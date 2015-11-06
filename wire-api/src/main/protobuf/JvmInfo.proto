@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package org_glowroot_wire_api_model;
+
+option java_package = "org.glowroot.wire.api.model";
+
+message JvmInfo {
+  int64 start_time = 2;
+  string java = 3;
+  string jvm = 4;
+  repeated string jvm_arg = 5;
+}

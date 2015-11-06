@@ -124,13 +124,14 @@
             <argument>--plugin=protoc-gen-grpc-java=${project.build.directory}/dependency/protoc-gen-grpc-java-${grpc.version}-${os.detected.classifier}.exe</argument>
             <argument>--java_out=${project.build.directory}/generated-sources/protobuf</argument>
             <argument>--grpc-java_out=${project.build.directory}/generated-sources/protobuf</argument>
-            <argument>src/main/protobuf/Aggregate.proto</argument>
             <argument>src/main/protobuf/CollectorService.proto</argument>
-            <argument>src/main/protobuf/DownstreamService.proto</argument>
+            <argument>src/main/protobuf/JvmInfo.proto</argument>
+            <argument>src/main/protobuf/Aggregate.proto</argument>
             <argument>src/main/protobuf/GaugeValue.proto</argument>
-            <argument>src/main/protobuf/ProfileTree.proto</argument>
             <argument>src/main/protobuf/Trace.proto</argument>
             <argument>src/main/protobuf/LogEvent.proto</argument>
+            <argument>src/main/protobuf/ProfileTree.proto</argument>
+            <argument>src/main/protobuf/DownstreamService.proto</argument>
           </arguments>
         </configuration>
         <executions>

@@ -1,8 +1,9 @@
 syntax = "proto3";
 
-import "Trace.proto";
+import "JvmInfo.proto";
 import "Aggregate.proto";
 import "GaugeValue.proto";
+import "Trace.proto";
 import "LogEvent.proto";
 
 package org_glowroot_wire_api_model;
@@ -10,27 +11,22 @@ package org_glowroot_wire_api_model;
 option java_package = "org.glowroot.wire.api.model";
 
 service CollectorService {
-  rpc hello(Hello) returns (EmptyMessage);
-  rpc collectConfig(ConfigMessage) returns (EmptyMessage);
   rpc collectJvmInfo(JvmInfoMessage) returns (EmptyMessage);
+  rpc collectConfig(ConfigMessage) returns (EmptyMessage);
   rpc collectAggregates(AggregateMessage) returns (EmptyMessage);
   rpc collectGaugeValues(GaugeValueMessage) returns (EmptyMessage);
   rpc collectTrace(TraceMessage) returns (EmptyMessage);
   rpc log(LogMessage) returns (EmptyMessage);
 }
 
-message Hello {
+message JvmInfoMessage {
   string server_id = 1;
-  repeated string secondary_rollup = 2;
+  JvmInfo jvm_info = 2;
 }
 
 message ConfigMessage {
   string server_id = 1;
   string config_json = 2;
-}
-
-message JvmInfoMessage {
-  string server_id = 1;
 }
 
 message AggregateMessage {

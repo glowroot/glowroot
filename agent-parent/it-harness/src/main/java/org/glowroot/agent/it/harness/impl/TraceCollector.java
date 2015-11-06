@@ -30,6 +30,7 @@ import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
 import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -102,19 +103,22 @@ class TraceCollector implements Collector {
     }
 
     @Override
+    public void collectJvmInfo(JvmInfo jvmInfo) {}
+
+    @Override
     public void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,
-            List<TransactionAggregate> transactionAggregates) throws Exception {}
+            List<TransactionAggregate> transactionAggregates) {}
 
     @Override
-    public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {}
+    public void collectGaugeValues(List<GaugeValue> gaugeValues) {}
 
     @Override
-    public void collectTrace(Trace trace) throws Exception {
+    public void collectTrace(Trace trace) {
         this.trace = trace;
     }
 
     @Override
-    public void log(LogEvent logEvent) throws Exception {
+    public void log(LogEvent logEvent) {
         if (isExpected(logEvent)) {
             return;
         }

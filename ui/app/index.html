@@ -111,8 +111,8 @@
                gt-navbar-item
                gt-display=""
                gt-item-name="config"
-               gt-url="config/transaction"
-               gt-state="config.transaction">
+               gt-url="{{layout.central ? 'config/ui' : 'config/transaction'}}"
+               gt-state="{{layout.central ? 'config.userInterface' : 'config.transaction'}}">
             <i title="Configuration"
                class="fa fa-gears"
                style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -3px;"></i>

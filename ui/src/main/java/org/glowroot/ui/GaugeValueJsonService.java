@@ -83,8 +83,9 @@ class GaugeValueJsonService {
 
     @GET("/backend/jvm/all-gauges")
     String getAllGaugeNames(String queryString) throws Exception {
-        String serverId = getServerId(queryString);
-        List<Gauge> gauges = gaugeValueRepository.getGauges(serverId);
+        String serverRollup =
+                QueryStrings.decode(queryString, AllGaugeNamesRequest.class).serverRollup();
+        List<Gauge> gauges = gaugeValueRepository.getGauges(serverRollup);
         ImmutableList<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
         return mapper.writeValueAsString(sortedGauges);
     }
@@ -132,8 +133,9 @@ class GaugeValueJsonService {
         return dataSeries;
     }
 
-    private static String getServerId(String queryString) throws Exception {
-        return queryString.substring("server-id".length() + 1);
+    @Value.Immutable
+    interface AllGaugeNamesRequest {
+        String serverRollup();
     }
 
     @Value.Immutable

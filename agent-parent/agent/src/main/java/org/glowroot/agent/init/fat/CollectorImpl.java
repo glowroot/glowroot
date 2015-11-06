@@ -19,26 +19,31 @@ import java.util.List;
 
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
+import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
 import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class CollectorImpl implements Collector {
 
-    private static final String SERVER_NAME = "";
+    private static final String SERVER_ID = "";
 
+    private final ServerRepository serverRepository;
     private final AggregateRepository aggregateRepository;
     private final TraceRepository traceRepository;
     private final GaugeValueRepository gaugeValueRepository;
     private final AlertingService alertingService;
 
-    CollectorImpl(AggregateRepository aggregateRepository, TraceRepository traceRepository,
-            GaugeValueRepository gaugeValueRepository, AlertingService alertingService) {
+    CollectorImpl(ServerRepository serverRepository, AggregateRepository aggregateRepository,
+            TraceRepository traceRepository, GaugeValueRepository gaugeValueRepository,
+            AlertingService alertingService) {
+        this.serverRepository = serverRepository;
         this.aggregateRepository = aggregateRepository;
         this.traceRepository = traceRepository;
         this.gaugeValueRepository = gaugeValueRepository;
@@ -46,21 +51,26 @@ class CollectorImpl implements Collector {
     }
 
     @Override
+    public void collectJvmInfo(JvmInfo jvmInfo) throws Exception {
+        serverRepository.storeJvmInfo(SERVER_ID, jvmInfo);
+    }
+
+    @Override
     public void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,
             List<TransactionAggregate> transactionAggregates) throws Exception {
-        aggregateRepository.store(SERVER_NAME, captureTime, overallAggregates,
+        aggregateRepository.store(SERVER_ID, captureTime, overallAggregates,
                 transactionAggregates);
         alertingService.checkAlerts(captureTime);
     }
 
     @Override
     public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
-        gaugeValueRepository.store(SERVER_NAME, gaugeValues);
+        gaugeValueRepository.store(SERVER_ID, gaugeValues);
     }
 
     @Override
     public void collectTrace(Trace trace) throws Exception {
-        traceRepository.collect(SERVER_NAME, trace);
+        traceRepository.collect(SERVER_ID, trace);
     }
 
     @Override

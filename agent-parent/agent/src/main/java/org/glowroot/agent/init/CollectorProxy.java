@@ -24,6 +24,7 @@ import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
 import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -31,6 +32,13 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 public class CollectorProxy implements Collector {
 
     private volatile @MonotonicNonNull Collector instance;
+
+    @Override
+    public void collectJvmInfo(JvmInfo jvmInfo) throws Exception {
+        if (instance != null) {
+            instance.collectJvmInfo(jvmInfo);
+        }
+    }
 
     @Override
     public void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,

@@ -38,6 +38,7 @@ import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.RepoAdmin;
+import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.TransactionTypeRepository;
 import org.glowroot.storage.repo.config.StorageConfig;
@@ -60,6 +61,7 @@ public class SimpleRepoModule {
     private final DataSource dataSource;
     private final ImmutableList<CappedDatabase> rollupCappedDatabases;
     private final CappedDatabase traceCappedDatabase;
+    private final ServerDao serverDao;
     private final TransactionTypeDao transactionTypeDao;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
@@ -91,9 +93,10 @@ public class SimpleRepoModule {
         traceCappedDatabase = new CappedDatabase(new File(dataDir, "trace-detail.capped.db"),
                 storageConfig.traceCappedDatabaseSizeMb() * 1024, ticker);
 
+        serverDao = new ServerDao(dataSource, clock);
         transactionTypeDao = new TransactionTypeDao(dataSource);
         aggregateDao = new AggregateDao(dataSource, this.rollupCappedDatabases, configRepository,
-                transactionTypeDao, clock);
+                serverDao, transactionTypeDao, clock);
         traceDao = new TraceDao(dataSource, traceCappedDatabase, transactionTypeDao);
         GaugeMetaDao gaugeMetaDao = new GaugeMetaDao(dataSource);
         gaugeValueDao = new GaugeValueDao(dataSource, gaugeMetaDao, configRepository, clock);
@@ -102,14 +105,14 @@ public class SimpleRepoModule {
                 configRepository);
 
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
-        alertingService = new AlertingService(configRepository, triggeredAlertDao, aggregateDao,
-                new MailService());
+        alertingService = new AlertingService(configRepository, serverDao, triggeredAlertDao,
+                aggregateDao, new MailService());
         if (reaperDisabled) {
             reaperRunnable = null;
         } else {
             // scheduledExecutor must be non-null when enabling reaper
             checkNotNull(scheduledExecutor);
-            reaperRunnable = new ReaperRunnable(configRepository, aggregateDao, traceDao,
+            reaperRunnable = new ReaperRunnable(configRepository, serverDao, aggregateDao, traceDao,
                     gaugeValueDao, gaugeMetaDao, transactionTypeDao, clock);
             reaperRunnable.scheduleWithFixedDelay(scheduledExecutor, 0,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
@@ -141,6 +144,10 @@ public class SimpleRepoModule {
                 }
             }
         });
+    }
+
+    public ServerRepository getServerRepository() {
+        return serverDao;
     }
 
     public TransactionTypeRepository getTransactionTypeRepository() {

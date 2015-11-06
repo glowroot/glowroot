@@ -15,10 +15,9 @@
  */
 package org.glowroot.ui;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -27,7 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.SortedSetMultimap;
+import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
@@ -36,6 +35,8 @@ import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
+import org.glowroot.storage.repo.ServerRepository;
+import org.glowroot.storage.repo.ServerRepository.ServerRollup;
 import org.glowroot.storage.repo.TransactionTypeRepository;
 import org.glowroot.storage.repo.config.UserInterfaceConfig;
 import org.glowroot.storage.repo.config.UserInterfaceConfig.AnonymousAccess;
@@ -52,15 +53,17 @@ class LayoutService {
     private final boolean central;
     private final String version;
     private final ConfigRepository configRepository;
+    private final ServerRepository serverRepository;
     private final TransactionTypeRepository transactionTypeRepository;
     private final LiveAggregateRepository liveAggregateRepository;
 
     LayoutService(boolean central, String version, ConfigRepository configRepository,
-            TransactionTypeRepository transactionTypeRepository,
+            ServerRepository serverRepository, TransactionTypeRepository transactionTypeRepository,
             LiveAggregateRepository liveAggregateRepository) {
         this.central = central;
         this.version = version;
         this.configRepository = configRepository;
+        this.serverRepository = serverRepository;
         this.transactionTypeRepository = transactionTypeRepository;
         this.liveAggregateRepository = liveAggregateRepository;
     }
@@ -101,15 +104,29 @@ class LayoutService {
 
         // linked hash map to preserve ordering
         Map<String, ServerRollupLayout> serverRollups = Maps.newLinkedHashMap();
-        SortedSetMultimap<String, String> transactionTypes =
+        Map<String, List<String>> transactionTypesMap =
                 transactionTypeRepository.readTransactionTypes();
-        if (!central) {
-            transactionTypes.putAll(SERVER_ID,
-                    liveAggregateRepository.getLiveTransactionTypes(SERVER_ID));
-        }
-        for (Entry<String, Collection<String>> entry : transactionTypes.asMap().entrySet()) {
-            serverRollups.put(entry.getKey(), ImmutableServerRollupLayout.builder()
-                    .addAllTransactionTypes(entry.getValue())
+        if (central) {
+            for (ServerRollup serverRollup : serverRepository.readServerRollups()) {
+                ImmutableServerRollupLayout.Builder builder = ImmutableServerRollupLayout.builder()
+                        .leaf(serverRollup.leaf());
+                List<String> transactionTypes = transactionTypesMap.get(serverRollup.name());
+                if (transactionTypes != null) {
+                    builder.addAllTransactionTypes(transactionTypes);
+                }
+                serverRollups.put(serverRollup.name(), builder.build());
+            }
+        } else {
+            // a couple of special cases for non-central
+            Set<String> transactionTypes = Sets.newHashSet();
+            List<String> storedTransactionTypes = transactionTypesMap.get(SERVER_ID);
+            if (storedTransactionTypes != null) {
+                transactionTypes.addAll(storedTransactionTypes);
+            }
+            transactionTypes.addAll(liveAggregateRepository.getLiveTransactionTypes(SERVER_ID));
+            serverRollups.put(SERVER_ID, ImmutableServerRollupLayout.builder()
+                    .leaf(true)
+                    .addAllTransactionTypes(transactionTypes)
                     .build());
         }
 
@@ -152,6 +169,7 @@ class LayoutService {
 
     @Value.Immutable
     interface ServerRollupLayout {
+        boolean leaf();
         List<String> transactionTypes();
     }
 }

@@ -32,7 +32,6 @@ import javax.annotation.Nullable;
 import ch.qos.logback.core.Context;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,7 +88,10 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                     collectorProxy.setInstance(customCollector);
                     return null;
                 }
-                String serverId = InetAddress.getLocalHost().getHostName();
+                String serverId = properties.get("glowroot.server.id");
+                if (Strings.isNullOrEmpty(serverId)) {
+                    serverId = InetAddress.getLocalHost().getHostName();
+                }
                 String collectorPortStr = properties.get("glowroot.collector.port");
                 if (Strings.isNullOrEmpty(collectorPortStr)) {
                     collectorPortStr = System.getProperty("glowroot.collector.port");
@@ -102,10 +104,10 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                 }
                 // GlowrootThinAgentInit.init() should not be called with null collectorHost
                 checkNotNull(collectorHost);
-                GrpcCollector grpcCollector = new GrpcCollector(serverId,
-                        ImmutableList.<String>of(), collectorHost, collectorPort);
-                grpcCollector.hello();
+                GrpcCollector grpcCollector =
+                        new GrpcCollector(serverId, collectorHost, collectorPort);
                 collectorProxy.setInstance(grpcCollector);
+                grpcCollector.collectJvmInfo(JvmInfoCreator.create());
                 return null;
             }
         });

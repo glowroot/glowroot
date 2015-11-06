@@ -15,36 +15,75 @@
 -->
 <div class="gt-header" style="margin-bottom: 16px;">
   <div class="gt-header-page-name">
-    JVM
+    <div ng-show="hideServerRollupDropdown()">
+      JVM
+    </div>
+    <div style="margin-top: -16px;" ng-hide="hideServerRollupDropdown()">
+      <span class="gt-inline-block gt-header-menu">
+        <span class="dropdown">
+          <a href="#" role="button" data-toggle="dropdown" class="dropdown-toggle">
+            {{serverRollup || '&lt;server&gt;'}}
+            <span class="gt-large-caret"></span>
+          </a>
+          <ul class="dropdown-menu" role="menu">
+            <li ng-repeat="(rollup, value) in layout.serverRollups"
+                ng-hide="rollup === serverRollup">
+              <a role="menuitem"
+                 tabindex="-1"
+                 ng-href="{{serverRollupUrl(rollup)}}">
+                {{rollup}}
+              </a>
+            </li>
+          </ul>
+        </span>
+      </span>
+      <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
+           while chrome guesses the placement of the border based on default font and then it moves slightly
+           once font is available -->
+      <span class="gt-inline-block gt-separator">
+        |
+      </span>
+      <span class="gt-inline-block">
+        JVM
+      </span>
+    </div>
   </div>
 </div>
-<div class="panel panel-default gt-sidebar hidden-print">
-  <ul class="list-group">
-    <div gt-sidebar-item
-         gt-display="Gauges"
-         gt-url="jvm/gauges">
-    </div>
-    <div gt-sidebar-item
-         gt-display="Process info"
-         gt-url="jvm/process-info"
-         ng-hide="layout.central">
-    </div>
-    <div gt-sidebar-item
-         gt-display="Thread dump"
-         gt-url="jvm/thread-dump"
-         ng-hide="layout.central">
-    </div>
-    <div gt-sidebar-item
-         gt-display="Heap dump"
-         gt-url="jvm/heap-dump"
-         ng-hide="layout.central">
-    </div>
-    <div gt-sidebar-item
-         gt-display="MBean tree"
-         gt-url="jvm/mbean-tree"
-         ng-hide="layout.central">
-    </div>
-  </ul>
+<div ng-if="!layout.central || layout.serverRollups[serverRollup].leaf">
+  <div class="panel panel-default gt-sidebar hidden-print">
+    <ul class="list-group">
+      <div gt-sidebar-item
+           gt-display="Gauges"
+           gt-url="jvm/gauges{{serverRollupQueryString()}}"
+           gt-active="currentUrl() === 'jvm/gauges'">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Process info"
+           gt-url="jvm/process-info{{serverIdQueryString()}}"
+           ng-if="layout.serverRollups[serverRollup].leaf"
+           gt-active="currentUrl() === 'jvm/process-info'">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Thread dump"
+           gt-url="jvm/thread-dump"
+           ng-if="!layout.central">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Heap dump"
+           gt-url="jvm/heap-dump"
+           ng-if="!layout.central">
+      </div>
+      <div gt-sidebar-item
+           gt-display="MBean tree"
+           gt-url="jvm/mbean-tree"
+           ng-if="!layout.central">
+      </div>
+    </ul>
+  </div>
+  <div ui-view autoscroll="false" class="gt-main-column">
+  </div>
 </div>
-<div ui-view autoscroll="false" class="gt-main-column">
+<div ng-if="layout.central && !layout.serverRollups[serverRollup].leaf">
+  <div ui-view autoscroll="false">
+  </div>
 </div>

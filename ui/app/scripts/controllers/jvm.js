@@ -14,15 +14,70 @@
  * limitations under the License.
  */
 
-/* global glowroot */
+/* global glowroot, angular */
 
 glowroot.controller('JvmCtrl', [
   '$scope',
   '$location',
-  function ($scope, $location) {
+  'queryStrings',
+  function ($scope, $location, queryStrings) {
     // \u00b7 is &middot;
     document.title = 'JVM \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'jvm';
+
+    $scope.hideServerRollupDropdown = function () {
+      if (!$scope.layout) {
+        // this is ok, under grunt serve and layout hasn't loaded yet
+        return true;
+      }
+      return !$scope.layout.central || $scope.layout.serverRollups.length === 1;
+    };
+
+    $scope.serverRollupUrl = function (serverRollup) {
+      var url;
+      var leaf = $scope.layout.serverRollups[serverRollup].leaf;
+      if (leaf) {
+        // ok to stay on current tab
+        url = $location.path().substring(1);
+      } else {
+        // only tab supporting non-leaf is gauges
+        url = 'jvm/gauges';
+      }
+      var query;
+      if (url === $location.path().substring(1)) {
+        // preserve query string
+        query = angular.copy($location.search());
+      } else {
+        query = {};
+      }
+      if ($scope.layout.central) {
+        if (url === 'jvm/gauges') {
+          query['server-rollup'] = serverRollup;
+        } else {
+          query['server-id'] = serverRollup;
+        }
+      }
+      url += queryStrings.encodeObject(query);
+      return url;
+    };
+
+    $scope.serverRollupQueryString = function () {
+      if ($scope.layout.central) {
+        return '?server-rollup=' + encodeURIComponent($scope.serverRollup);
+      }
+      return '';
+    };
+
+    $scope.serverIdQueryString = function () {
+      if ($scope.layout.central) {
+        return '?server-id=' + encodeURIComponent($scope.serverRollup);
+      }
+      return '';
+    };
+
+    $scope.currentUrl = function () {
+      return $location.path().substring(1);
+    };
 
     $scope.$on('$stateChangeStart', function () {
       // don't let the active sidebar selection get out of sync (which can happen after using the back button)

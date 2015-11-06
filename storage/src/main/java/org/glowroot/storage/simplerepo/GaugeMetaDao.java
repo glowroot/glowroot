@@ -103,14 +103,9 @@ class GaugeMetaDao {
         return gaugeIds.get(0);
     }
 
-    List<String> readAllGaugeNames() throws Exception {
-        return dataSource.query("select gauge_name from gauge_meta", new RowMapper<String>() {
-            @Override
-            public String mapRow(ResultSet resultSet) throws Exception {
-                return checkNotNull(resultSet.getString(1));
-            }
-
-        });
+    List<String> readAllGaugeNames(String serverRollup) throws Exception {
+        return dataSource.query("select gauge_name from gauge_meta where server_rollup = ?",
+                new GaugeNameRowMapper(), serverRollup);
     }
 
     void deleteAll(String serverRollup) throws Exception {
@@ -133,6 +128,13 @@ class GaugeMetaDao {
         @Override
         public Long mapRow(ResultSet resultSet) throws SQLException {
             return resultSet.getLong(1);
+        }
+    }
+
+    private static class GaugeNameRowMapper implements RowMapper<String> {
+        @Override
+        public String mapRow(ResultSet resultSet) throws SQLException {
+            return checkNotNull(resultSet.getString(1));
         }
     }
 }

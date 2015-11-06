@@ -128,7 +128,7 @@ case "$1" in
                # TODO find way to not omit these (especially it-harness)
                # omitting wire-api and agent-parent/it-harness from checker framework validation since they contain protobuf generated code which does not pass
                mvn clean install -am -pl wire-api,agent-parent/it-harness
-               mvn clean compile -pl .,misc/license-resource-bundle,common,storage,ui,agent-parent/api,agent-parent/plugin-api,agent-parent/agent,agent-parent/plugins/cassandra-plugin,agent-parent/plugins/http-client-plugin,agent-parent/plugins/jdbc-plugin,agent-parent/plugins/jms-plugin,agent-parent/plugins/logger-plugin,agent-parent/plugins/quartz-plugin,agent-parent/plugins/servlet-plugin \
+               mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/it-harness,!agent-parent/benchmarks,!agent-parent/ui-sandbox \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \

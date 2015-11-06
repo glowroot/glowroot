@@ -35,6 +35,7 @@ import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.RepoAdmin;
+import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.TransactionTypeRepository;
 import org.glowroot.storage.util.MailService;
@@ -51,6 +52,7 @@ public class UiModule {
             @Nullable File logDir,
             @Nullable LiveJvmService liveJvmService,
             ConfigRepository configRepository,
+            ServerRepository serverRepository,
             TransactionTypeRepository transactionTypeRepository,
             TraceRepository traceRepository,
             AggregateRepository aggregateRepository,
@@ -65,7 +67,7 @@ public class UiModule {
             List<PluginDescriptor> pluginDescriptors) throws Exception {
 
         LayoutService layoutService = new LayoutService(central, version, configRepository,
-                transactionTypeRepository, liveAggregateRepository);
+                serverRepository, transactionTypeRepository, liveAggregateRepository);
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(configRepository, clock, layoutService);
         IndexHtmlHttpService indexHtmlHttpService =
@@ -112,8 +114,8 @@ public class UiModule {
         jsonServices.add(errorJsonService);
         jsonServices.add(configJsonService);
         jsonServices.add(gaugeValueJsonService);
+        jsonServices.add(new JvmJsonService(serverRepository, liveJvmService));
         if (liveJvmService != null) {
-            jsonServices.add(new JvmJsonService(liveJvmService));
             jsonServices.add(new GaugeConfigJsonService(configRepository, liveJvmService));
         }
         if (liveWeavingService != null) {

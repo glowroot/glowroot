@@ -17,10 +17,12 @@ package org.glowroot.storage.simplerepo;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.SortedSetMultimap;
-import com.google.common.collect.TreeMultimap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import org.glowroot.storage.repo.TransactionTypeRepository;
 import org.glowroot.storage.simplerepo.util.DataSource;
@@ -31,6 +33,8 @@ import org.glowroot.storage.simplerepo.util.Schema;
 import org.glowroot.storage.simplerepo.util.Schema.Column;
 import org.glowroot.storage.simplerepo.util.Schema.ColumnType;
 import org.glowroot.storage.simplerepo.util.Schema.Index;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 class TransactionTypeDao implements TransactionTypeRepository {
 
@@ -57,13 +61,14 @@ class TransactionTypeDao implements TransactionTypeRepository {
     }
 
     @Override
-    public SortedSetMultimap<String, String> readTransactionTypes() throws Exception {
-        SortedSetMultimap<String, String> transactionTypes =
-                dataSource.query("select server_rollup, transaction_type from transaction_types",
+    public Map<String, List<String>> readTransactionTypes() throws Exception {
+        Map<String, List<String>> transactionTypes =
+                dataSource.query("select server_rollup, transaction_type from transaction_types"
+                        + " order by server_rollup, transaction_type",
                         new TransactionTypeResultSetExtractor());
         if (transactionTypes == null) {
             // data source is closing
-            return TreeMultimap.create();
+            return ImmutableMap.of();
         }
         return transactionTypes;
     }
@@ -100,16 +105,29 @@ class TransactionTypeDao implements TransactionTypeRepository {
     }
 
     private static class TransactionTypeResultSetExtractor
-            implements ResultSetExtractor<SortedSetMultimap<String, String>> {
+            implements ResultSetExtractor<Map<String, List<String>>> {
         @Override
-        public SortedSetMultimap<String, String> extractData(ResultSet resultSet)
-                throws SQLException {
-            SortedSetMultimap<String, String> multimap = TreeMultimap
-                    .create(String.CASE_INSENSITIVE_ORDER, String.CASE_INSENSITIVE_ORDER);
+        public Map<String, List<String>> extractData(ResultSet resultSet) throws SQLException {
+            ImmutableMap.Builder<String, List<String>> builder = ImmutableMap.builder();
+            String currServerRollup = null;
+            List<String> currTransactionTypes = Lists.newArrayList();
             while (resultSet.next()) {
-                multimap.put(resultSet.getString(1), resultSet.getString(2));
+                String serverRollup = checkNotNull(resultSet.getString(1));
+                String transactionType = checkNotNull(resultSet.getString(2));
+                if (currServerRollup == null) {
+                    currServerRollup = serverRollup;
+                }
+                if (!serverRollup.equals(currServerRollup)) {
+                    builder.put(currServerRollup, ImmutableList.copyOf(currTransactionTypes));
+                    currServerRollup = serverRollup;
+                    currTransactionTypes = Lists.newArrayList();
+                }
+                currTransactionTypes.add(transactionType);
             }
-            return multimap;
+            if (currServerRollup != null) {
+                builder.put(currServerRollup, ImmutableList.copyOf(currTransactionTypes));
+            }
+            return builder.build();
         }
     }
 }

@@ -57,6 +57,7 @@
     <module>agent-parent/webdriver-tests</module>
     <module>agent-parent/ui-sandbox</module>
     <module>agent-parent/distribution</module>
+    <module>central</module>
   </modules>
 
   <scm>

@@ -274,7 +274,7 @@ glowroot.config([
       controller: 'JvmCtrl'
     });
     $stateProvider.state('jvm.gauges', {
-      url: '/gauges',
+      url: '/gauges?server-rollup',
       templateUrl: 'views/jvm/gauge-values.html',
       controller: 'JvmGaugeValuesCtrl',
       // gauges controller needs to wait for layout when running under grunt serve
@@ -283,7 +283,7 @@ glowroot.config([
       }
     });
     $stateProvider.state('jvm.processInfo', {
-      url: '/process-info',
+      url: '/process-info?server-id',
       templateUrl: 'views/jvm/process-info.html',
       controller: 'JvmProcessInfoCtrl'
     });

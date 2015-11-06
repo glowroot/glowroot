@@ -36,6 +36,8 @@ import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
+import org.glowroot.storage.repo.ServerRepository;
+import org.glowroot.storage.repo.ServerRepository.ServerRollup;
 import org.glowroot.storage.repo.TriggeredAlertRepository;
 import org.glowroot.storage.repo.Utils;
 import org.glowroot.storage.repo.config.AlertConfig;
@@ -51,41 +53,42 @@ public class AlertingService {
     private static final Logger logger = LoggerFactory.getLogger(AlertingService.class);
 
     private final ConfigRepository configRepository;
+    private final ServerRepository serverRepository;
     private final TriggeredAlertRepository triggeredAlertRepository;
     private final AggregateRepository aggregateRepository;
     private final MailService mailService;
 
-    public AlertingService(ConfigRepository configRepository,
+    public AlertingService(ConfigRepository configRepository, ServerRepository serverRepository,
             TriggeredAlertRepository triggeredAlertRepository,
             AggregateRepository aggregateRepository, MailService mailService) {
         this.configRepository = configRepository;
+        this.serverRepository = serverRepository;
         this.triggeredAlertRepository = triggeredAlertRepository;
         this.aggregateRepository = aggregateRepository;
         this.mailService = mailService;
     }
 
     public void checkAlerts(long endTime) throws Exception {
-
-        // FIXME for each serverId
-        final String serverId = "";
-
-        for (AlertConfig alertConfig : configRepository.getAlertConfigs(serverId)) {
-            try {
-                checkAlert(serverId, alertConfig, endTime);
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
+        for (ServerRollup serverRollup : serverRepository.readServerRollups()) {
+            for (AlertConfig alertConfig : configRepository.getAlertConfigs(serverRollup.name())) {
+                try {
+                    checkAlert(serverRollup.name(), alertConfig, endTime);
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
             }
         }
     }
 
-    private void checkAlert(String serverId, AlertConfig alertConfig, long endTime)
+    private void checkAlert(String serverRollup, AlertConfig alertConfig, long endTime)
             throws Exception {
         long startTime = endTime - MINUTES.toMillis(alertConfig.timePeriodMinutes());
         // don't want to include the aggregate at startTime, so add 1
         startTime++;
-        int rollupLevel = aggregateRepository.getRollupLevelForView(serverId, startTime, endTime);
+        int rollupLevel =
+                aggregateRepository.getRollupLevelForView(serverRollup, startTime, endTime);
         List<PercentileAggregate> percentileAggregates =
-                aggregateRepository.readOverallPercentileAggregates(serverId,
+                aggregateRepository.readOverallPercentileAggregates(serverRollup,
                         alertConfig.transactionType(), startTime, endTime, rollupLevel);
         long transactionCount = 0;
         LazyHistogram histogram = new LazyHistogram();
@@ -103,14 +106,14 @@ public class AlertingService {
                 valueAtPercentile >= MILLISECONDS.toNanos(alertConfig.thresholdMillis());
         if (previouslyTriggered && !currentlyTriggered) {
             triggeredAlertRepository.delete(alertConfig.version());
-            sendAlert(serverId, alertConfig, valueAtPercentile, transactionCount, true);
+            sendAlert(serverRollup, alertConfig, valueAtPercentile, transactionCount, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
             triggeredAlertRepository.insert(alertConfig.version(), endTime);
-            sendAlert(serverId, alertConfig, valueAtPercentile, transactionCount, false);
+            sendAlert(serverRollup, alertConfig, valueAtPercentile, transactionCount, false);
         }
     }
 
-    private void sendAlert(String serverId, AlertConfig alertConfig, long valueAtPercentile,
+    private void sendAlert(String serverRollup, AlertConfig alertConfig, long valueAtPercentile,
             long transactionCount, boolean ok) throws Exception {
         SmtpConfig smtpConfig = configRepository.getSmtpConfig();
         Session session = createMailSession(smtpConfig, configRepository.getSecretKey());
@@ -130,7 +133,11 @@ public class AlertingService {
             emailAddresses[i] = new InternetAddress(alertConfig.emailAddresses().get(i));
         }
         message.setRecipients(Message.RecipientType.TO, emailAddresses);
-        String subject = "Glowroot alert - " + alertConfig.transactionType();
+        String subject = "Glowroot alert";
+        if (!serverRollup.equals("")) {
+            subject += " - " + serverRollup;
+        }
+        subject += " - " + alertConfig.transactionType();
         if (ok) {
             subject += " - OK";
         }

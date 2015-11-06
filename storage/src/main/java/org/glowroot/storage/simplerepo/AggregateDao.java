@@ -23,18 +23,20 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.protobuf.AbstractMessageLite;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import org.checkerframework.checker.tainting.qual.Untainted;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.live.ImmutableErrorPoint;
 import org.glowroot.common.live.ImmutableOverallErrorSummary;
 import org.glowroot.common.live.ImmutableOverallSummary;
@@ -135,20 +137,21 @@ public class AggregateDao implements AggregateRepository {
     private final DataSource dataSource;
     private final List<CappedDatabase> rollupCappedDatabases;
     private final ConfigRepository configRepository;
+    private final ServerDao serverDao;
     private final TransactionTypeDao transactionTypeDao;
     private final Clock clock;
 
-    // FIXME these need to be per server_rollup
-    private final AtomicLongArray lastRollupTimes;
+    private final ImmutableList<ConcurrentMap<String, Long>> lastRollupTimes;
 
     private final Object rollupLock = new Object();
 
     AggregateDao(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
-            ConfigRepository configRepository, TransactionTypeDao transactionTypeDao, Clock clock)
-                    throws Exception {
+            ConfigRepository configRepository, ServerDao serverDao,
+            TransactionTypeDao transactionTypeDao, Clock clock) throws Exception {
         this.dataSource = dataSource;
         this.rollupCappedDatabases = rollupCappedDatabases;
         this.configRepository = configRepository;
+        this.serverDao = serverDao;
         this.transactionTypeDao = transactionTypeDao;
         this.clock = clock;
 
@@ -167,20 +170,39 @@ public class AggregateDao implements AggregateRepository {
 
         // don't need last_rollup_times table like in GaugeValueDao since there is already index
         // on capture_time so these queries are relatively fast
-        long[] lastRollupTimes = new long[rollupConfigs.size()];
-        lastRollupTimes[0] = 0;
-        for (int i = 1; i < lastRollupTimes.length; i++) {
-            lastRollupTimes[i] = dataSource.queryForLong(
-                    "select coalesce(max(capture_time), 0) from overall_aggregate_rollup_"
-                            + castUntainted(i));
+        List<ConcurrentMap<String, Long>> lastRollupTimes = Lists.newArrayList();
+        // this first item is never used, it is just to make indexes line up
+        lastRollupTimes.add(Maps.<String, Long>newConcurrentMap());
+        for (int i = 1; i < rollupConfigs.size(); i++) {
+            ConcurrentMap<String, Long> map = dataSource.query(
+                    "select server_rollup, max(capture_time) from overall_aggregate_rollup_"
+                            + castUntainted(i) + " group by server_rollup",
+                    new LastRollupTimesExtractor());
+            if (map == null) {
+                // map could be null if data source is closing already
+                lastRollupTimes.add(Maps.<String, Long>newConcurrentMap());
+            } else {
+                lastRollupTimes.add(map);
+            }
         }
-        this.lastRollupTimes = new AtomicLongArray(lastRollupTimes);
+        this.lastRollupTimes = ImmutableList.copyOf(lastRollupTimes);
 
         // TODO initial rollup in case store is not called in a reasonable time
     }
 
     @Override
-    public void store(String serverRollup, long captureTime,
+    public void store(String serverId, long captureTime,
+            List<OverallAggregate> overallAggregates,
+            List<TransactionAggregate> transactionAggregates) throws Exception {
+        serverDao.updateLastCaptureTime(serverId, captureTime);
+        List<String> serverRollups = ServerDao.getServerRollups(serverId);
+        for (String serverRollup : serverRollups) {
+            storeToServerRollup(serverRollup, captureTime, overallAggregates,
+                    transactionAggregates);
+        }
+    }
+
+    private void storeToServerRollup(String serverRollup, long captureTime,
             List<OverallAggregate> overallAggregates,
             List<TransactionAggregate> transactionAggregates) throws Exception {
         // intentionally not using batch update as that could cause memory spike while preparing a
@@ -202,10 +224,11 @@ public class AggregateDao implements AggregateRepository {
             for (int i = 1; i < rollupConfigs.size(); i++) {
                 RollupConfig rollupConfig = rollupConfigs.get(i);
                 long safeRollupTime = getSafeRollupTime(captureTime, rollupConfig.intervalMillis());
-                if (safeRollupTime > lastRollupTimes.get(i)) {
-                    rollup(serverRollup, lastRollupTimes.get(i), safeRollupTime,
+                long lastRollupTime = getLastRollupTime(serverRollup, i);
+                if (safeRollupTime > lastRollupTime) {
+                    rollup(serverRollup, lastRollupTime, safeRollupTime,
                             rollupConfig.intervalMillis(), i, i - 1);
-                    lastRollupTimes.set(i, safeRollupTime);
+                    lastRollupTimes.get(i).put(serverRollup, safeRollupTime);
                 }
             }
         }
@@ -216,7 +239,7 @@ public class AggregateDao implements AggregateRepository {
     public OverallSummary readOverallSummary(String serverRollup, String transactionType,
             long captureTimeFrom, long captureTimeTo) throws Exception {
         int rollupLevel = getRollupLevelForView(serverRollup, captureTimeFrom, captureTimeTo);
-        long lastRollupTime = lastRollupTimes.get(rollupLevel);
+        long lastRollupTime = getLastRollupTime(serverRollup, rollupLevel);
         if (rollupLevel != 0 && captureTimeTo > lastRollupTime) {
             // need to aggregate some non-rolled up data
             OverallSummary overallSummary = readOverallSummaryInternal(serverRollup,
@@ -235,7 +258,7 @@ public class AggregateDao implements AggregateRepository {
             throws Exception {
         int rollupLevel = getRollupLevelForView(query.serverRollup(), query.from(), query.to());
         List<TransactionSummary> summaries;
-        long lastRollupTime = lastRollupTimes.get(rollupLevel);
+        long lastRollupTime = getLastRollupTime(query.serverRollup(), rollupLevel);
         if (rollupLevel != 0 && query.to() > lastRollupTime) {
             // need to aggregate some non-rolled up data
             summaries = readTransactionSummariesInternalSplit(query, rollupLevel, lastRollupTime);
@@ -270,7 +293,7 @@ public class AggregateDao implements AggregateRepository {
             throws Exception {
         int rollupLevel = getRollupLevelForView(query.serverRollup(), query.from(), query.to());
         List<TransactionErrorSummary> summaries;
-        long lastRollupTime = lastRollupTimes.get(rollupLevel);
+        long lastRollupTime = getLastRollupTime(query.serverRollup(), rollupLevel);
         if (rollupLevel != 0 && query.to() > lastRollupTime) {
             // need to aggregate some non-rolled up data
             summaries =
@@ -556,6 +579,14 @@ public class AggregateDao implements AggregateRepository {
                 "server_rollup", serverRollup, captureTime);
     }
 
+    private long getLastRollupTime(String serverRollup, int rollupLevel) {
+        Long lastRollupTimeObj = lastRollupTimes.get(rollupLevel).get(serverRollup);
+        if (lastRollupTimeObj == null) {
+            return 0;
+        }
+        return lastRollupTimeObj;
+    }
+
     private void rollup(String serverRollup, long lastRollupTime, long curentRollupTime,
             long fixedIntervalMillis, int toRollupLevel, int fromRollupLevel) throws Exception {
         // need ".0" to force double result
@@ -810,6 +841,14 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
+    private int getMaxAggregateQueriesPerQueryType(String serverRollup) {
+        if (!serverRollup.equals("")) {
+            // TODO this is hacky
+            return ImmutableAdvancedConfig.builder().build().maxAggregateQueriesPerQueryType();
+        }
+        return configRepository.getAdvancedConfig(serverRollup).maxAggregateQueriesPerQueryType();
+    }
+
     static long getSafeRollupTime(long captureTime, long intervalMillis) {
         return (long) Math.floor(captureTime / (double) intervalMillis) * intervalMillis;
     }
@@ -974,6 +1013,20 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
+    private static class LastRollupTimesExtractor
+            implements ResultSetExtractor<ConcurrentMap<String, Long>> {
+        @Override
+        public ConcurrentMap<String, Long> extractData(ResultSet resultSet) throws Exception {
+            ConcurrentMap<String, Long> lastRollupTimes = Maps.newConcurrentMap();
+            while (resultSet.next()) {
+                String serverRollup = checkNotNull(resultSet.getString(1));
+                long maxCaptureTime = resultSet.getLong(2);
+                lastRollupTimes.put(serverRollup, maxCaptureTime);
+            }
+            return lastRollupTimes;
+        }
+    }
+
     private static class OverallSummaryResultSetExtractor
             implements ResultSetExtractor<OverallSummary> {
         @Override
@@ -1131,8 +1184,7 @@ public class AggregateDao implements AggregateRepository {
 
         @Override
         public @Nullable Void extractData(ResultSet resultSet) throws Exception {
-            int maxAggregateQueriesPerQueryType = configRepository.getAdvancedConfig(serverRollup)
-                    .maxAggregateQueriesPerQueryType();
+            int maxAggregateQueriesPerQueryType = getMaxAggregateQueriesPerQueryType(serverRollup);
             MutableOverallAggregate curr = null;
             while (resultSet.next()) {
                 String transactionType = checkNotNull(resultSet.getString(1));
@@ -1173,8 +1225,7 @@ public class AggregateDao implements AggregateRepository {
 
         @Override
         public @Nullable Void extractData(ResultSet resultSet) throws Exception {
-            int maxAggregateQueriesPerQueryType = configRepository.getAdvancedConfig(serverRollup)
-                    .maxAggregateQueriesPerQueryType();
+            int maxAggregateQueriesPerQueryType = getMaxAggregateQueriesPerQueryType(serverRollup);
             MutableTransactionAggregate curr = null;
             while (resultSet.next()) {
                 String transactionType = checkNotNull(resultSet.getString(1));

@@ -28,6 +28,9 @@ import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
+import org.glowroot.storage.repo.ImmutableServerRollup;
+import org.glowroot.storage.repo.ServerRepository;
+import org.glowroot.storage.repo.ServerRepository.ServerRollup;
 import org.glowroot.storage.repo.TriggeredAlertRepository;
 import org.glowroot.storage.repo.Utils;
 import org.glowroot.storage.repo.config.AlertConfig;
@@ -43,9 +46,10 @@ import static org.mockito.Mockito.when;
 
 public class AlertingServiceTest {
 
-    private static final String SERVER_NAME = "";
+    private static final String SERVER_ID = "";
 
     private ConfigRepository configRepository;
+    private ServerRepository serverRepository;
     private TriggeredAlertRepository triggeredAlertRepository;
     private AggregateRepository aggregateRepository;
     private MockMailService mailService;
@@ -53,6 +57,9 @@ public class AlertingServiceTest {
     @Before
     public void beforeEachTest() throws Exception {
         configRepository = mock(ConfigRepository.class);
+        serverRepository = mock(ServerRepository.class);
+        when(serverRepository.readServerRollups())
+                .thenReturn(ImmutableList.<ServerRollup>of(ImmutableServerRollup.of("", true)));
         triggeredAlertRepository = mock(TriggeredAlertRepository.class);
         aggregateRepository = mock(AggregateRepository.class);
         mailService = new MockMailService();
@@ -73,7 +80,7 @@ public class AlertingServiceTest {
     public void shouldSendMail() throws Exception {
         // given
         setup(1000000);
-        AlertingService alertingService = new AlertingService(configRepository,
+        AlertingService alertingService = new AlertingService(configRepository, serverRepository,
                 triggeredAlertRepository, aggregateRepository, mailService);
         // when
         alertingService.checkAlerts(120000);
@@ -85,7 +92,7 @@ public class AlertingServiceTest {
     public void shouldNotSendMail() throws Exception {
         // given
         setup(999000);
-        AlertingService alertingService = new AlertingService(configRepository,
+        AlertingService alertingService = new AlertingService(configRepository, serverRepository,
                 triggeredAlertRepository, aggregateRepository, mailService);
         // when
         alertingService.checkAlerts(120000);
@@ -148,9 +155,9 @@ public class AlertingServiceTest {
                 .transactionCount(1)
                 .histogram(lazyHistogram.toProtobuf(new ScratchBuffer()))
                 .build();
-        when(configRepository.getAlertConfigs(SERVER_NAME))
+        when(configRepository.getAlertConfigs(SERVER_ID))
                 .thenReturn(ImmutableList.of(alertConfig));
-        when(aggregateRepository.readOverallPercentileAggregates(SERVER_NAME, "tt", 60001, 120000,
+        when(aggregateRepository.readOverallPercentileAggregates(SERVER_ID, "tt", 60001, 120000,
                 0)).thenReturn(ImmutableList.of(aggregate));
     }
 

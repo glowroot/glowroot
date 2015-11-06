@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.init;
+package org.glowroot.central;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
-import io.netty.channel.EventLoopGroup;
 
-import org.glowroot.wire.api.Collector;
+import org.glowroot.storage.repo.AggregateRepository;
+import org.glowroot.storage.repo.GaugeValueRepository;
+import org.glowroot.storage.repo.ServerRepository;
+import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorService;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
@@ -35,62 +33,42 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.JvmInfoMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
+import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+public class GrpcServer {
 
-// this exists to hide shading from integration test harness
-public class GrpcServerWrapper {
+    private final ServerRepository serverRepository;
+    private final AggregateRepository aggregateRepository;
+    private final GaugeValueRepository gaugeValueRepository;
+    private final TraceRepository traceRepository;
 
-    private final EventLoopGroup bossEventLoopGroup;
-    private final EventLoopGroup workerEventLoopGroup;
-    private final ExecutorService executor;
-    private final Server server;
+    public GrpcServer(int port, ServerRepository serverRepository,
+            AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
+            TraceRepository traceRepository) throws IOException {
 
-    public GrpcServerWrapper(Collector collector, int port) throws IOException {
-        bossEventLoopGroup = EventLoopGroups.create("Glowroot-grpc-boss-ELG");
-        workerEventLoopGroup = EventLoopGroups.create("Glowroot-grpc-worker-ELG");
-        executor = Executors.newCachedThreadPool(
-                new ThreadFactoryBuilder()
-                        .setDaemon(true)
-                        .setNameFormat("Glowroot-grpc-executor-%d")
-                        .build());
-        server = NettyServerBuilder.forPort(port)
-                .bossEventLoopGroup(bossEventLoopGroup)
-                .workerEventLoopGroup(workerEventLoopGroup)
-                .executor(executor)
-                .addService(CollectorServiceGrpc.bindService(new CollectorServiceImpl(collector)))
+        this.serverRepository = serverRepository;
+        this.aggregateRepository = aggregateRepository;
+        this.gaugeValueRepository = gaugeValueRepository;
+        this.traceRepository = traceRepository;
+
+        NettyServerBuilder.forPort(port)
+                .addService(CollectorServiceGrpc.bindService(new CollectorServiceImpl()))
                 .build()
                 .start();
     }
 
-    public void close() throws InterruptedException {
-        server.shutdown();
-        if (!server.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate gRPC channel");
-        }
-        executor.shutdown();
-        if (!executor.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate gRPC executor");
-        }
-        if (!bossEventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate gRPC boss event loop group");
-        }
-        if (!workerEventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate gRPC worker event loop group");
-        }
-    }
-
-    private static class CollectorServiceImpl implements CollectorService {
-
-        private final Collector collector;
-
-        private CollectorServiceImpl(Collector collector) {
-            this.collector = collector;
-        }
+    private class CollectorServiceImpl implements CollectorService {
 
         @Override
         public void collectJvmInfo(JvmInfoMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
+            try {
+                serverRepository.storeJvmInfo(request.getServerId(), request.getJvmInfo());
+            } catch (Throwable t) {
+                t.printStackTrace();
+                responseObserver.onError(t);
+                return;
+            }
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
         }
@@ -106,10 +84,10 @@ public class GrpcServerWrapper {
         public void collectAggregates(AggregateMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
             try {
-                collector.collectAggregates(request.getCaptureTime(),
-                        request.getOverallAggregateList(),
-                        request.getTransactionAggregateList());
+                aggregateRepository.store(request.getServerId(), request.getCaptureTime(),
+                        request.getOverallAggregateList(), request.getTransactionAggregateList());
             } catch (Throwable t) {
+                t.printStackTrace();
                 responseObserver.onError(t);
                 return;
             }
@@ -121,8 +99,9 @@ public class GrpcServerWrapper {
         public void collectGaugeValues(GaugeValueMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
             try {
-                collector.collectGaugeValues(request.getGaugeValuesList());
+                gaugeValueRepository.store(request.getServerId(), request.getGaugeValuesList());
             } catch (Throwable t) {
+                t.printStackTrace();
                 responseObserver.onError(t);
                 return;
             }
@@ -134,8 +113,9 @@ public class GrpcServerWrapper {
         public void collectTrace(TraceMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
             try {
-                collector.collectTrace(request.getTrace());
+                traceRepository.collect(request.getServerId(), request.getTrace());
             } catch (Throwable t) {
+                t.printStackTrace();
                 responseObserver.onError(t);
                 return;
             }
@@ -146,7 +126,8 @@ public class GrpcServerWrapper {
         @Override
         public void log(LogMessage request, StreamObserver<EmptyMessage> responseObserver) {
             try {
-                collector.log(request.getLogEvent());
+                LogEvent logEvent = request.getLogEvent();
+                System.out.println(logEvent);
             } catch (Throwable t) {
                 responseObserver.onError(t);
                 return;

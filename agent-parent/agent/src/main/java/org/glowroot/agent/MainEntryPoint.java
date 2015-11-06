@@ -143,7 +143,7 @@ public class MainEntryPoint {
             for (String key : props.stringPropertyNames()) {
                 String value = props.getProperty(key);
                 if (value != null) {
-                    properties.put(key, value);
+                    properties.put("glowroot." + key, value);
                 }
             }
         }

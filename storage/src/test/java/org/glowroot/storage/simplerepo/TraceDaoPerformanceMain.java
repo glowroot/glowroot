@@ -33,7 +33,7 @@ public class TraceDaoPerformanceMain {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceDaoPerformanceMain.class);
 
-    private static final String SERVER_NAME = "";
+    private static final String SERVER_ID = "";
 
     private TraceDaoPerformanceMain() {}
 
@@ -47,9 +47,9 @@ public class TraceDaoPerformanceMain {
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (int i = 0; i < 1000; i++) {
             Trace trace = TraceTestData.createTrace();
-            traceDao.collect(SERVER_NAME, trace);
+            traceDao.collect(SERVER_ID, trace);
         }
         logger.info("elapsed time: {}", stopwatch.elapsed(MILLISECONDS));
-        logger.info("num traces: {}", traceDao.count(SERVER_NAME));
+        logger.info("num traces: {}", traceDao.count(SERVER_ID));
     }
 }

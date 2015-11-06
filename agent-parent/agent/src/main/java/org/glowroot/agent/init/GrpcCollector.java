@@ -15,12 +15,11 @@
  */
 package org.glowroot.agent.init;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NegotiationType;
@@ -38,10 +37,11 @@ import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceStub;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Hello;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.JvmInfoMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
 import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -57,10 +57,13 @@ class GrpcCollector implements Collector {
     private final CollectorServiceStub client;
 
     private final String serverId;
-    private final ImmutableList<String> secondaryRollups;
 
-    GrpcCollector(String serverId, List<String> secondaryRollups, String collectorHost,
-            int collectorPort) {
+    private final LoggingStreamObserver loggingStreamObserver = new LoggingStreamObserver();
+
+    // limit error logging to once per minute
+    private RateLimiter loggingRateLimiter = RateLimiter.create(1 / 60.0);
+
+    GrpcCollector(String serverId, String collectorHost, int collectorPort) {
         eventLoopGroup = EventLoopGroups.create("Glowroot-grpc-worker-ELG");
         executor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                 .setDaemon(true)
@@ -74,15 +77,16 @@ class GrpcCollector implements Collector {
                 .build();
         client = CollectorServiceGrpc.newStub(channel);
         this.serverId = serverId;
-        this.secondaryRollups = ImmutableList.copyOf(secondaryRollups);
     }
 
-    void hello() throws IOException {
-        Hello hello = Hello.newBuilder()
+    @Override
+    public void collectJvmInfo(JvmInfo jvmInfo) throws Exception {
+        // FIXME for this one only, need to re-try if failure
+        JvmInfoMessage jvmInfoMessage = JvmInfoMessage.newBuilder()
                 .setServerId(serverId)
-                .addAllSecondaryRollup(secondaryRollups)
+                .setJvmInfo(jvmInfo)
                 .build();
-        client.hello(hello, LoggingStreamObserver.INSTANCE);
+        client.collectJvmInfo(jvmInfoMessage, loggingStreamObserver);
     }
 
     @Override
@@ -94,32 +98,34 @@ class GrpcCollector implements Collector {
                 .addAllOverallAggregate(overallAggregates)
                 .addAllTransactionAggregate(transactionAggregates)
                 .build();
-        client.collectAggregates(aggregateMessage, LoggingStreamObserver.INSTANCE);
+        client.collectAggregates(aggregateMessage, loggingStreamObserver);
     }
 
     @Override
     public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
         GaugeValueMessage gaugeValueMessage = GaugeValueMessage.newBuilder()
+                .setServerId(serverId)
                 .addAllGaugeValues(gaugeValues)
                 .build();
-        client.collectGaugeValues(gaugeValueMessage, LoggingStreamObserver.INSTANCE);
+        client.collectGaugeValues(gaugeValueMessage, loggingStreamObserver);
     }
 
     @Override
     public void collectTrace(Trace trace) throws Exception {
         TraceMessage traceMessage = TraceMessage.newBuilder()
+                .setServerId(serverId)
                 .setTrace(trace)
                 .build();
-        client.collectTrace(traceMessage, LoggingStreamObserver.INSTANCE);
+        client.collectTrace(traceMessage, loggingStreamObserver);
     }
 
     @Override
     public void log(LogEvent logEvent) throws Exception {
         LogMessage logMessage = LogMessage.newBuilder()
+                .setServerId(serverId)
                 .setLogEvent(logEvent)
                 .build();
-        // don't use LoggingStreamObserver here to avoid recursive loop
-        client.log(logMessage, NopStreamObserver.INSTANCE);
+        client.log(logMessage, loggingStreamObserver);
     }
 
     @Override
@@ -137,25 +143,19 @@ class GrpcCollector implements Collector {
         }
     }
 
-    private static class LoggingStreamObserver extends NopStreamObserver {
-
-        private static final LoggingStreamObserver INSTANCE = new LoggingStreamObserver();
-
-        @Override
-        public void onError(Throwable t) {
-            logger.error(t.getMessage(), t);
-        }
-    }
-
-    private static class NopStreamObserver implements StreamObserver<EmptyMessage> {
-
-        private static final NopStreamObserver INSTANCE = new NopStreamObserver();
+    private class LoggingStreamObserver implements StreamObserver<EmptyMessage> {
 
         @Override
         public void onNext(EmptyMessage value) {}
 
         @Override
-        public void onError(Throwable t) {}
+        public void onError(Throwable t) {
+            // limit error logging to once per minute
+            if (loggingRateLimiter.tryAcquire()) {
+                // this server error will not be sent back to the server (see GrpcLogbackAppender)
+                logger.error(t.getMessage(), t);
+            }
+        }
 
         @Override
         public void onCompleted() {}

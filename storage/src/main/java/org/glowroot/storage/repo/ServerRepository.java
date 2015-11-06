@@ -16,9 +16,27 @@
 package org.glowroot.storage.repo;
 
 import java.util.List;
-import java.util.Map;
 
-public interface TransactionTypeRepository {
+import javax.annotation.Nullable;
 
-    Map<String, List<String>> readTransactionTypes() throws Exception;
+import org.immutables.value.Value;
+
+import org.glowroot.common.util.Styles;
+import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
+
+public interface ServerRepository {
+
+    List<ServerRollup> readServerRollups() throws Exception;
+
+    void storeJvmInfo(String serverId, JvmInfo jvmInfo) throws Exception;
+
+    @Nullable
+    JvmInfo readJvmInfo(String serverId) throws Exception;
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface ServerRollup {
+        String name();
+        boolean leaf();
+    }
 }

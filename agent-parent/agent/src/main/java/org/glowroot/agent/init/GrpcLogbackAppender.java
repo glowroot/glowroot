@@ -32,6 +32,10 @@ class GrpcLogbackAppender extends AppenderBase<ILoggingEvent> {
 
     @Override
     protected void append(ILoggingEvent event) {
+        if (event.getLoggerName().equals(GrpcCollector.class.getName())) {
+            // don't send this server error back to server
+            return;
+        }
         LogEvent logEvent = LogEvent.newBuilder()
                 .setTimestamp(event.getTimeStamp())
                 .setLevel(convert(event.getLevel()))

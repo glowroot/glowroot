@@ -41,8 +41,6 @@ public interface LiveJvmService {
 
     MBeanMeta getMBeanMeta(String serverId, String mbeanObjectName) throws Exception;
 
-    ProcessInfo getProcessInfo(String serverId);
-
     AllThreads getAllThreads();
 
     String getHeapDumpDefaultDirectory(String serverId);
@@ -191,19 +189,6 @@ public interface LiveJvmService {
     interface HeapFile {
         String filename();
         long size();
-    }
-
-    @Value.Immutable
-    interface ProcessInfo {
-        long startTime();
-        long uptime();
-        String pid();
-        String mainClass();
-        List<String> mainClassArguments();
-        String jvm();
-        String java();
-        String javaHome();
-        List<String> jvmArguments();
     }
 
     @Value.Immutable

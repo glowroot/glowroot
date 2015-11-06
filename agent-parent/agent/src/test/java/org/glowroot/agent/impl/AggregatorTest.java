@@ -34,6 +34,7 @@ import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
 import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -106,6 +107,9 @@ public class AggregatorTest {
         private double getTotalNanos() {
             return totalNanos;
         }
+
+        @Override
+        public void collectJvmInfo(JvmInfo jvmInfo) {}
 
         @Override
         public void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,

@@ -36,6 +36,7 @@ import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.CollectorProxy;
+import org.glowroot.agent.init.JvmInfoCreator;
 import org.glowroot.agent.init.LoggingInit;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
@@ -127,14 +128,14 @@ class FatAgentModule {
             simpleRepoModule.registerMBeans(platformMBeanServerLifecycle);
 
             // now inject the real collector into the proxy
-
             CollectorImpl collectorImpl =
-                    new CollectorImpl(simpleRepoModule.getAggregateRepository(),
+                    new CollectorImpl(simpleRepoModule.getServerRepository(),
+                            simpleRepoModule.getAggregateRepository(),
                             simpleRepoModule.getTraceRepository(),
                             simpleRepoModule.getGaugeValueRepository(),
                             simpleRepoModule.getAlertingService());
-
             collectorProxy.setInstance(collectorImpl);
+            collectorImpl.collectJvmInfo(JvmInfoCreator.create());
             viewerAgentModule = null;
         }
 
@@ -152,6 +153,7 @@ class FatAgentModule {
                     .logDir(baseDir)
                     .liveJvmService(agentModule.getLiveJvmService())
                     .configRepository(simpleRepoModule.getConfigRepository())
+                    .serverRepository(simpleRepoModule.getServerRepository())
                     .transactionTypeRepository(simpleRepoModule.getTransactionTypeRepository())
                     .traceRepository(simpleRepoModule.getTraceRepository())
                     .aggregateRepository(simpleRepoModule.getAggregateRepository())
@@ -174,6 +176,7 @@ class FatAgentModule {
                     .logDir(baseDir)
                     .liveJvmService(null)
                     .configRepository(simpleRepoModule.getConfigRepository())
+                    .serverRepository(simpleRepoModule.getServerRepository())
                     .transactionTypeRepository(simpleRepoModule.getTransactionTypeRepository())
                     .traceRepository(simpleRepoModule.getTraceRepository())
                     .aggregateRepository(simpleRepoModule.getAggregateRepository())

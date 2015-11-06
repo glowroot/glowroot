@@ -41,10 +41,8 @@ import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.OpenType;
 import javax.management.openmbean.TabularData;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -63,7 +61,6 @@ import org.glowroot.common.live.ImmutableAvailability;
 import org.glowroot.common.live.ImmutableCapabilities;
 import org.glowroot.common.live.ImmutableHeapFile;
 import org.glowroot.common.live.ImmutableMBeanMeta;
-import org.glowroot.common.live.ImmutableProcessInfo;
 import org.glowroot.common.live.LiveJvmService;
 
 public class LiveJvmServiceImpl implements LiveJvmService {
@@ -80,7 +77,6 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
     private final ThreadDumpService threadDumpService;
     private final Availability threadAllocatedBytesAvailability;
-    private final String processId;
 
     public LiveJvmServiceImpl(LazyPlatformMBeanServer lazyPlatformMBeanServer,
             TransactionRegistry transactionRegistry, TransactionCollector transactionCollector,
@@ -89,7 +85,6 @@ public class LiveJvmServiceImpl implements LiveJvmService {
         threadDumpService =
                 new ThreadDumpService(transactionRegistry, transactionCollector);
         this.threadAllocatedBytesAvailability = threadAllocatedBytesAvailability;
-        this.processId = parseProcessId(ManagementFactory.getRuntimeMXBean().getName());
     }
 
     @Override
@@ -156,49 +151,6 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                 .unmatched(objectNames.isEmpty() && pattern)
                 .unavailable(objectNames.isEmpty() && !pattern)
                 .addAllAttributeNames(attributeNames)
-                .build();
-    }
-
-    @Override
-    public ProcessInfo getProcessInfo(String serverId) {
-        String command = System.getProperty("sun.java.command");
-        String mainClass = "";
-        List<String> arguments = ImmutableList.of();
-        if (command != null) {
-            int index = command.indexOf(' ');
-            if (index == -1) {
-                mainClass = command;
-            } else {
-                mainClass = command.substring(0, index);
-                arguments =
-                        Lists.newArrayList(Splitter.on(' ').split(command.substring(index + 1)));
-            }
-        }
-        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
-        String jvm = "";
-        String javaVmName = StandardSystemProperty.JAVA_VM_NAME.value();
-        if (javaVmName != null) {
-            jvm = javaVmName + " (" + StandardSystemProperty.JAVA_VM_VERSION.value() + ", "
-                    + System.getProperty("java.vm.info") + ")";
-        }
-        String java = "";
-        String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
-        if (javaVersion != null) {
-            java = "version " + javaVersion + ", vendor "
-                    + StandardSystemProperty.JAVA_VM_VENDOR.value();
-        }
-        String javaHome = MoreObjects.firstNonNull(StandardSystemProperty.JAVA_HOME.value(), "");
-
-        return ImmutableProcessInfo.builder()
-                .startTime(runtimeMXBean.getStartTime())
-                .uptime(runtimeMXBean.getUptime())
-                .pid(processId)
-                .mainClass(mainClass)
-                .mainClassArguments(arguments)
-                .jvm(jvm)
-                .java(java)
-                .javaHome(javaHome)
-                .jvmArguments(runtimeMXBean.getInputArguments())
                 .build();
     }
 
@@ -494,23 +446,6 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                     + ".isThreadContentionMonitoringEnabled() returned false");
         }
         return ImmutableAvailability.of(true, "");
-    }
-
-    @VisibleForTesting
-    static String parseProcessId(String runtimeName) {
-        int index = runtimeName.indexOf('@');
-        if (index > 0) {
-            String pid = runtimeName.substring(0, index);
-            try {
-                Long.parseLong(pid);
-                return pid;
-            } catch (NumberFormatException e) {
-                logger.debug(e.getMessage(), e);
-                return "";
-            }
-        } else {
-            return "";
-        }
     }
 
     @SuppressWarnings("serial")

@@ -26,6 +26,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 
+import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.live.ImmutableOverallSummary;
 import org.glowroot.common.live.ImmutableThroughputAggregate;
 import org.glowroot.common.live.ImmutableTransactionSummary;
@@ -296,7 +297,7 @@ class TransactionCommonService {
     List<Aggregate.QueriesByType> getMergedQueries(String serverRollup, String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
         return getMergedQueries(serverRollup, transactionType, transactionName, from, to,
-                configRepository.getAdvancedConfig(serverRollup).maxAggregateQueriesPerQueryType());
+                getMaxAggregateQueriesPerQueryType(serverRollup));
     }
 
     // from is INCLUSIVE
@@ -529,6 +530,14 @@ class TransactionCommonService {
                     .of(Math.min(currRollupTime, liveCaptureTime), currTransactionCount));
         }
         return rolledUpThroughputAggregates;
+    }
+
+    private int getMaxAggregateQueriesPerQueryType(String serverRollup) {
+        if (!serverRollup.equals("")) {
+            // TODO this is hacky
+            return ImmutableAdvancedConfig.builder().build().maxAggregateQueriesPerQueryType();
+        }
+        return configRepository.getAdvancedConfig(serverRollup).maxAggregateQueriesPerQueryType();
     }
 
     private static List<TransactionSummary> mergeInLiveTransactionSummaries(

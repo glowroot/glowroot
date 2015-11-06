@@ -123,7 +123,7 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     @Override
     public List<Gauge> getGauges(String serverRollup) throws Exception {
-        List<String> allGaugeNames = gaugeMetaDao.readAllGaugeNames();
+        List<String> allGaugeNames = gaugeMetaDao.readAllGaugeNames(serverRollup);
         List<Gauge> gauges = Lists.newArrayList();
         for (String gaugeName : allGaugeNames) {
             int index = gaugeName.lastIndexOf(':');
@@ -141,40 +141,13 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public void store(final String serverRollup, final List<GaugeValue> gaugeValues)
-            throws Exception {
+    public void store(String serverId, List<GaugeValue> gaugeValues) throws Exception {
         if (gaugeValues.isEmpty()) {
             return;
         }
         dataSource.batchUpdate("insert into gauge_value_rollup_0 (gauge_id, capture_time,"
-                + " value, weight) values (?, ?, ?, ?)", new PreparedStatementBinder() {
-                    @Override
-                    public void bind(PreparedStatement preparedStatement) throws Exception {
-                        for (GaugeValue gaugeValue : gaugeValues) {
-                            long gaugeId = gaugeMetaDao.updateLastCaptureTime(serverRollup,
-                                    gaugeValue.getGaugeName(), gaugeValue.getCaptureTime());
-                            if (gaugeId == -1) {
-                                // data source is closing and a new gauge id was needed, but could
-                                // not insert it, but this bind is already inside of the data source
-                                // lock so any inserts here will succeed, thus the break
-                                //
-                                // --or-- race condition with GaugeMetaDao.deleteAll() in which case
-                                // break is the best option also
-                                break;
-                            }
-                            preparedStatement.setLong(1, gaugeId);
-                            preparedStatement.setLong(2, gaugeValue.getCaptureTime());
-                            preparedStatement.setDouble(3, gaugeValue.getValue());
-                            long weight = gaugeValue.getIntervalNanos();
-                            if (weight == 0) {
-                                // this is for non-counter gauges
-                                weight = 1;
-                            }
-                            preparedStatement.setLong(4, weight);
-                            preparedStatement.addBatch();
-                        }
-                    }
-                });
+                + " value, weight) values (?, ?, ?, ?)",
+                new GaugeValuesBinder(serverId, gaugeValues));
         synchronized (rollupLock) {
             // clock can never go backwards and future gauge captures will wait until this method
             // completes since ScheduledExecutorService.scheduleAtFixedRate() guarantees that future
@@ -309,6 +282,47 @@ public class GaugeValueDao implements GaugeValueRepository {
                 + " from gauge_value_rollup_" + castUntainted(fromRollupLevel)
                 + " gp where gp.capture_time > ? and gp.capture_time <= ?"
                 + " group by gp.gauge_id, ceil_capture_time", lastRollupTime, safeRollupTime);
+    }
+
+    private class GaugeValuesBinder implements PreparedStatementBinder {
+
+        private final String serverId;
+        private final List<GaugeValue> gaugeValues;
+
+        private GaugeValuesBinder(String serverId, List<GaugeValue> gaugeValues) {
+            this.serverId = serverId;
+            this.gaugeValues = gaugeValues;
+        }
+
+        @Override
+        public void bind(PreparedStatement preparedStatement) throws Exception {
+            List<String> serverRollups = ServerDao.getServerRollups(serverId);
+            for (String serverRollup : serverRollups) {
+                for (GaugeValue gaugeValue : gaugeValues) {
+                    long gaugeId = gaugeMetaDao.updateLastCaptureTime(serverRollup,
+                            gaugeValue.getGaugeName(), gaugeValue.getCaptureTime());
+                    if (gaugeId == -1) {
+                        // data source is closing and a new gauge id was needed, but could not
+                        // insert it, but this bind is already inside of the data source lock so any
+                        // inserts here will succeed, thus the return
+                        //
+                        // --or-- race condition with GaugeMetaDao.deleteAll() in which case return
+                        // is the best option also
+                        return;
+                    }
+                    preparedStatement.setLong(1, gaugeId);
+                    preparedStatement.setLong(2, gaugeValue.getCaptureTime());
+                    preparedStatement.setDouble(3, gaugeValue.getValue());
+                    long weight = gaugeValue.getIntervalNanos();
+                    if (weight == 0) {
+                        // this is for non-counter gauges
+                        weight = 1;
+                    }
+                    preparedStatement.setLong(4, weight);
+                    preparedStatement.addBatch();
+                }
+            }
+        }
     }
 
     private static class LastRollupTimesExtractor

@@ -100,7 +100,8 @@ glowroot.run([
     $rootScope.serverId = '';
 
     $rootScope.$on('$locationChangeSuccess', function () {
-      $rootScope.serverRollup = $location.search()['server-rollup'] || '';
+      $rootScope.serverId = $location.search()['server-id'] || '';
+      $rootScope.serverRollup = $location.search()['server-rollup'] || $rootScope.serverId;
     });
 
     $rootScope.transactionTypes = function () {
