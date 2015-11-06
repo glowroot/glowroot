@@ -54,7 +54,7 @@ class ConnectionPool {
 
     private final Thread shutdownHookThread;
 
-    ConnectionPool(ConnectionFactory connectionFactory) throws SQLException {
+    ConnectionPool(ConnectionFactory connectionFactory) throws Exception {
         this.connectionFactory = connectionFactory;
         pool.offer(connectionFactory.createConnection());
         shutdownHookThread = new ShutdownHookThread();
@@ -78,7 +78,7 @@ class ConnectionPool {
             throws Exception {
         return execute(new ConnectionCallback<T>() {
             @Override
-            public T doWithConnection(Connection connection) throws SQLException {
+            public T doWithConnection(Connection connection) throws Exception {
                 PreparedStatement preparedStatement = connection.prepareStatement(sql);
                 StatementCloser closer = new StatementCloser(preparedStatement);
                 try {
@@ -97,7 +97,7 @@ class ConnectionPool {
             throws Exception {
         executeInternal(new ConnectionCallback</*@Nullable*/Void>() {
             @Override
-            public @Nullable Void doWithConnection(Connection connection) throws SQLException {
+            public @Nullable Void doWithConnection(Connection connection) throws Exception {
                 Statement statement = connection.createStatement();
                 StatementCloser closer = new StatementCloser(statement);
                 try {
@@ -161,9 +161,9 @@ class ConnectionPool {
         try {
             return callback.doWithConnection(connection);
         } catch (SQLException e) {
-            // close the connection in case it is disconnected
-            connection.close();
+            // don't return connection to pool in case it is disconnected or has open transaction
             returnConnection = false;
+            connection.close();
             throw e;
         } finally {
             if (unbindConnection) {
@@ -179,12 +179,12 @@ class ConnectionPool {
     }
 
     @OnlyUsedByTests
-    public void close() throws SQLException {
+    public void close() throws Exception {
         closeInternal();
         Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
     }
 
-    private void closeInternal() throws SQLException {
+    private void closeInternal() throws Exception {
         // update flag outside of lock in case there is a backlog of threads already
         // waiting on the lock (once the flag is set, any threads in the backlog that
         // haven't acquired the lock will abort quickly once they do obtain the lock)
@@ -202,11 +202,11 @@ class ConnectionPool {
     }
 
     interface ConnectionFactory {
-        Connection createConnection() throws SQLException;
+        Connection createConnection() throws Exception;
     }
 
     interface ConnectionCallback<T> {
-        T doWithConnection(Connection connection) throws SQLException;
+        T doWithConnection(Connection connection) throws Exception;
     }
 
     interface PreparedStatementCallback<T> {
@@ -214,7 +214,7 @@ class ConnectionPool {
     }
 
     interface StatementCallback {
-        void doWithStatement(Statement statement) throws SQLException;
+        void doWithStatement(Statement statement) throws Exception;
     }
 
     // this replaces H2's default shutdown hook (see jdbc connection db_close_on_exit=false above)
@@ -225,7 +225,7 @@ class ConnectionPool {
         public void run() {
             try {
                 closeInternal();
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 logger.warn(e.getMessage(), e);
             }
         }

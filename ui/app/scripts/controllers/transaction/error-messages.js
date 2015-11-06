@@ -55,7 +55,7 @@ glowroot.controller('ErrorMessagesCtrl', [
         return;
       }
       var query = {
-        serverGroup: $scope.serverGroup,
+        serverRollup: $scope.serverRollup,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
         from: $scope.chartFrom,
@@ -111,9 +111,10 @@ glowroot.controller('ErrorMessagesCtrl', [
 
     $scope.tracesQueryString = function (errorMessage) {
       var query = {};
-      if ($scope.transactionType !== $scope.layout.defaultTransactionType) {
-        query['transaction-type'] = $scope.transactionType;
+      if ($scope.layout.central) {
+        query['server-rollup'] = $scope.serverRollup;
       }
+      query['transaction-type'] = $scope.transactionType;
       query['transaction-name'] = $scope.transactionName;
       query.from = $scope.chartFrom;
       query.to = $scope.chartTo;

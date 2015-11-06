@@ -19,8 +19,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.glowroot.agent.plugin.api.Agent;
-
 public class AgentTest {
 
     @Rule

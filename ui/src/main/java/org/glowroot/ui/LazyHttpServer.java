@@ -40,7 +40,7 @@ class LazyHttpServer {
     private final LayoutService layoutService;
     private final TraceDetailHttpService traceDetailHttpService;
     private final TraceExportHttpService traceExportHttpService;
-    private final GlowrootLogHttpService glowrootLogHttpService;
+    private final @Nullable GlowrootLogHttpService glowrootLogHttpService;
     private final List<Object> jsonServices;
     private final boolean viewerMode;
 
@@ -50,7 +50,7 @@ class LazyHttpServer {
             IndexHtmlHttpService indexHtmlHttpService, LayoutHttpService layoutHttpService,
             LayoutService layoutService, TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService,
-            GlowrootLogHttpService glowrootLogHttpService, List<Object> jsonServices,
+            @Nullable GlowrootLogHttpService glowrootLogHttpService, List<Object> jsonServices,
             boolean viewerMode) {
         this.bindAddress = bindAddress;
         this.port = port;
@@ -97,7 +97,10 @@ class LazyHttpServer {
         httpServices.put(Pattern.compile("^/backend/trace/queries$"), traceDetailHttpService);
         httpServices.put(Pattern.compile("^/backend/trace/entries$"), traceDetailHttpService);
         httpServices.put(Pattern.compile("^/backend/trace/profile$"), traceDetailHttpService);
-        httpServices.put(Pattern.compile("^/backend/jvm/glowroot-log$"), glowrootLogHttpService);
+        if (glowrootLogHttpService != null) {
+            httpServices.put(Pattern.compile("^/backend/jvm/glowroot-log$"),
+                    glowrootLogHttpService);
+        }
         // services
         try {
             // in embedded mode, default two http worker threads to keep # of threads down

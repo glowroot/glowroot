@@ -81,7 +81,12 @@ class Weaver {
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
         WeavingTimer weavingTimer = weavingTimerService.start();
         try {
-            return weaveUnderTimer(classBytes, className, codeSource, loader);
+            logger.trace("transform(): className={}", className);
+            byte[] transformedBytes = weaveUnderTimer(classBytes, className, codeSource, loader);
+            if (transformedBytes != null) {
+                logger.debug("transform(): transformed {}", className);
+            }
+            return transformedBytes;
         } finally {
             weavingTimer.stop();
         }

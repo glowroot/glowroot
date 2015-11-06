@@ -171,7 +171,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
     });
 
-    $http.get('backend/jvm/all-gauges?server-group=' + $scope.serverGroup)
+    $http.get('backend/jvm/all-gauges?server-rollup=' + $scope.serverRollup)
         .success(function (data) {
           $scope.loaded = true;
           $scope.allGauges = data;

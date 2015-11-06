@@ -41,7 +41,7 @@ glowroot.controller('ConfigAlertCtrl', [
     }
 
     if (version) {
-      $http.get('backend/config/alerts?server=' + $scope.server + '&version=' + version)
+      $http.get('backend/config/alerts?version=' + version)
           .success(function (data) {
             $scope.loaded = true;
             onNewData(data);
@@ -50,6 +50,7 @@ glowroot.controller('ConfigAlertCtrl', [
     } else {
       $scope.loaded = true;
       onNewData({
+        // FIXME
         transactionType: $scope.layout.defaultTransactionType,
         minTransactionCount: 1,
         emailAddresses: []
@@ -58,7 +59,14 @@ glowroot.controller('ConfigAlertCtrl', [
 
     $scope.$watch('emailAddresses', function (newValue) {
       if (newValue) {
-        $scope.config.emailAddresses = newValue.split(/\s*,\s*/);
+        var emailAddresses = [];
+        angular.forEach(newValue.split(','), function (emailAddress) {
+          emailAddress = emailAddress.trim();
+          if (emailAddress.length) {
+            emailAddresses.push(emailAddress);
+          }
+        });
+        $scope.config.emailAddresses = emailAddresses;
       } else if ($scope.config) {
         $scope.config.emailAddresses = [];
       }
@@ -75,7 +83,6 @@ glowroot.controller('ConfigAlertCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.server = $scope.server;
       var url;
       if (version) {
         url = 'backend/config/alerts/update';
@@ -102,7 +109,6 @@ glowroot.controller('ConfigAlertCtrl', [
 
     $scope.delete = function (deferred) {
       var postData = {
-        server: $scope.server,
         version: $scope.config.version
       };
       $http.post('backend/config/alerts/remove', postData)

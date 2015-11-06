@@ -15,36 +15,43 @@
  */
 package org.glowroot.agent.it.harness.impl;
 
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.EventLoopGroup;
 
-import org.glowroot.agent.AgentModule;
 import org.glowroot.agent.MainEntryPoint;
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.it.harness.grpc.ConfigUpdateServiceGrpc;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc;
 import org.glowroot.common.config.ImmutableTransactionConfig;
 import org.glowroot.common.config.TransactionConfig;
 import org.glowroot.common.live.LiveWeavingService;
-import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class JavaagentMain {
 
     public static void main(String... args) throws Exception {
+
+        int port = Integer.parseInt(args[0]);
+        // socket is never closed since program is still running after main returns
+        Socket socket = new Socket((String) null, port);
+        ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
+        new Thread(new SocketHeartbeat(objectOut)).start();
+
         // transactionSlowThresholdMillis=0 is the default for testing
         setTransactionSlowThresholdMillisToZero();
-        int javaagentServicePort = Integer.parseInt(args[0]);
+        int javaagentServicePort = Integer.parseInt(args[1]);
         AgentModule agentModule = MainEntryPoint.getGlowrootAgentInit().getAgentModule();
         ConfigService configService = agentModule.getConfigService();
         LiveWeavingService liveWeavingService = agentModule.getLiveWeavingService();
@@ -54,6 +61,8 @@ public class JavaagentMain {
         final EventLoopGroup bossEventLoopGroup = EventLoopGroups.create("Glowroot-grpc-boss-ELG");
         final EventLoopGroup workerEventLoopGroup =
                 EventLoopGroups.create("Glowroot-grpc-worker-ELG");
+        // need at least 2 threads, one for executeApp(), and another for handling interruptApp() at
+        // the same time
         final ExecutorService executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
                         .setDaemon(true)
@@ -68,7 +77,6 @@ public class JavaagentMain {
                         ConfigUpdateServiceGrpc.bindService(new ConfigUpdateServiceImpl(helper)))
                 .build()
                 .start();
-        Executors.newSingleThreadExecutor().execute(new Heartbeat());
         javaagentService.setServerCloseable(new Callable</*@Nullable*/Void>() {
             @Override
             public @Nullable Void call() throws Exception {
@@ -122,26 +130,5 @@ public class JavaagentMain {
 
     private static void timerMarkerTwo() throws InterruptedException {
         Thread.sleep(1);
-    }
-
-    private static class Heartbeat implements Runnable {
-        @Override
-        public void run() {
-            while (true) {
-                try {
-                    MainEntryPoint.getGlowrootAgentInit().getAgentModule().getCollector()
-                            .collectGaugeValues(ImmutableList.<GaugeValue>of());
-                    Thread.sleep(100);
-                } catch (Exception e) {
-                    // wait a bit since this could be RejectedExecutionException from shutting down
-                    // the AgentModule (and therefore the GrpcCollector)
-                    try {
-                        Thread.sleep(10000);
-                    } catch (InterruptedException f) {
-                    }
-                    System.exit(1);
-                }
-            }
-        }
     }
 }

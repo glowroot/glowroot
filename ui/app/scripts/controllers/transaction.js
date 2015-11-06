@@ -30,16 +30,49 @@ glowroot.controller('TransactionCtrl', [
     document.title = headerDisplay + ' \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = shortName;
 
-    $scope.headerDisplay = headerDisplay;
+    if ($scope.layout.central) {
+      $scope.headerDisplay = $scope.serverRollup || '<server>';
+    } else {
+      $scope.headerDisplay = headerDisplay;
+    }
     $scope.shortName = shortName;
     $scope.defaultSummarySortOrder = defaultSummarySortOrder;
 
-    $scope.headerQueryString = function (transactionType) {
-      var query = {};
-      // add transaction-type first so it is first in url
-      if (transactionType !== $scope.layout.defaultTransactionType) {
-        query['transaction-type'] = transactionType;
+    $scope.hideServerRollupDropdown = function () {
+      return !$scope.layout.central || $scope.layout.serverRollups.length === 1;
+    };
+
+    $scope.hideTransactionTypeDropdown = function () {
+      var serverRollup = $scope.layout.serverRollups[$scope.serverRollup];
+      if (!serverRollup) {
+        return true;
       }
+      var transactionTypes = serverRollup.transactionTypes;
+      if (!transactionTypes) {
+        return true;
+      }
+      if (transactionTypes.length === 1 && transactionTypes[0] === $scope.transactionType) {
+        return true;
+      }
+      return false;
+    };
+
+    $scope.headerQueryString = function (serverRollup, transactionType) {
+      var query = {};
+      if ($scope.layout.central) {
+        query['server-rollup'] = serverRollup;
+      }
+      var transactionTypes = $scope.layout.serverRollups[serverRollup].transactionTypes;
+      if (transactionTypes.length === 0) {
+        query['transaction-type'] = '';
+      } else if (transactionTypes.indexOf(transactionType) !== -1) {
+        query['transaction-type'] = transactionType;
+      } else if (transactionTypes.indexOf($scope.layout.defaultTransactionType) !== -1) {
+        query['transaction-type'] = $scope.layout.defaultTransactionType;
+      } else {
+        query['transaction-type'] = transactionTypes[0];
+      }
+
       if ($scope.last) {
         if ($scope.last !== 4 * 60 * 60 * 1000) {
           query.last = $scope.last;
@@ -74,7 +107,7 @@ glowroot.controller('TransactionCtrl', [
     };
 
     function onLocationChangeSuccess() {
-      $scope.transactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
+      $scope.transactionType = $location.search()['transaction-type'];
       $scope.transactionName = $location.search()['transaction-name'];
       $scope.last = Number($location.search().last);
       $scope.chartFrom = Number($location.search().from);
@@ -110,11 +143,10 @@ glowroot.controller('TransactionCtrl', [
     // TODO this is exact duplicate of same function in gauges.js
     $scope.buildQueryObject = function (baseQuery) {
       var query = baseQuery || angular.copy($location.search());
-      if ($scope.transactionType !== $scope.layout.defaultTransactionType) {
-        query['transaction-type'] = $scope.transactionType;
-      } else {
-        delete query['transaction-type'];
+      if ($scope.layout.central) {
+        query['server-rollup'] = $scope.serverRollup;
       }
+      query['transaction-type'] = $scope.transactionType;
       query['transaction-name'] = $scope.transactionName;
       if (!$scope.last) {
         query.from = $scope.chartFrom;

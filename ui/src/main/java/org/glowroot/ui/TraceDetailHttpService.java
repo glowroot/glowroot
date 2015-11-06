@@ -54,16 +54,16 @@ class TraceDetailHttpService implements HttpService {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         String path = decoder.path();
         String traceComponent = path.substring(path.lastIndexOf('/') + 1);
-        List<String> servers = decoder.parameters().get("server");
-        checkNotNull(servers, "Missing server in query string: %s", request.uri());
-        String server = servers.get(0);
+        List<String> serverIds = decoder.parameters().get("server-id");
+        checkNotNull(serverIds, "Missing server id in query string: %s", request.uri());
+        String serverId = serverIds.get(0);
         List<String> traceIds = decoder.parameters().get("trace-id");
         checkNotNull(traceIds, "Missing trace id in query string: %s", request.uri());
         String traceId = traceIds.get(0);
-        logger.debug("handleRequest(): traceComponent={}, servers={}, traceId={}", traceComponent,
-                server, traceId);
+        logger.debug("handleRequest(): traceComponent={}, serverId={}, traceId={}", traceComponent,
+                serverId, traceId);
 
-        ChunkSource detail = getDetailChunkSource(traceComponent, server, traceId);
+        ChunkSource detail = getDetailChunkSource(traceComponent, serverId, traceId);
         if (detail == null) {
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
         }

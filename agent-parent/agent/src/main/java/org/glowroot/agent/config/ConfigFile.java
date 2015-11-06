@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.OnlyUsedByTests;
 
-// TODO if config.json file has unrecognized top-level node (something other than "transaction",
+// TODO if config.json file has unrecognized top-level node (something other than "transactions",
 // "userRecording", "advanced", etc) then log warning and remove that node
 class ConfigFile {
 
@@ -77,22 +77,9 @@ class ConfigFile {
             rootObjectNode = mapper.createObjectNode();
             return;
         }
-        // handling upgrade from 0.8 to 0.8.1
-        content = content.replace("\"defaultTransactionType\"",
-                "\"defaultDisplayedTransactionType\"");
-        // handling upgrade from 0.8.3 to 0.8.4
-        content = content.replace("\"cappedDatabaseSizeMb\"", "\"traceCappedDatabaseSizeMb\"");
-        // this will rename "general/traceStoreThresholdMillis" in addition to intended
-        // "instrumentation/traceStoreThresholdMillis", but general config is lost in upgrade
-        // to 0.8.4 anyways with rename to transaction
-        content = content.replace("\"traceStoreThresholdMillis\"",
-                "\"transactionSlowThresholdMillis\"");
-        // handling upgrade from 0.8.4 to 0.8.5
-        content = content.replace("\"captureGcInfo\"", "\"captureGcActivity\"");
-        content = content.replace("\"everIncreasing\"", "\"counter\"");
         ObjectNode rootObjectNode = null;
         try {
-            JsonNode rootNode = mapper.readTree(file);
+            JsonNode rootNode = mapper.readTree(content);
             if (rootNode instanceof ObjectNode) {
                 rootObjectNode = (ObjectNode) rootNode;
             }

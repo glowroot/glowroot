@@ -24,19 +24,19 @@ import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 
 public interface GaugeValueRepository {
 
-    void store(String serverGroup, List<GaugeValue> gaugeValues) throws Exception;
+    void store(String serverRollup, List<GaugeValue> gaugeValues) throws Exception;
 
-    List<Gauge> getGauges(String serverGroup) throws Exception;
+    List<Gauge> getGauges(String serverRollup) throws Exception;
 
-    List<GaugeValue> readGaugeValues(String serverGroup, String gaugeName, long captureTimeFrom,
+    List<GaugeValue> readGaugeValues(String serverRollup, String gaugeName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception;
 
-    List<GaugeValue> readManuallyRolledUpGaugeValues(String serverGroup, long from, long to,
+    List<GaugeValue> readManuallyRolledUpGaugeValues(String serverRollup, long from, long to,
             String gaugeName, int rollupLevel, long liveCaptureTime) throws Exception;
 
-    int getRollupLevelForView(String serverGroup, long from, long to);
+    int getRollupLevelForView(String serverRollup, long from, long to) throws Exception;
 
-    void deleteAll(String serverGroup) throws Exception;
+    void deleteAll(String serverRollup) throws Exception;
 
     @Value.Immutable
     @Styles.AllParameters

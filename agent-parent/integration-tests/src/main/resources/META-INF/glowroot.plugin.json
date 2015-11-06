@@ -1,16 +1,6 @@
 {
   "name": "Integration Tests Plugin",
   "id": "glowroot-integration-tests",
-  "transactionTypes": [
-    "Integration test"
-  ],
-  "transactionAttributes": [
-    "Zee One",
-    "Yee Two",
-    "Xee Three",
-    "Wee Four",
-    "Mock driver loaded"
-  ],
   "properties": [
     {
       "name": "starredHeadline",

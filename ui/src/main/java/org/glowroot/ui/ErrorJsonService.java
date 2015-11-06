@@ -73,7 +73,7 @@ class ErrorJsonService {
         ErrorMessageRequest request = QueryStrings.decode(queryString, ErrorMessageRequest.class);
 
         ErrorMessageQuery query = ImmutableErrorMessageQuery.builder()
-                .serverGroup(request.serverGroup())
+                .serverRollup(request.serverRollup())
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
@@ -87,7 +87,7 @@ class ErrorJsonService {
         long liveCaptureTime = clock.currentTimeMillis();
         Result<ErrorMessageCount> queryResult = traceRepository.readErrorMessageCounts(query);
         List<ErrorPoint> unfilteredErrorPoints =
-                errorCommonService.readErrorPoints(query.serverGroup(), query.transactionType(),
+                errorCommonService.readErrorPoints(query.serverRollup(), query.transactionType(),
                         query.transactionName(), query.from(), query.to(), liveCaptureTime);
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
@@ -100,7 +100,7 @@ class ErrorJsonService {
                         unfilteredErrorPoint.transactionCount());
             }
             long resolutionMillis = aggregateRepository
-                    .getDataPointIntervalMillis(query.serverGroup(), query.from(), query.to());
+                    .getDataPointIntervalMillis(query.serverRollup(), query.from(), query.to());
             List<TraceErrorPoint> traceErrorPoints =
                     traceRepository.readErrorPoints(query, resolutionMillis, liveCaptureTime);
             List<ErrorPoint> errorPoints = Lists.newArrayList();
@@ -119,8 +119,7 @@ class ErrorJsonService {
         jg.writeStartObject();
         jg.writeObjectField("dataSeries", dataSeries);
         jg.writeObjectField("dataSeriesExtra", dataSeriesExtra);
-        jg.writeFieldName("errorMessages");
-        jg.writeObject(queryResult.records());
+        jg.writeObjectField("errorMessages", queryResult.records());
         jg.writeBooleanField("moreErrorMessagesAvailable", queryResult.moreAvailable());
         jg.writeEndObject();
         jg.close();
@@ -132,10 +131,10 @@ class ErrorJsonService {
         ErrorSummaryRequest request = QueryStrings.decode(queryString, ErrorSummaryRequest.class);
 
         OverallErrorSummary overallSummary = errorCommonService.readOverallErrorSummary(
-                request.serverGroup(), request.transactionType(), request.from(), request.to());
+                request.serverRollup(), request.transactionType(), request.from(), request.to());
 
         ErrorSummaryQuery query = ImmutableErrorSummaryQuery.builder()
-                .serverGroup(request.serverGroup())
+                .serverRollup(request.serverRollup())
                 .transactionType(request.transactionType())
                 .from(request.from())
                 .to(request.to())
@@ -148,10 +147,8 @@ class ErrorJsonService {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeFieldName("overall");
-        jg.writeObject(overallSummary);
-        jg.writeFieldName("transactions");
-        jg.writeObject(queryResult.records());
+        jg.writeObjectField("overall", overallSummary);
+        jg.writeObjectField("transactions", queryResult.records());
         jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
         jg.writeEndObject();
         jg.close();
@@ -165,10 +162,10 @@ class ErrorJsonService {
         String transactionName = request.transactionName();
         long traceCount;
         if (transactionName == null) {
-            traceCount = traceRepository.readOverallErrorCount(request.serverGroup(),
+            traceCount = traceRepository.readOverallErrorCount(request.serverRollup(),
                     request.transactionType(), request.from(), request.to());
         } else {
-            traceCount = traceRepository.readTransactionErrorCount(request.serverGroup(),
+            traceCount = traceRepository.readTransactionErrorCount(request.serverRollup(),
                     request.transactionType(), transactionName, request.from(), request.to());
         }
         StringBuilder sb = new StringBuilder();
@@ -181,9 +178,9 @@ class ErrorJsonService {
     }
 
     private void populateDataSeries(ErrorMessageQuery request, List<ErrorPoint> errorPoints,
-            DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra) {
+            DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra) throws Exception {
         DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, aggregateRepository
-                .getDataPointIntervalMillis(request.serverGroup(), request.from(), request.to()));
+                .getDataPointIntervalMillis(request.serverRollup(), request.from(), request.to()));
         ErrorPoint lastErrorPoint = null;
         for (ErrorPoint errorPoint : errorPoints) {
             if (lastErrorPoint == null) {
@@ -209,7 +206,7 @@ class ErrorJsonService {
 
     @Value.Immutable
     interface ErrorSummaryRequest {
-        String serverGroup();
+        String serverRollup();
         String transactionType();
         long from();
         long to();
@@ -219,7 +216,7 @@ class ErrorJsonService {
 
     @Value.Immutable
     interface TabBarDataRequest {
-        String serverGroup();
+        String serverRollup();
         String transactionType();
         @Nullable
         String transactionName();
@@ -229,7 +226,7 @@ class ErrorJsonService {
 
     @Value.Immutable
     interface ErrorMessageRequest {
-        String serverGroup();
+        String serverRollup();
         String transactionType();
         @Nullable
         String transactionName();

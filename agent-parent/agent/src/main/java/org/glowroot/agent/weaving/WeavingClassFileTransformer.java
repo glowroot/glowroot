@@ -87,13 +87,8 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             // (e.g. woven code will not be able to see org.glowroot.agent.plugin.api.Agent)
             return null;
         }
-        logger.trace("transform(): className={}", className);
         CodeSource codeSource = protectionDomain == null ? null : protectionDomain.getCodeSource();
-        byte[] transformedBytes = weaver.weave(bytes, className, codeSource, loader);
-        if (transformedBytes != null) {
-            logger.debug("transform(): transformed {}", className);
-        }
-        return transformedBytes;
+        return weaver.weave(bytes, className, codeSource, loader);
     }
 
     private static boolean ignoreClass(String className) {
@@ -117,12 +112,24 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     }
 
     private static boolean isGlowrootAgentClass(String className) {
+        if (!className.startsWith("org/glowroot")) {
+            // optimization for common case
+            return false;
+        }
         return className.startsWith("org/glowroot/common/")
                 || className.startsWith("org/glowroot/wire/api/")
+                || className.startsWith("org/glowroot/agent/api/")
                 || className.startsWith("org/glowroot/agent/plugin/api/")
-                || (className.startsWith("org/glowroot/agent/")
-                        && !className.startsWith("org/glowroot/agent/plugin/")
-                        && !className.startsWith("org/glowroot/agent/tests/"));
+                || className.startsWith("org/glowroot/agent/advicegen/")
+                || className.startsWith("org/glowroot/agent/config/")
+                || className.startsWith("org/glowroot/agent/init/fat/")
+                || className.startsWith("org/glowroot/agent/init/thin/")
+                || className.startsWith("org/glowroot/agent/impl/")
+                || className.startsWith("org/glowroot/agent/jul/")
+                || className.startsWith("org/glowroot/agent/live/")
+                || className.startsWith("org/glowroot/agent/model/")
+                || className.startsWith("org/glowroot/agent/util/")
+                || className.startsWith("org/glowroot/agent/weaving/");
     }
 
     private static boolean isInBootstrapClassLoader() {

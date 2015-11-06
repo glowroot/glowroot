@@ -22,7 +22,6 @@ import java.io.Writer;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
-import org.glowroot.ui.ChunkSource;
 import org.glowroot.ui.ChunkSource.ChunkCopier;
 
 import static org.assertj.core.api.Assertions.assertThat;

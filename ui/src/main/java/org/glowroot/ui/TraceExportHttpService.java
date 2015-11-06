@@ -68,16 +68,16 @@ class TraceExportHttpService implements HttpService {
     public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
             throws Exception {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-        List<String> servers = decoder.parameters().get("server");
-        if (servers == null) {
-            servers = ImmutableList.of("");
+        List<String> serverIds = decoder.parameters().get("server-id");
+        if (serverIds == null) {
+            serverIds = ImmutableList.of("");
         }
-        String server = servers.get(0);
+        String serverId = serverIds.get(0);
         List<String> traceIds = decoder.parameters().get("trace-id");
         checkNotNull(traceIds, "Missing trace id in query string: %s", request.uri());
         String traceId = traceIds.get(0);
-        logger.debug("handleRequest(): server={}, traceId={}", server, traceId);
-        TraceExport traceExport = traceCommonService.getExport(server, traceId);
+        logger.debug("handleRequest(): serverId={}, traceId={}", serverId, traceId);
+        TraceExport traceExport = traceCommonService.getExport(serverId, traceId);
         if (traceExport == null) {
             logger.warn("no trace found for id: {}", traceId);
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);

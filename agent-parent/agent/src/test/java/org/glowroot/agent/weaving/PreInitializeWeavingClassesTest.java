@@ -21,14 +21,11 @@ import java.util.List;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 
-import org.glowroot.agent.weaving.PreInitializeWeavingClasses;
 import org.glowroot.agent.weaving.preinit.GlobalCollector;
 import org.glowroot.agent.weaving.preinit.ReferencedMethod;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// this test (and associated helper classes) are in glowroot-fat-agent-core so that
-// PreInitializeStorageShutdownClassesTest can share the helper classes
 public class PreInitializeWeavingClassesTest {
 
     @Test

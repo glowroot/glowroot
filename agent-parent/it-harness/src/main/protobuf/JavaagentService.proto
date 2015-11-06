@@ -10,8 +10,6 @@ service JavaagentService {
   rpc ping(Void) returns (Void);
   rpc executeApp(AppUnderTestClassName) returns (Void);
   rpc interruptApp(Void) returns (Void);
-  rpc addExpectedLogMessage(ExpectedLogMessage) returns (Void);
-  rpc clearLogMessages(Void) returns (LogCount);
   rpc resetAllConfig(Void) returns (Void);
   rpc shutdown(Void) returns (Void);
   rpc kill(Void) returns (Void);

@@ -19,18 +19,27 @@
 glowroot.controller('NavbarCtrl', [
   '$scope',
   '$location',
-  function ($scope, $location) {
-    $scope.queryString = function () {
+  'queryStrings',
+  function ($scope, $location, queryStrings) {
+    $scope.queryString = function (preserveServerGroup, preserveTransactionType) {
+      var query = {};
+      if (preserveServerGroup) {
+        query['server-rollup'] = $location.search()['server-rollup'];
+      }
+      if (preserveTransactionType) {
+        query['transaction-type'] = $location.search()['transaction-type'];
+      }
       var last = $location.search().last;
       if (last) {
-        return '?last=' + last;
+        query.last = last;
       }
       var from = $location.search().from;
       var to = $location.search().to;
       if (from !== undefined && to !== undefined) {
-        return '?from=' + from + '&to=' + to;
+        query.from = from;
+        query.to = to;
       }
-      return '';
+      return queryStrings.encodeObject(query);
     };
   }
 ]);

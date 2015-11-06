@@ -31,20 +31,22 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface TraceRepository {
 
-    void collect(String server, Trace trace) throws Exception;
+    void collect(String serverId, Trace trace) throws Exception;
+
+    List<String> readTraceAttributeNames(String serverRollup) throws Exception;
 
     Result<TracePoint> readPoints(TracePointQuery query) throws Exception;
 
-    long readOverallSlowCount(String serverGroup, String transactionType, long captureTimeFrom,
+    long readOverallSlowCount(String serverRollup, String transactionType, long captureTimeFrom,
             long captureTimeTo) throws Exception;
 
-    long readTransactionSlowCount(String serverGroup, String transactionType,
+    long readTransactionSlowCount(String serverRollup, String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo) throws Exception;
 
-    long readOverallErrorCount(String serverGroup, String transactionType, long captureTimeFrom,
+    long readOverallErrorCount(String serverRollup, String transactionType, long captureTimeFrom,
             long captureTimeTo) throws Exception;
 
-    long readTransactionErrorCount(String serverGroup, String transactionType,
+    long readTransactionErrorCount(String serverRollup, String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo) throws Exception;
 
     List<TraceErrorPoint> readErrorPoints(ErrorMessageQuery query, long resolutionMillis,
@@ -53,16 +55,16 @@ public interface TraceRepository {
     Result<ErrorMessageCount> readErrorMessageCounts(ErrorMessageQuery query) throws Exception;
 
     @Nullable
-    HeaderPlus readHeader(String server, String traceId) throws Exception;
+    HeaderPlus readHeader(String serverId, String traceId) throws Exception;
 
-    List<Trace.Entry> readEntries(String server, String traceId) throws Exception;
+    List<Trace.Entry> readEntries(String serverId, String traceId) throws Exception;
 
     @Nullable
-    ProfileTree readProfileTree(String server, String traceId) throws Exception;
+    ProfileTree readProfileTree(String serverId, String traceId) throws Exception;
 
-    void deleteAll(String serverGroup) throws Exception;
+    void deleteAll(String serverRollup) throws Exception;
 
-    long count(String serverGroup) throws Exception;
+    long count(String serverRollup) throws Exception;
 
     @Value.Immutable
     public interface ErrorMessageCount {
@@ -72,7 +74,7 @@ public interface TraceRepository {
 
     @Value.Immutable
     public interface ErrorMessageQuery {
-        String serverGroup();
+        String serverRollup();
         String transactionType();
         @Nullable
         String transactionName();

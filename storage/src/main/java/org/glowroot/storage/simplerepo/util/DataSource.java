@@ -42,10 +42,9 @@ import org.glowroot.storage.simplerepo.util.ConnectionPool.ConnectionFactory;
 import org.glowroot.storage.simplerepo.util.ConnectionPool.PreparedStatementCallback;
 import org.glowroot.storage.simplerepo.util.ConnectionPool.StatementCallback;
 
-public class DataSource {
+import static com.google.common.base.Preconditions.checkNotNull;
 
-    private static final boolean POSTGRES = false;
-    private static final boolean SINGLE_SERVER = true;
+public class DataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSource.class);
 
@@ -55,28 +54,47 @@ public class DataSource {
     private static final int QUERY_TIMEOUT_SECONDS =
             Integer.getInteger("glowroot.internal.h2.queryTimeout", 60);
 
+    private final boolean postgres;
+    private final boolean singleServer;
+
     // null means use memDb
     private final @Nullable File dbFile;
 
     private final ConnectionPool connectionPool;
 
-    // creates an in-memory database
-    public DataSource() throws SQLException {
-        dbFile = null;
-        connectionPool = new ConnectionPool(new ConnectionFactoryImpl(null));
+    public static DataSource createH2(File dbFile) throws Exception {
+        return new DataSource(dbFile);
     }
 
-    public DataSource(File dbFile) throws SQLException {
+    public static DataSource createPostgres() throws Exception {
+        return new DataSource(true, true);
+    }
+
+    @OnlyUsedByTests
+    public static DataSource createH2InMemory() throws Exception {
+        return new DataSource(false, false);
+    }
+
+    private DataSource(boolean postgres, boolean singleServer) throws Exception {
+        this.postgres = postgres;
+        this.singleServer = singleServer;
+        dbFile = null;
+        connectionPool = new ConnectionPool(new ConnectionFactoryImpl(postgres, null));
+    }
+
+    private DataSource(File dbFile) throws Exception {
+        postgres = false;
+        singleServer = true;
         this.dbFile = dbFile;
-        connectionPool = new ConnectionPool(new ConnectionFactoryImpl(dbFile));
+        connectionPool = new ConnectionPool(new ConnectionFactoryImpl(false, dbFile));
     }
 
     public Schema getSchema() {
-        return new Schema(connectionPool, POSTGRES);
+        return new Schema(connectionPool, postgres);
     }
 
     public void defrag() throws Exception {
-        if (dbFile == null || POSTGRES) {
+        if (dbFile == null || postgres) {
             return;
         }
         debug("shutdown defrag");
@@ -121,6 +139,17 @@ public class DataSource {
             }
         }, args);
         return MoreObjects.firstNonNull(exists, false);
+    }
+
+    public List<String> queryForStringList(final @Untainted String sql, final Object... args)
+            throws Exception {
+        List<String> list = query(sql, new RowMapper<String>() {
+            @Override
+            public String mapRow(ResultSet resultSet) throws Exception {
+                return checkNotNull(resultSet.getString(1));
+            }
+        }, args);
+        return list == null ? ImmutableList.<String>of() : list;
     }
 
     public <T extends /*@NonNull*/Object> List<T> query(final @Untainted String sql,
@@ -205,11 +234,11 @@ public class DataSource {
     }
 
     public void deleteAll(@Untainted String tableName, @Untainted String columnName,
-            String serverGroup) throws Exception {
-        if (SINGLE_SERVER) {
+            String serverRollup) throws Exception {
+        if (singleServer) {
             execute("truncate table " + tableName);
         } else {
-            batchDelete(tableName, columnName + " = ?", serverGroup);
+            batchDelete(tableName, columnName + " = ?", serverRollup);
         }
     }
 
@@ -224,7 +253,7 @@ public class DataSource {
         // lock the single jdbc connection for one large chunk of time
         int deleted;
         do {
-            if (POSTGRES) {
+            if (postgres) {
                 deleted = update(
                         "delete from " + tableName + " where ctid = any(array(select ctid from "
                                 + tableName + " where " + whereClause + " limit 100))",
@@ -241,7 +270,7 @@ public class DataSource {
     }
 
     @OnlyUsedByTests
-    public void close() throws SQLException {
+    public void close() throws Exception {
         connectionPool.close();
     }
 
@@ -318,15 +347,17 @@ public class DataSource {
 
     private static class ConnectionFactoryImpl implements ConnectionFactory {
 
+        private final boolean postgres;
         private final @Nullable File dbFile;
 
-        private ConnectionFactoryImpl(@Nullable File dbFile) {
+        private ConnectionFactoryImpl(boolean postgres, @Nullable File dbFile) {
+            this.postgres = postgres;
             this.dbFile = dbFile;
         }
 
         @Override
         public Connection createConnection() throws SQLException {
-            if (POSTGRES) {
+            if (postgres) {
                 try {
                     Class.forName("org.postgresql.Driver");
                 } catch (ClassNotFoundException e) {
@@ -350,5 +381,9 @@ public class DataSource {
 
     public interface ResultSetExtractor<T extends /*@Nullable*/Object> {
         T extractData(ResultSet resultSet) throws Exception;
+    }
+
+    public interface TransactionCallback {
+        void doInTransaction() throws Exception;
     }
 }

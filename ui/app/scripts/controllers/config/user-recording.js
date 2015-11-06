@@ -54,7 +54,6 @@ glowroot.controller('ConfigUserRecordingCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.server = $scope.server;
       $http.post('backend/config/user-recording', postData)
           .success(function (data) {
             onNewData(data);
@@ -63,7 +62,7 @@ glowroot.controller('ConfigUserRecordingCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/user-recording?server=' + $scope.server)
+    $http.get('backend/config/user-recording')
         .success(onNewData)
         .error(httpErrors.handler($scope));
   }

@@ -154,7 +154,7 @@
         </div>
       </fieldset>
       <div class="form-group gt-form-buttons">
-        <div class="col-lg-offset-3 col-lg-9">
+        <div class="col-lg-offset-4 col-lg-8">
           <div gt-button-group>
             <div gt-button
                  gt-label="Save changes"
@@ -169,7 +169,8 @@
                  gt-btn-class="btn-warning"
                  gt-dont-validate-form="true"
                  class="pull-left"
-                 style="margin-right: 8px;">
+                 style="margin-right: 8px;"
+                 ng-hide="layout.central">
             </div>
             <div gt-button
                  gt-label="Delete all data"
@@ -178,6 +179,7 @@
                  gt-dont-validate-form="true"
                  gt-confirm-header="Delete all data?"
                  gt-confirm-body="This will delete all captured data, including aggregated transaction data, traces and gauge data."
+                 ng-hide="layout.central"
                  class="pull-left">
             </div>
           </div>

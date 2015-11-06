@@ -15,7 +15,6 @@
  */
 package org.glowroot.ui;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
@@ -69,7 +68,7 @@ class HttpSessionManager {
         this.layoutJsonService = layoutJsonService;
     }
 
-    FullHttpResponse login(FullHttpRequest request, boolean admin) throws IOException {
+    FullHttpResponse login(FullHttpRequest request, boolean admin) throws Exception {
         boolean success;
         String password = request.content().toString(Charsets.ISO_8859_1);
         String existingPasswordHash;
@@ -95,7 +94,7 @@ class HttpSessionManager {
         }
     }
 
-    boolean hasReadAccess(HttpRequest request) {
+    boolean hasReadAccess(HttpRequest request) throws Exception {
         if (configRepository.getUserInterfaceConfig().anonymousAccess() != AnonymousAccess.NONE) {
             return true;
         }
@@ -112,7 +111,7 @@ class HttpSessionManager {
         return false;
     }
 
-    boolean hasAdminAccess(HttpRequest request) {
+    boolean hasAdminAccess(HttpRequest request) throws Exception {
         if (configRepository.getUserInterfaceConfig().anonymousAccess() == AnonymousAccess.ADMIN) {
             // anonymous is ok
             return true;
@@ -126,7 +125,7 @@ class HttpSessionManager {
     }
 
     @Nullable
-    String getAuthenticatedUser(HttpRequest request) {
+    String getAuthenticatedUser(HttpRequest request) throws Exception {
         String sessionId = getSessionId(request);
         if (sessionId == null) {
             return null;
@@ -151,7 +150,7 @@ class HttpSessionManager {
         return response;
     }
 
-    void createSession(HttpResponse response, boolean admin) {
+    void createSession(HttpResponse response, boolean admin) throws Exception {
         String sessionId = new BigInteger(130, secureRandom).toString(32);
         updateSessionExpiration(sessionId, admin);
         Cookie cookie = new DefaultCookie("GLOWROOT_SESSION_ID", sessionId);
@@ -197,7 +196,7 @@ class HttpSessionManager {
         purgeExpiredSessions(currentTimeMillis, readOnlySessionExpirations);
     }
 
-    private boolean isValidNonExpired(String sessionId, boolean admin) {
+    private boolean isValidNonExpired(String sessionId, boolean admin) throws Exception {
         Map<String, Long> sessionExpirations =
                 admin ? adminSessionExpirations : readOnlySessionExpirations;
         Long expires = sessionExpirations.get(sessionId);
@@ -209,7 +208,7 @@ class HttpSessionManager {
         return true;
     }
 
-    private void updateSessionExpiration(String sessionId, boolean admin) {
+    private void updateSessionExpiration(String sessionId, boolean admin) throws Exception {
         Map<String, Long> sessionExpirations =
                 admin ? adminSessionExpirations : readOnlySessionExpirations;
         int timeoutMinutes = configRepository.getUserInterfaceConfig().sessionTimeoutMinutes();

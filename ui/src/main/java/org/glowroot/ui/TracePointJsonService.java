@@ -16,7 +16,6 @@
 package org.glowroot.ui;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -77,7 +76,7 @@ class TracePointJsonService {
         }
 
         TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverGroup(request.serverGroup())
+                .serverRollup(request.serverRollup())
                 .from(request.from())
                 .to(request.to())
                 .durationNanosLow(durationNanosLow)
@@ -120,7 +119,7 @@ class TracePointJsonService {
                 // capture active traces first to make sure that none are missed in the transition
                 // between active and pending/stored (possible duplicates are removed below)
                 activeTracePoints.addAll(liveTraceRepository.getMatchingActiveTracePoints(
-                        query.serverGroup(), captureTime, captureTick, query));
+                        query.serverRollup(), captureTime, captureTick, query));
             }
             Result<TracePoint> queryResult =
                     getStoredAndPendingPoints(captureTime, captureActiveTracePoints);
@@ -128,7 +127,10 @@ class TracePointJsonService {
             removeDuplicatesBetweenActiveAndNormalTracePoints(activeTracePoints, points);
             boolean expired = points.isEmpty() && query.to() < clock.currentTimeMillis()
                     - HOURS.toMillis(configRepository.getStorageConfig().traceExpirationHours());
-            return writeResponse(points, activeTracePoints, queryResult.moreAvailable(), expired);
+            List<String> traceAttributeNames =
+                    traceRepository.readTraceAttributeNames(query.serverRollup());
+            return writeResponse(points, activeTracePoints, queryResult.moreAvailable(), expired,
+                    traceAttributeNames);
         }
 
         private boolean shouldCaptureActiveTracePoints() {
@@ -145,7 +147,7 @@ class TracePointJsonService {
                 // important to grab pending traces before stored points to ensure none are
                 // missed in the transition between pending and stored
                 matchingPendingPoints = liveTraceRepository
-                        .getMatchingPendingPoints(query.serverGroup(), captureTime, query);
+                        .getMatchingPendingPoints(query.serverRollup(), captureTime, query);
             } else {
                 matchingPendingPoints = ImmutableList.of();
             }
@@ -213,7 +215,8 @@ class TracePointJsonService {
         }
 
         private String writeResponse(List<TracePoint> points, List<TracePoint> activePoints,
-                boolean limitExceeded, boolean expired) throws IOException, SQLException {
+                boolean limitExceeded, boolean expired, List<String> traceAttributeNames)
+                        throws Exception {
             StringBuilder sb = new StringBuilder();
             JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();
@@ -242,6 +245,11 @@ class TracePointJsonService {
             if (expired) {
                 jg.writeBooleanField("expired", true);
             }
+            jg.writeArrayFieldStart("traceAttributeNames");
+            for (String traceAttributeName : traceAttributeNames) {
+                jg.writeString(traceAttributeName);
+            }
+            jg.writeEndArray();
             jg.writeEndObject();
             jg.close();
             return sb.toString();
@@ -251,7 +259,7 @@ class TracePointJsonService {
             jg.writeStartArray();
             jg.writeNumber(point.captureTime());
             jg.writeNumber(point.durationNanos() / NANOSECONDS_PER_MILLISECOND);
-            jg.writeString(point.server());
+            jg.writeString(point.serverId());
             jg.writeString(point.traceId());
             jg.writeEndArray();
         }
@@ -261,7 +269,7 @@ class TracePointJsonService {
     @Value.Immutable
     public abstract static class TracePointRequest {
 
-        public abstract String serverGroup();
+        public abstract String serverRollup();
         public abstract long from();
         public abstract long to();
         public abstract double responseTimeMillisLow();

@@ -15,24 +15,25 @@
  */
 package org.glowroot.ui;
 
-import java.io.IOException;
+import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.immutables.value.Value;
 
 import org.glowroot.common.live.LiveAggregateRepository;
-import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.storage.repo.AggregateRepository;
-import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.RepoAdmin;
 import org.glowroot.storage.repo.TraceRepository;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 @JsonService
 class AdminJsonService {
+
+    private static final String SERVER_ID = "";
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
@@ -40,45 +41,38 @@ class AdminJsonService {
     private final TraceRepository traceRepository;
     private final GaugeValueRepository gaugeValueRepository;
     private final LiveAggregateRepository liveAggregateRepository;
-    private final ConfigRepository configRepository;
-    private final LiveWeavingService liveWeavingService;
-    private final LiveTraceRepository liveTraceRepository;
+    private final @Nullable LiveWeavingService liveWeavingService;
     private final RepoAdmin repoAdmin;
 
     AdminJsonService(AggregateRepository aggregateRepository, TraceRepository traceRepository,
             GaugeValueRepository gaugeValueRepository,
-            LiveAggregateRepository liveAggregateRepository, ConfigRepository configRepository,
-            LiveWeavingService liveWeavingService, LiveTraceRepository liveTraceRepository,
-            RepoAdmin repoAdmin) {
+            LiveAggregateRepository liveAggregateRepository,
+            @Nullable LiveWeavingService liveWeavingService, RepoAdmin repoAdmin) {
         this.aggregateRepository = aggregateRepository;
         this.traceRepository = traceRepository;
         this.gaugeValueRepository = gaugeValueRepository;
         this.liveAggregateRepository = liveAggregateRepository;
-        this.configRepository = configRepository;
         this.liveWeavingService = liveWeavingService;
-        this.liveTraceRepository = liveTraceRepository;
         this.repoAdmin = repoAdmin;
     }
 
     @POST("/backend/admin/delete-all-data")
     void deleteAllData(String content) throws Exception {
-        String serverGroup =
-                mapper.readValue(content, ImmutableRequestWithServerGroup.class).serverGroup();
+        String serverRollup =
+                mapper.readValue(content, ImmutableRequestWithServerRollup.class).serverRollup();
         // clear in-memory aggregates first
-        if (liveAggregateRepository != null) {
-            liveAggregateRepository.clearAll();
-        }
+        liveAggregateRepository.clearAll();
         // TODO optimize by just deleting and re-creating h2 db
-        traceRepository.deleteAll(serverGroup);
-        gaugeValueRepository.deleteAll(serverGroup);
-        aggregateRepository.deleteAll(serverGroup);
+        traceRepository.deleteAll(serverRollup);
+        gaugeValueRepository.deleteAll(serverRollup);
+        aggregateRepository.deleteAll(serverRollup);
         repoAdmin.defrag();
     }
 
     @POST("/backend/admin/reweave")
-    String reweave(String content) throws Exception {
-        String server = mapper.readValue(content, ImmutableRequestWithServer.class).server();
-        int count = liveWeavingService.reweave(server);
+    String reweave() throws Exception {
+        checkNotNull(liveWeavingService);
+        int count = liveWeavingService.reweave(SERVER_ID);
         return "{\"classes\":" + count + "}";
     }
 
@@ -87,45 +81,13 @@ class AdminJsonService {
         repoAdmin.defrag();
     }
 
-    @OnlyUsedByTests
-    @POST("/backend/admin/reset-all-config")
-    void resetAllConfig(String content) throws IOException {
-        String server = mapper.readValue(content, ImmutableRequestWithServer.class).server();
-        configRepository.resetAllConfig(server);
-    }
-
-    @OnlyUsedByTests
-    @GET("/backend/admin/num-active-transactions")
-    String getNumActiveTransactions(String queryString) throws Exception {
-        String server = getServer(queryString);
-        return Integer.toString(liveTraceRepository.getActiveTransactionCount(server));
-    }
-
-    @OnlyUsedByTests
-    @GET("/backend/admin/num-pending-complete-transactions")
-    String getNumPendingCompleteTransactions(String queryString) throws Exception {
-        String server = getServer(queryString);
-        return Integer.toString(liveTraceRepository.getPendingCompleteTransactionCount(server));
-    }
-
-    @OnlyUsedByTests
-    @GET("/backend/admin/num-traces")
-    String getNumTraces(String queryString) throws Exception {
-        String server = getServer(queryString);
-        return Long.toString(traceRepository.count(server));
-    }
-
-    private static String getServer(String queryString) throws Exception {
-        return QueryStrings.decode(queryString, RequestWithServer.class).server();
+    @Value.Immutable
+    interface RequestWithServerRollup {
+        String serverRollup();
     }
 
     @Value.Immutable
-    interface RequestWithServerGroup {
-        String serverGroup();
-    }
-
-    @Value.Immutable
-    interface RequestWithServer {
-        String server();
+    interface RequestWithServerId {
+        String serverId();
     }
 }

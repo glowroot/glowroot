@@ -45,7 +45,6 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.util.Styles;
 import org.glowroot.storage.simplerepo.util.ConnectionPool.ConnectionCallback;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -228,6 +227,7 @@ public class Schema {
             throws SQLException {
         ListMultimap</*@Untainted*/String, /*@Untainted*/String> indexColumns =
                 ArrayListMultimap.create();
+        Set<String> uniqueIndexes = Sets.newHashSet();
         ResultSet resultSet = getMetaDataIndexInfo(connection, tableName);
         ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
@@ -238,6 +238,9 @@ public class Schema {
                 // prefixed in H2 by PRIMARY_KEY_ and suffixed in Postgres by _pkey
                 if (!indexName.startsWith("PRIMARY_KEY_") && !indexName.endsWith("_pkey")) {
                     indexColumns.put(castUntainted(indexName), castUntainted(columnName));
+                }
+                if (!resultSet.getBoolean("NON_UNIQUE")) {
+                    uniqueIndexes.add(indexName);
                 }
             }
         } catch (Throwable t) {
@@ -253,7 +256,11 @@ public class Schema {
             for (String column : entry.getValue()) {
                 columns.add(column.toLowerCase(Locale.ENGLISH));
             }
-            indexes.add(ImmutableIndex.of(name, columns));
+            indexes.add(ImmutableIndex.builder()
+                    .name(name)
+                    .columns(columns)
+                    .unique(uniqueIndexes.contains(entry.getKey()))
+                    .build());
         }
         return indexes.build();
     }
@@ -261,7 +268,11 @@ public class Schema {
     private static void createIndex(String tableName, Index index, Connection connection)
             throws SQLException {
         StringBuilder sql = new StringBuilder();
-        sql.append("create index ");
+        sql.append("create ");
+        if (index.unique()) {
+            sql.append("unique ");
+        }
+        sql.append("index ");
         sql.append(index.name());
         sql.append(" on ");
         sql.append(tableName);
@@ -350,10 +361,18 @@ public class Schema {
     }
 
     @Value.Immutable
-    @Styles.AllParameters
-    public interface Index {
+    public abstract static class Index {
+
+        @Value.Parameter
         @Untainted
-        String name();
-        ImmutableList</*@Untainted*/String> columns();
+        abstract String name();
+
+        @Value.Parameter
+        abstract ImmutableList</*@Untainted*/String> columns();
+
+        @Value.Default
+        boolean unique() {
+            return false;
+        }
     }
 }

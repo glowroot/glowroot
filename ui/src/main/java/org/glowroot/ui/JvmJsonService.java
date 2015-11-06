@@ -16,14 +16,9 @@
 package org.glowroot.ui;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.util.List;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -31,13 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveJvmService.MBeanTreeRequest;
-import org.glowroot.common.live.LiveThreadDumpService;
-import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.GaugeValueRepository;
-import org.glowroot.storage.repo.GaugeValueRepository.Gauge;
-import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 
 @JsonService
 class JvmJsonService {
@@ -45,62 +34,10 @@ class JvmJsonService {
     private static final Logger logger = LoggerFactory.getLogger(JvmJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final GaugeValueRepository gaugeValueRepository;
-    private final ConfigRepository configRepository;
     private final LiveJvmService liveJvmService;
-    private final LiveThreadDumpService liveThreadDumpService;
 
-    private final Clock clock;
-
-    JvmJsonService(GaugeValueRepository gaugeValueDao, ConfigRepository configRepository,
-            LiveJvmService liveJvmService, LiveThreadDumpService liveThreadDumpService,
-            Clock clock) {
-        this.gaugeValueRepository = gaugeValueDao;
-        this.configRepository = configRepository;
+    JvmJsonService(LiveJvmService liveJvmService) {
         this.liveJvmService = liveJvmService;
-        this.liveThreadDumpService = liveThreadDumpService;
-        this.clock = clock;
-    }
-
-    @GET("/backend/jvm/gauge-values")
-    String getGaugeValues(String queryString) throws Exception {
-        GaugeValueRequest request = QueryStrings.decode(queryString, GaugeValueRequest.class);
-        int rollupLevel = gaugeValueRepository.getRollupLevelForView(request.serverGroup(),
-                request.from(), request.to());
-        long intervalMillis;
-        if (rollupLevel == 0) {
-            intervalMillis = configRepository.getGaugeCollectionIntervalMillis();
-        } else {
-            intervalMillis =
-                    configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
-        }
-        double gapMillis = intervalMillis * 1.5;
-        long revisedFrom = request.from() - intervalMillis;
-        long revisedTo = request.to() + intervalMillis;
-
-        long liveCaptureTime = clock.currentTimeMillis();
-        List<DataSeries> dataSeriesList = Lists.newArrayList();
-        for (String gaugeName : request.gaugeNames()) {
-            List<GaugeValue> gaugeValues = getGaugeValues(request.serverGroup(), revisedFrom,
-                    revisedTo, gaugeName, rollupLevel, liveCaptureTime, gapMillis);
-            dataSeriesList.add(convertToDataSeriesWithGaps(gaugeName, gaugeValues, gapMillis));
-        }
-
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeObjectField("dataSeries", dataSeriesList);
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
-    }
-
-    @GET("/backend/jvm/all-gauges")
-    String getAllGaugeNames(String queryString) throws Exception {
-        String server = getServer(queryString);
-        List<Gauge> gauges = gaugeValueRepository.getGauges(server);
-        ImmutableList<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
-        return mapper.writeValueAsString(sortedGauges);
     }
 
     @GET("/backend/jvm/mbean-tree")
@@ -113,26 +50,24 @@ class JvmJsonService {
     String getMBeanAttributeMap(String queryString) throws Exception {
         MBeanAttributeMapRequest request =
                 QueryStrings.decode(queryString, MBeanAttributeMapRequest.class);
-        return mapper.writeValueAsString(
-                liveJvmService.getMBeanSortedAttributeMap(request.server(), request.objectName()));
+        return mapper.writeValueAsString(liveJvmService
+                .getMBeanSortedAttributeMap(request.serverId(), request.objectName()));
     }
 
     @POST("/backend/jvm/perform-gc")
     void performGC() throws IOException {
-        // using MemoryMXBean.gc() instead of System.gc() in hope that it will someday bypass
-        // -XX:+DisableExplicitGC (see https://bugs.openjdk.java.net/browse/JDK-6396411)
-        ManagementFactory.getMemoryMXBean().gc();
+        liveJvmService.gc();
     }
 
     @GET("/backend/jvm/thread-dump")
     String getThreadDump() throws IOException {
-        return mapper.writeValueAsString(liveThreadDumpService.getAllThreads());
+        return mapper.writeValueAsString(liveJvmService.getAllThreads());
     }
 
     @GET("/backend/jvm/heap-dump-default-dir")
     String getHeapDumpDefaultDir(String queryString) throws Exception {
-        String server = getServer(queryString);
-        return mapper.writeValueAsString(liveJvmService.getHeapDumpDefaultDirectory(server));
+        String serverId = getServerId(queryString);
+        return mapper.writeValueAsString(liveJvmService.getHeapDumpDefaultDirectory(serverId));
     }
 
     @POST("/backend/jvm/available-disk-space")
@@ -140,7 +75,7 @@ class JvmJsonService {
         HeapDumpRequest request = mapper.readValue(content, ImmutableHeapDumpRequest.class);
         try {
             return Long.toString(
-                    liveJvmService.getAvailableDiskSpace(request.server(), request.directory()));
+                    liveJvmService.getAvailableDiskSpace(request.serverId(), request.directory()));
         } catch (IOException e) {
             logger.debug(e.getMessage(), e);
             // this is for specific common errors, e.g. "Directory doesn't exist"
@@ -159,7 +94,7 @@ class JvmJsonService {
         HeapDumpRequest request = mapper.readValue(content, ImmutableHeapDumpRequest.class);
         try {
             return mapper.writeValueAsString(
-                    liveJvmService.dumpHeap(request.server(), request.directory()));
+                    liveJvmService.dumpHeap(request.serverId(), request.directory()));
         } catch (IOException e) {
             logger.debug(e.getMessage(), e);
             // this is for specific common errors, e.g. "Directory doesn't exist"
@@ -175,87 +110,29 @@ class JvmJsonService {
 
     @GET("/backend/jvm/process-info")
     String getProcessInfo(String queryString) throws Exception {
-        String server = getServer(queryString);
-        return mapper.writeValueAsString(liveJvmService.getProcessInfo(server));
+        String serverId = getServerId(queryString);
+        return mapper.writeValueAsString(liveJvmService.getProcessInfo(serverId));
     }
 
     @GET("/backend/jvm/capabilities")
     String getCapabilities(String queryString) throws Exception {
-        String server = getServer(queryString);
-        return mapper.writeValueAsString(liveJvmService.getCapabilities(server));
+        String serverId = getServerId(queryString);
+        return mapper.writeValueAsString(liveJvmService.getCapabilities(serverId));
     }
 
-    private List<GaugeValue> getGaugeValues(String serverGroup, long from, long to,
-            String gaugeName, int rollupLevel, long liveCaptureTime, double gapMillis)
-                    throws Exception {
-        List<GaugeValue> gaugeValues =
-                gaugeValueRepository.readGaugeValues(serverGroup, gaugeName, from, to, rollupLevel);
-        if (rollupLevel == 0) {
-            return gaugeValues;
-        }
-        long nonRolledUpFrom = from;
-        if (!gaugeValues.isEmpty()) {
-            long lastRolledUpTime = gaugeValues.get(gaugeValues.size() - 1).getCaptureTime();
-            nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
-        }
-        if (liveCaptureTime - nonRolledUpFrom > gapMillis) {
-            // only display "live" rollup if there is gap since the last value
-            // this avoids the confusion of an empty chart shortly after starting the jvm
-            // (when in default 4 hour rollup level)
-            // while at the same time avoiding the confusion of always showing the "live" rollup
-            // which can look like a strange spiky value at the end of a chart since it can be based
-            // on a very short amount of time (e.g. 5 seconds) and so not smoothed out with enough
-            // data yet
-            gaugeValues = Lists.newArrayList(gaugeValues);
-            gaugeValues.addAll(gaugeValueRepository.readManuallyRolledUpGaugeValues(serverGroup,
-                    nonRolledUpFrom, to, gaugeName, rollupLevel, liveCaptureTime));
-        }
-        return gaugeValues;
-    }
-
-    private static DataSeries convertToDataSeriesWithGaps(String dataSeriesName,
-            List<GaugeValue> gaugeValues, double gapMillis) {
-        DataSeries dataSeries = new DataSeries(dataSeriesName);
-        GaugeValue lastGaugeValue = null;
-        for (GaugeValue gaugeValue : gaugeValues) {
-            if (lastGaugeValue != null
-                    && gaugeValue.getCaptureTime() - lastGaugeValue.getCaptureTime() > gapMillis) {
-                dataSeries.addNull();
-            }
-            dataSeries.add(gaugeValue.getCaptureTime(), gaugeValue.getValue());
-            lastGaugeValue = gaugeValue;
-        }
-        return dataSeries;
-    }
-
-    private static String getServer(String queryString) throws Exception {
-        return queryString.substring("server".length() + 1);
-    }
-
-    @Value.Immutable
-    interface GaugeValueRequest {
-        String serverGroup();
-        long from();
-        long to();
-        ImmutableList<String> gaugeNames();
+    private static String getServerId(String queryString) throws Exception {
+        return queryString.substring("server-id".length() + 1);
     }
 
     @Value.Immutable
     interface MBeanAttributeMapRequest {
-        String server();
+        String serverId();
         String objectName();
     }
 
     @Value.Immutable
     interface HeapDumpRequest {
-        String server();
+        String serverId();
         String directory();
-    }
-
-    private static class GaugeOrdering extends Ordering<Gauge> {
-        @Override
-        public int compare(Gauge left, Gauge right) {
-            return left.display().compareToIgnoreCase(right.display());
-        }
     }
 }

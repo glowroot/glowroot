@@ -86,7 +86,7 @@ glowroot.controller('TransactionSidebarCtrl', [
 
     function updateSummaries(initialLoading, moreLoading) {
       var query = {
-        serverGroup: $scope.serverGroup,
+        serverRollup: $scope.serverRollup,
         transactionType: $scope.transactionType,
         from: $scope.chartFrom,
         to: $scope.chartTo,

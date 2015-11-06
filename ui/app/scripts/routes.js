@@ -21,27 +21,40 @@ glowroot.config([
   '$stateProvider',
   '$urlRouterProvider',
   function ($provide, $stateProvider, $urlRouterProvider) {
-    var waitForLayout;
-    if (window.layout) {
-      waitForLayout = function () {
-      };
-    } else {
-      // some controllers need to wait for layout when running under grunt serve
-      waitForLayout = ['$q', '$rootScope', function ($q, $rootScope) {
-        var deferred = $q.defer();
-        var unregisterWatch = $rootScope.$watch('layout', function (value) {
-          if (value) {
-            deferred.resolve();
-            unregisterWatch();
+    var waitForLayout = function (needsTransactionType) {
+      return ['$q', '$rootScope', '$location', function ($q, $rootScope, $location) {
+        if (window.layout) {
+          if (needsTransactionType && !$location.search()['transaction-type']) {
+            $location.search('transaction-type', $rootScope.defaultTransactionType());
+            $location.replace();
           }
-        });
-        return deferred.promise;
+          return function () {};
+        } else {
+          var deferred = $q.defer();
+          var unregisterWatch = $rootScope.$watch('layout', function (value) {
+            if (needsTransactionType && !$location.search()['transaction-type']) {
+              $location.search('transaction-type', $rootScope.defaultTransactionType());
+              $location.replace();
+            }
+            if (value) {
+              deferred.resolve();
+              unregisterWatch();
+            }
+          });
+          return deferred.promise;
+        }
       }];
-    }
-    $urlRouterProvider.otherwise('transaction/average');
+    };
+    $urlRouterProvider.otherwise(function ($injector) {
+      var $rootScope = $injector.get('$rootScope');
+      if ($rootScope.layout && $rootScope.layout.central) {
+        return '/server-rollups';
+      }
+      return 'transaction/average';
+    });
     $stateProvider.state('transaction', {
       abstract: true,
-      url: '/transaction?transaction-type',
+      url: '/transaction?server-rollup&transaction-type',
       templateUrl: 'views/transaction.html',
       controller: 'TransactionCtrl',
       resolve: {
@@ -55,7 +68,7 @@ glowroot.config([
           return 'total-time';
         },
         // transaction controller needs to wait for layout when running under grunt serve
-        waitForLayout: waitForLayout
+        waitForLayout: waitForLayout(true)
       }
     });
     $stateProvider.state('transaction.detail', {
@@ -176,12 +189,12 @@ glowroot.config([
           return deferred.promise;
         }],
         // flame graph controller needs to wait for layout when running under grunt serve
-        waitForLayout: waitForLayout
+        waitForLayout: waitForLayout(true)
       }
     });
     $stateProvider.state('error', {
       abstract: true,
-      url: '/error?transaction-type',
+      url: '/error?server-rollup&transaction-type',
       templateUrl: 'views/transaction.html',
       controller: 'TransactionCtrl',
       resolve: {
@@ -195,7 +208,7 @@ glowroot.config([
           return 'error-count';
         },
         // error controller needs to wait for layout when running under grunt serve
-        waitForLayout: waitForLayout
+        waitForLayout: waitForLayout(true)
       }
     });
     $stateProvider.state('error.detail', {
@@ -266,7 +279,7 @@ glowroot.config([
       controller: 'JvmGaugeValuesCtrl',
       // gauges controller needs to wait for layout when running under grunt serve
       resolve: {
-        waitForLayout: waitForLayout
+        waitForLayout: waitForLayout(false)
       }
     });
     $stateProvider.state('jvm.processInfo', {
@@ -345,7 +358,7 @@ glowroot.config([
       controller: 'ConfigAlertCtrl',
       // alert controller needs to wait for layout when running under grunt serve
       resolve: {
-        waitForLayout: waitForLayout
+        waitForLayout: waitForLayout(false)
       }
     });
     $stateProvider.state('config.pluginList', {
@@ -394,7 +407,7 @@ glowroot.config([
       controller: 'LoginCtrl',
       // login controller needs to wait for layout when running under grunt serve
       resolve: {
-        waitForLayout: waitForLayout
+        waitForLayout: waitForLayout(false)
       }
     });
   }

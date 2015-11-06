@@ -103,7 +103,7 @@ public class AdviceCache {
                 }
             }
             lazyAdvisors.putAll(AdviceGenerator.createAdvisors(
-                    pluginDescriptor.instrumentationConfigs(), pluginDescriptor.id()));
+                    pluginDescriptor.instrumentationConfigs(), pluginDescriptor.id(), false));
         }
         for (Entry<Advice, LazyDefinedClass> entry : lazyAdvisors.entrySet()) {
             pluginAdvisors.add(entry.getKey());
@@ -154,7 +154,7 @@ public class AdviceCache {
     public void updateAdvisors(/*>>>@UnknownInitialization(AdviceCache.class) AdviceCache this,*/
             List<InstrumentationConfig> reweavableConfigs, boolean cleanTmpDir) throws Exception {
         ImmutableMap<Advice, LazyDefinedClass> advisors =
-                AdviceGenerator.createAdvisors(reweavableConfigs, null);
+                AdviceGenerator.createAdvisors(reweavableConfigs, null, true);
         if (instrumentation == null) {
             // this is for tests that don't run with javaagent container
             ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -195,7 +195,7 @@ public class AdviceCache {
         for (Class<?> memberClass : aspectClass.getClasses()) {
             if (memberClass.isAnnotationPresent(Pointcut.class)) {
                 try {
-                    advisors.add(new AdviceBuilder(memberClass, false).build());
+                    advisors.add(new AdviceBuilder(memberClass).build());
                 } catch (Exception e) {
                     logger.error("error creating advice: {}", memberClass.getName(), e);
                 }

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration>
 <!-- this logback configuration is only used until the data dir is calculated, and then
   logback is reconfigured with glowroot.logback-override.xml -->
 <configuration>

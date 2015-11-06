@@ -32,9 +32,8 @@ public abstract class UserInterfaceConfig {
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
     public String defaultDisplayedTransactionType() {
-        return "";
+        return "Servlet";
     }
 
     @Value.Default

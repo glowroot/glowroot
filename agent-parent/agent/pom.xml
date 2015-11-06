@@ -32,6 +32,16 @@
     </dependency>
     <dependency>
       <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-storage</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-ui</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
       <artifactId>glowroot-wire-api</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -257,6 +267,31 @@
                 <exclude>META-INF/LICENSE</exclude>
               </excludes>
             </filter>
+            <filter>
+              <artifact>com.h2database:h2</artifact>
+              <excludes>
+                <exclude>META-INF/services/java.sql.Driver</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.sun.mail:mailapi</artifact>
+              <excludes>
+                <exclude>META-INF/gfprobe-provider.xml</exclude>
+                <exclude>META-INF/javamail.charset.map</exclude>
+                <exclude>META-INF/mailcap</exclude>
+                <exclude>META-INF/LICENSE.txt</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.sun.mail:smtp</artifact>
+              <excludes>
+                <!-- javamail.address.map and javamail.providers are replaced with
+                  glowroot.javamail.address.map and glowroot.javamail.providers -->
+                <exclude>META-INF/javamail.address.map</exclude>
+                <exclude>META-INF/javamail.providers</exclude>
+                <exclude>META-INF/LICENSE.txt</exclude>
+              </excludes>
+            </filter>
           </filters>
           <relocations>
             <relocation>
@@ -360,6 +395,60 @@
               <pattern>^java:comp/env/logback/context-name$</pattern>
               <shadedPattern>java:comp/env/glowroot.logback/context-name</shadedPattern>
             </relocation>
+            <relocation>
+              <pattern>org.h2</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.h2</shadedPattern>
+              <excludes>
+                <!-- these resource files are actually read from org/h2/util/data.zip whose
+                  internals do not get shaded -->
+                <exclude>/org/h2/res/*</exclude>
+                <exclude>/org/h2/server/web/res/*</exclude>
+              </excludes>
+            </relocation>
+            <relocation>
+              <!-- shade thread names to make it easy to identify glowroot threads -->
+              <rawString>true</rawString>
+              <pattern>H2 File Lock Watchdog</pattern>
+              <shadedPattern>Glowroot-H2 File Lock Watchdog</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- shade thread names to make it easy to identify glowroot threads -->
+              <rawString>true</rawString>
+              <pattern>H2 Log Writer</pattern>
+              <shadedPattern>Glowroot-H2 Log Writer</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- shade thread names to make it easy to identify glowroot threads -->
+              <rawString>true</rawString>
+              <pattern>Generate Seed</pattern>
+              <shadedPattern>Glowroot-H2 Generate Seed</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.ning.compress</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.ning.compress</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.jcraft.jzlib</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.jcraft.jzlib</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>javax.mail</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.javax.mail</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.sun.mail</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.sun.mail</shadedPattern>
+            </relocation>
+            <relocation>
+              <rawString>true</rawString>
+              <pattern>^META-INF/javamail.address.map$</pattern>
+              <shadedPattern>META-INF/glowroot.javamail.address.map</shadedPattern>
+            </relocation>
+            <relocation>
+              <rawString>true</rawString>
+              <pattern>^META-INF/javamail.providers$</pattern>
+              <shadedPattern>META-INF/glowroot.javamail.providers</shadedPattern>
+            </relocation>
           </relocations>
         </configuration>
         <executions>
@@ -392,6 +481,7 @@
             <archive>
               <manifestEntries>
                 <Build-Time>${maven.build.timestamp}</Build-Time>
+                <Main-Class>org.glowroot.agent.Viewer</Main-Class>
                 <Premain-Class>org.glowroot.agent.AgentPremain</Premain-Class>
                 <Can-Redefine-Classes>true</Can-Redefine-Classes>
                 <Can-Retransform-Classes>true</Can-Retransform-Classes>

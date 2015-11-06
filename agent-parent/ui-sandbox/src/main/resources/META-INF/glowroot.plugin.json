@@ -1,0 +1,38 @@
+{
+  "name": "UI Sandbox Plugin",
+  "id": "glowroot-ui-sandbox",
+  "properties": [
+    {
+      "name": "oneName",
+      "type": "boolean",
+      "default": true,
+      "label": "Something",
+      "checkboxLabel": "Do something",
+      "description": "Do you want to do something?"
+    },
+    {
+      "name": "anotherName",
+      "type": "string",
+      "default": "coding",
+      "label": "Whatever you want",
+      "description": "More help text here and more and more and more."
+    },
+    {
+      "name": "thirdName",
+      "type": "double",
+      "label": "For however long you want",
+      "description": "I'm quickly out of ideas."
+    },
+    {
+      "name": "fourthName",
+      "type": "double",
+      "label": "Lucky number",
+      "description": "Good luck."
+    }
+  ],
+  "aspects": [
+    "org.glowroot.agent.ui.sandbox.NestableCallAspect",
+    "org.glowroot.agent.ui.sandbox.ExpensiveCallAspect",
+    "org.glowroot.agent.ui.sandbox.ExternalJvmMainAspect"
+  ]
+}

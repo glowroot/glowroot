@@ -44,7 +44,7 @@ public class AlertConfigOrderingTest {
     public void shouldCompare() {
         // given
         // when
-        int compare = AlertJsonService.orderingByName.compare(left, right);
+        int compare = AlertConfigJsonService.orderingByName.compare(left, right);
         // then
         assertThat(compare).isNegative();
     }

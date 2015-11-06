@@ -16,10 +16,14 @@
 package org.glowroot.agent;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 
 import javax.annotation.Nullable;
 
@@ -27,12 +31,18 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.DataDirLocking.BaseDirLockedException;
+import org.glowroot.agent.init.GlowrootAgentInit;
+import org.glowroot.agent.init.GlowrootThinAgentInit;
+import org.glowroot.agent.init.LoggingInit;
+import org.glowroot.agent.init.fat.DataDirLocking.BaseDirLockedException;
+import org.glowroot.agent.init.fat.GlowrootFatAgentInit;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common.util.Version;
 
 public class MainEntryPoint {
 
@@ -55,9 +65,10 @@ public class MainEntryPoint {
             }
             System.setProperty("jboss.modules.system.pkgs", jbossModulesSystemPkgs);
         }
-        ImmutableMap<String, String> properties = getGlowrootProperties();
-        File baseDir = BaseDir.getBaseDir(properties, glowrootJarFile);
+        String baseDirPath = System.getProperty("glowroot.base.dir");
+        File baseDir = BaseDir.getBaseDir(baseDirPath, glowrootJarFile);
         try {
+            ImmutableMap<String, String> properties = getGlowrootProperties(baseDir);
             start(baseDir, properties, instrumentation, glowrootJarFile, jbossModules);
         } catch (BaseDirLockedException e) {
             logBaseDirLockedException(baseDir);
@@ -67,17 +78,15 @@ public class MainEntryPoint {
         }
     }
 
-    public static void runViewer(@Nullable File glowrootJarFile) throws InterruptedException {
-        ImmutableMap<String, String> properties = getGlowrootProperties();
-        File baseDir = BaseDir.getBaseDir(properties, glowrootJarFile);
+    static void runViewer(@Nullable File glowrootJarFile) throws InterruptedException {
+        String baseDirPath = System.getProperty("glowroot.base.dir");
+        File baseDir = BaseDir.getBaseDir(baseDirPath, glowrootJarFile);
         String version = Version.getVersion();
-        glowrootAgentInit = newGlowrootAgentInit();
         try {
-            boolean loggingSpy =
-                    Boolean.parseBoolean(properties.get("glowroot.internal.logging.spy"));
-            LoggingInit.initStaticLoggerState(baseDir, loggingSpy);
-            glowrootAgentInit.init(baseDir, properties, null, glowrootJarFile, version, false,
-                    true);
+            ImmutableMap<String, String> properties = getGlowrootProperties(baseDir);
+            LoggingInit.initStaticLoggerState(baseDir);
+            new GlowrootFatAgentInit().init(baseDir, null, properties, null, glowrootJarFile,
+                    version, false, true);
         } catch (BaseDirLockedException e) {
             logBaseDirLockedException(baseDir);
             return;
@@ -97,34 +106,44 @@ public class MainEntryPoint {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion();
-        glowrootAgentInit = newGlowrootAgentInit();
-        boolean loggingSpy = Boolean.parseBoolean(properties.get("glowroot.internal.logging.spy"));
-        LoggingInit.initStaticLoggerState(baseDir, loggingSpy);
-        glowrootAgentInit.init(baseDir, properties, instrumentation, glowrootJarFile, version,
-                false, jbossModules);
+        LoggingInit.initStaticLoggerState(baseDir);
+        String collectorHost = properties.get("glowroot.collector.host");
+        if (Strings.isNullOrEmpty(collectorHost)) {
+            collectorHost = System.getProperty("glowroot.collector.host");
+        }
+        if (Strings.isNullOrEmpty(collectorHost)) {
+            glowrootAgentInit = new GlowrootFatAgentInit();
+        } else {
+            glowrootAgentInit = new GlowrootThinAgentInit();
+        }
+        glowrootAgentInit.init(baseDir, collectorHost, properties, instrumentation, glowrootJarFile,
+                version, false, jbossModules);
         startupLogger.info("Glowroot started (version {})", version);
     }
 
-    private static GlowrootAgentInit newGlowrootAgentInit() {
-        try {
-            Class<?> glowrootAgentInitClass =
-                    Class.forName("org.glowroot.fat.GlowrootFatAgentInit");
-            return (GlowrootAgentInit) glowrootAgentInitClass.newInstance();
-        } catch (Exception e) {
-            return new GlowrootThinAgentInit();
+    private static ImmutableMap<String, String> getGlowrootProperties(File baseDir)
+            throws IOException {
+        Map<String, String> properties = Maps.newHashMap();
+        File propFile = new File(baseDir, "glowroot.properties");
+        if (propFile.exists()) {
+            Properties props = new Properties();
+            InputStream in = new FileInputStream(propFile);
+            props.load(in);
+            for (String key : props.stringPropertyNames()) {
+                String value = props.getProperty(key);
+                if (value != null) {
+                    properties.put(key, value);
+                }
+            }
         }
-    }
-
-    private static ImmutableMap<String, String> getGlowrootProperties() {
-        ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
         for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
             if (entry.getKey() instanceof String && entry.getValue() instanceof String
                     && ((String) entry.getKey()).startsWith("glowroot.")) {
                 String key = (String) entry.getKey();
-                builder.put(key, (String) entry.getValue());
+                properties.put(key, (String) entry.getValue());
             }
         }
-        return builder.build();
+        return ImmutableMap.copyOf(properties);
     }
 
     private static void logBaseDirLockedException(File baseDir) {
@@ -167,7 +186,8 @@ public class MainEntryPoint {
 
     @OnlyUsedByTests
     public static void start(Map<String, String> properties) throws Exception {
-        File baseDir = BaseDir.getBaseDir(properties, null);
+        String baseDirPath = properties.get("glowroot.base.dir");
+        File baseDir = BaseDir.getBaseDir(baseDirPath, null);
         start(baseDir, properties, null, null, false);
     }
 

@@ -89,7 +89,7 @@ class TransactionJsonService {
 
         long liveCaptureTime = clock.currentTimeMillis();
         List<OverviewAggregate> overviewAggregates = transactionCommonService.getOverviewAggregates(
-                request.serverGroup(), request.transactionType(), request.transactionName(),
+                request.serverRollup(), request.transactionType(), request.transactionName(),
                 request.from(), request.to(), liveCaptureTime);
         List<DataSeries> dataSeriesList = getDataSeriesForTimerChart(request, overviewAggregates);
         Map<Long, Long> transactionCounts = getTransactionCounts(overviewAggregates);
@@ -125,7 +125,7 @@ class TransactionJsonService {
 
         long liveCaptureTime = clock.currentTimeMillis();
         List<PercentileAggregate> percentileAggregates = transactionCommonService
-                .getPercentileAggregates(request.serverGroup(), request.transactionType(),
+                .getPercentileAggregates(request.serverRollup(), request.transactionType(),
                         request.transactionName(), request.from(), request.to(), liveCaptureTime);
         PercentileData percentileData = getDataSeriesForPercentileChart(request,
                 percentileAggregates, request.percentile(), request.from());
@@ -149,9 +149,9 @@ class TransactionJsonService {
 
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates =
-                transactionCommonService.getThroughputAggregates(
-                        request.serverGroup(), request.transactionType(), request.transactionName(),
-                        request.from(), request.to(), liveCaptureTime);
+                transactionCommonService.getThroughputAggregates(request.serverRollup(),
+                        request.transactionType(), request.transactionName(), request.from(),
+                        request.to(), liveCaptureTime);
         List<DataSeries> dataSeriesList =
                 getDataSeriesForThroughputChart(request, throughputAggregates);
         long transactionCount = 0;
@@ -186,12 +186,12 @@ class TransactionJsonService {
         TransactionProfileRequest request =
                 QueryStrings.decode(queryString, TransactionProfileRequest.class);
         MutableProfileTree profileTree = transactionCommonService.getMergedProfile(
-                request.serverGroup(), request.transactionType(), request.transactionName(),
+                request.serverRollup(), request.transactionType(), request.transactionName(),
                 request.from(), request.to(), request.include(), request.exclude(),
                 request.truncateBranchPercentage());
         if (profileTree.getSampleCount() == 0 && request.include().isEmpty()
                 && request.exclude().isEmpty()
-                && transactionCommonService.shouldHaveProfile(request.serverGroup(),
+                && transactionCommonService.shouldHaveProfile(request.serverRollup(),
                         request.transactionType(), request.transactionName(), request.from(),
                         request.to())) {
             return "{\"overwritten\":true}";
@@ -204,7 +204,7 @@ class TransactionJsonService {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
         List<Aggregate.QueriesByType> queries = transactionCommonService.getMergedQueries(
-                request.serverGroup(), request.transactionType(), request.transactionName(),
+                request.serverRollup(), request.transactionType(), request.transactionName(),
                 request.from(), request.to());
         List<Query> queryList = Lists.newArrayList();
         for (Aggregate.QueriesByType queriesByType : queries) {
@@ -225,9 +225,9 @@ class TransactionJsonService {
                 return Doubles.compare(right.totalNanos(), left.totalNanos());
             }
         });
-        if (queryList.isEmpty() && transactionCommonService.shouldHaveQueries(request.serverGroup(),
-                request.transactionType(), request.transactionName(), request.from(),
-                request.to())) {
+        if (queryList.isEmpty() && transactionCommonService.shouldHaveQueries(
+                request.serverRollup(), request.transactionType(), request.transactionName(),
+                request.from(), request.to())) {
             return "{\"overwritten\":true}";
         }
         StringBuilder sb = new StringBuilder();
@@ -243,10 +243,10 @@ class TransactionJsonService {
                 QueryStrings.decode(queryString, TransactionSummaryRequest.class);
 
         OverallSummary overallSummary = transactionCommonService.readOverallSummary(
-                request.serverGroup(), request.transactionType(), request.from(), request.to());
+                request.serverRollup(), request.transactionType(), request.from(), request.to());
 
         TransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
-                .serverGroup(request.serverGroup())
+                .serverRollup(request.serverRollup())
                 .transactionType(request.transactionType())
                 .from(request.from())
                 .to(request.to())
@@ -259,10 +259,8 @@ class TransactionJsonService {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeFieldName("overall");
-        jg.writeObject(overallSummary);
-        jg.writeFieldName("transactions");
-        jg.writeObject(queryResult.records());
+        jg.writeObjectField("overall", overallSummary);
+        jg.writeObjectField("transactions", queryResult.records());
         jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
         jg.writeEndObject();
         jg.close();
@@ -277,15 +275,15 @@ class TransactionJsonService {
         String transactionName = request.transactionName();
         long traceCount;
         if (transactionName == null) {
-            traceCount = traceRepository.readOverallSlowCount(request.serverGroup(),
+            traceCount = traceRepository.readOverallSlowCount(request.serverRollup(),
                     request.transactionType(), request.from(), request.to());
         } else {
-            traceCount = traceRepository.readTransactionSlowCount(request.serverGroup(),
+            traceCount = traceRepository.readTransactionSlowCount(request.serverRollup(),
                     request.transactionType(), transactionName, request.from(), request.to());
         }
         boolean includeActiveTraces = shouldIncludeActiveTraces(request);
         if (includeActiveTraces) {
-            traceCount += liveTraceRepository.getMatchingTraceCount(request.serverGroup(),
+            traceCount += liveTraceRepository.getMatchingTraceCount(request.serverRollup(),
                     request.transactionType(), request.transactionName());
         }
         StringBuilder sb = new StringBuilder();
@@ -301,7 +299,7 @@ class TransactionJsonService {
     String getFlameGraph(String queryString) throws Exception {
         FlameGraphRequest request = QueryStrings.decode(queryString, FlameGraphRequest.class);
         MutableProfileTree profileTree = transactionCommonService.getMergedProfile(
-                request.serverGroup(), request.transactionType(), request.transactionName(),
+                request.serverRollup(), request.transactionType(), request.transactionName(),
                 request.from(), request.to(), request.include(), request.exclude(),
                 request.truncateBranchPercentage());
         return profileTree.toFlameGraphJson();
@@ -326,7 +324,7 @@ class TransactionJsonService {
     }
 
     private List<DataSeries> getDataSeriesForTimerChart(TransactionDataRequest request,
-            List<OverviewAggregate> aggregates) throws IOException {
+            List<OverviewAggregate> aggregates) throws Exception {
         if (aggregates.isEmpty()) {
             return Lists.newArrayList();
         }
@@ -349,7 +347,7 @@ class TransactionJsonService {
                     .build();
         }
         DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, aggregateRepository
-                .getDataPointIntervalMillis(request.serverGroup(), request.from(), request.to()));
+                .getDataPointIntervalMillis(request.serverRollup(), request.from(), request.to()));
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (double percentile : percentiles) {
             dataSeriesList
@@ -416,7 +414,7 @@ class TransactionJsonService {
             return Lists.newArrayList();
         }
         long dataPointIntervalMillis = aggregateRepository
-                .getDataPointIntervalMillis(request.serverGroup(), request.from(), request.to());
+                .getDataPointIntervalMillis(request.serverRollup(), request.from(), request.to());
         DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, dataPointIntervalMillis);
         DataSeries dataSeries = new DataSeries("throughput");
         List<DataSeries> dataSeriesList = Lists.newArrayList(dataSeries);
@@ -446,9 +444,9 @@ class TransactionJsonService {
     }
 
     private List<DataSeries> getTimerDataSeries(TransactionDataRequest request,
-            List<StackedPoint> stackedPoints) {
+            List<StackedPoint> stackedPoints) throws Exception {
         DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, aggregateRepository
-                .getDataPointIntervalMillis(request.serverGroup(), request.from(), request.to()));
+                .getDataPointIntervalMillis(request.serverRollup(), request.from(), request.to()));
         final int topX = 5;
         List<String> timerNames = getTopTimerNames(stackedPoints, topX + 1);
         List<DataSeries> dataSeriesList = Lists.newArrayList();
@@ -605,7 +603,7 @@ class TransactionJsonService {
 
     @Value.Immutable
     interface TransactionSummaryRequest {
-        String serverGroup();
+        String serverRollup();
         String transactionType();
         long from();
         long to();
@@ -615,7 +613,7 @@ class TransactionJsonService {
 
     @Value.Immutable
     interface TransactionDataRequest {
-        String serverGroup();
+        String serverRollup();
         String transactionType();
         @Nullable
         String transactionName();
@@ -627,7 +625,7 @@ class TransactionJsonService {
 
     @Value.Immutable
     interface TransactionProfileRequest {
-        String serverGroup();
+        String serverRollup();
         String transactionType();
         @Nullable
         String transactionName();
@@ -642,7 +640,7 @@ class TransactionJsonService {
 
     @Value.Immutable
     interface FlameGraphRequest {
-        String serverGroup();
+        String serverRollup();
         String transactionType();
         @Nullable
         String transactionName();

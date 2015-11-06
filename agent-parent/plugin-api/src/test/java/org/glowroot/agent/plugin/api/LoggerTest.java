@@ -19,7 +19,6 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
-import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.Agent.LoggerImpl;
 
 import static org.mockito.Mockito.mock;

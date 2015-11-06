@@ -28,35 +28,46 @@ class ReaperRunnable extends ScheduledRunnable {
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final GaugeValueDao gaugeValueDao;
+    private final GaugeMetaDao gaugeMetaDao;
+    private final TransactionTypeDao transactionTypeDao;
     private final Clock clock;
 
     ReaperRunnable(ConfigRepository configService, AggregateDao aggregateDao, TraceDao traceDao,
-            GaugeValueDao gaugeValueDao, Clock clock) {
+            GaugeValueDao gaugeValueDao, GaugeMetaDao gaugeMetaDao,
+            TransactionTypeDao transactionTypeDao, Clock clock) {
         this.configRepository = configService;
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
         this.gaugeValueDao = gaugeValueDao;
+        this.gaugeMetaDao = gaugeMetaDao;
+        this.transactionTypeDao = transactionTypeDao;
         this.clock = clock;
     }
 
     @Override
     protected void runInternal() throws Exception {
 
-        // FIXME for each serverGroup
-        final String serverGroup = "";
+        // FIXME for each serverRollup
+        final String serverRollup = "";
 
+        long minCaptureTime = Long.MAX_VALUE;
         StorageConfig storageConfig = configRepository.getStorageConfig();
         long currentTime = clock.currentTimeMillis();
         for (int i = 0; i < storageConfig.rollupExpirationHours().size(); i++) {
             int hours = storageConfig.rollupExpirationHours().get(i);
             long captureTime = currentTime - HOURS.toMillis(hours);
-            aggregateDao.deleteBefore(serverGroup, captureTime, i);
+            aggregateDao.deleteBefore(serverRollup, captureTime, i);
             if (i == 0) {
-                gaugeValueDao.deleteBefore(serverGroup, captureTime, i);
+                gaugeValueDao.deleteBefore(serverRollup, captureTime, i);
             }
-            gaugeValueDao.deleteBefore(serverGroup, captureTime, i + 1);
+            gaugeValueDao.deleteBefore(serverRollup, captureTime, i + 1);
+            minCaptureTime = Math.min(minCaptureTime, captureTime);
         }
         long traceCaptureTime = currentTime - HOURS.toMillis(storageConfig.traceExpirationHours());
-        traceDao.deleteBefore(serverGroup, traceCaptureTime);
+        traceDao.deleteBefore(serverRollup, traceCaptureTime);
+        minCaptureTime = Math.min(minCaptureTime, traceCaptureTime);
+
+        gaugeMetaDao.deleteBefore(serverRollup, minCaptureTime);
+        transactionTypeDao.deleteBefore(serverRollup, minCaptureTime);
     }
 }

@@ -18,14 +18,8 @@ message ServerRequest {
 message ClientResponse {
   int64 request_id = 1;
   oneof message {
-    Hello hello = 2;
     MBeanTreeResponse mbean_tree_response = 100;
   }
-}
-
-message Hello {
-  string server = 1;
-  repeated string server_group = 2;
 }
 
 message MBeanTreeRequest {

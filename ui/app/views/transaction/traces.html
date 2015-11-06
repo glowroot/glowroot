@@ -217,7 +217,7 @@
                 id="filterAttributeName"
                 style="width: 25em;">
           <option value=""></option>
-          <option ng-repeat="attributeName in layout.transactionAttributes"
+          <option ng-repeat="attributeName in traceAttributeNames"
                   value="{{attributeName}}"
                   ng-selected="attributeName === filter.attributeName">
             {{attributeName}}

@@ -723,10 +723,10 @@ public class WeaverTest {
     public void shouldStillCallOnAfterOfHigherPriorityPointcut() throws Exception {
         // given
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
-        Advice advice1 = new AdviceBuilder(BasicAdvice.class, false).build();
-        Advice advice3 = new AdviceBuilder(BindThrowableAdvice.class, false).build();
-        Advice advice2 = new AdviceBuilder(ThrowInOnBeforeAdvice.class, false).build();
-        Advice advice4 = new AdviceBuilder(BasicLowPriorityAdvice.class, false).build();
+        Advice advice1 = new AdviceBuilder(BasicAdvice.class).build();
+        Advice advice3 = new AdviceBuilder(BindThrowableAdvice.class).build();
+        Advice advice2 = new AdviceBuilder(ThrowInOnBeforeAdvice.class).build();
+        Advice advice4 = new AdviceBuilder(BasicLowPriorityAdvice.class).build();
         loader.setAdvisors(ImmutableList.of(advice1, advice2, advice3, advice4));
         loader.setWeavingTimerService(NopWeavingTimerService.INSTANCE);
         // SomeAspectThreadLocals is passed as bridgeable so that the static thread locals will be
@@ -1369,7 +1369,7 @@ public class WeaverTest {
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         if (adviceOrShimOrMixinClass.isAnnotationPresent(Pointcut.class)) {
             loader.setAdvisors(
-                    ImmutableList.of(new AdviceBuilder(adviceOrShimOrMixinClass, false).build()));
+                    ImmutableList.of(new AdviceBuilder(adviceOrShimOrMixinClass).build()));
         }
         Mixin mixin = adviceOrShimOrMixinClass.getAnnotation(Mixin.class);
         if (mixin != null) {

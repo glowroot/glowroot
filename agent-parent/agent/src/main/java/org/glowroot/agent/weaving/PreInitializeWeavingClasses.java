@@ -328,6 +328,8 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.hash.AbstractByteHasher");
         types.add("com.google.common.hash.AbstractHasher");
         types.add("com.google.common.hash.AbstractStreamingHashFunction");
+        types.add("com.google.common.hash.HashCode");
+        types.add("com.google.common.hash.HashCode$BytesHashCode");
         types.add("com.google.common.hash.Hasher");
         types.add("com.google.common.hash.HashFunction");
         types.add("com.google.common.hash.Hashing");

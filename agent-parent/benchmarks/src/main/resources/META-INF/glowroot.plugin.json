@@ -1,9 +1,6 @@
 {
   "name": "Microbenchmarks Plugin",
   "id": "glowroot-microbenchmarks",
-  "transactionTypes": [
-    "Microbenchmark"
-  ],
   "capturePoints": [
     {
       "className": "org.glowroot.microbenchmarks.core.support.TransactionWorthy",

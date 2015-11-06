@@ -96,6 +96,10 @@ public class Containers {
         return create(baseDir, false);
     }
 
+    public static boolean useJavaagent() {
+        return harness == Harness.JAVAAGENT;
+    }
+
     private static Container create(@Nullable File baseDir, boolean shared) throws Exception {
         switch (harness) {
             case JAVAAGENT:

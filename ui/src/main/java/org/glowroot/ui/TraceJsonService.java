@@ -33,9 +33,9 @@ class TraceJsonService {
     @GET("/backend/trace/header")
     String getHeader(String queryString) throws Exception {
         HeaderRequest request = QueryStrings.decode(queryString, HeaderRequest.class);
-        String headerJson = traceCommonService.getHeaderJson(request.server(), request.traceId());
+        String headerJson = traceCommonService.getHeaderJson(request.serverId(), request.traceId());
         if (headerJson == null) {
-            logger.debug("no trace found for server '{}' and trace id '{}'", request.server(),
+            logger.debug("no trace found for server id '{}' and trace id '{}'", request.serverId(),
                     request.traceId());
             return "{\"expired\":true}";
         } else {
@@ -45,7 +45,7 @@ class TraceJsonService {
 
     @Value.Immutable
     interface HeaderRequest {
-        String server();
+        String serverId();
         String traceId();
     }
 }

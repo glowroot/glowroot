@@ -23,42 +23,35 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
-import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface LiveTraceRepository {
 
     @Nullable
-    Trace.Header getHeader(String server, String traceId) throws IOException;
+    Trace.Header getHeader(String serverId, String traceId) throws IOException;
 
-    List<Trace.Entry> getEntries(String server, String traceId) throws IOException;
-
-    @Nullable
-    ProfileTree getProfileTree(String server, String traceId) throws IOException;
+    List<Trace.Entry> getEntries(String serverId, String traceId) throws IOException;
 
     @Nullable
-    Trace getFullTrace(String server, String traceId) throws IOException;
+    ProfileTree getProfileTree(String serverId, String traceId) throws IOException;
 
-    int getMatchingTraceCount(String server, String transactionType,
+    @Nullable
+    Trace getFullTrace(String serverId, String traceId) throws IOException;
+
+    int getMatchingTraceCount(String serverId, String transactionType,
             @Nullable String transactionName);
 
-    List<TracePoint> getMatchingActiveTracePoints(String server, long captureTime, long captureTick,
+    List<TracePoint> getMatchingActiveTracePoints(String serverId, long captureTime,
+            long captureTick, TracePointQuery query);
+
+    List<TracePoint> getMatchingPendingPoints(String serverId, long captureTime,
             TracePointQuery query);
-
-    List<TracePoint> getMatchingPendingPoints(String server, long captureTime,
-            TracePointQuery query);
-
-    @OnlyUsedByTests
-    int getActiveTransactionCount(String server);
-
-    @OnlyUsedByTests
-    int getPendingCompleteTransactionCount(String server);
 
     @Value.Immutable
     public abstract static class TracePointQuery {
 
-        public abstract String serverGroup();
+        public abstract String serverRollup();
         public abstract long from();
         public abstract long to();
         public abstract long durationNanosLow();
@@ -91,7 +84,7 @@ public interface LiveTraceRepository {
 
     @Value.Immutable
     public interface TracePoint {
-        String server();
+        String serverId();
         String traceId();
         long captureTime();
         long durationNanos();
@@ -105,51 +98,41 @@ public interface LiveTraceRepository {
     public class LiveTraceRepositoryNop implements LiveTraceRepository {
 
         @Override
-        public @Nullable Trace.Header getHeader(String server, String traceId) {
+        public @Nullable Trace.Header getHeader(String serverId, String traceId) {
             return null;
         }
 
         @Override
-        public List<Trace.Entry> getEntries(String server, String traceId) {
+        public List<Trace.Entry> getEntries(String serverId, String traceId) {
             return ImmutableList.of();
         }
 
         @Override
-        public @Nullable ProfileTree getProfileTree(String server, String traceId) {
+        public @Nullable ProfileTree getProfileTree(String serverId, String traceId) {
             return null;
         }
 
         @Override
-        public @Nullable Trace getFullTrace(String server, String traceId) {
+        public @Nullable Trace getFullTrace(String serverId, String traceId) {
             return null;
         }
 
         @Override
-        public int getMatchingTraceCount(String server, String transactionType,
+        public int getMatchingTraceCount(String serverId, String transactionType,
                 @Nullable String transactionName) {
             return 0;
         }
 
         @Override
-        public List<TracePoint> getMatchingActiveTracePoints(String server, long captureTime,
+        public List<TracePoint> getMatchingActiveTracePoints(String serverId, long captureTime,
                 long captureTick, TracePointQuery query) {
             return ImmutableList.of();
         }
 
         @Override
-        public List<TracePoint> getMatchingPendingPoints(String server, long captureTime,
+        public List<TracePoint> getMatchingPendingPoints(String serverId, long captureTime,
                 TracePointQuery query) {
             return ImmutableList.of();
-        }
-
-        @Override
-        public int getActiveTransactionCount(String server) {
-            return 0;
-        }
-
-        @Override
-        public int getPendingCompleteTransactionCount(String server) {
-            return 0;
         }
     }
 }

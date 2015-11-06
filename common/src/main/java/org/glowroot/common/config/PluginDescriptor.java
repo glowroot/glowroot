@@ -24,8 +24,6 @@ public interface PluginDescriptor {
 
     String name();
     String id();
-    ImmutableList<String> transactionTypes();
-    ImmutableList<String> transactionAttributes();
     ImmutableList<PropertyDescriptor> properties();
     @JsonProperty("instrumentation")
     ImmutableList<InstrumentationConfig> instrumentationConfigs();

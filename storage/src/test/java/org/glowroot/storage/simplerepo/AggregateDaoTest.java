@@ -62,7 +62,7 @@ public class AggregateDaoTest {
 
     @Before
     public void beforeEachTest() throws Exception {
-        dataSource = new DataSource();
+        dataSource = DataSource.createH2InMemory();
         Schema schema = dataSource.getSchema();
         if (schema.tableExists("overall_point")) {
             dataSource.execute("drop table overall_point");
@@ -84,7 +84,7 @@ public class AggregateDaoTest {
                 ImmutableRollupConfig.of(900000000, 8 * 3600000));
         when(configRepository.getRollupConfigs()).thenReturn(rollupConfigs);
         aggregateDao = new AggregateDao(dataSource, ImmutableList.<CappedDatabase>of(),
-                configRepository, Clock.systemClock());
+                configRepository, mock(TransactionTypeDao.class), Clock.systemClock());
     }
 
     @After
@@ -102,7 +102,7 @@ public class AggregateDaoTest {
         List<OverviewAggregate> overallAggregates =
                 aggregateDao.readOverallOverviewAggregates(SERVER_NAME, "a type", 0, 100000, 0);
         TransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
-                .serverGroup(SERVER_NAME)
+                .serverRollup(SERVER_NAME)
                 .transactionType("a type")
                 .from(0)
                 .to(100000)

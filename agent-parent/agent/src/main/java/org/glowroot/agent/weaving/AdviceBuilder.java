@@ -100,10 +100,10 @@ public class AdviceBuilder {
     private boolean hasOnThrowAdvice;
     private boolean hasOnAfterAdvice;
 
-    public AdviceBuilder(Class<?> adviceClass, boolean reweavable) {
+    public AdviceBuilder(Class<?> adviceClass) {
         this.adviceClass = adviceClass;
         this.lazyAdviceClass = null;
-        builder.reweavable(reweavable);
+        builder.reweavable(false);
     }
 
     public AdviceBuilder(LazyDefinedClass lazyAdviceClass, boolean reweavable) {

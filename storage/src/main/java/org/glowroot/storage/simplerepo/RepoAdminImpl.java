@@ -15,7 +15,6 @@
  */
 package org.glowroot.storage.simplerepo;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.glowroot.storage.repo.ConfigRepository;
@@ -44,7 +43,7 @@ class RepoAdminImpl implements RepoAdmin {
     }
 
     @Override
-    public void resizeIfNecessary() throws IOException {
+    public void resizeIfNecessary() throws Exception {
         // resize() doesn't do anything if the new and old value are the same
         for (int i = 0; i < rollupCappedDatabases.size(); i++) {
             rollupCappedDatabases.get(i)

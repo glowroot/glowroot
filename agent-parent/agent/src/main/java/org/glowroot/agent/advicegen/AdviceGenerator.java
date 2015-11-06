@@ -80,7 +80,7 @@ public class AdviceGenerator {
     private final @Nullable String methodMetaInternalName;
 
     public static ImmutableMap<Advice, LazyDefinedClass> createAdvisors(
-            List<InstrumentationConfig> configs, @Nullable String pluginId) {
+            List<InstrumentationConfig> configs, @Nullable String pluginId, boolean reweavable) {
         Map<Advice, LazyDefinedClass> advisors = Maps.newHashMap();
         for (InstrumentationConfig config : configs) {
             if (!config.validationErrors().isEmpty()) {
@@ -88,7 +88,6 @@ public class AdviceGenerator {
             }
             try {
                 LazyDefinedClass lazyAdviceClass = new AdviceGenerator(config, pluginId).generate();
-                boolean reweavable = pluginId == null;
                 Advice advice = new AdviceBuilder(lazyAdviceClass, reweavable).build();
                 advisors.put(advice, lazyAdviceClass);
             } catch (Exception e) {
@@ -403,7 +402,7 @@ public class AdviceGenerator {
                             + "Lorg/glowroot/agent/plugin/api/transaction/TraceEntry;",
                     true);
         }
-        addCodeForOptionalTraceAttributes(mv);
+        addCodeForOptionalTransactionAttributes(mv);
         mv.visitInsn(ARETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
@@ -423,7 +422,7 @@ public class AdviceGenerator {
                 "(Lorg/glowroot/agent/plugin/api/transaction/TimerName;)"
                         + "Lorg/glowroot/agent/plugin/api/transaction/Timer;",
                 true);
-        addCodeForOptionalTraceAttributes(mv);
+        addCodeForOptionalTransactionAttributes(mv);
         mv.visitInsn(ARETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
@@ -432,7 +431,7 @@ public class AdviceGenerator {
     private void addOnBeforeMethodOther(ClassWriter cw) {
         MethodVisitor mv = visitOnBeforeMethod(cw, "V");
         mv.visitCode();
-        addCodeForOptionalTraceAttributes(mv);
+        addCodeForOptionalTransactionAttributes(mv);
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
@@ -461,7 +460,7 @@ public class AdviceGenerator {
         return mv;
     }
 
-    private void addCodeForOptionalTraceAttributes(MethodVisitor mv) {
+    private void addCodeForOptionalTransactionAttributes(MethodVisitor mv) {
         if (!config.transactionType().isEmpty() && !config.isTransaction()) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "transactionService",
                     "Lorg/glowroot/agent/plugin/api/transaction/TransactionService;");

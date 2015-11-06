@@ -67,8 +67,6 @@ public class AlertingServiceTest {
                 .putAdditionalProperties("b", "y")
                 .build();
         when(configRepository.getSmtpConfig()).thenReturn(smtpConfig);
-        when(configRepository.getAllTransactionTypes(SERVER_NAME))
-                .thenReturn(ImmutableList.of("tt", "uu"));
     }
 
     @Test

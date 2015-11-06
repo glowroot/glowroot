@@ -33,27 +33,31 @@ public interface LiveJvmService {
 
     Map<String, MBeanTreeInnerNode> getMBeanTree(MBeanTreeRequest request) throws Exception;
 
-    Map<String, /*@Nullable*/Object> getMBeanSortedAttributeMap(String server, String objectName)
+    Map<String, /*@Nullable*/Object> getMBeanSortedAttributeMap(String serverId, String objectName)
             throws Exception;
 
-    List<String> getMatchingMBeanObjectNames(String server, String partialMBeanObjectName,
+    List<String> getMatchingMBeanObjectNames(String serverId, String partialMBeanObjectName,
             int limit) throws InterruptedException;
 
-    MBeanMeta getMBeanMeta(String server, String mbeanObjectName) throws Exception;
+    MBeanMeta getMBeanMeta(String serverId, String mbeanObjectName) throws Exception;
 
-    String getHeapDumpDefaultDirectory(String server);
+    ProcessInfo getProcessInfo(String serverId);
 
-    long getAvailableDiskSpace(String server, String directory) throws IOException;
+    AllThreads getAllThreads();
 
-    HeapFile dumpHeap(String server, String directory) throws Exception;
+    String getHeapDumpDefaultDirectory(String serverId);
 
-    ProcessInfo getProcessInfo(String server);
+    long getAvailableDiskSpace(String serverId, String directory) throws IOException;
 
-    Capabilities getCapabilities(String server);
+    HeapFile dumpHeap(String serverId, String directory) throws Exception;
+
+    void gc();
+
+    Capabilities getCapabilities(String serverId);
 
     @Value.Immutable
     interface MBeanTreeRequest {
-        String server();
+        String serverId();
         List<String> expanded();
     }
 
@@ -153,6 +157,33 @@ public interface LiveJvmService {
         boolean unmatched();
         boolean unavailable();
         List<String> attributeNames();
+    }
+
+    // TODO improve AllThreads/OneThread class names
+    @Value.Immutable
+    public interface AllThreads {
+        List<OneThread> matchedThreads();
+        List<OneThread> unmatchedThreads();
+        @Nullable
+        OneThread currentThread();
+    }
+
+    @Value.Immutable
+    public interface OneThread {
+        String name();
+        String state();
+        @Nullable
+        String lockName();
+        List<String> stackTraceElements();
+
+        @Nullable
+        String transactionType();
+        @Nullable
+        String transactionName();
+        @Nullable
+        Long transactionTotalNanos();
+        @Nullable
+        String traceId();
     }
 
     @Value.Immutable

@@ -27,7 +27,6 @@ import org.immutables.builder.Builder;
 import org.glowroot.common.config.PluginDescriptor;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.live.LiveJvmService;
-import org.glowroot.common.live.LiveThreadDumpService;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.Clock;
@@ -37,6 +36,7 @@ import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.RepoAdmin;
 import org.glowroot.storage.repo.TraceRepository;
+import org.glowroot.storage.repo.TransactionTypeRepository;
 import org.glowroot.storage.util.MailService;
 
 public class UiModule {
@@ -45,26 +45,27 @@ public class UiModule {
 
     @Builder.Factory
     public static UiModule createUiModule(
+            boolean central,
             Ticker ticker,
             Clock clock,
-            File baseDir,
-            LiveJvmService liveJvmService,
+            @Nullable File logDir,
+            @Nullable LiveJvmService liveJvmService,
             ConfigRepository configRepository,
+            TransactionTypeRepository transactionTypeRepository,
             TraceRepository traceRepository,
             AggregateRepository aggregateRepository,
             GaugeValueRepository gaugeValueRepository,
             RepoAdmin repoAdmin,
             LiveTraceRepository liveTraceRepository,
-            LiveThreadDumpService liveThreadDumpService,
             LiveAggregateRepository liveAggregateRepository,
-            LiveWeavingService liveWeavingService,
+            @Nullable LiveWeavingService liveWeavingService,
             boolean viewerMode,
             String bindAddress,
             String version,
-            List<PluginDescriptor> pluginDescriptors) { // TODO UI should not depend on this
+            List<PluginDescriptor> pluginDescriptors) throws Exception {
 
-        LayoutService layoutService =
-                new LayoutService(version, configRepository, pluginDescriptors);
+        LayoutService layoutService = new LayoutService(central, version, configRepository,
+                transactionTypeRepository, liveAggregateRepository);
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(configRepository, clock, layoutService);
         IndexHtmlHttpService indexHtmlHttpService =
@@ -85,32 +86,40 @@ public class UiModule {
                 new TraceDetailHttpService(traceCommonService);
         TraceExportHttpService traceExportHttpService =
                 new TraceExportHttpService(traceCommonService, version);
-        GlowrootLogHttpService glowrootLogHttpService = new GlowrootLogHttpService(baseDir);
+        GlowrootLogHttpService glowrootLogHttpService;
+        if (logDir == null) {
+            glowrootLogHttpService = null;
+        } else {
+            glowrootLogHttpService = new GlowrootLogHttpService(logDir);
+        }
         ErrorCommonService errorCommonService = new ErrorCommonService(aggregateRepository,
                 liveAggregateRepository, configRepository.getRollupConfigs());
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
                 traceRepository, aggregateRepository, clock);
-        JvmJsonService jvmJsonService = new JvmJsonService(gaugeValueRepository, configRepository,
-                liveJvmService, liveThreadDumpService, clock);
         ConfigJsonService configJsonService = new ConfigJsonService(configRepository, repoAdmin,
                 pluginDescriptors, httpSessionManager, new MailService(), liveWeavingService);
-        InstrumentationJsonService instrumentationJsonService =
-                new InstrumentationJsonService(configRepository, liveWeavingService);
-        GaugeJsonService gaugeJsonService = new GaugeJsonService(configRepository, liveJvmService);
-        AlertJsonService alertJsonService = new AlertJsonService(configRepository);
+        GaugeValueJsonService gaugeValueJsonService =
+                new GaugeValueJsonService(gaugeValueRepository, configRepository, clock);
+        AlertConfigJsonService alertJsonService = new AlertConfigJsonService(configRepository);
         AdminJsonService adminJsonService = new AdminJsonService(aggregateRepository,
-                traceRepository, gaugeValueRepository, liveAggregateRepository, configRepository,
-                liveWeavingService, liveTraceRepository, repoAdmin);
+                traceRepository, gaugeValueRepository, liveAggregateRepository,
+                liveWeavingService, repoAdmin);
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(transactionJsonService);
         jsonServices.add(tracePointJsonService);
         jsonServices.add(traceJsonService);
         jsonServices.add(errorJsonService);
-        jsonServices.add(jvmJsonService);
         jsonServices.add(configJsonService);
-        jsonServices.add(instrumentationJsonService);
-        jsonServices.add(gaugeJsonService);
+        jsonServices.add(gaugeValueJsonService);
+        if (liveJvmService != null) {
+            jsonServices.add(new JvmJsonService(liveJvmService));
+            jsonServices.add(new GaugeConfigJsonService(configRepository, liveJvmService));
+        }
+        if (liveWeavingService != null) {
+            jsonServices.add(
+                    new InstrumentationConfigJsonService(configRepository, liveWeavingService));
+        }
         jsonServices.add(alertJsonService);
         jsonServices.add(adminJsonService);
 

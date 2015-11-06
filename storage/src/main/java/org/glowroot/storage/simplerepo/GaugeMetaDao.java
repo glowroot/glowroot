@@ -21,8 +21,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
@@ -38,70 +36,71 @@ import org.glowroot.storage.simplerepo.util.Schema.Index;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static java.util.concurrent.TimeUnit.HOURS;
 
 class GaugeMetaDao {
 
-    private static final ImmutableList<Column> gaugeColumns = ImmutableList.<Column>of(
+    private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
             ImmutableColumn.of("gauge_id", ColumnType.AUTO_IDENTITY),
-            ImmutableColumn.of("server_group", ColumnType.VARCHAR),
-            ImmutableColumn.of("gauge_name", ColumnType.VARCHAR));
+            ImmutableColumn.of("server_rollup", ColumnType.VARCHAR),
+            ImmutableColumn.of("gauge_name", ColumnType.VARCHAR),
+            ImmutableColumn.of("last_capture_time", ColumnType.BIGINT));
 
-    private static final ImmutableList<Index> gaugeIndexes = ImmutableList.<Index>of(
-            ImmutableIndex.of("gauge_meta_idx", ImmutableList.of("server_group", "gauge_name")));
-
-    // expire after 1 hour to avoid retaining deleted gauge configs indefinitely
-    private final Cache<GaugeKey, Long> gaugeIds =
-            CacheBuilder.newBuilder().expireAfterAccess(1, HOURS).build();
+    // important for this to be unique index to prevent race condition in clustered central
+    private static final ImmutableList<Index> indexes = ImmutableList.<Index>of(
+            ImmutableIndex.builder()
+                    .name("gauge_meta_idx")
+                    .addColumns("server_rollup", "gauge_name")
+                    .unique(true)
+                    .build());
 
     private final DataSource dataSource;
-
-    private final Object lock = new Object();
 
     GaugeMetaDao(DataSource dataSource) throws Exception {
         this.dataSource = dataSource;
         Schema schema = dataSource.getSchema();
-        schema.syncTable("gauge_meta", gaugeColumns);
-        schema.syncIndexes("gauge_meta", gaugeIndexes);
+        schema.syncTable("gauge_meta", columns);
+        schema.syncIndexes("gauge_meta", indexes);
     }
 
-    long getOrCreateGaugeId(String serverGroup, String gaugeName) throws Exception {
-        GaugeKey gaugeKey = ImmutableGaugeKey.of(serverGroup, gaugeName);
-        synchronized (lock) {
-            Long gaugeId = gaugeIds.getIfPresent(gaugeKey);
-            if (gaugeId != null) {
-                return gaugeId;
-            }
-            gaugeId = readGaugeId(gaugeKey);
-            if (gaugeId != null) {
-                return gaugeId;
-            }
-            dataSource.update("insert into gauge_meta (server_group, gauge_name) values (?, ?)",
-                    serverGroup, gaugeName);
-            gaugeId = readGaugeId(gaugeKey);
-            if (gaugeId == null) {
-                // it's only possible for this to occur if the data source closing flag has just
-                // been set which causes the readGaugeId() to read empty list and return null
-                return -1;
-            }
-            gaugeIds.put(gaugeKey, gaugeId);
+    long updateLastCaptureTime(String serverRollup, String gaugeName, long captureTime)
+            throws Exception {
+        Long gaugeId = getGaugeId(serverRollup, gaugeName);
+        if (gaugeId != null) {
+            dataSource.update("update gauge_meta set last_capture_time = ? where server_rollup = ?"
+                    + " and gauge_name = ?", captureTime, serverRollup, gaugeName);
             return gaugeId;
         }
+        try {
+            dataSource.update("insert into gauge_meta (server_rollup, gauge_name,"
+                    + "last_capture_time) values (?, ?, ?)", serverRollup, gaugeName,
+                    captureTime);
+        } catch (SQLException e) {
+            gaugeId = getGaugeId(serverRollup, gaugeName);
+            if (gaugeId != null) {
+                // unique constraint violation above, race condition in central cluster, ok
+                return gaugeId;
+            }
+            throw e;
+        }
+        gaugeId = getGaugeId(serverRollup, gaugeName);
+        if (gaugeId == null) {
+            // data source closing --or--
+            // deleteAll() was called after insert and before select above
+            return -1;
+        }
+        return gaugeId;
     }
 
     @Nullable
-    Long getGaugeId(String serverGroup, String gaugeName) throws Exception {
-        GaugeKey gaugeKey = ImmutableGaugeKey.of(serverGroup, gaugeName);
-        Long gaugeId = gaugeIds.getIfPresent(gaugeKey);
-        if (gaugeId != null) {
-            return gaugeId;
-        }
-        gaugeId = readGaugeId(gaugeKey);
-        if (gaugeId == null) {
+    Long getGaugeId(String serverRollup, String gaugeName) throws Exception {
+        List<Long> gaugeIds = dataSource.query(
+                "select gauge_id from gauge_meta where server_rollup = ? and gauge_name = ?",
+                new GaugeIdRowMapper(), serverRollup, gaugeName);
+        if (gaugeIds.isEmpty()) {
             return null;
         }
-        gaugeIds.put(gaugeKey, gaugeId);
-        return gaugeId;
+        checkState(gaugeIds.size() == 1);
+        return gaugeIds.get(0);
     }
 
     List<String> readAllGaugeNames() throws Exception {
@@ -114,28 +113,19 @@ class GaugeMetaDao {
         });
     }
 
-    void deleteAll(String serverGroup) throws Exception {
-        synchronized (lock) {
-            dataSource.deleteAll("gauge_meta", "server_group", serverGroup);
-            gaugeIds.invalidateAll();
-        }
+    void deleteAll(String serverRollup) throws Exception {
+        dataSource.update("delete from gauge_meta where server_rollup = ?", serverRollup);
     }
 
-    private @Nullable Long readGaugeId(GaugeKey gaugeKey) throws Exception {
-        List<Long> gaugeIds = dataSource.query(
-                "select gauge_id from gauge_meta where server_group = ? and gauge_name = ?",
-                new GaugeIdRowMapper(), gaugeKey.serverGroup(), gaugeKey.gaugeName());
-        if (gaugeIds.isEmpty()) {
-            return null;
-        }
-        checkState(gaugeIds.size() == 1);
-        return gaugeIds.get(0);
+    void deleteBefore(String serverRollup, long captureTime) throws Exception {
+        dataSource.update("delete from gauge_meta where server_rollup = ?"
+                + " and last_capture_time < ?", serverRollup, captureTime);
     }
 
     @Value.Immutable
     @Styles.AllParameters
     interface GaugeKey {
-        String serverGroup();
+        String serverRollup();
         String gaugeName();
     }
 

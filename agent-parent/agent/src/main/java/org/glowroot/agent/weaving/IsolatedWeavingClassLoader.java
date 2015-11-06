@@ -204,13 +204,24 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     }
 
     private static boolean isGlowrootAgentClass(String className) {
+        if (!className.startsWith("org.glowroot")) {
+            // optimization for common case
+            return false;
+        }
         return className.startsWith("org.glowroot.common.")
                 || className.startsWith("org.glowroot.wire.api.")
+                || className.startsWith("org.glowroot.agent.api.")
                 || className.startsWith("org.glowroot.agent.plugin.api.")
-                || (className.startsWith("org.glowroot.agent.")
-                        && !className.startsWith("org.glowroot.agent.plugin.")
-                        && !className.startsWith("org.glowroot.agent.tests.")
-                        && !className.startsWith("org.glowroot.agent.it."));
+                || className.startsWith("org.glowroot.agent.advicegen.")
+                || className.startsWith("org.glowroot.agent.config.")
+                || className.startsWith("org.glowroot.agent.init.fat.")
+                || className.startsWith("org.glowroot.agent.init.thin.")
+                || className.startsWith("org.glowroot.agent.impl.")
+                || className.startsWith("org.glowroot.agent.jul.")
+                || className.startsWith("org.glowroot.agent.live.")
+                || className.startsWith("org.glowroot.agent.model.")
+                || className.startsWith("org.glowroot.agent.util.")
+                || className.startsWith("org.glowroot.agent.weaving.");
     }
 
     public static class Builder {

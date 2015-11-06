@@ -47,7 +47,6 @@ glowroot.controller('ConfigPluginCtrl', [
 
     $scope.save = function (deferred) {
       var postData = {
-        server: $scope.server,
         pluginId: $stateParams.id,
         enabled: $scope.config.enabled,
         properties: {},
@@ -66,7 +65,7 @@ glowroot.controller('ConfigPluginCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/plugins?server=' + $scope.server + '&plugin-id=' + $stateParams.id)
+    $http.get('backend/config/plugins?plugin-id=' + $stateParams.id)
         .success(function (data) {
           onNewData(data);
         })

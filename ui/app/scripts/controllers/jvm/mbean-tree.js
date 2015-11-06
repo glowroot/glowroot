@@ -50,7 +50,7 @@ glowroot.controller('JvmMBeanTreeCtrl', [
       node.loading = true;
       node.expanded = true;
       var queryData = {
-        server: $scope.server,
+        serverId: $scope.serverId,
         objectName: node.objectName
       };
       $http.get('backend/jvm/mbean-attribute-map' + queryStrings.encodeObject(queryData))
@@ -74,7 +74,7 @@ glowroot.controller('JvmMBeanTreeCtrl', [
 
     $scope.refresh = function (deferred) {
       var queryData = {
-        server: $scope.server,
+        serverId: $scope.serverId,
         expanded: expandedObjectNames
       };
       $http.get('backend/jvm/mbean-tree' + queryStrings.encodeObject(queryData))

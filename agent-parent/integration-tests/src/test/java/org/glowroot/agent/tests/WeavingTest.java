@@ -37,7 +37,7 @@ public class WeavingTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.getSharedJavaagentContainer();
+        container = Containers.getSharedContainer();
     }
 
     @AfterClass

@@ -43,9 +43,10 @@ glowroot.controller('TransactionProfileCtrl', [
 
     $scope.flameGraphQueryString = function () {
       var query = {};
-      if ($scope.transactionType !== $scope.layout.defaultTransactionType) {
-        query['transaction-type'] = $scope.transactionType;
+      if ($scope.layout.central) {
+        query['server-rollup'] = $scope.serverRollup;
       }
+      query['transaction-type'] = $scope.transactionType;
       query['transaction-name'] = $scope.transactionName;
       if ($scope.last) {
         if ($scope.last !== 4 * 60 * 60 * 1000) {
@@ -102,7 +103,7 @@ glowroot.controller('TransactionProfileCtrl', [
         return;
       }
       var query = {
-        serverGroup: $scope.serverGroup,
+        serverRollup: $scope.serverRollup,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
         from: $scope.chartFrom,

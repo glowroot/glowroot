@@ -42,7 +42,6 @@ import org.glowroot.common.live.ImmutableTracePoint;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.StringComparator;
 import org.glowroot.common.util.Clock;
-import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -66,7 +65,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     // checks active traces first, then pending traces (and finally caller should check stored
     // traces) to make sure that the trace is not missed if it is in transition between these states
     @Override
-    public @Nullable Trace.Header getHeader(String server, String traceId) throws IOException {
+    public @Nullable Trace.Header getHeader(String serverId, String traceId) throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
@@ -77,7 +76,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public List<Trace.Entry> getEntries(String server, String traceId) {
+    public List<Trace.Entry> getEntries(String serverId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
@@ -88,7 +87,8 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable ProfileTree getProfileTree(String server, String traceId) throws IOException {
+    public @Nullable ProfileTree getProfileTree(String serverId, String traceId)
+            throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
@@ -99,7 +99,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Trace getFullTrace(String server, String traceId) throws IOException {
+    public @Nullable Trace getFullTrace(String serverId, String traceId) throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
@@ -110,7 +110,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public int getMatchingTraceCount(String server, String transactionType,
+    public int getMatchingTraceCount(String serverId, String transactionType,
             @Nullable String transactionName) {
         // include active traces, this is mostly for the case where there is just a single very
         // long running active trace and it would be misleading to display Traces (0) on the tab
@@ -126,14 +126,14 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public List<TracePoint> getMatchingActiveTracePoints(String server, long captureTime,
+    public List<TracePoint> getMatchingActiveTracePoints(String serverId, long captureTime,
             long captureTick, TracePointQuery query) {
         List<TracePoint> activeTracePoints = Lists.newArrayList();
         for (Transaction transaction : transactionRegistry.getTransactions()) {
             long startTick = transaction.getStartTick();
             if (matches(transaction, query) && startTick < captureTick) {
                 activeTracePoints.add(ImmutableTracePoint.builder()
-                        .server(server)
+                        .serverId(serverId)
                         .traceId(transaction.getId())
                         .captureTime(captureTime)
                         .durationNanos(captureTick - startTick)
@@ -156,13 +156,13 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public List<TracePoint> getMatchingPendingPoints(String server, long captureTime,
+    public List<TracePoint> getMatchingPendingPoints(String serverId, long captureTime,
             TracePointQuery query) {
         List<TracePoint> points = Lists.newArrayList();
         for (Transaction transaction : transactionCollector.getPendingTransactions()) {
             if (matches(transaction, query)) {
                 points.add(ImmutableTracePoint.builder()
-                        .server(server)
+                        .serverId(serverId)
                         .traceId(transaction.getId())
                         .captureTime(captureTime)
                         .durationNanos(transaction.getDurationNanos())
@@ -171,18 +171,6 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
             }
         }
         return points;
-    }
-
-    @Override
-    @OnlyUsedByTests
-    public int getActiveTransactionCount(String server) {
-        return transactionRegistry.getTransactions().size();
-    }
-
-    @Override
-    @OnlyUsedByTests
-    public int getPendingCompleteTransactionCount(String server) {
-        return transactionCollector.getPendingTransactions().size();
     }
 
     @VisibleForTesting

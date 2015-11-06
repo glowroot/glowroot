@@ -15,8 +15,6 @@
  */
 package org.glowroot.storage.simplerepo;
 
-import java.sql.SQLException;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,7 +30,7 @@ public class TriggeredAlertDaoTest {
 
     @Before
     public void beforeEachTest() throws Exception {
-        dataSource = new DataSource();
+        dataSource = DataSource.createH2InMemory();
         if (dataSource.getSchema().tableExists("triggered_alert")) {
             dataSource.execute("drop table triggered_alert");
         }
@@ -40,7 +38,7 @@ public class TriggeredAlertDaoTest {
     }
 
     @After
-    public void afterEachTest() throws SQLException {
+    public void afterEachTest() throws Exception {
         dataSource.close();
     }
 

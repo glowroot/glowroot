@@ -63,7 +63,6 @@ public class ConfigService {
     private static final Logger logger = LoggerFactory.getLogger(ConfigService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    // 5 seconds
     private static final long GAUGE_COLLECTION_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.gaugeCollectionIntervalMillis", 5000);
 
@@ -106,7 +105,7 @@ public class ConfigService {
         configFile = new ConfigFile(new File(baseDir, "config.json"));
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
         TransactionConfig transactionConfig =
-                configFile.getNode("transaction", ImmutableTransactionConfig.class, mapper);
+                configFile.getNode("transactions", ImmutableTransactionConfig.class, mapper);
         if (transactionConfig == null) {
             this.transactionConfig = ImmutableTransactionConfig.builder().build();
         } else {
@@ -211,7 +210,7 @@ public class ConfigService {
     }
 
     public void updateTransactionConfig(TransactionConfig updatedConfig) throws IOException {
-        configFile.write("transaction", updatedConfig, mapper);
+        configFile.write("transactions", updatedConfig, mapper);
         transactionConfig = updatedConfig;
         notifyConfigListeners();
     }
@@ -305,7 +304,7 @@ public class ConfigService {
     private void writeAll() throws IOException {
         // linked hash map to preserve ordering when writing to config file
         Map<String, Object> configs = Maps.newLinkedHashMap();
-        configs.put("transaction", transactionConfig);
+        configs.put("transactions", transactionConfig);
         configs.put("userRecording", userRecordingConfig);
         configs.put("advanced", advancedConfig);
         configs.put("plugins", this.pluginConfigs);

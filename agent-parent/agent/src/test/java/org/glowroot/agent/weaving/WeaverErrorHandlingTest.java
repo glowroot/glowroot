@@ -117,7 +117,7 @@ public class WeaverErrorHandlingTest {
             Class<?> adviceClass, Class<?>... extraBridgeClasses) throws Exception {
 
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
-        loader.setAdvisors(ImmutableList.of(new AdviceBuilder(adviceClass, false).build()));
+        loader.setAdvisors(ImmutableList.of(new AdviceBuilder(adviceClass).build()));
         Mixin mixin = adviceClass.getAnnotation(Mixin.class);
         if (mixin != null) {
             loader.setMixinTypes(ImmutableList.of(MixinType.from(mixin, adviceClass)));

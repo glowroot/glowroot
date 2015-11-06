@@ -23,7 +23,6 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
-import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
 
@@ -55,11 +54,6 @@ public class LazyPlatformMBeanServer {
 
     public LazyPlatformMBeanServer(boolean jbossModules) {
         this.jbossModules = jbossModules;
-    }
-
-    public ObjectInstance getObjectInstance(ObjectName name) throws Exception {
-        ensureInit();
-        return mbeanServer.getObjectInstance(name);
     }
 
     public void invoke(ObjectName name, String operationName, Object[] params, String[] signature)

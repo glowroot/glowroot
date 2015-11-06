@@ -161,7 +161,7 @@ public abstract class InstrumentationConfig {
         hasher.putString(timerName(), Charsets.UTF_8);
         hasher.putString(enabledProperty(), Charsets.UTF_8);
         hasher.putString(traceEntryEnabledProperty(), Charsets.UTF_8);
-        return hasher.toString();
+        return hasher.hash().toString();
     }
 
     @JsonIgnore

@@ -53,7 +53,7 @@ glowroot.controller('JvmThreadDumpCtrl', [
       var modalTraceId = $location.search()['modal-trace-id'];
       if (modalTraceId) {
         $('#traceModal').data('location-query', 'modal-trace-id');
-        traceModal.displayModal($scope.server, modalTraceId);
+        traceModal.displayModal($scope.serverId, modalTraceId);
       } else {
         $('#traceModal').modal('hide');
       }
@@ -63,7 +63,7 @@ glowroot.controller('JvmThreadDumpCtrl', [
     onLocationChangeSuccess();
 
     $scope.refresh = function (deferred) {
-      $http.get('backend/jvm/thread-dump?server=' + $scope.server)
+      $http.get('backend/jvm/thread-dump?server-id=' + $scope.serverId)
           .success(function (data) {
             $scope.loaded = true;
             // $.trim() is needed because this template is sensitive to surrounding spaces

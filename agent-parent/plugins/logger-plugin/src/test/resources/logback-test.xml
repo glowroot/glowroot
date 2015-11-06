@@ -6,64 +6,16 @@
       <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
-  <appender name="DEVNULL" class="ch.qos.logback.core.ConsoleAppender">
-    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-      <level>OFF</level>
-    </filter>
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>target/glowroot.log</file>
+    <append>false</append>
     <encoder>
       <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
   <root level="warn">
-    <appender-ref ref="CONSOLE" />
+    <!-- unit tests do not log to console to avoid logging expected warnings and errors which can be
+      confusing to new users building glowroot from source -->
+    <appender-ref ref="FILE" />
   </root>
-  <!-- don't log the test log messages -->
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jTest$ShouldLog" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jTest$ShouldLogWithOneParameter" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jTest$ShouldLogWithThrowable" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jTest$ShouldLogWithNullThrowable" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jTest$ShouldLogWithOneParameterAndThrowable" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jTest$ShouldLogWithTwoParameters" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jTest$ShouldLogWithMoreThanTwoParameters" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jTest$ShouldLogWithParametersAndThrowable" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jMarkerTest$ShouldLog" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jMarkerTest$ShouldLogWithOneParameter" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jMarkerTest$ShouldLogWithThrowable" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jMarkerTest$ShouldLogWithNullThrowable" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jMarkerTest$ShouldLogWithOneParameterAndThrowable" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jMarkerTest$ShouldLogWithTwoParameters" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jMarkerTest$ShouldLogWithMoreThanTwoParameters" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
-  <logger name="org.glowroot.agent.plugin.logger.Slf4jMarkerTest$ShouldLogWithParametersAndThrowable" additivity="false">
-    <appender-ref ref="DEVNULL" />
-  </logger>
 </configuration>

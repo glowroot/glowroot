@@ -21,7 +21,7 @@ import org.junit.Test;
 import org.glowroot.common.config.ImmutableInstrumentationConfig;
 import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.InstrumentationConfig.CaptureKind;
-import org.glowroot.ui.InstrumentationJsonService.InstrumentationConfigOrdering;
+import org.glowroot.ui.InstrumentationConfigJsonService.InstrumentationConfigOrdering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

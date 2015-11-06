@@ -188,7 +188,7 @@ glowroot.controller('TransactionQueriesCtrl', [
 
     function refreshData() {
       var query = {
-        serverGroup: $scope.serverGroup,
+        serverRollup: $scope.serverRollup,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
         from: $scope.chartFrom,

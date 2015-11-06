@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package org_glowroot_wire_api_model;
+
+option java_package = "org.glowroot.wire.api.model";
+
+message LogEvent {
+
+  int64 timestamp = 1;
+  Level level = 2;
+  string logger_name = 3;
+  string formatted_message = 4;
+
+  enum Level {
+    NONE = 0;
+    TRACE = 1;
+    DEBUG = 2;
+    INFO = 3;
+    WARN = 4;
+    ERROR = 5;
+  }
+}

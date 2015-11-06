@@ -26,16 +26,13 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.AgentModule;
 import org.glowroot.agent.MainEntryPoint;
+import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Threads;
 import org.glowroot.agent.it.harness.grpc.Common.Void;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc.JavaagentService;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.AppUnderTestClassName;
-import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.ExpectedLogMessage;
-import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.LogCount;
-import org.glowroot.agent.util.SpyingLogbackFilter;
 
 public class JavaagentServiceImpl implements JavaagentService {
 
@@ -90,38 +87,6 @@ public class JavaagentServiceImpl implements JavaagentService {
             }
         }
         responseObserver.onNext(Void.getDefaultInstance());
-        responseObserver.onCompleted();
-    }
-
-    @Override
-    public void addExpectedLogMessage(ExpectedLogMessage request,
-            StreamObserver<Void> responseObserver) {
-        try {
-            SpyingLogbackFilter.addExpectedLogMessage(request.getLoggerName(),
-                    request.getPartialMessage());
-        } catch (Throwable t) {
-            logger.error(t.getMessage(), t);
-            responseObserver.onError(t);
-            return;
-        }
-        responseObserver.onNext(Void.getDefaultInstance());
-        responseObserver.onCompleted();
-    }
-
-    @Override
-    public void clearLogMessages(Void request, StreamObserver<LogCount> responseObserver) {
-        org.glowroot.agent.util.SpyingLogbackFilter.LogCount logCount;
-        try {
-            logCount = SpyingLogbackFilter.clearMessages();
-        } catch (Throwable t) {
-            logger.error(t.getMessage(), t);
-            responseObserver.onError(t);
-            return;
-        }
-        responseObserver.onNext(LogCount.newBuilder()
-                .setUnexpectedCount(logCount.unexpectedCount())
-                .setExpectedButNotLoggedCount(logCount.expectedButNotLoggedCount())
-                .build());
         responseObserver.onCompleted();
     }
 

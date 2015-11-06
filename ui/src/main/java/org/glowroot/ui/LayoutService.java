@@ -15,28 +15,28 @@
  */
 package org.glowroot.ui;
 
-import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
-
-import javax.annotation.Nullable;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
+import com.google.common.collect.Maps;
+import com.google.common.collect.SortedSetMultimap;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
-import org.glowroot.common.config.PluginDescriptor;
 import org.glowroot.common.config.Versions;
+import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.ConfigRepository.ConfigListener;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
+import org.glowroot.storage.repo.TransactionTypeRepository;
 import org.glowroot.storage.repo.config.UserInterfaceConfig;
 import org.glowroot.storage.repo.config.UserInterfaceConfig.AnonymousAccess;
 
@@ -44,48 +44,38 @@ import static java.util.concurrent.TimeUnit.HOURS;
 
 class LayoutService {
 
+    private static final String SERVER_ID = "";
+
     private static final JsonFactory jsonFactory = new JsonFactory();
     private static final ObjectMapper mapper = ObjectMappers.create();
 
+    private final boolean central;
     private final String version;
     private final ConfigRepository configRepository;
-    private final ImmutableList<PluginDescriptor> pluginDescriptors;
+    private final TransactionTypeRepository transactionTypeRepository;
+    private final LiveAggregateRepository liveAggregateRepository;
 
-    private volatile @Nullable Layout layout;
-
-    LayoutService(String version, ConfigRepository configRepository,
-            List<PluginDescriptor> pluginDescriptors) {
+    LayoutService(boolean central, String version, ConfigRepository configRepository,
+            TransactionTypeRepository transactionTypeRepository,
+            LiveAggregateRepository liveAggregateRepository) {
+        this.central = central;
         this.version = version;
         this.configRepository = configRepository;
-        this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
-        ConfigListener listener = new ConfigListener() {
-            @Override
-            public void onChange() {
-                layout = null;
-            }
-        };
-        configRepository.addListener(listener);
+        this.transactionTypeRepository = transactionTypeRepository;
+        this.liveAggregateRepository = liveAggregateRepository;
     }
 
-    String getLayout() throws IOException {
-        Layout localLayout = layout;
-        if (localLayout == null) {
-            localLayout = buildLayout(version, configRepository, pluginDescriptors);
-            layout = localLayout;
-        }
-        return mapper.writeValueAsString(localLayout);
+    String getLayout() throws Exception {
+        Layout layout = buildLayout();
+        return mapper.writeValueAsString(layout);
     }
 
-    String getLayoutVersion() {
-        Layout localLayout = layout;
-        if (localLayout == null) {
-            localLayout = buildLayout(version, configRepository, pluginDescriptors);
-            layout = localLayout;
-        }
-        return localLayout.version();
+    String getLayoutVersion() throws Exception {
+        Layout layout = buildLayout();
+        return layout.version();
     }
 
-    String getNeedsAuthenticationLayout() throws IOException {
+    String getNeedsAuthenticationLayout() throws Exception {
         UserInterfaceConfig userInterfaceConfig = configRepository.getUserInterfaceConfig();
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
@@ -99,73 +89,69 @@ class LayoutService {
         return sb.toString();
     }
 
-    private static Layout buildLayout(String version, ConfigRepository configRepository,
-            List<PluginDescriptor> pluginDescriptors) {
-
-        // FIXME
-        String server = "";
-
-        // use linked hash set to maintain ordering in case there is no default transaction type
-        List<String> transactionTypes =
-                Lists.newArrayList(configRepository.getAllTransactionTypes(server));
-        String defaultDisplayedTransactionType =
-                configRepository.getDefaultDisplayedTransactionType(server);
-        List<String> orderedTransactionTypes = Lists.newArrayList();
-        if (transactionTypes.isEmpty()) {
-            defaultDisplayedTransactionType = "NO TRANSACTION TYPES DEFINED";
-        } else {
-            if (!transactionTypes.contains(defaultDisplayedTransactionType)) {
-                defaultDisplayedTransactionType = transactionTypes.iterator().next();
-            }
-            transactionTypes.remove(defaultDisplayedTransactionType);
-        }
-        // add default transaction type first
-        orderedTransactionTypes.add(defaultDisplayedTransactionType);
-        // add the rest alphabetical
-        orderedTransactionTypes
-                .addAll(Ordering.from(String.CASE_INSENSITIVE_ORDER).sortedCopy(transactionTypes));
-        Set<String> transactionAttributes = Sets.newTreeSet();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            transactionAttributes.addAll(pluginDescriptor.transactionAttributes());
-        }
+    private Layout buildLayout() throws Exception {
         List<Long> rollupExpirationMillis = Lists.newArrayList();
         for (long hours : configRepository.getStorageConfig().rollupExpirationHours()) {
             rollupExpirationMillis.add(HOURS.toMillis(hours));
         }
         UserInterfaceConfig userInterfaceConfig = configRepository.getUserInterfaceConfig();
+
+        String defaultDisplayedTransactionType =
+                userInterfaceConfig.defaultDisplayedTransactionType();
+
+        // linked hash map to preserve ordering
+        Map<String, ServerRollupLayout> serverRollups = Maps.newLinkedHashMap();
+        SortedSetMultimap<String, String> transactionTypes =
+                transactionTypeRepository.readTransactionTypes();
+        if (!central) {
+            transactionTypes.putAll(SERVER_ID,
+                    liveAggregateRepository.getLiveTransactionTypes(SERVER_ID));
+        }
+        for (Entry<String, Collection<String>> entry : transactionTypes.asMap().entrySet()) {
+            serverRollups.put(entry.getKey(), ImmutableServerRollupLayout.builder()
+                    .addAllTransactionTypes(entry.getValue())
+                    .build());
+        }
+
         return ImmutableLayout.builder()
+                .central(central)
                 .footerMessage("Glowroot version " + version)
                 .adminPasswordEnabled(userInterfaceConfig.adminPasswordEnabled())
                 .readOnlyPasswordEnabled(userInterfaceConfig.readOnlyPasswordEnabled())
                 .anonymousAccess(userInterfaceConfig.anonymousAccess())
-                .addAllTransactionTypes(orderedTransactionTypes)
-                .defaultTransactionType(defaultDisplayedTransactionType)
-                .addAllDefaultPercentiles(userInterfaceConfig.defaultDisplayedPercentiles())
-                .addAllTransactionAttributes(transactionAttributes)
                 .addAllRollupConfigs(configRepository.getRollupConfigs())
                 .addAllRollupExpirationMillis(rollupExpirationMillis)
                 .gaugeCollectionIntervalMillis(configRepository.getGaugeCollectionIntervalMillis())
+                .defaultTransactionType(defaultDisplayedTransactionType)
+                .addAllDefaultPercentiles(userInterfaceConfig.defaultDisplayedPercentiles())
+                .serverRollups(serverRollups)
                 .build();
     }
 
     @Value.Immutable
     abstract static class Layout {
 
+        abstract boolean central();
         abstract String footerMessage();
         abstract boolean adminPasswordEnabled();
         abstract boolean readOnlyPasswordEnabled();
         abstract AnonymousAccess anonymousAccess();
-        abstract ImmutableList<String> transactionTypes();
-        abstract String defaultTransactionType();
-        abstract ImmutableList<Double> defaultPercentiles();
-        abstract ImmutableList<String> transactionAttributes();
         abstract ImmutableList<RollupConfig> rollupConfigs();
         abstract ImmutableList<Long> rollupExpirationMillis();
         abstract long gaugeCollectionIntervalMillis();
+
+        abstract String defaultTransactionType();
+        abstract ImmutableList<Double> defaultPercentiles();
+        abstract ImmutableMap<String, ServerRollupLayout> serverRollups();
 
         @Value.Derived
         public String version() {
             return Versions.getVersion(this);
         }
+    }
+
+    @Value.Immutable
+    interface ServerRollupLayout {
+        List<String> transactionTypes();
     }
 }

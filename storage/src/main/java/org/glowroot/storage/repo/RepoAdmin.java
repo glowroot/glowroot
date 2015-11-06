@@ -15,11 +15,9 @@
  */
 package org.glowroot.storage.repo;
 
-import java.io.IOException;
-
 public interface RepoAdmin {
 
     void defrag() throws Exception;
 
-    void resizeIfNecessary() throws IOException;
+    void resizeIfNecessary() throws Exception;
 }

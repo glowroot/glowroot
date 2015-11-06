@@ -28,20 +28,20 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.reflect.Reflection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.AgentModule;
-import org.glowroot.agent.GlowrootAgentInit;
-import org.glowroot.agent.GrpcServerWrapper;
 import org.glowroot.agent.MainEntryPoint;
 import org.glowroot.agent.impl.AdviceCache;
+import org.glowroot.agent.init.AgentModule;
+import org.glowroot.agent.init.GlowrootAgentInit;
+import org.glowroot.agent.init.GrpcServerWrapper;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.ConfigService;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TempDirs;
 import org.glowroot.agent.it.harness.model.ConfigUpdate.OptionalInt;
 import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
-import org.glowroot.agent.util.SpyingLogbackFilter;
-import org.glowroot.agent.util.SpyingLogbackFilter.LogCount;
 import org.glowroot.agent.weaving.Advice;
 import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -82,10 +82,8 @@ public class LocalContainer implements Container {
 
         int collectorPort = getAvailablePort();
         server = new GrpcServerWrapper(traceCollector, collectorPort);
-
         Map<String, String> properties = Maps.newHashMap();
         properties.put("glowroot.base.dir", this.baseDir.getAbsolutePath());
-        properties.put("glowroot.internal.logging.spy", "true");
         properties.put("glowroot.collector.host", "localhost");
         properties.put("glowroot.collector.port", Integer.toString(collectorPort));
         properties.putAll(extraProperties);
@@ -137,7 +135,7 @@ public class LocalContainer implements Container {
 
     @Override
     public void addExpectedLogMessage(String loggerName, String partialMessage) {
-        SpyingLogbackFilter.addExpectedLogMessage(loggerName, partialMessage);
+        traceCollector.addExpectedLogMessage(loggerName, partialMessage);
     }
 
     @Override
@@ -179,14 +177,7 @@ public class LocalContainer implements Container {
                 TransactionConfigUpdate.newBuilder()
                         .setSlowThresholdMillis(OptionalInt.newBuilder().setValue(0))
                         .build());
-        // check and reset log messages
-        LogCount logMessageCount = SpyingLogbackFilter.clearMessages();
-        if (logMessageCount.expectedButNotLoggedCount() > 0) {
-            throw new AssertionError("One or more expected messages were not logged");
-        }
-        if (logMessageCount.unexpectedCount() > 0) {
-            throw new AssertionError("One or more unexpected messages were logged");
-        }
+        traceCollector.checkAndResetLogMessages();
     }
 
     @Override
@@ -198,6 +189,11 @@ public class LocalContainer implements Container {
     public void close(boolean evenIfShared) throws Exception {
         if (shared && !evenIfShared) {
             // this is the shared container and will be closed at the end of the run
+            ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) LoggerFactory
+                    .getLogger(Logger.ROOT_LOGGER_NAME);
+            // detaching existing GrpcLogbackAppender so that it won't continue to pick up and
+            // report errors that are logged to this Container
+            rootLogger.detachAppender("org.glowroot.agent.init.GrpcLogbackAppender");
             return;
         }
         glowrootAgentInit.close();

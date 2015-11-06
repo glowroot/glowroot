@@ -34,6 +34,7 @@ import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -108,7 +109,7 @@ public class AggregatorTest {
 
         @Override
         public void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,
-                List<TransactionAggregate> transactionAggregates) throws Exception {
+                List<TransactionAggregate> transactionAggregates) {
             // only capture first non-zero value
             if (totalNanos == 0 && !overallAggregates.isEmpty()) {
                 totalNanos = overallAggregates.iterator().next().getAggregate().getTotalNanos();
@@ -116,9 +117,15 @@ public class AggregatorTest {
         }
 
         @Override
-        public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {}
+        public void collectGaugeValues(List<GaugeValue> gaugeValues) {}
 
         @Override
-        public void collectTrace(Trace trace) throws Exception {}
+        public void collectTrace(Trace trace) {}
+
+        @Override
+        public void log(LogEvent logEvent) {}
+
+        @Override
+        public void close() {}
     }
 }

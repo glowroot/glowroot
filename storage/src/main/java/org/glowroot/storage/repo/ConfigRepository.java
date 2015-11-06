@@ -30,7 +30,6 @@ import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.PluginConfig;
 import org.glowroot.common.config.TransactionConfig;
 import org.glowroot.common.config.UserRecordingConfig;
-import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Styles;
 import org.glowroot.storage.repo.config.AlertConfig;
 import org.glowroot.storage.repo.config.SmtpConfig;
@@ -39,80 +38,88 @@ import org.glowroot.storage.repo.config.UserInterfaceConfig;
 
 public interface ConfigRepository {
 
-    TransactionConfig getTransactionConfig(String server);
+    String UI_KEY = "ui";
+    String STORAGE_KEY = "storage";
+    String SMTP_KEY = "smtp";
+    String ALERTS_KEY = "alerts";
 
-    UserRecordingConfig getUserRecordingConfig(String server);
+    long ROLLUP_0_INTERVAL_MILLIS =
+            Long.getLong("glowroot.internal.rollup.0.intervalMillis", 60 * 1000); // 1 minute
+    long ROLLUP_1_INTERVAL_MILLIS =
+            Long.getLong("glowroot.internal.rollup.1.intervalMillis", 5 * 60 * 1000); // 5 minutes
+    long ROLLUP_2_INTERVAL_MILLIS =
+            Long.getLong("glowroot.internal.rollup.2.intervalMillis", 30 * 60 * 1000); // 30 minutes
 
-    AdvancedConfig getAdvancedConfig(String server);
+    TransactionConfig getTransactionConfig(String serverId);
 
-    @Nullable
-    PluginConfig getPluginConfig(String server, String pluginId);
+    UserRecordingConfig getUserRecordingConfig(String serverId);
 
-    List<InstrumentationConfig> getInstrumentationConfigs(String server);
-
-    @Nullable
-    InstrumentationConfig getInstrumentationConfig(String server, String version);
-
-    List<GaugeConfig> getGaugeConfigs(String server);
-
-    @Nullable
-    GaugeConfig getGaugeConfig(String server, String version);
-
-    List<AlertConfig> getAlertConfigs(String server);
+    AdvancedConfig getAdvancedConfig(String serverId);
 
     @Nullable
-    AlertConfig getAlertConfig(String server, String version);
+    PluginConfig getPluginConfig(String serverId, String pluginId);
 
-    UserInterfaceConfig getUserInterfaceConfig();
+    List<InstrumentationConfig> getInstrumentationConfigs(String serverId);
 
-    StorageConfig getStorageConfig();
+    @Nullable
+    InstrumentationConfig getInstrumentationConfig(String serverId, String version);
 
-    SmtpConfig getSmtpConfig();
+    List<GaugeConfig> getGaugeConfigs(String serverId);
 
-    String updateTransactionConfig(String server, TransactionConfig transactionConfig,
+    @Nullable
+    GaugeConfig getGaugeConfig(String serverId, String version);
+
+    UserInterfaceConfig getUserInterfaceConfig() throws Exception;
+
+    StorageConfig getStorageConfig() throws Exception;
+
+    SmtpConfig getSmtpConfig() throws Exception;
+
+    List<AlertConfig> getAlertConfigs(String serverId) throws Exception;
+
+    @Nullable
+    AlertConfig getAlertConfig(String serverId, String version) throws Exception;
+
+    void updateTransactionConfig(String serverId, TransactionConfig transactionConfig,
             String priorVersion) throws Exception;
 
-    String updateUserRecordingConfig(String server, UserRecordingConfig userRecordingConfig,
+    void updateUserRecordingConfig(String serverId, UserRecordingConfig userRecordingConfig,
             String priorVersion) throws Exception;
 
-    String updateAdvancedConfig(String server, AdvancedConfig advancedConfig, String priorVersion)
+    void updateAdvancedConfig(String serverId, AdvancedConfig advancedConfig, String priorVersion)
             throws Exception;
 
-    String updatePluginConfig(String server, PluginConfig pluginConfig, String priorVersion)
+    void updatePluginConfig(String serverId, PluginConfig pluginConfig, String priorVersion)
             throws Exception;
 
-    String insertInstrumentationConfig(String server, InstrumentationConfig instrumentationConfig)
+    void insertInstrumentationConfig(String serverId, InstrumentationConfig instrumentationConfig)
             throws IOException;
 
-    String updateInstrumentationConfig(String server, InstrumentationConfig instrumentationConfig,
+    void updateInstrumentationConfig(String serverId, InstrumentationConfig instrumentationConfig,
             String priorVersion) throws IOException;
 
-    void deleteInstrumentationConfig(String server, String version) throws IOException;
+    void deleteInstrumentationConfig(String serverId, String version) throws IOException;
 
-    String insertGaugeConfig(String server, GaugeConfig gaugeConfig) throws Exception;
+    void insertGaugeConfig(String serverId, GaugeConfig gaugeConfig) throws Exception;
 
-    String updateGaugeConfig(String server, GaugeConfig gaugeConfig, String priorVersion)
+    void updateGaugeConfig(String serverId, GaugeConfig gaugeConfig, String priorVersion)
             throws Exception;
 
-    void deleteGaugeConfig(String server, String version) throws IOException;
+    void deleteGaugeConfig(String serverId, String version) throws IOException;
 
-    String insertAlertConfig(String server, AlertConfig alertConfig) throws Exception;
-
-    String updateAlertConfig(String server, AlertConfig alertConfig, String priorVersion)
-            throws IOException;
-
-    void deleteAlertConfig(String server, String version) throws IOException;
-
-    String updateUserInterfaceConfig(UserInterfaceConfig userInterfaceConfig, String priorVersion)
+    void updateUserInterfaceConfig(UserInterfaceConfig userInterfaceConfig, String priorVersion)
             throws Exception;
 
-    String updateStorageConfig(StorageConfig storageConfig, String priorVersion) throws Exception;
+    void updateStorageConfig(StorageConfig storageConfig, String priorVersion) throws Exception;
 
-    String updateSmtpConfig(SmtpConfig smtpConfig, String priorVersion) throws Exception;
+    void updateSmtpConfig(SmtpConfig smtpConfig, String priorVersion) throws Exception;
 
-    List<String> getAllTransactionTypes(String server);
+    void insertAlertConfig(String serverId, AlertConfig alertConfig) throws Exception;
 
-    String getDefaultDisplayedTransactionType(String server);
+    void updateAlertConfig(String serverId, AlertConfig alertConfig, String priorVersion)
+            throws Exception;
+
+    void deleteAlertConfig(String serverId, String version) throws Exception;
 
     long getGaugeCollectionIntervalMillis();
 
@@ -120,13 +127,7 @@ public interface ConfigRepository {
 
     SecretKey getSecretKey() throws Exception;
 
-    // only listens for UserInterfaceConfig, StorageConfig, SmtpConfig, AlertConfig
-    void addListener(ConfigListener listener);
-
-    @OnlyUsedByTests
-    void resetAllConfig(String server) throws IOException;
-
-    public interface ConfigListener {
+    public interface DeprecatedConfigListener {
         // the new config is not passed to onChange so that the receiver has to get the latest,
         // this avoids race condition worries that two updates may get sent to the receiver in the
         // wrong order
@@ -135,9 +136,26 @@ public interface ConfigRepository {
 
     @Value.Immutable
     @Styles.AllParameters
-    public interface RollupConfig {
-        long intervalMillis();
-        long viewThresholdMillis();
+    public abstract class RollupConfig {
+
+        public abstract long intervalMillis();
+        public abstract long viewThresholdMillis();
+
+        public static ImmutableList<RollupConfig> buildRollupConfigs() {
+            return ImmutableList.<RollupConfig>of(
+                    // default rollup level #0 fixed interval is 1 minute,
+                    // making default view threshold 15 min
+                    ImmutableRollupConfig.of(ROLLUP_0_INTERVAL_MILLIS,
+                            ROLLUP_0_INTERVAL_MILLIS * 15),
+                    // default rollup level #1 fixed interval is 5 minutes,
+                    // making default view threshold 1 hour
+                    ImmutableRollupConfig.of(ROLLUP_1_INTERVAL_MILLIS,
+                            ROLLUP_1_INTERVAL_MILLIS * 12),
+                    // default rollup level #2 fixed interval is 30 minutes,
+                    // making default view threshold 8 hour
+                    ImmutableRollupConfig.of(ROLLUP_2_INTERVAL_MILLIS,
+                            ROLLUP_2_INTERVAL_MILLIS * 16));
+        }
     }
 
     @SuppressWarnings("serial")

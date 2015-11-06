@@ -94,7 +94,7 @@ case "$1" in
                  # the sonar.jdbc.password system property is set in the pom.xml using the
                  # environment variable SONAR_DB_PASSWORD (instead of setting the system
                  # property on the command line which which would make it visible to ps)
-                 mvn sonar:sonar -pl !misc/checker-qual-jdk6,!misc/license-resource-bundle,!agent-parent/benchmarks,!agent-parent/it-harness,!agent-parent/distribution,!fat-agent-parent/ui-sandbox,!fat-agent-parent/distribution \
+                 mvn sonar:sonar -pl !misc/checker-qual-jdk6,!misc/license-resource-bundle,!agent-parent/benchmarks,!agent-parent/it-harness,!agent-parent/ui-sandbox,!agent-parent/distribution \
                                  -Dsonar.jdbc.url=$SONAR_JDBC_URL \
                                  -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
                                  -Dsonar.host.url=$SONAR_HOST_URL \
@@ -137,7 +137,7 @@ case "$1" in
                # TODO find way to not omit these (especially it-harness)
                # omitting wire-api and agent-parent/it-harness from checker framework validation since they contain protobuf generated code which does not pass
                mvn clean install -am -pl wire-api,agent-parent/it-harness
-               mvn clean compile -pl .,misc/license-resource-bundle,common,agent-parent/api,agent-parent/plugin-api,agent-parent/agent,$plugin_projects,storage,ui,fat-agent-parent/fat-agent \
+               mvn clean compile -pl .,misc/license-resource-bundle,common,storage,ui,agent-parent/api,agent-parent/plugin-api,agent-parent/agent,$plugin_projects \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \
@@ -159,7 +159,7 @@ case "$1" in
                then
                  mvn clean install -DskipTests=true \
                                    -B
-                 cd fat-agent-parent/webdriver-tests
+                 cd agent-parent/webdriver-tests
                  mvn clean test -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
                                 -Dsaucelabs.browser.name="$SAUCELABS_BROWSER_NAME" \
                                 -Dsaucelabs.browser.version="$SAUCELABS_BROWSER_VERSION" \

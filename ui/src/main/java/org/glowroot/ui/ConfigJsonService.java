@@ -77,6 +77,8 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 @JsonService
 class ConfigJsonService {
 
+    private static final String SERVER_ID = "";
+
     private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
@@ -85,13 +87,13 @@ class ConfigJsonService {
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
     private final HttpSessionManager httpSessionManager;
     private final MailService mailService;
-    private final LiveWeavingService liveWeavingService;
+    private final @Nullable LiveWeavingService liveWeavingService;
 
     private volatile @MonotonicNonNull HttpServer httpServer;
 
     ConfigJsonService(ConfigRepository configRepository, RepoAdmin repoAdmin,
             List<PluginDescriptor> pluginDescriptors, HttpSessionManager httpSessionManager,
-            MailService mailService, LiveWeavingService liveWeavingService) {
+            MailService mailService, @Nullable LiveWeavingService liveWeavingService) {
         this.configRepository = configRepository;
         this.repoAdmin = repoAdmin;
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
@@ -105,21 +107,18 @@ class ConfigJsonService {
     }
 
     @GET("/backend/config/transaction")
-    String getTransactionConfig(String queryString) throws Exception {
-        String server = getServer(queryString);
-        return getTransactionConfigInternal(server);
+    String getTransactionConfig() throws Exception {
+        return getTransactionConfigInternal();
     }
 
     @GET("/backend/config/user-recording")
-    String getUserRecordingConfig(String queryString) throws Exception {
-        String server = getServer(queryString);
-        return getUserRecordingConfigInternal(server);
+    String getUserRecordingConfig() throws Exception {
+        return getUserRecordingConfigInternal();
     }
 
     @GET("/backend/config/advanced")
-    String getAdvancedConfig(String queryString) throws Exception {
-        String server = getServer(queryString);
-        return getAdvancedConfigInternal(server);
+    String getAdvancedConfig() throws Exception {
+        return getAdvancedConfigInternal();
     }
 
     @GET("/backend/config/plugins")
@@ -127,13 +126,12 @@ class ConfigJsonService {
         PluginConfigRequest request = QueryStrings.decode(queryString, PluginConfigRequest.class);
         Optional<String> pluginId = request.pluginId();
         if (pluginId.isPresent()) {
-            return getPluginConfigInternal(request.server(), request.pluginId().get());
+            return getPluginConfigInternal(request.pluginId().get());
         } else {
             List<PluginResponse> pluginResponses = Lists.newArrayList();
             for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
                 PluginConfig pluginConfig =
-                        configRepository.getPluginConfig(request.server(),
-                                pluginDescriptor.id());
+                        configRepository.getPluginConfig(SERVER_ID, pluginDescriptor.id());
                 checkNotNull(pluginConfig);
                 pluginResponses.add(ImmutablePluginResponse.builder()
                         .id(pluginDescriptor.id())
@@ -145,9 +143,8 @@ class ConfigJsonService {
         }
     }
 
-    private String getPluginConfigInternal(String server, String pluginId)
-            throws JsonProcessingException {
-        PluginConfig config = configRepository.getPluginConfig(server, pluginId);
+    private String getPluginConfigInternal(String pluginId) throws JsonProcessingException {
+        PluginConfig config = configRepository.getPluginConfig(SERVER_ID, pluginId);
         PluginDescriptor pluginDescriptor = null;
         for (PluginDescriptor descriptor : pluginDescriptors) {
             if (descriptor.id().equals(pluginId)) {
@@ -192,55 +189,51 @@ class ConfigJsonService {
     String updateTransactionConfig(String content) throws Exception {
         TransactionConfigDto configDto =
                 mapper.readValue(content, ImmutableTransactionConfigDto.class);
-        String server = configDto.server().get();
         try {
-            configRepository.updateTransactionConfig(server, configDto.toConfig(),
+            configRepository.updateTransactionConfig(SERVER_ID, configDto.toConfig(),
                     configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getTransactionConfigInternal(server);
+        return getTransactionConfigInternal();
     }
 
     @POST("/backend/config/user-recording")
     String updateUserRecordingConfig(String content) throws Exception {
         UserRecordingConfigDto configDto =
                 mapper.readValue(content, ImmutableUserRecordingConfigDto.class);
-        String server = configDto.server().get();
         try {
-            configRepository.updateUserRecordingConfig(server, configDto.toConfig(),
+            configRepository.updateUserRecordingConfig(SERVER_ID, configDto.toConfig(),
                     configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getUserRecordingConfigInternal(server);
+        return getUserRecordingConfigInternal();
     }
 
     @POST("/backend/config/advanced")
     String updateAdvancedConfig(String content) throws Exception {
         AdvancedConfigDto configDto = mapper.readValue(content, ImmutableAdvancedConfigDto.class);
-        String server = configDto.server().get();
         try {
-            configRepository.updateAdvancedConfig(server, configDto.toConfig(),
+            configRepository.updateAdvancedConfig(SERVER_ID, configDto.toConfig(),
                     configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getAdvancedConfigInternal(server);
+        return getAdvancedConfigInternal();
     }
 
     @POST("/backend/config/plugins")
     String updatePluginConfig(String content) throws Exception {
         PluginConfigDto configDto = mapper.readValue(content, ImmutablePluginConfigDto.class);
-        String server = configDto.server().get();
         String pluginId = checkNotNull(configDto.pluginId());
         try {
-            configRepository.updatePluginConfig(server, configDto.toConfig(pluginId),
+            configRepository.updatePluginConfig(SERVER_ID, configDto.toConfig(pluginId),
                     configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getPluginConfigInternal(server, pluginId);
+        return getPluginConfigInternal(pluginId);
     }
 
     @POST("/backend/config/ui")
@@ -297,27 +290,29 @@ class ConfigJsonService {
                 mailService);
     }
 
-    private String getTransactionConfigInternal(String server) throws JsonProcessingException {
-        TransactionConfig config = configRepository.getTransactionConfig(server);
+    private String getTransactionConfigInternal() throws JsonProcessingException {
+        TransactionConfig config = configRepository.getTransactionConfig(SERVER_ID);
         return mapper.writeValueAsString(TransactionConfigDto.fromConfig(config));
     }
 
-    private String getUserRecordingConfigInternal(String server) throws JsonProcessingException {
-        UserRecordingConfig config = configRepository.getUserRecordingConfig(server);
+    private String getUserRecordingConfigInternal() throws JsonProcessingException {
+        UserRecordingConfig config = configRepository.getUserRecordingConfig(SERVER_ID);
         return mapper.writeValueAsString(UserRecordingConfigDto.fromConfig(config));
     }
 
-    private String getAdvancedConfigInternal(String server) throws JsonProcessingException {
-        AdvancedConfig config = configRepository.getAdvancedConfig(server);
+    private String getAdvancedConfigInternal() throws JsonProcessingException {
+        checkNotNull(liveWeavingService);
+        AdvancedConfig config = configRepository.getAdvancedConfig(SERVER_ID);
         return mapper.writeValueAsString(ImmutableAdvancedConfigResponse.builder()
                 .config(AdvancedConfigDto.fromConfig(config))
-                .timerWrapperMethodsActive(liveWeavingService.isTimerWrapperMethodsActive(server))
+                .timerWrapperMethodsActive(
+                        liveWeavingService.isTimerWrapperMethodsActive(SERVER_ID))
                 .build());
     }
 
     @RequiresNonNull("httpServer")
     private Object onSuccessfulUserInterfaceUpdate(UserInterfaceConfig priorConfig,
-            UserInterfaceConfig config) throws JsonProcessingException {
+            UserInterfaceConfig config) throws Exception {
         boolean portChangedSucceeded = false;
         boolean portChangedFailed = false;
         if (priorConfig.port() != config.port()) {
@@ -346,7 +341,7 @@ class ConfigJsonService {
     }
 
     @RequiresNonNull("httpServer")
-    private String getUserInterface(boolean portChangeFailed) throws JsonProcessingException {
+    private String getUserInterface(boolean portChangeFailed) throws Exception {
         UserInterfaceConfig config = configRepository.getUserInterfaceConfig();
         UserInterfaceConfigDto configDto = ImmutableUserInterfaceConfigDto.builder()
                 .defaultDisplayedTransactionType(config.defaultDisplayedTransactionType())
@@ -429,10 +424,6 @@ class ConfigJsonService {
         return builder.build();
     }
 
-    private static String getServer(String queryString) throws Exception {
-        return queryString.substring("server".length() + 1);
-    }
-
     private static class AdminPasswordHelper {
 
         private final String currentPassword;
@@ -501,7 +492,6 @@ class ConfigJsonService {
 
     @Value.Immutable
     interface PluginConfigRequest {
-        String server();
         Optional<String> pluginId();
     }
 
@@ -525,7 +515,6 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class TransactionConfigDto {
 
-        abstract Optional<String> server(); // only used in request
         abstract int slowThresholdMillis();
         abstract int profilingIntervalMillis();
         abstract String version();
@@ -548,7 +537,6 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class UserRecordingConfigDto {
 
-        abstract Optional<String> server(); // only used in request
         abstract ImmutableList<String> users();
         abstract @Nullable Integer profilingIntervalMillis();
         abstract String version();
@@ -572,8 +560,6 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class AdvancedConfigDto {
 
-        @JsonInclude(value = Include.NON_EMPTY)
-        abstract Optional<String> server(); // only used in request
         abstract boolean timerWrapperMethods();
         abstract boolean weavingTimer();
         abstract int immediatePartialStoreThresholdSeconds();
@@ -625,8 +611,6 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class PluginConfigDto {
 
-        @JsonInclude(value = Include.NON_EMPTY)
-        abstract Optional<String> server(); // only used in request
         @JsonInclude(value = Include.NON_EMPTY)
         abstract @Nullable String pluginId(); // only used in request
         abstract boolean enabled();

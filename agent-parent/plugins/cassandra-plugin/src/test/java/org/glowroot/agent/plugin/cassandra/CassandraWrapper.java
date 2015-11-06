@@ -71,6 +71,8 @@ class CassandraWrapper {
     }
 
     private static void downloadAndExtract(File baseDir) throws MalformedURLException, IOException {
+        // using System.out to make sure user sees why there is a big delay here
+        System.out.print("Downloading Cassandra " + CASSANDRA_VERSION + " ...");
         URL url = new URL("http://archive.apache.org/dist/cassandra/" + CASSANDRA_VERSION
                 + "/apache-cassandra-" + CASSANDRA_VERSION + "-bin.tar.gz");
         InputStream in = url.openStream();
@@ -80,6 +82,7 @@ class CassandraWrapper {
         Archiver archiver = ArchiverFactory.createArchiver(ArchiveFormat.TAR, CompressionType.GZIP);
         archiver.extract(archiveFile, baseDir);
         archiveFile.delete();
+        System.out.println(" OK");
 
         File cassandraDir = new File(baseDir, "apache-cassandra-" + CASSANDRA_VERSION);
         File confDir = new File(cassandraDir, "conf");
@@ -93,6 +96,8 @@ class CassandraWrapper {
         String log4j = Files.toString(log4jFile, Charsets.UTF_8);
         log4j = log4j.replace("/var/log/cassandra",
                 cassandraDir.getAbsolutePath().replace('\\', '/'));
+        // don't log to stdout
+        log4j = log4j.replace("log4j.rootLogger=INFO,stdout,R", "log4j.rootLogger=INFO,R");
         Files.asCharSink(log4jFile, Charsets.UTF_8).write(log4j);
     }
 

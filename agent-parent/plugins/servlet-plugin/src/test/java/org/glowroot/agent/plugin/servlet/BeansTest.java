@@ -22,8 +22,6 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import org.junit.Test;
 
-import org.glowroot.agent.plugin.servlet.Beans;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class BeansTest {

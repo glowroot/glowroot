@@ -20,6 +20,7 @@ import java.util.List;
 import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface Collector {
@@ -30,4 +31,9 @@ public interface Collector {
     void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception;
 
     void collectTrace(Trace trace) throws Exception;
+
+    void log(LogEvent logEvent) throws Exception;
+
+    // only used by tests
+    void close() throws InterruptedException;
 }

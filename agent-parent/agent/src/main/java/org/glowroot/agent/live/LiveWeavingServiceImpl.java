@@ -85,7 +85,7 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
     }
 
     @Override
-    public GlobalMeta getGlobalMeta(String server) {
+    public GlobalMeta getGlobalMeta(String serverId) {
         return ImmutableGlobalMeta.builder()
                 .jvmOutOfSync(adviceCache.isOutOfSync(configService.getInstrumentationConfigs()))
                 .jvmRetransformClassesSupported(jvmRetransformClassesSupported)
@@ -93,18 +93,18 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
     }
 
     @Override
-    public void preloadClasspathCache(String server) {
+    public void preloadClasspathCache(String serverId) {
         getClasspathCache().updateCache();
     }
 
     @Override
-    public List<String> getMatchingClassNames(String server, String partialClassName, int limit) {
+    public List<String> getMatchingClassNames(String serverId, String partialClassName, int limit) {
         return getClasspathCache().getMatchingClassNames(partialClassName, limit);
     }
 
     // returns the first <limit> matching method names, ordered alphabetically (case-insensitive)
     @Override
-    public List<String> getMatchingMethodNames(String server, String className,
+    public List<String> getMatchingMethodNames(String serverId, String className,
             String partialMethodName, int limit) {
         String partialMethodNameUpper = partialMethodName.toUpperCase(Locale.ENGLISH);
         Set<String> methodNames = Sets.newHashSet();
@@ -130,7 +130,7 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
     }
 
     @Override
-    public List<MethodSignature> getMethodSignatures(String server, String className,
+    public List<MethodSignature> getMethodSignatures(String serverId, String className,
             String methodName) {
         if (methodName.contains("*") || methodName.contains("|")) {
             return ImmutableList.of();
@@ -155,7 +155,7 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
     }
 
     @Override
-    public int reweave(String server) throws Exception {
+    public int reweave(String serverId) throws Exception {
         // this action is not displayed in the UI when instrumentation is null
         // (which is only in dev mode anyways)
         checkNotNull(instrumentation);
@@ -166,7 +166,7 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
     }
 
     @Override
-    public Boolean isTimerWrapperMethodsActive(String server) {
+    public Boolean isTimerWrapperMethodsActive(String serverId) {
         return timerWrapperMethods;
     }
 

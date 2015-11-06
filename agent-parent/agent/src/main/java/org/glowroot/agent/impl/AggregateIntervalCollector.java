@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
@@ -57,7 +58,7 @@ public class AggregateIntervalCollector {
     private final int maxAggregateTransactionsPerTransactionType;
     private final int maxAggregateQueriesPerQueryType;
 
-    public AggregateIntervalCollector(long currentTime, long aggregateIntervalMillis,
+    AggregateIntervalCollector(long currentTime, long aggregateIntervalMillis,
             int maxAggregateTransactionsPerTransactionType, int maxAggregateQueriesPerQueryType) {
         captureTime = (long) Math.ceil(currentTime / (double) aggregateIntervalMillis)
                 * aggregateIntervalMillis;
@@ -75,7 +76,7 @@ public class AggregateIntervalCollector {
         typeCollector.add(transaction);
     }
 
-    public void flush(Collector collector) throws Exception {
+    void flush(Collector collector) throws Exception {
         List<OverallAggregate> overallAggregates = Lists.newArrayList();
         List<TransactionAggregate> transactionAggregates = Lists.newArrayList();
         ScratchBuffer scratchBuffer = new ScratchBuffer();
@@ -222,8 +223,15 @@ public class AggregateIntervalCollector {
         }
     }
 
-    public void clear() {
+    void clear() {
         typeCollectors.clear();
+    }
+
+    // TODO report checker framework issue:
+    // found Set<@KeyFor("this.typeCollectors") String>, required Set<String>
+    @SuppressWarnings("return.type.incompatible")
+    Set<String> getTransactionTypes() {
+        return typeCollectors.keySet();
     }
 
     private IntervalTypeCollector getTypeCollector(String transactionType) {

@@ -21,26 +21,26 @@ glowroot.factory('traceModal', [
   'modals',
   function ($http, modals) {
 
-    function displayModal(server, traceId) {
+    function displayModal(serverId, traceId) {
 
       var spinner;
       var $modalContent = $('#traceModal .modal-body');
 
       modals.display('#traceModal');
-      $http.get('backend/trace/header?server=' + server + '&trace-id=' + traceId)
+      $http.get('backend/trace/header?server-id=' + serverId + '&trace-id=' + traceId)
           .success(function (data) {
             spinner.stop();
             if (data.expired) {
               $modalContent.html('expired');
             } else {
               data.showExport = true;
-              HandlebarsRendering.renderTrace(data, server, traceId, $modalContent);
+              HandlebarsRendering.renderTrace(data, serverId, traceId, $modalContent);
               $('#traceModal .modal-body button.download-trace').click(function () {
                 var $traceParent = $(this).parents('.gt-trace-parent');
                 var traceId = $traceParent.data('gtTraceId');
                 var url = document.getElementsByTagName('base')[0].href + 'export/trace?';
-                if (server) {
-                  url += 'server=' + server + '&';
+                if (serverId) {
+                  url += 'server-id=' + serverId + '&';
                 }
                 window.location = url + 'trace-id=' + traceId;
               });

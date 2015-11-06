@@ -258,10 +258,7 @@ glowroot.directive('gtNavbarItem', [
           $navbarCollapse.removeClass('in');
           $navbarCollapse.addClass('collapse');
           if ($state.current.name === scope.gtState && !event.ctrlKey) {
-            // inherit false prevents current state from being passed
-            // e.g. without inherit false transaction-type=Background will be passed
-            // which will defeat the point of reloading the page fresh (with no explicit transaction-type)
-            $state.go(scope.gtState, null, {reload: true, inherit: false});
+            $state.go(scope.gtState, null, {reload: true});
             // suppress normal link
             event.preventDefault();
             return false;

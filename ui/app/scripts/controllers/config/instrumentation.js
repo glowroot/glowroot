@@ -84,7 +84,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
     }
 
     if (version) {
-      $http.get('backend/config/instrumentation?server=' + $scope.server + '&version=' + version)
+      $http.get('backend/config/instrumentation?version=' + version)
           .success(function (data) {
             $scope.loaded = true;
             onNewData(data);
@@ -94,7 +94,14 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       $scope.loaded = true;
       onNewData({
         config: {
-          captureKind: 'transaction'
+          declaringClassName: '',
+          captureKind: 'transaction',
+          transactionType: '',
+          transactionNameTemplate: '',
+          transactionUserTemplate: '',
+          traceEntryCaptureSelfNested: false,
+          enabledProperty: '',
+          traceEntryEnabledProperty: ''
         }
       });
     }
@@ -115,7 +122,6 @@ glowroot.controller('ConfigInstrumentationCtrl', [
 
     $scope.classNames = function (suggestion) {
       var postData = {
-        server: $scope.server,
         partialClassName: suggestion,
         limit: 10
       };
@@ -151,7 +157,6 @@ glowroot.controller('ConfigInstrumentationCtrl', [
         return [suggestion];
       }
       var queryData = {
-        server: $scope.server,
         className: $scope.config.className,
         partialMethodName: suggestion,
         limit: 10
@@ -238,7 +243,6 @@ glowroot.controller('ConfigInstrumentationCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.server = $scope.server;
       var url;
       if (version) {
         url = 'backend/config/instrumentation/update';
@@ -263,7 +267,6 @@ glowroot.controller('ConfigInstrumentationCtrl', [
 
     $scope.delete = function (deferred) {
       var postData = {
-        server: $scope.server,
         version: $scope.config.version
       };
       $http.post('backend/config/instrumentation/remove', postData)
@@ -333,7 +336,6 @@ glowroot.controller('ConfigInstrumentationCtrl', [
 
     function matchingMethods(methodName) {
       var queryData = {
-        server: $scope.server,
         className: $scope.config.className,
         methodName: methodName
       };

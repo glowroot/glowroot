@@ -55,6 +55,8 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.impl.TransactionCollector;
+import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.PatternObjectNameQueryExp;
 import org.glowroot.common.live.ImmutableAvailability;
@@ -76,12 +78,16 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                     "java.lang.Double", "java.lang.Float");
 
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
+    private final ThreadDumpService threadDumpService;
     private final Availability threadAllocatedBytesAvailability;
     private final String processId;
 
     public LiveJvmServiceImpl(LazyPlatformMBeanServer lazyPlatformMBeanServer,
+            TransactionRegistry transactionRegistry, TransactionCollector transactionCollector,
             Availability threadAllocatedBytesAvailability) {
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
+        threadDumpService =
+                new ThreadDumpService(transactionRegistry, transactionCollector);
         this.threadAllocatedBytesAvailability = threadAllocatedBytesAvailability;
         this.processId = parseProcessId(ManagementFactory.getRuntimeMXBean().getName());
     }
@@ -118,13 +124,13 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public Map<String, /*@Nullable*/Object> getMBeanSortedAttributeMap(String server,
+    public Map<String, /*@Nullable*/Object> getMBeanSortedAttributeMap(String serverId,
             String objectName) throws Exception {
         return getMBeanSortedAttributeMap(ObjectName.getInstance(objectName));
     }
 
     @Override
-    public List<String> getMatchingMBeanObjectNames(String server, String partialMBeanObjectName,
+    public List<String> getMatchingMBeanObjectNames(String serverId, String partialMBeanObjectName,
             int limit) throws InterruptedException {
         Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null,
                 new ObjectNameQueryExp(partialMBeanObjectName));
@@ -141,7 +147,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public MBeanMeta getMBeanMeta(String server, String mbeanObjectName) throws Exception {
+    public MBeanMeta getMBeanMeta(String serverId, String mbeanObjectName) throws Exception {
         Set<ObjectName> objectNames = getObjectNames(mbeanObjectName);
         ImmutableList<String> attributeNames = Ordering.from(String.CASE_INSENSITIVE_ORDER)
                 .immutableSortedCopy(getAttributeNames(objectNames));
@@ -154,54 +160,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public String getHeapDumpDefaultDirectory(String server) {
-        String heapDumpPath = getHeapDumpPathFromCommandLine();
-        if (heapDumpPath == null) {
-            String javaTempDir =
-                    MoreObjects.firstNonNull(StandardSystemProperty.JAVA_IO_TMPDIR.value(), ".");
-            heapDumpPath = new File(javaTempDir).getAbsolutePath();
-        }
-        return heapDumpPath;
-    }
-
-    @Override
-    public long getAvailableDiskSpace(String server, String directory) throws IOException {
-        File dir = new File(directory);
-        if (!dir.exists()) {
-            throw new IOException("Directory doesn't exist");
-        }
-        if (!dir.isDirectory()) {
-            throw new IOException("Path is not a directory");
-        }
-        return dir.getFreeSpace();
-    }
-
-    @Override
-    public HeapFile dumpHeap(String server, String directory) throws Exception {
-        File dir = new File(directory);
-        if (!dir.exists()) {
-            throw new IOException("Directory doesn't exist");
-        }
-        if (!dir.isDirectory()) {
-            throw new IOException("Path is not a directory");
-        }
-        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
-        File file = new File(dir, "heap-dump-" + timestamp + ".hprof");
-        int i = 1;
-        while (file.exists()) {
-            // this seems unlikely now that timestamp is included in filename
-            i++;
-            file = new File(dir, "heap-dump-" + timestamp + "-" + i + ".hprof");
-        }
-        ObjectName objectName = ObjectName.getInstance(HOT_SPOT_DIAGNOSTIC_MBEAN_NAME);
-        lazyPlatformMBeanServer.invoke(objectName, "dumpHeap",
-                new Object[] {file.getAbsolutePath(), false},
-                new String[] {"java.lang.String", "boolean"});
-        return ImmutableHeapFile.of(file.getAbsolutePath(), file.length());
-    }
-
-    @Override
-    public ProcessInfo getProcessInfo(String server) {
+    public ProcessInfo getProcessInfo(String serverId) {
         String command = System.getProperty("sun.java.command");
         String mainClass = "";
         List<String> arguments = ImmutableList.of();
@@ -244,7 +203,66 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public Capabilities getCapabilities(String server) {
+    public AllThreads getAllThreads() {
+        return threadDumpService.getAllThreads();
+    }
+
+    @Override
+    public String getHeapDumpDefaultDirectory(String serverId) {
+        String heapDumpPath = getHeapDumpPathFromCommandLine();
+        if (heapDumpPath == null) {
+            String javaTempDir =
+                    MoreObjects.firstNonNull(StandardSystemProperty.JAVA_IO_TMPDIR.value(), ".");
+            heapDumpPath = new File(javaTempDir).getAbsolutePath();
+        }
+        return heapDumpPath;
+    }
+
+    @Override
+    public long getAvailableDiskSpace(String serverId, String directory) throws IOException {
+        File dir = new File(directory);
+        if (!dir.exists()) {
+            throw new IOException("Directory doesn't exist");
+        }
+        if (!dir.isDirectory()) {
+            throw new IOException("Path is not a directory");
+        }
+        return dir.getFreeSpace();
+    }
+
+    @Override
+    public HeapFile dumpHeap(String serverId, String directory) throws Exception {
+        File dir = new File(directory);
+        if (!dir.exists()) {
+            throw new IOException("Directory doesn't exist");
+        }
+        if (!dir.isDirectory()) {
+            throw new IOException("Path is not a directory");
+        }
+        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
+        File file = new File(dir, "heap-dump-" + timestamp + ".hprof");
+        int i = 1;
+        while (file.exists()) {
+            // this seems unlikely now that timestamp is included in filename
+            i++;
+            file = new File(dir, "heap-dump-" + timestamp + "-" + i + ".hprof");
+        }
+        ObjectName objectName = ObjectName.getInstance(HOT_SPOT_DIAGNOSTIC_MBEAN_NAME);
+        lazyPlatformMBeanServer.invoke(objectName, "dumpHeap",
+                new Object[] {file.getAbsolutePath(), false},
+                new String[] {"java.lang.String", "boolean"});
+        return ImmutableHeapFile.of(file.getAbsolutePath(), file.length());
+    }
+
+    @Override
+    public void gc() {
+        // using MemoryMXBean.gc() instead of System.gc() in hope that it will someday bypass
+        // -XX:+DisableExplicitGC (see https://bugs.openjdk.java.net/browse/JDK-6396411)
+        ManagementFactory.getMemoryMXBean().gc();
+    }
+
+    @Override
+    public Capabilities getCapabilities(String serverId) {
         return ImmutableCapabilities.builder()
                 .threadCpuTime(getThreadCpuTimeAvailability())
                 .threadContentionTime(getThreadContentionAvailability())

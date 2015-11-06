@@ -236,7 +236,7 @@ glowroot.factory('charts', [
       var chartFrom = $scope.chartFrom;
       var chartTo = $scope.chartTo;
       var query = {
-        serverGroup: $scope.serverGroup,
+        serverRollup: $scope.serverRollup,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
         from: chartFrom,

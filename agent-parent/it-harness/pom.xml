@@ -22,8 +22,8 @@
       <version>${project.version}</version>
     </dependency>
     <!-- do not include glowroot-agent-api or glowroot-agent-plugin-api since want to either get
-      them transitively from glowroot-fat-agent (during mvn test) or get them from shaded
-      glowroot-fat-agent (during mvn package) -->
+      them transitively from glowroot-agent (during mvn test) or get them from shaded glowroot-agent 
+      (during mvn package) -->
     <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
@@ -179,8 +179,12 @@
             <configuration>
               <target>
                 <mkdir dir="${project.build.directory}/generated-sources/protobuf" />
-                <chmod file="${project.build.directory}/dependency/protoc-${protobuf.version}-${os.detected.classifier}.exe" perm="ugo+x" />
-                <chmod file="${project.build.directory}/dependency/protoc-gen-grpc-java-${grpc.version}-${os.detected.classifier}.exe" perm="ugo+x" />
+                <chmod
+                  file="${project.build.directory}/dependency/protoc-${protobuf.version}-${os.detected.classifier}.exe"
+                  perm="ugo+x" />
+                <chmod
+                  file="${project.build.directory}/dependency/protoc-gen-grpc-java-${grpc.version}-${os.detected.classifier}.exe"
+                  perm="ugo+x" />
               </target>
             </configuration>
             <goals>

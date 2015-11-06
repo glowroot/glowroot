@@ -17,24 +17,17 @@ package org.glowroot.agent.util;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
-
 import org.glowroot.common.live.ImmutableAvailability;
 import org.glowroot.common.live.LiveJvmService.Availability;
 
 public abstract class OptionalService<T> {
 
-    public static <T> OptionalService<T> available(T service) {
+    static <T> OptionalService<T> available(T service) {
         return new PresentOptionalService<T>(service);
     }
 
-    public static <T> OptionalService<T> unavailable(String reason) {
+    static <T> OptionalService<T> unavailable(String reason) {
         return new AbsentOptionalService<T>(reason);
-    }
-
-    public static <T> OptionalService<T> lazy(Supplier<OptionalService<T>> supplier) {
-        return new LazyOptionalService<T>(supplier);
     }
 
     public abstract Availability getAvailability();
@@ -78,25 +71,6 @@ public abstract class OptionalService<T> {
         @Override
         public @Nullable T getService() {
             return null;
-        }
-    }
-
-    private static class LazyOptionalService<T> extends OptionalService<T> {
-
-        private final Supplier<OptionalService<T>> supplier;
-
-        LazyOptionalService(Supplier<OptionalService<T>> supplier) {
-            this.supplier = Suppliers.memoize(supplier);
-        }
-
-        @Override
-        public Availability getAvailability() {
-            return supplier.get().getAvailability();
-        }
-
-        @Override
-        public @Nullable T getService() {
-            return supplier.get().getService();
         }
     }
 }

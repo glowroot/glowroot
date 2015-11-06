@@ -18,9 +18,12 @@ package org.glowroot.agent.it.harness.impl;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
@@ -45,7 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.AgentPremain;
-import org.glowroot.agent.GrpcServerWrapper;
+import org.glowroot.agent.init.GrpcServerWrapper;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.ConfigService;
 import org.glowroot.agent.it.harness.Container;
@@ -55,8 +58,6 @@ import org.glowroot.agent.it.harness.grpc.ConfigUpdateServiceGrpc;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc.JavaagentServiceBlockingClient;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.AppUnderTestClassName;
-import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.ExpectedLogMessage;
-import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.LogCount;
 import org.glowroot.agent.it.harness.model.ConfigUpdate.OptionalInt;
 import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -72,13 +73,15 @@ public class JavaagentContainer implements Container {
     private final boolean deleteBaseDirOnClose;
     private final boolean shared;
 
+    private final ServerSocket heartbeatListenerSocket;
+    private final ExecutorService heartbeatListenerExecutor;
     private final GrpcServerWrapper server;
     private final EventLoopGroup eventLoopGroup;
     private final ExecutorService executor;
     private final ManagedChannel channel;
     private final TraceCollector traceCollector;
     private final JavaagentServiceBlockingClient javaagentService;
-    private final ExecutorService consolePipeExecutorService;
+    private final ExecutorService consolePipeExecutor;
     private final Process process;
     private final ConsoleOutputPipe consoleOutputPipe;
     private final ConfigService configService;
@@ -108,22 +111,39 @@ public class JavaagentContainer implements Container {
         }
         this.shared = shared;
 
+        // need to start heartbeat socket listener before spawning process
+        heartbeatListenerSocket = new ServerSocket(0);
+        heartbeatListenerExecutor = Executors.newSingleThreadExecutor();
+        heartbeatListenerExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Socket socket = heartbeatListenerSocket.accept();
+                    ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
+                    while (true) {
+                        objectIn.readObject();
+                    }
+                } catch (Exception e) {
+                }
+            }
+        });
+
         traceCollector = new TraceCollector();
         int collectorPort = LocalContainer.getAvailablePort();
         server = new GrpcServerWrapper(traceCollector, collectorPort);
         int javaagentServicePort = LocalContainer.getAvailablePort();
-        List<String> command =
-                buildCommand(collectorPort, javaagentServicePort, this.baseDir, extraJvmArgs);
+        List<String> command = buildCommand(heartbeatListenerSocket.getLocalPort(), collectorPort,
+                javaagentServicePort, this.baseDir, extraJvmArgs);
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         final Process process = processBuilder.start();
-        consolePipeExecutorService = Executors.newSingleThreadExecutor();
+        consolePipeExecutor = Executors.newSingleThreadExecutor();
         InputStream in = process.getInputStream();
         // process.getInputStream() only returns null if ProcessBuilder.redirectOutput() is used
         // to redirect output to a file
         checkNotNull(in);
         consoleOutputPipe = new ConsoleOutputPipe(in, System.out, captureConsoleOutput);
-        consolePipeExecutorService.submit(consoleOutputPipe);
+        consolePipeExecutor.submit(consoleOutputPipe);
         this.process = process;
 
         eventLoopGroup = EventLoopGroups.create("Glowroot-grpc-worker-ELG");
@@ -138,7 +158,6 @@ public class JavaagentContainer implements Container {
                 .negotiationType(NegotiationType.PLAINTEXT)
                 .build();
 
-        Thread.sleep(100);
         Stopwatch stopwatch = Stopwatch.createStarted();
         // this can take a while on slow travis-ci build machines
         while (stopwatch.elapsed(SECONDS) < 30) {
@@ -151,11 +170,6 @@ public class JavaagentContainer implements Container {
                 logger.debug(e.getMessage(), e);
             }
             Thread.sleep(100);
-        }
-        // clearing unexpected log messages because the above pinging can cause error messages,
-        // which will cause subsequent LocalContainer tests to fail
-        if (SpyingLogbackFilter.active()) {
-            SpyingLogbackFilter.clearMessages();
         }
         javaagentService = JavaagentServiceGrpc.newBlockingStub(channel);
         javaagentService.ping(Void.getDefaultInstance());
@@ -176,10 +190,7 @@ public class JavaagentContainer implements Container {
 
     @Override
     public void addExpectedLogMessage(String loggerName, String partialMessage) throws Exception {
-        javaagentService.addExpectedLogMessage(ExpectedLogMessage.newBuilder()
-                .setLoggerName(loggerName)
-                .setPartialMessage(partialMessage)
-                .build());
+        traceCollector.addExpectedLogMessage(loggerName, partialMessage);
     }
 
     @Override
@@ -218,15 +229,7 @@ public class JavaagentContainer implements Container {
                 TransactionConfigUpdate.newBuilder()
                         .setSlowThresholdMillis(OptionalInt.newBuilder().setValue(0).build())
                         .build());
-        // check and reset log messages
-        LogCount logCount =
-                javaagentService.clearLogMessages(Void.getDefaultInstance());
-        if (logCount.getUnexpectedCount() > 0) {
-            throw new AssertionError("One or more unexpected messages were logged");
-        }
-        if (logCount.getExpectedButNotLoggedCount() > 0) {
-            throw new AssertionError("One or more expected messages were not logged");
-        }
+        traceCollector.checkAndResetLogMessages();
     }
 
     @Override
@@ -281,10 +284,15 @@ public class JavaagentContainer implements Container {
 
     private void cleanup() throws Exception {
         process.waitFor();
-        consolePipeExecutorService.shutdownNow();
-        if (!consolePipeExecutorService.awaitTermination(10, SECONDS)) {
+        consolePipeExecutor.shutdownNow();
+        if (!consolePipeExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
         }
+        heartbeatListenerExecutor.shutdownNow();
+        if (!heartbeatListenerExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate executor");
+        }
+        heartbeatListenerSocket.close();
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
         if (deleteBaseDirOnClose) {
             TempDirs.deleteRecursively(baseDir);
@@ -297,8 +305,8 @@ public class JavaagentContainer implements Container {
                 .build());
     }
 
-    private static List<String> buildCommand(int collectorPort, int javaagentServicePort,
-            File baseDir, List<String> extraJvmArgs) throws Exception {
+    private static List<String> buildCommand(int heartbeatPort, int collectorPort,
+            int javaagentServicePort, File baseDir, List<String> extraJvmArgs) throws Exception {
         List<String> command = Lists.newArrayList();
         String javaExecutable = StandardSystemProperty.JAVA_HOME.value() + File.separator + "bin"
                 + File.separator + "java";
@@ -315,7 +323,7 @@ public class JavaagentContainer implements Container {
         for (String path : Splitter.on(File.pathSeparatorChar).split(classpath)) {
             File file = new File(path);
             String name = file.getName();
-            if (name.matches("glowroot(-fat)?-agent-[0-9.]+(-SNAPSHOT)?.jar")) {
+            if (name.matches("glowroot-agent-[0-9.]+(-SNAPSHOT)?.jar")) {
                 javaagentJarFile = file;
             } else if (name.matches("glowroot-common-[0-9.]+(-SNAPSHOT)?.jar")
                     || name.matches("glowroot-wire-api-[0-9.]+(-SNAPSHOT)?.jar")
@@ -331,6 +339,9 @@ public class JavaagentContainer implements Container {
                     + File.separator + "target" + File.separator + "classes")) {
                 paths.add(path);
             } else if (file.isDirectory() && file.getName().equals("test-classes")) {
+                paths.add(path);
+            } else if (file.isDirectory() && file.getAbsolutePath().contains(File.separator
+                    + "ui-sandbox" + File.separator + "target" + File.separator + "classes")) {
                 paths.add(path);
             } else {
                 bootPaths.add(path);
@@ -348,9 +359,10 @@ public class JavaagentContainer implements Container {
             command.add("-javaagent:" + javaagentJarFile);
         }
         command.add("-Dglowroot.base.dir=" + baseDir.getAbsolutePath());
-        command.add("-Dglowroot.internal.logging.spy=true");
-        command.add("-Dglowroot.collector.host=localhost");
-        command.add("-Dglowroot.collector.port=" + collectorPort);
+        if (!extraJvmArgs.contains("-Dglowroot.collector.host=")) {
+            command.add("-Dglowroot.collector.host=localhost");
+            command.add("-Dglowroot.collector.port=" + collectorPort);
+        }
         // this is used inside low-entropy docker containers
         String sourceOfRandomness = System.getProperty("java.security.egd");
         if (sourceOfRandomness != null) {
@@ -368,6 +380,7 @@ public class JavaagentContainer implements Container {
             }
         }
         command.add(JavaagentMain.class.getName());
+        command.add(Integer.toString(heartbeatPort));
         command.add(Integer.toString(javaagentServicePort));
         return command;
     }

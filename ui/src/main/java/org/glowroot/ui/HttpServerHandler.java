@@ -183,7 +183,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         FullHttpRequest request = (FullHttpRequest) msg;
         logger.debug("messageReceived(): request.uri={}", request.uri());
         Channel channel = ctx.channel();
@@ -206,7 +206,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     @SuppressWarnings("argument.type.incompatible")
     private void sendFullResponse(ChannelHandlerContext ctx, FullHttpRequest request,
-            FullHttpResponse response) {
+            FullHttpResponse response) throws Exception {
         boolean keepAlive = HttpUtil.isKeepAlive(request);
         if (httpSessionManager.getSessionId(request) != null
                 && httpSessionManager.getAuthenticatedUser(request) == null
@@ -264,7 +264,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private @Nullable FullHttpResponse handleIfLoginOrLogoutRequest(String path,
-            FullHttpRequest request) throws IOException {
+            FullHttpRequest request) throws Exception {
         if (path.equals("/backend/authenticated-user")) {
             // this is only used when running under 'grunt serve'
             return handleAuthenticatedUserRequest(request);
@@ -281,7 +281,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         return null;
     }
 
-    private FullHttpResponse handleAuthenticatedUserRequest(FullHttpRequest request) {
+    private FullHttpResponse handleAuthenticatedUserRequest(FullHttpRequest request)
+            throws Exception {
         String authenticatedUser = httpSessionManager.getAuthenticatedUser(request);
         if (authenticatedUser == null) {
             return HttpServices.createJsonResponse("null", OK);
@@ -328,7 +329,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private FullHttpResponse handleJsonServiceMappings(FullHttpRequest request,
-            JsonServiceMapping jsonServiceMapping, Matcher matcher) {
+            JsonServiceMapping jsonServiceMapping, Matcher matcher) throws Exception {
         if (!httpSessionManager.hasReadAccess(request)) {
             return handleNotAuthenticated(request);
         }

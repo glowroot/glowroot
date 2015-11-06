@@ -39,6 +39,7 @@ import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.RepoAdmin;
 import org.glowroot.storage.repo.TraceRepository;
+import org.glowroot.storage.repo.TransactionTypeRepository;
 import org.glowroot.storage.repo.config.StorageConfig;
 import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.storage.simplerepo.PlatformMBeanServerLifecycle.InitListener;
@@ -59,6 +60,7 @@ public class SimpleRepoModule {
     private final DataSource dataSource;
     private final ImmutableList<CappedDatabase> rollupCappedDatabases;
     private final CappedDatabase traceCappedDatabase;
+    private final TransactionTypeDao transactionTypeDao;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final GaugeValueDao gaugeValueDao;
@@ -70,25 +72,16 @@ public class SimpleRepoModule {
     @OnlyUsedByTests
     private volatile boolean unregisterMBeans;
 
-    public SimpleRepoModule(File baseDir, Clock clock, Ticker ticker,
+    public SimpleRepoModule(DataSource dataSource, File dataDir, Clock clock, Ticker ticker,
             ConfigRepository configRepository, @Nullable ScheduledExecutorService scheduledExecutor,
-            PlatformMBeanServerLifecycle platformMBeanServerLifecycle, boolean internalH2MemDb,
-            boolean viewerMode) throws Exception {
-        File dataDir = new File(baseDir, "data");
+            boolean reaperDisabled) throws Exception {
         if (!dataDir.exists() && !dataDir.mkdir()) {
             throw new IOException("Could not create directory: " + dataDir.getAbsolutePath());
-        }
-        final DataSource dataSource;
-        if (internalH2MemDb) {
-            // mem db is only used for testing (by glowroot-test-container)
-            dataSource = new DataSource();
-        } else {
-            dataSource = new DataSource(new File(dataDir, "data.h2.db"));
         }
         this.dataSource = dataSource;
         this.configRepository = configRepository;
         StorageConfig storageConfig = configRepository.getStorageConfig();
-        final List<CappedDatabase> rollupCappedDatabases = Lists.newArrayList();
+        List<CappedDatabase> rollupCappedDatabases = Lists.newArrayList();
         for (int i = 0; i < storageConfig.rollupCappedDatabaseSizesMb().size(); i++) {
             File file = new File(dataDir, "rollup-" + i + "-detail.capped.db");
             int sizeKb = storageConfig.rollupCappedDatabaseSizesMb().get(i) * 1024;
@@ -97,6 +90,33 @@ public class SimpleRepoModule {
         this.rollupCappedDatabases = ImmutableList.copyOf(rollupCappedDatabases);
         traceCappedDatabase = new CappedDatabase(new File(dataDir, "trace-detail.capped.db"),
                 storageConfig.traceCappedDatabaseSizeMb() * 1024, ticker);
+
+        transactionTypeDao = new TransactionTypeDao(dataSource);
+        aggregateDao = new AggregateDao(dataSource, this.rollupCappedDatabases, configRepository,
+                transactionTypeDao, clock);
+        traceDao = new TraceDao(dataSource, traceCappedDatabase, transactionTypeDao);
+        GaugeMetaDao gaugeMetaDao = new GaugeMetaDao(dataSource);
+        gaugeValueDao = new GaugeValueDao(dataSource, gaugeMetaDao, configRepository, clock);
+
+        repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
+                configRepository);
+
+        TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
+        alertingService = new AlertingService(configRepository, triggeredAlertDao, aggregateDao,
+                new MailService());
+        if (reaperDisabled) {
+            reaperRunnable = null;
+        } else {
+            // scheduledExecutor must be non-null when enabling reaper
+            checkNotNull(scheduledExecutor);
+            reaperRunnable = new ReaperRunnable(configRepository, aggregateDao, traceDao,
+                    gaugeValueDao, gaugeMetaDao, transactionTypeDao, clock);
+            reaperRunnable.scheduleWithFixedDelay(scheduledExecutor, 0,
+                    SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
+        }
+    }
+
+    public void registerMBeans(PlatformMBeanServerLifecycle platformMBeanServerLifecycle) {
         platformMBeanServerLifecycle.addInitListener(new InitListener() {
             @Override
             public void doWithPlatformMBeanServer(MBeanServer mbeanServer) throws Exception {
@@ -121,28 +141,10 @@ public class SimpleRepoModule {
                 }
             }
         });
+    }
 
-        aggregateDao =
-                new AggregateDao(dataSource, this.rollupCappedDatabases, configRepository, clock);
-        traceDao = new TraceDao(dataSource, traceCappedDatabase);
-        gaugeValueDao = new GaugeValueDao(dataSource, configRepository, clock);
-
-        repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
-                configRepository);
-
-        TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
-        alertingService = new AlertingService(configRepository, triggeredAlertDao, aggregateDao,
-                new MailService());
-        if (viewerMode) {
-            reaperRunnable = null;
-        } else {
-            // scheduledExecutor must be non-null when not in viewer mode
-            checkNotNull(scheduledExecutor);
-            reaperRunnable = new ReaperRunnable(configRepository, aggregateDao, traceDao,
-                    gaugeValueDao, clock);
-            reaperRunnable.scheduleWithFixedDelay(scheduledExecutor, 0,
-                    SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
-        }
+    public TransactionTypeRepository getTransactionTypeRepository() {
+        return transactionTypeDao;
     }
 
     public AggregateRepository getAggregateRepository() {

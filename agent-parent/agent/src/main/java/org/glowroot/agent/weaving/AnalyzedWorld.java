@@ -175,7 +175,7 @@ public class AnalyzedWorld {
             return advisors;
         }
         ImmutableMap<Advice, LazyDefinedClass> newAdvisors =
-                AdviceGenerator.createAdvisors(instrumentationConfigs, null);
+                AdviceGenerator.createAdvisors(instrumentationConfigs, null, false);
         try {
             ClassLoaders.defineClassesInClassLoader(newAdvisors.values(), loader);
         } catch (Exception e) {

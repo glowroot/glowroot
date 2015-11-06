@@ -21,7 +21,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLongArray;
-import java.util.regex.Pattern;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -30,9 +29,7 @@ import com.google.common.primitives.Longs;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.common.config.GaugeConfig;
-import org.glowroot.common.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.common.util.Clock;
-import org.glowroot.common.util.Patterns;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
 import org.glowroot.storage.repo.GaugeValueRepository;
@@ -78,10 +75,10 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     private final Object rollupLock = new Object();
 
-    GaugeValueDao(DataSource dataSource, ConfigRepository configRepository, Clock clock)
-            throws Exception {
-        gaugeMetaDao = new GaugeMetaDao(dataSource);
+    GaugeValueDao(DataSource dataSource, GaugeMetaDao gaugeMetaDao,
+            ConfigRepository configRepository, Clock clock) throws Exception {
         this.dataSource = dataSource;
+        this.gaugeMetaDao = gaugeMetaDao;
         this.configRepository = configRepository;
         this.clock = clock;
         this.rollupConfigs = configRepository.getRollupConfigs();
@@ -125,29 +122,26 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public List<Gauge> getGauges(String serverGroup) throws Exception {
+    public List<Gauge> getGauges(String serverRollup) throws Exception {
         List<String> allGaugeNames = gaugeMetaDao.readAllGaugeNames();
         List<Gauge> gauges = Lists.newArrayList();
-        for (GaugeConfig gaugeConfig : configRepository.getGaugeConfigs(serverGroup)) {
-            for (MBeanAttribute mbeanAttribute : gaugeConfig.mbeanAttributes()) {
-                String gaugeName = gaugeConfig.mbeanObjectName() + ':' + mbeanAttribute.name();
-                if (mbeanAttribute.counter()) {
-                    gaugeName += "[counter]";
-                }
-                if (gaugeName.contains("*")) {
-                    gauges.addAll(getMatching(gaugeName, mbeanAttribute, allGaugeNames));
-                } else {
-                    String display = GaugeConfig.display(gaugeConfig.mbeanObjectName()) + '/'
-                            + mbeanAttribute.name();
-                    gauges.add(ImmutableGauge.of(gaugeName, display, mbeanAttribute.counter()));
-                }
+        for (String gaugeName : allGaugeNames) {
+            int index = gaugeName.lastIndexOf(':');
+            String mbeanObjectName = gaugeName.substring(0, index);
+            String mbeanAttributeName = gaugeName.substring(index + 1);
+            boolean counter = mbeanAttributeName.endsWith("[counter]");
+            if (counter) {
+                mbeanAttributeName = mbeanAttributeName.substring(0,
+                        mbeanAttributeName.length() - "[counter]".length());
             }
+            String display = GaugeConfig.display(mbeanObjectName) + '/' + mbeanAttributeName;
+            gauges.add(ImmutableGauge.of(gaugeName, display, counter));
         }
         return gauges;
     }
 
     @Override
-    public void store(final String serverGroup, final List<GaugeValue> gaugeValues)
+    public void store(final String serverRollup, final List<GaugeValue> gaugeValues)
             throws Exception {
         if (gaugeValues.isEmpty()) {
             return;
@@ -157,12 +151,15 @@ public class GaugeValueDao implements GaugeValueRepository {
                     @Override
                     public void bind(PreparedStatement preparedStatement) throws Exception {
                         for (GaugeValue gaugeValue : gaugeValues) {
-                            long gaugeId = gaugeMetaDao.getOrCreateGaugeId(serverGroup,
-                                    gaugeValue.getGaugeName());
+                            long gaugeId = gaugeMetaDao.updateLastCaptureTime(serverRollup,
+                                    gaugeValue.getGaugeName(), gaugeValue.getCaptureTime());
                             if (gaugeId == -1) {
                                 // data source is closing and a new gauge id was needed, but could
                                 // not insert it, but this bind is already inside of the data source
                                 // lock so any inserts here will succeed, thus the break
+                                //
+                                // --or-- race condition with GaugeMetaDao.deleteAll() in which case
+                                // break is the best option also
                                 break;
                             }
                             preparedStatement.setLong(1, gaugeId);
@@ -204,10 +201,10 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public List<GaugeValue> readGaugeValues(String serverGroup, String gaugeName,
+    public List<GaugeValue> readGaugeValues(String serverRollup, String gaugeName,
             long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception {
         String tableName = "gauge_value_rollup_" + castUntainted(rollupLevel);
-        Long gaugeId = gaugeMetaDao.getGaugeId(serverGroup, gaugeName);
+        Long gaugeId = gaugeMetaDao.getGaugeId(serverRollup, gaugeName);
         if (gaugeId == null) {
             // not necessarily an error, gauge id not created until first store
             return ImmutableList.of();
@@ -222,10 +219,10 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public List<GaugeValue> readManuallyRolledUpGaugeValues(String serverGroup, long from, long to,
+    public List<GaugeValue> readManuallyRolledUpGaugeValues(String serverRollup, long from, long to,
             String gaugeName, int rollupLevel, long liveCaptureTime) throws Exception {
         long fixedIntervalMillis = rollupConfigs.get(rollupLevel - 1).intervalMillis();
-        Long gaugeId = gaugeMetaDao.getGaugeId(serverGroup, gaugeName);
+        Long gaugeId = gaugeMetaDao.getGaugeId(serverRollup, gaugeName);
         if (gaugeId == null) {
             // not necessarily an error, gauge id not created until first store
             return ImmutableList.of();
@@ -256,7 +253,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public int getRollupLevelForView(String serverGroup, long from, long to) {
+    public int getRollupLevelForView(String serverRollup, long from, long to) throws Exception {
         long millis = to - from;
         long timeAgoMillis = clock.currentTimeMillis() - from;
         ImmutableList<Integer> rollupExpirationHours =
@@ -276,36 +273,22 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public void deleteAll(String serverGroup) throws Exception {
-        String whereClause = "gauge_id in (select gauge_id from gauge_meta where server_group = ?)";
-        dataSource.batchDelete("gauge_value_rollup_0", whereClause, serverGroup);
+    public void deleteAll(String serverRollup) throws Exception {
+        String whereClause =
+                "gauge_id in (select gauge_id from gauge_meta where server_rollup = ?)";
+        dataSource.batchDelete("gauge_value_rollup_0", whereClause, serverRollup);
         for (int i = 1; i <= configRepository.getRollupConfigs().size(); i++) {
             dataSource.batchDelete("gauge_value_rollup_" + castUntainted(i), whereClause,
-                    serverGroup);
+                    serverRollup);
         }
-        gaugeMetaDao.deleteAll(serverGroup);
+        gaugeMetaDao.deleteAll(serverRollup);
     }
 
-    void deleteBefore(String serverGroup, long captureTime, int rollupLevel) throws Exception {
-        String whereClause = "gauge_id in (select gauge_id from gauge_meta where server_group = ?)"
+    void deleteBefore(String serverRollup, long captureTime, int rollupLevel) throws Exception {
+        String whereClause = "gauge_id in (select gauge_id from gauge_meta where server_rollup = ?)"
                 + " and capture_time < ?";
         dataSource.batchDelete("gauge_value_rollup_" + castUntainted(rollupLevel), whereClause,
-                serverGroup, captureTime);
-    }
-
-    private List<Gauge> getMatching(String gaugeName, MBeanAttribute mbeanAttribute,
-            List<String> allGaugeNames) {
-        List<Gauge> gauges = Lists.newArrayList();
-        Pattern pattern = Pattern.compile(Patterns.buildSimplePattern(gaugeName));
-        for (String storedGaugeName : allGaugeNames) {
-            if (pattern.matcher(storedGaugeName).matches()) {
-                int index = storedGaugeName.lastIndexOf(':');
-                String objectName = storedGaugeName.substring(0, index);
-                String display = GaugeConfig.display(objectName) + '/' + mbeanAttribute.name();
-                gauges.add(ImmutableGauge.of(storedGaugeName, display, mbeanAttribute.counter()));
-            }
-        }
-        return gauges;
+                serverRollup, captureTime);
     }
 
     private void rollup(long lastRollupTime, long safeRollupTime, long fixedIntervalMillis,

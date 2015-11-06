@@ -27,7 +27,7 @@ glowroot.controller('ConfigGaugeListCtrl', [
       return gauge.config.display.replace(/\//g, '\u200b/');
     };
 
-    $http.get('backend/config/gauges?server=' + $scope.server)
+    $http.get('backend/config/gauges')
         .success(function (data) {
           $scope.loaded = true;
           $scope.gauges = data;

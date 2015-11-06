@@ -6,7 +6,16 @@
       <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>target/glowroot.log</file>
+    <append>false</append>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
   <root level="info">
-    <appender-ref ref="CONSOLE" />
+    <!-- unit tests do not log to console to avoid logging expected warnings and errors which can be
+      confusing to new users building glowroot from source -->
+    <appender-ref ref="FILE" />
   </root>
 </configuration>

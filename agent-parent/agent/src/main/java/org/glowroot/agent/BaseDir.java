@@ -16,7 +16,6 @@
 package org.glowroot.agent;
 
 import java.io.File;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -32,8 +31,8 @@ class BaseDir {
 
     private BaseDir() {}
 
-    public static File getBaseDir(Map<String, String> properties, @Nullable File glowrootJarFile) {
-        String baseDirPath = properties.get("glowroot.base.dir");
+    public static File getBaseDir(@Nullable String baseDirPath, @Nullable File glowrootJarFile) {
+
         if (glowrootJarFile == null) {
             // this is only for test support
             checkNotNull(baseDirPath, "Property base.dir is required when no glowroot jar file");

@@ -21,7 +21,6 @@ import org.junit.runner.notification.RunListener;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.util.SpyingLogbackFilter;
 
 public class SharedSetupRunListener extends RunListener {
 
@@ -59,8 +58,5 @@ public class SharedSetupRunListener extends RunListener {
         CassandraWrapper.start();
         // need to trigger and clear known warning message in static initializer
         Class.forName("com.datastax.driver.core.NettyUtil");
-        if (SpyingLogbackFilter.active()) {
-            SpyingLogbackFilter.clearMessages();
-        }
     }
 }

@@ -27,6 +27,7 @@ import org.glowroot.storage.simplerepo.util.DataSource;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.mockito.Mockito.mock;
 
 public class TraceDaoPerformanceMain {
 
@@ -37,10 +38,11 @@ public class TraceDaoPerformanceMain {
     private TraceDaoPerformanceMain() {}
 
     public static void main(String... args) throws Exception {
-        DataSource dataSource = new DataSource();
+        DataSource dataSource = DataSource.createH2InMemory();
         CappedDatabase cappedDatabase =
                 new CappedDatabase(new File("glowroot.capped.db"), 1000000, Ticker.systemTicker());
-        TraceDao traceDao = new TraceDao(dataSource, cappedDatabase);
+        TraceDao traceDao =
+                new TraceDao(dataSource, cappedDatabase, mock(TransactionTypeDao.class));
 
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (int i = 0; i < 1000; i++) {

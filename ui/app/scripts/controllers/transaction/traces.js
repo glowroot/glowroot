@@ -96,7 +96,7 @@ glowroot.controller('TracesCtrl', [
       if (errorOnly) {
         query.errorOnly = true;
       }
-      query.serverGroup = $scope.serverGroup;
+      query.serverRollup = $scope.serverRollup;
       $scope.showChartSpinner++;
       $http.get('backend/trace/points' + queryStrings.encodeObject(query))
           .success(function (data) {
@@ -131,6 +131,7 @@ glowroot.controller('TracesCtrl', [
             $scope.showExpiredMessage = data.expired;
             $scope.chartLimitExceeded = data.limitExceeded;
             $scope.chartLimit = limit;
+            $scope.traceAttributeNames = data.traceAttributeNames;
             // user clicked on Refresh button, need to reset axes
             plot.getAxes().xaxis.options.min = from;
             plot.getAxes().xaxis.options.max = to;
@@ -332,7 +333,7 @@ glowroot.controller('TracesCtrl', [
       if (item) {
         plot.unhighlight();
         plot.highlight(item.series, item.datapoint);
-        var server = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
+        var serverId = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
         var traceId = plot.getData()[item.seriesIndex].data[item.dataIndex][3];
         if (originalEvent.ctrlKey) {
           var url = $location.url();
@@ -341,15 +342,15 @@ glowroot.controller('TracesCtrl', [
           } else {
             url += '&';
           }
-          if (server) {
-            url += 'modal-server=' + server + '&';
+          if (serverId) {
+            url += 'modal-server-id=' + serverId + '&';
           }
           url += 'modal-trace-id=' + traceId;
           window.open(url);
         } else {
           $scope.$apply(function () {
-            if (server) {
-              $location.search('modal-server', server);
+            if (serverId) {
+              $location.search('modal-server-id', serverId);
             }
             $location.search('modal-trace-id', traceId);
           });
@@ -435,11 +436,11 @@ glowroot.controller('TracesCtrl', [
         $scope.filterResponseTimeComparator = 'greater';
       }
 
-      var modalServer = $location.search()['modal-server'] || '';
+      var modalServer = $location.search()['modal-server-id'] || '';
       var modalTraceId = $location.search()['modal-trace-id'];
       if (modalTraceId) {
         highlightedTraceId = modalTraceId;
-        $('#traceModal').data('location-query', ['modal-server', 'modal-trace-id']);
+        $('#traceModal').data('location-query', ['modal-server-id', 'modal-trace-id']);
         traceModal.displayModal(modalServer, modalTraceId);
       } else {
         $('#traceModal').modal('hide');
@@ -494,7 +495,7 @@ glowroot.controller('TracesCtrl', [
         query.limit = appliedFilter.limit;
       }
       // preserve modal-*, otherwise refresh on modal trace does not work
-      query['modal-server'] = $location.search()['modal-server'];
+      query['modal-server-id'] = $location.search()['modal-server-id'];
       query['modal-trace-id'] = $location.search()['modal-trace-id'];
       $location.search(query);
     }

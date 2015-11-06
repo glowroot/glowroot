@@ -17,9 +17,7 @@ package org.glowroot.agent;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -49,7 +47,7 @@ public class BaseDirTest {
     public void testWithNoBaseDirPropertyAndGlowrootJarFile() {
         // given
         // when
-        File baseDir = BaseDir.getBaseDir(ImmutableMap.<String, String>of(), glowrootJarFile);
+        File baseDir = BaseDir.getBaseDir(null, glowrootJarFile);
         // then
         assertThat(baseDir.getPath()).isEqualTo(glowrootJarFile.getParent());
     }
@@ -58,8 +56,7 @@ public class BaseDirTest {
     public void testWithNoBaseDirPropertyAndGlowrootJarFileWithNullParent() {
         // given
         // when
-        File baseDir =
-                BaseDir.getBaseDir(ImmutableMap.<String, String>of(), new File("glowroot.jar"));
+        File baseDir = BaseDir.getBaseDir(null, new File("glowroot.jar"));
         // then
         assertThat(baseDir.getPath()).isEqualTo(new File(".").getPath());
     }
@@ -67,10 +64,8 @@ public class BaseDirTest {
     @Test
     public void testWithAbsoluteBaseDirProperty() {
         // given
-        Map<String, String> properties =
-                ImmutableMap.of("glowroot.base.dir", customBaseDir.getPath());
         // when
-        File baseDir = BaseDir.getBaseDir(properties, null);
+        File baseDir = BaseDir.getBaseDir(customBaseDir.getPath(), null);
         // then
         assertThat(baseDir.getPath()).isEqualTo(customBaseDir.getPath());
     }
@@ -78,10 +73,8 @@ public class BaseDirTest {
     @Test
     public void testWithAbsoluteBaseDirPropertyAndGlowrootJarFile() {
         // given
-        Map<String, String> properties =
-                ImmutableMap.of("glowroot.base.dir", customBaseDir.getPath());
         // when
-        File baseDir = BaseDir.getBaseDir(properties, glowrootJarFile);
+        File baseDir = BaseDir.getBaseDir(customBaseDir.getPath(), glowrootJarFile);
         // then
         assertThat(baseDir.getPath()).isEqualTo(customBaseDir.getPath());
     }
@@ -89,10 +82,8 @@ public class BaseDirTest {
     @Test
     public void testWithRelativeBaseDirPropertyAndGlowrootJarFile() {
         // given
-        Map<String, String> properties =
-                ImmutableMap.of("glowroot.base.dir", "x" + File.separator + "y");
         // when
-        File baseDir = BaseDir.getBaseDir(properties, glowrootJarFile);
+        File baseDir = BaseDir.getBaseDir("x" + File.separator + "y", glowrootJarFile);
         // then
         assertThat(baseDir.getPath())
                 .isEqualTo(new File(glowrootJarFile.getParentFile(), "x/y").getPath());
@@ -101,10 +92,8 @@ public class BaseDirTest {
     @Test
     public void testWithBadAbsoluteBaseDirPropertyAndGlowrootJarFile() {
         // given
-        Map<String, String> properties =
-                ImmutableMap.of("glowroot.base.dir", glowrootJarFile.getPath());
         // when
-        File baseDir = BaseDir.getBaseDir(properties, glowrootJarFile);
+        File baseDir = BaseDir.getBaseDir(glowrootJarFile.getPath(), glowrootJarFile);
         // then
         assertThat(baseDir.getPath()).isEqualTo(new File(".").getPath());
     }

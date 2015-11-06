@@ -16,6 +16,7 @@
 package org.glowroot.agent.live;
 
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -35,9 +36,14 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
         this.aggregator = aggregator;
     }
 
+    @Override
+    public Set<String> getLiveTransactionTypes(String serverId) {
+        return aggregator.getLiveTransactionTypes();
+    }
+
     // from is non-inclusive
     @Override
-    public @Nullable LiveResult<OverallSummary> getLiveOverallSummary(String server,
+    public @Nullable LiveResult<OverallSummary> getLiveOverallSummary(String serverId,
             final String transactionType, long from, long to) throws Exception {
         return map(from, to, new Mapper<OverallSummary>() {
             @Override
@@ -49,8 +55,8 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
 
     // from is non-inclusive
     @Override
-    public @Nullable LiveResult<List<TransactionSummary>> getLiveTransactionSummaries(String server,
-            final String transactionType, long from, long to) throws Exception {
+    public @Nullable LiveResult<List<TransactionSummary>> getLiveTransactionSummaries(
+            String serverId, final String transactionType, long from, long to) throws Exception {
         return map(from, to, new Mapper<List<TransactionSummary>>() {
             @Override
             public List<TransactionSummary> map(AggregateIntervalCollector collector) {
@@ -60,7 +66,7 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
     }
 
     @Override
-    public @Nullable LiveResult<OverviewAggregate> getLiveOverviewAggregates(String server,
+    public @Nullable LiveResult<OverviewAggregate> getLiveOverviewAggregates(String serverId,
             final String transactionType, final @Nullable String transactionName, long from,
             long to, final long liveCaptureTime) throws Exception {
         return map(from, to, new Mapper<OverviewAggregate>() {
@@ -74,7 +80,7 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
     }
 
     @Override
-    public @Nullable LiveResult<PercentileAggregate> getLivePercentileAggregates(String server,
+    public @Nullable LiveResult<PercentileAggregate> getLivePercentileAggregates(String serverId,
             final String transactionType, final @Nullable String transactionName, long from,
             long to, final long liveCaptureTime) throws Exception {
         return map(from, to, new Mapper<PercentileAggregate>() {
@@ -88,7 +94,7 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
     }
 
     @Override
-    public @Nullable LiveResult<ThroughputAggregate> getLiveThroughputAggregates(String server,
+    public @Nullable LiveResult<ThroughputAggregate> getLiveThroughputAggregates(String serverId,
             final String transactionType, final @Nullable String transactionName, long from,
             long to, final long liveCaptureTime) throws Exception {
         return map(from, to, new Mapper<ThroughputAggregate>() {
@@ -102,7 +108,7 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
     }
 
     @Override
-    public @Nullable LiveResult<ProfileTree> getLiveProfileTree(String server,
+    public @Nullable LiveResult<ProfileTree> getLiveProfileTree(String serverId,
             final String transactionType, final @Nullable String transactionName, long from,
             long to) throws Exception {
         return map(from, to, new Mapper<ProfileTree>() {
@@ -115,7 +121,7 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
     }
 
     @Override
-    public @Nullable LiveResult<List<Aggregate.QueriesByType>> getLiveQueries(String server,
+    public @Nullable LiveResult<List<Aggregate.QueriesByType>> getLiveQueries(String serverId,
             final String transactionType, final @Nullable String transactionName, long from,
             long to) throws Exception {
         return map(from, to, new Mapper<List<Aggregate.QueriesByType>>() {
@@ -128,7 +134,7 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
     }
 
     @Override
-    public @Nullable LiveResult<OverallErrorSummary> getLiveOverallErrorSummary(String server,
+    public @Nullable LiveResult<OverallErrorSummary> getLiveOverallErrorSummary(String serverId,
             final String transactionType, long from, long to) throws Exception {
         return map(from, to, new Mapper<OverallErrorSummary>() {
             @Override
@@ -140,7 +146,7 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
 
     @Override
     public @Nullable LiveResult<List<TransactionErrorSummary>> getLiveTransactionErrorSummaries(
-            String server, final String transactionType, long from, long to) throws Exception {
+            String serverId, final String transactionType, long from, long to) throws Exception {
         return map(from, to, new Mapper<List<TransactionErrorSummary>>() {
             @Override
             public List<TransactionErrorSummary> map(AggregateIntervalCollector collector) {
@@ -150,7 +156,7 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
     }
 
     @Override
-    public @Nullable LiveResult<ErrorPoint> getLiveErrorPoints(String server,
+    public @Nullable LiveResult<ErrorPoint> getLiveErrorPoints(String serverId,
             final String transactionType, final @Nullable String transactionName, long from,
             long to, final long liveCaptureTime) throws Exception {
         return map(from, to, new Mapper<ErrorPoint>() {

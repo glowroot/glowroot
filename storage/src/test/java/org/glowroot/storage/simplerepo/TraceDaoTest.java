@@ -32,6 +32,7 @@ import org.glowroot.storage.simplerepo.util.DataSource;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class TraceDaoTest {
 
@@ -44,13 +45,13 @@ public class TraceDaoTest {
 
     @Before
     public void beforeEachTest() throws Exception {
-        dataSource = new DataSource();
+        dataSource = DataSource.createH2InMemory();
         if (dataSource.getSchema().tableExists("trace")) {
             dataSource.execute("drop table trace");
         }
         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
         cappedDatabase = new CappedDatabase(cappedFile, 1000000, Ticker.systemTicker());
-        traceDao = new TraceDao(dataSource, cappedDatabase);
+        traceDao = new TraceDao(dataSource, cappedDatabase, mock(TransactionTypeDao.class));
     }
 
     @After
@@ -66,7 +67,7 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_NAME, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverGroup("")
+                .serverRollup("")
                 .from(0)
                 .to(100)
                 .durationNanosLow(0)
@@ -93,7 +94,7 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_NAME, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverGroup("")
+                .serverRollup("")
                 .from(0)
                 .to(100)
                 .durationNanosLow(trace.getHeader().getDurationNanos())
@@ -114,7 +115,7 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_NAME, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverGroup("")
+                .serverRollup("")
                 .from(0)
                 .to(0)
                 .durationNanosLow(trace.getHeader().getDurationNanos() + 1)
@@ -135,7 +136,7 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_NAME, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverGroup("")
+                .serverRollup("")
                 .from(0)
                 .to(0)
                 .durationNanosLow(trace.getHeader().getDurationNanos() - 2)
@@ -156,7 +157,7 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_NAME, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverGroup("")
+                .serverRollup("")
                 .from(0)
                 .to(100)
                 .durationNanosLow(0)
@@ -180,7 +181,7 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_NAME, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverGroup("")
+                .serverRollup("")
                 .from(0)
                 .to(100)
                 .durationNanosLow(0)
@@ -204,7 +205,7 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_NAME, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverGroup("")
+                .serverRollup("")
                 .from(0)
                 .to(100)
                 .durationNanosLow(0)
@@ -228,7 +229,7 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_NAME, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverGroup("")
+                .serverRollup("")
                 .from(0)
                 .to(100)
                 .durationNanosLow(0)
@@ -252,7 +253,7 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_NAME, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverGroup("")
+                .serverRollup("")
                 .from(0)
                 .to(100)
                 .durationNanosLow(0)

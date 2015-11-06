@@ -91,17 +91,17 @@ class TransactionCommonService {
     }
 
     // from is non-inclusive
-    OverallSummary readOverallSummary(String serverGroup, String transactionType, long from,
+    OverallSummary readOverallSummary(String serverRollup, String transactionType, long from,
             long to) throws Exception {
         LiveResult<OverallSummary> liveResult = liveAggregateRepository
-                .getLiveOverallSummary(serverGroup, transactionType, from, to);
+                .getLiveOverallSummary(serverRollup, transactionType, from, to);
         if (liveResult == null) {
-            return aggregateRepository.readOverallSummary(serverGroup, transactionType, from, to);
+            return aggregateRepository.readOverallSummary(serverRollup, transactionType, from, to);
         }
         // -1 since query 'to' is inclusive
         // this way don't need to worry about de-dupping between live and stored aggregates
         long revisedTo = liveResult.initialCaptureTime() - 1;
-        OverallSummary overallSummary = aggregateRepository.readOverallSummary(serverGroup,
+        OverallSummary overallSummary = aggregateRepository.readOverallSummary(serverRollup,
                 transactionType, from, revisedTo);
         for (OverallSummary liveOverallSummary : liveResult.get()) {
             overallSummary = combineOverallSummaries(overallSummary, liveOverallSummary);
@@ -113,7 +113,7 @@ class TransactionCommonService {
     Result<TransactionSummary> readTransactionSummaries(TransactionSummaryQuery query)
             throws Exception {
         LiveResult<List<TransactionSummary>> liveResult =
-                liveAggregateRepository.getLiveTransactionSummaries(query.serverGroup(),
+                liveAggregateRepository.getLiveTransactionSummaries(query.serverRollup(),
                         query.transactionType(), query.from(), query.to());
         if (liveResult == null) {
             return aggregateRepository.readTransactionSummaries(query);
@@ -140,41 +140,41 @@ class TransactionCommonService {
     }
 
     // from is non-inclusive
-    boolean shouldHaveQueries(String serverGroup, String transactionType,
+    boolean shouldHaveQueries(String serverRollup, String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
         if (transactionName == null) {
-            return aggregateRepository.shouldHaveOverallQueries(serverGroup, transactionType, from,
+            return aggregateRepository.shouldHaveOverallQueries(serverRollup, transactionType, from,
                     to);
         } else {
-            return aggregateRepository.shouldHaveTransactionQueries(serverGroup, transactionType,
+            return aggregateRepository.shouldHaveTransactionQueries(serverRollup, transactionType,
                     transactionName, from, to);
         }
     }
 
     // from is non-inclusive
-    boolean shouldHaveProfile(String serverGroup, String transactionType,
+    boolean shouldHaveProfile(String serverRollup, String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
         if (transactionName == null) {
-            return aggregateRepository.shouldHaveOverallProfile(serverGroup, transactionType, from,
+            return aggregateRepository.shouldHaveOverallProfile(serverRollup, transactionType, from,
                     to);
         } else {
-            return aggregateRepository.shouldHaveTransactionProfile(serverGroup, transactionType,
+            return aggregateRepository.shouldHaveTransactionProfile(serverRollup, transactionType,
                     transactionName, from, to);
         }
     }
 
     // from is INCLUSIVE
-    List<OverviewAggregate> getOverviewAggregates(String serverGroup, String transactionType,
+    List<OverviewAggregate> getOverviewAggregates(String serverRollup, String transactionType,
             @Nullable String transactionName, long from, long to, long liveCaptureTime)
                     throws Exception {
-        int rollupLevel = aggregateRepository.getRollupLevelForView(serverGroup, from, to);
+        int rollupLevel = aggregateRepository.getRollupLevelForView(serverRollup, from, to);
         LiveResult<OverviewAggregate> liveResult =
-                liveAggregateRepository.getLiveOverviewAggregates(serverGroup, transactionType,
+                liveAggregateRepository.getLiveOverviewAggregates(serverRollup, transactionType,
                         transactionName, from - 1, to, liveCaptureTime);
         // -1 since query 'to' is inclusive
         // this way don't need to worry about de-dupping between live and stored aggregates
         long revisedTo = liveResult == null ? to : liveResult.initialCaptureTime() - 1;
-        List<OverviewAggregate> aggregates = getOverviewAggregatesFromDao(serverGroup,
+        List<OverviewAggregate> aggregates = getOverviewAggregatesFromDao(serverRollup,
                 transactionType, transactionName, from, revisedTo, rollupLevel);
         if (rollupLevel == 0) {
             aggregates = Lists.newArrayList(aggregates);
@@ -189,7 +189,7 @@ class TransactionCommonService {
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<OverviewAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
-        orderedNonRolledUpAggregates.addAll(getOverviewAggregatesFromDao(serverGroup,
+        orderedNonRolledUpAggregates.addAll(getOverviewAggregatesFromDao(serverRollup,
                 transactionType, transactionName, nonRolledUpFrom, revisedTo, 0));
         if (liveResult != null) {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
@@ -201,17 +201,17 @@ class TransactionCommonService {
     }
 
     // from is INCLUSIVE
-    List<PercentileAggregate> getPercentileAggregates(String serverGroup, String transactionType,
+    List<PercentileAggregate> getPercentileAggregates(String serverRollup, String transactionType,
             @Nullable String transactionName, long from, long to, long liveCaptureTime)
                     throws Exception {
-        int rollupLevel = aggregateRepository.getRollupLevelForView(serverGroup, from, to);
+        int rollupLevel = aggregateRepository.getRollupLevelForView(serverRollup, from, to);
         LiveResult<PercentileAggregate> liveResult =
-                liveAggregateRepository.getLivePercentileAggregates(serverGroup, transactionType,
+                liveAggregateRepository.getLivePercentileAggregates(serverRollup, transactionType,
                         transactionName, from - 1, to, liveCaptureTime);
         // -1 since query 'to' is inclusive
         // this way don't need to worry about de-dupping between live and stored aggregates
         long revisedTo = liveResult == null ? to : liveResult.initialCaptureTime() - 1;
-        List<PercentileAggregate> aggregates = getPercentileAggregatesFromDao(serverGroup,
+        List<PercentileAggregate> aggregates = getPercentileAggregatesFromDao(serverRollup,
                 transactionType, transactionName, from, revisedTo, rollupLevel);
         if (rollupLevel == 0) {
             aggregates = Lists.newArrayList(aggregates);
@@ -226,7 +226,7 @@ class TransactionCommonService {
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<PercentileAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
-        orderedNonRolledUpAggregates.addAll(getPercentileAggregatesFromDao(serverGroup,
+        orderedNonRolledUpAggregates.addAll(getPercentileAggregatesFromDao(serverRollup,
                 transactionType, transactionName, nonRolledUpFrom, revisedTo, 0));
         if (liveResult != null) {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
@@ -238,17 +238,17 @@ class TransactionCommonService {
     }
 
     // from is INCLUSIVE
-    List<ThroughputAggregate> getThroughputAggregates(String serverGroup, String transactionType,
+    List<ThroughputAggregate> getThroughputAggregates(String serverRollup, String transactionType,
             @Nullable String transactionName, long from, long to, long liveCaptureTime)
                     throws Exception {
-        int rollupLevel = aggregateRepository.getRollupLevelForView(serverGroup, from, to);
+        int rollupLevel = aggregateRepository.getRollupLevelForView(serverRollup, from, to);
         LiveResult<ThroughputAggregate> liveResult =
-                liveAggregateRepository.getLiveThroughputAggregates(serverGroup, transactionType,
+                liveAggregateRepository.getLiveThroughputAggregates(serverRollup, transactionType,
                         transactionName, from - 1, to, liveCaptureTime);
         // -1 since query 'to' is inclusive
         // this way don't need to worry about de-dupping between live and stored aggregates
         long revisedTo = liveResult == null ? to : liveResult.initialCaptureTime() - 1;
-        List<ThroughputAggregate> aggregates = getThroughputAggregatesFromDao(serverGroup,
+        List<ThroughputAggregate> aggregates = getThroughputAggregatesFromDao(serverRollup,
                 transactionType, transactionName, from, revisedTo, rollupLevel);
         if (rollupLevel == 0) {
             aggregates = Lists.newArrayList(aggregates);
@@ -263,7 +263,7 @@ class TransactionCommonService {
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<ThroughputAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
-        orderedNonRolledUpAggregates.addAll(getThroughputAggregatesFromDao(serverGroup,
+        orderedNonRolledUpAggregates.addAll(getThroughputAggregatesFromDao(serverRollup,
                 transactionType, transactionName, nonRolledUpFrom, revisedTo, 0));
         if (liveResult != null) {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
@@ -275,11 +275,11 @@ class TransactionCommonService {
     }
 
     // from is non-inclusive
-    MutableProfileTree getMergedProfile(String serverGroup, String transactionType,
+    MutableProfileTree getMergedProfile(String serverRollup, String transactionType,
             @Nullable String transactionName, long from, long to, List<String> includes,
             List<String> excludes, double truncateBranchPercentage) throws Exception {
         MutableProfileTree profileTree =
-                getMergedProfile(serverGroup, transactionType, transactionName, from, to);
+                getMergedProfile(serverRollup, transactionType, transactionName, from, to);
         if (!includes.isEmpty() || !excludes.isEmpty()) {
             profileTree.filter(includes, excludes);
         }
@@ -293,47 +293,47 @@ class TransactionCommonService {
     }
 
     // from is non-inclusive
-    List<Aggregate.QueriesByType> getMergedQueries(String serverGroup, String transactionType,
+    List<Aggregate.QueriesByType> getMergedQueries(String serverRollup, String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
-        return getMergedQueries(serverGroup, transactionType, transactionName, from, to,
-                configRepository.getAdvancedConfig(serverGroup).maxAggregateQueriesPerQueryType());
+        return getMergedQueries(serverRollup, transactionType, transactionName, from, to,
+                configRepository.getAdvancedConfig(serverRollup).maxAggregateQueriesPerQueryType());
     }
 
     // from is INCLUSIVE
-    private List<OverviewAggregate> getOverviewAggregatesFromDao(String serverGroup,
+    private List<OverviewAggregate> getOverviewAggregatesFromDao(String serverRollup,
             String transactionType, @Nullable String transactionName, long from, long to,
             int rollupLevel) throws Exception {
         if (transactionName == null) {
-            return aggregateRepository.readOverallOverviewAggregates(serverGroup, transactionType,
+            return aggregateRepository.readOverallOverviewAggregates(serverRollup, transactionType,
                     from, to, rollupLevel);
         } else {
-            return aggregateRepository.readTransactionOverviewAggregates(serverGroup,
+            return aggregateRepository.readTransactionOverviewAggregates(serverRollup,
                     transactionType, transactionName, from, to, rollupLevel);
         }
     }
 
     // from is INCLUSIVE
-    private List<PercentileAggregate> getPercentileAggregatesFromDao(String serverGroup,
+    private List<PercentileAggregate> getPercentileAggregatesFromDao(String serverRollup,
             String transactionType, @Nullable String transactionName, long from, long to,
             int rollupLevel) throws Exception {
         if (transactionName == null) {
-            return aggregateRepository.readOverallPercentileAggregates(serverGroup, transactionType,
-                    from, to, rollupLevel);
+            return aggregateRepository.readOverallPercentileAggregates(serverRollup,
+                    transactionType, from, to, rollupLevel);
         } else {
-            return aggregateRepository.readTransactionPercentileAggregates(serverGroup,
+            return aggregateRepository.readTransactionPercentileAggregates(serverRollup,
                     transactionType, transactionName, from, to, rollupLevel);
         }
     }
 
     // from is INCLUSIVE
-    private List<ThroughputAggregate> getThroughputAggregatesFromDao(String serverGroup,
+    private List<ThroughputAggregate> getThroughputAggregatesFromDao(String serverRollup,
             String transactionType, @Nullable String transactionName, long from, long to,
             int rollupLevel) throws Exception {
         if (transactionName == null) {
-            return aggregateRepository.readOverallThroughputAggregates(serverGroup, transactionType,
-                    from, to, rollupLevel);
+            return aggregateRepository.readOverallThroughputAggregates(serverRollup,
+                    transactionType, from, to, rollupLevel);
         } else {
-            return aggregateRepository.readTransactionThroughputAggregates(serverGroup,
+            return aggregateRepository.readTransactionThroughputAggregates(serverRollup,
                     transactionType, transactionName, from, to, rollupLevel);
         }
     }
@@ -344,18 +344,18 @@ class TransactionCommonService {
     // result as opposed to charted over time period
     //
     // from is non-inclusive
-    private MutableProfileTree getMergedProfile(String serverGroup, String transactionType,
+    private MutableProfileTree getMergedProfile(String serverRollup, String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
-        int initialRollupLevel = aggregateRepository.getRollupLevelForView(serverGroup, from, to);
-        LiveResult<ProfileTree> liveResult = liveAggregateRepository.getLiveProfileTree(serverGroup,
-                transactionType, transactionName, from, to);
+        int initialRollupLevel = aggregateRepository.getRollupLevelForView(serverRollup, from, to);
+        LiveResult<ProfileTree> liveResult = liveAggregateRepository
+                .getLiveProfileTree(serverRollup, transactionType, transactionName, from, to);
         // -1 since query 'to' is inclusive
         // this way don't need to worry about de-dupping between live and stored aggregates
         long revisedTo = liveResult == null ? to : liveResult.initialCaptureTime() - 1;
         long revisedFrom = from;
         ProfileCollector mergedProfile = new ProfileCollector();
         for (int rollupLevel = initialRollupLevel; rollupLevel >= 0; rollupLevel--) {
-            mergeInProfileFromDao(mergedProfile, serverGroup, transactionType, transactionName,
+            mergeInProfileFromDao(mergedProfile, serverRollup, transactionType, transactionName,
                     revisedFrom, revisedTo, rollupLevel);
             long lastRolledUpTime = mergedProfile.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
@@ -377,19 +377,19 @@ class TransactionCommonService {
     // result as opposed to charted over time period
     //
     // from is non-inclusive
-    private List<Aggregate.QueriesByType> getMergedQueries(String serverGroup,
+    private List<Aggregate.QueriesByType> getMergedQueries(String serverRollup,
             String transactionType, @Nullable String transactionName, long from, long to,
             int maxAggregateQueriesPerQueryType) throws Exception {
-        int initialRollupLevel = aggregateRepository.getRollupLevelForView(serverGroup, from, to);
+        int initialRollupLevel = aggregateRepository.getRollupLevelForView(serverRollup, from, to);
         LiveResult<List<Aggregate.QueriesByType>> liveResult = liveAggregateRepository
-                .getLiveQueries(serverGroup, transactionType, transactionName, from, to);
+                .getLiveQueries(serverRollup, transactionType, transactionName, from, to);
         // -1 since query 'to' is inclusive
         // this way don't need to worry about de-dupping between live and stored aggregates
         long revisedTo = liveResult == null ? to : liveResult.initialCaptureTime() - 1;
         long revisedFrom = from;
         QueryCollector mergedQueries = new QueryCollector(maxAggregateQueriesPerQueryType, 0);
         for (int rollupLevel = initialRollupLevel; rollupLevel >= 0; rollupLevel--) {
-            mergeInQueriesFromDao(mergedQueries, serverGroup, transactionType, transactionName,
+            mergeInQueriesFromDao(mergedQueries, serverRollup, transactionType, transactionName,
                     from, revisedTo, rollupLevel);
             long lastRolledUpTime = mergedQueries.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
@@ -406,27 +406,27 @@ class TransactionCommonService {
     }
 
     // from is non-inclusive
-    private void mergeInProfileFromDao(ProfileCollector mergedProfile, String serverGroup,
+    private void mergeInProfileFromDao(ProfileCollector mergedProfile, String serverRollup,
             String transactionType, @Nullable String transactionName, long from, long to,
             int rollupLevel) throws Exception {
         if (transactionName == null) {
-            aggregateRepository.mergeInOverallProfiles(mergedProfile, serverGroup, transactionType,
+            aggregateRepository.mergeInOverallProfiles(mergedProfile, serverRollup, transactionType,
                     from, to, rollupLevel);
         } else {
-            aggregateRepository.mergeInTransactionProfiles(mergedProfile, serverGroup,
+            aggregateRepository.mergeInTransactionProfiles(mergedProfile, serverRollup,
                     transactionType, transactionName, from, to, rollupLevel);
         }
     }
 
     // from is non-inclusive
-    private void mergeInQueriesFromDao(QueryCollector mergedQueries, String serverGroup,
+    private void mergeInQueriesFromDao(QueryCollector mergedQueries, String serverRollup,
             String transactionType, @Nullable String transactionName, long from, long to,
             int rollupLevel) throws Exception {
         if (transactionName == null) {
-            aggregateRepository.mergeInOverallQueries(mergedQueries, serverGroup, transactionType,
+            aggregateRepository.mergeInOverallQueries(mergedQueries, serverRollup, transactionType,
                     from, to, rollupLevel);
         } else {
-            aggregateRepository.mergeInTransactionQueries(mergedQueries, serverGroup,
+            aggregateRepository.mergeInTransactionQueries(mergedQueries, serverRollup,
                     transactionType, transactionName, from, to, rollupLevel);
         }
     }

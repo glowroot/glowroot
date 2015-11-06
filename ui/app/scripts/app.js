@@ -48,6 +48,7 @@ glowroot.config([
                   .success(function (data) {
                     $rootScope.layout = data;
                   });
+              // TODO handle error() above
             }
             return response;
           },
@@ -96,9 +97,39 @@ glowroot.run([
   'login',
   function ($rootScope, $http, $location, $state, login) {
 
-    // FIXME
-    $rootScope.serverGroup = '';
-    $rootScope.server = '';
+    $rootScope.serverId = '';
+
+    $rootScope.$on('$locationChangeSuccess', function () {
+      $rootScope.serverRollup = $location.search()['server-rollup'] || '';
+    });
+
+    $rootScope.transactionTypes = function () {
+      if (!$rootScope.layout) {
+        return [];
+      }
+      var serverRollupObj = $rootScope.layout.serverRollups[$rootScope.serverRollup];
+      if (!serverRollupObj) {
+        return [];
+      }
+      return serverRollupObj.transactionTypes;
+    };
+
+    $rootScope.defaultTransactionType = function () {
+      if (!$rootScope.layout) {
+        return '';
+      }
+      if (!$rootScope.layout.central) {
+        return $rootScope.layout.defaultTransactionType;
+      }
+      var transactionTypes = $rootScope.transactionTypes();
+      if (transactionTypes.indexOf($rootScope.layout.defaultTransactionType) !== -1) {
+        return $rootScope.layout.defaultTransactionType;
+      }
+      if (transactionTypes.length === 0) {
+        return '';
+      }
+      return transactionTypes[0];
+    };
 
     $rootScope.showSignIn = function () {
       return !$rootScope.authenticatedUser && $rootScope.layout && $rootScope.layout.adminPasswordEnabled;
@@ -174,7 +205,7 @@ glowroot.run([
       setInitialLayout(window.layout);
       $rootScope.authenticatedUser = window.authenticatedUser;
     } else {
-      // running in dev under 'grunt server'
+      // running in dev under 'grunt serve'
       $http.get('backend/authenticated-user')
           .success(function (data) {
             $rootScope.authenticatedUser = data;

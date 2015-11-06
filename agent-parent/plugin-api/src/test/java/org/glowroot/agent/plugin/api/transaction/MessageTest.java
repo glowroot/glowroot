@@ -18,7 +18,6 @@ package org.glowroot.agent.plugin.api.transaction;
 import com.google.common.base.Strings;
 import org.junit.Test;
 
-import org.glowroot.agent.plugin.api.transaction.Message;
 import org.glowroot.agent.plugin.api.transaction.internal.ReadableMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -6,10 +6,16 @@
       <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
-  <!-- don't clutter unit test output with cassandra info logging -->
-  <root level="warn">
-    <appender-ref ref="CONSOLE" />
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>target/glowroot.log</file>
+    <append>false</append>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <root level="info">
+    <!-- unit tests do not log to console to avoid logging expected warnings and errors which can be
+      confusing to new users building glowroot from source -->
+    <appender-ref ref="FILE" />
   </root>
-  <!-- suppress known harmless warn message in NettyUtil static initializer -->
-  <logger name="com.datastax.driver.core.NettyUtil" level="error" />
 </configuration>

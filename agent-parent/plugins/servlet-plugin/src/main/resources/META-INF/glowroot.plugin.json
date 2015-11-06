@@ -1,9 +1,6 @@
 {
   "name": "Servlet Plugin",
   "id": "servlet",
-  "transactionTypes": [
-    "Servlet"
-  ],
   "properties": [
     {
       "name": "sessionUserAttribute",
