@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.plugin.logger;
 
+import javax.annotation.Nullable;
+
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.config.ConfigService;
@@ -51,36 +53,27 @@ class LoggerPlugin {
         LoggerPlugin.inAdvice.set(inAdvice);
     }
 
-    static boolean markTraceAsError(Level level, boolean throwable) {
-        if (level == Level.ERROR || level == Level.FATAL) {
+    static boolean markTraceAsError(boolean isErrorOrHigher, boolean isWarnOrHigher,
+            boolean throwable) {
+        if (isErrorOrHigher) {
             return throwable ? traceErrorOnErrorWithThrowable.value()
                     : traceErrorOnErrorWithoutThrowable.value();
         }
-        if (level == Level.WARN) {
+        if (isWarnOrHigher) {
             return throwable ? traceErrorOnWarningWithThrowable.value()
                     : traceErrorOnWarningWithoutThrowable.value();
         }
         return false;
     }
 
-    static enum Level {
-
-        TRACE("trace"),
-        DEBUG("debug"),
-        INFO("info"),
-        WARN("warn"),
-        ERROR("error"),
-        FATAL("fatal"),
-        UNKNOWN("unknown");
-
-        private final String name;
-
-        private Level(String name) {
-            this.name = name;
+    static String getShortName(@Nullable String loggerName) {
+        if (loggerName == null) {
+            return "null";
         }
-
-        String getName() {
-            return name;
+        int index = loggerName.lastIndexOf('.');
+        if (index == -1) {
+            return loggerName;
         }
+        return loggerName.substring(index + 1);
     }
 }

@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.plugin.logger;
 
+import java.util.Enumeration;
+
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
@@ -24,12 +26,13 @@ import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.transaction.TraceEntry;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
+import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.logger.LoggerPlugin.Level;
+import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class Log4jAspect {
 
@@ -37,6 +40,31 @@ public class Log4jAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
     private static final ConfigService configService = Agent.getConfigService("logger");
+
+    // constants from org.apache.log4j.Priority
+    private final static int OFF_INT = Integer.MAX_VALUE;
+    private final static int FATAL_INT = 50000;
+    private final static int ERROR_INT = 40000;
+    private final static int WARN_INT = 30000;
+    private final static int INFO_INT = 20000;
+    private final static int DEBUG_INT = 10000;
+    private final static int ALL_INT = Integer.MIN_VALUE;
+
+    @Shim("org.apache.log4j.Category")
+    public interface Logger {
+        @Nullable
+        String getName();
+        @Shim("org.apache.log4j.Category getParent()")
+        @Nullable
+        Logger glowrootShimGetParent();
+        @Nullable
+        Enumeration<?> getAllAppenders();
+    }
+
+    @Shim("org.apache.log4j.Priority")
+    public interface Level {
+        int toInt();
+    }
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "forcedLog",
             methodParameterTypes = {"java.lang.String", "org.apache.log4j.Priority",
@@ -47,55 +75,87 @@ public class Log4jAspect {
                 transactionService.getTimerName(ForcedLogAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
-        public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice() && configService.isEnabled();
+        public static boolean isEnabled(@BindReceiver Logger logger) {
+            if (LoggerPlugin.inAdvice() || !configService.isEnabled()) {
+                return false;
+            }
+            // check to see if no appenders, then don't capture (this is just to avoid confusion)
+            // log4j itself will log a warning:
+            // "No appenders could be found for logger, Please initialize the log4j system properly"
+            // (see org.apache.log4j.Hierarchy.emitNoAppenderWarning())
+            Logger curr = logger;
+            while (true) {
+                Enumeration<?> e = curr.getAllAppenders();
+                if (e != null && e.hasMoreElements()) {
+                    // has at least one appender
+                    return true;
+                }
+                curr = curr.glowrootShimGetParent();
+                if (curr == null) {
+                    return false;
+                }
+            }
         }
         @OnBefore
         @SuppressWarnings("unused")
-        public static TraceEntry onBefore(@BindParameter @Nullable String fqcn,
-                @BindParameter @Nullable Object log4jLevel, @BindParameter @Nullable Object message,
-                @BindParameter @Nullable Throwable t) {
+        public static TraceEntry onBefore(@BindReceiver Logger logger,
+                @BindParameter @Nullable String fqcn, @BindParameter @Nullable Level level,
+                @BindParameter @Nullable Object message, @BindParameter @Nullable Throwable t) {
             LoggerPlugin.inAdvice(true);
             String messageText = String.valueOf(message);
-            Level level = getLevel(log4jLevel);
-            if (LoggerPlugin.markTraceAsError(level, t != null)) {
+            int lvl = level == null ? 0 : level.toInt();
+            if (LoggerPlugin.markTraceAsError(lvl >= ERROR_INT, lvl >= WARN_INT, t != null)) {
                 transactionService.setTransactionError(messageText);
             }
-            return transactionService.startTraceEntry(
-                    MessageSupplier.from("log {}: {}", level.getName(), messageText), timerName);
+            if (lvl <= DEBUG_INT) {
+                // include logger name for debug or lower
+                String loggerName = LoggerPlugin.getShortName(logger.getName());
+                return transactionService.startTraceEntry(
+                        MessageSupplier.from("log {}: {} {}", getLevelStr(lvl), loggerName,
+                                messageText),
+                        timerName);
+            } else {
+                return transactionService.startTraceEntry(
+                        MessageSupplier.from("log {}: {}", getLevelStr(lvl), messageText),
+                        timerName);
+            }
         }
         @OnAfter
         @SuppressWarnings("unused")
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
-                @BindParameter @Nullable String fqcn, @BindParameter @Nullable Object priority,
+                @BindParameter @Nullable String fqcn, @BindParameter @Nullable Level level,
                 @BindParameter @Nullable Object message, @BindParameter @Nullable Throwable t) {
             LoggerPlugin.inAdvice(false);
-            if (t == null) {
-                traceEntry.endWithError(String.valueOf(message));
-            } else {
+            int lvl = level == null ? 0 : level.toInt();
+            if (t != null) {
                 // intentionally not passing message since it is already the trace entry message
                 traceEntry.endWithError(t);
+            } else if (lvl >= WARN_INT) {
+                traceEntry.endWithError(String.valueOf(message));
+            } else {
+                traceEntry.end();
             }
         }
     }
 
-    private static Level getLevel(@Nullable Object log4jLevel) {
-        if (log4jLevel == null) {
-            return Level.UNKNOWN;
-        }
-        String log4jLevelStr = log4jLevel.toString();
-        if ("DEBUG".equals(log4jLevelStr)) {
-            return Level.DEBUG;
-        } else if ("INFO".equals(log4jLevelStr)) {
-            return Level.INFO;
-        } else if ("WARN".equals(log4jLevelStr)) {
-            return Level.WARN;
-        } else if ("ERROR".equals(log4jLevelStr)) {
-            return Level.ERROR;
-        } else if ("FATAL".equals(log4jLevelStr)) {
-            return Level.FATAL;
-        } else {
-            return Level.UNKNOWN;
+    private static String getLevelStr(int lvl) {
+        switch (lvl) {
+            case ALL_INT:
+                return "all";
+            case DEBUG_INT:
+                return "debug";
+            case INFO_INT:
+                return "info";
+            case WARN_INT:
+                return "warn";
+            case ERROR_INT:
+                return "error";
+            case FATAL_INT:
+                return "fatal";
+            case OFF_INT:
+                return "off";
+            default:
+                return "unknown (" + lvl + ")";
         }
     }
 }
