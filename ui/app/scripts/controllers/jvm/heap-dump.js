@@ -40,14 +40,14 @@ glowroot.controller('JvmHeapDumpCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $scope.dumpHeap = function (deferred) {
+    $scope.heapDump = function (deferred) {
       var postData = {
         serverId: $scope.serverId,
         directory: $scope.directory
       };
       $scope.availableDiskSpace = false;
       $scope.heapDumpResponse = false;
-      $http.post('backend/jvm/dump-heap', postData)
+      $http.post('backend/jvm/heap-dump', postData)
           .success(function (data) {
             if (data.error) {
               deferred.reject(data.error);

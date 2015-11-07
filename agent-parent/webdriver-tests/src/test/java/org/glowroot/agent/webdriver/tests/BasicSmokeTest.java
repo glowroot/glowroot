@@ -169,7 +169,8 @@ public class BasicSmokeTest extends WebDriverTest {
         jvmSidebar.getThreadDumpLink().click();
 
         jvmSidebar.getHeapDumpLink().click();
-        Utils.withWait(driver, By.xpath("//button[normalize-space()='Dump heap']")).click();
+        Utils.withWait(driver, By.xpath("//button[normalize-space()='Heap dump']")).click();
+        Utils.withWait(driver, By.xpath("//button[normalize-space()='Yes']")).click();
         String heapDumpFileName = Utils
                 .withWait(driver,
                         By.xpath("//div[@ng-show='heapDumpResponse']//table//tr[1]/td[2]"))

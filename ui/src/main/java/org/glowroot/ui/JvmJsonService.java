@@ -89,8 +89,8 @@ class JvmJsonService {
         }
     }
 
-    @POST("/backend/jvm/dump-heap")
-    String dumpHeap(String content) throws Exception {
+    @POST("/backend/jvm/heap-dump")
+    String heapDump(String content) throws Exception {
         HeapDumpRequest request = mapper.readValue(content, ImmutableHeapDumpRequest.class);
         try {
             return mapper.writeValueAsString(
