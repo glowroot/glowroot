@@ -46,11 +46,19 @@ import org.glowroot.common.util.Version;
 
 public class MainEntryPoint {
 
-    // log startup messages using logger name "org.glowroot"
-    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
+    private static final Logger startupLogger;
 
     @OnlyUsedByTests
     private static @MonotonicNonNull GlowrootAgentInit glowrootAgentInit;
+
+    static {
+        ch.qos.logback.classic.Logger rootLogger =
+                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        // FILE appender depends on ${glowroot.base.dir}, so need to remove it temporarily
+        rootLogger.detachAppender("FILE");
+        // log startup messages using logger name "org.glowroot"
+        startupLogger = LoggerFactory.getLogger("org.glowroot");
+    }
 
     private MainEntryPoint() {}
 
@@ -68,6 +76,8 @@ public class MainEntryPoint {
         String baseDirPath = System.getProperty("glowroot.base.dir");
         File baseDir = BaseDir.getBaseDir(baseDirPath, glowrootJarFile);
         try {
+            // init logger as early as possible
+            LoggingInit.initStaticLoggerState(baseDir);
             ImmutableMap<String, String> properties = getGlowrootProperties(baseDir);
             start(baseDir, properties, instrumentation, glowrootJarFile, jbossModules);
         } catch (BaseDirLockedException e) {
@@ -81,10 +91,12 @@ public class MainEntryPoint {
     static void runViewer(@Nullable File glowrootJarFile) throws InterruptedException {
         String baseDirPath = System.getProperty("glowroot.base.dir");
         File baseDir = BaseDir.getBaseDir(baseDirPath, glowrootJarFile);
-        String version = Version.getVersion();
+        String version;
         try {
-            ImmutableMap<String, String> properties = getGlowrootProperties(baseDir);
+            // init logger as early as possible
             LoggingInit.initStaticLoggerState(baseDir);
+            version = Version.getVersion();
+            ImmutableMap<String, String> properties = getGlowrootProperties(baseDir);
             new GlowrootFatAgentInit().init(baseDir, null, properties, null, glowrootJarFile,
                     version, false, true);
         } catch (BaseDirLockedException e) {
@@ -106,7 +118,6 @@ public class MainEntryPoint {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion();
-        LoggingInit.initStaticLoggerState(baseDir);
         String collectorHost = properties.get("glowroot.collector.host");
         if (Strings.isNullOrEmpty(collectorHost)) {
             collectorHost = System.getProperty("glowroot.collector.host");
@@ -188,6 +199,8 @@ public class MainEntryPoint {
     public static void start(Map<String, String> properties) throws Exception {
         String baseDirPath = properties.get("glowroot.base.dir");
         File baseDir = BaseDir.getBaseDir(baseDirPath, null);
+        // init logger as early as possible
+        LoggingInit.initStaticLoggerState(baseDir);
         start(baseDir, properties, null, null, false);
     }
 

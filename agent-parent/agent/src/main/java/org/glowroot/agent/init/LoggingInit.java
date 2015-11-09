@@ -39,16 +39,16 @@ public class LoggingInit {
         }
     }
 
+    public static boolean shouldOverrideLogging() {
+        // don't override glowroot.logback-test.xml
+        return isShaded() && ClassLoader.getSystemResource("glowroot.logback-test.xml") == null;
+    }
+
     @OnlyUsedByTests
     public static void close() {
         if (shouldOverrideLogging()) {
             ((LoggerContext) LoggerFactory.getILoggerFactory()).reset();
         }
-    }
-
-    private static boolean shouldOverrideLogging() {
-        // don't override glowroot.logback-test.xml
-        return isShaded() && ClassLoader.getSystemResource("glowroot.logback-test.xml") == null;
     }
 
     private static void overrideLogging(File baseDir) {
@@ -62,7 +62,7 @@ public class LoggingInit {
             if (logbackXmlFile.exists()) {
                 configurator.doConfigure(logbackXmlFile);
             } else {
-                configurator.doConfigure(Resources.getResource("glowroot.logback-override.xml"));
+                configurator.doConfigure(Resources.getResource("glowroot.logback.xml"));
             }
         } catch (JoranException je) {
             // any errors are printed below by StatusPrinter
