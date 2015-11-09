@@ -1,4 +1,4 @@
-Glowroot &nbsp;&nbsp; [![Build Status](https://img.shields.io/travis/glowroot/glowroot.svg)](https://travis-ci.org/glowroot/glowroot)  [![Code Coverage](https://img.shields.io/sonar/https/sonar.glowroot.org/org.glowroot:glowroot-parent/coverage.svg)](https://sonar.glowroot.org/dashboard/index?id=org.glowroot%3Aglowroot-parent) [![SonarQube Tech Debt](https://img.shields.io/sonar/https/sonar.glowroot.org/org.glowroot:glowroot-parent/tech_debt.svg)](https://sonar.glowroot.org/dashboard/index?id=org.glowroot%3Aglowroot-parent)
+Glowroot &nbsp;&nbsp; [![Build Status](https://img.shields.io/travis/glowroot/glowroot.svg)](https://travis-ci.org/glowroot/glowroot)  [![Code Coverage](https://img.shields.io/sonar/https/sonar.glowroot.org/org.glowroot:glowroot-parent/overall_coverage.svg)](https://sonar.glowroot.org/dashboard/index?id=org.glowroot%3Aglowroot-parent) [![SonarQube Tech Debt](https://img.shields.io/sonar/https/sonar.glowroot.org/org.glowroot:glowroot-parent/tech_debt.svg)](https://sonar.glowroot.org/dashboard/index?id=org.glowroot%3Aglowroot-parent)
 =========
 
 ## Quick start
@@ -40,13 +40,11 @@ If you are modifying web assets, you either need to run grunt to re-build them a
 
 ## Integration tests
 
-The agent has an [integration test harness](agent-parent/it-harness) which is used to run tests using either a custom weaving class loader which is convenient for debugging inside your favorite IDE, or as a java agent which matches how it is used when monitoring applications.
+Integration tests are run during Maven's standard `integration-test` lifecycle phase.
 
-The agent's integration test harness is used to test the agent and all of its plugins.
+The Glowroot agent has an [integration test harness](agent-parent/it-harness) which makes it easy to run sample application code and then validate the data captured by the agent.  The integration test harness is able to run tests both using a custom weaving class loader (which is very convenient for running and debugging inside your favorite IDE), and by spawning a JVM with the -javaagent flag (which more correctly simulates real world conditions).
 
-## WebDriver tests
-
-Thanks to [Sauce Labs](https://saucelabs.com), the [webdriver tests](agent-parent/webdriver-tests) run against Chrome (latest), Firefox (latest), IE (9, 10, 11) and Safari (6, 7, 8, 9) as part of every Travis CI build (see the jobs with TARGET=saucelabs).
+Browser-based integration tests are run using WebDriver.  By default they run against Firefox.  Thanks to [Sauce Labs](https://saucelabs.com), they also run against Chrome, IE (9, 10, 11) and Safari (6, 7, 8, 9) during every Travis CI build (see the jobs with TARGET=saucelabs).
 
 ## Microbenchmarks
 

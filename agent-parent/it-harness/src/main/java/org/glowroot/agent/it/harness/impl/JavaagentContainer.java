@@ -16,6 +16,7 @@
 package org.glowroot.agent.it.harness.impl;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -28,6 +29,8 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
@@ -319,6 +322,7 @@ public class JavaagentContainer implements Container {
         String classpath = Strings.nullToEmpty(StandardSystemProperty.JAVA_CLASS_PATH.value());
         List<String> bootPaths = Lists.newArrayList();
         List<String> paths = Lists.newArrayList();
+        List<String> maybeShadedInsideAgentJars = Lists.newArrayList();
         File javaagentJarFile = null;
         for (String path : Splitter.on(File.pathSeparatorChar).split(classpath)) {
             File file = new File(path);
@@ -333,6 +337,7 @@ public class JavaagentContainer implements Container {
                 // but maven 3.3.1/3.3.3 are not using the dependency reduced pom during downstream
                 // module builds, which causes the glowroot artifacts to be included
                 // when running "mvn clean install" from the project root, see MSHADE-206
+                maybeShadedInsideAgentJars.add(path);
             } else if (name.matches("glowroot-agent-it-harness-[0-9.]+(-SNAPSHOT)?.jar")) {
                 paths.add(path);
             } else if (file.getAbsolutePath().contains(File.separator + "it-harness"
@@ -345,6 +350,21 @@ public class JavaagentContainer implements Container {
                 paths.add(path);
             } else {
                 bootPaths.add(path);
+            }
+        }
+        if (!maybeShadedInsideAgentJars.isEmpty() && javaagentJarFile != null) {
+            JarInputStream jarIn = new JarInputStream(new FileInputStream(javaagentJarFile));
+            JarEntry jarEntry;
+            boolean shaded = false;
+            while ((jarEntry = jarIn.getNextJarEntry()) != null) {
+                if (jarEntry.getName().startsWith("org/glowroot/agent/shaded/")) {
+                    shaded = true;
+                    break;
+                }
+            }
+            jarIn.close();
+            if (!shaded) {
+                bootPaths.addAll(maybeShadedInsideAgentJars);
             }
         }
         command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(bootPaths));

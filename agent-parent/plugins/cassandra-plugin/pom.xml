@@ -76,6 +76,28 @@
   </dependencies>
 
   <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <properties>
+            <property>
+              <!-- this is just a test performance optimization -->
+              <name>listener</name>
+              <value>org.glowroot.agent.plugin.cassandra.SharedSetupRunListener</value>
+            </property>
+          </properties>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -90,18 +112,6 @@
               </configuration>
             </execution>
           </executions>
-        </plugin>
-        <plugin>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <configuration>
-            <properties>
-              <property>
-                <!-- this is just a test performance optimization -->
-                <name>listener</name>
-                <value>org.glowroot.agent.plugin.cassandra.SharedSetupRunListener</value>
-              </property>
-            </properties>
-          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>

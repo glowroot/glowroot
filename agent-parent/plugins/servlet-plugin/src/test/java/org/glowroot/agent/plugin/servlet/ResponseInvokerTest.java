@@ -15,34 +15,11 @@
  */
 package org.glowroot.agent.plugin.servlet;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ResponseInvokerTest {
-
-    private static ch.qos.logback.classic.Logger responseInvokerLogger;
-    private static ch.qos.logback.classic.Level priorLevel;
-
-    @BeforeClass
-    public static void setUp() throws Exception {
-        // this is to avoid expected errors from being logged during the test
-        // which causes other tests to fail due to Container.checkAndReset()
-        // TODO this would not be necessary if unit tests were separated from integration tests
-        // (e.g. using maven-failsafe-plugin for integration tests)
-        responseInvokerLogger =
-                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(ResponseInvoker.class);
-        priorLevel = responseInvokerLogger.getLevel();
-        responseInvokerLogger.setLevel(ch.qos.logback.classic.Level.ERROR);
-    }
-
-    @AfterClass
-    public static void tearDown() throws Exception {
-        responseInvokerLogger.setLevel(priorLevel);
-    }
 
     @Test
     public void shouldNotFindServletResponseClass() {

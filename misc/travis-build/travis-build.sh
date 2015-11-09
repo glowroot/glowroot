@@ -5,39 +5,34 @@
 # (see https://docs.oracle.com/javase/8/docs/technotes/guides/security/enhancements-8.html)
 surefire_jvm_args="-Xmx512m -Djava.security.egd=file:/dev/./urandom"
 
-plugin_projects="agent-parent/plugins/cassandra-plugin,agent-parent/plugins/http-client-plugin,agent-parent/plugins/jdbc-plugin,agent-parent/plugins/jms-plugin,agent-parent/plugins/logger-plugin,agent-parent/plugins/quartz-plugin,agent-parent/plugins/servlet-plugin"
-
 case "$1" in
 
-       "test") # shading is done during the package phase, so 'mvn test' is used to run tests
-               # against unshaded glowroot-agent and 'mvn package' is used to run tests against
-               # shaded glowroot-agent
-               if [[ "$GLOWROOT_UNSHADED" == "true" ]]
+       "test") if [[ "$SKIP_SHADING" == "true" ]]
                then
-                 mvn clean test -Dglowroot.it.harness=$GLOWROOT_HARNESS \
-                                -DargLine="$surefire_jvm_args" \
-                                -B
-               else
-                 # using install instead of package for subsequent jdbc-plugin tests
-                 mvn clean install -Dglowroot.it.harness=$GLOWROOT_HARNESS \
-                                   -DargLine="$surefire_jvm_args" \
-                                   -B
-                 mvn clean test -pl agent-parent/plugins/jdbc-plugin \
+                 skip_shading_opt=-Dglowroot.shade.skip
+               fi
+               mvn clean install -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                 -DargLine="$surefire_jvm_args" \
+                                $skip_shading_opt \
+                                 -B
+               mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=H2 \
                                 -DargLine="$surefire_jvm_args" \
+                                $skip_shading_opt \
                                 -B
-                 mvn clean test -pl agent-parent/plugins/jdbc-plugin \
+               mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=COMMONS_DBCP_WRAPPED \
                                 -DargLine="$surefire_jvm_args" \
+                                $skip_shading_opt \
                                 -B
-                 mvn clean test -pl agent-parent/plugins/jdbc-plugin \
+               mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=TOMCAT_JDBC_POOL_WRAPPED \
                                 -DargLine="$surefire_jvm_args" \
+                                $skip_shading_opt \
                                 -B
-               fi
                ;;
 
      "deploy") # using the default integration test harness (local) since it is faster, and complete coverage
@@ -45,17 +40,17 @@ case "$1" in
                #
                # using glowroot.ui.skip so deployed it-harness artifact will not include any third
                # party javascript libraries
-               mvn clean install -Dglowroot.ui.skip=true \
+               mvn clean install -Dglowroot.ui.skip \
                                  -DargLine="$surefire_jvm_args" \
                                  -B
                # only deploy snapshot versions (release versions need pgp signature)
                version=`mvn help:evaluate -Dexpression=project.version | grep -v '\['`
                if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_PULL_REQUEST" == "false" && "$version" == *-SNAPSHOT ]]
                then
-                 # deploy only parent, agent-parent/api, agent-parent/plugin-api, and agent-parent/it-harness artifacts to maven repository
-                 mvn clean deploy -pl .,agent-parent/api,agent-parent/plugin-api,agent-parent/it-harness \
+                 # deploy only glowroot-parent, glowroot-agent-api, glowroot-agent-plugin-api and glowroot-agent-it-harness artifacts to maven repository
+                 mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness \
                                   -Pjavadoc \
-                                  -Dglowroot.ui.skip=true \
+                                  -Dglowroot.ui.skip \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
                                   -DargLine="$surefire_jvm_args" \
                                   --settings misc/travis-build/settings.xml \
@@ -80,26 +75,31 @@ case "$1" in
                  # (see JavaagentMain) and uses the original bytecode to construct the class ids,
                  # whereas when run with local integration test harness jacoco javaagent uses the
                  # bytecode that is woven by IsolatedWeavingClassLoader to construct the class ids
-                 #
-                 # shading is done during the package phase, so 'mvn test' is used to run tests
-                 # against unshaded glowroot-agent and 'mvn package' is used to run tests against
-                 # shaded glowroot-agent
                  mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent test \
-                                 -Dglowroot.it.harness=javaagent \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                 -Dglowroot.shade.skip \
                                  -B
-
+                 # intentionally calling failsafe plugin directly in order to skip surefire (unit test) execution
+                 mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent-integration test-compile failsafe:integration-test failsafe:verify \
+                                 -Dglowroot.it.harness=javaagent \
+                                 -Djacoco.destFile=$PWD/jacoco-combined-it.exec \
+                                 -Djacoco.propertyName=jacocoArgLine \
+                                 -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                 -Dglowroot.shade.skip \
+                                 -B
                  # the sonar.jdbc.password system property is set in the pom.xml using the
                  # environment variable SONAR_DB_PASSWORD (instead of setting the system
                  # property on the command line which which would make it visible to ps)
-                 mvn sonar:sonar -pl !misc/checker-qual-jdk6,!misc/license-resource-bundle,!agent-parent/benchmarks,!agent-parent/it-harness,!agent-parent/ui-sandbox,!agent-parent/distribution \
+                 mvn clean verify sonar:sonar -pl !misc/checker-qual-jdk6,!misc/license-resource-bundle,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!agent-parent/distribution \
                                  -Dsonar.jdbc.url=$SONAR_JDBC_URL \
                                  -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
                                  -Dsonar.host.url=$SONAR_HOST_URL \
                                  -Dsonar.jacoco.reportPath=$PWD/jacoco-combined.exec \
+                                 -Dsonar.jacoco.itReportPath=$PWD/jacoco-combined-it.exec \
                                  -DargLine="$surefire_jvm_args" \
+                                 -Dglowroot.shade.skip \
                                  -B
                else
                  echo skipping, sonar analysis only runs against master repository and master branch
@@ -137,11 +137,11 @@ case "$1" in
                # TODO find way to not omit these (especially it-harness)
                # omitting wire-api and agent-parent/it-harness from checker framework validation since they contain protobuf generated code which does not pass
                mvn clean install -am -pl wire-api,agent-parent/it-harness
-               mvn clean compile -pl .,misc/license-resource-bundle,common,storage,ui,agent-parent/api,agent-parent/plugin-api,agent-parent/agent,$plugin_projects \
+               mvn clean compile -pl .,misc/license-resource-bundle,common,storage,ui,agent-parent/api,agent-parent/plugin-api,agent-parent/agent,agent-parent/plugins/cassandra-plugin,agent-parent/plugins/http-client-plugin,agent-parent/plugins/jdbc-plugin,agent-parent/plugins/jms-plugin,agent-parent/plugins/logger-plugin,agent-parent/plugins/quartz-plugin,agent-parent/plugins/servlet-plugin \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \
-                                 -Dglowroot.ui.skip=true \
+                                 -Dglowroot.ui.skip \
                                  -DargLine="$surefire_jvm_args" \
                                  -B \
                                  | sed 's/\[ERROR\] .*[\/]\([^\/.]*\.java\):\[\([0-9]*\),\([0-9]*\)\]/[ERROR] (\1:\2) [column \3]/'
@@ -160,14 +160,14 @@ case "$1" in
                  mvn clean install -DskipTests=true \
                                    -B
                  cd agent-parent/webdriver-tests
-                 mvn clean test -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
-                                -Dsaucelabs.browser.name="$SAUCELABS_BROWSER_NAME" \
-                                -Dsaucelabs.browser.version="$SAUCELABS_BROWSER_VERSION" \
-                                -Dsaucelabs.device.name="$SAUCELABS_DEVICE_NAME" \
-                                -Dsaucelabs.device.orientation="$SAUCELABS_DEVICE_ORIENTATION" \
-                                -Dsaucelabs.tunnel.identifier="$TRAVIS_JOB_NUMBER" \
-                                -DargLine="$surefire_jvm_args" \
-                                -B
+                 mvn clean verify -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
+                                  -Dsaucelabs.browser.name="$SAUCELABS_BROWSER_NAME" \
+                                  -Dsaucelabs.browser.version="$SAUCELABS_BROWSER_VERSION" \
+                                  -Dsaucelabs.device.name="$SAUCELABS_DEVICE_NAME" \
+                                  -Dsaucelabs.device.orientation="$SAUCELABS_DEVICE_ORIENTATION" \
+                                  -Dsaucelabs.tunnel.identifier="$TRAVIS_JOB_NUMBER" \
+                                  -DargLine="$surefire_jvm_args" \
+                                  -B
                else
                  echo skipping, saucelabs only runs against master repository and master branch
                fi

@@ -136,6 +136,28 @@
   </dependencies>
 
   <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <properties>
+            <property>
+              <!-- this is just a test performance optimization -->
+              <name>listener</name>
+              <value>org.glowroot.agent.webdriver.tests.SharedSetupRunListener</value>
+            </property>
+          </properties>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -150,18 +172,6 @@
               </configuration>
             </execution>
           </executions>
-        </plugin>
-        <plugin>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <configuration>
-            <properties>
-              <property>
-                <!-- this is just a test performance optimization -->
-                <name>listener</name>
-                <value>org.glowroot.agent.webdriver.tests.SharedSetupRunListener</value>
-              </property>
-            </properties>
-          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -179,7 +189,7 @@
         <pluginManagement>
           <plugins>
             <plugin>
-              <artifactId>maven-surefire-plugin</artifactId>
+              <artifactId>maven-failsafe-plugin</artifactId>
               <configuration>
                 <!-- webdriver tests cannot be run if the ui has not been built,
                   can't just use <skipTests>${glowroot.ui.skip}</skipTests> since that prevents
