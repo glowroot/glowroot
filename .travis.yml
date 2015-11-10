@@ -51,7 +51,7 @@ env:
     - TARGET=test SKIP_SHADING=true GLOWROOT_HARNESS=local
 before_deploy:
   - mkdir -p s3/snapshots
-  - cp fat-agent-parent/distribution/target/glowroot-fat-agent-*-dist.zip s3/snapshots
+  - cp agent-parent/distribution/target/glowroot-*-dist.zip s3/snapshots
   - cd s3
 deploy:
   provider: s3
