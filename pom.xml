@@ -73,7 +73,7 @@
     <logback.version>1.1.3</logback.version>
     <immutables.version>2.1.0</immutables.version>
     <javax.mail.version>1.5.4</javax.mail.version>
-    <jmh.version>1.11.1</jmh.version>
+    <jmh.version>1.11.2</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
@@ -159,7 +159,7 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.12</version>
+        <version>1.7.13</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
@@ -612,7 +612,7 @@
       <properties>
         <checker.qual.group.id>org.checkerframework</checker.qual.group.id>
         <checker.qual.artifact.id>checker-qual</checker.qual.artifact.id>
-        <checker.qual.version>1.9.7</checker.qual.version>
+        <checker.qual.version>1.9.8</checker.qual.version>
       </properties>
       <dependencies>
         <dependency>

@@ -11,7 +11,7 @@
     "flot": "trask/flot#glowroot-0.8.5",
     "flot.tooltip": "0.8.5",
     "fontawesome": "4.4.0",
-    "handlebars": "4.0.3",
+    "handlebars": "4.0.4",
     "jquery": "2.1.4",
     "moment": "2.10.6",
     "sequeljs": "trask/sequeljs#glowroot-0.8",
