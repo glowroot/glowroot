@@ -214,6 +214,17 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <!-- TODO this is just needed until next Immutables release
+            see https://github.com/immutables/immutables/pull/197 -->
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <sourceFileExcludes>
+              <sourceFileExclude>org/glowroot/agent/**/Immutable*.java</sourceFileExclude>
+              <sourceFileExclude>org/glowroot/agent/**/ThreadInfoDataBuilder.java</sourceFileExclude>
+            </sourceFileExcludes>
+          </configuration>
+        </plugin>
+        <plugin>
           <artifactId>maven-jar-plugin</artifactId>
           <configuration>
             <archive>

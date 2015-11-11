@@ -35,31 +35,22 @@ case "$1" in
                                 -B
                ;;
 
-     "deploy") # using the default integration test harness (local) since it is faster, and complete coverage
-               # with both harnesses is done elsewhere in the build
-               #
-               # using glowroot.ui.skip so deployed it-harness artifact will not include any third
-               # party javascript libraries
-               mvn clean install -Dglowroot.ui.skip \
+     "deploy") # build shaded distribution zip which will be uploaded to s3 in travis-ci deploy step
+               mvn clean install -Dglowroot.build.commit=$TRAVIS_COMMIT \
                                  -DargLine="$surefire_jvm_args" \
                                  -B
                # only deploy snapshot versions (release versions need pgp signature)
                version=`mvn help:evaluate -Dexpression=project.version | grep -v '\['`
                if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_PULL_REQUEST" == "false" && "$version" == *-SNAPSHOT ]]
                then
-                 # deploy only glowroot-parent, glowroot-agent-api, glowroot-agent-plugin-api and glowroot-agent-it-harness artifacts to maven repository
-                 mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness \
+                 # deploy only glowroot-parent, glowroot-agent-api, glowroot-agent-plugin-api, glowroot-agent and glowroot-agent-it-harness artifacts to maven repository
+                 mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent,:glowroot-agent-it-harness \
                                   -Pjavadoc \
-                                  -Dglowroot.ui.skip \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
                                   -DargLine="$surefire_jvm_args" \
                                   --settings misc/travis-build/settings.xml \
                                   -B
                fi
-               # build shaded distribution zip which will be uploaded to s3 in travis-ci deploy step
-               mvn clean install -Dglowroot.build.commit=$TRAVIS_COMMIT \
-                                 -DargLine="$surefire_jvm_args" \
-                                 -B
                ;;
 
       "sonar") if [[ $SONAR_JDBC_URL && "$TRAVIS_PULL_REQUEST" == "false" ]]
