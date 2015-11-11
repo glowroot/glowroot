@@ -123,19 +123,6 @@
             <excludePackageNames>org.glowroot.agent.it.harness.impl</excludePackageNames>
           </configuration>
         </plugin>
-        <plugin>
-          <artifactId>maven-jar-plugin</artifactId>
-          <configuration>
-            <archive>
-              <manifestEntries>
-                <Build-Time>${maven.build.timestamp}</Build-Time>
-                <Premain-Class>org.glowroot.agent.AgentPremain</Premain-Class>
-                <Can-Redefine-Classes>true</Can-Redefine-Classes>
-                <Can-Retransform-Classes>true</Can-Retransform-Classes>
-              </manifestEntries>
-            </archive>
-          </configuration>
-        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
@@ -172,7 +159,6 @@
       </plugin>
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.8</version>
         <executions>
           <execution>
             <phase>generate-sources</phase>

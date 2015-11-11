@@ -253,6 +253,35 @@
       <build>
         <plugins>
           <plugin>
+            <artifactId>maven-remote-resources-plugin</artifactId>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </plugin>
+          <plugin>
+            <!-- not using maven-resources-plugin:copy-resources because it generates m2e warning
+              about accessing "directory outside of project base directory" -->
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>generate-sources</phase>
+                <configuration>
+                  <target>
+                    <copy todir="${project.build.outputDirectory}/META-INF">
+                      <fileset dir="../..">
+                        <include name="LICENSE" />
+                        <include name="NOTICE" />
+                      </fileset>
+                    </copy>
+                  </target>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
             <artifactId>maven-shade-plugin</artifactId>
             <configuration>
               <dependencyReducedPomLocation>
