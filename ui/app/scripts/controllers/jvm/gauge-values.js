@@ -213,9 +213,9 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       for (var i = 0; i < data.length; i++) {
         var dataSeries = data[i];
         if (dataSeries.data.length) {
+          updateYvalMap(dataSeries.name, dataSeries.data);
           var scale = scalePoints(dataSeries.data);
           gaugeScales[dataSeries.name] = scale;
-          updateYvalMap(dataSeries.name, dataSeries.data);
         } else {
           emptyGaugeNames[dataSeries.name] = true;
         }
