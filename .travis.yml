@@ -4,8 +4,6 @@ sudo: false
 language: java
 jdk:
   - oraclejdk8
-  - oraclejdk7
-  - openjdk7
 before_install:
   - "export DISPLAY=:99.0"
   - sh -e /etc/init.d/xvfb start
@@ -26,32 +24,10 @@ matrix:
       # chrome
     - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=chrome SAUCELABS_BROWSER_VERSION=
-      # firefox
-    - jdk: oraclejdk8
-      # having trouble with latest firefox (47) on saucelabs
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=firefox SAUCELABS_BROWSER_VERSION=46
-      # internet explorer
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=11
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=10
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=9
-      # safari
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.11" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=9
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.10" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=8
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.9" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=7
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.8" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=6
 env:
   matrix:
     - TARGET=test SKIP_SHADING=false GLOWROOT_HARNESS=javaagent
-    - TARGET=test SKIP_SHADING=false GLOWROOT_HARNESS=local
     - TARGET=test SKIP_SHADING=true GLOWROOT_HARNESS=javaagent
-    - TARGET=test SKIP_SHADING=true GLOWROOT_HARNESS=local
 addons:
   firefox: "latest"
   sauce_connect:
