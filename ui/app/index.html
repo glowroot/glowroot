@@ -89,20 +89,17 @@
           <div gt-navbar-item
                gt-display="Transactions"
                gt-item-name="transaction"
-               gt-url="transaction/average{{queryString(true, true)}}"
-               gt-state="transaction.detail.average">
+               gt-url="transaction/average{{queryString(true, true)}}">
           </div>
           <div gt-navbar-item
                gt-display="Errors"
                gt-item-name="error"
-               gt-url="error/messages{{queryString(true, true)}}"
-               gt-state="error.detail.messages">
+               gt-url="error/messages{{queryString(true, true)}}">
           </div>
           <div gt-navbar-item
                gt-display="JVM"
                gt-item-name="jvm"
-               gt-url="jvm/gauges{{queryString(true)}}"
-               gt-state="jvm.gauges">
+               gt-url="jvm/gauges{{queryString(true)}}">
           </div>
         </ul>
         <ul class="nav navbar-nav navbar-right"
@@ -111,8 +108,7 @@
                gt-navbar-item
                gt-display=""
                gt-item-name="config"
-               gt-url="{{layout.central ? 'config/ui' : 'config/transaction'}}"
-               gt-state="{{layout.central ? 'config.userInterface' : 'config.transaction'}}">
+               gt-url="{{layout.central ? 'config/ui' : 'config/transaction'}}">
             <i title="Configuration"
                class="fa fa-gears"
                style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -3px;"></i>

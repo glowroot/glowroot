@@ -234,15 +234,12 @@ glowroot.directive('gtInputGroupDropdown', function () {
 });
 
 glowroot.directive('gtNavbarItem', [
-  '$location',
-  '$state',
-  function ($location, $state) {
+  function () {
     return {
       scope: {
         gtDisplay: '@',
         gtItemName: '@',
-        gtUrl: '@',
-        gtState: '@'
+        gtUrl: '@'
       },
       // replace is needed in order to not mess up bootstrap css hierarchical selectors
       replace: true,
@@ -252,17 +249,11 @@ glowroot.directive('gtNavbarItem', [
         scope.isActive = function () {
           return scope.$parent.activeNavbarItem === scope.gtItemName;
         };
-        scope.ngClick = function (event) {
+        scope.ngClick = function () {
           // need to collapse the navbar in mobile view
           var $navbarCollapse = $('.navbar-collapse');
           $navbarCollapse.removeClass('in');
           $navbarCollapse.addClass('collapse');
-          if ($state.current.name === scope.gtState && !event.ctrlKey) {
-            $state.go(scope.gtState, null, {reload: true});
-            // suppress normal link
-            event.preventDefault();
-            return false;
-          }
         };
       }
     };
@@ -271,16 +262,14 @@ glowroot.directive('gtNavbarItem', [
 
 glowroot.directive('gtSidebarItem', [
   '$location',
-  '$state',
-  function ($location, $state) {
+  function ($location) {
     return {
       scope: {
         gtDisplay: '@',
         gtDisplayRight: '@',
         gtUrl: '@',
         gtActive: '&',
-        gtSubActive: '&',
-        gtActiveRefresh: '&'
+        gtSubActive: '&'
       },
       // replace is needed in order to not mess up bootstrap css hierarchical selectors
       replace: true,
@@ -292,18 +281,6 @@ glowroot.directive('gtSidebarItem', [
         // isSubActive sidebar items are marked active, but when clicked will return to their parent
         scope.isSubActive = function () {
           return iAttrs.gtSubActive && scope.gtSubActive();
-        };
-        scope.ngClick = function (event) {
-          if (scope.isActive() && !event.ctrlKey) {
-            if (iAttrs.gtActiveRefresh) {
-              scope.gtActiveRefresh();
-            } else {
-              $state.reload();
-            }
-            // suppress normal link
-            event.preventDefault();
-            return false;
-          }
         };
       }
     };
