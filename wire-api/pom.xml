@@ -130,7 +130,7 @@
             <argument>src/main/protobuf/GaugeValue.proto</argument>
             <argument>src/main/protobuf/Trace.proto</argument>
             <argument>src/main/protobuf/LogEvent.proto</argument>
-            <argument>src/main/protobuf/ProfileTree.proto</argument>
+            <argument>src/main/protobuf/Profile.proto</argument>
             <argument>src/main/protobuf/DownstreamService.proto</argument>
           </arguments>
         </configuration>

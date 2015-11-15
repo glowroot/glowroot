@@ -98,7 +98,7 @@ class TraceDetailHttpService implements HttpService {
             return ChunkSource.wrap(entriesJson);
         }
         if (traceComponent.equals("profile")) {
-            String profileJson = traceCommonService.getProfileTreeJson(serverName, traceId);
+            String profileJson = traceCommonService.getProfileJson(serverName, traceId);
             if (profileJson == null) {
                 return null;
             }

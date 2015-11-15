@@ -159,11 +159,8 @@ glowroot.config([
           templateUrl: 'views/transaction/traces.html',
           controller: 'TracesCtrl',
           resolve: {
-            slowOnly: function () {
-              return true;
-            },
-            errorOnly: function () {
-              return false;
+            traceKind: function () {
+              return 'transaction';
             }
           }
         }
@@ -258,11 +255,8 @@ glowroot.config([
           templateUrl: 'views/transaction/traces.html',
           controller: 'TracesCtrl',
           resolve: {
-            slowOnly: function () {
-              return false;
-            },
-            errorOnly: function () {
-              return true;
+            traceKind: function () {
+              return 'error';
             }
           }
         }

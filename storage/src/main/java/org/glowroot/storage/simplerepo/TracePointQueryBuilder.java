@@ -26,16 +26,33 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.tainting.qual.Untainted;
 import org.immutables.value.Value;
 
-import org.glowroot.common.live.LiveTraceRepository.TracePointQuery;
+import org.glowroot.common.live.LiveTraceRepository.TraceKind;
+import org.glowroot.common.live.LiveTraceRepository.TracePointCriteria;
 import org.glowroot.common.live.StringComparator;
 import org.glowroot.common.util.Styles;
 
 class TracePointQueryBuilder {
 
-    private final TracePointQuery query;
+    private final TraceKind traceKind;
+    private final String serverRollup;
+    private final String transactionType;
+    private final @Nullable String transactionName;
+    private final long captureTimeFrom;
+    private final long captureTimeTo;
+    private final TracePointCriteria criteria;
+    private final int limit;
 
-    TracePointQueryBuilder(TracePointQuery query) {
-        this.query = query;
+    TracePointQueryBuilder(TraceKind traceKind, String serverRollup, String transactionType,
+            @Nullable String transactionName, long captureTimeFrom, long captureTimeTo,
+            TracePointCriteria criteria, int limit) {
+        this.traceKind = traceKind;
+        this.serverRollup = serverRollup;
+        this.transactionType = transactionType;
+        this.transactionName = transactionName;
+        this.captureTimeFrom = captureTimeFrom;
+        this.captureTimeTo = captureTimeTo;
+        this.criteria = criteria;
+        this.limit = limit;
     }
 
     // capture time lower bound is non-inclusive so that aggregate data intervals can be mapped
@@ -52,8 +69,8 @@ class TracePointQueryBuilder {
             builder.appendText(", trace_attribute attr where attr.server_id = trace.server_id"
                     + " and attr.id = trace.id and attr.capture_time > ? and attr.capture_time <= ?"
                     + " and" + criteria.sql());
-            builder.addArg(query.from());
-            builder.addArg(query.to());
+            builder.addArg(captureTimeFrom);
+            builder.addArg(captureTimeTo);
             builder.addArgs(criteria.args());
 
         }
@@ -61,14 +78,13 @@ class TracePointQueryBuilder {
         // (maintain this table on agent "Hello", wipe out prior associations and add new ones)
         builder.appendText(
                 " trace.server_id = ? and trace.capture_time > ? and trace.capture_time <= ?");
-        builder.addArg(query.serverRollup());
-        builder.addArg(query.from());
-        builder.addArg(query.to());
+        builder.addArg(serverRollup);
+        builder.addArg(captureTimeFrom);
+        builder.addArg(captureTimeTo);
         appendTotalNanosCriteria(builder);
         appendTransactionTypeCriteria(builder);
-        appendSlowOnlyCriteria(builder);
-        appendErrorOnlyCriteria(builder);
         appendTransactionNameCriteria(builder);
+        appendTraceKindCriteria(builder);
         appendHeadlineCriteria(builder);
         appendErrorCriteria(builder);
         appendUserCriteria(builder);
@@ -79,13 +95,13 @@ class TracePointQueryBuilder {
     private @Nullable ParameterizedSql getAttributeCriteria() {
         String sql = "";
         List<Object> args = Lists.newArrayList();
-        String attributeName = query.attributeName();
+        String attributeName = criteria.attributeName();
         if (!Strings.isNullOrEmpty(attributeName)) {
             sql += " upper(attr.name) = ? and";
             args.add(attributeName.toUpperCase(Locale.ENGLISH));
         }
-        StringComparator attributeValueComparator = query.attributeValueComparator();
-        String attributeValue = query.attributeValue();
+        StringComparator attributeValueComparator = criteria.attributeValueComparator();
+        String attributeValue = criteria.attributeValue();
         if (attributeValueComparator != null && !Strings.isNullOrEmpty(attributeValue)) {
             sql += " upper(attr.value) " + attributeValueComparator.getComparator() + " ? and";
             args.add(attributeValueComparator.formatParameter(attributeValue));
@@ -98,12 +114,12 @@ class TracePointQueryBuilder {
     }
 
     private void appendTotalNanosCriteria(ParameterizedSqlBuilder builder) {
-        long totalNanosLow = query.durationNanosLow();
+        long totalNanosLow = criteria.durationNanosLow();
         if (totalNanosLow != 0) {
             builder.appendText(" and trace.duration_nanos >= ?");
             builder.addArg(totalNanosLow);
         }
-        Long totalNanosHigh = query.durationNanosHigh();
+        Long totalNanosHigh = criteria.durationNanosHigh();
         if (totalNanosHigh != null) {
             builder.appendText(" and trace.duration_nanos <= ?");
             builder.addArg(totalNanosHigh);
@@ -111,40 +127,39 @@ class TracePointQueryBuilder {
     }
 
     private void appendTransactionTypeCriteria(ParameterizedSqlBuilder builder) {
-        String transactionType = query.transactionType();
-        if (!Strings.isNullOrEmpty(transactionType)) {
-            builder.appendText(" and trace.transaction_type = ?");
-            builder.addArg(transactionType);
-        }
+        builder.appendText(" and trace.transaction_type = ?");
+        builder.addArg(transactionType);
     }
 
-    private void appendSlowOnlyCriteria(ParameterizedSqlBuilder builder) {
-        if (query.slowOnly()) {
+    private void appendTraceKindCriteria(ParameterizedSqlBuilder builder) {
+        if (traceKind == TraceKind.SLOW) {
             builder.appendText(" and trace.slow = ?");
             builder.addArg(true);
-        }
-    }
-
-    private void appendErrorOnlyCriteria(ParameterizedSqlBuilder builder) {
-        if (query.errorOnly()) {
+        } else {
+            // TraceKind.ERROR
             builder.appendText(" and trace.error = ?");
             builder.addArg(true);
         }
     }
 
     private void appendTransactionNameCriteria(ParameterizedSqlBuilder builder) {
-        StringComparator transactionNameComparator = query.transactionNameComparator();
-        String transactionName = query.transactionName();
-        if (transactionNameComparator != null && !Strings.isNullOrEmpty(transactionName)) {
-            builder.appendText(" and upper(trace.transaction_name) "
-                    + transactionNameComparator.getComparator() + " ?");
-            builder.addArg(transactionNameComparator.formatParameter(transactionName));
+        if (transactionName == null) {
+            StringComparator transactionNameComparator = criteria.transactionNameComparator();
+            String transactionName = criteria.transactionName();
+            if (transactionNameComparator != null && !Strings.isNullOrEmpty(transactionName)) {
+                builder.appendText(" and upper(trace.transaction_name) "
+                        + transactionNameComparator.getComparator() + " ?");
+                builder.addArg(transactionNameComparator.formatParameter(transactionName));
+            }
+        } else {
+            builder.appendText(" and trace.transaction_name = ?");
+            builder.addArg(transactionName);
         }
     }
 
     private void appendHeadlineCriteria(ParameterizedSqlBuilder builder) {
-        StringComparator headlineComparator = query.headlineComparator();
-        String headline = query.headline();
+        StringComparator headlineComparator = criteria.headlineComparator();
+        String headline = criteria.headline();
         if (headlineComparator != null && !Strings.isNullOrEmpty(headline)) {
             builder.appendText(
                     " and upper(trace.headline) " + headlineComparator.getComparator() + " ?");
@@ -153,8 +168,8 @@ class TracePointQueryBuilder {
     }
 
     private void appendErrorCriteria(ParameterizedSqlBuilder builder) {
-        StringComparator errorComparator = query.errorComparator();
-        String error = query.error();
+        StringComparator errorComparator = criteria.errorMessageComparator();
+        String error = criteria.errorMessage();
         if (errorComparator != null && !Strings.isNullOrEmpty(error)) {
             builder.appendText(
                     " and upper(trace.error_message) " + errorComparator.getComparator() + " ?");
@@ -163,8 +178,8 @@ class TracePointQueryBuilder {
     }
 
     private void appendUserCriteria(ParameterizedSqlBuilder builder) {
-        StringComparator userComparator = query.userComparator();
-        String user = query.user();
+        StringComparator userComparator = criteria.userComparator();
+        String user = criteria.user();
         if (userComparator != null && !Strings.isNullOrEmpty(user)) {
             builder.appendText(
                     " and upper(trace.user_id) " + userComparator.getComparator() + " ?");
@@ -174,10 +189,10 @@ class TracePointQueryBuilder {
 
     private void appendOrderByAndLimit(ParameterizedSqlBuilder builder) {
         builder.appendText(" order by trace.duration_nanos");
-        if (query.limit() != 0) {
+        if (limit != 0) {
             // +1 is to identify if limit was exceeded
             builder.appendText(" desc limit ?");
-            builder.addArg(query.limit() + 1);
+            builder.addArg(limit + 1);
         }
     }
 

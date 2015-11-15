@@ -43,6 +43,7 @@ import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.TransactionTypeRepository;
 import org.glowroot.storage.repo.config.StorageConfig;
 import org.glowroot.storage.repo.helper.AlertingService;
+import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.storage.simplerepo.PlatformMBeanServerLifecycle.InitListener;
 import org.glowroot.storage.simplerepo.util.CappedDatabase;
 import org.glowroot.storage.simplerepo.util.DataSource;
@@ -68,6 +69,7 @@ public class SimpleRepoModule {
     private final GaugeValueDao gaugeValueDao;
     private final ConfigRepository configRepository;
     private final RepoAdmin repoAdmin;
+    private final RollupLevelService rollupLevelService;
     private final AlertingService alertingService;
     private final @Nullable ReaperRunnable reaperRunnable;
 
@@ -95,8 +97,9 @@ public class SimpleRepoModule {
 
         serverDao = new ServerDao(dataSource, clock);
         transactionTypeDao = new TransactionTypeDao(dataSource);
+        rollupLevelService = new RollupLevelService(configRepository, clock);
         aggregateDao = new AggregateDao(dataSource, this.rollupCappedDatabases, configRepository,
-                serverDao, transactionTypeDao, clock);
+                serverDao, transactionTypeDao, rollupLevelService);
         traceDao = new TraceDao(dataSource, traceCappedDatabase, transactionTypeDao);
         GaugeMetaDao gaugeMetaDao = new GaugeMetaDao(dataSource);
         gaugeValueDao = new GaugeValueDao(dataSource, gaugeMetaDao, configRepository, clock);
@@ -106,7 +109,7 @@ public class SimpleRepoModule {
 
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
         alertingService = new AlertingService(configRepository, serverDao, triggeredAlertDao,
-                aggregateDao, new MailService());
+                aggregateDao, rollupLevelService, new MailService());
         if (reaperDisabled) {
             reaperRunnable = null;
         } else {
@@ -172,6 +175,10 @@ public class SimpleRepoModule {
 
     public RepoAdmin getRepoAdmin() {
         return repoAdmin;
+    }
+
+    public RollupLevelService getRollupLevelService() {
+        return rollupLevelService;
     }
 
     public AlertingService getAlertingService() {

@@ -28,7 +28,6 @@ import org.junit.Test;
 import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
-import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.TransactionSummaryQuery;
@@ -39,6 +38,7 @@ import org.glowroot.storage.repo.ImmutableRollupConfig;
 import org.glowroot.storage.repo.ImmutableTransactionSummaryQuery;
 import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.config.ImmutableStorageConfig;
+import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.storage.simplerepo.util.CappedDatabase;
 import org.glowroot.storage.simplerepo.util.DataSource;
 import org.glowroot.storage.simplerepo.util.Schema;
@@ -85,7 +85,7 @@ public class AggregateDaoTest {
         when(configRepository.getRollupConfigs()).thenReturn(rollupConfigs);
         aggregateDao = new AggregateDao(dataSource, ImmutableList.<CappedDatabase>of(),
                 configRepository, mock(ServerDao.class), mock(TransactionTypeDao.class),
-                Clock.systemClock());
+                mock(RollupLevelService.class));
     }
 
     @After

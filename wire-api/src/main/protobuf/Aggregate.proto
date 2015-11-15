@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "ProfileTree.proto";
+import "Profile.proto";
 
 package org_glowroot_wire_api_model;
 
@@ -27,13 +27,10 @@ message Aggregate {
   OptionalDouble total_blocked_nanos = 5;
   OptionalDouble total_waited_nanos = 6;
   OptionalDouble total_allocated_bytes = 7;
-  Histogram total_nanos_histogram = 8;
-
-  repeated Timer root_timer = 9;
-
-  repeated QueriesByType queries_by_type = 10;
-
-  ProfileTree profile_tree = 11;
+  repeated Timer root_timer = 8;
+  Histogram total_nanos_histogram = 9;
+  Profile profile = 10;
+  repeated QueriesByType queries_by_type = 11;
 
   message OptionalDouble {
     double value = 1;

@@ -24,9 +24,9 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
-import org.glowroot.common.live.LiveTraceRepository.TracePointQuery;
+import org.glowroot.common.live.LiveTraceRepository.TracePointCriteria;
 import org.glowroot.common.util.Styles;
-import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface TraceRepository {
@@ -35,7 +35,21 @@ public interface TraceRepository {
 
     List<String> readTraceAttributeNames(String serverRollup) throws Exception;
 
-    Result<TracePoint> readPoints(TracePointQuery query) throws Exception;
+    Result<TracePoint> readOverallSlowPoints(String serverRollup, String transactionType,
+            long captureTimeFrom, long captureTimeTo, TracePointCriteria criteria, int limit)
+                    throws Exception;
+
+    Result<TracePoint> readTransactionSlowPoints(String serverRollup, String transactionType,
+            String transactionName, long captureTimeFrom, long captureTimeTo,
+            TracePointCriteria criteria, int limit) throws Exception;
+
+    Result<TracePoint> readOverallErrorPoints(String serverRollup, String transactionType,
+            long captureTimeFrom, long captureTimeTo, TracePointCriteria criteria, int limit)
+                    throws Exception;
+
+    Result<TracePoint> readTransactionErrorPoints(String serverRollup, String transactionType,
+            String transactionName, long captureTimeFrom, long captureTimeTo,
+            TracePointCriteria criteria, int limit) throws Exception;
 
     long readOverallSlowCount(String serverRollup, String transactionType, long captureTimeFrom,
             long captureTimeTo) throws Exception;
@@ -60,7 +74,7 @@ public interface TraceRepository {
     List<Trace.Entry> readEntries(String serverId, String traceId) throws Exception;
 
     @Nullable
-    ProfileTree readProfileTree(String serverId, String traceId) throws Exception;
+    Profile readProfile(String serverId, String traceId) throws Exception;
 
     void deleteAll(String serverRollup) throws Exception;
 

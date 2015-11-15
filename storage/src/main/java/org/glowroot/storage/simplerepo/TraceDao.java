@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.List;
 import java.util.Locale;
 
@@ -33,8 +34,9 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.ImmutableTracePoint;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
+import org.glowroot.common.live.LiveTraceRepository.TraceKind;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
-import org.glowroot.common.live.LiveTraceRepository.TracePointQuery;
+import org.glowroot.common.live.LiveTraceRepository.TracePointCriteria;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.storage.repo.ImmutableErrorMessageCount;
 import org.glowroot.storage.repo.ImmutableHeaderPlus;
@@ -54,7 +56,7 @@ import org.glowroot.storage.simplerepo.util.Schema;
 import org.glowroot.storage.simplerepo.util.Schema.Column;
 import org.glowroot.storage.simplerepo.util.Schema.ColumnType;
 import org.glowroot.storage.simplerepo.util.Schema.Index;
-import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -201,12 +203,35 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public Result<TracePoint> readPoints(TracePointQuery query) throws Exception {
-        ParameterizedSql parameterizedSql = new TracePointQueryBuilder(query).getParameterizedSql();
-        List<TracePoint> points = dataSource.query(parameterizedSql.sql(),
-                new TracePointRowMapper(), parameterizedSql.argsAsArray());
-        // one extra record over the limit is fetched above to identify if the limit was hit
-        return Result.from(points, query.limit());
+    public Result<TracePoint> readOverallSlowPoints(String serverRollup, String transactionType,
+            long captureTimeFrom, long captureTimeTo, TracePointCriteria criteria, int limit)
+                    throws Exception {
+        return readPoints(TraceKind.SLOW, serverRollup, transactionType, null, captureTimeFrom,
+                captureTimeTo, criteria, limit);
+    }
+
+    @Override
+    public Result<TracePoint> readTransactionSlowPoints(String serverRollup, String transactionType,
+            String transactionName, long captureTimeFrom, long captureTimeTo,
+            TracePointCriteria criteria, int limit) throws Exception {
+        return readPoints(TraceKind.SLOW, serverRollup, transactionType, transactionName,
+                captureTimeFrom, captureTimeTo, criteria, limit);
+    }
+
+    @Override
+    public Result<TracePoint> readOverallErrorPoints(String serverRollup, String transactionType,
+            long captureTimeFrom, long captureTimeTo, TracePointCriteria criteria, int limit)
+                    throws Exception {
+        return readPoints(TraceKind.ERROR, serverRollup, transactionType, null, captureTimeFrom,
+                captureTimeTo, criteria, limit);
+    }
+
+    @Override
+    public Result<TracePoint> readTransactionErrorPoints(String serverRollup,
+            String transactionType, String transactionName, long captureTimeFrom,
+            long captureTimeTo, TracePointCriteria criteria, int limit) throws Exception {
+        return readPoints(TraceKind.ERROR, serverRollup, transactionType, transactionName,
+                captureTimeFrom, captureTimeTo, criteria, limit);
     }
 
     @Override
@@ -301,10 +326,10 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable ProfileTree readProfileTree(String serverId, String traceId) throws Exception {
+    public @Nullable Profile readProfile(String serverId, String traceId) throws Exception {
         return dataSource.query(
                 "select profile_capped_id from trace where server_id = ? and id = ?",
-                new ProfileTreeResultExtractor(), serverId, traceId);
+                new ProfileResultExtractor(), serverId, traceId);
     }
 
     @Override
@@ -324,6 +349,18 @@ public class TraceDao implements TraceRepository {
     @OnlyUsedByTests
     public long count(String serverId) throws Exception {
         return dataSource.queryForLong("select count(*) from trace where server_id = ?", serverId);
+    }
+
+    private Result<TracePoint> readPoints(TraceKind traceKind, String serverRollup,
+            String transactionType, @Nullable String transactionName, long captureTimeFrom,
+            long captureTimeTo, TracePointCriteria criteria, int limit) throws Exception {
+        ParameterizedSql parameterizedSql = new TracePointQueryBuilder(traceKind, serverRollup,
+                transactionType, transactionName, captureTimeFrom, captureTimeTo, criteria, limit)
+                        .getParameterizedSql();
+        List<TracePoint> points = dataSource.query(parameterizedSql.sql(),
+                new TracePointRowMapper(), parameterizedSql.argsAsArray());
+        // one extra record over the limit is fetched above to identify if the limit was hit
+        return Result.from(points, limit);
     }
 
     private ParameterizedSql buildErrorMessageQuery(ErrorMessageQuery query,
@@ -373,10 +410,10 @@ public class TraceDao implements TraceRepository {
         }
     }
 
-    private class ProfileTreeResultExtractor
-            implements ResultSetExtractor</*@Nullable*/ProfileTree> {
+    private class ProfileResultExtractor
+            implements ResultSetExtractor</*@Nullable*/Profile> {
         @Override
-        public @Nullable ProfileTree extractData(ResultSet resultSet) throws Exception {
+        public @Nullable Profile extractData(ResultSet resultSet) throws Exception {
             if (!resultSet.next()) {
                 // trace must have just expired while user was viewing it
                 return null;
@@ -385,7 +422,7 @@ public class TraceDao implements TraceRepository {
             if (resultSet.wasNull()) {
                 return null;
             }
-            return traceCappedDatabase.readMessage(cappedId, ProfileTree.parser());
+            return traceCappedDatabase.readMessage(cappedId, Profile.parser());
         }
     }
 
@@ -410,12 +447,11 @@ public class TraceDao implements TraceRepository {
                         TraceCappedDatabaseStats.TRACE_ENTRIES);
             }
 
-            ProfileTree profileTree = trace.getProfileTree();
-            if (profileTree.getNodeCount() == 0) {
-                profileId = null;
-            } else {
-                profileId = traceCappedDatabase.writeMessage(profileTree,
+            if (trace.hasProfile()) {
+                profileId = traceCappedDatabase.writeMessage(trace.getProfile(),
                         TraceCappedDatabaseStats.TRACE_PROFILES);
+            } else {
+                profileId = null;
             }
         }
 
@@ -432,8 +468,12 @@ public class TraceDao implements TraceRepository {
             preparedStatement.setString(i++, header.getTransactionType());
             preparedStatement.setString(i++, header.getTransactionName());
             preparedStatement.setString(i++, header.getHeadline());
-            preparedStatement.setString(i++, header.getUser());
-            preparedStatement.setString(i++, header.getError().getMessage());
+            preparedStatement.setString(i++, Strings.emptyToNull(header.getUser()));
+            if (header.hasError()) {
+                preparedStatement.setString(i++, header.getError().getMessage());
+            } else {
+                preparedStatement.setNull(i++, Types.VARCHAR);
+            }
             preparedStatement.setBytes(i++, header.toByteArray());
             RowMappers.setLong(preparedStatement, i++, entriesId);
             RowMappers.setLong(preparedStatement, i++, profileId);

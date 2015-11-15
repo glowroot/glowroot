@@ -25,9 +25,8 @@ glowroot.controller('TracesCtrl', [
   'httpErrors',
   'traceModal',
   'queryStrings',
-  'slowOnly',
-  'errorOnly',
-  function ($scope, $location, $http, $q, charts, httpErrors, traceModal, queryStrings, slowOnly, errorOnly) {
+  'traceKind',
+  function ($scope, $location, $http, $q, charts, httpErrors, traceModal, queryStrings, traceKind) {
 
     $scope.$parent.activeTabItem = 'traces';
 
@@ -47,7 +46,7 @@ glowroot.controller('TracesCtrl', [
     var highlightedTraceId;
 
     $scope.showChartSpinner = 0;
-    $scope.showErrorFilter = errorOnly;
+    $scope.showErrorMessageFilter = traceKind === 'error';
 
     $scope.filterLimitOptions = [
       {text: '100', value: 100},
@@ -90,15 +89,9 @@ glowroot.controller('TracesCtrl', [
         query.transactionNameComparator = 'equals';
         query.transactionName = $scope.transactionName;
       }
-      if (slowOnly) {
-        query.slowOnly = true;
-      }
-      if (errorOnly) {
-        query.errorOnly = true;
-      }
       query.serverRollup = $scope.serverRollup;
       $scope.showChartSpinner++;
-      $http.get('backend/trace/points' + queryStrings.encodeObject(query))
+      $http.get('backend/' + traceKind + '/points' + queryStrings.encodeObject(query))
           .success(function (data) {
             function tryHighlight(dataPoints, dataSeries) {
               var i;
@@ -183,8 +176,8 @@ glowroot.controller('TracesCtrl', [
       $scope.filterResponseTimeComparator = 'greater';
       $scope.filter.headlineComparator = 'begins';
       $scope.filter.headline = '';
-      $scope.filter.errorComparator = 'begins';
-      $scope.filter.error = '';
+      $scope.filter.errorMessageComparator = 'begins';
+      $scope.filter.errorMessage = '';
       $scope.filter.userComparator = 'begins';
       $scope.filter.user = '';
       $scope.filter.attributeName = '';
@@ -409,8 +402,8 @@ glowroot.controller('TracesCtrl', [
       appliedFilter.responseTimeMillisHigh = Number($location.search()['response-time-millis-high']) || undefined;
       appliedFilter.headlineComparator = $location.search()['headline-comparator'] || 'begins';
       appliedFilter.headline = $location.search().headline || '';
-      appliedFilter.errorComparator = $location.search()['error-comparator'] || 'begins';
-      appliedFilter.error = $location.search().error || '';
+      appliedFilter.errorMessageComparator = $location.search()['error-message-comparator'] || 'begins';
+      appliedFilter.errorMessage = $location.search()['error-message'] || '';
       appliedFilter.userComparator = $location.search()['user-comparator'] || 'begins';
       appliedFilter.user = $location.search().user || '';
       appliedFilter.attributeName = $location.search()['custom-attribute-name'] || '';
@@ -476,9 +469,9 @@ glowroot.controller('TracesCtrl', [
         query['headline-comparator'] = appliedFilter.headlineComparator;
         query.headline = appliedFilter.headline;
       }
-      if (appliedFilter.error) {
-        query['error-comparator'] = appliedFilter.errorComparator;
-        query.error = appliedFilter.error;
+      if (appliedFilter.errorMessage) {
+        query['error-message-comparator'] = appliedFilter.errorMessageComparator;
+        query.errorMessage = appliedFilter.errorMessage;
       }
       if (appliedFilter.user) {
         query['user-comparator'] = appliedFilter.userComparator;

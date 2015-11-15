@@ -42,7 +42,7 @@ import org.glowroot.common.live.ImmutableTracePoint;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.StringComparator;
 import org.glowroot.common.util.Clock;
-import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -87,12 +87,12 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable ProfileTree getProfileTree(String serverId, String traceId)
+    public @Nullable Profile getProfile(String serverId, String traceId)
             throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
-                return transaction.getProfileTreeProtobuf();
+                return transaction.getProfileProtobuf();
             }
         }
         return null;
@@ -126,12 +126,14 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public List<TracePoint> getMatchingActiveTracePoints(String serverId, long captureTime,
-            long captureTick, TracePointQuery query) {
+    public List<TracePoint> getMatchingActiveTracePoints(TraceKind traceKind, String serverId,
+            String transactionType, @Nullable String transactionName, TracePointCriteria criteria,
+            int limit, long captureTime, long captureTick) {
         List<TracePoint> activeTracePoints = Lists.newArrayList();
         for (Transaction transaction : transactionRegistry.getTransactions()) {
             long startTick = transaction.getStartTick();
-            if (matches(transaction, query) && startTick < captureTick) {
+            if (matches(transaction, traceKind, transactionType, transactionName, criteria)
+                    && startTick < captureTick) {
                 activeTracePoints.add(ImmutableTracePoint.builder()
                         .serverId(serverId)
                         .traceId(transaction.getId())
@@ -149,18 +151,19 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                         return tracePoint.durationNanos();
                     }
                 }));
-        if (query.limit() != 0 && activeTracePoints.size() > query.limit()) {
-            activeTracePoints = activeTracePoints.subList(0, query.limit());
+        if (limit != 0 && activeTracePoints.size() > limit) {
+            activeTracePoints = activeTracePoints.subList(0, limit);
         }
         return activeTracePoints;
     }
 
     @Override
-    public List<TracePoint> getMatchingPendingPoints(String serverId, long captureTime,
-            TracePointQuery query) {
+    public List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String serverId,
+            String transactionType, @Nullable String transactionName, TracePointCriteria criteria,
+            long captureTime) {
         List<TracePoint> points = Lists.newArrayList();
         for (Transaction transaction : transactionCollector.getPendingTransactions()) {
-            if (matches(transaction, query)) {
+            if (matches(transaction, traceKind, transactionType, transactionName, criteria)) {
                 points.add(ImmutableTracePoint.builder()
                         .serverId(serverId)
                         .traceId(transaction.getId())
@@ -209,82 +212,87 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         }
     }
 
-    private boolean matches(Transaction transaction, TracePointQuery query) {
-        return matchesTotal(transaction, query)
-                && matchesTransactionType(transaction, query)
-                && matchesSlowOnly(transaction, query)
-                && matchesErrorOnly(transaction, query)
-                && matchesHeadline(transaction, query)
-                && matchesTransactionName(transaction, query)
-                && matchesError(transaction, query)
-                && matchesUser(transaction, query)
-                && matchesAttribute(transaction, query);
+    private boolean matches(Transaction transaction, TraceKind traceKind, String transactionType,
+            @Nullable String transactionName, TracePointCriteria criteria) {
+        return matchesTransactionType(transaction, transactionType)
+                && matchesTransactionName(transaction, transactionName)
+                && matchesTotal(transaction, criteria)
+                && matchesKind(transaction, traceKind)
+                && matchesHeadline(transaction, criteria)
+                && matchesTransactionName(transaction, criteria)
+                && matchesError(transaction, criteria)
+                && matchesUser(transaction, criteria)
+                && matchesAttribute(transaction, criteria);
     }
 
-    private boolean matchesTotal(Transaction transaction, TracePointQuery query) {
-        long totalNanos = transaction.getDurationNanos();
-        if (totalNanos < query.durationNanosLow()) {
-            return false;
-        }
-        Long totalNanosHigh = query.durationNanosHigh();
-        return totalNanosHigh == null || totalNanos <= totalNanosHigh;
-    }
-
-    private boolean matchesTransactionType(Transaction transaction, TracePointQuery query) {
-        String transactionType = query.transactionType();
-        if (Strings.isNullOrEmpty(transactionType)) {
-            return true;
-        }
+    private boolean matchesTransactionType(Transaction transaction, String transactionType) {
         return transactionType.equals(transaction.getTransactionType());
     }
 
-    private boolean matchesSlowOnly(Transaction transaction, TracePointQuery query) {
-        return !query.slowOnly() || transactionCollector.shouldStoreSlow(transaction);
+    private boolean matchesTransactionName(Transaction transaction,
+            @Nullable String transactionName) {
+        return transactionName == null || transactionName.equals(transaction.getTransactionName());
     }
 
-    private boolean matchesErrorOnly(Transaction transaction, TracePointQuery query) {
-        return !query.errorOnly() || transactionCollector.shouldStoreError(transaction);
+    private boolean matchesTotal(Transaction transaction, TracePointCriteria criteria) {
+        long totalNanos = transaction.getDurationNanos();
+        if (totalNanos < criteria.durationNanosLow()) {
+            return false;
+        }
+        Long totalNanosHigh = criteria.durationNanosHigh();
+        return totalNanosHigh == null || totalNanos <= totalNanosHigh;
     }
 
-    private boolean matchesHeadline(Transaction transaction, TracePointQuery query) {
-        return matchesUsingStringComparator(query.headlineComparator(), query.headline(),
+    private boolean matchesKind(Transaction transaction, TraceKind traceKind) {
+        if (traceKind == TraceKind.SLOW) {
+            return transactionCollector.shouldStoreSlow(transaction);
+        } else {
+            // TraceKind.ERROR
+            return transactionCollector.shouldStoreError(transaction);
+        }
+    }
+
+    private boolean matchesHeadline(Transaction transaction, TracePointCriteria criteria) {
+        return matchesUsingStringComparator(criteria.headlineComparator(), criteria.headline(),
                 transaction.getHeadline());
     }
 
-    private boolean matchesTransactionName(Transaction transaction, TracePointQuery query) {
-        return matchesUsingStringComparator(query.transactionNameComparator(),
-                query.transactionName(), transaction.getTransactionName());
+    private boolean matchesTransactionName(Transaction transaction, TracePointCriteria criteria) {
+        return matchesUsingStringComparator(criteria.transactionNameComparator(),
+                criteria.transactionName(), transaction.getTransactionName());
     }
 
-    private boolean matchesError(Transaction transaction, TracePointQuery query) {
+    private boolean matchesError(Transaction transaction, TracePointCriteria criteria) {
         ErrorMessage errorMessage = transaction.getErrorMessage();
         String text = errorMessage == null ? "" : errorMessage.message();
-        return matchesUsingStringComparator(query.errorComparator(), query.error(), text);
+        return matchesUsingStringComparator(criteria.errorMessageComparator(),
+                criteria.errorMessage(),
+                text);
     }
 
-    private boolean matchesUser(Transaction transaction, TracePointQuery query) {
-        return matchesUsingStringComparator(query.userComparator(), query.user(),
+    private boolean matchesUser(Transaction transaction, TracePointCriteria criteria) {
+        return matchesUsingStringComparator(criteria.userComparator(), criteria.user(),
                 transaction.getUser());
     }
 
-    private boolean matchesAttribute(Transaction transaction, TracePointQuery query) {
-        if (Strings.isNullOrEmpty(query.attributeName())
-                && (query.attributeValueComparator() == null
-                        || Strings.isNullOrEmpty(query.attributeValue()))) {
+    private boolean matchesAttribute(Transaction transaction, TracePointCriteria criteria) {
+        if (Strings.isNullOrEmpty(criteria.attributeName())
+                && (criteria.attributeValueComparator() == null
+                        || Strings.isNullOrEmpty(criteria.attributeValue()))) {
             // no custom attribute filter
             return true;
         }
         ImmutableMap<String, Collection<String>> attributes = transaction.getAttributes().asMap();
         for (Entry<String, Collection<String>> entry : attributes.entrySet()) {
             String attributeName = entry.getKey();
-            if (!matchesUsingStringComparator(StringComparator.EQUALS, query.attributeName(),
+            if (!matchesUsingStringComparator(StringComparator.EQUALS, criteria.attributeName(),
                     attributeName)) {
                 // name doesn't match, no need to test values
                 continue;
             }
             for (String attributeValue : entry.getValue()) {
-                if (matchesUsingStringComparator(query.attributeValueComparator(),
-                        query.attributeValue(), attributeValue)) {
+                if (matchesUsingStringComparator(criteria.attributeValueComparator(),
+                        criteria.attributeValue(), attributeValue)) {
                     // found matching name and value
                     return true;
                 }

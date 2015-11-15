@@ -15,64 +15,76 @@
  */
 package org.glowroot.central;
 
-import java.io.File;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Session;
 import com.google.common.base.Ticker;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
+import org.glowroot.central.storage.AggregateDao;
 import org.glowroot.central.storage.ConfigDao;
 import org.glowroot.central.storage.ConfigRepositoryImpl;
+import org.glowroot.central.storage.GaugeValueDao;
+import org.glowroot.central.storage.ServerDao;
+import org.glowroot.central.storage.TraceDao;
+import org.glowroot.central.storage.TransactionTypeDao;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Version;
+import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.simplerepo.SimpleRepoModule;
-import org.glowroot.storage.simplerepo.util.DataSource;
+import org.glowroot.storage.repo.GaugeValueRepository;
+import org.glowroot.storage.repo.RepoAdmin;
+import org.glowroot.storage.repo.TraceRepository;
+import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.UiModule;
 
 public class Main {
 
+    private Main() {}
+
     public static void main(String[] args) throws Exception {
-
-        File dataDir = new File("data");
-
-        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
-                .setNameFormat("Glowroot-Background-%d").build();
-        ScheduledExecutorService scheduledExecutor =
-                Executors.newScheduledThreadPool(2, threadFactory);
 
         Clock clock = Clock.systemClock();
         Ticker ticker = Ticker.systemTicker();
-
-        DataSource dataSource = DataSource.createPostgres();
-        ConfigDao configDao = new ConfigDao(dataSource);
-        ConfigRepository configRepository = new ConfigRepositoryImpl(configDao);
-        SimpleRepoModule simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
-                configRepository, scheduledExecutor, false);
-
         String version = Version.getVersion();
 
-        new GrpcServer(8181, simpleRepoModule.getServerRepository(),
-                simpleRepoModule.getAggregateRepository(),
-                simpleRepoModule.getGaugeValueRepository(), simpleRepoModule.getTraceRepository());
+        // FIXME
+        Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
+        Session session = cluster.connect();
+        session.execute("create keyspace if not exists glowroot with replication ="
+                + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
+        session.execute("use glowroot");
+
+        ConfigDao configDao = new ConfigDao(session);
+        ConfigRepository configRepository = new ConfigRepositoryImpl(configDao);
+
+        ServerDao serverDao = new ServerDao(session);
+        TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session);
+
+        AggregateRepository aggregateRepository =
+                new AggregateDao(session, serverDao, transactionTypeDao);
+        TraceRepository traceRepository = new TraceDao(session, serverDao, transactionTypeDao);
+        GaugeValueRepository gaugeValueRepository = new GaugeValueDao(session, serverDao);
+
+        new GrpcServer(8181, serverDao, aggregateRepository, gaugeValueRepository,
+                traceRepository);
+
+        RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
 
         UiModule uiModule = new CreateUiModuleBuilder()
                 .central(true)
                 .ticker(ticker)
                 .clock(clock)
                 .liveJvmService(null)
-                .configRepository(simpleRepoModule.getConfigRepository())
-                .serverRepository(simpleRepoModule.getServerRepository())
-                .transactionTypeRepository(simpleRepoModule.getTransactionTypeRepository())
-                .traceRepository(simpleRepoModule.getTraceRepository())
-                .aggregateRepository(simpleRepoModule.getAggregateRepository())
-                .gaugeValueRepository(simpleRepoModule.getGaugeValueRepository())
-                .repoAdmin(simpleRepoModule.getRepoAdmin())
+                .configRepository(configRepository)
+                .serverRepository(serverDao)
+                .transactionTypeRepository(transactionTypeDao)
+                .traceRepository(traceRepository)
+                .aggregateRepository(aggregateRepository)
+                .gaugeValueRepository(gaugeValueRepository)
+                .repoAdmin(new NopRepoAdmin())
+                .rollupLevelService(rollupLevelService)
                 .liveTraceRepository(new LiveTraceRepositoryNop())
                 .liveAggregateRepository(new LiveAggregateRepositoryNop())
                 .liveWeavingService(null)
@@ -82,5 +94,12 @@ public class Main {
                 .build();
 
         Thread.sleep(Long.MAX_VALUE);
+    }
+
+    private static class NopRepoAdmin implements RepoAdmin {
+        @Override
+        public void defrag() throws Exception {}
+        @Override
+        public void resizeIfNecessary() throws Exception {}
     }
 }

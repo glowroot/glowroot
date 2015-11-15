@@ -29,20 +29,20 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MutableProfileTreeTest {
+public class MutableProfileTest {
 
     @Test
     public void testSingleStackTrace() throws IOException {
         // given
-        MutableProfileTree profileTree = new MutableProfileTree();
+        MutableProfile profile = new MutableProfile();
         List<StackTraceElement> stackTraceElements = Lists.newArrayList();
         stackTraceElements.add(new StackTraceElement("aa.bb.cc.Def", "ghi", "Def.java", 123));
         stackTraceElements.add(new StackTraceElement("aa.bb.cc.Def", "ghi", "Def.java", 456));
         stackTraceElements.add(new StackTraceElement("xx.yy.zz.Main", "main", "Main.java", 789));
         // when
-        profileTree.merge(stackTraceElements, Thread.State.RUNNABLE, false);
+        profile.merge(stackTraceElements, Thread.State.RUNNABLE, false);
         // then
-        assertThat(profileTree.toJson()).isEqualTo(("{"
+        assertThat(profile.toJson()).isEqualTo(("{"
                 + "  \"unfilteredSampleCount\": 1,"
                 + "  \"rootNodes\": ["
                 + "    {"
@@ -69,16 +69,16 @@ public class MutableProfileTreeTest {
     @Test
     public void testMerging() throws IOException {
         // given
-        MutableProfileTree profileTree = new MutableProfileTree();
+        MutableProfile profile = new MutableProfile();
         List<StackTraceElement> stackTraceElements = Lists.newArrayList();
         stackTraceElements.add(new StackTraceElement("aa.bb.cc.Def", "ghi", "Def.java", 123));
         stackTraceElements.add(new StackTraceElement("aa.bb.cc.Def", "ghi", "Def.java", 456));
         stackTraceElements.add(new StackTraceElement("xx.yy.zz.Main", "main", "Main.java", 789));
         // when
-        profileTree.merge(stackTraceElements, Thread.State.RUNNABLE, false);
-        profileTree.merge(stackTraceElements, Thread.State.BLOCKED, false);
+        profile.merge(stackTraceElements, Thread.State.RUNNABLE, false);
+        profile.merge(stackTraceElements, Thread.State.BLOCKED, false);
         // then
-        assertThat(profileTree.toJson()).isEqualTo(("{"
+        assertThat(profile.toJson()).isEqualTo(("{"
                 + "  \"unfilteredSampleCount\": 2,"
                 + "  \"rootNodes\": ["
                 + "    {"
@@ -110,7 +110,7 @@ public class MutableProfileTreeTest {
     @Test
     public void testMultipleRootNodes() throws IOException {
         // given
-        MutableProfileTree profileTree = new MutableProfileTree();
+        MutableProfile profile = new MutableProfile();
         List<StackTraceElement> stackTraceElements1 = Lists.newArrayList();
         stackTraceElements1.add(new StackTraceElement("aa.bb.cc.Def", "ghi", "Def.java", 123));
         stackTraceElements1.add(new StackTraceElement("aa.bb.cc.Def", "ghi", "Def.java", 456));
@@ -120,10 +120,10 @@ public class MutableProfileTreeTest {
         stackTraceElements2.add(new StackTraceElement("aa.bb.cc.Def", "ghi", "Def.java", 456));
         stackTraceElements2.add(new StackTraceElement("xx.yy.zz.Main", "main2", "Main.java", 789));
         // when
-        profileTree.merge(stackTraceElements1, Thread.State.RUNNABLE, false);
-        profileTree.merge(stackTraceElements2, Thread.State.RUNNABLE, false);
+        profile.merge(stackTraceElements1, Thread.State.RUNNABLE, false);
+        profile.merge(stackTraceElements2, Thread.State.RUNNABLE, false);
         // then
-        assertThat(profileTree.toJson()).isEqualTo(("{"
+        assertThat(profile.toJson()).isEqualTo(("{"
                 + "  \"unfilteredSampleCount\": 2,"
                 + "  \"rootNodes\": ["
                 + "    {"

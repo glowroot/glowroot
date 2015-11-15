@@ -25,8 +25,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-import org.glowroot.common.model.MutableProfileTree;
-import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.common.model.MutableProfile;
 
 public class Profile {
 
@@ -36,7 +35,7 @@ public class Profile {
     @GuardedBy("lock")
     private final List<Thread.State> unmergedStackTraceThreadStates = Lists.newArrayList();
     @GuardedBy("lock")
-    private @MonotonicNonNull MutableProfileTree profileTree;
+    private @MonotonicNonNull MutableProfile profile;
     @GuardedBy("lock")
     private long sampleCount;
 
@@ -47,25 +46,25 @@ public class Profile {
         this.mayHaveSyntheticTimerMethods = mayHaveSyntheticTimerMethods;
     }
 
-    public void mergeIntoProfileTree(MutableProfileTree profileTree) {
+    public void mergeIntoProfile(MutableProfile profile) {
         synchronized (lock) {
-            if (this.profileTree == null) {
-                mergeTheUnmergedIntoProfileTree(profileTree);
+            if (this.profile == null) {
+                mergeTheUnmergedIntoProfile(profile);
             } else {
-                profileTree.merge(this.profileTree);
+                profile.merge(this.profile);
             }
         }
     }
 
-    ProfileTree toProtobuf() {
+    org.glowroot.wire.api.model.ProfileOuterClass.Profile toProtobuf() {
         synchronized (lock) {
-            if (profileTree == null) {
-                profileTree = new MutableProfileTree();
-                mergeTheUnmergedIntoProfileTree(profileTree);
+            if (profile == null) {
+                profile = new MutableProfile();
+                mergeTheUnmergedIntoProfile(profile);
                 unmergedStackTraces.clear();
                 unmergedStackTraceThreadStates.clear();
             }
-            return profileTree.toProtobuf();
+            return profile.toProtobuf();
         }
     }
 
@@ -85,28 +84,28 @@ public class Profile {
             }
             List<StackTraceElement> stackTrace = Arrays.asList(threadInfo.getStackTrace());
             Thread.State threadState = threadInfo.getThreadState();
-            if (profileTree == null) {
+            if (profile == null) {
                 unmergedStackTraces.add(stackTrace);
                 unmergedStackTraceThreadStates.add(threadState);
                 if (unmergedStackTraces.size() >= 10) {
                     // merged stack tree takes up less memory
-                    profileTree = new MutableProfileTree();
-                    mergeTheUnmergedIntoProfileTree(profileTree);
+                    profile = new MutableProfile();
+                    mergeTheUnmergedIntoProfile(profile);
                     unmergedStackTraces.clear();
                     unmergedStackTraceThreadStates.clear();
                 }
             } else {
-                profileTree.merge(stackTrace, threadState, mayHaveSyntheticTimerMethods);
+                profile.merge(stackTrace, threadState, mayHaveSyntheticTimerMethods);
             }
             sampleCount++;
         }
     }
 
-    private void mergeTheUnmergedIntoProfileTree(MutableProfileTree profileTree) {
+    private void mergeTheUnmergedIntoProfile(MutableProfile profile) {
         for (int i = 0; i < unmergedStackTraces.size(); i++) {
             List<StackTraceElement> stackTrace = unmergedStackTraces.get(i);
             Thread.State threadState = unmergedStackTraceThreadStates.get(i);
-            profileTree.merge(stackTrace, threadState, mayHaveSyntheticTimerMethods);
+            profile.merge(stackTrace, threadState, mayHaveSyntheticTimerMethods);
         }
     }
 }

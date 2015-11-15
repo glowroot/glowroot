@@ -22,9 +22,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.common.live.ImmutableTracePointQuery;
+import org.glowroot.common.live.ImmutableTracePointCriteria;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
-import org.glowroot.common.live.LiveTraceRepository.TracePointQuery;
+import org.glowroot.common.live.LiveTraceRepository.TracePointCriteria;
 import org.glowroot.common.live.StringComparator;
 import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.simplerepo.util.CappedDatabase;
@@ -66,17 +66,12 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_ID, trace);
-        TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverRollup("")
-                .from(0)
-                .to(100)
+        TracePointCriteria criteria = ImmutableTracePointCriteria.builder()
                 .durationNanosLow(0)
                 .durationNanosHigh(Long.MAX_VALUE)
-                .transactionType("unit test")
-                .errorOnly(false)
-                .limit(1)
                 .build();
-        Result<TracePoint> queryResult = traceDao.readPoints(query);
+        Result<TracePoint> queryResult =
+                traceDao.readOverallSlowPoints(SERVER_ID, "unit test", 0, 100, criteria, 1);
         Trace.Header header =
                 traceDao.readHeader(SERVER_ID, queryResult.records().get(0).traceId()).header();
         // then
@@ -93,18 +88,13 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_ID, trace);
-        TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverRollup("")
-                .from(0)
-                .to(100)
+        TracePointCriteria criteria = ImmutableTracePointCriteria.builder()
                 .durationNanosLow(trace.getHeader().getDurationNanos())
                 .durationNanosHigh(trace.getHeader().getDurationNanos())
-                .transactionType("unit test")
-                .errorOnly(false)
-                .limit(1)
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readPoints(query);
+        Result<TracePoint> queryResult =
+                traceDao.readOverallSlowPoints(SERVER_ID, "unit test", 0, 100, criteria, 1);
         // then
         assertThat(queryResult.records()).hasSize(1);
     }
@@ -114,18 +104,13 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_ID, trace);
-        TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverRollup("")
-                .from(0)
-                .to(0)
+        TracePointCriteria criteria = ImmutableTracePointCriteria.builder()
                 .durationNanosLow(trace.getHeader().getDurationNanos() + 1)
                 .durationNanosHigh(trace.getHeader().getDurationNanos() + 2)
-                .transactionType("unit test")
-                .errorOnly(false)
-                .limit(1)
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readPoints(query);
+        Result<TracePoint> queryResult =
+                traceDao.readOverallSlowPoints(SERVER_ID, "unit test", 0, 100, criteria, 1);
         // then
         assertThat(queryResult.records()).isEmpty();
     }
@@ -135,18 +120,13 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_ID, trace);
-        TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverRollup("")
-                .from(0)
-                .to(0)
+        TracePointCriteria criteria = ImmutableTracePointCriteria.builder()
                 .durationNanosLow(trace.getHeader().getDurationNanos() - 2)
                 .durationNanosHigh(trace.getHeader().getDurationNanos() - 1)
-                .transactionType("unit test")
-                .errorOnly(false)
-                .limit(1)
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readPoints(query);
+        Result<TracePoint> queryResult =
+                traceDao.readOverallSlowPoints(SERVER_ID, "unit test", 0, 100, criteria, 1);
         // then
         assertThat(queryResult.records()).isEmpty();
     }
@@ -156,21 +136,16 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_ID, trace);
-        TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverRollup("")
-                .from(0)
-                .to(100)
+        TracePointCriteria criteria = ImmutableTracePointCriteria.builder()
                 .durationNanosLow(0)
                 .durationNanosHigh(Long.MAX_VALUE)
-                .transactionType("unit test")
                 .attributeName("abc")
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("xyz")
-                .errorOnly(false)
-                .limit(1)
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readPoints(query);
+        Result<TracePoint> queryResult =
+                traceDao.readOverallSlowPoints(SERVER_ID, "unit test", 0, 100, criteria, 1);
         // then
         assertThat(queryResult.records()).hasSize(1);
     }
@@ -180,21 +155,16 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_ID, trace);
-        TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverRollup("")
-                .from(0)
-                .to(100)
+        TracePointCriteria criteria = ImmutableTracePointCriteria.builder()
                 .durationNanosLow(0)
                 .durationNanosHigh(Long.MAX_VALUE)
-                .transactionType("unit test")
                 .attributeName("abc")
                 .attributeValueComparator(null)
                 .attributeValue(null)
-                .errorOnly(false)
-                .limit(1)
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readPoints(query);
+        Result<TracePoint> queryResult =
+                traceDao.readOverallSlowPoints(SERVER_ID, "unit test", 0, 100, criteria, 1);
         // then
         assertThat(queryResult.records()).hasSize(1);
     }
@@ -204,21 +174,16 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_ID, trace);
-        TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverRollup("")
-                .from(0)
-                .to(100)
+        TracePointCriteria criteria = ImmutableTracePointCriteria.builder()
                 .durationNanosLow(0)
                 .durationNanosHigh(Long.MAX_VALUE)
-                .transactionType("unit test")
                 .attributeName(null)
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("xyz")
-                .errorOnly(false)
-                .limit(1)
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readPoints(query);
+        Result<TracePoint> queryResult =
+                traceDao.readOverallSlowPoints(SERVER_ID, "unit test", 0, 100, criteria, 1);
         // then
         assertThat(queryResult.records()).hasSize(1);
     }
@@ -228,21 +193,16 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_ID, trace);
-        TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverRollup("")
-                .from(0)
-                .to(100)
+        TracePointCriteria criteria = ImmutableTracePointCriteria.builder()
                 .durationNanosLow(0)
                 .durationNanosHigh(Long.MAX_VALUE)
-                .transactionType("unit test")
                 .attributeName("abc")
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("abc")
-                .errorOnly(false)
-                .limit(1)
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readPoints(query);
+        Result<TracePoint> queryResult =
+                traceDao.readOverallSlowPoints(SERVER_ID, "unit test", 0, 100, criteria, 1);
         // then
         assertThat(queryResult.records()).isEmpty();
     }
@@ -252,21 +212,16 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_ID, trace);
-        TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverRollup("")
-                .from(0)
-                .to(100)
+        TracePointCriteria criteria = ImmutableTracePointCriteria.builder()
                 .durationNanosLow(0)
                 .durationNanosHigh(Long.MAX_VALUE)
-                .transactionType("unit test")
                 .attributeName(null)
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("xyz1")
-                .errorOnly(false)
-                .limit(1)
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readPoints(query);
+        Result<TracePoint> queryResult =
+                traceDao.readOverallSlowPoints(SERVER_ID, "unit test", 0, 100, criteria, 1);
         // then
         assertThat(queryResult.records()).isEmpty();
     }

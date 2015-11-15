@@ -77,7 +77,7 @@ public class TimerWrapperMethodsIT {
         // then
         // profiler should have captured about 10 stack traces
         assertThat(trace.getHeader().getProfileSampleCount()).isBetween(5L, 15L);
-        assertThat(trace.getProfileTree().getTimerNameList()).containsExactly("mock trace marker");
+        assertThat(trace.getProfile().getTimerNameList()).containsExactly("mock trace marker");
     }
 
     public static class ShouldGenerateTraceWithProfile implements AppUnderTest, TransactionMarker {

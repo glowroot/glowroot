@@ -56,15 +56,18 @@ public class AlertingService {
     private final ServerRepository serverRepository;
     private final TriggeredAlertRepository triggeredAlertRepository;
     private final AggregateRepository aggregateRepository;
+    private final RollupLevelService rollupLevelService;
     private final MailService mailService;
 
     public AlertingService(ConfigRepository configRepository, ServerRepository serverRepository,
             TriggeredAlertRepository triggeredAlertRepository,
-            AggregateRepository aggregateRepository, MailService mailService) {
+            AggregateRepository aggregateRepository, RollupLevelService rollupLevelService,
+            MailService mailService) {
         this.configRepository = configRepository;
         this.serverRepository = serverRepository;
         this.triggeredAlertRepository = triggeredAlertRepository;
         this.aggregateRepository = aggregateRepository;
+        this.rollupLevelService = rollupLevelService;
         this.mailService = mailService;
     }
 
@@ -85,8 +88,7 @@ public class AlertingService {
         long startTime = endTime - MINUTES.toMillis(alertConfig.timePeriodMinutes());
         // don't want to include the aggregate at startTime, so add 1
         startTime++;
-        int rollupLevel =
-                aggregateRepository.getRollupLevelForView(serverRollup, startTime, endTime);
+        int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
         List<PercentileAggregate> percentileAggregates =
                 aggregateRepository.readOverallPercentileAggregates(serverRollup,
                         alertConfig.transactionType(), startTime, endTime, rollupLevel);

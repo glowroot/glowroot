@@ -119,7 +119,7 @@ public class PartialTraceIT {
         } else {
             assertThat(trace.getEntryCount()).isZero();
         }
-        assertThat(trace.hasProfileTree()).isTrue();
+        assertThat(trace.hasProfile()).isTrue();
         // interrupt trace
         container.interruptAppUnderTest();
         trace = future.get();

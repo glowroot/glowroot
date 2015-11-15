@@ -33,7 +33,7 @@ import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 
 public interface AggregateRepository {
 
-    void store(String serverRollup, long captureTime, List<OverallAggregate> overallAggregates,
+    void store(String serverId, long captureTime, List<OverallAggregate> overallAggregates,
             List<TransactionAggregate> transactionAggregates) throws Exception;
 
     // captureTimeFrom is non-inclusive
@@ -110,14 +110,6 @@ public interface AggregateRepository {
                     throws Exception;
 
     // captureTimeFrom is non-inclusive
-    boolean shouldHaveOverallQueries(String serverRollup, String transactionType,
-            long captureTimeFrom, long captureTimeTo) throws Exception;
-
-    // captureTimeFrom is non-inclusive
-    boolean shouldHaveTransactionQueries(String serverRollup, String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo) throws Exception;
-
-    // captureTimeFrom is non-inclusive
     boolean shouldHaveOverallProfile(String serverRollup, String transactionType,
             long captureTimeFrom, long captureTimeTo) throws Exception;
 
@@ -125,11 +117,13 @@ public interface AggregateRepository {
     boolean shouldHaveTransactionProfile(String serverRollup, String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo) throws Exception;
 
-    long getDataPointIntervalMillis(String serverRollup, long captureTimeFrom, long captureTimeTo)
-            throws Exception;
+    // captureTimeFrom is non-inclusive
+    boolean shouldHaveOverallQueries(String serverRollup, String transactionType,
+            long captureTimeFrom, long captureTimeTo) throws Exception;
 
-    int getRollupLevelForView(String serverRollup, long captureTimeFrom, long captureTimeTo)
-            throws Exception;
+    // captureTimeFrom is non-inclusive
+    boolean shouldHaveTransactionQueries(String serverRollup, String transactionType,
+            String transactionName, long captureTimeFrom, long captureTimeTo) throws Exception;
 
     void deleteAll(String serverRollup) throws Exception;
 

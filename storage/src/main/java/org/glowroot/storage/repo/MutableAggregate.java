@@ -28,13 +28,13 @@ import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
-import org.glowroot.common.model.MutableProfileTree;
+import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble;
-import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
 @Styles.Private
 public class MutableAggregate {
@@ -46,11 +46,11 @@ public class MutableAggregate {
     private double totalBlockedNanos = NotAvailableAware.NA;
     private double totalWaitedNanos = NotAvailableAware.NA;
     private double totalAllocatedBytes = NotAvailableAware.NA;
-    private final LazyHistogram lazyHistogram = new LazyHistogram();
     private final List<MutableTimer> rootTimers = Lists.newArrayList();
-    private QueryCollector queries;
+    private final LazyHistogram lazyHistogram = new LazyHistogram();
     // lazy instantiated to reduce memory footprint
-    private @MonotonicNonNull MutableProfileTree profileTree;
+    private @MonotonicNonNull MutableProfile profile;
+    private QueryCollector queries;
 
     public MutableAggregate(int maxAggregateQueriesPerQueryType) {
         queries = new QueryCollector(maxAggregateQueriesPerQueryType, 0);
@@ -85,14 +85,14 @@ public class MutableAggregate {
                 NotAvailableAware.add(this.totalAllocatedBytes, totalAllocatedBytes);
     }
 
-    public void mergeHistogram(Aggregate.Histogram toBeMergedHistogram) throws DataFormatException {
-        lazyHistogram.merge(toBeMergedHistogram);
-    }
-
     public void mergeRootTimers(List<Aggregate.Timer> toBeMergedRootTimers) {
         for (Aggregate.Timer toBeMergedRootTimer : toBeMergedRootTimers) {
             mergeRootTimer(toBeMergedRootTimer);
         }
+    }
+
+    public void mergeHistogram(Aggregate.Histogram toBeMergedHistogram) throws DataFormatException {
+        lazyHistogram.merge(toBeMergedHistogram);
     }
 
     private void mergeRootTimer(Aggregate.Timer toBeMergedRootTimer) {
@@ -117,13 +117,13 @@ public class MutableAggregate {
                 .setTotalBlockedNanos(toOptionalDouble(totalBlockedNanos))
                 .setTotalWaitedNanos(toOptionalDouble(totalWaitedNanos))
                 .setTotalAllocatedBytes(toOptionalDouble(totalAllocatedBytes))
-                .setTotalNanosHistogram(lazyHistogram.toProtobuf(scratchBuffer))
                 .addAllRootTimer(getRootTimersProtobuf())
-                .addAllQueriesByType(queries.toProtobuf(true));
-        if (profileTree != null) {
-            builder.setProfileTree(profileTree.toProtobuf());
+                .setTotalNanosHistogram(lazyHistogram.toProtobuf(scratchBuffer));
+        if (profile != null) {
+            builder.setProfile(profile.toProtobuf());
         }
-        return builder.build();
+        return builder.addAllQueriesByType(queries.toProtobuf(true))
+                .build();
     }
 
     public OverviewAggregate toOverviewAggregate(long captureTime) throws IOException {
@@ -148,15 +148,15 @@ public class MutableAggregate {
                 .build();
     }
 
-    public void mergeQueries(List<Aggregate.QueriesByType> toBeMergedQueries) throws IOException {
-        queries.mergeQueries(toBeMergedQueries);
+    public void mergeProfile(Profile toBeMergedProfile) throws IOException {
+        if (profile == null) {
+            profile = new MutableProfile();
+        }
+        profile.merge(toBeMergedProfile);
     }
 
-    public void mergeProfile(ProfileTree toBeMergedProfileTree) throws IOException {
-        if (profileTree == null) {
-            profileTree = new MutableProfileTree();
-        }
-        profileTree.merge(toBeMergedProfileTree);
+    public void mergeQueries(List<Aggregate.QueriesByType> toBeMergedQueries) throws IOException {
+        queries.mergeQueries(toBeMergedQueries);
     }
 
     private List<Aggregate.Timer> getRootTimersProtobuf() {

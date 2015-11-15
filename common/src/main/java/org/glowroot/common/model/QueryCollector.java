@@ -78,15 +78,19 @@ public class QueryCollector {
 
     public void mergeQueries(List<Aggregate.QueriesByType> toBeMergedQueries) throws IOException {
         for (Aggregate.QueriesByType toBeMergedQueriesByType : toBeMergedQueries) {
-            String queryType = toBeMergedQueriesByType.getType();
-            Map<String, MutableQuery> queriesForQueryType = queries.get(queryType);
-            if (queriesForQueryType == null) {
-                queriesForQueryType = Maps.newHashMap();
-                queries.put(queryType, queriesForQueryType);
-            }
-            for (Query query : toBeMergedQueriesByType.getQueryList()) {
-                mergeQuery(query, queriesForQueryType);
-            }
+            mergeQueries(toBeMergedQueriesByType);
+        }
+    }
+
+    public void mergeQueries(Aggregate.QueriesByType toBeMergedQueries) {
+        String queryType = toBeMergedQueries.getType();
+        Map<String, MutableQuery> queriesForQueryType = queries.get(queryType);
+        if (queriesForQueryType == null) {
+            queriesForQueryType = Maps.newHashMap();
+            queries.put(queryType, queriesForQueryType);
+        }
+        for (Query query : toBeMergedQueries.getQueryList()) {
+            mergeQuery(query, queriesForQueryType);
         }
     }
 

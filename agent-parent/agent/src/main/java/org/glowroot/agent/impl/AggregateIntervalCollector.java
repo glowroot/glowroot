@@ -45,7 +45,6 @@ import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
-import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
 
 public class AggregateIntervalCollector {
 
@@ -211,8 +210,8 @@ public class AggregateIntervalCollector {
         }
     }
 
-    public @Nullable ProfileTree getLiveProfile(String transactionType,
-            @Nullable String transactionName) throws IOException {
+    public @Nullable org.glowroot.wire.api.model.ProfileOuterClass.Profile getLiveProfile(
+            String transactionType, @Nullable String transactionName) throws IOException {
         AggregateCollector aggregateCollector =
                 getAggregateCollector(transactionType, transactionName);
         if (aggregateCollector == null) {

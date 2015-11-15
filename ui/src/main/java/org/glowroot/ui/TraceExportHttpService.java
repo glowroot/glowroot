@@ -157,7 +157,7 @@ class TraceExportHttpService implements HttpService {
             } else if (match.equals(profilePlaceholder)) {
                 chunkSources
                         .add(ChunkSource.wrap("<script type=\"text/json\" id=\"profileJson\">"));
-                String profileJson = traceExport.profileTreeJson();
+                String profileJson = traceExport.profileJson();
                 if (profileJson != null) {
                     chunkSources.add(ChunkSource.wrap(profileJson));
                 }

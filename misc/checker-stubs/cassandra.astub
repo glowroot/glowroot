@@ -1,0 +1,8 @@
+import org.checkerframework.checker.nullness.qual.*;
+
+/* ========================================================================== */
+package com.datastax.driver.core;
+
+public class BoundStatement {
+    public BoundStatement setString(int i, @Nullable String v);
+}

@@ -31,7 +31,7 @@ public class RowMappers {
 
     public static @Nullable Long getLong(ResultSet resultSet, int columnIndex) throws SQLException {
         long value = resultSet.getLong(columnIndex);
-        if (resultSet.wasNull()) {
+        if (value == 0 && resultSet.wasNull()) {
             return null;
         } else {
             return value;
@@ -50,26 +50,17 @@ public class RowMappers {
     public static double getNotAvailableAwareDouble(ResultSet resultSet, int columnIndex)
             throws SQLException {
         double value = resultSet.getDouble(columnIndex);
-        if (resultSet.wasNull()) {
+        if (value == 0 && resultSet.wasNull()) {
             return NotAvailableAware.NA;
         } else {
             return value;
         }
     }
 
-    public static void setNotAvailableAwareDouble(PreparedStatement preparedStatement,
-            int columnIndex, double value) throws SQLException {
-        if (NotAvailableAware.isNA(value)) {
-            preparedStatement.setNull(columnIndex, Types.BIGINT);
-        } else {
-            preparedStatement.setDouble(columnIndex, value);
-        }
-    }
-
     public static Existence getExistence(ResultSet resultSet, int columnIndex,
             CappedDatabase cappedDatabase) throws SQLException {
         long cappedId = resultSet.getLong(columnIndex);
-        if (resultSet.wasNull()) {
+        if (cappedId == 0 && resultSet.wasNull()) {
             return Existence.NO;
         }
         if (cappedDatabase.isExpired(cappedId)) {

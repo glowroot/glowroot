@@ -98,7 +98,7 @@
         <label>Throughput:</label>
 
         <div class="gt-inline-block" style="vertical-align: top;">
-          {{transactionsPerMin.toFixed(1)}} transactions per minute<br>
+          {{transactionsPerMin | gtCount}} transactions per minute<br>
           ({{transactionCount}}
           <span ng-pluralize
                 count="transactionCount"

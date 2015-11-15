@@ -42,6 +42,7 @@ import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
 import org.glowroot.storage.repo.ImmutableErrorSummaryQuery;
 import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.Utils;
+import org.glowroot.storage.repo.helper.RollupLevelService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -68,19 +69,22 @@ class ErrorCommonService {
 
     private final AggregateRepository aggregateRepository;
     private final LiveAggregateRepository liveAggregateRepository;
+    private final RollupLevelService rollupLevelService;
     private final ImmutableList<RollupConfig> rollupConfigs;
 
     ErrorCommonService(AggregateRepository aggregateRepository,
-            LiveAggregateRepository liveAggregateRepository, List<RollupConfig> rollupConfigs) {
+            LiveAggregateRepository liveAggregateRepository, RollupLevelService rollupLevelService,
+            List<RollupConfig> rollupConfigs) {
         this.aggregateRepository = aggregateRepository;
         this.liveAggregateRepository = liveAggregateRepository;
+        this.rollupLevelService = rollupLevelService;
         this.rollupConfigs = ImmutableList.copyOf(rollupConfigs);
     }
 
     // from is non-inclusive
     OverallErrorSummary readOverallErrorSummary(String serverRollup, String transactionType,
             long from, long to) throws Exception {
-        int rollupLevel = aggregateRepository.getRollupLevelForView(serverRollup, from, to);
+        int rollupLevel = rollupLevelService.getRollupLevelForView(from, to);
         LiveResult<OverallErrorSummary> liveResult = liveAggregateRepository
                 .getLiveOverallErrorSummary(serverRollup, transactionType, from, to);
         if (liveResult == null) {
@@ -120,7 +124,7 @@ class ErrorCommonService {
     List<ErrorPoint> readErrorPoints(String serverRollup, String transactionType,
             @Nullable String transactionName, long from, long to, long liveCaptureTime)
                     throws Exception {
-        int rollupLevel = aggregateRepository.getRollupLevelForView(serverRollup, from, to);
+        int rollupLevel = rollupLevelService.getRollupLevelForView(from, to);
         LiveResult<ErrorPoint> liveResult = liveAggregateRepository.getLiveErrorPoints(serverRollup,
                 transactionType, transactionName, from, to, liveCaptureTime);
         // -1 since query 'to' is inclusive

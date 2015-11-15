@@ -25,7 +25,7 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
 public interface LiveAggregateRepository {
 
@@ -57,7 +57,7 @@ public interface LiveAggregateRepository {
             long liveCaptureTime) throws Exception;
 
     @Nullable
-    LiveResult<ProfileTree> getLiveProfileTree(String serverId, String transactionType,
+    LiveResult<Profile> getLiveProfile(String serverId, String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception;
 
     @Nullable
@@ -205,7 +205,7 @@ public interface LiveAggregateRepository {
         }
 
         @Override
-        public @Nullable LiveResult<ProfileTree> getLiveProfileTree(String serverId,
+        public @Nullable LiveResult<Profile> getLiveProfile(String serverId,
                 String transactionType, @Nullable String transactionName, long from, long to) {
             return null;
         }

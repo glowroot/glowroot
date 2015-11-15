@@ -38,6 +38,7 @@ import org.glowroot.storage.repo.RepoAdmin;
 import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.TransactionTypeRepository;
+import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.storage.util.MailService;
 
 public class UiModule {
@@ -54,10 +55,11 @@ public class UiModule {
             ConfigRepository configRepository,
             ServerRepository serverRepository,
             TransactionTypeRepository transactionTypeRepository,
-            TraceRepository traceRepository,
             AggregateRepository aggregateRepository,
+            TraceRepository traceRepository,
             GaugeValueRepository gaugeValueRepository,
             RepoAdmin repoAdmin,
+            RollupLevelService rollupLevelService,
             LiveTraceRepository liveTraceRepository,
             LiveAggregateRepository liveAggregateRepository,
             @Nullable LiveWeavingService liveWeavingService,
@@ -75,12 +77,12 @@ public class UiModule {
         LayoutHttpService layoutHttpService =
                 new LayoutHttpService(httpSessionManager, layoutService);
         TransactionCommonService transactionCommonService = new TransactionCommonService(
-                aggregateRepository, liveAggregateRepository, configRepository);
+                aggregateRepository, liveAggregateRepository, configRepository, rollupLevelService);
         TraceCommonService traceCommonService =
                 new TraceCommonService(traceRepository, liveTraceRepository);
         TransactionJsonService transactionJsonService =
                 new TransactionJsonService(transactionCommonService, traceRepository,
-                        liveTraceRepository, aggregateRepository, clock);
+                        liveTraceRepository, rollupLevelService, clock);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(traceRepository,
                 liveTraceRepository, configRepository, ticker, clock);
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
@@ -95,13 +97,13 @@ public class UiModule {
             glowrootLogHttpService = new GlowrootLogHttpService(logDir);
         }
         ErrorCommonService errorCommonService = new ErrorCommonService(aggregateRepository,
-                liveAggregateRepository, configRepository.getRollupConfigs());
+                liveAggregateRepository, rollupLevelService, configRepository.getRollupConfigs());
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
-                traceRepository, aggregateRepository, clock);
+                traceRepository, rollupLevelService, clock);
         ConfigJsonService configJsonService = new ConfigJsonService(configRepository, repoAdmin,
                 pluginDescriptors, httpSessionManager, new MailService(), liveWeavingService);
-        GaugeValueJsonService gaugeValueJsonService =
-                new GaugeValueJsonService(gaugeValueRepository, configRepository, clock);
+        GaugeValueJsonService gaugeValueJsonService = new GaugeValueJsonService(
+                gaugeValueRepository, rollupLevelService, configRepository, clock);
         AlertConfigJsonService alertJsonService = new AlertConfigJsonService(configRepository);
         AdminJsonService adminJsonService = new AdminJsonService(aggregateRepository,
                 traceRepository, gaugeValueRepository, liveAggregateRepository,

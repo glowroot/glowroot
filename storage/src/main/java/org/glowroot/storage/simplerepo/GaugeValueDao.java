@@ -28,12 +28,11 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.Longs;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
-import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.util.Clock;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
 import org.glowroot.storage.repo.GaugeValueRepository;
-import org.glowroot.storage.repo.ImmutableGauge;
+import org.glowroot.storage.repo.helper.Gauges;
 import org.glowroot.storage.simplerepo.util.DataSource;
 import org.glowroot.storage.simplerepo.util.DataSource.PreparedStatementBinder;
 import org.glowroot.storage.simplerepo.util.DataSource.ResultSetExtractor;
@@ -44,9 +43,9 @@ import org.glowroot.storage.simplerepo.util.Schema;
 import org.glowroot.storage.simplerepo.util.Schema.Column;
 import org.glowroot.storage.simplerepo.util.Schema.ColumnType;
 import org.glowroot.storage.simplerepo.util.Schema.Index;
+import org.glowroot.storage.util.ServerRollups;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 
-import static java.util.concurrent.TimeUnit.HOURS;
 import static org.glowroot.storage.simplerepo.util.Checkers.castUntainted;
 
 public class GaugeValueDao implements GaugeValueRepository {
@@ -126,16 +125,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         List<String> allGaugeNames = gaugeMetaDao.readAllGaugeNames(serverRollup);
         List<Gauge> gauges = Lists.newArrayList();
         for (String gaugeName : allGaugeNames) {
-            int index = gaugeName.lastIndexOf(':');
-            String mbeanObjectName = gaugeName.substring(0, index);
-            String mbeanAttributeName = gaugeName.substring(index + 1);
-            boolean counter = mbeanAttributeName.endsWith("[counter]");
-            if (counter) {
-                mbeanAttributeName = mbeanAttributeName.substring(0,
-                        mbeanAttributeName.length() - "[counter]".length());
-            }
-            String display = GaugeConfig.display(mbeanObjectName) + '/' + mbeanAttributeName;
-            gauges.add(ImmutableGauge.of(gaugeName, display, counter));
+            gauges.add(Gauges.getGauge(gaugeName));
         }
         return gauges;
     }
@@ -226,26 +216,6 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public int getRollupLevelForView(String serverRollup, long from, long to) throws Exception {
-        long millis = to - from;
-        long timeAgoMillis = clock.currentTimeMillis() - from;
-        ImmutableList<Integer> rollupExpirationHours =
-                configRepository.getStorageConfig().rollupExpirationHours();
-        // gauge point rollup level 0 shares rollup level 1's expiration
-        if (millis < rollupConfigs.get(0).viewThresholdMillis()
-                && HOURS.toMillis(rollupExpirationHours.get(0)) > timeAgoMillis) {
-            return 0;
-        }
-        for (int i = 0; i < rollupConfigs.size() - 1; i++) {
-            if (millis < rollupConfigs.get(i + 1).viewThresholdMillis()
-                    && HOURS.toMillis(rollupExpirationHours.get(i)) > timeAgoMillis) {
-                return i + 1;
-            }
-        }
-        return rollupConfigs.size();
-    }
-
-    @Override
     public void deleteAll(String serverRollup) throws Exception {
         String whereClause =
                 "gauge_id in (select gauge_id from gauge_meta where server_rollup = ?)";
@@ -296,7 +266,7 @@ public class GaugeValueDao implements GaugeValueRepository {
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws Exception {
-            List<String> serverRollups = ServerDao.getServerRollups(serverId);
+            List<String> serverRollups = ServerRollups.getServerRollups(serverId);
             for (String serverRollup : serverRollups) {
                 for (GaugeValue gaugeValue : gaugeValues) {
                     long gaugeId = gaugeMetaDao.updateLastCaptureTime(serverRollup,

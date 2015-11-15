@@ -52,6 +52,7 @@ public class AlertingServiceTest {
     private ServerRepository serverRepository;
     private TriggeredAlertRepository triggeredAlertRepository;
     private AggregateRepository aggregateRepository;
+    private RollupLevelService rollupLevelService;
     private MockMailService mailService;
 
     @Before
@@ -62,6 +63,7 @@ public class AlertingServiceTest {
                 .thenReturn(ImmutableList.<ServerRollup>of(ImmutableServerRollup.of("", true)));
         triggeredAlertRepository = mock(TriggeredAlertRepository.class);
         aggregateRepository = mock(AggregateRepository.class);
+        rollupLevelService = mock(RollupLevelService.class);
         mailService = new MockMailService();
         SecretKey secretKey = Encryption.generateNewKey();
         when(configRepository.getSecretKey()).thenReturn(secretKey);
@@ -81,7 +83,7 @@ public class AlertingServiceTest {
         // given
         setup(1000000);
         AlertingService alertingService = new AlertingService(configRepository, serverRepository,
-                triggeredAlertRepository, aggregateRepository, mailService);
+                triggeredAlertRepository, aggregateRepository, rollupLevelService, mailService);
         // when
         alertingService.checkAlerts(120000);
         // then
@@ -93,7 +95,7 @@ public class AlertingServiceTest {
         // given
         setup(999000);
         AlertingService alertingService = new AlertingService(configRepository, serverRepository,
-                triggeredAlertRepository, aggregateRepository, mailService);
+                triggeredAlertRepository, aggregateRepository, rollupLevelService, mailService);
         // when
         alertingService.checkAlerts(120000);
         // then

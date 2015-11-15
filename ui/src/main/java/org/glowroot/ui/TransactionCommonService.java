@@ -37,7 +37,7 @@ import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
-import org.glowroot.common.model.MutableProfileTree;
+import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.TransactionSummaryQuery;
@@ -48,8 +48,9 @@ import org.glowroot.storage.repo.MutableAggregate;
 import org.glowroot.storage.repo.ProfileCollector;
 import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.Utils;
+import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -83,12 +84,15 @@ class TransactionCommonService {
     private final AggregateRepository aggregateRepository;
     private final LiveAggregateRepository liveAggregateRepository;
     private final ConfigRepository configRepository;
+    private final RollupLevelService rollupLevelService;
 
     TransactionCommonService(AggregateRepository aggregateRepository,
-            LiveAggregateRepository liveAggregateRepository, ConfigRepository configRepository) {
+            LiveAggregateRepository liveAggregateRepository, ConfigRepository configRepository,
+            RollupLevelService rollupLevelService) {
         this.aggregateRepository = aggregateRepository;
         this.liveAggregateRepository = liveAggregateRepository;
         this.configRepository = configRepository;
+        this.rollupLevelService = rollupLevelService;
     }
 
     // from is non-inclusive
@@ -168,7 +172,7 @@ class TransactionCommonService {
     List<OverviewAggregate> getOverviewAggregates(String serverRollup, String transactionType,
             @Nullable String transactionName, long from, long to, long liveCaptureTime)
                     throws Exception {
-        int rollupLevel = aggregateRepository.getRollupLevelForView(serverRollup, from, to);
+        int rollupLevel = rollupLevelService.getRollupLevelForView(from, to);
         LiveResult<OverviewAggregate> liveResult =
                 liveAggregateRepository.getLiveOverviewAggregates(serverRollup, transactionType,
                         transactionName, from - 1, to, liveCaptureTime);
@@ -205,7 +209,7 @@ class TransactionCommonService {
     List<PercentileAggregate> getPercentileAggregates(String serverRollup, String transactionType,
             @Nullable String transactionName, long from, long to, long liveCaptureTime)
                     throws Exception {
-        int rollupLevel = aggregateRepository.getRollupLevelForView(serverRollup, from, to);
+        int rollupLevel = rollupLevelService.getRollupLevelForView(from, to);
         LiveResult<PercentileAggregate> liveResult =
                 liveAggregateRepository.getLivePercentileAggregates(serverRollup, transactionType,
                         transactionName, from - 1, to, liveCaptureTime);
@@ -242,7 +246,7 @@ class TransactionCommonService {
     List<ThroughputAggregate> getThroughputAggregates(String serverRollup, String transactionType,
             @Nullable String transactionName, long from, long to, long liveCaptureTime)
                     throws Exception {
-        int rollupLevel = aggregateRepository.getRollupLevelForView(serverRollup, from, to);
+        int rollupLevel = rollupLevelService.getRollupLevelForView(from, to);
         LiveResult<ThroughputAggregate> liveResult =
                 liveAggregateRepository.getLiveThroughputAggregates(serverRollup, transactionType,
                         transactionName, from - 1, to, liveCaptureTime);
@@ -276,21 +280,21 @@ class TransactionCommonService {
     }
 
     // from is non-inclusive
-    MutableProfileTree getMergedProfile(String serverRollup, String transactionType,
+    MutableProfile getMergedProfile(String serverRollup, String transactionType,
             @Nullable String transactionName, long from, long to, List<String> includes,
             List<String> excludes, double truncateBranchPercentage) throws Exception {
-        MutableProfileTree profileTree =
+        MutableProfile profile =
                 getMergedProfile(serverRollup, transactionType, transactionName, from, to);
         if (!includes.isEmpty() || !excludes.isEmpty()) {
-            profileTree.filter(includes, excludes);
+            profile.filter(includes, excludes);
         }
         if (truncateBranchPercentage != 0) {
             int minSamples =
-                    (int) Math.ceil(profileTree.getSampleCount() * truncateBranchPercentage / 100);
+                    (int) Math.ceil(profile.getSampleCount() * truncateBranchPercentage / 100);
             // don't truncate any root nodes
-            profileTree.truncateBranches(minSamples);
+            profile.truncateBranches(minSamples);
         }
-        return profileTree;
+        return profile;
     }
 
     // from is non-inclusive
@@ -345,11 +349,11 @@ class TransactionCommonService {
     // result as opposed to charted over time period
     //
     // from is non-inclusive
-    private MutableProfileTree getMergedProfile(String serverRollup, String transactionType,
+    private MutableProfile getMergedProfile(String serverRollup, String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
-        int initialRollupLevel = aggregateRepository.getRollupLevelForView(serverRollup, from, to);
-        LiveResult<ProfileTree> liveResult = liveAggregateRepository
-                .getLiveProfileTree(serverRollup, transactionType, transactionName, from, to);
+        int initialRollupLevel = rollupLevelService.getRollupLevelForView(from, to);
+        LiveResult<Profile> liveResult = liveAggregateRepository
+                .getLiveProfile(serverRollup, transactionType, transactionName, from, to);
         // -1 since query 'to' is inclusive
         // this way don't need to worry about de-dupping between live and stored aggregates
         long revisedTo = liveResult == null ? to : liveResult.initialCaptureTime() - 1;
@@ -365,11 +369,11 @@ class TransactionCommonService {
             }
         }
         if (liveResult != null) {
-            for (ProfileTree profileTree : liveResult.get()) {
-                mergedProfile.mergeProfileTree(profileTree);
+            for (Profile profile : liveResult.get()) {
+                mergedProfile.mergeProfile(profile);
             }
         }
-        return mergedProfile.getProfileTree();
+        return mergedProfile.getProfile();
     }
 
     // this method may return some rolled up query aggregates and some non-rolled up
@@ -381,7 +385,7 @@ class TransactionCommonService {
     private List<Aggregate.QueriesByType> getMergedQueries(String serverRollup,
             String transactionType, @Nullable String transactionName, long from, long to,
             int maxAggregateQueriesPerQueryType) throws Exception {
-        int initialRollupLevel = aggregateRepository.getRollupLevelForView(serverRollup, from, to);
+        int initialRollupLevel = rollupLevelService.getRollupLevelForView(from, to);
         LiveResult<List<Aggregate.QueriesByType>> liveResult = liveAggregateRepository
                 .getLiveQueries(serverRollup, transactionType, transactionName, from, to);
         // -1 since query 'to' is inclusive

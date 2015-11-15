@@ -30,6 +30,7 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.GaugeValueRepository.Gauge;
+import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 
 @JsonService
@@ -38,13 +39,15 @@ class GaugeValueJsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final GaugeValueRepository gaugeValueRepository;
+    private final RollupLevelService rollupLevelService;
     private final ConfigRepository configRepository;
 
     private final Clock clock;
 
     GaugeValueJsonService(GaugeValueRepository gaugeValueRepository,
-            ConfigRepository configRepository, Clock clock) {
+            RollupLevelService rollupLevelService, ConfigRepository configRepository, Clock clock) {
         this.gaugeValueRepository = gaugeValueRepository;
+        this.rollupLevelService = rollupLevelService;
         this.configRepository = configRepository;
         this.clock = clock;
     }
@@ -52,8 +55,7 @@ class GaugeValueJsonService {
     @GET("/backend/jvm/gauge-values")
     String getGaugeValues(String queryString) throws Exception {
         GaugeValueRequest request = QueryStrings.decode(queryString, GaugeValueRequest.class);
-        int rollupLevel = gaugeValueRepository.getRollupLevelForView(request.serverRollup(),
-                request.from(), request.to());
+        int rollupLevel = rollupLevelService.getRollupLevelForView(request.from(), request.to());
         long intervalMillis;
         if (rollupLevel == 0) {
             intervalMillis = configRepository.getGaugeCollectionIntervalMillis();

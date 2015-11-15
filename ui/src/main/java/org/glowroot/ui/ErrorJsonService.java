@@ -44,6 +44,7 @@ import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.TraceRepository.ErrorMessageCount;
 import org.glowroot.storage.repo.TraceRepository.ErrorMessageQuery;
 import org.glowroot.storage.repo.TraceRepository.TraceErrorPoint;
+import org.glowroot.storage.repo.helper.RollupLevelService;
 
 @JsonService
 class ErrorJsonService {
@@ -57,14 +58,14 @@ class ErrorJsonService {
 
     private final ErrorCommonService errorCommonService;
     private final TraceRepository traceRepository;
-    private final AggregateRepository aggregateRepository;
+    private final RollupLevelService rollupLevelService;
     private final Clock clock;
 
     ErrorJsonService(ErrorCommonService errorCommonService, TraceRepository traceRepository,
-            AggregateRepository aggregateRepository, Clock clock) {
+            RollupLevelService rollupLevelService, Clock clock) {
         this.errorCommonService = errorCommonService;
         this.traceRepository = traceRepository;
-        this.aggregateRepository = aggregateRepository;
+        this.rollupLevelService = rollupLevelService;
         this.clock = clock;
     }
 
@@ -99,8 +100,8 @@ class ErrorJsonService {
                 transactionCountMap.put(unfilteredErrorPoint.captureTime(),
                         unfilteredErrorPoint.transactionCount());
             }
-            long resolutionMillis = aggregateRepository
-                    .getDataPointIntervalMillis(query.serverRollup(), query.from(), query.to());
+            long resolutionMillis =
+                    rollupLevelService.getDataPointIntervalMillis(query.from(), query.to());
             List<TraceErrorPoint> traceErrorPoints =
                     traceRepository.readErrorPoints(query, resolutionMillis, liveCaptureTime);
             List<ErrorPoint> errorPoints = Lists.newArrayList();
@@ -179,8 +180,8 @@ class ErrorJsonService {
 
     private void populateDataSeries(ErrorMessageQuery request, List<ErrorPoint> errorPoints,
             DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra) throws Exception {
-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, aggregateRepository
-                .getDataPointIntervalMillis(request.serverRollup(), request.from(), request.to()));
+        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock,
+                rollupLevelService.getDataPointIntervalMillis(request.from(), request.to()));
         ErrorPoint lastErrorPoint = null;
         for (ErrorPoint errorPoint : errorPoints) {
             if (lastErrorPoint == null) {

@@ -47,13 +47,12 @@ import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
-import org.glowroot.common.model.MutableProfileTree;
+import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble;
-import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -69,12 +68,12 @@ class AggregateCollector {
     private double totalBlockedNanos = NotAvailableAware.NA;
     private double totalWaitedNanos = NotAvailableAware.NA;
     private double totalAllocatedBytes = NotAvailableAware.NA;
+    private final List<MutableTimer> rootTimers = Lists.newArrayList();
     // histogram values are in nanoseconds, but with microsecond precision to reduce the number of
     // buckets (and memory) required
     private final LazyHistogram lazyHistogram = new LazyHistogram();
-    private final List<MutableTimer> rootTimers = Lists.newArrayList();
+    private final MutableProfile profile = new MutableProfile();
     private final QueryCollector queries;
-    private final MutableProfileTree profileTree = new MutableProfileTree();
 
     AggregateCollector(@Nullable String transactionName, int maxAggregateQueriesPerQueryType) {
         int hardLimitMultiplierWhileBuilding = transactionName == null
@@ -118,6 +117,10 @@ class AggregateCollector {
         rootTimers.add(rootTimer);
     }
 
+    void mergeProfile(Profile toBeMergedProfile) {
+        toBeMergedProfile.mergeIntoProfile(profile);
+    }
+
     void mergeQueries(Iterator<QueryData> toBeMergedQueries) {
         while (toBeMergedQueries.hasNext()) {
             QueryData toBeMergedQuery = toBeMergedQueries.next();
@@ -127,12 +130,8 @@ class AggregateCollector {
         }
     }
 
-    void mergeProfile(Profile toBeMergedProfile) {
-        toBeMergedProfile.mergeIntoProfileTree(profileTree);
-    }
-
     Aggregate build(ScratchBuffer scratchBuffer) throws IOException {
-        return Aggregate.newBuilder()
+        Aggregate.Builder builder = Aggregate.newBuilder()
                 .setTotalNanos(totalNanos)
                 .setTransactionCount(transactionCount)
                 .setErrorCount(errorCount)
@@ -140,10 +139,12 @@ class AggregateCollector {
                 .setTotalBlockedNanos(toOptionalDouble(totalBlockedNanos))
                 .setTotalWaitedNanos(toOptionalDouble(totalWaitedNanos))
                 .setTotalAllocatedBytes(toOptionalDouble(totalAllocatedBytes))
-                .setTotalNanosHistogram(lazyHistogram.toProtobuf(scratchBuffer))
                 .addAllRootTimer(getRootTimersProtobuf())
-                .addAllQueriesByType(queries.toProtobuf(true))
-                .setProfileTree(profileTree.toProtobuf())
+                .setTotalNanosHistogram(lazyHistogram.toProtobuf(scratchBuffer));
+        if (profile.getSampleCount() > 0) {
+            builder.setProfile(profile.toProtobuf());
+        }
+        return builder.addAllQueriesByType(queries.toProtobuf(true))
                 .build();
     }
 
@@ -212,8 +213,8 @@ class AggregateCollector {
     }
 
     // needs to return copy for thread safety
-    ProfileTree getLiveProfile() throws IOException {
-        return profileTree.toProtobuf();
+    org.glowroot.wire.api.model.ProfileOuterClass.Profile getLiveProfile() throws IOException {
+        return profile.toProtobuf();
     }
 
     // needs to return copy for thread safety

@@ -26,7 +26,7 @@ import org.glowroot.agent.impl.AggregateIntervalCollector;
 import org.glowroot.agent.impl.Aggregator;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
 public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
 
@@ -108,12 +108,12 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
     }
 
     @Override
-    public @Nullable LiveResult<ProfileTree> getLiveProfileTree(String serverId,
+    public @Nullable LiveResult<Profile> getLiveProfile(String serverId,
             final String transactionType, final @Nullable String transactionName, long from,
             long to) throws Exception {
-        return map(from, to, new Mapper<ProfileTree>() {
+        return map(from, to, new Mapper<Profile>() {
             @Override
-            public @Nullable ProfileTree map(AggregateIntervalCollector collector)
+            public @Nullable Profile map(AggregateIntervalCollector collector)
                     throws Exception {
                 return collector.getLiveProfile(transactionType, transactionName);
             }

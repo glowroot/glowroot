@@ -23,16 +23,18 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
-import org.glowroot.common.live.ImmutableTracePointQuery;
+import org.glowroot.common.live.ImmutableTracePointCriteria;
 import org.glowroot.common.live.LiveTraceRepository;
+import org.glowroot.common.live.LiveTraceRepository.TraceKind;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
-import org.glowroot.common.live.LiveTraceRepository.TracePointQuery;
+import org.glowroot.common.live.LiveTraceRepository.TracePointCriteria;
 import org.glowroot.common.live.StringComparator;
 import org.glowroot.common.util.Clock;
 import org.glowroot.storage.repo.ConfigRepository;
@@ -63,8 +65,17 @@ class TracePointJsonService {
         this.clock = clock;
     }
 
-    @GET("/backend/trace/points")
-    String getPoints(String queryString) throws Exception {
+    @GET("/backend/transaction/points")
+    String getTransactionPoints(String queryString) throws Exception {
+        return getPoints(TraceKind.SLOW, queryString);
+    }
+
+    @GET("/backend/error/points")
+    String getErrorPoints(String queryString) throws Exception {
+        return getPoints(TraceKind.ERROR, queryString);
+    }
+
+    private String getPoints(TraceKind traceKind, String queryString) throws Exception {
         TracePointRequest request = QueryStrings.decode(queryString, TracePointRequest.class);
 
         double durationMillisLow = request.responseTimeMillisLow();
@@ -74,38 +85,55 @@ class TracePointJsonService {
         if (durationMillisHigh != null) {
             durationNanosHigh = Math.round(durationMillisHigh * NANOSECONDS_PER_MILLISECOND);
         }
-
-        TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverRollup(request.serverRollup())
-                .from(request.from())
-                .to(request.to())
+        ImmutableTracePointCriteria.Builder builder = ImmutableTracePointCriteria.builder()
                 .durationNanosLow(durationNanosLow)
                 .durationNanosHigh(durationNanosHigh)
-                .transactionType(request.transactionType())
-                .transactionNameComparator(request.transactionNameComparator())
-                .transactionName(request.transactionName())
                 .headlineComparator(request.headlineComparator())
                 .headline(request.headline())
-                .errorComparator(request.errorComparator())
-                .error(request.error())
+                .errorMessageComparator(request.errorMessageComparator())
+                .errorMessage(request.errorMessage())
                 .userComparator(request.userComparator())
                 .user(request.user())
                 .attributeName(request.attributeName())
                 .attributeValueComparator(request.attributeValueComparator())
-                .attributeValue(request.attributeValue())
-                .slowOnly(request.slowOnly())
-                .errorOnly(request.errorOnly())
-                .limit(request.limit())
-                .build();
-        return new Handler(query).handle();
+                .attributeValue(request.attributeValue());
+
+        String transactionName = null;
+        if (request.transactionNameComparator() == StringComparator.EQUALS
+                && !Strings.isNullOrEmpty(request.transactionName())) {
+            transactionName = request.transactionName();
+        } else {
+            builder.transactionNameComparator(request.transactionNameComparator())
+                    .transactionName(request.transactionName());
+        }
+        return new Handler(traceKind, request.serverRollup(), request.transactionType(),
+                transactionName, request.from(), request.to(), builder.build(), request.limit())
+                        .handle();
     }
 
     private class Handler {
 
-        private final TracePointQuery query;
+        private final TraceKind traceKind;
 
-        public Handler(TracePointQuery query) {
-            this.query = query;
+        private final String serverRollup;
+        private final String transactionType;
+        private final @Nullable String transactionName;
+        private final long captureTimeFrom;
+        private final long captureTimeTo;
+        private final TracePointCriteria criteria;
+        private final int limit;
+
+        private Handler(TraceKind traceKind, String serverRollup, String transactionType,
+                @Nullable String transactionName, long captureTimeFrom, long captureTimeTo,
+                TracePointCriteria criteria, int limit) {
+            this.traceKind = traceKind;
+            this.serverRollup = serverRollup;
+            this.transactionType = transactionType;
+            this.transactionName = transactionName;
+            this.captureTimeFrom = captureTimeFrom;
+            this.captureTimeTo = captureTimeTo;
+            this.criteria = criteria;
+            this.limit = limit;
         }
 
         private String handle() throws Exception {
@@ -118,25 +146,26 @@ class TracePointJsonService {
                 captureTick = ticker.read();
                 // capture active traces first to make sure that none are missed in the transition
                 // between active and pending/stored (possible duplicates are removed below)
-                activeTracePoints.addAll(liveTraceRepository.getMatchingActiveTracePoints(
-                        query.serverRollup(), captureTime, captureTick, query));
+                activeTracePoints.addAll(liveTraceRepository.getMatchingActiveTracePoints(traceKind,
+                        serverRollup, transactionType, transactionName, criteria, limit,
+                        captureTime, captureTick));
             }
             Result<TracePoint> queryResult =
                     getStoredAndPendingPoints(captureTime, captureActiveTracePoints);
             List<TracePoint> points = Lists.newArrayList(queryResult.records());
             removeDuplicatesBetweenActiveAndNormalTracePoints(activeTracePoints, points);
-            boolean expired = points.isEmpty() && query.to() < clock.currentTimeMillis()
+            boolean expired = points.isEmpty() && captureTimeTo < clock.currentTimeMillis()
                     - HOURS.toMillis(configRepository.getStorageConfig().traceExpirationHours());
             List<String> traceAttributeNames =
-                    traceRepository.readTraceAttributeNames(query.serverRollup());
+                    traceRepository.readTraceAttributeNames(serverRollup);
             return writeResponse(points, activeTracePoints, queryResult.moreAvailable(), expired,
                     traceAttributeNames);
         }
 
         private boolean shouldCaptureActiveTracePoints() {
             long currentTimeMillis = clock.currentTimeMillis();
-            return (query.to() == 0 || query.to() > currentTimeMillis)
-                    && query.from() < currentTimeMillis;
+            return (captureTimeTo == 0 || captureTimeTo > currentTimeMillis)
+                    && captureTimeFrom < currentTimeMillis;
         }
 
         private Result<TracePoint> getStoredAndPendingPoints(long captureTime,
@@ -146,12 +175,33 @@ class TracePointJsonService {
             if (captureActiveTraces) {
                 // important to grab pending traces before stored points to ensure none are
                 // missed in the transition between pending and stored
-                matchingPendingPoints = liveTraceRepository
-                        .getMatchingPendingPoints(query.serverRollup(), captureTime, query);
+                matchingPendingPoints = liveTraceRepository.getMatchingPendingPoints(traceKind,
+                        serverRollup, transactionType, transactionName, criteria, captureTime);
             } else {
                 matchingPendingPoints = ImmutableList.of();
             }
-            Result<TracePoint> queryResult = traceRepository.readPoints(query);
+            Result<TracePoint> queryResult;
+            if (traceKind == TraceKind.SLOW) {
+                if (transactionName == null) {
+                    queryResult = traceRepository.readOverallSlowPoints(serverRollup,
+                            transactionType, captureTimeFrom, captureTimeTo, criteria, limit);
+                } else {
+                    queryResult = traceRepository.readTransactionSlowPoints(serverRollup,
+                            transactionType, transactionName, captureTimeFrom, captureTimeTo,
+                            criteria, limit);
+                }
+            } else {
+                // TraceKind.ERROR
+                if (transactionName == null) {
+                    queryResult =
+                            traceRepository.readOverallErrorPoints(serverRollup, transactionType,
+                                    captureTimeFrom, captureTimeTo, criteria, limit);
+                } else {
+                    queryResult = traceRepository.readTransactionErrorPoints(serverRollup,
+                            transactionType, transactionName, captureTimeFrom, captureTimeTo,
+                            criteria, limit);
+                }
+            }
             // create single merged and limited list of points
             List<TracePoint> orderedPoints = Lists.newArrayList(queryResult.records());
             for (TracePoint pendingPoint : matchingPendingPoints) {
@@ -270,32 +320,22 @@ class TracePointJsonService {
     public abstract static class TracePointRequest {
 
         public abstract String serverRollup();
+        public abstract String transactionType();
         public abstract long from();
         public abstract long to();
         public abstract double responseTimeMillisLow();
         public abstract @Nullable Double responseTimeMillisHigh();
-        public abstract @Nullable String transactionType();
         public abstract @Nullable StringComparator transactionNameComparator();
         public abstract @Nullable String transactionName();
         public abstract @Nullable StringComparator headlineComparator();
         public abstract @Nullable String headline();
-        public abstract @Nullable StringComparator errorComparator();
-        public abstract @Nullable String error();
+        public abstract @Nullable StringComparator errorMessageComparator();
+        public abstract @Nullable String errorMessage();
         public abstract @Nullable StringComparator userComparator();
         public abstract @Nullable String user();
         public abstract @Nullable String attributeName();
         public abstract @Nullable StringComparator attributeValueComparator();
         public abstract @Nullable String attributeValue();
-
-        @Value.Default
-        public boolean slowOnly() {
-            return false;
-        }
-
-        @Value.Default
-        public boolean errorOnly() {
-            return false;
-        }
 
         public abstract int limit();
     }

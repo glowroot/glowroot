@@ -46,7 +46,6 @@ import org.glowroot.agent.plugin.api.transaction.internal.ReadableMessage;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.util.ScheduledRunnable;
-import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -312,7 +311,7 @@ public class Transaction {
         return profile;
     }
 
-    public @Nullable ProfileTree getProfileTreeProtobuf() {
+    public @Nullable org.glowroot.wire.api.model.ProfileOuterClass.Profile getProfileProtobuf() {
         if (profile == null) {
             return null;
         }

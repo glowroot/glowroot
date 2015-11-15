@@ -41,6 +41,7 @@ import org.glowroot.storage.simplerepo.util.Schema;
 import org.glowroot.storage.simplerepo.util.Schema.Column;
 import org.glowroot.storage.simplerepo.util.Schema.ColumnType;
 import org.glowroot.storage.simplerepo.util.Schema.Index;
+import org.glowroot.storage.util.ServerRollups;
 import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -84,7 +85,7 @@ class ServerDao implements ServerRepository {
         }
         Set<String> serverRollups = Sets.newHashSet();
         for (String serverId : serverIds) {
-            serverRollups.addAll(getServerRollups(serverId));
+            serverRollups.addAll(ServerRollups.getServerRollups(serverId));
         }
         List<ServerRollup> rollups = Lists.newArrayList();
         for (String serverRollup : Ordering.natural().immutableSortedCopy(serverRollups)) {
@@ -140,18 +141,6 @@ class ServerDao implements ServerRepository {
     void deleteBefore(String serverId, long captureTime) throws Exception {
         dataSource.update("delete from server where server_id = ? and last_capture_time < ?",
                 serverId, captureTime);
-    }
-
-    static List<String> getServerRollups(String serverId) {
-        List<String> serverRollups = Lists.newArrayList();
-        int lastFoundIndex = -1;
-        int nextFoundIndex;
-        while ((nextFoundIndex = serverId.indexOf('/', lastFoundIndex)) != -1) {
-            serverRollups.add(serverId.substring(0, nextFoundIndex));
-            lastFoundIndex = nextFoundIndex + 1;
-        }
-        serverRollups.add(serverId);
-        return serverRollups;
     }
 
     private static class ServerIdsExtractor implements ResultSetExtractor<Set<String>> {

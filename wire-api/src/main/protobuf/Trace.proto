@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "ProfileTree.proto";
+import "Profile.proto";
 
 package org_glowroot_wire_api_model;
 
@@ -15,7 +15,7 @@ message Trace {
   // each entry can have child entries (and each child entry can have child entries, etc)
   repeated Entry entry = 3;
 
-  ProfileTree profile_tree = 4;
+  Profile profile = 4;
 
   message Header {
     bool partial = 2;

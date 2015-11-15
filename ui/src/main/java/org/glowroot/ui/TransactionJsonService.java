@@ -43,16 +43,16 @@ import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.model.LazyHistogram;
-import org.glowroot.common.model.MutableProfileTree;
+import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.TransactionSummaryQuery;
 import org.glowroot.storage.repo.AggregateRepository.TransactionSummarySortOrder;
 import org.glowroot.storage.repo.ImmutableTransactionSummaryQuery;
 import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.Utils;
+import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.ui.AggregateMerging.PercentileValue;
 import org.glowroot.ui.AggregateMerging.ThreadInfoAggregate;
 import org.glowroot.ui.AggregateMerging.TimerMergedAggregate;
@@ -69,16 +69,16 @@ class TransactionJsonService {
     private final TransactionCommonService transactionCommonService;
     private final TraceRepository traceRepository;
     private final LiveTraceRepository liveTraceRepository;
-    private final AggregateRepository aggregateRepository;
+    private final RollupLevelService rollupLevelService;
     private final Clock clock;
 
     TransactionJsonService(TransactionCommonService transactionCommonService,
             TraceRepository traceRepository, LiveTraceRepository liveTraceRepository,
-            AggregateRepository aggregateRepository, Clock clock) {
+            RollupLevelService rollupLevelService, Clock clock) {
         this.transactionCommonService = transactionCommonService;
         this.traceRepository = traceRepository;
         this.liveTraceRepository = liveTraceRepository;
-        this.aggregateRepository = aggregateRepository;
+        this.rollupLevelService = rollupLevelService;
         this.clock = clock;
     }
 
@@ -185,18 +185,17 @@ class TransactionJsonService {
     String getProfile(String queryString) throws Exception {
         TransactionProfileRequest request =
                 QueryStrings.decode(queryString, TransactionProfileRequest.class);
-        MutableProfileTree profileTree = transactionCommonService.getMergedProfile(
-                request.serverRollup(), request.transactionType(), request.transactionName(),
-                request.from(), request.to(), request.include(), request.exclude(),
-                request.truncateBranchPercentage());
-        if (profileTree.getSampleCount() == 0 && request.include().isEmpty()
+        MutableProfile profile = transactionCommonService.getMergedProfile(request.serverRollup(),
+                request.transactionType(), request.transactionName(), request.from(), request.to(),
+                request.include(), request.exclude(), request.truncateBranchPercentage());
+        if (profile.getSampleCount() == 0 && request.include().isEmpty()
                 && request.exclude().isEmpty()
                 && transactionCommonService.shouldHaveProfile(request.serverRollup(),
                         request.transactionType(), request.transactionName(), request.from(),
                         request.to())) {
             return "{\"overwritten\":true}";
         }
-        return profileTree.toJson();
+        return profile.toJson();
     }
 
     @GET("/backend/transaction/queries")
@@ -298,11 +297,10 @@ class TransactionJsonService {
     @GET("/backend/transaction/flame-graph")
     String getFlameGraph(String queryString) throws Exception {
         FlameGraphRequest request = QueryStrings.decode(queryString, FlameGraphRequest.class);
-        MutableProfileTree profileTree = transactionCommonService.getMergedProfile(
-                request.serverRollup(), request.transactionType(), request.transactionName(),
-                request.from(), request.to(), request.include(), request.exclude(),
-                request.truncateBranchPercentage());
-        return profileTree.toFlameGraphJson();
+        MutableProfile profile = transactionCommonService.getMergedProfile(request.serverRollup(),
+                request.transactionType(), request.transactionName(), request.from(), request.to(),
+                request.include(), request.exclude(), request.truncateBranchPercentage());
+        return profile.toFlameGraphJson();
     }
 
     private Map<Long, Long> getTransactionCounts(List<OverviewAggregate> overviewAggregates) {
@@ -346,8 +344,8 @@ class TransactionJsonService {
                             .build())
                     .build();
         }
-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, aggregateRepository
-                .getDataPointIntervalMillis(request.serverRollup(), request.from(), request.to()));
+        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock,
+                rollupLevelService.getDataPointIntervalMillis(request.from(), request.to()));
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (double percentile : percentiles) {
             dataSeriesList
@@ -413,8 +411,8 @@ class TransactionJsonService {
         if (throughputAggregates.isEmpty()) {
             return Lists.newArrayList();
         }
-        long dataPointIntervalMillis = aggregateRepository
-                .getDataPointIntervalMillis(request.serverRollup(), request.from(), request.to());
+        long dataPointIntervalMillis =
+                rollupLevelService.getDataPointIntervalMillis(request.from(), request.to());
         DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, dataPointIntervalMillis);
         DataSeries dataSeries = new DataSeries("throughput");
         List<DataSeries> dataSeriesList = Lists.newArrayList(dataSeries);
@@ -445,8 +443,8 @@ class TransactionJsonService {
 
     private List<DataSeries> getTimerDataSeries(TransactionDataRequest request,
             List<StackedPoint> stackedPoints) throws Exception {
-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, aggregateRepository
-                .getDataPointIntervalMillis(request.serverRollup(), request.from(), request.to()));
+        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock,
+                rollupLevelService.getDataPointIntervalMillis(request.from(), request.to()));
         final int topX = 5;
         List<String> timerNames = getTopTimerNames(stackedPoints, topX + 1);
         List<DataSeries> dataSeriesList = Lists.newArrayList();

@@ -24,7 +24,7 @@ import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 
 public interface GaugeValueRepository {
 
-    void store(String serverRollup, List<GaugeValue> gaugeValues) throws Exception;
+    void store(String serverId, List<GaugeValue> gaugeValues) throws Exception;
 
     List<Gauge> getGauges(String serverRollup) throws Exception;
 
@@ -33,8 +33,6 @@ public interface GaugeValueRepository {
 
     List<GaugeValue> readManuallyRolledUpGaugeValues(String serverRollup, long from, long to,
             String gaugeName, int rollupLevel, long liveCaptureTime) throws Exception;
-
-    int getRollupLevelForView(String serverRollup, long from, long to) throws Exception;
 
     void deleteAll(String serverRollup) throws Exception;
 

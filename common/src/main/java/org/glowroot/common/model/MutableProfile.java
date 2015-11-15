@@ -42,13 +42,13 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Traverser;
-import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class MutableProfileTree {
+public class MutableProfile {
 
-    private static final Logger logger = LoggerFactory.getLogger(MutableProfileTree.class);
+    private static final Logger logger = LoggerFactory.getLogger(MutableProfile.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final Pattern timerMarkerMethodPattern =
@@ -74,13 +74,13 @@ public class MutableProfileTree {
 
     // this method is not used that often (only for traces with > 20 stack trace samples) so ok
     // that it does not have most optimal implementation (converts unnecessarily to profile tree)
-    public void merge(MutableProfileTree profileTree) {
-        merge(profileTree.toProtobuf());
+    public void merge(MutableProfile profile) {
+        merge(profile.toProtobuf());
     }
 
-    public void merge(ProfileTree profileTree) {
-        Merger merger = new Merger(profileTree);
-        merger.merge(profileTree.getNodeList(), rootNodes);
+    public void merge(Profile profile) {
+        Merger merger = new Merger(profile);
+        merger.merge(profile.getNodeList(), rootNodes);
     }
 
     public void merge(List<StackTraceElement> stackTraceElements, Thread.State threadState,
@@ -125,8 +125,8 @@ public class MutableProfileTree {
             int fileNameIndex = getNameIndex(Strings.nullToEmpty(stackTraceElement.getFileName()),
                     fileNameIndexes, fileNames);
             int lineNumber = stackTraceElement.getLineNumber();
-            ProfileTree.LeafThreadState leafThreadState =
-                    i.hasNext() ? ProfileTree.LeafThreadState.NONE : getThreadState(threadState);
+            Profile.LeafThreadState leafThreadState =
+                    i.hasNext() ? Profile.LeafThreadState.NONE : getThreadState(threadState);
 
             ProfileNode node = null;
             if (lookingForMatch) {
@@ -205,12 +205,12 @@ public class MutableProfileTree {
         return sampleCount;
     }
 
-    public ProfileTree toProtobuf() {
-        List<ProfileTree.ProfileNode> nodes = Lists.newArrayList();
+    public Profile toProtobuf() {
+        List<Profile.ProfileNode> nodes = Lists.newArrayList();
         for (ProfileNode rootNode : rootNodes) {
             new ProfileNodeCollector(rootNode, nodes).traverse();
         }
-        return ProfileTree.newBuilder()
+        return Profile.newBuilder()
                 .addAllPackageName(packageNames)
                 .addAllClassName(classNames)
                 .addAllMethodName(methodNames)
@@ -271,26 +271,26 @@ public class MutableProfileTree {
         return index;
     }
 
-    private static ProfileTree.LeafThreadState getThreadState(@Nullable Thread.State state) {
+    private static Profile.LeafThreadState getThreadState(@Nullable Thread.State state) {
         if (state == null) {
-            return ProfileTree.LeafThreadState.NONE;
+            return Profile.LeafThreadState.NONE;
         }
         switch (state) {
             case NEW:
-                return ProfileTree.LeafThreadState.NEW;
+                return Profile.LeafThreadState.NEW;
             case RUNNABLE:
-                return ProfileTree.LeafThreadState.RUNNABLE;
+                return Profile.LeafThreadState.RUNNABLE;
             case BLOCKED:
-                return ProfileTree.LeafThreadState.BLOCKED;
+                return Profile.LeafThreadState.BLOCKED;
             case WAITING:
-                return ProfileTree.LeafThreadState.WAITING;
+                return Profile.LeafThreadState.WAITING;
             case TIMED_WAITING:
-                return ProfileTree.LeafThreadState.TIMED_WAITING;
+                return Profile.LeafThreadState.TIMED_WAITING;
             case TERMINATED:
-                return ProfileTree.LeafThreadState.TERMINATED;
+                return Profile.LeafThreadState.TERMINATED;
             default:
                 logger.warn("unexpected thread state: {}", state);
-                return ProfileTree.LeafThreadState.NONE;
+                return Profile.LeafThreadState.NONE;
         }
     }
 
@@ -334,7 +334,7 @@ public class MutableProfileTree {
 
     private static boolean isMatch(ProfileNode profileNode, int packageNameIndex,
             int classNameIndex, int methodNameIndex, int fileNameIndex, int lineNumber,
-            ProfileTree.LeafThreadState leafThreadState) {
+            Profile.LeafThreadState leafThreadState) {
         // checking line number first since most likely to be different
         return lineNumber == profileNode.lineNumber
                 && fileNameIndex == profileNode.fileNameIndex
@@ -369,7 +369,7 @@ public class MutableProfileTree {
         private final int methodNameIndex;
         private final int fileNameIndex;
         private final int lineNumber;
-        private final ProfileTree.LeafThreadState leafThreadState;
+        private final Profile.LeafThreadState leafThreadState;
 
         private long sampleCount;
 
@@ -384,7 +384,7 @@ public class MutableProfileTree {
         private long ellipsedSampleCount;
 
         private ProfileNode(int packageNameIndex, int classNameIndex, int methodNameIndex,
-                int fileNameIndex, int lineNumber, ProfileTree.LeafThreadState leafThreadState) {
+                int fileNameIndex, int lineNumber, Profile.LeafThreadState leafThreadState) {
             this.packageNameIndex = packageNameIndex;
             this.classNameIndex = classNameIndex;
             this.methodNameIndex = methodNameIndex;
@@ -441,26 +441,26 @@ public class MutableProfileTree {
 
         private final Deque<List<ProfileNode>> destinationStack = Queues.newArrayDeque();
 
-        private Merger(ProfileTree toBeMergedProfileTree) {
-            packageNameIndexMapping = makeIndexMapping(toBeMergedProfileTree.getPackageNameList(),
+        private Merger(Profile toBeMergedProfile) {
+            packageNameIndexMapping = makeIndexMapping(toBeMergedProfile.getPackageNameList(),
                     packageNameIndexes, packageNames);
-            classNameIndexMapping = makeIndexMapping(toBeMergedProfileTree.getClassNameList(),
+            classNameIndexMapping = makeIndexMapping(toBeMergedProfile.getClassNameList(),
                     classNameIndexes, classNames);
-            methodNameIndexMapping = makeIndexMapping(toBeMergedProfileTree.getMethodNameList(),
+            methodNameIndexMapping = makeIndexMapping(toBeMergedProfile.getMethodNameList(),
                     methodNameIndexes, methodNames);
-            fileNameIndexMapping = makeIndexMapping(toBeMergedProfileTree.getFileNameList(),
+            fileNameIndexMapping = makeIndexMapping(toBeMergedProfile.getFileNameList(),
                     fileNameIndexes, fileNames);
-            timerNameIndexMapping = makeIndexMapping(toBeMergedProfileTree.getTimerNameList(),
+            timerNameIndexMapping = makeIndexMapping(toBeMergedProfile.getTimerNameList(),
                     timerNameIndexes, timerNames);
         }
 
-        private void merge(List<ProfileTree.ProfileNode> flatNodes,
+        private void merge(List<Profile.ProfileNode> flatNodes,
                 List<ProfileNode> destinationRootNodes) {
             destinationStack.push(destinationRootNodes);
-            PeekingIterator<ProfileTree.ProfileNode> i =
+            PeekingIterator<Profile.ProfileNode> i =
                     Iterators.peekingIterator(flatNodes.iterator());
             while (i.hasNext()) {
-                ProfileTree.ProfileNode flatNode = i.next();
+                Profile.ProfileNode flatNode = i.next();
                 int destinationDepth = destinationStack.size() - 1;
                 for (int j = 0; j < destinationDepth - flatNode.getDepth(); j++) {
                     // TODO optimize: faster way to pop multiple elements at once
@@ -473,7 +473,7 @@ public class MutableProfileTree {
             }
         }
 
-        private ProfileNode mergeOne(ProfileTree.ProfileNode toBeMergedNode,
+        private ProfileNode mergeOne(Profile.ProfileNode toBeMergedNode,
                 List<ProfileNode> destinationNodes) {
             int toBeMergedPackageNameIndex =
                     packageNameIndexMapping[toBeMergedNode.getPackageNameIndex()];
@@ -483,7 +483,7 @@ public class MutableProfileTree {
                     methodNameIndexMapping[toBeMergedNode.getMethodNameIndex()];
             int toBeMergedFileNameIndex = fileNameIndexMapping[toBeMergedNode.getFileNameIndex()];
             int toBeMergedLineNumber = toBeMergedNode.getLineNumber();
-            ProfileTree.LeafThreadState toBeMergedLeafThreadState =
+            Profile.LeafThreadState toBeMergedLeafThreadState =
                     toBeMergedNode.getLeafThreadState();
             for (ProfileNode destinationNode : destinationNodes) {
                 if (isMatch(destinationNode, toBeMergedPackageNameIndex, toBeMergedClassNameIndex,
@@ -502,7 +502,7 @@ public class MutableProfileTree {
             return destinationNode;
         }
 
-        private void merge(ProfileTree.ProfileNode toBeMergedNode, ProfileNode destinationNode) {
+        private void merge(Profile.ProfileNode toBeMergedNode, ProfileNode destinationNode) {
             destinationNode.sampleCount += toBeMergedNode.getSampleCount();
             List<Integer> toBeMergedTimerNameIndexes = toBeMergedNode.getTimerNameIndexList();
             int toBeMergedTimerNameCount = toBeMergedTimerNameIndexes.size();
@@ -520,16 +520,16 @@ public class MutableProfileTree {
     // using Traverser to avoid StackOverflowError caused by a recursive algorithm
     private static class ProfileNodeCollector extends Traverser<ProfileNode, RuntimeException> {
 
-        private final List<ProfileTree.ProfileNode> nodes;
+        private final List<Profile.ProfileNode> nodes;
 
-        public ProfileNodeCollector(ProfileNode rootNode, List<ProfileTree.ProfileNode> nodes) {
+        public ProfileNodeCollector(ProfileNode rootNode, List<Profile.ProfileNode> nodes) {
             super(rootNode);
             this.nodes = nodes;
         }
 
         @Override
         public List<ProfileNode> visit(ProfileNode node, int depth) {
-            nodes.add(ProfileTree.ProfileNode.newBuilder()
+            nodes.add(Profile.ProfileNode.newBuilder()
                     .setDepth(depth)
                     .setPackageNameIndex(node.packageNameIndex)
                     .setClassNameIndex(node.classNameIndex)
@@ -603,7 +603,7 @@ public class MutableProfileTree {
             if (textUpper.contains(filterTextUpper)) {
                 return true;
             }
-            ProfileTree.LeafThreadState leafThreadState = node.leafThreadState;
+            Profile.LeafThreadState leafThreadState = node.leafThreadState;
             if (leafThreadState != null) {
                 String leafThreadStateUpper = leafThreadState.name().toUpperCase(Locale.ENGLISH);
                 if (leafThreadStateUpper.contains(filterTextUpper)) {
@@ -666,8 +666,8 @@ public class MutableProfileTree {
         public List<ProfileNode> visit(ProfileNode node, int depth) throws IOException {
             jg.writeStartObject();
             jg.writeStringField("stackTraceElement", node.getText());
-            ProfileTree.LeafThreadState leafThreadState = node.leafThreadState;
-            if (leafThreadState != ProfileTree.LeafThreadState.NONE) {
+            Profile.LeafThreadState leafThreadState = node.leafThreadState;
+            if (leafThreadState != Profile.LeafThreadState.NONE) {
                 jg.writeStringField("leafThreadState", leafThreadState.name());
             }
             jg.writeNumberField("sampleCount", node.sampleCount);

@@ -22,7 +22,7 @@ import java.util.Map.Entry;
 
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
-import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 @Styles.Private
@@ -62,13 +62,13 @@ public class TraceCreator {
         Trace.Header header =
                 createTraceHeader(transaction, slow, partial, captureTime, captureTick);
         List<Trace.Entry> entries = transaction.getEntriesProtobuf();
-        ProfileTree profileTree = transaction.getProfileTreeProtobuf();
+        Profile profile = transaction.getProfileProtobuf();
         Trace.Builder builder = Trace.newBuilder()
                 .setId(transaction.getId())
                 .setHeader(header)
                 .addAllEntry(entries);
-        if (profileTree != null) {
-            builder.setProfileTree(profileTree);
+        if (profile != null) {
+            builder.setProfile(profile);
         }
         return builder.build();
     }

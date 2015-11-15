@@ -29,11 +29,11 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
-import org.glowroot.common.model.MutableProfileTree;
+import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.util.Styles;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.TraceRepository.HeaderPlus;
-import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class TraceCommonService {
@@ -80,14 +80,14 @@ class TraceCommonService {
     // overwritten profile will return {"overwritten":true}
     // expired (not found) trace will return {"expired":true}
     @Nullable
-    String getProfileTreeJson(String serverId, String traceId) throws Exception {
+    String getProfileJson(String serverId, String traceId) throws Exception {
         // check active/pending traces first, and lastly stored traces to make sure that the trace
         // is not missed if it is in transition between these states
-        ProfileTree profileTree = liveTraceRepository.getProfileTree(serverId, traceId);
-        if (profileTree == null) {
-            profileTree = traceRepository.readProfileTree(serverId, traceId);
+        Profile profile = liveTraceRepository.getProfile(serverId, traceId);
+        if (profile == null) {
+            profile = traceRepository.readProfile(serverId, traceId);
         }
-        return toJson(profileTree);
+        return toJson(profile);
     }
 
     @Nullable
@@ -101,7 +101,7 @@ class TraceCommonService {
                     .fileName(getFilename(header))
                     .headerJson(toJsonLiveHeader(header))
                     .entriesJson(toJson(trace.getEntryList()))
-                    .profileTreeJson(toJson(trace.getProfileTree()))
+                    .profileJson(toJson(trace.getProfile()))
                     .build();
         }
 
@@ -116,7 +116,7 @@ class TraceCommonService {
             builder.entriesJson(toJson(traceRepository.readEntries(serverId, traceId)));
         }
         if (header.profileExistence() == Existence.YES) {
-            builder.profileTreeJson(toJson(traceRepository.readProfileTree(serverId, traceId)));
+            builder.profileJson(toJson(traceRepository.readProfile(serverId, traceId)));
         }
         return builder.build();
     }
@@ -136,13 +136,13 @@ class TraceCommonService {
         return sb.toString();
     }
 
-    private static @Nullable String toJson(@Nullable ProfileTree profileTree) throws IOException {
-        if (profileTree == null) {
+    private static @Nullable String toJson(@Nullable Profile profile) throws IOException {
+        if (profile == null) {
             return null;
         }
-        MutableProfileTree mutableProfileTree = new MutableProfileTree();
-        mutableProfileTree.merge(profileTree);
-        return mutableProfileTree.toJson();
+        MutableProfile mutableProfile = new MutableProfile();
+        mutableProfile.merge(profile);
+        return mutableProfile.toJson();
     }
 
     private static String toJsonLiveHeader(Trace.Header header) throws IOException {
@@ -401,6 +401,6 @@ class TraceCommonService {
         @Nullable
         String entriesJson();
         @Nullable
-        String profileTreeJson();
+        String profileJson();
     }
 }
