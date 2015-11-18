@@ -741,6 +741,8 @@ HandlebarsRendering = (function () {
       function filterNode(node, underMatchingNode) {
         var nodes = [node];
         while (node.childNodes && node.childNodes.length === 1 && !node.leafThreadState
+          // the below condition is to make the 100% block at the top really mean exactly 100% (no ellipsed nodes)
+        && (node.sampleCount === node.childNodes[0].sampleCount || node.sampleCount < profile.unfilteredSampleCount)
         && (!SHOW_ELLIPSED_NODE_MARKERS || !node.ellipsedSampleCount)) {
           node = node.childNodes[0];
           nodes.push(node);
@@ -857,6 +859,8 @@ HandlebarsRendering = (function () {
         }
         var nodes = [node];
         while (node.childNodes && node.childNodes.length === 1 && !node.leafThreadState
+          // the below condition is to make the 100% block at the top really mean exactly 100% (no ellipsed nodes)
+        && (node.sampleCount === node.childNodes[0].sampleCount || node.sampleCount < profile.unfilteredSampleCount)
         && (!SHOW_ELLIPSED_NODE_MARKERS || !node.ellipsedSampleCount)) {
           node = node.childNodes[0];
           nodes.push(node);
@@ -1186,6 +1190,20 @@ HandlebarsRendering = (function () {
   }
 
   function formatPercent(number) {
+    if (number === 100) {
+      return '100';
+    }
+    if (number > 99.9) {
+      // don't round up to 100 since that looks incorrect in UI
+      return '99.9';
+    }
+    if (number === 0) {
+      return '0';
+    }
+    if (number < 0.1) {
+      // don't round down to 0 since that looks incorrect in UI
+      return '0.1';
+    }
     return formatCount(number);
   }
 
