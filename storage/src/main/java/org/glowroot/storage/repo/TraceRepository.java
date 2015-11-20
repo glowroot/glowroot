@@ -24,7 +24,7 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
-import org.glowroot.common.live.LiveTraceRepository.TracePointCriteria;
+import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -35,38 +35,18 @@ public interface TraceRepository {
 
     List<String> readTraceAttributeNames(String serverRollup) throws Exception;
 
-    Result<TracePoint> readOverallSlowPoints(String serverRollup, String transactionType,
-            long captureTimeFrom, long captureTimeTo, TracePointCriteria criteria, int limit)
-                    throws Exception;
+    Result<TracePoint> readSlowPoints(TraceQuery query, TracePointFilter filter, int limit)
+            throws Exception;
 
-    Result<TracePoint> readTransactionSlowPoints(String serverRollup, String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo,
-            TracePointCriteria criteria, int limit) throws Exception;
+    Result<TracePoint> readErrorPoints(TraceQuery query, TracePointFilter filter, int limit)
+            throws Exception;
 
-    Result<TracePoint> readOverallErrorPoints(String serverRollup, String transactionType,
-            long captureTimeFrom, long captureTimeTo, TracePointCriteria criteria, int limit)
-                    throws Exception;
+    long readSlowCount(TraceQuery query) throws Exception;
 
-    Result<TracePoint> readTransactionErrorPoints(String serverRollup, String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo,
-            TracePointCriteria criteria, int limit) throws Exception;
+    long readErrorCount(TraceQuery query) throws Exception;
 
-    long readOverallSlowCount(String serverRollup, String transactionType, long captureTimeFrom,
-            long captureTimeTo) throws Exception;
-
-    long readTransactionSlowCount(String serverRollup, String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo) throws Exception;
-
-    long readOverallErrorCount(String serverRollup, String transactionType, long captureTimeFrom,
-            long captureTimeTo) throws Exception;
-
-    long readTransactionErrorCount(String serverRollup, String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo) throws Exception;
-
-    List<TraceErrorPoint> readErrorPoints(ErrorMessageQuery query, long resolutionMillis,
-            long liveCaptureTime) throws Exception;
-
-    Result<ErrorMessageCount> readErrorMessageCounts(ErrorMessageQuery query) throws Exception;
+    ErrorMessageResult readErrorMessages(TraceQuery query, ErrorMessageFilter filter,
+            long resolutionMillis, long liveCaptureTime, int limit) throws Exception;
 
     @Nullable
     HeaderPlus readHeader(String serverId, String traceId) throws Exception;
@@ -78,32 +58,40 @@ public interface TraceRepository {
 
     void deleteAll(String serverRollup) throws Exception;
 
-    long count(String serverRollup) throws Exception;
-
     @Value.Immutable
-    public interface ErrorMessageCount {
-        String message();
-        long count();
-    }
-
-    @Value.Immutable
-    public interface ErrorMessageQuery {
+    public interface TraceQuery {
         String serverRollup();
         String transactionType();
         @Nullable
         String transactionName();
         long from();
         long to();
+    }
+
+    @Value.Immutable
+    public interface ErrorMessageFilter {
         ImmutableList<String> includes();
         ImmutableList<String> excludes();
-        int limit();
+    }
+
+    @Value.Immutable
+    public interface ErrorMessageResult {
+        List<ErrorMessagePoint> points();
+        Result<ErrorMessageCount> counts();
     }
 
     @Value.Immutable
     @Styles.AllParameters
-    public interface TraceErrorPoint {
+    public interface ErrorMessagePoint {
         long captureTime();
         long errorCount();
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    public interface ErrorMessageCount {
+        String message();
+        long count();
     }
 
     @Value.Immutable

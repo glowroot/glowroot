@@ -190,8 +190,6 @@ public class GlobalCollector {
         classCollector.setAllSuperInternalNames(allSuperInternalNames);
         // add static initializer (if it exists)
         processMethod(ReferencedMethod.from(internalName, "<clinit>", "()V"));
-        // always add default constructor (if it exists)
-        processMethod(ReferencedMethod.from(internalName, "<init>", "()V"));
         return Optional.of(classCollector);
     }
 

@@ -46,11 +46,15 @@ import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.storage.repo.AggregateRepository.TransactionSummaryQuery;
-import org.glowroot.storage.repo.AggregateRepository.TransactionSummarySortOrder;
-import org.glowroot.storage.repo.ImmutableTransactionSummaryQuery;
+import org.glowroot.storage.repo.AggregateRepository;
+import org.glowroot.storage.repo.AggregateRepository.TransactionQuery;
+import org.glowroot.storage.repo.AggregateRepository.SummarySortOrder;
+import org.glowroot.storage.repo.ImmutableOverallQuery;
+import org.glowroot.storage.repo.ImmutableTraceQuery;
+import org.glowroot.storage.repo.ImmutableTransactionQuery;
 import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.TraceRepository;
+import org.glowroot.storage.repo.TraceRepository.TraceQuery;
 import org.glowroot.storage.repo.Utils;
 import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.ui.AggregateMerging.PercentileValue;
@@ -67,15 +71,18 @@ class TransactionJsonService {
     private static final double NANOSECONDS_PER_MILLISECOND = 1000000.0;
 
     private final TransactionCommonService transactionCommonService;
+    private final AggregateRepository aggregateRepository;
     private final TraceRepository traceRepository;
     private final LiveTraceRepository liveTraceRepository;
     private final RollupLevelService rollupLevelService;
     private final Clock clock;
 
     TransactionJsonService(TransactionCommonService transactionCommonService,
-            TraceRepository traceRepository, LiveTraceRepository liveTraceRepository,
-            RollupLevelService rollupLevelService, Clock clock) {
+            AggregateRepository aggregateRepository, TraceRepository traceRepository,
+            LiveTraceRepository liveTraceRepository, RollupLevelService rollupLevelService,
+            Clock clock) {
         this.transactionCommonService = transactionCommonService;
+        this.aggregateRepository = aggregateRepository;
         this.traceRepository = traceRepository;
         this.liveTraceRepository = liveTraceRepository;
         this.rollupLevelService = rollupLevelService;
@@ -86,11 +93,10 @@ class TransactionJsonService {
     String getOverview(String queryString) throws Exception {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
-
+        TransactionQuery query = toQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
-        List<OverviewAggregate> overviewAggregates = transactionCommonService.getOverviewAggregates(
-                request.serverRollup(), request.transactionType(), request.transactionName(),
-                request.from(), request.to(), liveCaptureTime);
+        List<OverviewAggregate> overviewAggregates =
+                transactionCommonService.getOverviewAggregates(query, liveCaptureTime);
         List<DataSeries> dataSeriesList = getDataSeriesForTimerChart(request, overviewAggregates);
         Map<Long, Long> transactionCounts = getTransactionCounts(overviewAggregates);
         if (!overviewAggregates.isEmpty()
@@ -122,11 +128,10 @@ class TransactionJsonService {
     String getPercentiles(String queryString) throws Exception {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
-
+        TransactionQuery query = toQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
-        List<PercentileAggregate> percentileAggregates = transactionCommonService
-                .getPercentileAggregates(request.serverRollup(), request.transactionType(),
-                        request.transactionName(), request.from(), request.to(), liveCaptureTime);
+        List<PercentileAggregate> percentileAggregates =
+                transactionCommonService.getPercentileAggregates(query, liveCaptureTime);
         PercentileData percentileData = getDataSeriesForPercentileChart(request,
                 percentileAggregates, request.percentile(), request.from());
         Map<Long, Long> transactionCounts = getTransactionCounts2(percentileAggregates);
@@ -146,12 +151,10 @@ class TransactionJsonService {
     String getThroughput(String queryString) throws Exception {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
-
+        TransactionQuery query = toQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates =
-                transactionCommonService.getThroughputAggregates(request.serverRollup(),
-                        request.transactionType(), request.transactionName(), request.from(),
-                        request.to(), liveCaptureTime);
+                transactionCommonService.getThroughputAggregates(query, liveCaptureTime);
         List<DataSeries> dataSeriesList =
                 getDataSeriesForThroughputChart(request, throughputAggregates);
         long transactionCount = 0;
@@ -185,14 +188,11 @@ class TransactionJsonService {
     String getProfile(String queryString) throws Exception {
         TransactionProfileRequest request =
                 QueryStrings.decode(queryString, TransactionProfileRequest.class);
-        MutableProfile profile = transactionCommonService.getMergedProfile(request.serverRollup(),
-                request.transactionType(), request.transactionName(), request.from(), request.to(),
-                request.include(), request.exclude(), request.truncateBranchPercentage());
+        TransactionQuery query = toQuery(request);
+        MutableProfile profile = transactionCommonService.getMergedProfile(query, request.include(),
+                request.exclude(), request.truncateBranchPercentage());
         if (profile.getSampleCount() == 0 && request.include().isEmpty()
-                && request.exclude().isEmpty()
-                && transactionCommonService.shouldHaveProfile(request.serverRollup(),
-                        request.transactionType(), request.transactionName(), request.from(),
-                        request.to())) {
+                && request.exclude().isEmpty() && aggregateRepository.shouldHaveProfile(query)) {
             return "{\"overwritten\":true}";
         }
         return profile.toJson();
@@ -202,18 +202,17 @@ class TransactionJsonService {
     String getQueries(String queryString) throws Exception {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
-        List<Aggregate.QueriesByType> queries = transactionCommonService.getMergedQueries(
-                request.serverRollup(), request.transactionType(), request.transactionName(),
-                request.from(), request.to());
+        TransactionQuery query = toQuery(request);
+        List<Aggregate.QueriesByType> queries = transactionCommonService.getMergedQueries(query);
         List<Query> queryList = Lists.newArrayList();
         for (Aggregate.QueriesByType queriesByType : queries) {
-            for (Aggregate.Query query : queriesByType.getQueryList()) {
+            for (Aggregate.Query aggQuery : queriesByType.getQueryList()) {
                 queryList.add(ImmutableQuery.builder()
                         .queryType(queriesByType.getType())
-                        .queryText(query.getText())
-                        .totalNanos(query.getTotalNanos())
-                        .executionCount(query.getExecutionCount())
-                        .totalRows(query.getTotalRows())
+                        .queryText(aggQuery.getText())
+                        .totalNanos(aggQuery.getTotalNanos())
+                        .executionCount(aggQuery.getExecutionCount())
+                        .totalRows(aggQuery.getTotalRows())
                         .build());
             }
         }
@@ -224,9 +223,7 @@ class TransactionJsonService {
                 return Doubles.compare(right.totalNanos(), left.totalNanos());
             }
         });
-        if (queryList.isEmpty() && transactionCommonService.shouldHaveQueries(
-                request.serverRollup(), request.transactionType(), request.transactionName(),
-                request.from(), request.to())) {
+        if (queryList.isEmpty() && aggregateRepository.shouldHaveQueries(query)) {
             return "{\"overwritten\":true}";
         }
         StringBuilder sb = new StringBuilder();
@@ -240,20 +237,16 @@ class TransactionJsonService {
     String getSummaries(String queryString) throws Exception {
         TransactionSummaryRequest request =
                 QueryStrings.decode(queryString, TransactionSummaryRequest.class);
-
-        OverallSummary overallSummary = transactionCommonService.readOverallSummary(
-                request.serverRollup(), request.transactionType(), request.from(), request.to());
-
-        TransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
+        ImmutableOverallQuery quer = ImmutableOverallQuery.builder()
                 .serverRollup(request.serverRollup())
                 .transactionType(request.transactionType())
                 .from(request.from())
                 .to(request.to())
-                .sortOrder(request.sortOrder())
-                .limit(request.limit())
+                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to()))
                 .build();
-        Result<TransactionSummary> queryResult =
-                transactionCommonService.readTransactionSummaries(query);
+        OverallSummary overallSummary = transactionCommonService.readOverallSummary(quer);
+        Result<TransactionSummary> queryResult = transactionCommonService
+                .readTransactionSummaries(quer, request.sortOrder(), request.limit());
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -270,16 +263,14 @@ class TransactionJsonService {
     String getTabBarData(String queryString) throws Exception {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
-
-        String transactionName = request.transactionName();
-        long traceCount;
-        if (transactionName == null) {
-            traceCount = traceRepository.readOverallSlowCount(request.serverRollup(),
-                    request.transactionType(), request.from(), request.to());
-        } else {
-            traceCount = traceRepository.readTransactionSlowCount(request.serverRollup(),
-                    request.transactionType(), transactionName, request.from(), request.to());
-        }
+        TraceQuery query = ImmutableTraceQuery.builder()
+                .serverRollup(request.serverRollup())
+                .transactionType(request.transactionType())
+                .transactionName(request.transactionName())
+                .from(request.from())
+                .to(request.to())
+                .build();
+        long traceCount = traceRepository.readSlowCount(query);
         boolean includeActiveTraces = shouldIncludeActiveTraces(request);
         if (includeActiveTraces) {
             traceCount += liveTraceRepository.getMatchingTraceCount(request.serverRollup(),
@@ -297,10 +288,21 @@ class TransactionJsonService {
     @GET("/backend/transaction/flame-graph")
     String getFlameGraph(String queryString) throws Exception {
         FlameGraphRequest request = QueryStrings.decode(queryString, FlameGraphRequest.class);
-        MutableProfile profile = transactionCommonService.getMergedProfile(request.serverRollup(),
-                request.transactionType(), request.transactionName(), request.from(), request.to(),
-                request.include(), request.exclude(), request.truncateBranchPercentage());
+        TransactionQuery query = toQuery(request);
+        MutableProfile profile = transactionCommonService.getMergedProfile(query, request.include(),
+                request.exclude(), request.truncateBranchPercentage());
         return profile.toFlameGraphJson();
+    }
+
+    private TransactionQuery toQuery(RequestBase request) throws Exception {
+        return ImmutableTransactionQuery.builder()
+                .serverRollup(request.serverRollup())
+                .transactionType(request.transactionType())
+                .transactionName(request.transactionName())
+                .from(request.from())
+                .to(request.to())
+                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to()))
+                .build();
     }
 
     private Map<Long, Long> getTransactionCounts(List<OverviewAggregate> overviewAggregates) {
@@ -466,7 +468,7 @@ class TransactionJsonService {
                         overviewAggregate.captureTime(), dataSeriesList, otherDataSeries);
             }
             lastOverviewAggregate = overviewAggregate;
-            MutableLongMap<String> stackedTimers = stackedPoint.getStackedTimers();
+            MutableDoubleMap<String> stackedTimers = stackedPoint.getStackedTimers();
             double totalOtherNanos = overviewAggregate.totalNanos();
             for (DataSeries dataSeries : dataSeriesList) {
                 MutableDouble totalNanos = stackedTimers.get(dataSeries.getName());
@@ -499,7 +501,7 @@ class TransactionJsonService {
 
     // calculate top 5 timers
     private static List<String> getTopTimerNames(List<StackedPoint> stackedPoints, int topX) {
-        MutableLongMap<String> timerTotals = new MutableLongMap<String>();
+        MutableDoubleMap<String> timerTotals = new MutableDoubleMap<String>();
         for (StackedPoint stackedPoint : stackedPoints) {
             for (Entry<String, MutableDouble> entry : stackedPoint.getStackedTimers().entrySet()) {
                 timerTotals.add(entry.getKey(), entry.getValue().doubleValue());
@@ -533,10 +535,10 @@ class TransactionJsonService {
 
         private final OverviewAggregate overviewAggregate;
         // stacked timer values only include time spent as a leaf node in the timer tree
-        private final MutableLongMap<String> stackedTimers;
+        private final MutableDoubleMap<String> stackedTimers;
 
         private static StackedPoint create(OverviewAggregate overviewAggregate) throws IOException {
-            MutableLongMap<String> stackedTimers = new MutableLongMap<String>();
+            MutableDoubleMap<String> stackedTimers = new MutableDoubleMap<String>();
             for (Aggregate.Timer rootTimer : overviewAggregate.rootTimers()) {
                 // skip root timers
                 for (Aggregate.Timer topLevelTimer : rootTimer.getChildTimerList()) {
@@ -548,7 +550,7 @@ class TransactionJsonService {
         }
 
         private StackedPoint(OverviewAggregate overviewAggregate,
-                MutableLongMap<String> stackedTimers) {
+                MutableDoubleMap<String> stackedTimers) {
             this.overviewAggregate = overviewAggregate;
             this.stackedTimers = stackedTimers;
         }
@@ -557,12 +559,12 @@ class TransactionJsonService {
             return overviewAggregate;
         }
 
-        private MutableLongMap<String> getStackedTimers() {
+        private MutableDoubleMap<String> getStackedTimers() {
             return stackedTimers;
         }
 
         private static void addToStackedTimer(Aggregate.Timer timer,
-                MutableLongMap<String> stackedTimers) {
+                MutableDoubleMap<String> stackedTimers) {
             double totalNestedNanos = 0;
             for (Aggregate.Timer childTimer : timer.getChildTimerList()) {
                 totalNestedNanos += childTimer.getTotalNanos();
@@ -573,12 +575,10 @@ class TransactionJsonService {
         }
     }
 
-    // by using MutableLong, two operations (get/put) are not required for each increment,
+    // by using MutableDouble, two operations (get/put) are not required for each increment,
     // instead just a single get is needed (except for first delta)
-    //
-    // not thread safe, for thread safety use guava's AtomicLongMap
     @SuppressWarnings("serial")
-    private static class MutableLongMap<K> extends HashMap<K, MutableDouble> {
+    private static class MutableDoubleMap<K> extends HashMap<K, MutableDouble> {
         private void add(K key, double delta) {
             MutableDouble existing = get(key);
             if (existing == null) {
@@ -605,30 +605,27 @@ class TransactionJsonService {
         String transactionType();
         long from();
         long to();
-        TransactionSummarySortOrder sortOrder();
+        SummarySortOrder sortOrder();
         int limit();
     }
 
-    @Value.Immutable
-    interface TransactionDataRequest {
+    interface RequestBase {
         String serverRollup();
         String transactionType();
         @Nullable
         String transactionName();
         long from();
         long to();
+    }
+
+    @Value.Immutable
+    interface TransactionDataRequest extends RequestBase {
         // singular because this is used in query string
         ImmutableList<Double> percentile();
     }
 
     @Value.Immutable
-    interface TransactionProfileRequest {
-        String serverRollup();
-        String transactionType();
-        @Nullable
-        String transactionName();
-        long from();
-        long to();
+    interface TransactionProfileRequest extends RequestBase {
         // intentionally not plural since maps from query string
         ImmutableList<String> include();
         // intentionally not plural since maps from query string
@@ -637,13 +634,7 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
-    interface FlameGraphRequest {
-        String serverRollup();
-        String transactionType();
-        @Nullable
-        String transactionName();
-        long from();
-        long to();
+    interface FlameGraphRequest extends RequestBase {
         // intentionally not plural since maps from query string
         ImmutableList<String> include();
         // intentionally not plural since maps from query string

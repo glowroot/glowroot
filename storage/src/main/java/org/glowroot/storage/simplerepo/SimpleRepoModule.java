@@ -95,13 +95,13 @@ public class SimpleRepoModule {
         traceCappedDatabase = new CappedDatabase(new File(dataDir, "trace-detail.capped.db"),
                 storageConfig.traceCappedDatabaseSizeMb() * 1024, ticker);
 
-        serverDao = new ServerDao(dataSource, clock);
+        serverDao = new ServerDao(dataSource);
         transactionTypeDao = new TransactionTypeDao(dataSource);
         rollupLevelService = new RollupLevelService(configRepository, clock);
         aggregateDao = new AggregateDao(dataSource, this.rollupCappedDatabases, configRepository,
-                serverDao, transactionTypeDao, rollupLevelService);
+                transactionTypeDao);
         traceDao = new TraceDao(dataSource, traceCappedDatabase, transactionTypeDao);
-        GaugeMetaDao gaugeMetaDao = new GaugeMetaDao(dataSource);
+        GaugeDao gaugeMetaDao = new GaugeDao(dataSource);
         gaugeValueDao = new GaugeValueDao(dataSource, gaugeMetaDao, configRepository, clock);
 
         repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
@@ -115,7 +115,7 @@ public class SimpleRepoModule {
         } else {
             // scheduledExecutor must be non-null when enabling reaper
             checkNotNull(scheduledExecutor);
-            reaperRunnable = new ReaperRunnable(configRepository, serverDao, aggregateDao, traceDao,
+            reaperRunnable = new ReaperRunnable(configRepository, aggregateDao, traceDao,
                     gaugeValueDao, gaugeMetaDao, transactionTypeDao, clock);
             reaperRunnable.scheduleWithFixedDelay(scheduledExecutor, 0,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);

@@ -124,6 +124,7 @@ class LayoutService {
                 transactionTypes.addAll(storedTransactionTypes);
             }
             transactionTypes.addAll(liveAggregateRepository.getLiveTransactionTypes(SERVER_ID));
+            transactionTypes.add(defaultDisplayedTransactionType);
             serverRollups.put(SERVER_ID, ImmutableServerRollupLayout.builder()
                     .leaf(true)
                     .addAllTransactionTypes(transactionTypes)

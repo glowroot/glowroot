@@ -89,9 +89,9 @@ class FatAgentModule {
         DataSource dataSource;
         if (h2MemDb) {
             // mem db is only used for testing (by glowroot-test-container)
-            dataSource = DataSource.createH2InMemory();
+            dataSource = new DataSource();
         } else {
-            dataSource = DataSource.createH2(new File(dataDir, "data.h2.db"));
+            dataSource = new DataSource(new File(dataDir, "data.h2.db"));
         }
 
         if (viewerMode) {

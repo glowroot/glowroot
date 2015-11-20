@@ -19,6 +19,8 @@ import java.io.IOException;
 
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
@@ -36,6 +38,8 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
 import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
 
 public class GrpcServer {
+
+    private static final Logger logger = LoggerFactory.getLogger(GrpcServer.class);
 
     private final ServerRepository serverRepository;
     private final AggregateRepository aggregateRepository;
@@ -65,7 +69,7 @@ public class GrpcServer {
             try {
                 serverRepository.storeJvmInfo(request.getServerId(), request.getJvmInfo());
             } catch (Throwable t) {
-                t.printStackTrace();
+                logger.error(t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
@@ -85,9 +89,9 @@ public class GrpcServer {
                 StreamObserver<EmptyMessage> responseObserver) {
             try {
                 aggregateRepository.store(request.getServerId(), request.getCaptureTime(),
-                        request.getOverallAggregateList(), request.getTransactionAggregateList());
+                        request.getAggregatesByTypeList());
             } catch (Throwable t) {
-                t.printStackTrace();
+                logger.error(t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
@@ -101,7 +105,7 @@ public class GrpcServer {
             try {
                 gaugeValueRepository.store(request.getServerId(), request.getGaugeValuesList());
             } catch (Throwable t) {
-                t.printStackTrace();
+                logger.error(t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
@@ -115,7 +119,7 @@ public class GrpcServer {
             try {
                 traceRepository.collect(request.getServerId(), request.getTrace());
             } catch (Throwable t) {
-                t.printStackTrace();
+                logger.error(t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
@@ -127,6 +131,7 @@ public class GrpcServer {
         public void log(LogMessage request, StreamObserver<EmptyMessage> responseObserver) {
             try {
                 LogEvent logEvent = request.getLogEvent();
+                // FIXME put these in Cassandra?
                 System.out.println(logEvent);
             } catch (Throwable t) {
                 responseObserver.onError(t);

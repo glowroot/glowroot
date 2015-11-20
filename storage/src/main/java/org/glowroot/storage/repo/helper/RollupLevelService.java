@@ -87,4 +87,8 @@ public class RollupLevelService {
         }
         return rollupConfigs.get(rollupConfigs.size() - 1).intervalMillis();
     }
+
+    public static long getSafeRollupTime(long captureTime, long intervalMillis) {
+        return (long) Math.floor(captureTime / (double) intervalMillis) * intervalMillis;
+    }
 }

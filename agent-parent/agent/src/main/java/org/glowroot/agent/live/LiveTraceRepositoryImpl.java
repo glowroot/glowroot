@@ -16,19 +16,15 @@
 package org.glowroot.agent.live;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -40,7 +36,6 @@ import org.glowroot.agent.model.TraceCreator;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.live.ImmutableTracePoint;
 import org.glowroot.common.live.LiveTraceRepository;
-import org.glowroot.common.live.StringComparator;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -127,12 +122,12 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
 
     @Override
     public List<TracePoint> getMatchingActiveTracePoints(TraceKind traceKind, String serverId,
-            String transactionType, @Nullable String transactionName, TracePointCriteria criteria,
+            String transactionType, @Nullable String transactionName, TracePointFilter filter,
             int limit, long captureTime, long captureTick) {
         List<TracePoint> activeTracePoints = Lists.newArrayList();
         for (Transaction transaction : transactionRegistry.getTransactions()) {
             long startTick = transaction.getStartTick();
-            if (matches(transaction, traceKind, transactionType, transactionName, criteria)
+            if (matches(transaction, traceKind, transactionType, transactionName, filter)
                     && startTick < captureTick) {
                 activeTracePoints.add(ImmutableTracePoint.builder()
                         .serverId(serverId)
@@ -159,11 +154,11 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
 
     @Override
     public List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String serverId,
-            String transactionType, @Nullable String transactionName, TracePointCriteria criteria,
+            String transactionType, @Nullable String transactionName, TracePointFilter filter,
             long captureTime) {
         List<TracePoint> points = Lists.newArrayList();
         for (Transaction transaction : transactionCollector.getPendingTransactions()) {
-            if (matches(transaction, traceKind, transactionType, transactionName, criteria)) {
+            if (matches(transaction, traceKind, transactionType, transactionName, filter)) {
                 points.add(ImmutableTracePoint.builder()
                         .serverId(serverId)
                         .traceId(transaction.getId())
@@ -213,34 +208,15 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     private boolean matches(Transaction transaction, TraceKind traceKind, String transactionType,
-            @Nullable String transactionName, TracePointCriteria criteria) {
-        return matchesTransactionType(transaction, transactionType)
+            @Nullable String transactionName, TracePointFilter filter) {
+        ErrorMessage errorMessage = transaction.getErrorMessage();
+        return matchesKind(transaction, traceKind)
+                && matchesTransactionType(transaction, transactionType)
                 && matchesTransactionName(transaction, transactionName)
-                && matchesTotal(transaction, criteria)
-                && matchesKind(transaction, traceKind)
-                && matchesHeadline(transaction, criteria)
-                && matchesTransactionName(transaction, criteria)
-                && matchesError(transaction, criteria)
-                && matchesUser(transaction, criteria)
-                && matchesAttribute(transaction, criteria);
-    }
-
-    private boolean matchesTransactionType(Transaction transaction, String transactionType) {
-        return transactionType.equals(transaction.getTransactionType());
-    }
-
-    private boolean matchesTransactionName(Transaction transaction,
-            @Nullable String transactionName) {
-        return transactionName == null || transactionName.equals(transaction.getTransactionName());
-    }
-
-    private boolean matchesTotal(Transaction transaction, TracePointCriteria criteria) {
-        long totalNanos = transaction.getDurationNanos();
-        if (totalNanos < criteria.durationNanosLow()) {
-            return false;
-        }
-        Long totalNanosHigh = criteria.durationNanosHigh();
-        return totalNanosHigh == null || totalNanos <= totalNanosHigh;
+                && filter.matchesDuration(transaction.getDurationNanos())
+                && filter.matchesError(errorMessage == null ? "" : errorMessage.message())
+                && filter.matchesUser(transaction.getUser())
+                && filter.matchesAttributes(transaction.getAttributes().asMap());
     }
 
     private boolean matchesKind(Transaction transaction, TraceKind traceKind) {
@@ -252,60 +228,12 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         }
     }
 
-    private boolean matchesHeadline(Transaction transaction, TracePointCriteria criteria) {
-        return matchesUsingStringComparator(criteria.headlineComparator(), criteria.headline(),
-                transaction.getHeadline());
+    private boolean matchesTransactionType(Transaction transaction, String transactionType) {
+        return transactionType.equals(transaction.getTransactionType());
     }
 
-    private boolean matchesTransactionName(Transaction transaction, TracePointCriteria criteria) {
-        return matchesUsingStringComparator(criteria.transactionNameComparator(),
-                criteria.transactionName(), transaction.getTransactionName());
-    }
-
-    private boolean matchesError(Transaction transaction, TracePointCriteria criteria) {
-        ErrorMessage errorMessage = transaction.getErrorMessage();
-        String text = errorMessage == null ? "" : errorMessage.message();
-        return matchesUsingStringComparator(criteria.errorMessageComparator(),
-                criteria.errorMessage(),
-                text);
-    }
-
-    private boolean matchesUser(Transaction transaction, TracePointCriteria criteria) {
-        return matchesUsingStringComparator(criteria.userComparator(), criteria.user(),
-                transaction.getUser());
-    }
-
-    private boolean matchesAttribute(Transaction transaction, TracePointCriteria criteria) {
-        if (Strings.isNullOrEmpty(criteria.attributeName())
-                && (criteria.attributeValueComparator() == null
-                        || Strings.isNullOrEmpty(criteria.attributeValue()))) {
-            // no custom attribute filter
-            return true;
-        }
-        ImmutableMap<String, Collection<String>> attributes = transaction.getAttributes().asMap();
-        for (Entry<String, Collection<String>> entry : attributes.entrySet()) {
-            String attributeName = entry.getKey();
-            if (!matchesUsingStringComparator(StringComparator.EQUALS, criteria.attributeName(),
-                    attributeName)) {
-                // name doesn't match, no need to test values
-                continue;
-            }
-            for (String attributeValue : entry.getValue()) {
-                if (matchesUsingStringComparator(criteria.attributeValueComparator(),
-                        criteria.attributeValue(), attributeValue)) {
-                    // found matching name and value
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private boolean matchesUsingStringComparator(@Nullable StringComparator requestComparator,
-            @Nullable String requestText, String traceText) throws AssertionError {
-        if (requestComparator == null || Strings.isNullOrEmpty(requestText)) {
-            return true;
-        }
-        return requestComparator.matches(traceText, requestText);
+    private boolean matchesTransactionName(Transaction transaction,
+            @Nullable String transactionName) {
+        return transactionName == null || transactionName.equals(transaction.getTransactionName());
     }
 }

@@ -66,7 +66,6 @@ class PreInitializeStorageShutdownClasses {
         types.addAll(getGlowrootUsedTypes());
         types.addAll(getH2UsedTypes());
         return types;
-
     }
 
     private static List<String> getGlowrootUsedTypes() {
@@ -74,8 +73,8 @@ class PreInitializeStorageShutdownClasses {
         types.add("org.glowroot.storage.simplerepo.util.CappedDatabase");
         types.add("org.glowroot.storage.simplerepo.util.CappedDatabase$ShutdownHookThread");
         types.add("org.glowroot.storage.simplerepo.util.CappedDatabaseOutputStream");
-        types.add("org.glowroot.storage.simplerepo.util.ConnectionPool");
-        types.add("org.glowroot.storage.simplerepo.util.ConnectionPool$ShutdownHookThread");
+        types.add("org.glowroot.storage.simplerepo.util.DataSource");
+        types.add("org.glowroot.storage.simplerepo.util.DataSource$ShutdownHookThread");
         return types;
     }
 

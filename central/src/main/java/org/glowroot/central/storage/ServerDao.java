@@ -33,6 +33,8 @@ import org.glowroot.storage.repo.ImmutableServerRollup;
 import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 // TODO need to validate cannot have serverIds "A/B/C" and "A/B" since there is logic elsewhere
 // (at least in the UI) that "A/B" is only a rollup
 public class ServerDao implements ServerRepository {
@@ -60,7 +62,9 @@ public class ServerDao implements ServerRepository {
         ResultSet results = session.execute("select server_rollup, leaf from server where one = 1");
         List<ServerRollup> rollups = Lists.newArrayList();
         for (Row row : results) {
-            rollups.add(ImmutableServerRollup.of(row.getString(0), row.getBool(1)));
+            String serverRollup = checkNotNull(row.getString(0));
+            boolean leaf = row.getBool(1);
+            rollups.add(ImmutableServerRollup.of(serverRollup, leaf));
         }
         return rollups;
     }

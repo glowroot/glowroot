@@ -107,8 +107,7 @@ public class GrpcServerWrapper {
                 StreamObserver<EmptyMessage> responseObserver) {
             try {
                 collector.collectAggregates(request.getCaptureTime(),
-                        request.getOverallAggregateList(),
-                        request.getTransactionAggregateList());
+                        request.getAggregatesByTypeList());
             } catch (Throwable t) {
                 responseObserver.onError(t);
                 return;

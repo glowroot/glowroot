@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.ui;
+package org.glowroot.storage.repo;
 
 import java.util.List;
 
@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import org.glowroot.common.live.ImmutableTransactionErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
+import org.glowroot.storage.repo.TransactionErrorSummaryCollector;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -32,7 +33,7 @@ public class ErrorSummaryBaseTest {
         // given
         List<TransactionErrorSummary> elements = buildElements();
         // when
-        elements = ErrorCommonService.orderingByErrorRateDesc.sortedCopy(elements);
+        elements = TransactionErrorSummaryCollector.orderingByErrorRateDesc.sortedCopy(elements);
         // then
         assertThat(elements.get(0).transactionName()).isEqualTo("b");
         assertThat(elements.get(1).transactionName()).isEqualTo("c");
@@ -44,7 +45,7 @@ public class ErrorSummaryBaseTest {
         // given
         List<TransactionErrorSummary> elements = buildElements();
         // when
-        elements = ErrorCommonService.orderingByErrorCountDesc.sortedCopy(elements);
+        elements = TransactionErrorSummaryCollector.orderingByErrorCountDesc.sortedCopy(elements);
         // then
         assertThat(elements.get(0).transactionName()).isEqualTo("c");
         assertThat(elements.get(1).transactionName()).isEqualTo("a");

@@ -6,13 +6,13 @@ package org_glowroot_wire_api_model;
 
 option java_package = "org.glowroot.wire.api.model";
 
-message OverallAggregate {
+message AggregatesByType {
   string transaction_type = 1;
-  Aggregate aggregate = 2;
+  Aggregate overall_aggregate = 2;
+  repeated TransactionAggregate transaction_aggregate = 3;
 }
 
 message TransactionAggregate {
-  string transaction_type = 1;
   string transaction_name = 2;
   Aggregate aggregate = 3;
 }

@@ -21,8 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.wire.api.Collector;
-import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
+import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
 import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
@@ -41,10 +40,10 @@ public class CollectorProxy implements Collector {
     }
 
     @Override
-    public void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,
-            List<TransactionAggregate> transactionAggregates) throws Exception {
+    public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType)
+            throws Exception {
         if (instance != null) {
-            instance.collectAggregates(captureTime, overallAggregates, transactionAggregates);
+            instance.collectAggregates(captureTime, aggregatesByType);
         }
     }
 

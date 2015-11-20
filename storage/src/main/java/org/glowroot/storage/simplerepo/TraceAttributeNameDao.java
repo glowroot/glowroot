@@ -15,83 +15,53 @@
  */
 package org.glowroot.storage.simplerepo;
 
-import java.sql.SQLException;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
 import org.glowroot.storage.simplerepo.util.DataSource;
 import org.glowroot.storage.simplerepo.util.ImmutableColumn;
-import org.glowroot.storage.simplerepo.util.ImmutableIndex;
-import org.glowroot.storage.simplerepo.util.Schema;
-import org.glowroot.storage.simplerepo.util.Schema.Column;
-import org.glowroot.storage.simplerepo.util.Schema.ColumnType;
-import org.glowroot.storage.simplerepo.util.Schema.Index;
+import org.glowroot.storage.simplerepo.util.Schemas.Column;
+import org.glowroot.storage.simplerepo.util.Schemas.ColumnType;
 
 class TraceAttributeNameDao {
 
     private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
-            ImmutableColumn.of("server_id", ColumnType.VARCHAR),
             ImmutableColumn.of("trace_attribute_name", ColumnType.VARCHAR),
             ImmutableColumn.of("last_capture_time", ColumnType.BIGINT));
 
-    // important for this to be unique index to prevent race condition in clustered central
-    private static final ImmutableList<Index> indexes = ImmutableList.<Index>of(
-            ImmutableIndex.builder()
-                    .name("trace_attribute_names_idx")
-                    .addColumns("server_id", "trace_attribute_name")
-                    .unique(true)
-                    .build());
-
     private final DataSource dataSource;
+
+    private final Object lock = new Object();
 
     TraceAttributeNameDao(DataSource dataSource) throws Exception {
         this.dataSource = dataSource;
-        Schema schema = dataSource.getSchema();
-        schema.syncTable("trace_attribute_names", columns);
-        schema.syncIndexes("trace_attribute_names", indexes);
+        dataSource.syncTable("trace_attribute_name", columns);
     }
 
-    public List<String> readTraceAttributeNames(String serverRollup) throws Exception {
-        // FIXME maintain table of server_id/server_rollup associations and join that here
-        // (maintain this table on agent "Hello", wipe out prior associations and add new ones)
-        return dataSource.queryForStringList(
-                "select trace_attribute_name from trace_attribute_names where server_id = ?",
-                serverRollup);
+    public List<String> readTraceAttributeNames() throws Exception {
+        return dataSource
+                .queryForStringList("select trace_attribute_name from trace_attribute_name");
     }
 
-    void updateLastCaptureTime(String serverId, String traceAttributeName, long captureTime)
-            throws Exception {
-        int updateCount = dataSource.update(
-                "update trace_attribute_names set last_capture_time = ? where server_id = ?"
-                        + " and trace_attribute_name = ?",
-                captureTime, serverId, traceAttributeName);
-        if (updateCount == 1) {
-            return;
-        }
-        try {
-            dataSource.update(
-                    "insert into trace_attribute_names (server_id, trace_attribute_name,"
-                            + " last_capture_time) values (?, ?, ?)",
-                    serverId, traceAttributeName, captureTime);
-        } catch (SQLException e) {
-            if (dataSource.queryForExists(
-                    "select 1 from trace_attribute_names where server_id = ?"
-                            + " and trace_attribute_name = ?",
-                    serverId, traceAttributeName)) {
-                // unique constraint violation above, race condition in central cluster, ok
-                return;
+    void updateLastCaptureTime(String traceAttributeName, long captureTime) throws Exception {
+        synchronized (lock) {
+            int updateCount = dataSource.update("update trace_attribute_name"
+                    + " set last_capture_time = ? where trace_attribute_name = ?", captureTime,
+                    traceAttributeName);
+            if (updateCount == 0) {
+                dataSource.update("insert into trace_attribute_name (trace_attribute_name,"
+                        + " last_capture_time) values (?, ?)", traceAttributeName, captureTime);
             }
-            throw e;
         }
     }
 
-    void deleteAll(String serverId) throws Exception {
-        dataSource.update("delete from trace_attribute_names where server_id = ?", serverId);
+    void deleteAll() throws Exception {
+        dataSource.update("truncate table trace_attribute_name");
     }
 
-    void deleteBefore(String serverId, long captureTime) throws Exception {
-        dataSource.update("delete from trace_attribute_names where server_id = ?"
-                + " and last_capture_time < ?", serverId, captureTime);
+    void deleteBefore(long captureTime) throws Exception {
+        dataSource.update("delete from trace_attribute_name where last_capture_time < ?",
+                captureTime);
     }
 }

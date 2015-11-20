@@ -29,7 +29,6 @@ import org.glowroot.agent.model.ThreadInfoData;
 import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.config.AdvancedConfig;
-import org.glowroot.common.live.ImmutableErrorPoint;
 import org.glowroot.common.live.ImmutableOverallErrorSummary;
 import org.glowroot.common.live.ImmutableOverallSummary;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
@@ -37,7 +36,6 @@ import org.glowroot.common.live.ImmutablePercentileAggregate;
 import org.glowroot.common.live.ImmutableThroughputAggregate;
 import org.glowroot.common.live.ImmutableTransactionErrorSummary;
 import org.glowroot.common.live.ImmutableTransactionSummary;
-import org.glowroot.common.live.LiveAggregateRepository.ErrorPoint;
 import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
@@ -178,10 +176,11 @@ class AggregateCollector {
                 .build();
     }
 
-    OverallSummary getLiveOverallSummary() {
+    OverallSummary getLiveOverallSummary(long captureTime) {
         return ImmutableOverallSummary.builder()
                 .totalNanos(totalNanos)
                 .transactionCount(transactionCount)
+                .lastCaptureTime(captureTime)
                 .build();
     }
 
@@ -195,10 +194,11 @@ class AggregateCollector {
                 .build();
     }
 
-    OverallErrorSummary getLiveOverallErrorSummary() {
+    OverallErrorSummary getLiveOverallErrorSummary(long captureTime) {
         return ImmutableOverallErrorSummary.builder()
                 .errorCount(errorCount)
                 .transactionCount(transactionCount)
+                .lastCaptureTime(captureTime)
                 .build();
     }
 
@@ -220,18 +220,6 @@ class AggregateCollector {
     // needs to return copy for thread safety
     List<Aggregate.QueriesByType> getLiveQueries() {
         return queries.toProtobuf(false);
-    }
-
-    @Nullable
-    ErrorPoint buildErrorPoint(long captureTime) {
-        if (errorCount == 0) {
-            return null;
-        }
-        return ImmutableErrorPoint.builder()
-                .captureTime(captureTime)
-                .errorCount(errorCount)
-                .transactionCount(transactionCount)
-                .build();
     }
 
     private List<Aggregate.Timer> getRootTimersProtobuf() {

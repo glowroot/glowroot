@@ -36,6 +36,7 @@ import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
+import org.glowroot.storage.repo.ImmutableTransactionQuery;
 import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.storage.repo.ServerRepository.ServerRollup;
 import org.glowroot.storage.repo.TriggeredAlertRepository;
@@ -90,8 +91,14 @@ public class AlertingService {
         startTime++;
         int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
         List<PercentileAggregate> percentileAggregates =
-                aggregateRepository.readOverallPercentileAggregates(serverRollup,
-                        alertConfig.transactionType(), startTime, endTime, rollupLevel);
+                aggregateRepository.readPercentileAggregates(
+                        ImmutableTransactionQuery.builder()
+                                .serverRollup(serverRollup)
+                                .transactionType(alertConfig.transactionType())
+                                .from(startTime)
+                                .to(endTime)
+                                .rollupLevel(rollupLevel)
+                                .build());
         long transactionCount = 0;
         LazyHistogram histogram = new LazyHistogram();
         for (PercentileAggregate aggregate : percentileAggregates) {

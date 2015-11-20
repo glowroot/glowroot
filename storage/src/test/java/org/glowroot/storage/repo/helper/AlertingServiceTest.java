@@ -29,6 +29,7 @@ import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ImmutableServerRollup;
+import org.glowroot.storage.repo.ImmutableTransactionQuery;
 import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.storage.repo.ServerRepository.ServerRollup;
 import org.glowroot.storage.repo.TriggeredAlertRepository;
@@ -159,8 +160,15 @@ public class AlertingServiceTest {
                 .build();
         when(configRepository.getAlertConfigs(SERVER_ID))
                 .thenReturn(ImmutableList.of(alertConfig));
-        when(aggregateRepository.readOverallPercentileAggregates(SERVER_ID, "tt", 60001, 120000,
-                0)).thenReturn(ImmutableList.of(aggregate));
+        ImmutableTransactionQuery query = ImmutableTransactionQuery.builder()
+                .serverRollup(SERVER_ID)
+                .transactionType("tt")
+                .from(60001)
+                .to(120000)
+                .rollupLevel(0)
+                .build();
+        when(aggregateRepository.readPercentileAggregates(query))
+                .thenReturn(ImmutableList.of(aggregate));
     }
 
     static class MockMailService extends MailService {

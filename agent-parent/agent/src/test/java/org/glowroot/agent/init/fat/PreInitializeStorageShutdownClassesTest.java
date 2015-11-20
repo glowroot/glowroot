@@ -35,7 +35,7 @@ public class PreInitializeStorageShutdownClassesTest {
         // "call" DataSource$ShutdownHookThread.run() and CappedDatabase$ShutdownHookThread.run()
         // because class loading during jvm shutdown throws exception
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
-                "org/glowroot/storage/simplerepo/util/ConnectionPool$ShutdownHookThread", "run",
+                "org/glowroot/storage/simplerepo/util/DataSource$ShutdownHookThread", "run",
                 "()V"));
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "org/glowroot/storage/simplerepo/util/CappedDatabase$ShutdownHookThread", "run",

@@ -30,8 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.wire.api.Collector;
-import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
+import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceStub;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
@@ -90,13 +89,12 @@ class GrpcCollector implements Collector {
     }
 
     @Override
-    public void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,
-            List<TransactionAggregate> transactionAggregates) throws Exception {
+    public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType)
+            throws Exception {
         AggregateMessage aggregateMessage = AggregateMessage.newBuilder()
                 .setServerId(serverId)
                 .setCaptureTime(captureTime)
-                .addAllOverallAggregate(overallAggregates)
-                .addAllTransactionAggregate(transactionAggregates)
+                .addAllAggregatesByType(aggregatesByType)
                 .build();
         client.collectAggregates(aggregateMessage, loggingStreamObserver);
     }

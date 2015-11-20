@@ -32,8 +32,7 @@ message ConfigMessage {
 message AggregateMessage {
   string server_id = 1;
   int64 capture_time = 2;
-  repeated OverallAggregate overall_aggregate = 3;
-  repeated TransactionAggregate transaction_aggregate = 4;
+  repeated AggregatesByType aggregates_by_type = 3;
 }
 
 message GaugeValueMessage {

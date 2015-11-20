@@ -63,8 +63,12 @@ public class ConfigDao {
         if (row == null) {
             return null;
         }
+        String value = row.getString(0);
+        if (value == null) {
+            return null;
+        }
         try {
-            return mapper.readValue(row.getString(0), clazz);
+            return mapper.readValue(value, clazz);
         } catch (IOException e) {
             logger.error("error parsing config node '{}': ", key, e);
             return null;
@@ -80,8 +84,12 @@ public class ConfigDao {
         if (row == null) {
             return null;
         }
+        String value = row.getString(0);
+        if (value == null) {
+            return null;
+        }
         try {
-            return mapper.readValue(row.getString(0), typeReference);
+            return mapper.readValue(value, typeReference);
         } catch (IOException e) {
             logger.error("error parsing config node '{}': ", key, e);
             return null;

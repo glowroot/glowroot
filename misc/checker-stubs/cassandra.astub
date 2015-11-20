@@ -6,3 +6,9 @@ package com.datastax.driver.core;
 public class BoundStatement {
     public BoundStatement setString(int i, @Nullable String v);
 }
+
+public class Row {
+    public @Nullable Date getTimestamp(int i);
+    public @Nullable ByteBuffer getBytes(int i);
+    public @Nullable String getString(int i);
+}

@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.model.Profile;
 import org.glowroot.agent.model.Transaction;
-import org.glowroot.common.live.LiveAggregateRepository.ErrorPoint;
 import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
@@ -43,7 +42,7 @@ import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
+import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 
 public class AggregateIntervalCollector {
@@ -76,20 +75,22 @@ public class AggregateIntervalCollector {
     }
 
     void flush(Collector collector) throws Exception {
-        List<OverallAggregate> overallAggregates = Lists.newArrayList();
-        List<TransactionAggregate> transactionAggregates = Lists.newArrayList();
+        List<AggregatesByType> aggregatesByTypeList = Lists.newArrayList();
         ScratchBuffer scratchBuffer = new ScratchBuffer();
         for (Entry<String, IntervalTypeCollector> e : typeCollectors.entrySet()) {
             IntervalTypeCollector intervalTypeCollector = e.getValue();
-            overallAggregates.add(buildOverallAggregate(e.getKey(),
-                    intervalTypeCollector.overallAggregateCollector, scratchBuffer));
+            AggregatesByType.Builder aggregatesByType = AggregatesByType.newBuilder()
+                    .setTransactionType(e.getKey())
+                    .setOverallAggregate(buildOverallAggregate(
+                            intervalTypeCollector.overallAggregateCollector, scratchBuffer));
             for (Entry<String, AggregateCollector> f : intervalTypeCollector.transactionAggregateCollectors
                     .entrySet()) {
-                transactionAggregates.add(buildTransactionAggregate(e.getKey(), f.getKey(),
-                        f.getValue(), scratchBuffer));
+                aggregatesByType.addTransactionAggregate(
+                        buildTransactionAggregate(f.getKey(), f.getValue(), scratchBuffer));
             }
+            aggregatesByTypeList.add(aggregatesByType.build());
         }
-        collector.collectAggregates(captureTime, overallAggregates, transactionAggregates);
+        collector.collectAggregates(captureTime, aggregatesByTypeList);
     }
 
     public @Nullable OverallSummary getLiveOverallSummary(String transactionType) {
@@ -99,7 +100,7 @@ public class AggregateIntervalCollector {
         }
         AggregateCollector aggregateCollector = intervalTypeCollector.overallAggregateCollector;
         synchronized (aggregateCollector) {
-            return aggregateCollector.getLiveOverallSummary();
+            return aggregateCollector.getLiveOverallSummary(captureTime);
         }
     }
 
@@ -126,7 +127,7 @@ public class AggregateIntervalCollector {
         }
         AggregateCollector aggregateCollector = intervalTypeCollector.overallAggregateCollector;
         synchronized (aggregateCollector) {
-            return aggregateCollector.getLiveOverallErrorSummary();
+            return aggregateCollector.getLiveOverallErrorSummary(captureTime);
         }
     }
 
@@ -139,8 +140,12 @@ public class AggregateIntervalCollector {
         for (Entry<String, AggregateCollector> entry : intervalTypeCollector.transactionAggregateCollectors
                 .entrySet()) {
             AggregateCollector aggregateCollector = entry.getValue();
+            TransactionErrorSummary transactionErrorSummary;
             synchronized (aggregateCollector) {
-                errorSummaries.add(aggregateCollector.getLiveTransactionErrorSummary());
+                transactionErrorSummary = aggregateCollector.getLiveTransactionErrorSummary();
+            }
+            if (transactionErrorSummary.errorCount() > 0) {
+                errorSummaries.add(transactionErrorSummary);
             }
         }
         return errorSummaries;
@@ -182,19 +187,6 @@ public class AggregateIntervalCollector {
         synchronized (aggregateCollector) {
             long capturedAt = Math.min(liveCaptureTime, captureTime);
             return aggregateCollector.buildLiveThroughputAggregate(capturedAt);
-        }
-    }
-
-    public @Nullable ErrorPoint getLiveErrorPoint(String transactionType,
-            @Nullable String transactionName, long liveCaptureTime) throws IOException {
-        AggregateCollector aggregateCollector =
-                getAggregateCollector(transactionType, transactionName);
-        if (aggregateCollector == null) {
-            return null;
-        }
-        synchronized (aggregateCollector) {
-            long capturedAt = Math.min(liveCaptureTime, captureTime);
-            return aggregateCollector.buildErrorPoint(capturedAt);
         }
     }
 
@@ -243,22 +235,17 @@ public class AggregateIntervalCollector {
         return typeCollector;
     }
 
-    private OverallAggregate buildOverallAggregate(String transactionType,
-            AggregateCollector aggregateCollector, ScratchBuffer scratchBuffer) throws IOException {
+    private Aggregate buildOverallAggregate(AggregateCollector aggregateCollector,
+            ScratchBuffer scratchBuffer) throws IOException {
         synchronized (aggregateCollector) {
-            return OverallAggregate.newBuilder()
-                    .setTransactionType(transactionType)
-                    .setAggregate(aggregateCollector.build(scratchBuffer))
-                    .build();
+            return aggregateCollector.build(scratchBuffer);
         }
     }
 
-    private TransactionAggregate buildTransactionAggregate(String transactionType,
-            String transactionName, AggregateCollector aggregateCollector,
-            ScratchBuffer scratchBuffer) throws IOException {
+    private TransactionAggregate buildTransactionAggregate(String transactionName,
+            AggregateCollector aggregateCollector, ScratchBuffer scratchBuffer) throws IOException {
         synchronized (aggregateCollector) {
             return TransactionAggregate.newBuilder()
-                    .setTransactionType(transactionType)
                     .setTransactionName(transactionName)
                     .setAggregate(aggregateCollector.build(scratchBuffer))
                     .build();

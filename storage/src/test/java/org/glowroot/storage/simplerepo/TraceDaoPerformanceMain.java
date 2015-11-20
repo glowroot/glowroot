@@ -38,7 +38,7 @@ public class TraceDaoPerformanceMain {
     private TraceDaoPerformanceMain() {}
 
     public static void main(String... args) throws Exception {
-        DataSource dataSource = DataSource.createH2InMemory();
+        DataSource dataSource = new DataSource();
         CappedDatabase cappedDatabase =
                 new CappedDatabase(new File("glowroot.capped.db"), 1000000, Ticker.systemTicker());
         TraceDao traceDao =
@@ -50,6 +50,5 @@ public class TraceDaoPerformanceMain {
             traceDao.collect(SERVER_ID, trace);
         }
         logger.info("elapsed time: {}", stopwatch.elapsed(MILLISECONDS));
-        logger.info("num traces: {}", traceDao.count(SERVER_ID));
     }
 }

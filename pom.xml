@@ -57,7 +57,6 @@
     <module>agent-parent/webdriver-tests</module>
     <module>agent-parent/ui-sandbox</module>
     <module>agent-parent/distribution</module>
-    <module>central</module>
   </modules>
 
   <scm>
@@ -478,6 +477,14 @@
   </build>
 
   <profiles>
+    <profile>
+      <activation>
+        <jdk>1.8</jdk>
+      </activation>
+      <modules>
+        <module>central</module>
+      </modules>
+    </profile>
     <profile>
       <id>auto-actived-add-license-jar-bundle</id>
       <activation>

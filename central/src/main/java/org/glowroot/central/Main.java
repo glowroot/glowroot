@@ -52,6 +52,7 @@ public class Main {
         // FIXME
         Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
         Session session = cluster.connect();
+        // session.execute("drop keyspace if exists glowroot");
         session.execute("create keyspace if not exists glowroot with replication ="
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
         session.execute("use glowroot");
@@ -63,7 +64,7 @@ public class Main {
         TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session);
 
         AggregateRepository aggregateRepository =
-                new AggregateDao(session, serverDao, transactionTypeDao);
+                new AggregateDao(session, serverDao, transactionTypeDao, configRepository);
         TraceRepository traceRepository = new TraceDao(session, serverDao, transactionTypeDao);
         GaugeValueRepository gaugeValueRepository = new GaugeValueDao(session, serverDao);
 

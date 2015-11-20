@@ -680,7 +680,7 @@ public class MutableProfile {
                 jg.writeEndArray();
             }
             long ellipsedSampleCount = node.ellipsedSampleCount;
-            if (ellipsedSampleCount != 0) {
+            if (ellipsedSampleCount > 0) {
                 jg.writeNumberField("ellipsedSampleCount", ellipsedSampleCount);
             }
             List<ProfileNode> childNodes = node.childNodes;

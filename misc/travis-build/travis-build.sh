@@ -128,7 +128,8 @@ case "$1" in
                # TODO find way to not omit these (especially it-harness)
                # omitting wire-api and agent-parent/it-harness from checker framework validation since they contain protobuf generated code which does not pass
                mvn clean install -am -pl wire-api,agent-parent/it-harness
-               mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/it-harness,!agent-parent/benchmarks,!agent-parent/ui-sandbox \
+               # FIXME central is currently omitted due to https://github.com/typetools/checker-framework/issues/529
+               mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/it-harness,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!central \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \

@@ -404,7 +404,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.plugin.api.transaction.Timer");
         types.add("org.glowroot.agent.plugin.api.transaction.TimerName");
         types.add("org.glowroot.agent.plugin.api.util.FastThreadLocal");
-        types.add("org.glowroot.agent.plugin.api.util.FastThreadLocal$1");
         types.add("org.glowroot.agent.plugin.api.util.Holder");
         types.add("org.glowroot.agent.plugin.api.weaving.BindClassMeta");
         types.add("org.glowroot.agent.plugin.api.weaving.BindMethodMeta");

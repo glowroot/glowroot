@@ -27,31 +27,23 @@ import org.checkerframework.checker.tainting.qual.Untainted;
 import org.immutables.value.Value;
 
 import org.glowroot.common.live.LiveTraceRepository.TraceKind;
-import org.glowroot.common.live.LiveTraceRepository.TracePointCriteria;
+import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.live.StringComparator;
 import org.glowroot.common.util.Styles;
+import org.glowroot.storage.repo.TraceRepository.TraceQuery;
 
 class TracePointQueryBuilder {
 
     private final TraceKind traceKind;
-    private final String serverRollup;
-    private final String transactionType;
-    private final @Nullable String transactionName;
-    private final long captureTimeFrom;
-    private final long captureTimeTo;
-    private final TracePointCriteria criteria;
+    private final TraceQuery query;
+    private final TracePointFilter filter;
     private final int limit;
 
-    TracePointQueryBuilder(TraceKind traceKind, String serverRollup, String transactionType,
-            @Nullable String transactionName, long captureTimeFrom, long captureTimeTo,
-            TracePointCriteria criteria, int limit) {
+    TracePointQueryBuilder(TraceKind traceKind, TraceQuery query, TracePointFilter filter,
+            int limit) {
         this.traceKind = traceKind;
-        this.serverRollup = serverRollup;
-        this.transactionType = transactionType;
-        this.transactionName = transactionName;
-        this.captureTimeFrom = captureTimeFrom;
-        this.captureTimeTo = captureTimeTo;
-        this.criteria = criteria;
+        this.query = query;
+        this.filter = filter;
         this.limit = limit;
     }
 
@@ -60,34 +52,28 @@ class TracePointQueryBuilder {
     // inclusive on upper bound)
     ParameterizedSql getParameterizedSql() {
         ParameterizedSqlBuilder builder = new ParameterizedSqlBuilder();
-        builder.appendText("select trace.server_id, trace.id, trace.capture_time,"
-                + " trace.duration_nanos, trace.error from trace");
+        builder.appendText("select trace.id, trace.capture_time, trace.duration_nanos, trace.error"
+                + " from trace");
         ParameterizedSql criteria = getAttributeCriteria();
         if (criteria == null) {
             builder.appendText(" where");
         } else {
-            builder.appendText(", trace_attribute attr where attr.server_id = trace.server_id"
-                    + " and attr.id = trace.id and attr.capture_time > ? and attr.capture_time <= ?"
-                    + " and" + criteria.sql());
-            builder.addArg(captureTimeFrom);
-            builder.addArg(captureTimeTo);
+            builder.appendText(", trace_attribute attr where attr.trace_id = trace.id"
+                    + " and attr.capture_time > ? and attr.capture_time <= ? and" + criteria.sql());
+            builder.addArg(query.from());
+            builder.addArg(query.to());
             builder.addArgs(criteria.args());
 
         }
-        // FIXME maintain table of server_rollup/server_rollup associations and join that here
-        // (maintain this table on agent "Hello", wipe out prior associations and add new ones)
-        builder.appendText(
-                " trace.server_id = ? and trace.capture_time > ? and trace.capture_time <= ?");
-        builder.addArg(serverRollup);
-        builder.addArg(captureTimeFrom);
-        builder.addArg(captureTimeTo);
-        appendTotalNanosCriteria(builder);
+        builder.appendText(" trace.capture_time > ? and trace.capture_time <= ?");
+        builder.addArg(query.from());
+        builder.addArg(query.to());
+        appendTraceKindCriteria(builder);
         appendTransactionTypeCriteria(builder);
         appendTransactionNameCriteria(builder);
-        appendTraceKindCriteria(builder);
-        appendHeadlineCriteria(builder);
-        appendErrorCriteria(builder);
+        appendDurationNanosCriteria(builder);
         appendUserCriteria(builder);
+        appendErrorCriteria(builder);
         appendOrderByAndLimit(builder);
         return builder.build();
     }
@@ -95,13 +81,13 @@ class TracePointQueryBuilder {
     private @Nullable ParameterizedSql getAttributeCriteria() {
         String sql = "";
         List<Object> args = Lists.newArrayList();
-        String attributeName = criteria.attributeName();
+        String attributeName = filter.attributeName();
         if (!Strings.isNullOrEmpty(attributeName)) {
             sql += " upper(attr.name) = ? and";
             args.add(attributeName.toUpperCase(Locale.ENGLISH));
         }
-        StringComparator attributeValueComparator = criteria.attributeValueComparator();
-        String attributeValue = criteria.attributeValue();
+        StringComparator attributeValueComparator = filter.attributeValueComparator();
+        String attributeValue = filter.attributeValue();
         if (attributeValueComparator != null && !Strings.isNullOrEmpty(attributeValue)) {
             sql += " upper(attr.value) " + attributeValueComparator.getComparator() + " ? and";
             args.add(attributeValueComparator.formatParameter(attributeValue));
@@ -111,24 +97,6 @@ class TracePointQueryBuilder {
         } else {
             return ImmutableParameterizedSql.of(sql, args);
         }
-    }
-
-    private void appendTotalNanosCriteria(ParameterizedSqlBuilder builder) {
-        long totalNanosLow = criteria.durationNanosLow();
-        if (totalNanosLow != 0) {
-            builder.appendText(" and trace.duration_nanos >= ?");
-            builder.addArg(totalNanosLow);
-        }
-        Long totalNanosHigh = criteria.durationNanosHigh();
-        if (totalNanosHigh != null) {
-            builder.appendText(" and trace.duration_nanos <= ?");
-            builder.addArg(totalNanosHigh);
-        }
-    }
-
-    private void appendTransactionTypeCriteria(ParameterizedSqlBuilder builder) {
-        builder.appendText(" and trace.transaction_type = ?");
-        builder.addArg(transactionType);
     }
 
     private void appendTraceKindCriteria(ParameterizedSqlBuilder builder) {
@@ -142,34 +110,35 @@ class TracePointQueryBuilder {
         }
     }
 
+    private void appendTransactionTypeCriteria(ParameterizedSqlBuilder builder) {
+        builder.appendText(" and trace.transaction_type = ?");
+        builder.addArg(query.transactionType());
+    }
+
     private void appendTransactionNameCriteria(ParameterizedSqlBuilder builder) {
-        if (transactionName == null) {
-            StringComparator transactionNameComparator = criteria.transactionNameComparator();
-            String transactionName = criteria.transactionName();
-            if (transactionNameComparator != null && !Strings.isNullOrEmpty(transactionName)) {
-                builder.appendText(" and upper(trace.transaction_name) "
-                        + transactionNameComparator.getComparator() + " ?");
-                builder.addArg(transactionNameComparator.formatParameter(transactionName));
-            }
-        } else {
+        String transactionName = query.transactionName();
+        if (transactionName != null) {
             builder.appendText(" and trace.transaction_name = ?");
             builder.addArg(transactionName);
         }
     }
 
-    private void appendHeadlineCriteria(ParameterizedSqlBuilder builder) {
-        StringComparator headlineComparator = criteria.headlineComparator();
-        String headline = criteria.headline();
-        if (headlineComparator != null && !Strings.isNullOrEmpty(headline)) {
-            builder.appendText(
-                    " and upper(trace.headline) " + headlineComparator.getComparator() + " ?");
-            builder.addArg(headlineComparator.formatParameter(headline));
+    private void appendDurationNanosCriteria(ParameterizedSqlBuilder builder) {
+        long durationNanosLow = filter.durationNanosLow();
+        if (durationNanosLow > 0) {
+            builder.appendText(" and trace.duration_nanos >= ?");
+            builder.addArg(durationNanosLow);
+        }
+        Long durationNanosHigh = filter.durationNanosHigh();
+        if (durationNanosHigh != null) {
+            builder.appendText(" and trace.duration_nanos <= ?");
+            builder.addArg(durationNanosHigh);
         }
     }
 
     private void appendErrorCriteria(ParameterizedSqlBuilder builder) {
-        StringComparator errorComparator = criteria.errorMessageComparator();
-        String error = criteria.errorMessage();
+        StringComparator errorComparator = filter.errorMessageComparator();
+        String error = filter.errorMessage();
         if (errorComparator != null && !Strings.isNullOrEmpty(error)) {
             builder.appendText(
                     " and upper(trace.error_message) " + errorComparator.getComparator() + " ?");
@@ -178,11 +147,10 @@ class TracePointQueryBuilder {
     }
 
     private void appendUserCriteria(ParameterizedSqlBuilder builder) {
-        StringComparator userComparator = criteria.userComparator();
-        String user = criteria.user();
+        StringComparator userComparator = filter.userComparator();
+        String user = filter.user();
         if (userComparator != null && !Strings.isNullOrEmpty(user)) {
-            builder.appendText(
-                    " and upper(trace.user_id) " + userComparator.getComparator() + " ?");
+            builder.appendText(" and upper(trace.user) " + userComparator.getComparator() + " ?");
             builder.addArg(userComparator.formatParameter(user));
         }
     }

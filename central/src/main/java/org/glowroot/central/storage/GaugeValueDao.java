@@ -15,6 +15,7 @@
  */
 package org.glowroot.central.storage;
 
+import java.util.Date;
 import java.util.List;
 
 import com.datastax.driver.core.BatchStatement;
@@ -28,9 +29,9 @@ import com.google.common.collect.Lists;
 
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.helper.Gauges;
-import org.glowroot.storage.util.ServerRollups;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.storage.simplerepo.util.Checkers.castUntainted;
 
 public class GaugeValueDao implements GaugeValueRepository {
@@ -47,9 +48,9 @@ public class GaugeValueDao implements GaugeValueRepository {
         this.serverDao = serverDao;
 
         // name already has "[counter]" suffix when it is a counter
-        session.execute("create table if not exists gauge_value_rollup_0"
-                + " (server_rollup varchar, gauge_name varchar, capture_time bigint, value double,"
-                + " weight bigint, primary key ((server_rollup, gauge_name), capture_time))");
+        session.execute("create table if not exists gauge_value_rollup_0 (server_rollup varchar,"
+                + " gauge_name varchar, capture_time timestamp, value double, weight bigint,"
+                + " primary key ((server_rollup, gauge_name), capture_time))");
 
         // TTL on gauge_name table needs to be max(TTL) of gauge_value_rollup_*
         session.execute("create table if not exists gauge_name (server_rollup varchar,"
@@ -76,30 +77,27 @@ public class GaugeValueDao implements GaugeValueRepository {
         if (gaugeValues.isEmpty()) {
             return;
         }
-        List<String> serverRollups = ServerRollups.getServerRollups(serverId);
         BatchStatement batchStatement = new BatchStatement();
-        for (String serverRollup : serverRollups) {
-            for (GaugeValue gaugeValue : gaugeValues) {
-                BoundStatement boundStatement = insertValuePS.get(0).bind();
-                boundStatement.setString(0, serverRollup);
-                boundStatement.setString(1, gaugeValue.getGaugeName());
-                boundStatement.setLong(2, gaugeValue.getCaptureTime());
-                boundStatement.setDouble(3, gaugeValue.getValue());
-                long weight = gaugeValue.getIntervalNanos();
-                if (weight == 0) {
-                    // this is for non-counter gauges
-                    weight = 1;
-                }
-                boundStatement.setLong(4, weight);
-                batchStatement.add(boundStatement);
-
-                boundStatement = insertNamePS.get(0).bind();
-                boundStatement.setString(0, serverRollup);
-                boundStatement.setString(1, gaugeValue.getGaugeName());
-                batchStatement.add(boundStatement);
+        for (GaugeValue gaugeValue : gaugeValues) {
+            BoundStatement boundStatement = insertValuePS.get(0).bind();
+            boundStatement.setString(0, serverId);
+            boundStatement.setString(1, gaugeValue.getGaugeName());
+            boundStatement.setTimestamp(2, new Date(gaugeValue.getCaptureTime()));
+            boundStatement.setDouble(3, gaugeValue.getValue());
+            long weight = gaugeValue.getIntervalNanos();
+            if (weight == 0) {
+                // this is for non-counter gauges
+                weight = 1;
             }
-            serverDao.updateLastCaptureTime(serverRollup, serverRollup.equals(serverId));
+            boundStatement.setLong(4, weight);
+            batchStatement.add(boundStatement);
+
+            boundStatement = insertNamePS.get(0).bind();
+            boundStatement.setString(0, serverId);
+            boundStatement.setString(1, gaugeValue.getGaugeName());
+            batchStatement.add(boundStatement);
         }
+        serverDao.updateLastCaptureTime(serverId, true);
         session.execute(batchStatement);
     }
 
@@ -109,7 +107,7 @@ public class GaugeValueDao implements GaugeValueRepository {
                 .execute("select gauge_name from gauge_name where server_rollup = ?", serverRollup);
         List<Gauge> gauges = Lists.newArrayList();
         for (Row row : results) {
-            gauges.add(Gauges.getGauge(row.getString(0)));
+            gauges.add(Gauges.getGauge(checkNotNull(row.getString(0))));
         }
         return gauges;
     }
@@ -125,7 +123,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         List<GaugeValue> gaugeValues = Lists.newArrayList();
         for (Row row : results) {
             gaugeValues.add(GaugeValue.newBuilder()
-                    .setCaptureTime(row.getLong(0))
+                    .setCaptureTime(checkNotNull(row.getTimestamp(0)).getTime())
                     .setValue(row.getDouble(1))
                     .build());
         }

@@ -23,8 +23,7 @@ import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.wire.api.Collector;
-import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
+import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
 import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
@@ -56,10 +55,9 @@ class CollectorImpl implements Collector {
     }
 
     @Override
-    public void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,
-            List<TransactionAggregate> transactionAggregates) throws Exception {
-        aggregateRepository.store(SERVER_ID, captureTime, overallAggregates,
-                transactionAggregates);
+    public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType)
+            throws Exception {
+        aggregateRepository.store(SERVER_ID, captureTime, aggregatesByType);
         alertingService.checkAlerts(captureTime);
     }
 

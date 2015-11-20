@@ -69,9 +69,8 @@ public class ErrorCaptureIT {
         Trace.Header header = trace.getHeader();
         assertThat(header.getEntryCount()).isEqualTo(3);
         List<Trace.Entry> entries = trace.getEntryList();
-        // the exception has no message, and no message is supplied in this test
         assertThat(header.hasError()).isTrue();
-        assertThat(header.getError().getMessage()).isEmpty();
+        assertThat(header.getError().getMessage()).isEqualTo(RuntimeException.class.getName());
         assertThat(header.getError().hasException()).isTrue();
         assertThat(entries).hasSize(1);
         Trace.Entry entry1 = entries.get(0);

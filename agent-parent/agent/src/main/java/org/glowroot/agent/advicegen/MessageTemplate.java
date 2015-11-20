@@ -204,7 +204,7 @@ public class MessageTemplate {
             sb.append('[');
             int len = Array.getLength(array);
             for (int i = 0; i < len; i++) {
-                if (i != 0) {
+                if (i > 0) {
                     sb.append(", ");
                 }
                 valueOf(Array.get(array, i), sb);

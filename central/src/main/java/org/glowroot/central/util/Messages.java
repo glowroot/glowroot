@@ -21,6 +21,9 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.protobuf.AbstractMessageLite;
 import com.google.protobuf.Parser;
@@ -40,7 +43,10 @@ public class Messages {
     }
 
     public static <T extends /*@NonNull*/AbstractMessageLite> List<T> parseDelimitedFrom(
-            ByteBuffer byteBuf, Parser<T> parser) throws IOException {
+            @Nullable ByteBuffer byteBuf, Parser<T> parser) throws IOException {
+        if (byteBuf == null) {
+            return ImmutableList.of();
+        }
         List<T> messages = Lists.newArrayList();
         try (InputStream input = new ByteBufferInputStream(byteBuf)) {
             T message;

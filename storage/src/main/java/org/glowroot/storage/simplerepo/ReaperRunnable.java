@@ -18,7 +18,6 @@ package org.glowroot.storage.simplerepo;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ScheduledRunnable;
 import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.ServerRepository.ServerRollup;
 import org.glowroot.storage.repo.config.StorageConfig;
 
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -26,19 +25,17 @@ import static java.util.concurrent.TimeUnit.HOURS;
 class ReaperRunnable extends ScheduledRunnable {
 
     private final ConfigRepository configRepository;
-    private final ServerDao serverDao;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final GaugeValueDao gaugeValueDao;
-    private final GaugeMetaDao gaugeMetaDao;
+    private final GaugeDao gaugeMetaDao;
     private final TransactionTypeDao transactionTypeDao;
     private final Clock clock;
 
-    ReaperRunnable(ConfigRepository configService, ServerDao serverDao, AggregateDao aggregateDao,
-            TraceDao traceDao, GaugeValueDao gaugeValueDao, GaugeMetaDao gaugeMetaDao,
+    ReaperRunnable(ConfigRepository configService, AggregateDao aggregateDao, TraceDao traceDao,
+            GaugeValueDao gaugeValueDao, GaugeDao gaugeMetaDao,
             TransactionTypeDao transactionTypeDao, Clock clock) {
         this.configRepository = configService;
-        this.serverDao = serverDao;
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
         this.gaugeValueDao = gaugeValueDao;
@@ -49,34 +46,25 @@ class ReaperRunnable extends ScheduledRunnable {
 
     @Override
     protected void runInternal() throws Exception {
-
         long minCaptureTime = Long.MAX_VALUE;
         long currentTime = clock.currentTimeMillis();
         StorageConfig storageConfig = configRepository.getStorageConfig();
         for (int i = 0; i < storageConfig.rollupExpirationHours().size(); i++) {
             int hours = storageConfig.rollupExpirationHours().get(i);
             long captureTime = currentTime - HOURS.toMillis(hours);
+            aggregateDao.deleteBefore(captureTime, i);
+            if (i == 0) {
+                gaugeValueDao.deleteBefore(captureTime, i);
+            }
+            gaugeValueDao.deleteBefore(captureTime, i + 1);
             minCaptureTime = Math.min(minCaptureTime, captureTime);
         }
+        gaugeMetaDao.deleteBefore(minCaptureTime);
+
         long traceCaptureTime = currentTime - HOURS.toMillis(storageConfig.traceExpirationHours());
+        traceDao.deleteBefore(traceCaptureTime);
         minCaptureTime = Math.min(minCaptureTime, traceCaptureTime);
 
-        for (ServerRollup serverRollup : serverDao.readServerRollups()) {
-            for (int i = 0; i < storageConfig.rollupExpirationHours().size(); i++) {
-                int hours = storageConfig.rollupExpirationHours().get(i);
-                long captureTime = currentTime - HOURS.toMillis(hours);
-                aggregateDao.deleteBefore(serverRollup.name(), captureTime, i);
-                if (i == 0) {
-                    gaugeValueDao.deleteBefore(serverRollup.name(), captureTime, i);
-                }
-                gaugeValueDao.deleteBefore(serverRollup.name(), captureTime, i + 1);
-            }
-            gaugeMetaDao.deleteBefore(serverRollup.name(), minCaptureTime);
-            transactionTypeDao.deleteBefore(serverRollup.name(), minCaptureTime);
-            if (serverRollup.leaf()) {
-                traceDao.deleteBefore(serverRollup.name(), traceCaptureTime);
-                minCaptureTime = Math.min(minCaptureTime, traceCaptureTime);
-            }
-        }
+        transactionTypeDao.deleteBefore(minCaptureTime);
     }
 }

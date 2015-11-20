@@ -31,8 +31,7 @@ import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.Collector;
-import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
+import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
 import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
@@ -112,11 +111,10 @@ public class AggregatorTest {
         public void collectJvmInfo(JvmInfo jvmInfo) {}
 
         @Override
-        public void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,
-                List<TransactionAggregate> transactionAggregates) {
+        public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType) {
             // only capture first non-zero value
-            if (totalNanos == 0 && !overallAggregates.isEmpty()) {
-                totalNanos = overallAggregates.iterator().next().getAggregate().getTotalNanos();
+            if (totalNanos == 0 && !aggregatesByType.isEmpty()) {
+                totalNanos = aggregatesByType.get(0).getOverallAggregate().getTotalNanos();
             }
         }
 

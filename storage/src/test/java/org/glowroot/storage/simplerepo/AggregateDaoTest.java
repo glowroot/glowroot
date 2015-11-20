@@ -30,20 +30,21 @@ import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.util.Styles;
 import org.glowroot.storage.repo.AggregateRepository;
-import org.glowroot.storage.repo.AggregateRepository.TransactionSummaryQuery;
-import org.glowroot.storage.repo.AggregateRepository.TransactionSummarySortOrder;
+import org.glowroot.storage.repo.AggregateRepository.OverallQuery;
+import org.glowroot.storage.repo.AggregateRepository.TransactionQuery;
+import org.glowroot.storage.repo.AggregateRepository.SummarySortOrder;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
+import org.glowroot.storage.repo.ImmutableOverallQuery;
 import org.glowroot.storage.repo.ImmutableRollupConfig;
-import org.glowroot.storage.repo.ImmutableTransactionSummaryQuery;
+import org.glowroot.storage.repo.ImmutableTransactionQuery;
 import org.glowroot.storage.repo.Result;
+import org.glowroot.storage.repo.TransactionSummaryCollector;
 import org.glowroot.storage.repo.config.ImmutableStorageConfig;
-import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.storage.simplerepo.util.CappedDatabase;
 import org.glowroot.storage.simplerepo.util.DataSource;
-import org.glowroot.storage.simplerepo.util.Schema;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
+import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,12 +63,11 @@ public class AggregateDaoTest {
 
     @Before
     public void beforeEachTest() throws Exception {
-        dataSource = DataSource.createH2InMemory();
-        Schema schema = dataSource.getSchema();
-        if (schema.tableExists("overall_point")) {
+        dataSource = new DataSource();
+        if (dataSource.tableExists("overall_point")) {
             dataSource.execute("drop table overall_point");
         }
-        if (schema.tableExists("transaction_point")) {
+        if (dataSource.tableExists("transaction_point")) {
             dataSource.execute("drop table transaction_point");
         }
         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
@@ -84,8 +84,7 @@ public class AggregateDaoTest {
                 ImmutableRollupConfig.of(900000000, 8 * 3600000));
         when(configRepository.getRollupConfigs()).thenReturn(rollupConfigs);
         aggregateDao = new AggregateDao(dataSource, ImmutableList.<CappedDatabase>of(),
-                configRepository, mock(ServerDao.class), mock(TransactionTypeDao.class),
-                mock(RollupLevelService.class));
+                configRepository, mock(TransactionTypeDao.class));
     }
 
     @After
@@ -100,17 +99,26 @@ public class AggregateDaoTest {
         // given
         populateAggregates();
         // when
-        List<OverviewAggregate> overallAggregates =
-                aggregateDao.readOverallOverviewAggregates(SERVER_ID, "a type", 0, 100000, 0);
-        TransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
+        TransactionQuery query = ImmutableTransactionQuery.builder()
                 .serverRollup(SERVER_ID)
                 .transactionType("a type")
                 .from(0)
                 .to(100000)
-                .sortOrder(TransactionSummarySortOrder.TOTAL_TIME)
-                .limit(10)
+                .rollupLevel(0)
                 .build();
-        Result<TransactionSummary> queryResult = aggregateDao.readTransactionSummaries(query);
+        OverallQuery query2 = ImmutableOverallQuery.builder()
+                .serverRollup(SERVER_ID)
+                .transactionType("a type")
+                .from(0)
+                .to(100000)
+                .rollupLevel(0)
+                .build();
+        TransactionSummaryCollector mergedTransactionSummaries = new TransactionSummaryCollector();
+        List<OverviewAggregate> overallAggregates = aggregateDao.readOverviewAggregates(query);
+        aggregateDao.mergeInTransactionSummaries(mergedTransactionSummaries, query2,
+                SummarySortOrder.TOTAL_TIME, 10);
+        Result<TransactionSummary> queryResult =
+                mergedTransactionSummaries.getResult(SummarySortOrder.TOTAL_TIME, 10);
         // then
         assertThat(overallAggregates).hasSize(2);
         assertThat(queryResult.records()).hasSize(3);
@@ -127,18 +135,14 @@ public class AggregateDaoTest {
 
     // also used by TransactionCommonServiceTest
     public void populateAggregates() throws Exception {
-        OverallAggregate overallAggregate = OverallAggregate.newBuilder()
-                .setTransactionType("a type")
-                .setAggregate(Aggregate.newBuilder()
-                        .setTotalNanos(1000000)
-                        .setErrorCount(0)
-                        .setTransactionCount(10)
-                        .setTotalNanosHistogram(getFakeHistogram())
-                        .build())
+        Aggregate overallAggregate = Aggregate.newBuilder()
+                .setTotalNanos(1000000)
+                .setErrorCount(0)
+                .setTransactionCount(10)
+                .setTotalNanosHistogram(getFakeHistogram())
                 .build();
         List<TransactionAggregate> transactionAggregates = Lists.newArrayList();
         transactionAggregates.add(TransactionAggregate.newBuilder()
-                .setTransactionType("a type")
                 .setTransactionName("one")
                 .setAggregate(Aggregate.newBuilder()
                         .setTotalNanos(100000)
@@ -148,7 +152,6 @@ public class AggregateDaoTest {
                         .build())
                 .build());
         transactionAggregates.add(TransactionAggregate.newBuilder()
-                .setTransactionType("a type")
                 .setTransactionName("two")
                 .setAggregate(Aggregate.newBuilder()
                         .setTotalNanos(300000)
@@ -158,7 +161,6 @@ public class AggregateDaoTest {
                         .build())
                 .build());
         transactionAggregates.add(TransactionAggregate.newBuilder()
-                .setTransactionType("a type")
                 .setTransactionName("seven")
                 .setAggregate(Aggregate.newBuilder()
                         .setTotalNanos(1400000)
@@ -167,21 +169,15 @@ public class AggregateDaoTest {
                         .setTotalNanosHistogram(getFakeHistogram())
                         .build())
                 .build());
-        aggregateDao.store(SERVER_ID, 10000, ImmutableList.of(overallAggregate),
-                transactionAggregates);
-
-        OverallAggregate overallAggregate2 = OverallAggregate.newBuilder()
+        AggregatesByType aggregatesByType = AggregatesByType.newBuilder()
                 .setTransactionType("a type")
-                .setAggregate(Aggregate.newBuilder()
-                        .setTotalNanos(1000000)
-                        .setErrorCount(0)
-                        .setTransactionCount(10)
-                        .setTotalNanosHistogram(getFakeHistogram())
-                        .build())
+                .setOverallAggregate(overallAggregate)
+                .addAllTransactionAggregate(transactionAggregates)
                 .build();
+        aggregateDao.store(SERVER_ID, 10000, ImmutableList.of(aggregatesByType));
+
         List<TransactionAggregate> transactionAggregates2 = Lists.newArrayList();
         transactionAggregates2.add(TransactionAggregate.newBuilder()
-                .setTransactionType("a type")
                 .setTransactionName("one")
                 .setAggregate(Aggregate.newBuilder()
                         .setTotalNanos(100000)
@@ -191,7 +187,6 @@ public class AggregateDaoTest {
                         .build())
                 .build());
         transactionAggregates2.add(TransactionAggregate.newBuilder()
-                .setTransactionType("a type")
                 .setTransactionName("two")
                 .setAggregate(Aggregate.newBuilder()
                         .setTotalNanos(300000)
@@ -201,7 +196,6 @@ public class AggregateDaoTest {
                         .build())
                 .build());
         transactionAggregates2.add(TransactionAggregate.newBuilder()
-                .setTransactionType("a type")
                 .setTransactionName("seven")
                 .setAggregate(Aggregate.newBuilder()
                         .setTotalNanos(1400000)
@@ -210,8 +204,12 @@ public class AggregateDaoTest {
                         .setTotalNanosHistogram(getFakeHistogram())
                         .build())
                 .build());
-        aggregateDao.store(SERVER_ID, 20000, ImmutableList.of(overallAggregate2),
-                transactionAggregates2);
+        AggregatesByType aggregatesByType2 = AggregatesByType.newBuilder()
+                .setTransactionType("a type")
+                .setOverallAggregate(overallAggregate)
+                .addAllTransactionAggregate(transactionAggregates2)
+                .build();
+        aggregateDao.store(SERVER_ID, 20000, ImmutableList.of(aggregatesByType2));
     }
 
     // used by TransactionCommonServiceTest

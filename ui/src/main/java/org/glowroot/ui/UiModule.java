@@ -77,12 +77,12 @@ public class UiModule {
         LayoutHttpService layoutHttpService =
                 new LayoutHttpService(httpSessionManager, layoutService);
         TransactionCommonService transactionCommonService = new TransactionCommonService(
-                aggregateRepository, liveAggregateRepository, configRepository, rollupLevelService);
+                aggregateRepository, liveAggregateRepository, configRepository);
         TraceCommonService traceCommonService =
                 new TraceCommonService(traceRepository, liveTraceRepository);
         TransactionJsonService transactionJsonService =
-                new TransactionJsonService(transactionCommonService, traceRepository,
-                        liveTraceRepository, rollupLevelService, clock);
+                new TransactionJsonService(transactionCommonService, aggregateRepository,
+                        traceRepository, liveTraceRepository, rollupLevelService, clock);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(traceRepository,
                 liveTraceRepository, configRepository, ticker, clock);
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
@@ -96,10 +96,10 @@ public class UiModule {
         } else {
             glowrootLogHttpService = new GlowrootLogHttpService(logDir);
         }
-        ErrorCommonService errorCommonService = new ErrorCommonService(aggregateRepository,
-                liveAggregateRepository, rollupLevelService, configRepository.getRollupConfigs());
+        ErrorCommonService errorCommonService =
+                new ErrorCommonService(aggregateRepository, liveAggregateRepository);
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
-                traceRepository, rollupLevelService, clock);
+                transactionCommonService, traceRepository, rollupLevelService, clock);
         ConfigJsonService configJsonService = new ConfigJsonService(configRepository, repoAdmin,
                 pluginDescriptors, httpSessionManager, new MailService(), liveWeavingService);
         GaugeValueJsonService gaugeValueJsonService = new GaugeValueJsonService(

@@ -21,10 +21,9 @@ import org.glowroot.storage.repo.TriggeredAlertRepository;
 import org.glowroot.storage.simplerepo.util.DataSource;
 import org.glowroot.storage.simplerepo.util.ImmutableColumn;
 import org.glowroot.storage.simplerepo.util.ImmutableIndex;
-import org.glowroot.storage.simplerepo.util.Schema;
-import org.glowroot.storage.simplerepo.util.Schema.Column;
-import org.glowroot.storage.simplerepo.util.Schema.ColumnType;
-import org.glowroot.storage.simplerepo.util.Schema.Index;
+import org.glowroot.storage.simplerepo.util.Schemas.Column;
+import org.glowroot.storage.simplerepo.util.Schemas.ColumnType;
+import org.glowroot.storage.simplerepo.util.Schemas.Index;
 
 class TriggeredAlertDao implements TriggeredAlertRepository {
 
@@ -39,9 +38,8 @@ class TriggeredAlertDao implements TriggeredAlertRepository {
 
     TriggeredAlertDao(DataSource dataSource) throws Exception {
         this.dataSource = dataSource;
-        Schema schema = dataSource.getSchema();
-        schema.syncTable("triggered_alert", triggeredAlertColumns);
-        schema.syncIndexes("triggered_alert", triggeredAlertIndexes);
+        dataSource.syncTable("triggered_alert", triggeredAlertColumns);
+        dataSource.syncIndexes("triggered_alert", triggeredAlertIndexes);
     }
 
     @Override

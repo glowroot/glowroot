@@ -17,8 +17,7 @@ package org.glowroot.wire.api;
 
 import java.util.List;
 
-import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
+import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
 import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
@@ -28,8 +27,8 @@ public interface Collector {
 
     void collectJvmInfo(JvmInfo jvmInfo) throws Exception;
 
-    void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,
-            List<TransactionAggregate> transactionAggregates) throws Exception;
+    void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType)
+            throws Exception;
 
     void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception;
 

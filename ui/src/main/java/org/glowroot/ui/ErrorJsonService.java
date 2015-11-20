@@ -29,21 +29,26 @@ import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
-import org.glowroot.common.live.ImmutableErrorPoint;
-import org.glowroot.common.live.LiveAggregateRepository.ErrorPoint;
 import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
+import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.storage.repo.AggregateRepository;
-import org.glowroot.storage.repo.AggregateRepository.ErrorSummaryQuery;
-import org.glowroot.storage.repo.ImmutableErrorMessageQuery;
-import org.glowroot.storage.repo.ImmutableErrorSummaryQuery;
+import org.glowroot.storage.repo.AggregateRepository.ErrorPoint;
+import org.glowroot.storage.repo.AggregateRepository.OverallQuery;
+import org.glowroot.storage.repo.AggregateRepository.TransactionQuery;
+import org.glowroot.storage.repo.ImmutableErrorMessageFilter;
+import org.glowroot.storage.repo.ImmutableErrorPoint;
+import org.glowroot.storage.repo.ImmutableOverallQuery;
+import org.glowroot.storage.repo.ImmutableTraceQuery;
+import org.glowroot.storage.repo.ImmutableTransactionQuery;
 import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.TraceRepository;
-import org.glowroot.storage.repo.TraceRepository.ErrorMessageCount;
-import org.glowroot.storage.repo.TraceRepository.ErrorMessageQuery;
-import org.glowroot.storage.repo.TraceRepository.TraceErrorPoint;
+import org.glowroot.storage.repo.TraceRepository.ErrorMessageFilter;
+import org.glowroot.storage.repo.TraceRepository.ErrorMessagePoint;
+import org.glowroot.storage.repo.TraceRepository.ErrorMessageResult;
+import org.glowroot.storage.repo.TraceRepository.TraceQuery;
 import org.glowroot.storage.repo.helper.RollupLevelService;
 
 @JsonService
@@ -57,13 +62,16 @@ class ErrorJsonService {
     }
 
     private final ErrorCommonService errorCommonService;
+    private final TransactionCommonService transactionCommonService;
     private final TraceRepository traceRepository;
     private final RollupLevelService rollupLevelService;
     private final Clock clock;
 
-    ErrorJsonService(ErrorCommonService errorCommonService, TraceRepository traceRepository,
+    ErrorJsonService(ErrorCommonService errorCommonService,
+            TransactionCommonService transactionCommonService, TraceRepository traceRepository,
             RollupLevelService rollupLevelService, Clock clock) {
         this.errorCommonService = errorCommonService;
+        this.transactionCommonService = transactionCommonService;
         this.traceRepository = traceRepository;
         this.rollupLevelService = rollupLevelService;
         this.clock = clock;
@@ -72,56 +80,60 @@ class ErrorJsonService {
     @GET("/backend/error/messages")
     String getData(String queryString) throws Exception {
         ErrorMessageRequest request = QueryStrings.decode(queryString, ErrorMessageRequest.class);
-
-        ErrorMessageQuery query = ImmutableErrorMessageQuery.builder()
+        TraceQuery query = ImmutableTraceQuery.builder()
                 .serverRollup(request.serverRollup())
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
                 .to(request.to())
+                .build();
+        TransactionQuery transactionQuery = ImmutableTransactionQuery.builder()
+                .serverRollup(request.serverRollup())
+                .transactionType(request.transactionType())
+                .transactionName(request.transactionName())
+                .from(request.from())
+                .to(request.to())
+                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(),
+                        request.to()))
+                .build();
+        ErrorMessageFilter filter = ImmutableErrorMessageFilter.builder()
                 .addAllIncludes(request.include())
                 .addAllExcludes(request.exclude())
-                .limit(request.errorMessageLimit())
                 .build();
         // need live capture time to match up between unfilteredErrorPoints and traceErrorPoints
         // so that transactionCountMap.get(traceErrorPoint.captureTime()) will work
         long liveCaptureTime = clock.currentTimeMillis();
-        Result<ErrorMessageCount> queryResult = traceRepository.readErrorMessageCounts(query);
-        List<ErrorPoint> unfilteredErrorPoints =
-                errorCommonService.readErrorPoints(query.serverRollup(), query.transactionType(),
-                        query.transactionName(), query.from(), query.to(), liveCaptureTime);
+        long resolutionMillis =
+                rollupLevelService.getDataPointIntervalMillis(query.from(), query.to());
+        ErrorMessageResult result = traceRepository.readErrorMessages(query, filter,
+                resolutionMillis, liveCaptureTime, request.errorMessageLimit());
+
+        List<ThroughputAggregate> throughputAggregates =
+                transactionCommonService.getThroughputAggregates(transactionQuery, liveCaptureTime);
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
-        if (query.includes().isEmpty() && query.excludes().isEmpty()) {
-            populateDataSeries(query, unfilteredErrorPoints, dataSeries, dataSeriesExtra);
-        } else {
-            Map<Long, Long> transactionCountMap = Maps.newHashMap();
-            for (ErrorPoint unfilteredErrorPoint : unfilteredErrorPoints) {
-                transactionCountMap.put(unfilteredErrorPoint.captureTime(),
-                        unfilteredErrorPoint.transactionCount());
-            }
-            long resolutionMillis =
-                    rollupLevelService.getDataPointIntervalMillis(query.from(), query.to());
-            List<TraceErrorPoint> traceErrorPoints =
-                    traceRepository.readErrorPoints(query, resolutionMillis, liveCaptureTime);
-            List<ErrorPoint> errorPoints = Lists.newArrayList();
-            for (TraceErrorPoint traceErrorPoint : traceErrorPoints) {
-                Long transactionCount = transactionCountMap.get(traceErrorPoint.captureTime());
-                if (transactionCount != null) {
-                    errorPoints.add(ImmutableErrorPoint.of(traceErrorPoint.captureTime(),
-                            traceErrorPoint.errorCount(), transactionCount));
-                }
-            }
-            populateDataSeries(query, errorPoints, dataSeries, dataSeriesExtra);
+        Map<Long, Long> transactionCountMap = Maps.newHashMap();
+        for (ThroughputAggregate unfilteredErrorPoint : throughputAggregates) {
+            transactionCountMap.put(unfilteredErrorPoint.captureTime(),
+                    unfilteredErrorPoint.transactionCount());
         }
+        List<ErrorPoint> errorPoints = Lists.newArrayList();
+        for (ErrorMessagePoint traceErrorPoint : result.points()) {
+            Long transactionCount = transactionCountMap.get(traceErrorPoint.captureTime());
+            if (transactionCount != null) {
+                errorPoints.add(ImmutableErrorPoint.of(traceErrorPoint.captureTime(),
+                        traceErrorPoint.errorCount(), transactionCount));
+            }
+        }
+        populateDataSeries(query, errorPoints, dataSeries, dataSeriesExtra);
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeObjectField("dataSeries", dataSeries);
         jg.writeObjectField("dataSeriesExtra", dataSeriesExtra);
-        jg.writeObjectField("errorMessages", queryResult.records());
-        jg.writeBooleanField("moreErrorMessagesAvailable", queryResult.moreAvailable());
+        jg.writeObjectField("errorMessages", result.counts().records());
+        jg.writeBooleanField("moreErrorMessagesAvailable", result.counts().moreAvailable());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -130,20 +142,16 @@ class ErrorJsonService {
     @GET("/backend/error/summaries")
     String getSummaries(String queryString) throws Exception {
         ErrorSummaryRequest request = QueryStrings.decode(queryString, ErrorSummaryRequest.class);
-
-        OverallErrorSummary overallSummary = errorCommonService.readOverallErrorSummary(
-                request.serverRollup(), request.transactionType(), request.from(), request.to());
-
-        ErrorSummaryQuery query = ImmutableErrorSummaryQuery.builder()
+        OverallQuery query = ImmutableOverallQuery.builder()
                 .serverRollup(request.serverRollup())
                 .transactionType(request.transactionType())
                 .from(request.from())
                 .to(request.to())
-                .sortOrder(request.sortOrder())
-                .limit(request.limit())
+                .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to()))
                 .build();
-        Result<TransactionErrorSummary> queryResult =
-                errorCommonService.readTransactionErrorSummaries(query);
+        OverallErrorSummary overallSummary = errorCommonService.readOverallErrorSummary(query);
+        Result<TransactionErrorSummary> queryResult = errorCommonService
+                .readTransactionErrorSummaries(query, request.sortOrder(), request.limit());
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -158,19 +166,11 @@ class ErrorJsonService {
 
     @GET("/backend/error/tab-bar-data")
     String getTabBarData(String queryString) throws Exception {
-        TabBarDataRequest request = QueryStrings.decode(queryString, TabBarDataRequest.class);
-
-        String transactionName = request.transactionName();
-        long traceCount;
-        if (transactionName == null) {
-            traceCount = traceRepository.readOverallErrorCount(request.serverRollup(),
-                    request.transactionType(), request.from(), request.to());
-        } else {
-            traceCount = traceRepository.readTransactionErrorCount(request.serverRollup(),
-                    request.transactionType(), transactionName, request.from(), request.to());
-        }
+        TraceQuery query = QueryStrings.decode(queryString, TraceQuery.class);
+        long traceCount = traceRepository.readErrorCount(query);
         StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(
+                sb));
         jg.writeStartObject();
         jg.writeNumberField("traceCount", traceCount);
         jg.writeEndObject();
@@ -178,15 +178,16 @@ class ErrorJsonService {
         return sb.toString();
     }
 
-    private void populateDataSeries(ErrorMessageQuery request, List<ErrorPoint> errorPoints,
-            DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra) throws Exception {
+    private void populateDataSeries(TraceQuery query, List<ErrorPoint> errorPoints,
+            DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra)
+                    throws Exception {
         DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock,
-                rollupLevelService.getDataPointIntervalMillis(request.from(), request.to()));
+                rollupLevelService.getDataPointIntervalMillis(query.from(), query.to()));
         ErrorPoint lastErrorPoint = null;
         for (ErrorPoint errorPoint : errorPoints) {
             if (lastErrorPoint == null) {
                 // first aggregate
-                dataSeriesHelper.addInitialUpslopeIfNeeded(request.from(), errorPoint.captureTime(),
+                dataSeriesHelper.addInitialUpslopeIfNeeded(query.from(), errorPoint.captureTime(),
                         dataSeries);
             } else {
                 dataSeriesHelper.addGapIfNeeded(lastErrorPoint.captureTime(),
@@ -200,7 +201,7 @@ class ErrorJsonService {
                     new Long[] {errorPoint.errorCount(), transactionCount});
         }
         if (lastErrorPoint != null) {
-            dataSeriesHelper.addFinalDownslopeIfNeeded(request.to(), dataSeries,
+            dataSeriesHelper.addFinalDownslopeIfNeeded(query.to(), dataSeries,
                     lastErrorPoint.captureTime());
         }
     }
@@ -213,16 +214,6 @@ class ErrorJsonService {
         long to();
         AggregateRepository.ErrorSummarySortOrder sortOrder();
         int limit();
-    }
-
-    @Value.Immutable
-    interface TabBarDataRequest {
-        String serverRollup();
-        String transactionType();
-        @Nullable
-        String transactionName();
-        long from();
-        long to();
     }
 
     @Value.Immutable

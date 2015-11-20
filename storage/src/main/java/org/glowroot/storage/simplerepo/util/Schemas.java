@@ -33,7 +33,6 @@ import javax.annotation.Nullable;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
@@ -45,114 +44,86 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.storage.simplerepo.util.ConnectionPool.ConnectionCallback;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.storage.simplerepo.util.Checkers.castUntainted;
 
-public class Schema {
+public class Schemas {
 
-    private static final Logger logger = LoggerFactory.getLogger(Schema.class);
+    private static final Logger logger = LoggerFactory.getLogger(Schemas.class);
 
-    private final ImmutableMap<ColumnType, String> typeNames;
+    private static final Map<ColumnType, String> typeNames = Maps.newHashMap();
 
-    private final ConnectionPool connectionPool;
+    static {
+        // these are type mappings for H2
+        typeNames.put(ColumnType.VARCHAR, "varchar");
+        typeNames.put(ColumnType.BIGINT, "bigint");
+        typeNames.put(ColumnType.BOOLEAN, "boolean");
+        typeNames.put(ColumnType.VARBINARY, "varbinary");
+        typeNames.put(ColumnType.DOUBLE, "double");
+        typeNames.put(ColumnType.AUTO_IDENTITY, "bigint identity");
+    }
 
-    Schema(ConnectionPool connectionPool, boolean postgres) {
-        this.connectionPool = connectionPool;
-        Map<ColumnType, String> typeNames = Maps.newHashMap();
-        if (postgres) {
-            typeNames.put(ColumnType.VARCHAR, "varchar");
-            typeNames.put(ColumnType.BIGINT, "int8");
-            typeNames.put(ColumnType.BOOLEAN, "bool");
-            typeNames.put(ColumnType.VARBINARY, "bytea");
-            typeNames.put(ColumnType.DOUBLE, "float8");
-            typeNames.put(ColumnType.AUTO_IDENTITY, "serial");
-        } else {
-            typeNames.put(ColumnType.VARCHAR, "varchar");
-            typeNames.put(ColumnType.BIGINT, "bigint");
-            typeNames.put(ColumnType.BOOLEAN, "boolean");
-            typeNames.put(ColumnType.VARBINARY, "varbinary");
-            typeNames.put(ColumnType.DOUBLE, "double");
-            typeNames.put(ColumnType.AUTO_IDENTITY, "bigint identity");
+    private Schemas() {}
+
+    static void syncTable(@Untainted String tableName, List<Column> columns, Connection connection)
+            throws SQLException {
+        if (!tableExists(tableName, connection)) {
+            createTable(tableName, columns, connection);
+        } else if (tableNeedsUpgrade(tableName, columns, connection)) {
+            logger.warn("upgrading table {}, which unfortunately at this point just means"
+                    + " dropping and re-create the table (losing existing data)", tableName);
+            execute("drop table " + tableName, connection);
+            createTable(tableName, columns, connection);
         }
-        this.typeNames = ImmutableMap.copyOf(typeNames);
     }
 
-    public void syncTable(final @Untainted String tableName, final List<Column> columns)
-            throws Exception {
-        connectionPool.execute(new ConnectionCallback</*@Nullable*/Void>() {
-            @Override
-            public @Nullable Void doWithConnection(Connection connection) throws SQLException {
-                if (!tableExistsInternal(tableName, connection)) {
-                    createTable(tableName, columns, connection);
-                } else if (tableNeedsUpgrade(tableName, columns, connection)) {
-                    logger.warn(
-                            "upgrading table {}, which unfortunately at this point just means"
-                                    + " dropping and re-create the table (losing existing data)",
-                            tableName);
-                    execute("drop table " + tableName, connection);
-                    createTable(tableName, columns, connection);
-                }
-                return null;
-            }
-        }, null);
-    }
-
-    public void syncIndexes(final @Untainted String tableName, final List<Index> indexes)
-            throws Exception {
-        connectionPool.execute(new ConnectionCallback</*@Nullable*/Void>() {
-            @Override
-            public @Nullable Void doWithConnection(Connection connection) throws SQLException {
-                ImmutableSet<Index> desiredIndexes = ImmutableSet.copyOf(indexes);
-                Set<Index> existingIndexes = getIndexes(tableName, connection);
-                for (Index index : Sets.difference(existingIndexes, desiredIndexes)) {
-                    execute("drop index " + index.name(), connection);
-                }
-                for (Index index : Sets.difference(desiredIndexes, existingIndexes)) {
-                    createIndex(tableName, index, connection);
-                }
-                // test the logic
-                existingIndexes = getIndexes(tableName, connection);
-                if (!existingIndexes.equals(desiredIndexes)) {
-                    logger.error("the logic in syncIndexes() needs fixing");
-                }
-                return null;
-            }
-        }, null);
+    static void syncIndexes(@Untainted String tableName, ImmutableList<Index> indexes,
+            Connection connection) throws SQLException {
+        ImmutableSet<Index> desiredIndexes = ImmutableSet.copyOf(indexes);
+        Set<Index> existingIndexes = getIndexes(tableName, connection);
+        for (Index index : Sets.difference(existingIndexes, desiredIndexes)) {
+            execute("drop index " + index.name(), connection);
+        }
+        for (Index index : Sets.difference(desiredIndexes, existingIndexes)) {
+            createIndex(tableName, index, connection);
+        }
+        // test the logic
+        existingIndexes = getIndexes(tableName, connection);
+        if (!existingIndexes.equals(desiredIndexes)) {
+            logger.error("the logic in syncIndexes() needs fixing");
+        }
     }
 
     // useful for upgrades
-    public boolean tableExists(final String tableName) throws Exception {
-        return connectionPool.execute(new ConnectionCallback<Boolean>() {
-            @Override
-            public Boolean doWithConnection(Connection connection) throws SQLException {
-                return tableExistsInternal(tableName, connection);
-            }
-        }, false);
+    static boolean tableExists(String tableName, Connection connection) throws SQLException {
+        logger.debug("tableExists(): tableName={}", tableName);
+        ResultSet resultSet = getMetaDataTables(connection, tableName);
+        ResultSetCloser closer = new ResultSetCloser(resultSet);
+        try {
+            return resultSet.next();
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
+        } finally {
+            closer.close();
+        }
     }
 
     // useful for upgrades
-    public boolean columnExists(final String tableName, final String columnName)
-            throws Exception {
-        return connectionPool.execute(new ConnectionCallback<Boolean>() {
-            @Override
-            public Boolean doWithConnection(Connection connection) throws SQLException {
-                logger.debug("columnExists(): tableName={}, columnName={}", tableName, columnName);
-                ResultSet resultSet = getMetaDataColumns(connection, tableName, columnName);
-                ResultSetCloser closer = new ResultSetCloser(resultSet);
-                try {
-                    return resultSet.next();
-                } catch (Throwable t) {
-                    throw closer.rethrow(t);
-                } finally {
-                    closer.close();
-                }
-            }
-        }, false);
+    static boolean columnExists(String tableName, String columnName, Connection connection)
+            throws SQLException {
+        logger.debug("columnExists(): tableName={}, columnName={}", tableName, columnName);
+        ResultSet resultSet = getMetaDataColumns(connection, tableName, columnName);
+        ResultSetCloser closer = new ResultSetCloser(resultSet);
+        try {
+            return resultSet.next();
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
+        } finally {
+            closer.close();
+        }
     }
 
-    private void createTable(@Untainted String tableName, List<Column> columns,
+    private static void createTable(@Untainted String tableName, List<Column> columns,
             Connection connection) throws SQLException {
         StringBuilder sql = new StringBuilder();
         sql.append("create table ");
@@ -179,8 +150,8 @@ public class Schema {
         }
     }
 
-    private boolean tableNeedsUpgrade(String tableName, List<Column> columns, Connection connection)
-            throws SQLException {
+    private static boolean tableNeedsUpgrade(String tableName, List<Column> columns,
+            Connection connection) throws SQLException {
         // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
         // see https://code.google.com/p/guava-libraries/issues/detail?id=635
         Map<String, Column> columnMap = new TreeMap<String, Column>(String.CASE_INSENSITIVE_ORDER);
@@ -198,8 +169,8 @@ public class Schema {
         }
     }
 
-    private boolean columnNamesAndTypesMatch(ResultSet resultSet, Map<String, Column> columnMap,
-            Connection connection) throws SQLException {
+    private static boolean columnNamesAndTypesMatch(ResultSet resultSet,
+            Map<String, Column> columnMap, Connection connection) throws SQLException {
         while (resultSet.next()) {
             Column column = columnMap.remove(resultSet.getString("COLUMN_NAME"));
             if (column == null) {
@@ -227,7 +198,6 @@ public class Schema {
             throws SQLException {
         ListMultimap</*@Untainted*/String, /*@Untainted*/String> indexColumns =
                 ArrayListMultimap.create();
-        Set<String> uniqueIndexes = Sets.newHashSet();
         ResultSet resultSet = getMetaDataIndexInfo(connection, tableName);
         ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
@@ -235,12 +205,9 @@ public class Schema {
                 String indexName = checkNotNull(resultSet.getString("INDEX_NAME"));
                 String columnName = checkNotNull(resultSet.getString("COLUMN_NAME"));
                 // hack-ish to skip over primary key constraints which seem to be always
-                // prefixed in H2 by PRIMARY_KEY_ and suffixed in Postgres by _pkey
-                if (!indexName.startsWith("PRIMARY_KEY_") && !indexName.endsWith("_pkey")) {
+                // prefixed in H2 by PRIMARY_KEY_
+                if (!indexName.startsWith("PRIMARY_KEY_")) {
                     indexColumns.put(castUntainted(indexName), castUntainted(columnName));
-                }
-                if (!resultSet.getBoolean("NON_UNIQUE")) {
-                    uniqueIndexes.add(indexName);
                 }
             }
         } catch (Throwable t) {
@@ -256,11 +223,7 @@ public class Schema {
             for (String column : entry.getValue()) {
                 columns.add(column.toLowerCase(Locale.ENGLISH));
             }
-            indexes.add(ImmutableIndex.builder()
-                    .name(name)
-                    .columns(columns)
-                    .unique(uniqueIndexes.contains(entry.getKey()))
-                    .build());
+            indexes.add(ImmutableIndex.of(name, columns));
         }
         return indexes.build();
     }
@@ -268,11 +231,7 @@ public class Schema {
     private static void createIndex(String tableName, Index index, Connection connection)
             throws SQLException {
         StringBuilder sql = new StringBuilder();
-        sql.append("create ");
-        if (index.unique()) {
-            sql.append("unique ");
-        }
-        sql.append("index ");
+        sql.append("create index ");
         sql.append(index.name());
         sql.append(" on ");
         sql.append(tableName);
@@ -287,29 +246,12 @@ public class Schema {
         execute(castUntainted(sql.toString()), connection);
     }
 
-    private Boolean tableExistsInternal(final String tableName, Connection connection)
-            throws SQLException {
-        logger.debug("tableExists(): tableName={}", tableName);
-        ResultSet resultSet = getMetaDataTables(connection, tableName);
-        ResultSetCloser closer = new ResultSetCloser(resultSet);
-        try {
-            return resultSet.next();
-        } catch (Throwable t) {
-            throw closer.rethrow(t);
-        } finally {
-            closer.close();
-        }
-    }
-
     private static void execute(@Untainted String sql, Connection connection) throws SQLException {
         Statement statement = connection.createStatement();
-        StatementCloser closer = new StatementCloser(statement);
         try {
             statement.execute(sql);
-        } catch (Throwable t) {
-            throw closer.rethrow(t);
         } finally {
-            closer.close();
+            statement.close();
         }
     }
 
@@ -362,17 +304,9 @@ public class Schema {
 
     @Value.Immutable
     public abstract static class Index {
-
         @Value.Parameter
-        @Untainted
-        abstract String name();
-
+        abstract @Untainted String name();
         @Value.Parameter
         abstract ImmutableList</*@Untainted*/String> columns();
-
-        @Value.Default
-        boolean unique() {
-            return false;
-        }
     }
 }

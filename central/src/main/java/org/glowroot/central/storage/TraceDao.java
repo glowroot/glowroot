@@ -16,7 +16,12 @@
 package org.glowroot.central.storage;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -28,6 +33,7 @@ import com.datastax.driver.core.Session;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -35,7 +41,10 @@ import org.glowroot.central.util.Messages;
 import org.glowroot.common.live.ImmutableTracePoint;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
-import org.glowroot.common.live.LiveTraceRepository.TracePointCriteria;
+import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
+import org.glowroot.storage.repo.ImmutableErrorMessageCount;
+import org.glowroot.storage.repo.ImmutableErrorMessagePoint;
+import org.glowroot.storage.repo.ImmutableErrorMessageResult;
 import org.glowroot.storage.repo.ImmutableHeaderPlus;
 import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.TraceRepository;
@@ -43,16 +52,21 @@ import org.glowroot.storage.util.ServerRollups;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class TraceDao implements TraceRepository {
 
     private final Session session;
     private final ServerDao serverDao;
     private final TransactionTypeDao transactionTypeDao;
 
-    private final PreparedStatement insertOverallSlowPoint;
+    private final PreparedStatement insertOverallSlowPointPS;
     private final PreparedStatement insertTransactionSlowPoint;
     private final PreparedStatement insertOverallErrorPoint;
     private final PreparedStatement insertTransactionErrorPoint;
+
+    private final PreparedStatement insertOverallErrorMessage;
+    private final PreparedStatement insertTransactionErrorMessage;
 
     private final PreparedStatement insertHeader;
     private final PreparedStatement insertEntries;
@@ -63,37 +77,55 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement insertOverallError;
     private final PreparedStatement insertTransactionError;
 
+    private final PreparedStatement readOverallSlowPoint;
+    private final PreparedStatement readTransactionSlowPoint;
+    private final PreparedStatement readOverallErrorPoint;
+    private final PreparedStatement readTransactionErrorPoint;
+
+    private final PreparedStatement readOverallErrorMessage;
+    private final PreparedStatement readTransactionErrorMessage;
+
     public TraceDao(Session session, ServerDao serverDao, TransactionTypeDao transactionTypeDao) {
         this.session = session;
         this.serverDao = serverDao;
         this.transactionTypeDao = transactionTypeDao;
 
         session.execute("create table if not exists trace_overall_slow_point"
-                + " (server_rollup varchar, transaction_type varchar, capture_time bigint,"
+                + " (server_rollup varchar, transaction_type varchar, capture_time timestamp,"
                 + " server_id varchar, trace_id varchar, duration_nanos bigint, error boolean,"
-                + " transaction_name varchar, headline varchar, user varchar, primary key"
-                + " ((server_rollup, transaction_type), capture_time, trace_id))");
+                + " user varchar, attributes blob, primary key ((server_rollup, transaction_type),"
+                + " capture_time, server_id, trace_id))");
 
         session.execute("create table if not exists trace_transaction_slow_point"
                 + " (server_rollup varchar, transaction_type varchar, transaction_name varchar,"
-                + " capture_time bigint, server_id varchar, trace_id varchar,"
-                + " duration_nanos bigint, error boolean, headline varchar, user varchar,"
+                + " capture_time timestamp, server_id varchar, trace_id varchar,"
+                + " duration_nanos bigint, error boolean, user varchar, attributes blob, "
                 + " primary key ((server_rollup, transaction_type, transaction_name), capture_time,"
-                + " trace_id))");
+                + " server_id, trace_id))");
 
         session.execute("create table if not exists trace_overall_error_point"
-                + " (server_rollup varchar, transaction_type varchar, capture_time bigint,"
+                + " (server_rollup varchar, transaction_type varchar, capture_time timestamp,"
                 + " server_id varchar, trace_id varchar, duration_nanos bigint,"
-                + " error_message varchar, transaction_name varchar, headline varchar,"
-                + " user varchar, primary key ((server_rollup, transaction_type), capture_time,"
-                + " trace_id))");
+                + " error_message varchar, user varchar, attributes blob, primary key"
+                + " ((server_rollup, transaction_type), capture_time, server_id, trace_id))");
 
         session.execute("create table if not exists trace_transaction_error_point"
                 + " (server_rollup varchar, transaction_type varchar, transaction_name varchar,"
-                + " capture_time bigint, server_id varchar, trace_id varchar,"
-                + " duration_nanos bigint, error_message varchar, headline varchar, user varchar,"
+                + " capture_time timestamp, server_id varchar, trace_id varchar,"
+                + " duration_nanos bigint, error_message varchar, user varchar, attributes blob,"
                 + " primary key ((server_rollup, transaction_type, transaction_name), capture_time,"
-                + " trace_id))");
+                + " server_id, trace_id))");
+
+        session.execute("create table if not exists trace_overall_error_message"
+                + " (server_rollup varchar, transaction_type varchar, capture_time timestamp,"
+                + " server_id varchar, trace_id varchar, error_message varchar, primary key"
+                + " ((server_rollup, transaction_type), capture_time, server_id, trace_id))");
+
+        session.execute("create table if not exists trace_transaction_error_message"
+                + " (server_rollup varchar, transaction_type varchar, transaction_name varchar,"
+                + " capture_time timestamp, server_id varchar, trace_id varchar,"
+                + " error_message varchar, primary key ((server_rollup, transaction_type,"
+                + " transaction_name), capture_time, server_id, trace_id))");
 
         session.execute("create table if not exists trace_header (server_id varchar,"
                 + " trace_id varchar, header blob, primary key (server_id, trace_id))");
@@ -110,42 +142,53 @@ public class TraceDao implements TraceRepository {
         // but counter has no TTL, see https://issues.apache.org/jira/browse/CASSANDRA-2103
         // so adding trace_id to provide uniqueness
         session.execute("create table if not exists trace_overall_slow (server_rollup varchar,"
-                + " transaction_type varchar, capture_time bigint, trace_id varchar,"
-                + " primary key ((server_rollup, transaction_type), capture_time, trace_id))");
+                + " transaction_type varchar, capture_time timestamp, server_id varchar,"
+                + " trace_id varchar, primary key ((server_rollup, transaction_type), capture_time,"
+                + " server_id, trace_id))");
 
         session.execute("create table if not exists trace_transaction_slow (server_rollup varchar,"
-                + " transaction_type varchar, transaction_name varchar, capture_time bigint,"
-                + " trace_id varchar, primary key ((server_rollup, transaction_type,"
-                + " transaction_name), capture_time, trace_id))");
+                + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
+                + " server_id varchar, trace_id varchar, primary key ((server_rollup,"
+                + " transaction_type, transaction_name), capture_time, server_id, trace_id))");
 
         session.execute("create table if not exists trace_overall_error (server_rollup varchar,"
-                + " transaction_type varchar, capture_time bigint, trace_id varchar,"
-                + " primary key ((server_rollup, transaction_type), capture_time, trace_id))");
+                + " transaction_type varchar, capture_time timestamp, server_id varchar,"
+                + " trace_id varchar, primary key ((server_rollup, transaction_type), capture_time,"
+                + " server_id, trace_id))");
 
         session.execute("create table if not exists trace_transaction_error (server_rollup varchar,"
-                + " transaction_type varchar, transaction_name varchar, capture_time bigint,"
-                + " trace_id varchar, primary key ((server_rollup, transaction_type,"
-                + " transaction_name), capture_time, trace_id))");
+                + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
+                + " server_id varchar, trace_id varchar, primary key ((server_rollup,"
+                + " transaction_type, transaction_name), capture_time, server_id, trace_id))");
 
-        insertOverallSlowPoint = session.prepare("insert into trace_overall_slow_point"
+        insertOverallSlowPointPS = session.prepare("insert into trace_overall_slow_point"
                 + " (server_rollup, transaction_type, capture_time, server_id, trace_id,"
-                + " duration_nanos, error, transaction_name, headline, user) values"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                + " duration_nanos, error, user, attributes) values"
+                + " (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         insertTransactionSlowPoint = session.prepare("insert into trace_transaction_slow_point"
                 + " (server_rollup, transaction_type, transaction_name, capture_time, server_id,"
-                + " trace_id, duration_nanos, error, headline, user) values"
+                + " trace_id, duration_nanos, error, user, attributes) values"
                 + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         insertOverallErrorPoint = session.prepare("insert into trace_overall_error_point"
                 + " (server_rollup, transaction_type, capture_time, server_id, trace_id,"
-                + " duration_nanos, error_message, transaction_name, headline, user) values"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                + " duration_nanos, error_message, user, attributes) values"
+                + " (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         insertTransactionErrorPoint = session.prepare("insert into trace_transaction_error_point"
                 + " (server_rollup, transaction_type, transaction_name, capture_time, server_id,"
-                + " trace_id, duration_nanos, error_message, headline, user) values"
+                + " trace_id, duration_nanos, error_message, user, attributes) values"
                 + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+        insertOverallErrorMessage = session.prepare("insert into trace_overall_error_message"
+                + " (server_rollup, transaction_type, capture_time, server_id, trace_id,"
+                + " error_message) values (?, ?, ?, ?, ?, ?)");
+
+        insertTransactionErrorMessage = session.prepare(
+                "insert into trace_transaction_error_message (server_rollup, transaction_type,"
+                        + " transaction_name, capture_time, server_id, trace_id, error_message)"
+                        + " values (?, ?, ?, ?, ?, ?, ?)");
 
         insertHeader = session.prepare("insert into trace_header (server_id, trace_id, header)"
                 + " values (?, ?, ?)");
@@ -157,19 +200,48 @@ public class TraceDao implements TraceRepository {
                 + " values (?, ?, ?)");
 
         insertOverallSlow = session.prepare("insert into trace_overall_slow (server_rollup,"
-                + " transaction_type, capture_time, trace_id) values (?, ?, ?, ?)");
+                + " transaction_type, capture_time, server_id, trace_id) values (?, ?, ?, ?, ?)");
 
         insertTransactionSlow = session.prepare("insert into trace_transaction_slow (server_rollup,"
-                + " transaction_type, transaction_name, capture_time, trace_id)"
-                + " values (?, ?, ?, ?, ?)");
+                + " transaction_type, transaction_name, capture_time, server_id, trace_id)"
+                + " values (?, ?, ?, ?, ?, ?)");
 
         insertOverallError = session.prepare("insert into trace_overall_error (server_rollup,"
-                + " transaction_type, capture_time, trace_id) values (?, ?, ?, ?)");
+                + " transaction_type, capture_time, server_id, trace_id) values (?, ?, ?, ?, ?)");
 
-        insertTransactionError =
-                session.prepare("insert into trace_transaction_error (server_rollup,"
-                        + " transaction_type, transaction_name, capture_time, trace_id)"
-                        + " values (?, ?, ?, ?, ?)");
+        insertTransactionError = session.prepare("insert into trace_transaction_error"
+                + " (server_rollup, transaction_type, transaction_name, capture_time, server_id,"
+                + " trace_id) values (?, ?, ?, ?, ?, ?)");
+
+        readOverallSlowPoint = session.prepare("select server_id, trace_id, capture_time,"
+                + " duration_nanos, error, user, attributes from trace_overall_slow_point"
+                + " where server_rollup = ? and transaction_type = ? and capture_time > ?"
+                + " and capture_time <= ?");
+
+        readTransactionSlowPoint = session.prepare("select server_id, trace_id, capture_time,"
+                + " duration_nanos, error, user, attributes from trace_transaction_slow_point"
+                + " where server_rollup = ? and transaction_type = ? and transaction_name = ?"
+                + " and capture_time > ? and capture_time <= ?");
+
+        readOverallErrorPoint = session.prepare("select server_id, trace_id, capture_time,"
+                + " duration_nanos, error_message, user, attributes from trace_overall_error_point"
+                + " where server_rollup = ? and transaction_type = ? and capture_time > ?"
+                + " and capture_time <= ?");
+
+        readTransactionErrorPoint = session.prepare("select server_id, trace_id, capture_time,"
+                + " duration_nanos, error_message, user, attributes from"
+                + " trace_transaction_error_point where server_rollup = ? and transaction_type = ?"
+                + " and transaction_name = ? and capture_time > ? and capture_time <= ?");
+
+        readOverallErrorMessage = session.prepare(
+                "select capture_time, error_message from trace_overall_error_message"
+                        + " where server_rollup = ? and transaction_type = ? and capture_time > ?"
+                        + " and capture_time <= ?");
+
+        readTransactionErrorMessage = session.prepare(
+                "select capture_time, error_message from trace_transaction_error_message"
+                        + " where server_rollup = ? and transaction_type = ?"
+                        + " and transaction_name = ? and capture_time > ? and capture_time <= ?");
     }
 
     @Override
@@ -177,22 +249,23 @@ public class TraceDao implements TraceRepository {
 
         Trace.Header header = trace.getHeader();
 
+        // unlike aggregates and gauge values, traces can get written to server rollups immediately
         List<String> serverRollups = ServerRollups.getServerRollups(serverId);
 
         for (String serverRollup : serverRollups) {
             if (header.getSlow()) {
-                BoundStatement boundStatement = insertOverallSlowPoint.bind();
+                BoundStatement boundStatement = insertOverallSlowPointPS.bind();
                 int i = 0;
                 boundStatement.setString(i++, serverRollup);
                 boundStatement.setString(i++, header.getTransactionType());
-                boundStatement.setLong(i++, header.getCaptureTime());
+                // FIXME, partial traces don't get overwritten b/c capture time is part of PK
+                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
                 boundStatement.setString(i++, serverId);
                 boundStatement.setString(i++, trace.getId());
                 boundStatement.setLong(i++, header.getDurationNanos());
                 boundStatement.setBool(i++, header.hasError());
-                boundStatement.setString(i++, header.getTransactionName());
-                boundStatement.setString(i++, header.getHeadline());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
+                boundStatement.setBytes(i++, Messages.toByteBuffer(header.getAttributeList()));
                 session.execute(boundStatement);
 
                 boundStatement = insertTransactionSlowPoint.bind();
@@ -200,32 +273,48 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, serverRollup);
                 boundStatement.setString(i++, header.getTransactionType());
                 boundStatement.setString(i++, header.getTransactionName());
-                boundStatement.setLong(i++, header.getCaptureTime());
+                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
                 boundStatement.setString(i++, serverId);
                 boundStatement.setString(i++, trace.getId());
                 boundStatement.setLong(i++, header.getDurationNanos());
                 boundStatement.setBool(i++, header.hasError());
-                boundStatement.setString(i++, header.getHeadline());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
+                boundStatement.setBytes(i++, Messages.toByteBuffer(header.getAttributeList()));
                 session.execute(boundStatement);
             }
             if (header.hasError()) {
-                BoundStatement boundStatement = insertOverallErrorPoint.bind();
+                BoundStatement boundStatement = insertOverallErrorMessage.bind();
                 int i = 0;
                 boundStatement.setString(i++, serverRollup);
                 boundStatement.setString(i++, header.getTransactionType());
-                boundStatement.setLong(i++, header.getCaptureTime());
+                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
+                boundStatement.setString(i++, serverId);
+                boundStatement.setString(i++, trace.getId());
+                boundStatement.setString(i++, header.getError().getMessage());
+                session.execute(boundStatement);
+
+                boundStatement = insertTransactionErrorMessage.bind();
+                i = 0;
+                boundStatement.setString(i++, serverRollup);
+                boundStatement.setString(i++, header.getTransactionType());
+                boundStatement.setString(i++, header.getTransactionName());
+                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
+                boundStatement.setString(i++, serverId);
+                boundStatement.setString(i++, trace.getId());
+                boundStatement.setString(i++, header.getError().getMessage());
+                session.execute(boundStatement);
+
+                boundStatement = insertOverallErrorPoint.bind();
+                i = 0;
+                boundStatement.setString(i++, serverRollup);
+                boundStatement.setString(i++, header.getTransactionType());
+                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
                 boundStatement.setString(i++, serverId);
                 boundStatement.setString(i++, trace.getId());
                 boundStatement.setLong(i++, header.getDurationNanos());
-                if (header.hasError()) {
-                    boundStatement.setString(i++, header.getError().getMessage());
-                } else {
-                    boundStatement.setToNull(i++);
-                }
-                boundStatement.setString(i++, header.getTransactionName());
-                boundStatement.setString(i++, header.getHeadline());
+                boundStatement.setString(i++, header.getError().getMessage());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
+                boundStatement.setBytes(i++, Messages.toByteBuffer(header.getAttributeList()));
                 session.execute(boundStatement);
 
                 boundStatement = insertTransactionErrorPoint.bind();
@@ -233,17 +322,13 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, serverRollup);
                 boundStatement.setString(i++, header.getTransactionType());
                 boundStatement.setString(i++, header.getTransactionName());
-                boundStatement.setLong(i++, header.getCaptureTime());
+                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
                 boundStatement.setString(i++, serverId);
                 boundStatement.setString(i++, trace.getId());
                 boundStatement.setLong(i++, header.getDurationNanos());
-                if (header.hasError()) {
-                    boundStatement.setString(i++, header.getError().getMessage());
-                } else {
-                    boundStatement.setToNull(i++);
-                }
-                boundStatement.setString(i++, header.getHeadline());
+                boundStatement.setString(i++, header.getError().getMessage());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
+                boundStatement.setBytes(i++, Messages.toByteBuffer(header.getAttributeList()));
                 session.execute(boundStatement);
             }
             serverDao.updateLastCaptureTime(serverRollup, serverRollup.equals(serverId));
@@ -278,16 +363,18 @@ public class TraceDao implements TraceRepository {
                 boundStatement = insertOverallSlow.bind();
                 boundStatement.setString(0, serverRollup);
                 boundStatement.setString(1, header.getTransactionType());
-                boundStatement.setLong(2, header.getCaptureTime());
-                boundStatement.setString(3, trace.getId());
+                boundStatement.setTimestamp(2, new Date(header.getCaptureTime()));
+                boundStatement.setString(3, serverId);
+                boundStatement.setString(4, trace.getId());
                 session.execute(boundStatement);
 
                 boundStatement = insertTransactionSlow.bind();
                 boundStatement.setString(0, serverRollup);
                 boundStatement.setString(1, header.getTransactionType());
                 boundStatement.setString(2, header.getTransactionName());
-                boundStatement.setLong(3, header.getCaptureTime());
-                boundStatement.setString(4, trace.getId());
+                boundStatement.setTimestamp(3, new Date(header.getCaptureTime()));
+                boundStatement.setString(4, serverId);
+                boundStatement.setString(5, trace.getId());
                 session.execute(boundStatement);
             }
         }
@@ -296,16 +383,18 @@ public class TraceDao implements TraceRepository {
                 boundStatement = insertOverallError.bind();
                 boundStatement.setString(0, serverRollup);
                 boundStatement.setString(1, header.getTransactionType());
-                boundStatement.setLong(2, header.getCaptureTime());
-                boundStatement.setString(3, trace.getId());
+                boundStatement.setTimestamp(2, new Date(header.getCaptureTime()));
+                boundStatement.setString(3, serverId);
+                boundStatement.setString(4, trace.getId());
                 session.execute(boundStatement);
 
                 boundStatement = insertTransactionError.bind();
                 boundStatement.setString(0, serverRollup);
                 boundStatement.setString(1, header.getTransactionType());
                 boundStatement.setString(2, header.getTransactionName());
-                boundStatement.setLong(3, header.getCaptureTime());
-                boundStatement.setString(4, trace.getId());
+                boundStatement.setTimestamp(3, new Date(header.getCaptureTime()));
+                boundStatement.setString(4, serverId);
+                boundStatement.setString(5, trace.getId());
                 session.execute(boundStatement);
             }
         }
@@ -318,100 +407,147 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public Result<TracePoint> readOverallSlowPoints(String serverRollup, String transactionType,
-            long captureTimeFrom, long captureTimeTo, TracePointCriteria criteria, int limit) {
-        ResultSet results = session.execute("select server_id, trace_id, capture_time,"
-                + " duration_nanos, error from trace_overall_slow_point where server_rollup = ?"
-                + " and transaction_type = ? and capture_time > ? and capture_time <= ?",
-                serverRollup, transactionType, captureTimeFrom, captureTimeTo);
-        return processSlowPoints(limit, results);
+    public Result<TracePoint> readSlowPoints(TraceQuery query, TracePointFilter filter, int limit)
+            throws IOException {
+        String transactionName = query.transactionName();
+        if (transactionName == null) {
+            BoundStatement boundStatement = readOverallSlowPoint.bind();
+            boundStatement.setString(0, query.serverRollup());
+            boundStatement.setString(1, query.transactionType());
+            boundStatement.setTimestamp(2, new Date(query.from()));
+            boundStatement.setTimestamp(3, new Date(query.to()));
+            ResultSet results = session.execute(boundStatement);
+            return processPoints(results, filter, limit, false);
+        } else {
+            BoundStatement boundStatement = readTransactionSlowPoint.bind();
+            boundStatement.setString(0, query.serverRollup());
+            boundStatement.setString(1, query.transactionType());
+            boundStatement.setString(2, transactionName);
+            boundStatement.setTimestamp(3, new Date(query.from()));
+            boundStatement.setTimestamp(4, new Date(query.to()));
+            ResultSet results = session.execute(boundStatement);
+            return processPoints(results, filter, limit, false);
+        }
     }
 
     @Override
-    public Result<TracePoint> readTransactionSlowPoints(String serverRollup, String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo,
-            TracePointCriteria criteria, int limit) {
-        ResultSet results = session.execute("select server_id, trace_id, capture_time,"
-                + " duration_nanos, error from trace_overall_slow_point where server_rollup = ?"
-                + " and transaction_type = ? and transaction_name = ? and capture_time > ?"
-                + " and capture_time <= ?", serverRollup, transactionType, transactionName,
-                captureTimeFrom, captureTimeTo);
-        return processSlowPoints(limit, results);
+    public Result<TracePoint> readErrorPoints(TraceQuery query, TracePointFilter filter,
+            int limit) throws IOException {
+        String transactionName = query.transactionName();
+        if (transactionName == null) {
+            BoundStatement boundStatement = readOverallErrorPoint.bind();
+            boundStatement.setString(0, query.serverRollup());
+            boundStatement.setString(1, query.transactionType());
+            boundStatement.setTimestamp(2, new Date(query.from()));
+            boundStatement.setTimestamp(3, new Date(query.to()));
+            ResultSet results = session.execute(boundStatement);
+            return processPoints(results, filter, limit, true);
+        } else {
+            BoundStatement boundStatement = readTransactionErrorPoint.bind();
+            boundStatement.setString(0, query.serverRollup());
+            boundStatement.setString(1, query.transactionType());
+            boundStatement.setString(2, transactionName);
+            boundStatement.setTimestamp(3, new Date(query.from()));
+            boundStatement.setTimestamp(4, new Date(query.to()));
+            ResultSet results = session.execute(boundStatement);
+            return processPoints(results, filter, limit, true);
+        }
     }
 
     @Override
-    public Result<TracePoint> readOverallErrorPoints(String serverRollup, String transactionType,
-            long captureTimeFrom, long captureTimeTo, TracePointCriteria criteria, int limit) {
-        ResultSet results = session.execute("select server_id, trace_id, capture_time,"
-                + " duration_nanos from trace_overall_error_point where server_rollup = ?"
-                + " and transaction_type = ? and capture_time > ? and capture_time <= ?",
-                serverRollup, transactionType, captureTimeFrom, captureTimeTo);
-        return processErrorPoints(limit, results);
+    public long readSlowCount(TraceQuery query) {
+        String transactionName = query.transactionName();
+        if (transactionName == null) {
+            ResultSet results = session.execute(
+                    "select count(*) from trace_overall_slow where server_rollup = ?"
+                            + " and transaction_type = ? and capture_time > ?"
+                            + " and capture_time <= ?",
+                    query.serverRollup(), query.transactionType(), query.from(), query.to());
+            return results.one().getLong(0);
+        } else {
+            ResultSet results = session.execute(
+                    "select count(*) from trace_transaction_slow where server_rollup = ?"
+                            + " and transaction_type = ? and transaction_name = ?"
+                            + " and capture_time > ? and capture_time <= ?",
+                    query.serverRollup(), query.transactionType(), transactionName, query.from(),
+                    query.to());
+            return results.one().getLong(0);
+        }
     }
 
     @Override
-    public Result<TracePoint> readTransactionErrorPoints(String serverRollup,
-            String transactionType, String transactionName, long captureTimeFrom,
-            long captureTimeTo, TracePointCriteria criteria, int limit) {
-        ResultSet results = session.execute("select server_id, trace_id, capture_time,"
-                + " duration_nanos from trace_overall_error_point where server_rollup = ?"
-                + " and transaction_type = ? and transaction_name = ? and capture_time > ?"
-                + " and capture_time <= ?", serverRollup, transactionType, transactionName,
-                captureTimeFrom, captureTimeTo);
-        return processSlowPoints(limit, results);
+    public long readErrorCount(TraceQuery query) {
+        String transactionName = query.transactionName();
+        if (transactionName == null) {
+            ResultSet results = session.execute(
+                    "select count(*) from trace_overall_error where server_rollup = ?"
+                            + " and transaction_type = ? and capture_time > ?"
+                            + " and capture_time <= ?",
+                    query.serverRollup(), query.transactionType(), query.from(), query.to());
+            return results.one().getLong(0);
+        } else {
+            ResultSet results = session.execute(
+                    "select count(*) from trace_transaction_error where server_rollup = ?"
+                            + " and transaction_type = ? and transaction_name = ?"
+                            + " and capture_time > ? and capture_time <= ?",
+                    query.serverRollup(), query.transactionType(), transactionName, query.from(),
+                    query.to());
+            return results.one().getLong(0);
+        }
     }
 
     @Override
-    public long readOverallSlowCount(String serverRollup, String transactionType,
-            long captureTimeFrom, long captureTimeTo) {
-        ResultSet results = session.execute("select count(*) from trace_overall_slow"
-                + " where server_rollup = ? and transaction_type = ? and capture_time > ?"
-                + " and capture_time <= ?", serverRollup, transactionType, captureTimeFrom,
-                captureTimeTo);
-        return results.one().getLong(0);
-    }
+    public ErrorMessageResult readErrorMessages(TraceQuery query, ErrorMessageFilter filter,
+            long resolutionMillis, long liveCaptureTime, int limit) throws Exception {
+        BoundStatement boundStatement;
+        String transactionName = query.transactionName();
+        if (transactionName == null) {
+            boundStatement = readOverallErrorMessage.bind();
+            boundStatement.setString(0, query.serverRollup());
+            boundStatement.setString(1, query.transactionType());
+            boundStatement.setTimestamp(2, new Date(query.from()));
+            boundStatement.setTimestamp(3, new Date(query.to()));
+        } else {
+            boundStatement = readTransactionErrorMessage.bind();
+            boundStatement.setString(0, query.serverRollup());
+            boundStatement.setString(1, query.transactionType());
+            boundStatement.setString(2, transactionName);
+            boundStatement.setTimestamp(3, new Date(query.from()));
+            boundStatement.setTimestamp(4, new Date(query.to()));
+        }
+        ResultSet results = session.execute(boundStatement);
+        // rows are already in order by captureTime, so saving sort step by using linked hash map
+        Map<Long, MutableLong> pointCounts = Maps.newLinkedHashMap();
+        Map<String, MutableLong> messageCounts = Maps.newHashMap();
+        for (Row row : results) {
+            long captureTime = checkNotNull(row.getTimestamp(0)).getTime();
+            String errorMessage = checkNotNull(row.getString(1));
+            captureTime =
+                    (long) Math.ceil(captureTime / (double) resolutionMillis) * resolutionMillis;
+            pointCounts.computeIfAbsent(captureTime, k -> new MutableLong()).increment();
+            messageCounts.computeIfAbsent(errorMessage, k -> new MutableLong()).increment();
+        }
+        List<ErrorMessagePoint> points = pointCounts.entrySet().stream()
+                .map(e -> ImmutableErrorMessagePoint.of(e.getKey(), e.getValue().value))
+                .sorted(Comparator.comparingLong(ErrorMessagePoint::captureTime))
+                // explicit type on this line is needed for Checker Framework
+                .collect(Collectors.<ErrorMessagePoint>toList());
+        List<ErrorMessageCount> counts = messageCounts.entrySet().stream()
+                .map(e -> ImmutableErrorMessageCount.of(e.getKey(), e.getValue().value))
+                // explicit type on this line is needed for Checker Framework
+                .collect(Collectors.<ErrorMessageCount>toList());
 
-    @Override
-    public long readTransactionSlowCount(String serverRollup, String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo) {
-        ResultSet results = session.execute("select count(*) from trace_overall_slow"
-                + " where server_rollup = ? and transaction_type = ? and transaction_name = ?"
-                + " and capture_time > ? and capture_time <= ?", serverRollup, transactionType,
-                transactionName, captureTimeFrom, captureTimeTo);
-        return results.one().getLong(0);
-    }
-
-    @Override
-    public long readOverallErrorCount(String serverRollup, String transactionType,
-            long captureTimeFrom, long captureTimeTo) {
-        ResultSet results = session.execute("select count(*) from trace_overall_error"
-                + " where server_rollup = ? and transaction_type = ? and capture_time > ?"
-                + " and capture_time <= ?", serverRollup, transactionType, captureTimeFrom,
-                captureTimeTo);
-        return results.one().getLong(0);
-    }
-
-    @Override
-    public long readTransactionErrorCount(String serverRollup, String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo) {
-        ResultSet results = session.execute("select count(*) from trace_overall_error"
-                + " where server_rollup = ? and transaction_type = ? and transaction_name = ?"
-                + " and capture_time > ? and capture_time <= ?", serverRollup, transactionType,
-                transactionName, captureTimeFrom, captureTimeTo);
-        return results.one().getLong(0);
-    }
-
-    @Override
-    public List<TraceErrorPoint> readErrorPoints(ErrorMessageQuery query, long resolutionMillis,
-            long liveCaptureTime) {
-        // FIXME
-        return ImmutableList.of();
-    }
-
-    @Override
-    public Result<ErrorMessageCount> readErrorMessageCounts(ErrorMessageQuery query) {
-        // FIXME
-        return new Result<>(ImmutableList.<ErrorMessageCount>of(), false);
+        if (counts.size() <= limit) {
+            return ImmutableErrorMessageResult.builder()
+                    .addAllPoints(points)
+                    .counts(new Result<>(counts, false))
+                    .build();
+        } else {
+            return ImmutableErrorMessageResult.builder()
+                    .addAllPoints(points)
+                    .counts(new Result<>(counts.subList(0, limit), true))
+                    .build();
+        }
     }
 
     @Override
@@ -423,7 +559,8 @@ public class TraceDao implements TraceRepository {
         if (row == null) {
             return null;
         }
-        Trace.Header header = Trace.Header.parseFrom(ByteString.copyFrom(row.getBytes(0)));
+        ByteBuffer bytes = checkNotNull(row.getBytes(0));
+        Trace.Header header = Trace.Header.parseFrom(ByteString.copyFrom(bytes));
         results = session.execute("select count(*) from trace_entries where server_id = ?"
                 + " and trace_id = ?", serverId, traceId);
         Existence entriesExistence = results.one().getLong(0) == 0 ? Existence.NO : Existence.YES;
@@ -441,19 +578,21 @@ public class TraceDao implements TraceRepository {
         if (row == null) {
             return ImmutableList.of();
         }
-        return Messages.parseDelimitedFrom(row.getBytes(0), Trace.Entry.parser());
+        ByteBuffer bytes = checkNotNull(row.getBytes(0));
+        return Messages.parseDelimitedFrom(bytes, Trace.Entry.parser());
     }
 
     @Override
     public @Nullable Profile readProfile(String serverId, String traceId)
             throws InvalidProtocolBufferException {
-        ResultSet results = session.execute("select header from trace_profile where server_id = ?"
+        ResultSet results = session.execute("select profile from trace_profile where server_id = ?"
                 + " and trace_id = ?", serverId, traceId);
         Row row = results.one();
         if (row == null) {
             return null;
         }
-        return Profile.parseFrom(ByteString.copyFrom(row.getBytes(0)));
+        ByteBuffer bytes = checkNotNull(row.getBytes(0));
+        return Profile.parseFrom(ByteString.copyFrom(bytes));
     }
 
     @Override
@@ -462,28 +601,44 @@ public class TraceDao implements TraceRepository {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public long count(String serverRollup) {
-        // this is not currently supported (to avoid row key range query)
-        throw new UnsupportedOperationException();
-    }
-
-    private Result<TracePoint> processSlowPoints(int limit, ResultSet results) {
+    private Result<TracePoint> processPoints(ResultSet results, TracePointFilter filter,
+            int limit, boolean errorPoints) throws IOException {
         List<TracePoint> tracePoints = Lists.newArrayList();
         for (Row row : results) {
             // FIXME need to at least filter in-memory for now
-            String serverId = row.getString(0);
-            String traceId = row.getString(1);
-            long captureTime = row.getLong(2);
-            long durationNanos = row.getLong(3);
-            boolean error = row.getBool(4);
-            tracePoints.add(ImmutableTracePoint.builder()
-                    .serverId(serverId)
-                    .traceId(traceId)
-                    .captureTime(captureTime)
-                    .durationNanos(durationNanos)
-                    .error(error)
-                    .build());
+            int i = 0;
+            String serverId = checkNotNull(row.getString(i++));
+            String traceId = checkNotNull(row.getString(i++));
+            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long durationNanos = row.getLong(i++);
+            boolean error;
+            String errorMessage;
+            if (errorPoints) {
+                error = true;
+                // error points are defined by having an error message, so safe to checkNotNull
+                errorMessage = checkNotNull(row.getString(i++));
+            } else {
+                error = row.getBool(i++);
+                errorMessage = ""; // non-error query doesn't support filtering on error message
+            }
+            String user = Strings.nullToEmpty(row.getString(i++));
+            ByteBuffer attributeBytes = row.getBytes(i++);
+            List<Trace.Attribute> attrs =
+                    Messages.parseDelimitedFrom(attributeBytes, Trace.Attribute.parser());
+            Map<String, List<String>> attributes = attrs.stream().collect(
+                    Collectors.toMap(Trace.Attribute::getName, Trace.Attribute::getValueList));
+            if (filter.matchesDuration(durationNanos)
+                    && filter.matchesError(errorMessage)
+                    && filter.matchesUser(user)
+                    && filter.matchesAttributes(attributes)) {
+                tracePoints.add(ImmutableTracePoint.builder()
+                        .serverId(serverId)
+                        .traceId(traceId)
+                        .captureTime(captureTime)
+                        .durationNanos(durationNanos)
+                        .error(error)
+                        .build());
+            }
         }
         if (tracePoints.size() > limit) {
             tracePoints = tracePoints.subList(0, limit);
@@ -493,27 +648,10 @@ public class TraceDao implements TraceRepository {
         }
     }
 
-    private Result<TracePoint> processErrorPoints(int limit, ResultSet results) {
-        List<TracePoint> tracePoints = Lists.newArrayList();
-        for (Row row : results) {
-            // FIXME need to at least filter in-memory for now
-            String serverId = row.getString(0);
-            String traceId = row.getString(1);
-            long captureTime = row.getLong(2);
-            long durationNanos = row.getLong(3);
-            tracePoints.add(ImmutableTracePoint.builder()
-                    .serverId(serverId)
-                    .traceId(traceId)
-                    .captureTime(captureTime)
-                    .durationNanos(durationNanos)
-                    .error(true)
-                    .build());
-        }
-        if (tracePoints.size() > limit) {
-            tracePoints = tracePoints.subList(0, limit);
-            return new Result<>(tracePoints, true);
-        } else {
-            return new Result<>(tracePoints, false);
+    private static class MutableLong {
+        private long value;
+        private void increment() {
+            value++;
         }
     }
 }

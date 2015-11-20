@@ -30,8 +30,8 @@ public class TriggeredAlertDaoTest {
 
     @Before
     public void beforeEachTest() throws Exception {
-        dataSource = DataSource.createH2InMemory();
-        if (dataSource.getSchema().tableExists("triggered_alert")) {
+        dataSource = new DataSource();
+        if (dataSource.tableExists("triggered_alert")) {
             dataSource.execute("drop table triggered_alert");
         }
         triggeredAlertDao = new TriggeredAlertDao(dataSource);
