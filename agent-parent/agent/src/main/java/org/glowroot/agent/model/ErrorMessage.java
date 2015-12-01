@@ -53,6 +53,9 @@ public abstract class ErrorMessage {
         if (msg.isEmpty()) {
             msg = Strings.nullToEmpty(t.getMessage());
         }
+        if (msg.isEmpty()) {
+            msg = Strings.nullToEmpty(t.getClass().getName());
+        }
         return ImmutableErrorMessage.of(msg, buildThrowableInfo(t, null));
     }
 
