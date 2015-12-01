@@ -362,12 +362,10 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.util.concurrent.AbstractFuture$Listener");
         types.add("com.google.common.util.concurrent.AbstractFuture$SafeAtomicHelper");
         types.add("com.google.common.util.concurrent.AbstractFuture$SetFuture");
+        types.add("com.google.common.util.concurrent.AbstractFuture$SynchronizedHelper");
         types.add("com.google.common.util.concurrent.AbstractFuture$TrustedFuture");
         types.add("com.google.common.util.concurrent.AbstractFuture$UnsafeAtomicHelper");
         types.add("com.google.common.util.concurrent.AbstractFuture$UnsafeAtomicHelper$1");
-        types.add("com.google.common.util.concurrent.AbstractFuture$UnsafeAtomicHelperFactory");
-        types.add("com.google.common.util.concurrent.AbstractFuture$UnsafeAtomicHelperFactory$1");
-        types.add("com.google.common.util.concurrent.AbstractFuture$UnsafeAtomicHelperFactory$2");
         types.add("com.google.common.util.concurrent.AbstractFuture$Waiter");
         types.add("com.google.common.util.concurrent.AsyncFunction");
         types.add("com.google.common.util.concurrent.ExecutionError");
