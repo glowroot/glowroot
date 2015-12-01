@@ -15,13 +15,13 @@
  */
 package org.glowroot.central.storage;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
 
 import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -33,7 +33,6 @@ import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.PluginConfig;
 import org.glowroot.common.config.TransactionConfig;
 import org.glowroot.common.config.UserRecordingConfig;
-import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.config.AlertConfig;
 import org.glowroot.storage.repo.config.ImmutableAlertConfig;
@@ -52,7 +51,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     private static final long GAUGE_COLLECTION_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.gaugeCollectionIntervalMillis", 5000);
 
-    private static final ObjectMapper mapper = ObjectMappers.create();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     private final ConfigDao configDao;
 
@@ -60,11 +59,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     public ConfigRepositoryImpl(ConfigDao configDao) {
         this.configDao = configDao;
-        rollupConfigs = RollupConfig.buildRollupConfigs();
+        rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
     }
 
     @Override
-    public UserInterfaceConfig getUserInterfaceConfig() throws Exception {
+    public UserInterfaceConfig getUserInterfaceConfig() {
         UserInterfaceConfig config =
                 configDao.read(UI_KEY, ImmutableUserInterfaceConfig.class, mapper);
         if (config == null) {
@@ -74,16 +73,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public StorageConfig getStorageConfig() throws Exception {
-        StorageConfig config = configDao.read(STORAGE_KEY, ImmutableStorageConfig.class, mapper);
-        if (config == null) {
-            return ImmutableStorageConfig.builder().build();
-        }
-        return config;
-    }
-
-    @Override
-    public SmtpConfig getSmtpConfig() throws Exception {
+    public SmtpConfig getSmtpConfig() {
         SmtpConfig config = configDao.read(SMTP_KEY, ImmutableSmtpConfig.class, mapper);
         if (config == null) {
             return ImmutableSmtpConfig.builder().build();
@@ -92,7 +82,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<AlertConfig> getAlertConfigs(String serverRollup) throws Exception {
+    public List<AlertConfig> getAlertConfigs(String serverRollup) throws JsonProcessingException {
         List<ImmutableAlertConfig> configs = configDao.read(ALERTS_KEY,
                 new TypeReference<List<ImmutableAlertConfig>>() {}, mapper);
         if (configs == null) {
@@ -103,7 +93,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public @Nullable AlertConfig getAlertConfig(String serverRollup, String version)
-            throws Exception {
+            throws JsonProcessingException {
         for (AlertConfig alertConfig : getAlertConfigs(serverRollup)) {
             if (alertConfig.version().equals(version)) {
                 return alertConfig;
@@ -122,18 +112,16 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateStorageConfig(StorageConfig storageConfig, String priorVersion)
-            throws Exception {
-        configDao.write(STORAGE_KEY, storageConfig, mapper);
-    }
-
-    @Override
     public void updateSmtpConfig(SmtpConfig smtpConfig, String priorVersion) throws Exception {
+        if (!getSmtpConfig().version().equals(priorVersion)) {
+            throw new OptimisticLockException();
+        }
         configDao.write(SMTP_KEY, smtpConfig, mapper);
     }
 
     @Override
-    public void insertAlertConfig(String serverRollup, AlertConfig alertConfig) throws Exception {
+    public void insertAlertConfig(String serverRollup, AlertConfig alertConfig)
+            throws JsonProcessingException {
         List<AlertConfig> configs = Lists.newArrayList(getAlertConfigs(serverRollup));
         configs.add(alertConfig);
         configDao.write(ALERTS_KEY, configs, mapper);
@@ -141,7 +129,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void updateAlertConfig(String serverRollup, AlertConfig alertConfig, String priorVersion)
-            throws Exception {
+            throws JsonProcessingException {
         List<AlertConfig> configs = Lists.newArrayList(getAlertConfigs(serverRollup));
         boolean found = false;
         for (ListIterator<AlertConfig> i = configs.listIterator(); i.hasNext();) {
@@ -156,7 +144,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteAlertConfig(String serverRollup, String version) throws Exception {
+    public void deleteAlertConfig(String serverRollup, String version)
+            throws JsonProcessingException {
         List<AlertConfig> configs = Lists.newArrayList(getAlertConfigs(serverRollup));
         boolean found = false;
         for (ListIterator<AlertConfig> i = configs.listIterator(); i.hasNext();) {
@@ -181,7 +170,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public SecretKey getSecretKey() throws Exception {
+    public SecretKey getSecretKey() {
         throw new UnsupportedOperationException();
     }
 
@@ -226,59 +215,69 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public StorageConfig getStorageConfig() {
+        // this is needed for access to StorageConfig.rollupExpirationHours()
+        return ImmutableStorageConfig.builder().build();
+    }
+
+    @Override
     public void updateTransactionConfig(String serverId, TransactionConfig transactionConfig,
-            String priorVersion) throws Exception {
+            String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateUserRecordingConfig(String serverId, UserRecordingConfig userRecordingConfig,
-            String priorVersion) throws Exception {
+            String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateAdvancedConfig(String serverId, AdvancedConfig advancedConfig,
-            String priorVersion) throws Exception {
+            String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void updatePluginConfig(String serverId, PluginConfig pluginConfig, String priorVersion)
-            throws Exception {
+    public void updatePluginConfig(String serverId, PluginConfig pluginConfig,
+            String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void insertInstrumentationConfig(String serverId,
-            InstrumentationConfig instrumentationConfig) throws IOException {
+            InstrumentationConfig instrumentationConfig) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateInstrumentationConfig(String serverId,
-            InstrumentationConfig instrumentationConfig, String priorVersion) throws IOException {
+            InstrumentationConfig instrumentationConfig, String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void deleteInstrumentationConfig(String serverId, String version) throws IOException {
+    public void deleteInstrumentationConfig(String serverId, String version) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void insertGaugeConfig(String serverId, GaugeConfig gaugeConfig) throws Exception {
+    public void insertGaugeConfig(String serverId, GaugeConfig gaugeConfig) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void updateGaugeConfig(String serverId, GaugeConfig gaugeConfig, String priorVersion)
-            throws Exception {
+    public void updateGaugeConfig(String serverId, GaugeConfig gaugeConfig, String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void deleteGaugeConfig(String serverId, String version) throws IOException {
+    public void deleteGaugeConfig(String serverId, String version) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void updateStorageConfig(StorageConfig storageConfig, String priorVersion) {
         throw new UnsupportedOperationException();
     }
 }

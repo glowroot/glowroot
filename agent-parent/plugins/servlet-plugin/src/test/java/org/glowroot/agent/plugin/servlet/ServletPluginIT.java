@@ -228,7 +228,7 @@ public class ServletPluginIT {
     private static @Nullable String getDetailValue(Trace.Header header, String name) {
         for (Trace.DetailEntry detail : header.getDetailEntryList()) {
             if (detail.getName().equals(name)) {
-                return detail.getValueList().get(0).getSval();
+                return detail.getValueList().get(0).getString();
             }
         }
         return null;

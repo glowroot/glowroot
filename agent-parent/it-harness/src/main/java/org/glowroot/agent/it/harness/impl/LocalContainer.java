@@ -35,13 +35,10 @@ import org.glowroot.agent.MainEntryPoint;
 import org.glowroot.agent.impl.AdviceCache;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
-import org.glowroot.agent.init.GrpcServerWrapper;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.ConfigService;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TempDirs;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.OptionalInt;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
 import org.glowroot.agent.weaving.Advice;
 import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -56,18 +53,18 @@ public class LocalContainer implements Container {
     private final boolean shared;
 
     private volatile @Nullable IsolatedWeavingClassLoader isolatedWeavingClassLoader;
-    private final GrpcServerWrapper server;
-    private final TraceCollector traceCollector;
-    private final ConfigService configService;
+    private final @Nullable GrpcServerWrapper server;
+    private final @Nullable TraceCollector traceCollector;
+    private final @Nullable ConfigService configService;
     private final GlowrootAgentInit glowrootAgentInit;
 
     private volatile @Nullable Thread executingAppThread;
 
     public static LocalContainer create(File baseDir) throws Exception {
-        return new LocalContainer(baseDir, false, ImmutableMap.<String, String>of());
+        return new LocalContainer(baseDir, false, false, ImmutableMap.<String, String>of());
     }
 
-    public LocalContainer(@Nullable File baseDir, boolean shared,
+    public LocalContainer(@Nullable File baseDir, boolean shared, boolean fat,
             Map<String, String> extraProperties) throws Exception {
         if (baseDir == null) {
             this.baseDir = TempDirs.createTempDir("glowroot-test-basedir");
@@ -78,14 +75,22 @@ public class LocalContainer implements Container {
         }
         this.shared = shared;
 
-        traceCollector = new TraceCollector();
-
-        int collectorPort = getAvailablePort();
-        server = new GrpcServerWrapper(traceCollector, collectorPort);
+        int collectorPort;
+        if (fat) {
+            collectorPort = 0;
+            traceCollector = null;
+            server = null;
+        } else {
+            collectorPort = getAvailablePort();
+            traceCollector = new TraceCollector();
+            server = new GrpcServerWrapper(traceCollector, collectorPort);
+        }
         Map<String, String> properties = Maps.newHashMap();
         properties.put("glowroot.base.dir", this.baseDir.getAbsolutePath());
-        properties.put("glowroot.collector.host", "localhost");
-        properties.put("glowroot.collector.port", Integer.toString(collectorPort));
+        if (collectorPort != 0) {
+            properties.put("glowroot.collector.host", "localhost");
+            properties.put("glowroot.collector.port", Integer.toString(collectorPort));
+        }
         properties.putAll(extraProperties);
         List<Class<?>> bridgeClasses = ImmutableList.<Class<?>>of(AppUnderTest.class);
         IsolatedClassLoader midLoader = new IsolatedClassLoader(bridgeClasses);
@@ -108,7 +113,6 @@ public class LocalContainer implements Container {
         } finally {
             Thread.currentThread().setContextClassLoader(priorContextClassLoader);
         }
-        JavaagentMain.setTransactionSlowThresholdMillisToZero();
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         loader.setParentClassLoader(midLoader);
         glowrootAgentInit = checkNotNull(MainEntryPoint.getGlowrootAgentInit());
@@ -124,22 +128,26 @@ public class LocalContainer implements Container {
                 agentModule.getConfigService().getAdvancedConfig().timerWrapperMethods());
         loader.addBridgeClasses(bridgeClasses);
         isolatedWeavingClassLoader = loader.build();
-        configService = new LocalConfigService(
-                new ConfigUpdateServiceHelper(agentModule.getConfigService(), null));
+        configService = new ConfigServiceImpl(server, false);
+        // this is used to set slowThresholdMillis=0
+        glowrootAgentInit.getAgentModule().getConfigService().resetAllConfig();
     }
 
     @Override
     public ConfigService getConfigService() {
+        checkNotNull(configService);
         return configService;
     }
 
     @Override
     public void addExpectedLogMessage(String loggerName, String partialMessage) {
+        checkNotNull(traceCollector);
         traceCollector.addExpectedLogMessage(loggerName, partialMessage);
     }
 
     @Override
     public Trace execute(Class<? extends AppUnderTest> appClass) throws Exception {
+        checkNotNull(traceCollector);
         executeInternal(appClass);
         Trace trace = traceCollector.getCompletedTrace(10, SECONDS);
         traceCollector.clearTrace();
@@ -150,7 +158,7 @@ public class LocalContainer implements Container {
     public void executeNoExpectedTrace(Class<? extends AppUnderTest> appClass) throws Exception {
         executeInternal(appClass);
         Thread.sleep(10);
-        if (traceCollector.hasTrace()) {
+        if (traceCollector != null && traceCollector.hasTrace()) {
             throw new IllegalStateException("Trace was collected when none was expected");
         }
     }
@@ -166,18 +174,16 @@ public class LocalContainer implements Container {
 
     @Override
     public Trace getCollectedPartialTrace() throws InterruptedException {
+        checkNotNull(traceCollector);
         return traceCollector.getPartialTrace(10, SECONDS);
     }
 
     @Override
     public void checkAndReset() throws Exception {
         glowrootAgentInit.getAgentModule().getConfigService().resetAllConfig();
-        // setTransactionSlowThresholdMillis=0 is the default for testing
-        configService.updateTransactionConfig(
-                TransactionConfigUpdate.newBuilder()
-                        .setSlowThresholdMillis(OptionalInt.newBuilder().setValue(0))
-                        .build());
-        traceCollector.checkAndResetLogMessages();
+        if (traceCollector != null) {
+            traceCollector.checkAndResetLogMessages();
+        }
     }
 
     @Override
@@ -197,7 +203,9 @@ public class LocalContainer implements Container {
             return;
         }
         glowrootAgentInit.close();
-        server.close();
+        if (server != null) {
+            server.close();
+        }
         if (deleteBaseDirOnClose) {
             TempDirs.deleteRecursively(baseDir);
         }

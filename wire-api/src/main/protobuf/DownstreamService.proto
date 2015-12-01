@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "Config.proto";
+
 package org_glowroot_wire_api_model;
 
 option java_package = "org.glowroot.wire.api.model";
@@ -11,41 +13,169 @@ service DownstreamService {
 message ServerRequest {
   int64 request_id = 1;
   oneof message {
-    MBeanTreeRequest mbean_tree_request = 100;
+    ConfigUpdateRequest config_update_request = 200;
+    ReweaveRequest reweave_request = 201;
+    ThreadDumpRequest thread_dump_request = 300;
+    AvailableDiskSpaceRequest available_disk_space_request = 301;
+    HeapDumpRequest heap_dump_request = 302;
+    GcRequest gc_request = 303;
+    MBeanDumpRequest mbean_dump_request = 304;
   }
 }
 
 message ClientResponse {
   int64 request_id = 1;
   oneof message {
-    MBeanTreeResponse mbean_tree_response = 100;
+    Hello hello = 100;
+    ConfigUpdateResponse config_update_response = 200;
+    ReweaveResponse reweave_response = 201;
+    ThreadDumpResponse thread_dump_response = 300;
+    AvailableDiskSpaceResponse available_disk_space_response = 301;
+    HeapDumpResponse heap_dump_response = 302;
+    GcResponse gc_response = 303;
+    MBeanDumpResponse mbean_dump_response = 304;
+
+    UnknownRequestResponse unknown_request_response = 10000;
+    ExceptionResponse exception_response = 10001;
   }
 }
 
-message MBeanTreeRequest {
-  repeated string include_attrs_for_object_name = 1;
+message Hello {
+  string server_id = 1;
 }
 
-message MBeanTreeResponse {
-  repeated MBeanNode root_node = 1;
+message ConfigUpdateRequest {
+  Config config = 1;
 }
 
-message MBeanNode {
-  string object_name = 1;
-  repeated MBeanAttribute attribute = 2;
-  repeated MBeanNode child_node = 3;
+message ConfigUpdateResponse {
 }
 
-message MBeanAttribute {
-  string name = 1;
-  MBeanValue value = 2;
+message ReweaveRequest {
 }
 
-message MBeanValue {
-  oneof val {
-    string sval = 1;
-    double dval = 2;
-    int64 lval = 3;
-    bool bval = 4;
+message ReweaveResponse {
+  int32 class_update_count = 1;
+}
+
+message ThreadDumpRequest {
+}
+
+message ThreadDumpResponse {
+  ThreadDump thread_dump = 1;
+}
+
+message AvailableDiskSpaceRequest {
+  string directory = 1;
+}
+
+message AvailableDiskSpaceResponse {
+  int64 available_bytes = 1;
+}
+
+message HeapDumpRequest {
+  string directory = 1;
+}
+
+message HeapDumpResponse {
+  HeapDumpFileInfo heap_dump_file_info = 1;
+}
+
+message GcRequest {
+}
+
+message GcResponse {
+}
+
+message MBeanDumpRequest {
+  MBeanDumpKind kind = 1;
+  repeated string object_name = 2; // not relevant for ALL_MBEANS_WITH_ATTRS
+}
+
+message MBeanDumpResponse {
+  MBeanDump mbean_dump = 1;
+}
+
+message UnknownRequestResponse {
+}
+
+message ExceptionResponse {
+}
+
+message ThreadDump {
+
+  repeated ThreadInfo matched_thread = 1;
+  repeated ThreadInfo unmatched_thread = 2;
+  ThreadInfo thread_dumping_thread = 3;
+
+  message ThreadInfo {
+    string name = 1;
+    string state = 2;
+    string lock_name = 3;
+    repeated StackTraceElement stack_trace_element = 4;
+
+    string transaction_type = 100;
+    string transaction_name = 101;
+    int64 transaction_total_nanos = 102;
+    string trace_id = 103;
+  }
+
+  message StackTraceElement {
+    string class_name = 1;
+    string method_name = 2;
+    string file_name = 3;
+    // sint since can be negative
+    sint32 line_number = 4;
+  }
+}
+
+message HeapDumpFileInfo {
+  string file_path = 1;
+  int64 file_size_bytes = 2;
+}
+
+enum MBeanDumpKind {
+  ALL_MBEANS_INCLUDE_ATTRIBUTES = 0;
+  ALL_MBEANS_INCLUDE_ATTRIBUTES_FOR_SOME = 1;
+  SOME_MBEANS_INCLUDE_ATTRIBUTES = 2;
+}
+
+message MBeanDump {
+
+  repeated MBeanInfo mbean_info = 1;
+
+  message MBeanInfo {
+    string object_name = 1;
+    repeated MBeanAttribute attribute = 2;
+  }
+
+  message MBeanAttribute {
+    string name = 1;
+    MBeanValue value = 2;
+  }
+
+  message MBeanValue {
+    bool null = 1;
+    oneof val {
+      string string = 2;
+      double double = 3;
+      int64 long = 4;
+      bool boolean = 5;
+      MBeanValueList list = 10;
+      MBeanValueMap map = 11;
+    }
+  }
+
+  message MBeanValueList {
+    repeated MBeanValue value = 1;
+  }
+
+  message MBeanValueMap {
+    repeated MBeanValueMapEntry entry = 1;
+  }
+
+  message MBeanValueMapEntry {
+    string key = 1;
+    MBeanValue value = 2;
   }
 }

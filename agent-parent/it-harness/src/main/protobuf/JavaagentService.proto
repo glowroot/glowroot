@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-import "Common.proto";
-
 package org_glowroot_agent_it_harness;
 
 option java_package = "org.glowroot.agent.it.harness.grpc";
@@ -27,4 +25,7 @@ message ExpectedLogMessage {
 message LogCount {
   int32 unexpectedCount = 1;
   int32 expectedButNotLoggedCount = 2;
+}
+
+message Void {
 }

@@ -130,7 +130,6 @@ class LayoutService {
                     .addAllTransactionTypes(transactionTypes)
                     .build());
         }
-
         return ImmutableLayout.builder()
                 .central(central)
                 .footerMessage("Glowroot version " + version)

@@ -25,8 +25,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.InstrumentationConfig;
 import org.glowroot.agent.tests.ConfiguredInstrumentationIT;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.InstrumentationConfig;
 
 public class ReweavePointcutsIT extends ConfiguredInstrumentationIT {
 

@@ -25,6 +25,16 @@
       them transitively from glowroot-agent (during mvn test) or get them from shaded glowroot-agent 
       (during mvn package) -->
     <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-wire-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
       <!-- immutables is only needed at compile time -->
@@ -207,9 +217,6 @@
             <argument>--plugin=protoc-gen-grpc-java=${project.build.directory}/dependency/protoc-gen-grpc-java-${grpc.version}-${os.detected.classifier}.exe</argument>
             <argument>--java_out=${project.build.directory}/generated-sources/protobuf</argument>
             <argument>--grpc-java_out=${project.build.directory}/generated-sources/protobuf</argument>
-            <argument>src/main/protobuf/Common.proto</argument>
-            <argument>src/main/protobuf/ConfigUpdate.proto</argument>
-            <argument>src/main/protobuf/ConfigUpdateService.proto</argument>
             <argument>src/main/protobuf/JavaagentService.proto</argument>
           </arguments>
         </configuration>

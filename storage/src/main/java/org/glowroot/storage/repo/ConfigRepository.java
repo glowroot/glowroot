@@ -123,7 +123,7 @@ public interface ConfigRepository {
 
     long getGaugeCollectionIntervalMillis();
 
-    ImmutableList<RollupConfig> getRollupConfigs();
+    List<RollupConfig> getRollupConfigs();
 
     SecretKey getSecretKey() throws Exception;
 
@@ -141,7 +141,7 @@ public interface ConfigRepository {
         public abstract long intervalMillis();
         public abstract long viewThresholdMillis();
 
-        public static ImmutableList<RollupConfig> buildRollupConfigs() {
+        public static List<RollupConfig> buildRollupConfigs() {
             return ImmutableList.<RollupConfig>of(
                     // default rollup level #0 fixed interval is 1 minute,
                     // making default view threshold 15 min

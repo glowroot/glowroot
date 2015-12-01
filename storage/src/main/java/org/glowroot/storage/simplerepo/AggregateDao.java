@@ -145,7 +145,7 @@ public class AggregateDao implements AggregateRepository {
         this.configRepository = configRepository;
         this.transactionTypeDao = transactionTypeDao;
 
-        ImmutableList<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         for (int i = 0; i < rollupConfigs.size(); i++) {
             String overallTableName = "aggregate_overall_rollup_" + castUntainted(i);
             dataSource.syncTable(overallTableName, overallAggregatePointColumns);
@@ -191,7 +191,7 @@ public class AggregateDao implements AggregateRepository {
             }
         }
         synchronized (rollupLock) {
-            ImmutableList<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+            List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
             for (int i = 1; i < rollupConfigs.size(); i++) {
                 RollupConfig rollupConfig = rollupConfigs.get(i);
                 long safeRollupTime = RollupLevelService.getSafeRollupTime(captureTime,

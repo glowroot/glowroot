@@ -20,7 +20,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Executors;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
+import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.Request;
+import com.ning.http.client.Response;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
@@ -33,8 +38,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.it.harness.model.ConfigUpdate.OptionalInt;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
 import org.glowroot.agent.webdriver.tests.jvm.JvmSidebar;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -46,11 +49,23 @@ public class BasicSmokeIT extends WebDriverIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container.getConfigService().updateTransactionConfig(
-                TransactionConfigUpdate.newBuilder()
-                        .setSlowThresholdMillis(OptionalInt.newBuilder().setValue(0))
-                        .setProfilingIntervalMillis(OptionalInt.newBuilder().setValue(10))
-                        .build());
+        AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+        Request request = asyncHttpClient
+                .prepareGet("http://localhost:" + getUiPort() + "/backend/config/transaction")
+                .build();
+        Response response = asyncHttpClient.executeRequest(request).get();
+        JsonNode responseNode = new ObjectMapper().readTree(response.getResponseBody());
+        String version = responseNode.get("version").asText();
+        request = asyncHttpClient
+                .preparePost("http://localhost:" + getUiPort() + "/backend/config/transaction")
+                .setBody("{\"slowThresholdMillis\":0,\"profilingIntervalMillis\":10,\"version\":\""
+                        + version + "\"}")
+                .build();
+        int status = asyncHttpClient.executeRequest(request).get().getStatusCode();
+        asyncHttpClient.close();
+        if (status != 200) {
+            throw new AssertionError("Unexpected status: " + status);
+        }
         Executors.newSingleThreadExecutor().execute(new Runnable() {
             @Override
             public void run() {
@@ -179,7 +194,7 @@ public class BasicSmokeIT extends WebDriverIT {
             throw new IOException("Could not delete heap dump file: " + heapDumpFileName);
         }
         Utils.withWait(driver, By.xpath("//button[normalize-space()='Check disk space']")).click();
-        Utils.withWait(driver, By.xpath("//div[@ng-show='availableDiskSpace']"));
+        Utils.withWait(driver, By.xpath("//div[@ng-show='availableDiskSpaceBytes !== undefined']"));
 
         jvmSidebar.getMBeanTreeLink().click();
         List<WebElement> elements = new WebDriverWait(driver, 30)

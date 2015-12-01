@@ -15,8 +15,8 @@
  */
 package org.glowroot.agent.tests;
 
-import org.glowroot.agent.it.harness.model.ConfigUpdate.OptionalBool;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.OptionalInt;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.OptionalBool;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.OptionalInt;
 
 public class ProtoOptional {
 

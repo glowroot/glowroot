@@ -15,6 +15,8 @@
  */
 package org.glowroot.storage.repo.helper;
 
+import java.util.List;
+
 import com.google.common.collect.ImmutableList;
 
 import org.glowroot.common.util.Clock;
@@ -38,7 +40,7 @@ public class RollupLevelService {
         long timeAgoMillis = clock.currentTimeMillis() - captureTimeFrom;
         ImmutableList<Integer> rollupExpirationHours =
                 configRepository.getStorageConfig().rollupExpirationHours();
-        ImmutableList<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         for (int i = 0; i < rollupConfigs.size() - 1; i++) {
             RollupConfig nextRollupConfig = rollupConfigs.get(i + 1);
             if (millis < nextRollupConfig.viewThresholdMillis()
@@ -55,7 +57,7 @@ public class RollupLevelService {
         long timeAgoMillis = clock.currentTimeMillis() - captureTimeFrom;
         ImmutableList<Integer> rollupExpirationHours =
                 configRepository.getStorageConfig().rollupExpirationHours();
-        ImmutableList<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         // gauge point rollup level 0 shares rollup level 1's expiration
         if (millis < rollupConfigs.get(0).viewThresholdMillis()
                 && HOURS.toMillis(rollupExpirationHours.get(0)) > timeAgoMillis) {
@@ -76,7 +78,7 @@ public class RollupLevelService {
         long timeAgoMillis = clock.currentTimeMillis() - captureTimeFrom;
         ImmutableList<Integer> rollupExpirationHours =
                 configRepository.getStorageConfig().rollupExpirationHours();
-        ImmutableList<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         for (int i = 0; i < rollupConfigs.size() - 1; i++) {
             RollupConfig currRollupConfig = rollupConfigs.get(i);
             RollupConfig nextRollupConfig = rollupConfigs.get(i + 1);

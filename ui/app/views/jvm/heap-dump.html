@@ -65,14 +65,15 @@
           </div>
         </div>
       </div>
+      <!-- checking against undefined so it will still show when availableDiskSpaceBytes === 0 -->
       <div class="form-group gt-form-buttons"
-           ng-show="availableDiskSpace">
+           ng-show="availableDiskSpaceBytes !== undefined">
         <div class="col-lg-offset-2 col-lg-9">
           <div class="well">
             <table class="gt-heap-dump-response">
               <tr>
                 <td>Free disk space</td>
-                <td><strong>{{availableDiskSpace | gtBytes}}</strong></td>
+                <td><strong>{{availableDiskSpaceBytes | gtBytes}}</strong></td>
               </tr>
             </table>
           </div>
@@ -86,11 +87,11 @@
               <tr>
                 <td class="gt-nowrap">Heap dump</td>
                 <!-- break-all is for long paths with no spaces or hyphens -->
-                <td><strong style="word-break: break-all;">{{heapDumpResponse.filename}}</strong></td>
+                <td><strong style="word-break: break-all;">{{heapDumpResponse.filePath}}</strong></td>
               </tr>
               <tr>
                 <td class="gt-nowrap">File size</td>
-                <td><strong>{{heapDumpResponse.size | gtBytes}}</strong></td>
+                <td><strong>{{heapDumpResponse.fileSizeBytes | gtBytes}}</strong></td>
               </tr>
             </table>
           </div>

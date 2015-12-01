@@ -28,14 +28,7 @@ import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.EventLoopGroup;
 
-import org.glowroot.agent.MainEntryPoint;
-import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.init.AgentModule;
-import org.glowroot.agent.it.harness.grpc.ConfigUpdateServiceGrpc;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc;
-import org.glowroot.common.config.ImmutableTransactionConfig;
-import org.glowroot.common.config.TransactionConfig;
-import org.glowroot.common.live.LiveWeavingService;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -49,14 +42,7 @@ public class JavaagentMain {
         ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
         new Thread(new SocketHeartbeat(objectOut)).start();
 
-        // transactionSlowThresholdMillis=0 is the default for testing
-        setTransactionSlowThresholdMillisToZero();
         int javaagentServicePort = Integer.parseInt(args[1]);
-        AgentModule agentModule = MainEntryPoint.getGlowrootAgentInit().getAgentModule();
-        ConfigService configService = agentModule.getConfigService();
-        LiveWeavingService liveWeavingService = agentModule.getLiveWeavingService();
-        ConfigUpdateServiceHelper helper =
-                new ConfigUpdateServiceHelper(configService, liveWeavingService);
         JavaagentServiceImpl javaagentService = new JavaagentServiceImpl();
         final EventLoopGroup bossEventLoopGroup = EventLoopGroups.create("Glowroot-grpc-boss-ELG");
         final EventLoopGroup workerEventLoopGroup =
@@ -73,8 +59,6 @@ public class JavaagentMain {
                 .workerEventLoopGroup(workerEventLoopGroup)
                 .executor(executor)
                 .addService(JavaagentServiceGrpc.bindService(javaagentService))
-                .addService(
-                        ConfigUpdateServiceGrpc.bindService(new ConfigUpdateServiceImpl(helper)))
                 .build()
                 .start();
         javaagentService.setServerCloseable(new Callable</*@Nullable*/Void>() {
@@ -109,19 +93,6 @@ public class JavaagentMain {
         }
         // non-daemon threads started above keep jvm alive after main returns
         Thread.sleep(Long.MAX_VALUE);
-    }
-
-    static void setTransactionSlowThresholdMillisToZero() throws Exception {
-        ConfigService configService =
-                MainEntryPoint.getGlowrootAgentInit().getAgentModule().getConfigService();
-        TransactionConfig config = configService.getTransactionConfig();
-        // conditional check is needed to prevent config file timestamp update when testing
-        // ConfigFileLastModifiedTest.shouldNotUpdateFileOnStartupIfNoChanges()
-        if (config.slowThresholdMillis() != 0) {
-            TransactionConfig updatedConfig = ImmutableTransactionConfig.builder().copyFrom(config)
-                    .slowThresholdMillis(0).build();
-            configService.updateTransactionConfig(updatedConfig);
-        }
     }
 
     private static void timerMarkerOne() throws InterruptedException {

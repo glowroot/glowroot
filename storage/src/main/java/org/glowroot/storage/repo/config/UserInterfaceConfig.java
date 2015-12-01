@@ -37,6 +37,7 @@ public abstract class UserInterfaceConfig {
     }
 
     @Value.Default
+    @SuppressWarnings("immutables")
     public ImmutableList<Double> defaultDisplayedPercentiles() {
         return ImmutableList.of(50.0, 95.0, 99.0);
     }

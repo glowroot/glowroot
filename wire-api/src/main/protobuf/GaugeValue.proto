@@ -7,8 +7,9 @@ option java_package = "org.glowroot.wire.api.model";
 message GaugeValue {
   string gauge_name = 1;
   int64 capture_time = 2;
-  // for counter gauges, the value is the delta of the counter over the past interval_nanos
+  // for counter gauges, value is the "average delta per second" of the counter, and weight is the
+  // number of nanoseconds over which this average delta was calculated
+  // for non-counter gauges, value is just the gauge value, and weight is 1
   double value = 3;
-  // interval_nanos is only used for counter gauges
-  int64 interval_nanos = 4;
+  int64 weight = 4;
 }

@@ -272,8 +272,9 @@ public class TraceDao implements TraceRepository {
         }
     }
 
-    private static int bindQueryAndFilter(PreparedStatement preparedStatement, int i,
+    private static int bindQueryAndFilter(PreparedStatement preparedStatement, int startIndex,
             TraceQuery query, ErrorMessageFilter filter) throws SQLException {
+        int i = startIndex;
         preparedStatement.setString(i++, query.transactionType());
         String transactionName = query.transactionName();
         if (transactionName != null) {

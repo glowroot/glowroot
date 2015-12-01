@@ -77,8 +77,8 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         grpcAppender.start();
         attachGrpcAppender(grpcAppender);
 
-        agentModule = new AgentModule(clock, ticker, pluginCache, configService, collectorProxy,
-                instrumentation, baseDir, jbossModules);
+        final AgentModule agentModule = new AgentModule(clock, ticker, pluginCache, configService,
+                collectorProxy, instrumentation, baseDir, jbossModules);
 
         NettyWorkaround.run(instrumentation, new Callable</*@Nullable*/Void>() {
             @Override
@@ -105,12 +105,16 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                 // GlowrootThinAgentInit.init() should not be called with null collectorHost
                 checkNotNull(collectorHost);
                 GrpcCollector grpcCollector =
-                        new GrpcCollector(serverId, collectorHost, collectorPort);
+                        new GrpcCollector(serverId, collectorHost, collectorPort,
+                                new ConfigUpdateService(configService,
+                                        agentModule.getLiveWeavingService()),
+                                agentModule.getLiveJvmService());
                 collectorProxy.setInstance(grpcCollector);
                 grpcCollector.collectJvmInfo(JvmInfoCreator.create());
                 return null;
             }
         });
+        this.agentModule = agentModule;
     }
 
     @Override

@@ -24,6 +24,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
@@ -33,10 +34,7 @@ import com.google.common.primitives.Longs;
 import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.model.Transaction;
-import org.glowroot.common.live.ImmutableAllThreads;
-import org.glowroot.common.live.ImmutableOneThread;
-import org.glowroot.common.live.LiveJvmService.AllThreads;
-import org.glowroot.common.live.LiveJvmService.OneThread;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -51,7 +49,7 @@ class ThreadDumpService {
         this.transactionCollector = transactionCollector;
     }
 
-    AllThreads getAllThreads() {
+    ThreadDump getThreadDump() {
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
         Map<Long, Transaction> transactionsBefore = Maps.newHashMap();
         for (Transaction transaction : transactionRegistry.getTransactions()) {
@@ -84,47 +82,44 @@ class ThreadDumpService {
         // sort descending by stack trace length
         Collections.sort(unmatchedThreadInfos, new UnmatchedThreadInfoOrdering());
 
-        List<OneThread> matchedThreads = Lists.newArrayList();
+        ThreadDump.Builder builder = ThreadDump.newBuilder();
         for (ThreadInfo threadInfo : matchedThreadInfos) {
             Transaction matchedTransaction = matchedTransactions.get(threadInfo.getThreadId());
-            matchedThreads.add(createOneThread(threadInfo, matchedTransaction));
+            builder.addMatchedThread(createThreadInfo(threadInfo, matchedTransaction));
         }
-
-        List<OneThread> unmatchedThreads = Lists.newArrayList();
         for (ThreadInfo threadInfo : unmatchedThreadInfos) {
-            unmatchedThreads.add(createOneThread(threadInfo, null));
+            builder.addUnmatchedThread(createThreadInfo(threadInfo, null));
         }
-
-        OneThread currentThread = null;
         if (currentThreadInfo != null) {
             Transaction matchedTransaction =
                     matchedTransactions.get(currentThreadInfo.getThreadId());
-            currentThread = createOneThread(currentThreadInfo, matchedTransaction);
+            builder.setThreadDumpingThread(
+                    createThreadInfo(currentThreadInfo, matchedTransaction));
         }
-
-        return ImmutableAllThreads.builder()
-                .matchedThreads(matchedThreads)
-                .unmatchedThreads(unmatchedThreads)
-                .currentThread(currentThread)
-                .build();
+        return builder.build();
     }
 
-    private OneThread createOneThread(ThreadInfo threadInfo,
+    private ThreadDump.ThreadInfo createThreadInfo(ThreadInfo threadInfo,
             @Nullable Transaction matchedTransaction) {
-        ImmutableOneThread.Builder builder = ImmutableOneThread.builder();
-        builder.name(threadInfo.getThreadName());
-        builder.state(threadInfo.getThreadState().name());
-        builder.lockName(threadInfo.getLockName());
+        ThreadDump.ThreadInfo.Builder builder = ThreadDump.ThreadInfo.newBuilder();
+        builder.setName(threadInfo.getThreadName());
+        builder.setState(threadInfo.getThreadState().name());
+        builder.setLockName(Strings.nullToEmpty(threadInfo.getLockName()));
         for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
-            builder.addStackTraceElements(stackTraceElement.toString());
+            builder.addStackTraceElement(
+                    ThreadDump.StackTraceElement.newBuilder()
+                            .setClassName(stackTraceElement.getClassName())
+                            .setMethodName(Strings.nullToEmpty(stackTraceElement.getMethodName()))
+                            .setFileName(Strings.nullToEmpty(stackTraceElement.getFileName()))
+                            .setLineNumber(stackTraceElement.getLineNumber()));
         }
 
         if (matchedTransaction != null) {
-            builder.transactionType(matchedTransaction.getTransactionType());
-            builder.transactionName(matchedTransaction.getTransactionName());
-            builder.transactionTotalNanos(matchedTransaction.getDurationNanos());
+            builder.setTransactionType(matchedTransaction.getTransactionType());
+            builder.setTransactionName(matchedTransaction.getTransactionName());
+            builder.setTransactionTotalNanos(matchedTransaction.getDurationNanos());
             if (transactionCollector.shouldStoreSlow(matchedTransaction)) {
-                builder.traceId(matchedTransaction.getId());
+                builder.setTraceId(matchedTransaction.getId());
             }
         }
         return builder.build();

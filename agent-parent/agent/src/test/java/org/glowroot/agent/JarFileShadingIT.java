@@ -39,12 +39,10 @@ public class JarFileShadingIT {
         List<String> acceptableEntries = Lists.newArrayList();
         acceptableEntries.add("glowroot\\..*");
         acceptableEntries.add("org/");
-        acceptableEntries.add("org/glowroot/.*");
+        acceptableEntries.add("org/glowroot/");
+        acceptableEntries.add("org/glowroot/agent/.*");
         acceptableEntries.add("META-INF/");
         acceptableEntries.add("META-INF/maven/.*");
-        acceptableEntries.add("META-INF/glowroot\\..*");
-        acceptableEntries.add("META-INF/services/");
-        acceptableEntries.add("META-INF/services/org.glowroot\\..*");
         acceptableEntries.add("META-INF/MANIFEST\\.MF");
         acceptableEntries.add("META-INF/LICENSE");
         acceptableEntries.add("META-INF/NOTICE");

@@ -42,8 +42,8 @@ class ChunkedInputs {
     }
 
     static ChunkedInput<HttpContent> fromChunkSourceToZipFileDownload(ChunkSource chunkSource,
-            String filename) throws IOException {
-        return new ZipFileChunkedInput(chunkSource, filename);
+            String fileName) throws IOException {
+        return new ZipFileChunkedInput(chunkSource, fileName);
     }
 
     private ChunkedInputs() {}
@@ -138,11 +138,11 @@ class ChunkedInputs {
         private boolean firstChunk = true;
         private boolean closed;
 
-        private ZipFileChunkedInput(ChunkSource chunkSource, String filename) throws IOException {
+        private ZipFileChunkedInput(ChunkSource chunkSource, String fileName) throws IOException {
             byteBuf = Unpooled.buffer();
             bbos = new ByteBufOutputStream(byteBuf);
             ZipOutputStream zipOut = new ZipOutputStream(bbos);
-            zipOut.putNextEntry(new ZipEntry(filename + ".html"));
+            zipOut.putNextEntry(new ZipEntry(fileName + ".html"));
             zipWriter = new OutputStreamWriter(zipOut, Charsets.UTF_8);
             chunkCopier = chunkSource.getCopier(zipWriter);
         }

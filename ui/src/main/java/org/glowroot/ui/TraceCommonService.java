@@ -98,7 +98,7 @@ class TraceCommonService {
         if (trace != null) {
             Trace.Header header = trace.getHeader();
             return ImmutableTraceExport.builder()
-                    .fileName(getFilename(header))
+                    .fileName(getFileName(header))
                     .headerJson(toJsonLiveHeader(header))
                     .entriesJson(toJson(trace.getEntryList()))
                     .profileJson(toJson(trace.getProfile()))
@@ -110,7 +110,7 @@ class TraceCommonService {
             return null;
         }
         ImmutableTraceExport.Builder builder = ImmutableTraceExport.builder()
-                .fileName(getFilename(header.header()))
+                .fileName(getFileName(header.header()))
                 .headerJson(toJsonRepoHeader(header));
         if (header.entriesExistence() == Existence.YES) {
             builder.entriesJson(toJson(traceRepository.readEntries(serverId, traceId)));
@@ -311,17 +311,17 @@ class TraceCommonService {
 
     private static void writeValue(Trace.DetailValue value, JsonGenerator jg) throws IOException {
         switch (value.getValCase()) {
-            case SVAL:
-                jg.writeString(value.getSval());
+            case STRING:
+                jg.writeString(value.getString());
                 break;
-            case DVAL:
-                jg.writeNumber(value.getDval());
+            case DOUBLE:
+                jg.writeNumber(value.getDouble());
                 break;
-            case LVAL:
-                jg.writeNumber(value.getLval());
+            case LONG:
+                jg.writeNumber(value.getLong());
                 break;
-            case BVAL:
-                jg.writeBoolean(value.getBval());
+            case BOOLEAN:
+                jg.writeBoolean(value.getBoolean());
                 break;
             default:
                 throw new IllegalStateException("Unexpected detail value: " + value.getValCase());
@@ -389,7 +389,7 @@ class TraceCommonService {
                 stackTraceElement.getLineNumber()).toString());
     }
 
-    private static String getFilename(Trace.Header header) {
+    private static String getFileName(Trace.Header header) {
         return "trace-" + new SimpleDateFormat("yyyyMMdd-HHmmss-SSS").format(header.getStartTime());
     }
 

@@ -31,9 +31,9 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.AdvancedConfigUpdate;
 import org.glowroot.agent.tests.app.LevelOne;
 import org.glowroot.agent.tests.app.LogError;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.AdvancedConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -63,7 +63,7 @@ public class MaxEntriesLimitIT {
     @Test
     public void shouldReadIsLimitExceededMarker() throws Exception {
         // given
-        container.getConfigService().updateAdvancedConfig(AdvancedConfigUpdate.newBuilder()
+        container.getConfigService().updateAdvancedConfig(AdvancedConfig.newBuilder()
                 .setMaxTraceEntriesPerTransaction(ProtoOptional.of(100))
                 .setImmediatePartialStoreThresholdSeconds(ProtoOptional.of(1))
                 .build());
@@ -95,7 +95,7 @@ public class MaxEntriesLimitIT {
         assertThat(header.getEntryLimitExceeded()).isTrue();
 
         // part 2 of this test, extend the max trace entries limit in the middle of transaction
-        container.getConfigService().updateAdvancedConfig(AdvancedConfigUpdate.newBuilder()
+        container.getConfigService().updateAdvancedConfig(AdvancedConfig.newBuilder()
                 .setMaxTraceEntriesPerTransaction(ProtoOptional.of(200))
                 .build());
         stopwatch.stop().reset().start();
@@ -124,7 +124,7 @@ public class MaxEntriesLimitIT {
     @Test
     public void shouldReadLimitBypassedTraceEntries() throws Exception {
         // given
-        container.getConfigService().updateAdvancedConfig(AdvancedConfigUpdate.newBuilder()
+        container.getConfigService().updateAdvancedConfig(AdvancedConfig.newBuilder()
                 .setMaxTraceEntriesPerTransaction(ProtoOptional.of(100))
                 .build());
         // when

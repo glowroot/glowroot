@@ -37,7 +37,7 @@ public class TransactionTypeDao implements TransactionTypeRepository {
 
     private final PreparedStatement insertPS;
 
-    public TransactionTypeDao(Session session) throws Exception {
+    public TransactionTypeDao(Session session) {
         this.session = session;
 
         session.execute("create table if not exists transaction_type (one int,"

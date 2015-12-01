@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.live;
+package org.glowroot.ui;
 
 import java.util.List;
 
 import javax.management.ObjectName;
 
 import org.junit.Test;
+
+import org.glowroot.ui.ObjectNames;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

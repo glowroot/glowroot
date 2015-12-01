@@ -29,7 +29,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.AdvancedConfigUpdate;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.AdvancedConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -81,7 +81,7 @@ public class TimerIT {
     public void shouldReadActiveTimers() throws Exception {
         // given
         container.getConfigService().updateAdvancedConfig(
-                AdvancedConfigUpdate.newBuilder()
+                AdvancedConfig.newBuilder()
                         .setImmediatePartialStoreThresholdSeconds(ProtoOptional.of(1))
                         .build());
         // when

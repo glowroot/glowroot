@@ -13,10 +13,10 @@ Transaction duration: {{nanosToMillis transactionDuration}} milliseconds {{#if t
 {{#ifBlocked state}}        - blocked on {{lockName}}
 {{/ifBlocked}}{{#ifWaiting state}}{{#if lockName}}        - waiting on {{lockName}}
 {{/if}}{{/ifWaiting}}{{#each stackTraceElements}}        {{.}}
-{{/each}}<br>{{/each}}{{/if}}{{#if currentThread}}<strong>Thread dump request thread</strong> (producing this thread dump):<br>
-"{{currentThread/name}}"
-&nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{currentThread/state}}
-{{#ifBlocked currentThread/state}}        - blocked on {{currentThread/lockName}}
-{{/ifBlocked}}{{#ifWaiting currentThread/state}}{{#if currentThread/lockName}}        - waiting on {{currentThread/lockName}}
-{{/if}}{{/ifWaiting}}{{#each currentThread/stackTraceElements}}        {{.}}
+{{/each}}<br>{{/each}}{{/if}}{{#if threadDumpingThread}}<strong>Thread dumping thread</strong> (producing this thread dump):<br>
+"{{threadDumpingThread/name}}"
+&nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{threadDumpingThread/state}}
+{{#ifBlocked threadDumpingThread/state}}        - blocked on {{threadDumpingThread/lockName}}
+{{/ifBlocked}}{{#ifWaiting threadDumpingThread/state}}{{#if threadDumpingThread/lockName}}        - waiting on {{threadDumpingThread/lockName}}
+{{/if}}{{/ifWaiting}}{{#each threadDumpingThread/stackTraceElements}}        {{.}}
 {{/each}}{{/if}}

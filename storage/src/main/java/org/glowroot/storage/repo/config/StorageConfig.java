@@ -39,6 +39,7 @@ public abstract class StorageConfig {
     // currently aggregate expiration should be at least as big as trace expiration
     // errors/messages page depends on this for calculating error percentage when using the filter
     @Value.Default
+    @SuppressWarnings("immutables")
     public ImmutableList<Integer> rollupExpirationHours() {
         return DEFAULT_ROLLUP_EXPIRATION_HOURS;
     }
@@ -49,6 +50,7 @@ public abstract class StorageConfig {
     }
 
     @Value.Default
+    @SuppressWarnings("immutables")
     public ImmutableList<Integer> rollupCappedDatabaseSizesMb() {
         return DEFAULT_CAPPED_DATABASE_SIZES_MB;
     }

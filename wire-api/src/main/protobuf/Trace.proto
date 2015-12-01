@@ -56,10 +56,10 @@ message Trace {
 
   message DetailValue {
     oneof val {
-      string sval = 1;
-      double dval = 2;
-      int64 lval = 3;
-      bool bval = 4;
+      string string = 1;
+      double double = 2;
+      int64 long = 3;
+      bool boolean = 4;
     }
   }
 

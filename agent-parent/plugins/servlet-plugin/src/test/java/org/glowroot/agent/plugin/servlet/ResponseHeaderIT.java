@@ -216,11 +216,11 @@ public class ResponseHeaderIT {
         for (Trace.DetailEntry detail : found.getChildEntryList()) {
             List<Trace.DetailValue> values = detail.getValueList();
             if (values.size() == 1) {
-                responseHeaders.put(detail.getName(), values.get(0).getSval());
+                responseHeaders.put(detail.getName(), values.get(0).getString());
             } else {
                 List<String> vals = Lists.newArrayList();
                 for (Trace.DetailValue value : values) {
-                    vals.add(value.getSval());
+                    vals.add(value.getString());
                 }
                 responseHeaders.put(detail.getName(), vals);
             }

@@ -62,34 +62,34 @@ public class DetailMapIT {
         assertThat(details).hasSize(4);
         assertThat(details.get(0).getName()).isEqualTo("arg1");
         assertThat(details.get(0).getValueList()).hasSize(1);
-        assertThat(details.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(details.get(0).getValueList().get(0).getString()).isEqualTo("a");
         assertThat(details.get(1).getName()).isEqualTo("arg2");
         assertThat(details.get(1).getValueList()).hasSize(1);
-        assertThat(details.get(1).getValueList().get(0).getSval()).isEqualTo("b");
+        assertThat(details.get(1).getValueList().get(0).getString()).isEqualTo("b");
         assertThat(details.get(2).getName()).isEqualTo("nested1");
         List<Trace.DetailEntry> nestedDetails = details.get(2).getChildEntryList();
         assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey11");
         assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(nestedDetails.get(0).getValueList().get(0).getString()).isEqualTo("a");
         assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey12");
         assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(1).getValueList().get(0).getSval()).isEqualTo("b");
+        assertThat(nestedDetails.get(1).getValueList().get(0).getString()).isEqualTo("b");
         assertThat(nestedDetails.get(2).getName()).isEqualTo("subnested1");
         List<Trace.DetailEntry> subNestedDetails = nestedDetails.get(2).getChildEntryList();
         assertThat(subNestedDetails.get(0).getName()).isEqualTo("subnestedkey1");
         assertThat(subNestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(subNestedDetails.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(subNestedDetails.get(0).getValueList().get(0).getString()).isEqualTo("a");
         assertThat(subNestedDetails.get(1).getName()).isEqualTo("subnestedkey2");
         assertThat(subNestedDetails.get(1).getValueList()).hasSize(1);
-        assertThat(subNestedDetails.get(1).getValueList().get(0).getSval()).isEqualTo("b");
+        assertThat(subNestedDetails.get(1).getValueList().get(0).getString()).isEqualTo("b");
         assertThat(details.get(3).getName()).isEqualTo("nested2");
         nestedDetails = details.get(3).getChildEntryList();
         assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey21");
         assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(nestedDetails.get(0).getValueList().get(0).getString()).isEqualTo("a");
         assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey22");
         assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(1).getValueList().get(0).getSval()).isEqualTo("b");
+        assertThat(nestedDetails.get(1).getValueList().get(0).getString()).isEqualTo("b");
 
         assertThat(header.getTransactionName()).isEqualTo("basic test");
         assertThat(header.getRootTimer().getName()).isEqualTo("level one");
@@ -110,10 +110,10 @@ public class DetailMapIT {
         assertThat(details).hasSize(2);
         assertThat(details.get(0).getName()).isEqualTo("arg1");
         assertThat(details.get(0).getValueList()).hasSize(1);
-        assertThat(details.get(0).getValueList().get(0).getSval()).isEqualTo("ax");
+        assertThat(details.get(0).getValueList().get(0).getString()).isEqualTo("ax");
         assertThat(details.get(1).getName()).isEqualTo("arg2");
         assertThat(details.get(1).getValueList()).hasSize(1);
-        assertThat(details.get(1).getValueList().get(0).getSval()).isEqualTo("bx");
+        assertThat(details.get(1).getValueList().get(0).getString()).isEqualTo("bx");
         List<Trace.Entry> childEntries2 = entry2.getChildEntryList();
         assertThat(childEntries2).hasSize(1);
         Trace.Entry entry3 = childEntries2.get(0);
@@ -122,10 +122,10 @@ public class DetailMapIT {
         assertThat(details).hasSize(2);
         assertThat(details.get(0).getName()).isEqualTo("arg1");
         assertThat(details.get(0).getValueList()).hasSize(1);
-        assertThat(details.get(0).getValueList().get(0).getSval()).isEqualTo("axy");
+        assertThat(details.get(0).getValueList().get(0).getString()).isEqualTo("axy");
         assertThat(details.get(1).getName()).isEqualTo("arg2");
         assertThat(details.get(1).getValueList()).hasSize(1);
-        assertThat(details.get(1).getValueList().get(0).getSval()).isEqualTo("bxy");
+        assertThat(details.get(1).getValueList().get(0).getString()).isEqualTo("bxy");
         // there's no way offsetNanos should be 0
         assertThat(entry3.getStartOffsetNanos()).isGreaterThan(0);
         List<Trace.Entry> childEntries3 = entry3.getChildEntryList();
@@ -146,34 +146,34 @@ public class DetailMapIT {
         assertThat(details).hasSize(4);
         assertThat(details.get(0).getName()).isEqualTo("arg1");
         assertThat(details.get(0).getValueList()).hasSize(1);
-        assertThat(details.get(0).getValueList().get(0).getBval()).isEqualTo(false);
+        assertThat(details.get(0).getValueList().get(0).getBoolean()).isEqualTo(false);
         assertThat(details.get(1).getName()).isEqualTo("arg2");
         assertThat(details.get(1).getValueList()).hasSize(1);
-        assertThat(details.get(1).getValueList().get(0).getBval()).isEqualTo(true);
+        assertThat(details.get(1).getValueList().get(0).getBoolean()).isEqualTo(true);
         assertThat(details.get(2).getName()).isEqualTo("nested1");
         List<Trace.DetailEntry> nestedDetails = details.get(2).getChildEntryList();
         assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey11");
         assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(0).getValueList().get(0).getBval()).isEqualTo(false);
+        assertThat(nestedDetails.get(0).getValueList().get(0).getBoolean()).isEqualTo(false);
         assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey12");
         assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(1).getValueList().get(0).getBval()).isEqualTo(true);
+        assertThat(nestedDetails.get(1).getValueList().get(0).getBoolean()).isEqualTo(true);
         assertThat(nestedDetails.get(2).getName()).isEqualTo("subnested1");
         List<Trace.DetailEntry> subNestedDetails = nestedDetails.get(2).getChildEntryList();
         assertThat(subNestedDetails.get(0).getName()).isEqualTo("subnestedkey1");
         assertThat(subNestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(subNestedDetails.get(0).getValueList().get(0).getBval()).isEqualTo(false);
+        assertThat(subNestedDetails.get(0).getValueList().get(0).getBoolean()).isEqualTo(false);
         assertThat(subNestedDetails.get(1).getName()).isEqualTo("subnestedkey2");
         assertThat(subNestedDetails.get(1).getValueList()).hasSize(1);
-        assertThat(subNestedDetails.get(1).getValueList().get(0).getBval()).isEqualTo(true);
+        assertThat(subNestedDetails.get(1).getValueList().get(0).getBoolean()).isEqualTo(true);
         assertThat(details.get(3).getName()).isEqualTo("nested2");
         nestedDetails = details.get(3).getChildEntryList();
         assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey21");
         assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(0).getValueList().get(0).getBval()).isEqualTo(false);
+        assertThat(nestedDetails.get(0).getValueList().get(0).getBoolean()).isEqualTo(false);
         assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey22");
         assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(1).getValueList().get(0).getBval()).isEqualTo(true);
+        assertThat(nestedDetails.get(1).getValueList().get(0).getBoolean()).isEqualTo(true);
     }
 
     @Test
@@ -188,34 +188,34 @@ public class DetailMapIT {
         assertThat(details).hasSize(4);
         assertThat(details.get(0).getName()).isEqualTo("arg1");
         assertThat(details.get(0).getValueList()).hasSize(1);
-        assertThat(details.get(0).getValueList().get(0).getDval()).isEqualTo(5.0);
+        assertThat(details.get(0).getValueList().get(0).getDouble()).isEqualTo(5.0);
         assertThat(details.get(1).getName()).isEqualTo("arg2");
         assertThat(details.get(1).getValueList()).hasSize(1);
-        assertThat(details.get(1).getValueList().get(0).getDval()).isEqualTo(5.5);
+        assertThat(details.get(1).getValueList().get(0).getDouble()).isEqualTo(5.5);
         assertThat(details.get(2).getName()).isEqualTo("nested1");
         List<Trace.DetailEntry> nestedDetails = details.get(2).getChildEntryList();
         assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey11");
         assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(0).getValueList().get(0).getDval()).isEqualTo(5.0);
+        assertThat(nestedDetails.get(0).getValueList().get(0).getDouble()).isEqualTo(5.0);
         assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey12");
         assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(1).getValueList().get(0).getDval()).isEqualTo(5.5);
+        assertThat(nestedDetails.get(1).getValueList().get(0).getDouble()).isEqualTo(5.5);
         assertThat(nestedDetails.get(2).getName()).isEqualTo("subnested1");
         List<Trace.DetailEntry> subNestedDetails = nestedDetails.get(2).getChildEntryList();
         assertThat(subNestedDetails.get(0).getName()).isEqualTo("subnestedkey1");
         assertThat(subNestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(subNestedDetails.get(0).getValueList().get(0).getDval()).isEqualTo(5.0);
+        assertThat(subNestedDetails.get(0).getValueList().get(0).getDouble()).isEqualTo(5.0);
         assertThat(subNestedDetails.get(1).getName()).isEqualTo("subnestedkey2");
         assertThat(subNestedDetails.get(1).getValueList()).hasSize(1);
-        assertThat(subNestedDetails.get(1).getValueList().get(0).getDval()).isEqualTo(5.5);
+        assertThat(subNestedDetails.get(1).getValueList().get(0).getDouble()).isEqualTo(5.5);
         assertThat(details.get(3).getName()).isEqualTo("nested2");
         nestedDetails = details.get(3).getChildEntryList();
         assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey21");
         assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(0).getValueList().get(0).getDval()).isEqualTo(5.0);
+        assertThat(nestedDetails.get(0).getValueList().get(0).getDouble()).isEqualTo(5.0);
         assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey22");
         assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(1).getValueList().get(0).getDval()).isEqualTo(5.5);
+        assertThat(nestedDetails.get(1).getValueList().get(0).getDouble()).isEqualTo(5.5);
     }
 
     @Test
@@ -233,34 +233,34 @@ public class DetailMapIT {
         assertThat(details).hasSize(4);
         assertThat(details.get(0).getName()).isEqualTo("arg1");
         assertThat(details.get(0).getValueList()).hasSize(1);
-        assertThat(details.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(details.get(0).getValueList().get(0).getString()).isEqualTo("a");
         assertThat(details.get(1).getName()).isEqualTo("arg2");
         assertThat(details.get(1).getValueList()).hasSize(1);
-        assertThat(details.get(1).getValueList().get(0).getSval()).isEqualTo("x");
+        assertThat(details.get(1).getValueList().get(0).getString()).isEqualTo("x");
         assertThat(details.get(2).getName()).isEqualTo("nested1");
         List<Trace.DetailEntry> nestedDetails = details.get(2).getChildEntryList();
         assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey11");
         assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(nestedDetails.get(0).getValueList().get(0).getString()).isEqualTo("a");
         assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey12");
         assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(1).getValueList().get(0).getSval()).isEqualTo("x");
+        assertThat(nestedDetails.get(1).getValueList().get(0).getString()).isEqualTo("x");
         assertThat(nestedDetails.get(2).getName()).isEqualTo("subnested1");
         List<Trace.DetailEntry> subNestedDetails = nestedDetails.get(2).getChildEntryList();
         assertThat(subNestedDetails.get(0).getName()).isEqualTo("subnestedkey1");
         assertThat(subNestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(subNestedDetails.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(subNestedDetails.get(0).getValueList().get(0).getString()).isEqualTo("a");
         assertThat(subNestedDetails.get(1).getName()).isEqualTo("subnestedkey2");
         assertThat(subNestedDetails.get(1).getValueList()).hasSize(1);
-        assertThat(subNestedDetails.get(1).getValueList().get(0).getSval()).isEqualTo("x");
+        assertThat(subNestedDetails.get(1).getValueList().get(0).getString()).isEqualTo("x");
         assertThat(details.get(3).getName()).isEqualTo("nested2");
         nestedDetails = details.get(3).getChildEntryList();
         assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey21");
         assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(nestedDetails.get(0).getValueList().get(0).getString()).isEqualTo("a");
         assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey22");
         assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(1).getValueList().get(0).getSval()).isEqualTo("x");
+        assertThat(nestedDetails.get(1).getValueList().get(0).getString()).isEqualTo("x");
     }
 
     @Test
@@ -280,13 +280,13 @@ public class DetailMapIT {
         assertThat(details).hasSize(2);
         assertThat(details.get(0).getName()).isEqualTo("arg1");
         assertThat(details.get(0).getValueList()).hasSize(1);
-        assertThat(details.get(0).getValueList().get(0).getSval())
+        assertThat(details.get(0).getValueList().get(0).getString())
                 .isEqualTo("useArg2AsKeyAndValue");
         assertThat(details.get(1).getName()).isEqualTo("nested1");
         List<Trace.DetailEntry> nestedDetails = details.get(1).getChildEntryList();
         assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey11");
         assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
-        assertThat(nestedDetails.get(0).getValueList().get(0).getSval())
+        assertThat(nestedDetails.get(0).getValueList().get(0).getString())
                 .isEqualTo("useArg2AsKeyAndValue");
     }
 

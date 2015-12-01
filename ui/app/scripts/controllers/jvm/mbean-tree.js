@@ -30,9 +30,11 @@ glowroot.controller('JvmMBeanTreeCtrl', [
     }
 
     function updateLocation() {
-      var query = {
-        expanded: expandedObjectNames
-      };
+      var query = {};
+      if ($scope.layout.central) {
+        query['server-id'] = $scope.serverId;
+      }
+      query.expanded = expandedObjectNames;
       $location.search(query).replace();
     }
 

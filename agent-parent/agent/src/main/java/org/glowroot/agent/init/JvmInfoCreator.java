@@ -15,9 +15,13 @@
  */
 package org.glowroot.agent.init;
 
+import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 
+import javax.annotation.Nullable;
+
+import com.google.common.base.MoreObjects;
 import com.google.common.base.StandardSystemProperty;
 
 import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
@@ -40,11 +44,28 @@ public class JvmInfoCreator {
             java = "version " + javaVersion + ", vendor "
                     + StandardSystemProperty.JAVA_VM_VENDOR.value();
         }
+        String heapDumpPath = getHeapDumpPathFromCommandLine();
+        if (heapDumpPath == null) {
+            String javaTempDir =
+                    MoreObjects.firstNonNull(StandardSystemProperty.JAVA_IO_TMPDIR.value(), ".");
+            heapDumpPath = new File(javaTempDir).getAbsolutePath();
+        }
         return JvmInfo.newBuilder()
                 .setStartTime(runtimeMXBean.getStartTime())
                 .setJvm(jvm)
                 .setJava(java)
                 .addAllJvmArg(runtimeMXBean.getInputArguments())
+                .setHeapDumpDefaultDir(heapDumpPath)
                 .build();
+    }
+
+    private static @Nullable String getHeapDumpPathFromCommandLine() {
+        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+        for (String arg : runtimeMXBean.getInputArguments()) {
+            if (arg.startsWith("-XX:HeapDumpPath=")) {
+                return arg.substring("-XX:HeapDumpPath=".length());
+            }
+        }
+        return null;
     }
 }

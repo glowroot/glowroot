@@ -35,6 +35,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.JvmInfoMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
+import org.glowroot.wire.api.model.DownstreamServiceGrpc;
 import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
 
 public class GrpcServer {
@@ -46,6 +47,8 @@ public class GrpcServer {
     private final GaugeValueRepository gaugeValueRepository;
     private final TraceRepository traceRepository;
 
+    private final DownstreamServiceImpl downstreamService;
+
     public GrpcServer(int port, ServerRepository serverRepository,
             AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
             TraceRepository traceRepository) throws IOException {
@@ -55,10 +58,17 @@ public class GrpcServer {
         this.gaugeValueRepository = gaugeValueRepository;
         this.traceRepository = traceRepository;
 
+        downstreamService = new DownstreamServiceImpl();
+
         NettyServerBuilder.forPort(port)
                 .addService(CollectorServiceGrpc.bindService(new CollectorServiceImpl()))
+                .addService(DownstreamServiceGrpc.bindService(downstreamService))
                 .build()
                 .start();
+    }
+
+    DownstreamServiceImpl getDownstreamService() {
+        return downstreamService;
     }
 
     private class CollectorServiceImpl implements CollectorService {

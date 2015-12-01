@@ -125,7 +125,7 @@ class ErrorJsonService {
                         traceErrorPoint.errorCount(), transactionCount));
             }
         }
-        populateDataSeries(query, errorPoints, dataSeries, dataSeriesExtra);
+        populateDataSeries(query, errorPoints, dataSeries, dataSeriesExtra, liveCaptureTime);
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -179,9 +179,9 @@ class ErrorJsonService {
     }
 
     private void populateDataSeries(TraceQuery query, List<ErrorPoint> errorPoints,
-            DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra)
+            DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra, long liveCaptureTime)
                     throws Exception {
-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock,
+        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime,
                 rollupLevelService.getDataPointIntervalMillis(query.from(), query.to()));
         ErrorPoint lastErrorPoint = null;
         for (ErrorPoint errorPoint : errorPoints) {
@@ -201,8 +201,7 @@ class ErrorJsonService {
                     new Long[] {errorPoint.errorCount(), transactionCount});
         }
         if (lastErrorPoint != null) {
-            dataSeriesHelper.addFinalDownslopeIfNeeded(query.to(), dataSeries,
-                    lastErrorPoint.captureTime());
+            dataSeriesHelper.addFinalDownslopeIfNeeded(dataSeries, lastErrorPoint.captureTime());
         }
     }
 

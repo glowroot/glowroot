@@ -28,11 +28,11 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
 import org.glowroot.agent.tests.app.LevelOne;
 import org.glowroot.agent.tests.app.LogCause;
 import org.glowroot.agent.tests.app.LogError;
 import org.glowroot.agent.tests.plugin.LogCauseAspect.LogCauseAdvice;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,7 +60,7 @@ public class ErrorCaptureIT {
     public void shouldCaptureError() throws Exception {
         // given
         container.getConfigService().updateTransactionConfig(
-                TransactionConfigUpdate.newBuilder()
+                TransactionConfig.newBuilder()
                         .setSlowThresholdMillis(ProtoOptional.of(10000))
                         .build());
         // when

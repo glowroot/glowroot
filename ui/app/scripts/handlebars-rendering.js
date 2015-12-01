@@ -1183,6 +1183,9 @@ HandlebarsRendering = (function () {
   }
 
   function formatCount(number) {
+    if (number === undefined) {
+      return '';
+    }
     if (Math.abs(number) < 0.1) {
       return number.toPrecision(1);
     }

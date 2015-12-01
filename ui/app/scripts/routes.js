@@ -67,7 +67,6 @@ glowroot.config([
         defaultSummarySortOrder: function () {
           return 'total-time';
         },
-        // transaction controller needs to wait for layout when running under grunt serve
         waitForLayout: waitForLayout(true)
       }
     });
@@ -185,7 +184,6 @@ glowroot.config([
           $timeout(checkForD3, 100);
           return deferred.promise;
         }],
-        // flame graph controller needs to wait for layout when running under grunt serve
         waitForLayout: waitForLayout(true)
       }
     });
@@ -204,7 +202,6 @@ glowroot.config([
         defaultSummarySortOrder: function () {
           return 'error-count';
         },
-        // error controller needs to wait for layout when running under grunt serve
         waitForLayout: waitForLayout(true)
       }
     });
@@ -265,16 +262,15 @@ glowroot.config([
     $stateProvider.state('jvm', {
       url: '/jvm',
       templateUrl: 'views/jvm.html',
-      controller: 'JvmCtrl'
+      controller: 'JvmCtrl',
+      resolve: {
+        waitForLayout: waitForLayout(false)
+      }
     });
     $stateProvider.state('jvm.gauges', {
       url: '/gauges?server-rollup',
       templateUrl: 'views/jvm/gauge-values.html',
-      controller: 'JvmGaugeValuesCtrl',
-      // gauges controller needs to wait for layout when running under grunt serve
-      resolve: {
-        waitForLayout: waitForLayout(false)
-      }
+      controller: 'JvmGaugeValuesCtrl'
     });
     $stateProvider.state('jvm.processInfo', {
       url: '/process-info?server-id',
@@ -309,7 +305,10 @@ glowroot.config([
     $stateProvider.state('config', {
       url: '/config',
       templateUrl: 'views/config.html',
-      controller: 'ConfigCtrl'
+      controller: 'ConfigCtrl',
+      resolve: {
+        waitForLayout: waitForLayout(false)
+      }
     });
     $stateProvider.state('config.transaction', {
       url: '/transaction',
@@ -349,11 +348,7 @@ glowroot.config([
     $stateProvider.state('config.alert', {
       url: '/alert',
       templateUrl: 'views/config/alert.html',
-      controller: 'ConfigAlertCtrl',
-      // alert controller needs to wait for layout when running under grunt serve
-      resolve: {
-        waitForLayout: waitForLayout(false)
-      }
+      controller: 'ConfigAlertCtrl'
     });
     $stateProvider.state('config.pluginList', {
       url: '/plugin-list',
@@ -399,7 +394,6 @@ glowroot.config([
       url: '/login',
       templateUrl: 'views/login.html',
       controller: 'LoginCtrl',
-      // login controller needs to wait for layout when running under grunt serve
       resolve: {
         waitForLayout: waitForLayout(false)
       }

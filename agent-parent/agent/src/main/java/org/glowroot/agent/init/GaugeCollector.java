@@ -232,13 +232,14 @@ class GaugeCollector extends ScheduledRunnable {
                     long captureTick = ticker.read();
                     if (priorRawCounterValue != null) {
                         long intervalNanos = captureTick - priorRawCounterValue.captureTick();
-                        double valuePerSecond =
+                        // value is the average delta per second
+                        double averageDeltaPerSecond =
                                 1000000000 * (value - priorRawCounterValue.value()) / intervalNanos;
                         gaugeValues.add(GaugeValue.newBuilder()
                                 .setGaugeName(gaugeName)
                                 .setCaptureTime(captureTime)
-                                .setValue(valuePerSecond)
-                                .setIntervalNanos(intervalNanos)
+                                .setValue(averageDeltaPerSecond)
+                                .setWeight(intervalNanos)
                                 .build());
                     }
                     priorRawCounterValues.put(gaugeName,
@@ -248,6 +249,7 @@ class GaugeCollector extends ScheduledRunnable {
                             .setGaugeName(gaugeName)
                             .setCaptureTime(captureTime)
                             .setValue(value)
+                            .setWeight(1)
                             .build());
                 }
             }

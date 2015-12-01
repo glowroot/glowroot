@@ -24,7 +24,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.AdvancedConfigUpdate;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.AdvancedConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,7 +61,7 @@ public class GcActivityIT {
     public void shouldReadTraceGcActivityConfigDisabled() throws Exception {
         // given
         container.getConfigService().updateAdvancedConfig(
-                AdvancedConfigUpdate.newBuilder()
+                AdvancedConfig.newBuilder()
                         .setCaptureGcActivity(ProtoOptional.of(false))
                         .build());
         // when

@@ -88,7 +88,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     private ConfigRepositoryImpl(File baseDir, ConfigService configService) {
         this.configService = configService;
         secretFile = new File(baseDir, "secret");
-        rollupConfigs = RollupConfig.buildRollupConfigs();
+        rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
 
         UserInterfaceConfig userInterfaceConfig =
                 configService.getOtherConfig(UI_KEY, ImmutableUserInterfaceConfig.class);

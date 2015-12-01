@@ -31,9 +31,6 @@ public interface GaugeValueRepository {
     List<GaugeValue> readGaugeValues(String serverRollup, String gaugeName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception;
 
-    List<GaugeValue> readManuallyRolledUpGaugeValues(String serverRollup, long from, long to,
-            String gaugeName, int rollupLevel, long liveCaptureTime) throws Exception;
-
     void deleteAll(String serverRollup) throws Exception;
 
     @Value.Immutable

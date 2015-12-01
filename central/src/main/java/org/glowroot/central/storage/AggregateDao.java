@@ -19,7 +19,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +51,6 @@ import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
@@ -225,7 +223,7 @@ public class AggregateDao implements AggregateRepository {
             }
             transactionTypeDao.updateLastCaptureTime(serverId, transactionType);
 
-            ImmutableList<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+            List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
             for (int i = 1; i < rollupConfigs.size(); i++) {
                 long intervalMillis = rollupConfigs.get(i).intervalMillis();
                 long rollupCaptureTime =
@@ -269,7 +267,7 @@ public class AggregateDao implements AggregateRepository {
     // TransactionSummaryCollector
     @Override
     public void mergeInTransactionSummaries(TransactionSummaryCollector mergedTransactionSummaries,
-            OverallQuery query, SummarySortOrder sortOrder, int limit) throws Exception {
+            OverallQuery query, SummarySortOrder sortOrder, int limit) {
         // currently have to do group by / sort / limit client-side
         BoundStatement boundStatement =
                 checkNotNull(readTransactionPS.get(summaryTable)).get(query.rollupLevel()).bind();
@@ -298,8 +296,8 @@ public class AggregateDao implements AggregateRepository {
         for (Row row : results) {
             // results are ordered by capture time so Math.max() is not needed here
             lastCaptureTime = checkNotNull(row.getTimestamp(0)).getTime();
-            errorCount += row.getLong(0);
-            transactionCount += row.getLong(1);
+            errorCount += row.getLong(1);
+            transactionCount += row.getLong(2);
         }
         return ImmutableOverallErrorSummary.builder()
                 .errorCount(errorCount)
@@ -314,7 +312,7 @@ public class AggregateDao implements AggregateRepository {
     @Override
     public void mergeInTransactionErrorSummaries(
             TransactionErrorSummaryCollector mergedTransactionErrorSummaries, OverallQuery query,
-            ErrorSummarySortOrder sortOrder, int limit) throws Exception {
+            ErrorSummarySortOrder sortOrder, int limit) {
         // currently have to do group by / sort / limit client-side
         BoundStatement boundStatement = checkNotNull(readTransactionPS.get(errorSummaryTable))
                 .get(query.rollupLevel()).bind();
@@ -832,19 +830,6 @@ public class AggregateDao implements AggregateRepository {
         return sb;
     }
 
-    private static Comparator<TransactionErrorSummary> getComparator(
-            ErrorSummarySortOrder sortOrder) {
-        switch (sortOrder) {
-            case ERROR_COUNT:
-                return Comparator.comparingDouble(TransactionErrorSummary::errorCount);
-            case ERROR_RATE:
-                return Comparator
-                        .comparingDouble(o -> o.errorCount() / (double) o.transactionCount());
-            default:
-                throw new IllegalStateException();
-        }
-    }
-
     @Value.Immutable
     interface Table {
         String partialName();
@@ -860,10 +845,5 @@ public class AggregateDao implements AggregateRepository {
     interface Column {
         String name();
         String type();
-    }
-
-    private static class MutableTransactionErrorSummary {
-        private long errorCount;
-        private long transactionCount;
     }
 }

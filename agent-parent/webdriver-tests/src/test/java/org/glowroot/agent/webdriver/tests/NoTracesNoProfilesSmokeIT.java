@@ -15,13 +15,16 @@
  */
 package org.glowroot.agent.webdriver.tests;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.Request;
+import com.ning.http.client.Response;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
 
-import org.glowroot.agent.it.harness.model.ConfigUpdate.OptionalInt;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
 import org.glowroot.agent.webdriver.tests.config.ConfigSidebar;
 import org.glowroot.agent.webdriver.tests.config.StorageConfigPage;
 
@@ -50,12 +53,23 @@ public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
         configSidebar.getStorageLink().click();
         storageConfigPage.clickDeleteAllButton();
 
-        container.getConfigService().updateTransactionConfig(
-                TransactionConfigUpdate.newBuilder()
-                        .setSlowThresholdMillis(
-                                OptionalInt.newBuilder().setValue(Integer.MAX_VALUE))
-                        .setProfilingIntervalMillis(OptionalInt.newBuilder().setValue(0))
-                        .build());
+        AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+        Request request = asyncHttpClient
+                .prepareGet("http://localhost:" + getUiPort() + "/backend/config/transaction")
+                .build();
+        Response response = asyncHttpClient.executeRequest(request).get();
+        JsonNode responseNode = new ObjectMapper().readTree(response.getResponseBody());
+        String version = responseNode.get("version").asText();
+        request = asyncHttpClient
+                .preparePost("http://localhost:" + getUiPort() + "/backend/config/transaction")
+                .setBody("{\"slowThresholdMillis\":" + Integer.MAX_VALUE
+                        + ",\"profilingIntervalMillis\":0,\"version\":\"" + version + "\"}")
+                .build();
+        int status = asyncHttpClient.executeRequest(request).get().getStatusCode();
+        asyncHttpClient.close();
+        if (status != 200) {
+            throw new AssertionError("Unexpected status: " + status);
+        }
         container.executeNoExpectedTrace(JdbcServlet.class);
         // sleep for a bit to give glowroot aggregator time to process these requests
         Thread.sleep(1000);

@@ -25,11 +25,11 @@ import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
-import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.GaugeValueRepository.Gauge;
+import org.glowroot.storage.repo.Utils;
 import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 
@@ -42,20 +42,18 @@ class GaugeValueJsonService {
     private final RollupLevelService rollupLevelService;
     private final ConfigRepository configRepository;
 
-    private final Clock clock;
-
     GaugeValueJsonService(GaugeValueRepository gaugeValueRepository,
-            RollupLevelService rollupLevelService, ConfigRepository configRepository, Clock clock) {
+            RollupLevelService rollupLevelService, ConfigRepository configRepository) {
         this.gaugeValueRepository = gaugeValueRepository;
         this.rollupLevelService = rollupLevelService;
         this.configRepository = configRepository;
-        this.clock = clock;
     }
 
     @GET("/backend/jvm/gauge-values")
     String getGaugeValues(String queryString) throws Exception {
         GaugeValueRequest request = QueryStrings.decode(queryString, GaugeValueRequest.class);
-        int rollupLevel = rollupLevelService.getRollupLevelForView(request.from(), request.to());
+        int rollupLevel =
+                rollupLevelService.getGaugeRollupLevelForView(request.from(), request.to());
         long intervalMillis;
         if (rollupLevel == 0) {
             intervalMillis = configRepository.getGaugeCollectionIntervalMillis();
@@ -67,11 +65,10 @@ class GaugeValueJsonService {
         long revisedFrom = request.from() - intervalMillis;
         long revisedTo = request.to() + intervalMillis;
 
-        long liveCaptureTime = clock.currentTimeMillis();
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (String gaugeName : request.gaugeNames()) {
             List<GaugeValue> gaugeValues = getGaugeValues(request.serverRollup(), revisedFrom,
-                    revisedTo, gaugeName, rollupLevel, liveCaptureTime, gapMillis);
+                    revisedTo, gaugeName, rollupLevel);
             dataSeriesList.add(convertToDataSeriesWithGaps(gaugeName, gaugeValues, gapMillis));
         }
         StringBuilder sb = new StringBuilder();
@@ -93,8 +90,7 @@ class GaugeValueJsonService {
     }
 
     private List<GaugeValue> getGaugeValues(String serverRollup, long from, long to,
-            String gaugeName, int rollupLevel, long liveCaptureTime, double gapMillis)
-                    throws Exception {
+            String gaugeName, int rollupLevel) throws Exception {
         List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(serverRollup, gaugeName,
                 from, to, rollupLevel);
         if (rollupLevel == 0) {
@@ -105,19 +101,61 @@ class GaugeValueJsonService {
             long lastRolledUpTime = gaugeValues.get(gaugeValues.size() - 1).getCaptureTime();
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
-        if (liveCaptureTime - nonRolledUpFrom > gapMillis) {
-            // only display "live" rollup if there is gap since the last value
-            // this avoids the confusion of an empty chart shortly after starting the jvm
-            // (when in default 4 hour rollup level)
-            // while at the same time avoiding the confusion of always showing the "live" rollup
-            // which can look like a strange spiky value at the end of a chart since it can be based
-            // on a very short amount of time (e.g. 5 seconds) and so not smoothed out with enough
-            // data yet
-            gaugeValues = Lists.newArrayList(gaugeValues);
-            gaugeValues.addAll(gaugeValueRepository.readManuallyRolledUpGaugeValues(serverRollup,
-                    nonRolledUpFrom, to, gaugeName, rollupLevel, liveCaptureTime));
-        }
+        List<GaugeValue> orderedNonRolledUpGaugeValues = Lists.newArrayList();
+        orderedNonRolledUpGaugeValues.addAll(gaugeValueRepository.readGaugeValues(serverRollup,
+                gaugeName, nonRolledUpFrom, to, 0));
+        gaugeValues = Lists.newArrayList(gaugeValues);
+        gaugeValues
+                .addAll(rollUpGaugeValues(orderedNonRolledUpGaugeValues, gaugeName, rollupLevel));
         return gaugeValues;
+    }
+
+    private List<GaugeValue> rollUpGaugeValues(List<GaugeValue> orderedNonRolledUpGaugeValues,
+            String gaugeName, int rollupLevel) {
+        long fixedIntervalMillis =
+                configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
+        List<GaugeValue> rolledUpGaugeValues = Lists.newArrayList();
+        double currTotal = 0;
+        long currWeight = 0;
+        long currRollupTime = Long.MIN_VALUE;
+        long maxCaptureTime;
+        if (orderedNonRolledUpGaugeValues.isEmpty()) {
+            maxCaptureTime = Long.MIN_VALUE;
+        } else {
+            maxCaptureTime = orderedNonRolledUpGaugeValues
+                    .get(orderedNonRolledUpGaugeValues.size() - 1).getCaptureTime();
+        }
+        maxCaptureTime = (long) (Math.floor(maxCaptureTime / 60000) * 60000);
+        for (GaugeValue nonRolledUpGaugeValue : orderedNonRolledUpGaugeValues) {
+            long captureTime = nonRolledUpGaugeValue.getCaptureTime();
+            if (captureTime > maxCaptureTime) {
+                break;
+            }
+            long rollupTime = Utils.getNextRollupTime(captureTime, fixedIntervalMillis);
+            if (rollupTime != currRollupTime && currWeight > 0) {
+                rolledUpGaugeValues.add(GaugeValue.newBuilder()
+                        .setGaugeName(gaugeName)
+                        .setCaptureTime(currRollupTime)
+                        .setValue(currTotal / currWeight)
+                        .setWeight(currWeight)
+                        .build());
+                currTotal = 0;
+                currWeight = 0;
+            }
+            currRollupTime = rollupTime;
+            currTotal += nonRolledUpGaugeValue.getValue() * nonRolledUpGaugeValue.getWeight();
+            currWeight += nonRolledUpGaugeValue.getWeight();
+        }
+        if (currWeight > 0) {
+            // roll up final one
+            rolledUpGaugeValues.add(GaugeValue.newBuilder()
+                    .setGaugeName(gaugeName)
+                    .setCaptureTime(maxCaptureTime)
+                    .setValue(currTotal / currWeight)
+                    .setWeight(currWeight)
+                    .build());
+        }
+        return rolledUpGaugeValues;
     }
 
     private static DataSeries convertToDataSeriesWithGaps(String dataSeriesName,

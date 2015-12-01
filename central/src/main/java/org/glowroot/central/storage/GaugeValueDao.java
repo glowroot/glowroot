@@ -27,6 +27,7 @@ import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.helper.Gauges;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
@@ -43,26 +44,28 @@ public class GaugeValueDao implements GaugeValueRepository {
     private final ImmutableList<PreparedStatement> insertValuePS;
     private final ImmutableList<PreparedStatement> insertNamePS;
 
-    public GaugeValueDao(Session session, ServerDao serverDao) {
+    public GaugeValueDao(Session session, ServerDao serverDao, ConfigRepository configRepository) {
         this.session = session;
         this.serverDao = serverDao;
 
-        // name already has "[counter]" suffix when it is a counter
-        session.execute("create table if not exists gauge_value_rollup_0 (server_rollup varchar,"
-                + " gauge_name varchar, capture_time timestamp, value double, weight bigint,"
-                + " primary key ((server_rollup, gauge_name), capture_time))");
-
-        // TTL on gauge_name table needs to be max(TTL) of gauge_value_rollup_*
-        session.execute("create table if not exists gauge_name (server_rollup varchar,"
-                + " gauge_name varchar, primary key (server_rollup, gauge_name))");
+        int count = configRepository.getRollupConfigs().size();
 
         List<PreparedStatement> insertValuePS = Lists.newArrayList();
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i <= count; i++) {
+            // name already has "[counter]" suffix when it is a counter
+            session.execute("create table if not exists gauge_value_rollup_" + castUntainted(i)
+                    + " (server_rollup varchar, gauge_name varchar, capture_time timestamp,"
+                    + " value double, weight bigint, primary key ((server_rollup, gauge_name),"
+                    + " capture_time))");
             insertValuePS.add(session.prepare("insert into gauge_value_rollup_" + castUntainted(i)
                     + "(server_rollup, gauge_name, capture_time, value, weight)"
                     + " values (?, ?, ?, ?, ?)"));
         }
         this.insertValuePS = ImmutableList.copyOf(insertValuePS);
+
+        // TTL on gauge_name table needs to be max(TTL) of gauge_value_rollup_*
+        session.execute("create table if not exists gauge_name (server_rollup varchar,"
+                + " gauge_name varchar, primary key (server_rollup, gauge_name))");
 
         List<PreparedStatement> insertNamePS = Lists.newArrayList();
         for (int i = 0; i < 1; i++) {
@@ -73,7 +76,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public void store(String serverId, List<GaugeValue> gaugeValues) throws Exception {
+    public void store(String serverId, List<GaugeValue> gaugeValues) {
         if (gaugeValues.isEmpty()) {
             return;
         }
@@ -84,12 +87,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             boundStatement.setString(1, gaugeValue.getGaugeName());
             boundStatement.setTimestamp(2, new Date(gaugeValue.getCaptureTime()));
             boundStatement.setDouble(3, gaugeValue.getValue());
-            long weight = gaugeValue.getIntervalNanos();
-            if (weight == 0) {
-                // this is for non-counter gauges
-                weight = 1;
-            }
-            boundStatement.setLong(4, weight);
+            boundStatement.setLong(4, gaugeValue.getWeight());
             batchStatement.add(boundStatement);
 
             boundStatement = insertNamePS.get(0).bind();
@@ -102,7 +100,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public List<Gauge> getGauges(String serverRollup) throws Exception {
+    public List<Gauge> getGauges(String serverRollup) {
         ResultSet results = session
                 .execute("select gauge_name from gauge_name where server_rollup = ?", serverRollup);
         List<Gauge> gauges = Lists.newArrayList();
@@ -114,30 +112,25 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     @Override
     public List<GaugeValue> readGaugeValues(String serverRollup, String gaugeName,
-            long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception {
-        // FIXME
-        rollupLevel = 0;
-        ResultSet results = session.execute("select capture_time, value from gauge_value_rollup_"
-                + castUntainted(rollupLevel) + " where server_rollup = ? and gauge_name = ?",
+            long captureTimeFrom, long captureTimeTo, int rollupLevel) {
+        ResultSet results = session.execute(
+                "select capture_time, value, weight from gauge_value_rollup_"
+                        + castUntainted(rollupLevel) + " where server_rollup = ?"
+                        + " and gauge_name = ?",
                 serverRollup, gaugeName);
         List<GaugeValue> gaugeValues = Lists.newArrayList();
         for (Row row : results) {
             gaugeValues.add(GaugeValue.newBuilder()
                     .setCaptureTime(checkNotNull(row.getTimestamp(0)).getTime())
                     .setValue(row.getDouble(1))
+                    .setWeight(row.getLong(2))
                     .build());
         }
         return gaugeValues;
     }
 
     @Override
-    public List<GaugeValue> readManuallyRolledUpGaugeValues(String serverRollup, long from, long to,
-            String gaugeName, int rollupLevel, long liveCaptureTime) throws Exception {
-        return ImmutableList.of();
-    }
-
-    @Override
-    public void deleteAll(String serverRollup) throws Exception {
+    public void deleteAll(String serverRollup) {
         // this is not currently supported (to avoid row key range query)
         throw new UnsupportedOperationException();
     }

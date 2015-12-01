@@ -19,16 +19,15 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.common.util.Clock;
 import org.glowroot.storage.repo.Utils;
 
 class DataSeriesHelper {
 
-    private final Clock clock;
+    private final long liveCaptureTime;
     private final long dataPointIntervalMillis;
 
-    DataSeriesHelper(Clock clock, long dataPointIntervalMillis) {
-        this.clock = clock;
+    DataSeriesHelper(long liveCaptureTime, long dataPointIntervalMillis) {
+        this.liveCaptureTime = liveCaptureTime;
         this.dataPointIntervalMillis = dataPointIntervalMillis;
     }
 
@@ -62,10 +61,9 @@ class DataSeriesHelper {
         }
     }
 
-    void addFinalDownslopeIfNeeded(long requestCaptureTimeTo, List<DataSeries> dataSeriesList,
+    void addFinalDownslopeIfNeeded(List<DataSeries> dataSeriesList,
             @Nullable DataSeries otherDataSeries, long lastCaptureTime) {
-        long downslopeCaptureTime =
-                finalDownslopeCaptureTime(requestCaptureTimeTo, lastCaptureTime);
+        long downslopeCaptureTime = finalDownslopeCaptureTime(lastCaptureTime);
         if (downslopeCaptureTime != 0) {
             // bring down to zero
             for (DataSeries dataSeries : dataSeriesList) {
@@ -95,10 +93,8 @@ class DataSeriesHelper {
         addGap(dataSeries, lastCaptureTime, captureTime);
     }
 
-    void addFinalDownslopeIfNeeded(long requestCaptureTimeTo, DataSeries dataSeries,
-            long lastCaptureTime) {
-        long downslopeCaptureTime =
-                finalDownslopeCaptureTime(requestCaptureTimeTo, lastCaptureTime);
+    void addFinalDownslopeIfNeeded(DataSeries dataSeries, long lastCaptureTime) {
+        long downslopeCaptureTime = finalDownslopeCaptureTime(lastCaptureTime);
         if (downslopeCaptureTime != 0) {
             // bring down to zero
             dataSeries.add(downslopeCaptureTime, 0);
@@ -118,24 +114,11 @@ class DataSeriesHelper {
     }
 
     // returns 0 if final downslope is not needed
-    private long finalDownslopeCaptureTime(long requestCaptureTimeTo, long lastCaptureTime) {
-        if (lastCaptureTime == requestCaptureTimeTo) {
-            return 0;
-        }
-        long now = clock.currentTimeMillis();
-        long lastCaptureAgoFromNow = now - lastCaptureTime;
-        if (lastCaptureAgoFromNow < dataPointIntervalMillis / 5) {
-            // last capture time is within 20% of data point interval
-            // probably lastCaptureTime is live data point already
-            // and even if not, final steep downslope would be more distracting than helpful
-            return 0;
-        }
-        if (lastCaptureAgoFromNow > dataPointIntervalMillis) {
+    private long finalDownslopeCaptureTime(long lastCaptureTime) {
+        if (liveCaptureTime - lastCaptureTime > 1.5 * dataPointIntervalMillis) {
             return lastCaptureTime + dataPointIntervalMillis;
-        } else {
-            // capturing live data
-            return now;
         }
+        return 0;
     }
 
     private long getPriorCaptureTime(long captureTime) {

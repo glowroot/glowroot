@@ -29,6 +29,8 @@ import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
@@ -39,6 +41,10 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.JvmInfoMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
+import org.glowroot.wire.api.model.DownstreamServiceGrpc;
+import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceStub;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Hello;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
 import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
@@ -48,21 +54,25 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 class GrpcCollector implements Collector {
 
-    private static final Logger logger = LoggerFactory.getLogger(GrpcCollector.class);
+    static final Logger logger = LoggerFactory.getLogger(GrpcCollector.class);
 
     private final EventLoopGroup eventLoopGroup;
     private final ExecutorService executor;
     private final ManagedChannel channel;
-    private final CollectorServiceStub client;
+    private final CollectorServiceStub collectorServiceStub;
+    private final DownstreamServiceStub downstreamServiceStub;
 
     private final String serverId;
 
     private final LoggingStreamObserver loggingStreamObserver = new LoggingStreamObserver();
 
     // limit error logging to once per minute
-    private RateLimiter loggingRateLimiter = RateLimiter.create(1 / 60.0);
+    private final RateLimiter loggingRateLimiter = RateLimiter.create(1 / 60.0);
 
-    GrpcCollector(String serverId, String collectorHost, int collectorPort) {
+    private final StreamObserver<ClientResponse> responseObserver;
+
+    GrpcCollector(String serverId, String collectorHost, int collectorPort,
+            ConfigUpdateService configUpdateService, LiveJvmService liveJvmService) {
         eventLoopGroup = EventLoopGroups.create("Glowroot-grpc-worker-ELG");
         executor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                 .setDaemon(true)
@@ -74,7 +84,17 @@ class GrpcCollector implements Collector {
                 .executor(executor)
                 .negotiationType(NegotiationType.PLAINTEXT)
                 .build();
-        client = CollectorServiceGrpc.newStub(channel);
+        collectorServiceStub = CollectorServiceGrpc.newStub(channel);
+        downstreamServiceStub = DownstreamServiceGrpc.newStub(channel);
+        DownstreamServiceObserver requestObserver =
+                new DownstreamServiceObserver(configUpdateService, liveJvmService);
+        // FIXME need to detect reconnect and re-issue connect/hello
+        responseObserver = downstreamServiceStub.connect(requestObserver);
+        responseObserver.onNext(ClientResponse.newBuilder()
+                .setHello(Hello.newBuilder()
+                        .setServerId(serverId))
+                .build());
+        requestObserver.responseObserver = responseObserver;
         this.serverId = serverId;
     }
 
@@ -85,7 +105,7 @@ class GrpcCollector implements Collector {
                 .setServerId(serverId)
                 .setJvmInfo(jvmInfo)
                 .build();
-        client.collectJvmInfo(jvmInfoMessage, loggingStreamObserver);
+        collectorServiceStub.collectJvmInfo(jvmInfoMessage, loggingStreamObserver);
     }
 
     @Override
@@ -96,7 +116,7 @@ class GrpcCollector implements Collector {
                 .setCaptureTime(captureTime)
                 .addAllAggregatesByType(aggregatesByType)
                 .build();
-        client.collectAggregates(aggregateMessage, loggingStreamObserver);
+        collectorServiceStub.collectAggregates(aggregateMessage, loggingStreamObserver);
     }
 
     @Override
@@ -105,7 +125,7 @@ class GrpcCollector implements Collector {
                 .setServerId(serverId)
                 .addAllGaugeValues(gaugeValues)
                 .build();
-        client.collectGaugeValues(gaugeValueMessage, loggingStreamObserver);
+        collectorServiceStub.collectGaugeValues(gaugeValueMessage, loggingStreamObserver);
     }
 
     @Override
@@ -114,7 +134,7 @@ class GrpcCollector implements Collector {
                 .setServerId(serverId)
                 .setTrace(trace)
                 .build();
-        client.collectTrace(traceMessage, loggingStreamObserver);
+        collectorServiceStub.collectTrace(traceMessage, loggingStreamObserver);
     }
 
     @Override
@@ -123,11 +143,15 @@ class GrpcCollector implements Collector {
                 .setServerId(serverId)
                 .setLogEvent(logEvent)
                 .build();
-        client.log(logMessage, loggingStreamObserver);
+        collectorServiceStub.log(logMessage, loggingStreamObserver);
     }
 
     @Override
+    @OnlyUsedByTests
     public void close() throws InterruptedException {
+        responseObserver.onCompleted();
+        // sleep is needed to mitigate sporadic failure to shutdown channel
+        Thread.sleep(1000);
         channel.shutdown();
         if (!channel.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate gRPC channel");

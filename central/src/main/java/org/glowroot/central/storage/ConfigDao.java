@@ -38,7 +38,7 @@ public class ConfigDao {
 
     private final PreparedStatement insertPS;
 
-    public ConfigDao(Session session) throws Exception {
+    public ConfigDao(Session session) {
         this.session = session;
 
         session.execute("create table if not exists config (key varchar, value varchar,"
@@ -58,7 +58,6 @@ public class ConfigDao {
     <T> T read(String key, Class<T> clazz, ObjectMapper mapper) {
 
         ResultSet results = session.execute("select value from config where key = ?", key);
-
         Row row = results.one();
         if (row == null) {
             return null;
@@ -76,10 +75,9 @@ public class ConfigDao {
     }
 
     <T extends /*@NonNull*/Object> /*@Nullable*/T read(String key, TypeReference<T> typeReference,
-            ObjectMapper mapper) throws Exception {
+            ObjectMapper mapper) {
 
         ResultSet results = session.execute("select value from config where key = ?", key);
-
         Row row = results.one();
         if (row == null) {
             return null;

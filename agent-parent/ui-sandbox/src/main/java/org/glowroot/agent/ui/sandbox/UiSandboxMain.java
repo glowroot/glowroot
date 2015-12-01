@@ -33,6 +33,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class UiSandboxMain {
 
     private static final boolean useJavaagent = false;
+    private static final boolean useCentral = false;
     private static final boolean useReverseProxy = false;
 
     static {
@@ -53,16 +54,17 @@ public class UiSandboxMain {
                     Charsets.UTF_8);
         }
         if (useJavaagent) {
-            container = new JavaagentContainer(baseDir, false, false,
-                    ImmutableList.of("-Dglowroot.collector.host="));
+            container =
+                    new JavaagentContainer(baseDir, false, true, false, ImmutableList.<String>of());
+        } else if (useCentral) {
+            container = new LocalContainer(baseDir, false, false,
+                    ImmutableMap.of("glowroot.server.id", "UI Sandbox",
+                            "glowroot.collector.host", "localhost",
+                            "glowroot.collector.port", "8181"));
         } else {
-            container = new LocalContainer(baseDir, false,
-                    ImmutableMap.of("glowroot.collector.host", ""));
+            container = new LocalContainer(baseDir, false, true, ImmutableMap.<String, String>of());
         }
-        // FIXME JavaagentContainer needs to wait until glowroot is ready before proceeding
-        // give it time to start up
-        Thread.sleep(5000);
-        container.execute(GenerateTraces.class);
+        container.executeNoExpectedTrace(GenerateTraces.class);
     }
 
     public static class GenerateTraces implements AppUnderTest {

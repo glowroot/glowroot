@@ -30,9 +30,9 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.AdvancedConfigUpdate;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
 import org.glowroot.agent.tests.app.Pause;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.AdvancedConfig;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -71,11 +71,11 @@ public class PartialTraceIT {
             boolean stuckOnNonRoot) throws Exception {
         // given
         container.getConfigService().updateTransactionConfig(
-                TransactionConfigUpdate.newBuilder()
+                TransactionConfig.newBuilder()
                         .setProfilingIntervalMillis(ProtoOptional.of(10))
                         .build());
         container.getConfigService().updateAdvancedConfig(
-                AdvancedConfigUpdate.newBuilder()
+                AdvancedConfig.newBuilder()
                         .setImmediatePartialStoreThresholdSeconds(ProtoOptional.of(1))
                         .build());
         // when

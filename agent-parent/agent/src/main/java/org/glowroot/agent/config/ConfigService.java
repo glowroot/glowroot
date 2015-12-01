@@ -290,7 +290,9 @@ public class ConfigService {
 
     @OnlyUsedByTests
     public void resetAllConfig() throws IOException {
-        transactionConfig = ImmutableTransactionConfig.builder().build();
+        transactionConfig = ImmutableTransactionConfig.builder()
+                .slowThresholdMillis(0)
+                .build();
         userRecordingConfig = ImmutableUserRecordingConfig.builder().build();
         advancedConfig = ImmutableAdvancedConfig.builder().build();
         pluginConfigs = fixPluginConfigs(ImmutableList.<PluginConfig>of(), pluginDescriptors);

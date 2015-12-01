@@ -48,7 +48,7 @@ public class UiModule {
     @Builder.Factory
     public static UiModule createUiModule(
             boolean central,
-            Ticker ticker,
+            @Nullable Ticker ticker, // @Nullable to deal with shading from central
             Clock clock,
             @Nullable File logDir,
             @Nullable LiveJvmService liveJvmService,
@@ -63,8 +63,8 @@ public class UiModule {
             LiveTraceRepository liveTraceRepository,
             LiveAggregateRepository liveAggregateRepository,
             @Nullable LiveWeavingService liveWeavingService,
-            boolean viewerMode,
             String bindAddress,
+            int numWorkerThreads,
             String version,
             List<PluginDescriptor> pluginDescriptors) throws Exception {
 
@@ -103,7 +103,7 @@ public class UiModule {
         ConfigJsonService configJsonService = new ConfigJsonService(configRepository, repoAdmin,
                 pluginDescriptors, httpSessionManager, new MailService(), liveWeavingService);
         GaugeValueJsonService gaugeValueJsonService = new GaugeValueJsonService(
-                gaugeValueRepository, rollupLevelService, configRepository, clock);
+                gaugeValueRepository, rollupLevelService, configRepository);
         AlertConfigJsonService alertJsonService = new AlertConfigJsonService(configRepository);
         AdminJsonService adminJsonService = new AdminJsonService(aggregateRepository,
                 traceRepository, gaugeValueRepository, liveAggregateRepository,
@@ -130,7 +130,7 @@ public class UiModule {
         int port = configRepository.getUserInterfaceConfig().port();
         LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, httpSessionManager,
                 indexHtmlHttpService, layoutHttpService, layoutService, traceDetailHttpService,
-                traceExportHttpService, glowrootLogHttpService, jsonServices, viewerMode);
+                traceExportHttpService, glowrootLogHttpService, jsonServices, numWorkerThreads);
 
         lazyHttpServer.init(configJsonService);
         return new UiModule(lazyHttpServer);

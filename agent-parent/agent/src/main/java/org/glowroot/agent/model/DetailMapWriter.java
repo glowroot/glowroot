@@ -96,16 +96,16 @@ class DetailMapWriter {
         if (value == null) {
             // add nothing (as a corollary, this will strip null/Optional.absent() items from lists)
         } else if (value instanceof String) {
-            builder.addValueBuilder().setSval((String) value).build();
+            builder.addValueBuilder().setString((String) value).build();
         } else if (value instanceof Boolean) {
-            builder.addValueBuilder().setBval((Boolean) value).build();
+            builder.addValueBuilder().setBoolean((Boolean) value).build();
         } else if (value instanceof Long) {
-            builder.addValueBuilder().setLval((Long) value).build();
+            builder.addValueBuilder().setLong((Long) value).build();
         } else if (value instanceof Number) {
-            builder.addValueBuilder().setDval(((Number) value).doubleValue()).build();
+            builder.addValueBuilder().setDouble(((Number) value).doubleValue()).build();
         } else {
             logger.warn("detail map has unexpected value type: {}", value.getClass().getName());
-            builder.addValueBuilder().setSval(Strings.nullToEmpty(value.toString())).build();
+            builder.addValueBuilder().setString(Strings.nullToEmpty(value.toString())).build();
         }
     }
 

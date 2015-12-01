@@ -65,18 +65,15 @@
       </div>
       <div gt-sidebar-item
            gt-display="Thread dump"
-           gt-url="jvm/thread-dump"
-           ng-if="!layout.central">
+           gt-url="jvm/thread-dump{{serverIdQueryString()}}">
       </div>
       <div gt-sidebar-item
            gt-display="Heap dump"
-           gt-url="jvm/heap-dump"
-           ng-if="!layout.central">
+           gt-url="jvm/heap-dump{{serverIdQueryString()}}">
       </div>
       <div gt-sidebar-item
            gt-display="MBean tree"
-           gt-url="jvm/mbean-tree"
-           ng-if="!layout.central">
+           gt-url="jvm/mbean-tree{{serverIdQueryString()}}">
       </div>
     </ul>
   </div>

@@ -9,4 +9,5 @@ message JvmInfo {
   string java = 3;
   string jvm = 4;
   repeated string jvm_arg = 5;
+  string heap_dump_default_dir = 6;
 }

@@ -30,9 +30,9 @@ import org.glowroot.agent.MainEntryPoint;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Threads;
-import org.glowroot.agent.it.harness.grpc.Common.Void;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc.JavaagentService;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.AppUnderTestClassName;
+import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.Void;
 
 public class JavaagentServiceImpl implements JavaagentService {
 

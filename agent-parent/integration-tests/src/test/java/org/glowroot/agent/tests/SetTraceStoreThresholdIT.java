@@ -24,10 +24,10 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.tests.app.LevelOne;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -62,7 +62,7 @@ public class SetTraceStoreThresholdIT {
     public void shouldReadTrace() throws Exception {
         // given
         container.getConfigService().updateTransactionConfig(
-                TransactionConfigUpdate.newBuilder()
+                TransactionConfig.newBuilder()
                         .setSlowThresholdMillis(ProtoOptional.of(Integer.MAX_VALUE))
                         .build());
         // when
@@ -74,7 +74,7 @@ public class SetTraceStoreThresholdIT {
     public void shouldReadTrace2() throws Exception {
         // given
         container.getConfigService().updateTransactionConfig(
-                TransactionConfigUpdate.newBuilder()
+                TransactionConfig.newBuilder()
                         .setSlowThresholdMillis(ProtoOptional.of(Integer.MAX_VALUE))
                         .build());
         // when

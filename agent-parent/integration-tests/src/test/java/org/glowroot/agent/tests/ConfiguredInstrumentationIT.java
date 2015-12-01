@@ -29,10 +29,10 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TempDirs;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.LocalContainer;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.CaptureKind;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.InstrumentationConfig;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.MethodModifier;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.CaptureKind;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.InstrumentationConfig;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.MethodModifier;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,7 +74,7 @@ public class ConfiguredInstrumentationIT {
     public void shouldExecute1() throws Exception {
         // given
         container.getConfigService().updateTransactionConfig(
-                TransactionConfigUpdate.newBuilder()
+                TransactionConfig.newBuilder()
                         .setSlowThresholdMillis(ProtoOptional.of(Integer.MAX_VALUE))
                         .build());
         // when

@@ -363,7 +363,7 @@ public class SessionAttributeIT {
             if (detail.getValueList().isEmpty()) {
                 responseHeaders.put(detail.getName(), null);
             } else {
-                responseHeaders.put(detail.getName(), detail.getValueList().get(0).getSval());
+                responseHeaders.put(detail.getName(), detail.getValueList().get(0).getString());
             }
         }
         return responseHeaders;

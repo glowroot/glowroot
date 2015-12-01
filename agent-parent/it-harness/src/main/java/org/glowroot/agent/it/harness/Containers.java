@@ -70,7 +70,8 @@ public class Containers {
         JavaagentContainer container =
                 (JavaagentContainer) SharedContainerRunListener.getSharedJavaagentContainer();
         if (container == null) {
-            container = new JavaagentContainer(null, true, false, ImmutableList.<String>of());
+            container =
+                    new JavaagentContainer(null, true, false, false, ImmutableList.<String>of());
             SharedContainerRunListener.setSharedJavaagentContainer(container);
         }
         return container;
@@ -78,12 +79,12 @@ public class Containers {
 
     public static Container getSharedLocalContainer() throws Exception {
         if (!SharedContainerRunListener.useSharedContainer()) {
-            return new LocalContainer(null, false, ImmutableMap.<String, String>of());
+            return new LocalContainer(null, false, false, ImmutableMap.<String, String>of());
         }
         LocalContainer container =
                 (LocalContainer) SharedContainerRunListener.getSharedLocalContainer();
         if (container == null) {
-            container = new LocalContainer(null, true, ImmutableMap.<String, String>of());
+            container = new LocalContainer(null, true, false, ImmutableMap.<String, String>of());
             SharedContainerRunListener.setSharedLocalContainer(container);
         } else {
             container.reopen();
@@ -106,11 +107,13 @@ public class Containers {
                 // this is the most realistic way to run tests because it launches an external JVM
                 // process using -javaagent:glowroot.jar
                 logger.debug("create(): using javaagent container");
-                return new JavaagentContainer(baseDir, shared, false, ImmutableList.<String>of());
+                return new JavaagentContainer(baseDir, shared, false, false,
+                        ImmutableList.<String>of());
             case LOCAL:
                 // this is the easiest way to run/debug tests inside of Eclipse
                 logger.debug("create(): using local container");
-                return new LocalContainer(baseDir, shared, ImmutableMap.<String, String>of());
+                return new LocalContainer(baseDir, shared, false,
+                        ImmutableMap.<String, String>of());
             default:
                 throw new IllegalStateException("Unexpected harness enum value: " + harness);
         }

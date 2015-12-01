@@ -16,21 +16,44 @@
 package org.glowroot.central;
 
 import java.util.List;
-import java.util.Map;
 
 import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 
-public class LiveJvmServiceImpl implements LiveJvmService {
+class LiveJvmServiceImpl implements LiveJvmService {
 
-    @Override
-    public Map<String, MBeanTreeInnerNode> getMBeanTree(MBeanTreeRequest request) {
-        throw new UnsupportedOperationException();
+    private final DownstreamServiceImpl downstreamService;
+
+    LiveJvmServiceImpl(DownstreamServiceImpl downstreamService) {
+        this.downstreamService = downstreamService;
     }
 
     @Override
-    public Map<String, /*@Nullable*/Object> getMBeanSortedAttributeMap(String serverId,
-            String objectName) {
-        throw new UnsupportedOperationException();
+    public ThreadDump getThreadDump(String serverId) throws Exception {
+        return downstreamService.threadDump(serverId);
+    }
+
+    @Override
+    public long getAvailableDiskSpace(String serverId, String directory) throws Exception {
+        return downstreamService.availableDiskSpaceBytes(serverId, directory);
+    }
+
+    @Override
+    public HeapDumpFileInfo heapDump(String serverId, String directory) throws Exception {
+        return downstreamService.heapDump(serverId, directory);
+    }
+
+    @Override
+    public void gc(String serverId) throws Exception {
+        downstreamService.gc(serverId);
+    }
+
+    @Override
+    public MBeanDump getMBeanDump(String serverId, MBeanDumpRequest request) throws Exception {
+        return downstreamService.mbeanDump(serverId, request);
     }
 
     @Override
@@ -41,31 +64,6 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
     @Override
     public MBeanMeta getMBeanMeta(String serverId, String mbeanObjectName) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public AllThreads getAllThreads() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String getHeapDumpDefaultDirectory(String serverId) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long getAvailableDiskSpace(String serverId, String directory) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public HeapFile dumpHeap(String serverId, String directory) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void gc() {
         throw new UnsupportedOperationException();
     }
 

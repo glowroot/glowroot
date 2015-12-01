@@ -51,18 +51,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.AgentPremain;
-import org.glowroot.agent.init.GrpcServerWrapper;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.ConfigService;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TempDirs;
-import org.glowroot.agent.it.harness.grpc.Common.Void;
-import org.glowroot.agent.it.harness.grpc.ConfigUpdateServiceGrpc;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc.JavaagentServiceBlockingClient;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.AppUnderTestClassName;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.OptionalInt;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
+import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.Void;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -78,33 +74,33 @@ public class JavaagentContainer implements Container {
 
     private final ServerSocket heartbeatListenerSocket;
     private final ExecutorService heartbeatListenerExecutor;
-    private final GrpcServerWrapper server;
+    private final @Nullable GrpcServerWrapper server;
     private final EventLoopGroup eventLoopGroup;
     private final ExecutorService executor;
     private final ManagedChannel channel;
-    private final TraceCollector traceCollector;
+    private final @Nullable TraceCollector traceCollector;
     private final JavaagentServiceBlockingClient javaagentService;
     private final ExecutorService consolePipeExecutor;
     private final Process process;
     private final ConsoleOutputPipe consoleOutputPipe;
-    private final ConfigService configService;
+    private final @Nullable ConfigService configService;
     private final Thread shutdownHook;
 
     public static JavaagentContainer create() throws Exception {
-        return new JavaagentContainer(null, false, false, ImmutableList.<String>of());
+        return new JavaagentContainer(null, false, false, false, ImmutableList.<String>of());
     }
 
     public static JavaagentContainer create(File baseDir) throws Exception {
-        return new JavaagentContainer(baseDir, false, false, ImmutableList.<String>of());
+        return new JavaagentContainer(baseDir, false, false, false, ImmutableList.<String>of());
     }
 
     public static JavaagentContainer createWithExtraJvmArgs(List<String> extraJvmArgs)
             throws Exception {
-        return new JavaagentContainer(null, false, false, extraJvmArgs);
+        return new JavaagentContainer(null, false, false, false, extraJvmArgs);
     }
 
-    public JavaagentContainer(@Nullable File baseDir, boolean shared, boolean captureConsoleOutput,
-            List<String> extraJvmArgs) throws Exception {
+    public JavaagentContainer(@Nullable File baseDir, boolean shared, boolean fat,
+            boolean captureConsoleOutput, List<String> extraJvmArgs) throws Exception {
         if (baseDir == null) {
             this.baseDir = TempDirs.createTempDir("glowroot-test-basedir");
             deleteBaseDirOnClose = true;
@@ -130,10 +126,16 @@ public class JavaagentContainer implements Container {
                 }
             }
         });
-
-        traceCollector = new TraceCollector();
-        int collectorPort = LocalContainer.getAvailablePort();
-        server = new GrpcServerWrapper(traceCollector, collectorPort);
+        int collectorPort;
+        if (fat) {
+            collectorPort = 0;
+            traceCollector = null;
+            server = null;
+        } else {
+            collectorPort = LocalContainer.getAvailablePort();
+            traceCollector = new TraceCollector();
+            server = new GrpcServerWrapper(traceCollector, collectorPort);
+        }
         int javaagentServicePort = LocalContainer.getAvailablePort();
         List<String> command = buildCommand(heartbeatListenerSocket.getLocalPort(), collectorPort,
                 javaagentServicePort, this.baseDir, extraJvmArgs);
@@ -176,8 +178,13 @@ public class JavaagentContainer implements Container {
         }
         javaagentService = JavaagentServiceGrpc.newBlockingStub(channel);
         javaagentService.ping(Void.getDefaultInstance());
-        configService =
-                new JavaagentConfigService(ConfigUpdateServiceGrpc.newBlockingStub(channel));
+        if (server == null) {
+            configService = null;
+        } else {
+            configService = new ConfigServiceImpl(server, true);
+        }
+        // this is used to set slowThresholdMillis=0
+        javaagentService.resetAllConfig(Void.getDefaultInstance());
         shutdownHook = new ShutdownHookThread(javaagentService);
         // unfortunately, ctrl-c during maven test will kill the maven process, but won't kill the
         // forked surefire jvm where the tests are being run
@@ -188,16 +195,19 @@ public class JavaagentContainer implements Container {
 
     @Override
     public ConfigService getConfigService() {
+        checkNotNull(configService);
         return configService;
     }
 
     @Override
     public void addExpectedLogMessage(String loggerName, String partialMessage) throws Exception {
+        checkNotNull(traceCollector);
         traceCollector.addExpectedLogMessage(loggerName, partialMessage);
     }
 
     @Override
     public Trace execute(Class<? extends AppUnderTest> appClass) throws Exception {
+        checkNotNull(traceCollector);
         executeInternal(appClass);
         Trace trace = traceCollector.getCompletedTrace(10, SECONDS);
         traceCollector.clearTrace();
@@ -209,7 +219,7 @@ public class JavaagentContainer implements Container {
         executeInternal(appClass);
         // give a short time to see if trace gets collected
         Thread.sleep(10);
-        if (traceCollector.hasTrace()) {
+        if (traceCollector != null && traceCollector.hasTrace()) {
             throw new IllegalStateException("Trace was collected when none was expected");
         }
     }
@@ -221,18 +231,16 @@ public class JavaagentContainer implements Container {
 
     @Override
     public Trace getCollectedPartialTrace() throws InterruptedException {
+        checkNotNull(traceCollector);
         return traceCollector.getPartialTrace(10, SECONDS);
     }
 
     @Override
     public void checkAndReset() throws Exception {
         javaagentService.resetAllConfig(Void.getDefaultInstance());
-        // transactionSlowThresholdMillis=0 is the default for testing
-        configService.updateTransactionConfig(
-                TransactionConfigUpdate.newBuilder()
-                        .setSlowThresholdMillis(OptionalInt.newBuilder().setValue(0).build())
-                        .build());
-        traceCollector.checkAndResetLogMessages();
+        if (traceCollector != null) {
+            traceCollector.checkAndResetLogMessages();
+        }
     }
 
     @Override
@@ -259,7 +267,9 @@ public class JavaagentContainer implements Container {
         if (!eventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate gRPC event loop group");
         }
-        server.close();
+        if (server != null) {
+            server.close();
+        }
         cleanup();
     }
 
@@ -379,7 +389,7 @@ public class JavaagentContainer implements Container {
             command.add("-javaagent:" + javaagentJarFile);
         }
         command.add("-Dglowroot.base.dir=" + baseDir.getAbsolutePath());
-        if (!extraJvmArgs.contains("-Dglowroot.collector.host=")) {
+        if (collectorPort != 0) {
             command.add("-Dglowroot.collector.host=localhost");
             command.add("-Dglowroot.collector.port=" + collectorPort);
         }

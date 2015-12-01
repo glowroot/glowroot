@@ -17,24 +17,24 @@ package org.glowroot.agent.it.harness;
 
 import java.util.List;
 
-import org.glowroot.agent.it.harness.model.ConfigUpdate.AdvancedConfigUpdate;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.InstrumentationConfig;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.PluginConfigUpdate;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.UserRecordingConfigUpdate;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.AdvancedConfig;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.InstrumentationConfig;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.PluginConfig;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.UserRecordingConfig;
 
 public interface ConfigService {
 
-    void updateTransactionConfig(TransactionConfigUpdate update) throws Exception;
+    void updateTransactionConfig(TransactionConfig config) throws Exception;
 
-    void updateUserRecordingConfig(UserRecordingConfigUpdate update) throws Exception;
+    void updateUserRecordingConfig(UserRecordingConfig config) throws Exception;
 
-    void updateAdvancedConfig(AdvancedConfigUpdate update) throws Exception;
+    void updateAdvancedConfig(AdvancedConfig config) throws Exception;
 
-    void updatePluginConfig(PluginConfigUpdate update) throws Exception;
+    void updatePluginConfig(PluginConfig config) throws Exception;
 
     // returns the number of classes updated during re-weaving
-    int updateInstrumentationConfigs(List<InstrumentationConfig> update) throws Exception;
+    int updateInstrumentationConfigs(List<InstrumentationConfig> configs) throws Exception;
 
     // convenience methods wrapping updatePluginConfig()
     void disablePlugin(String pluginId) throws Exception;

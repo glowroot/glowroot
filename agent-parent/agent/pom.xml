@@ -378,6 +378,24 @@
                 </filter>
               </filters>
               <relocations>
+                <!-- need to shade glowroot modules so they can be used in glowroot-central without
+                  conflict, while central itself is being monitored by glowroot-agent -->
+                <relocation>
+                  <pattern>org.glowroot.common</pattern>
+                  <shadedPattern>org.glowroot.agent.shaded.glowroot.common</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.glowroot.wire.api</pattern>
+                  <shadedPattern>org.glowroot.agent.shaded.glowroot.wire.api</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.glowroot.storage</pattern>
+                  <shadedPattern>org.glowroot.agent.shaded.glowroot.storage</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.glowroot.ui</pattern>
+                  <shadedPattern>org.glowroot.agent.shaded.glowroot.ui</shadedPattern>
+                </relocation>
                 <relocation>
                   <pattern>org.objectweb.asm</pattern>
                   <shadedPattern>org.glowroot.agent.shaded.objectweb.asm</shadedPattern>

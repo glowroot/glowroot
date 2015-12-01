@@ -24,8 +24,8 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.CaptureKind;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.InstrumentationConfig;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.CaptureKind;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.InstrumentationConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

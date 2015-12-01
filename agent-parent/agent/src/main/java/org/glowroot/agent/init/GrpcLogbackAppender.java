@@ -18,13 +18,40 @@ package org.glowroot.agent.init;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
+import com.google.common.reflect.Reflection;
+import io.netty.buffer.AbstractByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
 
 class GrpcLogbackAppender extends AppenderBase<ILoggingEvent> {
 
+    private static final Logger logger = LoggerFactory.getLogger(GrpcLogbackAppender.class);
+
+    static {
+        // explicit initializations are to work around NullPointerExceptions caused by class init
+        // ordering, e.g. when running UiSandboxMain against central collector (and debug logging
+        // enabled at root logger)
+        Reflection.initialize(AbstractByteBuf.class);
+        try {
+            Class.forName("io.netty.channel.DefaultChannelHandlerInvoker$WriteTask", true,
+                    GrpcLogbackAppender.class.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new AssertionError(e);
+        }
+    }
+
     private final Collector collector;
+
+    @SuppressWarnings("nullness:type.argument.type.incompatible")
+    private final ThreadLocal<Boolean> inLogging = new ThreadLocal<Boolean>() {
+        @Override
+        protected Boolean initialValue() {
+            return false;
+        }
+    };
 
     GrpcLogbackAppender(Collector collector) {
         this.collector = collector;
@@ -32,8 +59,10 @@ class GrpcLogbackAppender extends AppenderBase<ILoggingEvent> {
 
     @Override
     protected void append(ILoggingEvent event) {
-        if (event.getLoggerName().equals(GrpcCollector.class.getName())) {
-            // don't send this server error back to server
+        if (inLogging.get()) {
+            return;
+        }
+        if (Thread.currentThread().getName().startsWith("Glowroot-grpc-worker-ELG-")) {
             return;
         }
         LogEvent logEvent = LogEvent.newBuilder()
@@ -42,10 +71,14 @@ class GrpcLogbackAppender extends AppenderBase<ILoggingEvent> {
                 .setLoggerName(event.getLoggerName())
                 .setFormattedMessage(event.getFormattedMessage())
                 .build();
+        inLogging.set(true);
         try {
             collector.log(logEvent);
         } catch (Exception e) {
-            // do not log (could end up in recursive loop)
+            // this won't be recursively sent to collector.log() thanks to ThreadLocal check
+            logger.error(e.getMessage(), e);
+        } finally {
+            inLogging.set(false);
         }
     }
 

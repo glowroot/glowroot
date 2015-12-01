@@ -17,7 +17,6 @@ package org.glowroot.central;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
-import com.google.common.base.Ticker;
 
 import org.glowroot.central.storage.AggregateDao;
 import org.glowroot.central.storage.ConfigDao;
@@ -46,7 +45,6 @@ public class Main {
     public static void main(String[] args) throws Exception {
 
         Clock clock = Clock.systemClock();
-        Ticker ticker = Ticker.systemTicker();
         String version = Version.getVersion();
 
         // FIXME
@@ -66,18 +64,18 @@ public class Main {
         AggregateRepository aggregateRepository =
                 new AggregateDao(session, serverDao, transactionTypeDao, configRepository);
         TraceRepository traceRepository = new TraceDao(session, serverDao, transactionTypeDao);
-        GaugeValueRepository gaugeValueRepository = new GaugeValueDao(session, serverDao);
+        GaugeValueRepository gaugeValueRepository =
+                new GaugeValueDao(session, serverDao, configRepository);
 
-        new GrpcServer(8181, serverDao, aggregateRepository, gaugeValueRepository,
-                traceRepository);
+        GrpcServer server = new GrpcServer(8181, serverDao, aggregateRepository,
+                gaugeValueRepository, traceRepository);
 
         RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
 
         UiModule uiModule = new CreateUiModuleBuilder()
                 .central(true)
-                .ticker(ticker)
                 .clock(clock)
-                .liveJvmService(null)
+                .liveJvmService(new LiveJvmServiceImpl(server.getDownstreamService()))
                 .configRepository(configRepository)
                 .serverRepository(serverDao)
                 .transactionTypeRepository(transactionTypeDao)
@@ -89,8 +87,8 @@ public class Main {
                 .liveTraceRepository(new LiveTraceRepositoryNop())
                 .liveAggregateRepository(new LiveAggregateRepositoryNop())
                 .liveWeavingService(null)
-                .viewerMode(false)
                 .bindAddress("0.0.0.0")
+                .numWorkerThreads(50)
                 .version(version)
                 .build();
 

@@ -29,8 +29,8 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.Threads;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.AdvancedConfigUpdate;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.AdvancedConfig;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,7 +50,7 @@ public class TimerWrapperMethodsIT {
         container.execute(ShouldGenerateTraceWithProfile.class);
         container.checkAndReset();
         container.getConfigService().updateAdvancedConfig(
-                AdvancedConfigUpdate.newBuilder()
+                AdvancedConfig.newBuilder()
                         .setTimerWrapperMethods(ProtoOptional.of(true))
                         .build());
     }
@@ -69,7 +69,7 @@ public class TimerWrapperMethodsIT {
     public void shouldReadProfile() throws Exception {
         // given
         container.getConfigService().updateTransactionConfig(
-                TransactionConfigUpdate.newBuilder()
+                TransactionConfig.newBuilder()
                         .setProfilingIntervalMillis(ProtoOptional.of(20))
                         .build());
         // when

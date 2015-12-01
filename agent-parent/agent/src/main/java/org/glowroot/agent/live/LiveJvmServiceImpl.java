@@ -18,16 +18,13 @@ package org.glowroot.agent.live;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 
 import javax.annotation.Nullable;
 import javax.management.Descriptor;
@@ -42,12 +39,9 @@ import javax.management.openmbean.OpenType;
 import javax.management.openmbean.TabularData;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -59,9 +53,12 @@ import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.PatternObjectNameQueryExp;
 import org.glowroot.common.live.ImmutableAvailability;
 import org.glowroot.common.live.ImmutableCapabilities;
-import org.glowroot.common.live.ImmutableHeapFile;
 import org.glowroot.common.live.ImmutableMBeanMeta;
 import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 
 public class LiveJvmServiceImpl implements LiveJvmService {
 
@@ -88,40 +85,104 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public Map<String, MBeanTreeInnerNode> getMBeanTree(MBeanTreeRequest request) throws Exception {
-        Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null, null);
-        // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
-        // see https://code.google.com/p/guava-libraries/issues/detail?id=635
-        Map<String, MBeanTreeInnerNode> sortedRootNodes =
-                new TreeMap<String, MBeanTreeInnerNode>(String.CASE_INSENSITIVE_ORDER);
-        for (ObjectName objectName : objectNames) {
-            String domain = objectName.getDomain();
-            MBeanTreeInnerNode node = sortedRootNodes.get(domain);
-            if (node == null) {
-                node = new MBeanTreeInnerNode(domain);
-                sortedRootNodes.put(domain, node);
-            }
-            List<String> propertyValues = ObjectNames.getPropertyValues(objectName);
-            for (int i = 0; i < propertyValues.size() - 1; i++) {
-                node = node.getOrCreateNode(propertyValues.get(i));
-            }
-            String name = objectName.toString();
-            String value = propertyValues.get(propertyValues.size() - 1);
-            if (request.expanded().contains(name)) {
-                Map<String, /*@Nullable*/Object> sortedAttributeMap =
-                        getMBeanSortedAttributeMap(objectName);
-                node.addLeafNode(new MBeanTreeLeafNode(value, name, true, sortedAttributeMap));
-            } else {
-                node.addLeafNode(new MBeanTreeLeafNode(value, name, false, null));
-            }
-        }
-        return sortedRootNodes;
+    public ThreadDump getThreadDump(String serverId) {
+        return threadDumpService.getThreadDump();
     }
 
     @Override
-    public Map<String, /*@Nullable*/Object> getMBeanSortedAttributeMap(String serverId,
-            String objectName) throws Exception {
-        return getMBeanSortedAttributeMap(ObjectName.getInstance(objectName));
+    public long getAvailableDiskSpace(String serverId, String directory) throws IOException {
+        File dir = new File(directory);
+        if (!dir.exists()) {
+            throw new IOException("Directory doesn't exist");
+        }
+        if (!dir.isDirectory()) {
+            throw new IOException("Path is not a directory");
+        }
+        return dir.getFreeSpace();
+    }
+
+    @Override
+    public HeapDumpFileInfo heapDump(String serverId, String directory) throws Exception {
+        File dir = new File(directory);
+        if (!dir.exists()) {
+            throw new IOException("Directory doesn't exist");
+        }
+        if (!dir.isDirectory()) {
+            throw new IOException("Path is not a directory");
+        }
+        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
+        File file = new File(dir, "heap-dump-" + timestamp + ".hprof");
+        int i = 1;
+        while (file.exists()) {
+            // this seems unlikely now that timestamp is included in file name
+            i++;
+            file = new File(dir, "heap-dump-" + timestamp + "-" + i + ".hprof");
+        }
+        ObjectName objectName = ObjectName.getInstance(HOT_SPOT_DIAGNOSTIC_MBEAN_NAME);
+        lazyPlatformMBeanServer.invoke(objectName, "dumpHeap",
+                new Object[] {file.getAbsolutePath(), false},
+                new String[] {"java.lang.String", "boolean"});
+        return HeapDumpFileInfo.newBuilder()
+                .setFilePath(file.getAbsolutePath())
+                .setFileSizeBytes(file.length())
+                .build();
+    }
+
+    @Override
+    public void gc(String serverId) {
+        // using MemoryMXBean.gc() instead of System.gc() in hope that it will someday bypass
+        // -XX:+DisableExplicitGC (see https://bugs.openjdk.java.net/browse/JDK-6396411)
+        ManagementFactory.getMemoryMXBean().gc();
+    }
+
+    @Override
+    public MBeanDump getMBeanDump(String serverId, MBeanDumpRequest request) throws Exception {
+        switch (request.getKind()) {
+            case ALL_MBEANS_INCLUDE_ATTRIBUTES:
+                throw new UnsupportedOperationException("Not implemented yet");
+            case ALL_MBEANS_INCLUDE_ATTRIBUTES_FOR_SOME:
+                return MBeanDump.newBuilder()
+                        .addAllMbeanInfo(getAllMBeanInfos(request.getObjectNameList()))
+                        .build();
+            case SOME_MBEANS_INCLUDE_ATTRIBUTES:
+                return MBeanDump.newBuilder()
+                        .addAllMbeanInfo(getSomeMBeanInfos(request.getObjectNameList()))
+                        .build();
+            default:
+                throw new IllegalStateException("Unexpected mbean dump kind: " + request.getKind());
+        }
+    }
+
+    private List<MBeanDump.MBeanInfo> getAllMBeanInfos(List<String> includeAttrsForObjectNames)
+            throws Exception {
+        Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null, null);
+        List<MBeanDump.MBeanInfo> mbeanInfos = Lists.newArrayList();
+        for (ObjectName objectName : objectNames) {
+            String name = objectName.toString();
+            if (includeAttrsForObjectNames.contains(name)) {
+                mbeanInfos.add(MBeanDump.MBeanInfo.newBuilder()
+                        .setObjectName(name)
+                        .addAllAttribute(getMBeanAttributes(objectName))
+                        .build());
+            } else {
+                mbeanInfos.add(MBeanDump.MBeanInfo.newBuilder()
+                        .setObjectName(name)
+                        .build());
+            }
+        }
+        return mbeanInfos;
+    }
+
+    private List<MBeanDump.MBeanInfo> getSomeMBeanInfos(List<String> includeObjectNames)
+            throws Exception {
+        List<MBeanDump.MBeanInfo> mbeanInfos = Lists.newArrayList();
+        for (String objectName : includeObjectNames) {
+            mbeanInfos.add(MBeanDump.MBeanInfo.newBuilder()
+                    .setObjectName(objectName)
+                    .addAllAttribute(getMBeanAttributes(new ObjectName(objectName)))
+                    .build());
+        }
+        return mbeanInfos;
     }
 
     @Override
@@ -155,65 +216,6 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public AllThreads getAllThreads() {
-        return threadDumpService.getAllThreads();
-    }
-
-    @Override
-    public String getHeapDumpDefaultDirectory(String serverId) {
-        String heapDumpPath = getHeapDumpPathFromCommandLine();
-        if (heapDumpPath == null) {
-            String javaTempDir =
-                    MoreObjects.firstNonNull(StandardSystemProperty.JAVA_IO_TMPDIR.value(), ".");
-            heapDumpPath = new File(javaTempDir).getAbsolutePath();
-        }
-        return heapDumpPath;
-    }
-
-    @Override
-    public long getAvailableDiskSpace(String serverId, String directory) throws IOException {
-        File dir = new File(directory);
-        if (!dir.exists()) {
-            throw new IOException("Directory doesn't exist");
-        }
-        if (!dir.isDirectory()) {
-            throw new IOException("Path is not a directory");
-        }
-        return dir.getFreeSpace();
-    }
-
-    @Override
-    public HeapFile dumpHeap(String serverId, String directory) throws Exception {
-        File dir = new File(directory);
-        if (!dir.exists()) {
-            throw new IOException("Directory doesn't exist");
-        }
-        if (!dir.isDirectory()) {
-            throw new IOException("Path is not a directory");
-        }
-        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
-        File file = new File(dir, "heap-dump-" + timestamp + ".hprof");
-        int i = 1;
-        while (file.exists()) {
-            // this seems unlikely now that timestamp is included in filename
-            i++;
-            file = new File(dir, "heap-dump-" + timestamp + "-" + i + ".hprof");
-        }
-        ObjectName objectName = ObjectName.getInstance(HOT_SPOT_DIAGNOSTIC_MBEAN_NAME);
-        lazyPlatformMBeanServer.invoke(objectName, "dumpHeap",
-                new Object[] {file.getAbsolutePath(), false},
-                new String[] {"java.lang.String", "boolean"});
-        return ImmutableHeapFile.of(file.getAbsolutePath(), file.length());
-    }
-
-    @Override
-    public void gc() {
-        // using MemoryMXBean.gc() instead of System.gc() in hope that it will someday bypass
-        // -XX:+DisableExplicitGC (see https://bugs.openjdk.java.net/browse/JDK-6396411)
-        ManagementFactory.getMemoryMXBean().gc();
-    }
-
-    @Override
     public Capabilities getCapabilities(String serverId) {
         return ImmutableCapabilities.builder()
                 .threadCpuTime(getThreadCpuTimeAvailability())
@@ -222,13 +224,10 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                 .build();
     }
 
-    private Map<String, /*@Nullable*/Object> getMBeanSortedAttributeMap(ObjectName objectName)
+    private List<MBeanDump.MBeanAttribute> getMBeanAttributes(ObjectName objectName)
             throws Exception {
         MBeanInfo mBeanInfo = lazyPlatformMBeanServer.getMBeanInfo(objectName);
-        // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
-        // see https://code.google.com/p/guava-libraries/issues/detail?id=635
-        Map<String, /*@Nullable*/Object> sortedAttributeMap =
-                new TreeMap<String, /*@Nullable*/Object>(String.CASE_INSENSITIVE_ORDER);
+        List<MBeanDump.MBeanAttribute> attributes = Lists.newArrayList();
         for (MBeanAttributeInfo attribute : mBeanInfo.getAttributes()) {
             Object value;
             try {
@@ -239,9 +238,12 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                 Throwable rootCause = getRootCause(e);
                 value = "<" + rootCause.getClass().getName() + ": " + rootCause.getMessage() + ">";
             }
-            sortedAttributeMap.put(attribute.getName(), getMBeanAttributeValue(value));
+            attributes.add(MBeanDump.MBeanAttribute.newBuilder()
+                    .setName(attribute.getName())
+                    .setValue(getMBeanAttributeValue(value))
+                    .build());
         }
-        return sortedAttributeMap;
+        return attributes;
     }
 
     private static Throwable getRootCause(Throwable t) {
@@ -256,34 +258,58 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     // see list of allowed attribute value types:
     // http://docs.oracle.com/javase/7/docs/api/javax/management/openmbean/OpenType.html
     // #ALLOWED_CLASSNAMES_LIST
-    private static @Nullable Object getMBeanAttributeValue(@Nullable Object value) {
+    private static MBeanDump.MBeanValue getMBeanAttributeValue(@Nullable Object value) {
         if (value == null) {
-            return null;
+            return MBeanDump.MBeanValue.newBuilder()
+                    .setNull(true)
+                    .build();
         } else if (value instanceof CompositeData) {
             return getCompositeDataValue((CompositeData) value);
         } else if (value instanceof TabularData) {
             return getTabularDataValue((TabularData) value);
         } else if (value.getClass().isArray()) {
             return getArrayValue(value);
+        } else if (value instanceof Boolean) {
+            return MBeanDump.MBeanValue.newBuilder()
+                    .setBoolean((Boolean) value)
+                    .build();
+        } else if (value instanceof Long) {
+            return MBeanDump.MBeanValue.newBuilder()
+                    .setLong((Long) value)
+                    .build();
+        } else if (value instanceof Integer) {
+            return MBeanDump.MBeanValue.newBuilder()
+                    .setLong((Integer) value)
+                    .build();
         } else if (value instanceof Number) {
-            return value;
+            return MBeanDump.MBeanValue.newBuilder()
+                    .setDouble(((Number) value).doubleValue())
+                    .build();
         } else {
-            return value.toString();
+            return MBeanDump.MBeanValue.newBuilder()
+                    .setString(value.toString())
+                    .build();
         }
     }
 
-    private static Object getCompositeDataValue(CompositeData compositeData) {
+    private static MBeanDump.MBeanValue getCompositeDataValue(CompositeData compositeData) {
         // linked hash map used to preserve attribute ordering
-        Map<String, /*@Nullable*/Object> valueMap = Maps.newLinkedHashMap();
+        List<MBeanDump.MBeanValueMapEntry> entries = Lists.newArrayList();
         for (String key : compositeData.getCompositeType().keySet()) {
-            valueMap.put(key, getMBeanAttributeValue(compositeData.get(key)));
+            entries.add(MBeanDump.MBeanValueMapEntry.newBuilder()
+                    .setKey(key)
+                    .setValue(getMBeanAttributeValue(compositeData.get(key)))
+                    .build());
         }
-        return valueMap;
+        return MBeanDump.MBeanValue.newBuilder()
+                .setMap(MBeanDump.MBeanValueMap.newBuilder()
+                        .addAllEntry(entries))
+                .build();
     }
 
-    private static Object getTabularDataValue(TabularData tabularData) {
+    private static MBeanDump.MBeanValue getTabularDataValue(TabularData tabularData) {
         // linked hash map used to preserve row ordering
-        Map<String, Map<String, /*@Nullable*/Object>> rowMap = Maps.newLinkedHashMap();
+        List<MBeanDump.MBeanValueMapEntry> outerEntries = Lists.newArrayList();
         Set<String> attributeNames = tabularData.getTabularType().getRowType().keySet();
         for (Object key : tabularData.keySet()) {
             // TabularData.keySet() returns "Set<List<?>> but is declared Set<?> for
@@ -294,24 +320,38 @@ public class LiveJvmServiceImpl implements LiveJvmService {
             @SuppressWarnings("argument.type.incompatible")
             CompositeData compositeData = tabularData.get(keyList.toArray());
             // linked hash map used to preserve attribute ordering
-            Map<String, /*@Nullable*/Object> valueMap = Maps.newLinkedHashMap();
+            List<MBeanDump.MBeanValueMapEntry> innerEntries = Lists.newArrayList();
             for (String attributeName : attributeNames) {
-                valueMap.put(attributeName,
-                        getMBeanAttributeValue(compositeData.get(attributeName)));
+                innerEntries.add(MBeanDump.MBeanValueMapEntry.newBuilder()
+                        .setKey(attributeName)
+                        .setValue(getMBeanAttributeValue(compositeData.get(attributeName)))
+                        .build());
             }
-            rowMap.put(keyString, valueMap);
+            outerEntries.add(MBeanDump.MBeanValueMapEntry.newBuilder()
+                    .setKey(keyString)
+                    .setValue(MBeanDump.MBeanValue.newBuilder()
+                            .setMap(MBeanDump.MBeanValueMap.newBuilder()
+                                    .addAllEntry(innerEntries))
+                            .build())
+                    .build());
         }
-        return rowMap;
+        return MBeanDump.MBeanValue.newBuilder()
+                .setMap(MBeanDump.MBeanValueMap.newBuilder()
+                        .addAllEntry(outerEntries))
+                .build();
     }
 
-    private static Object getArrayValue(Object value) {
+    private static MBeanDump.MBeanValue getArrayValue(Object value) {
         int length = Array.getLength(value);
-        List</*@Nullable*/Object> valueList = Lists.newArrayListWithCapacity(length);
+        List<MBeanDump.MBeanValue> values = Lists.newArrayListWithCapacity(length);
         for (int i = 0; i < length; i++) {
             Object val = Array.get(value, i);
-            valueList.add(getMBeanAttributeValue(val));
+            values.add(getMBeanAttributeValue(val));
         }
-        return valueList;
+        return MBeanDump.MBeanValue.newBuilder()
+                .setList(MBeanDump.MBeanValueList.newBuilder()
+                        .addAllValue(values))
+                .build();
     }
 
     private Set<ObjectName> getObjectNames(String objectName) throws Exception {
@@ -410,16 +450,6 @@ public class LiveJvmServiceImpl implements LiveJvmService {
             }
         }
         return attributeNames;
-    }
-
-    private static @Nullable String getHeapDumpPathFromCommandLine() {
-        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
-        for (String arg : runtimeMXBean.getInputArguments()) {
-            if (arg.startsWith("-XX:HeapDumpPath=")) {
-                return arg.substring("-XX:HeapDumpPath=".length());
-            }
-        }
-        return null;
     }
 
     private static Availability getThreadCpuTimeAvailability() {

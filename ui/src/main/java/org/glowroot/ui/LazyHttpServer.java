@@ -42,7 +42,7 @@ class LazyHttpServer {
     private final TraceExportHttpService traceExportHttpService;
     private final @Nullable GlowrootLogHttpService glowrootLogHttpService;
     private final List<Object> jsonServices;
-    private final boolean viewerMode;
+    private final int numWorkerThreads;
 
     private volatile @Nullable HttpServer httpServer;
 
@@ -51,7 +51,7 @@ class LazyHttpServer {
             LayoutService layoutService, TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService,
             @Nullable GlowrootLogHttpService glowrootLogHttpService, List<Object> jsonServices,
-            boolean viewerMode) {
+            int numWorkerThreads) {
         this.bindAddress = bindAddress;
         this.port = port;
         this.httpSessionManager = httpSessionManager;
@@ -62,7 +62,7 @@ class LazyHttpServer {
         this.traceExportHttpService = traceExportHttpService;
         this.glowrootLogHttpService = glowrootLogHttpService;
         this.jsonServices = jsonServices;
-        this.viewerMode = viewerMode;
+        this.numWorkerThreads = numWorkerThreads;
     }
 
     void init(ConfigJsonService configJsonService) {
@@ -103,11 +103,6 @@ class LazyHttpServer {
         }
         // services
         try {
-            // in embedded mode, default two http worker threads to keep # of threads down
-            // in viewer mode, no need for restrictive limit
-            int defaultNumWorkerThreads = viewerMode ? 20 : 2;
-            int numWorkerThreads = Integer.getInteger("glowroot.internal.ui.workerThreads",
-                    defaultNumWorkerThreads);
             return new HttpServer(bindAddress, port, numWorkerThreads, layoutService, httpServices,
                     httpSessionManager, jsonServices);
         } catch (Exception e) {

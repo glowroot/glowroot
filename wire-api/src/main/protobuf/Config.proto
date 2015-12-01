@@ -1,0 +1,120 @@
+syntax = "proto3";
+
+package org_glowroot_wire_api_model;
+
+option java_package = "org.glowroot.wire.api.model";
+
+message Config {
+
+  TransactionConfig transaction_config = 1;
+  UserRecordingConfig user_recording_config = 2;
+  AdvancedConfig advanced_config = 3;
+  repeated PluginConfig plugin_config = 4;
+  // need to use list wrapper to differentiate between "no update" and "update to empty"
+  GaugeConfigList gauge_config_list = 5;
+  // need to use list wrapper to differentiate between "no update" and "update to empty"
+  InstrumentationConfigList instrumentation_config_list = 6;
+
+  message TransactionConfig {
+    OptionalInt profiling_interval_millis = 1;
+    OptionalInt slow_threshold_millis = 2;
+  }
+
+  message UserRecordingConfig {
+    OptionalStringList users = 1;
+    OptionalInt profiling_interval_millis = 2;
+  }
+
+  message AdvancedConfig {
+    OptionalBool timer_wrapper_methods = 1;
+    OptionalBool weaving_timer = 2;
+    OptionalInt immediate_partial_store_threshold_seconds = 3;
+    OptionalInt max_aggregate_transactions_per_transaction_type = 4;
+    OptionalInt max_aggregate_queries_per_query_type = 5;
+    OptionalInt max_trace_entries_per_transaction = 6;
+    OptionalInt max_stack_trace_samples_per_transaction = 7;
+    OptionalBool capture_thread_info = 8;
+    OptionalBool capture_gc_activity = 9;
+    OptionalInt mbean_gauge_not_found_delay_seconds = 10;
+  }
+
+  message PluginConfig {
+    string id = 1;
+    OptionalBool enabled = 2;
+    repeated PluginProperty property = 3;
+  }
+
+  message GaugeConfigList {
+    repeated GaugeConfig gauge_config = 1;
+  }
+
+  message InstrumentationConfigList {
+    repeated InstrumentationConfig instrumentation_config = 1;
+  }
+
+  message PluginProperty {
+    string name = 1;
+    oneof val {
+      bool bval = 2;
+      bool dval_null = 3; // simple one field NullableDouble won't work inside "oneof"
+      double dval = 4;
+      string sval = 5;
+    }
+  }
+
+  message GaugeConfig {
+    string mbean_object_name = 1;
+    repeated MBeanAttribute mbean_attribute = 2;
+  }
+
+  message MBeanAttribute {
+    string name = 1;
+    bool counter = 2;
+  }
+
+  message InstrumentationConfig {
+    string class_name = 1;
+    string declaring_class_name = 2;
+    string method_name = 3;
+    repeated string method_parameter_type = 4;
+    string method_return_type = 5;
+    repeated MethodModifier method_modifier = 6;
+    CaptureKind capture_kind = 7;
+    string timer_name = 8;
+    string trace_entry_message_template = 9;
+    OptionalInt trace_entry_stack_threshold_millis = 10; // absent means N/A
+    bool trace_entry_capture_self_nested = 11;
+    string transaction_type = 12;
+    string transaction_name_template = 13;
+    string transaction_user_template = 14;
+    map<string, string> transaction_attribute_templates = 15;
+    OptionalInt transaction_slow_threshold_millis = 16; // absent means N/A
+    string enabled_property = 17;
+    string trace_entry_enabled_property = 18;
+  }
+
+  message OptionalInt {
+    int32 value = 1;
+  }
+
+  message OptionalBool {
+    bool value = 1;
+  }
+
+  message OptionalStringList {
+    repeated string value = 1;
+  }
+
+  enum MethodModifier {
+    PUBLIC = 0;
+    STATIC = 4;
+    NOT_STATIC = 5;
+  }
+
+  enum CaptureKind {
+    TRANSACTION = 0;
+    TRACE_ENTRY = 1;
+    TIMER = 2;
+    OTHER = 3;
+  }
+}

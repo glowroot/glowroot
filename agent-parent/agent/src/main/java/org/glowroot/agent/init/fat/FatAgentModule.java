@@ -163,8 +163,8 @@ class FatAgentModule {
                     .liveTraceRepository(agentModule.getLiveTraceRepository())
                     .liveAggregateRepository(agentModule.getLiveAggregateRepository())
                     .liveWeavingService(agentModule.getLiveWeavingService())
-                    .viewerMode(false)
                     .bindAddress(bindAddress)
+                    .numWorkerThreads(2)
                     .version(version)
                     .pluginDescriptors(agentModule.getPluginDescriptors())
                     .build();
@@ -187,8 +187,8 @@ class FatAgentModule {
                     .liveTraceRepository(new LiveTraceRepositoryNop())
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
                     .liveWeavingService(null)
-                    .viewerMode(true)
                     .bindAddress(bindAddress)
+                    .numWorkerThreads(10)
                     .version(version)
                     .pluginDescriptors(viewerAgentModule.getPluginDescriptors())
                     .build();

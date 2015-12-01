@@ -155,10 +155,10 @@ public class WebDriverSetup {
         Files.write("{\"ui\":{\"port\":" + uiPort + "}}", configFile, Charsets.UTF_8);
         Container container;
         if (Containers.useJavaagent()) {
-            container = new JavaagentContainer(baseDir, false, false,
+            container = new JavaagentContainer(baseDir, false, true, false,
                     ImmutableList.of("-Dglowroot.collector.host="));
         } else {
-            container = new LocalContainer(baseDir, false,
+            container = new LocalContainer(baseDir, false, true,
                     ImmutableMap.of("glowroot.collector.host", ""));
         }
         if (SauceLabs.useSauceLabs()) {

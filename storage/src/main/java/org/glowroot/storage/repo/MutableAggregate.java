@@ -56,6 +56,10 @@ public class MutableAggregate {
         queries = new QueryCollector(maxAggregateQueriesPerQueryType, 0);
     }
 
+    public boolean isEmpty() {
+        return transactionCount == 0;
+    }
+
     public void addTotalNanos(double totalNanos) {
         this.totalNanos += totalNanos;
     }

@@ -54,11 +54,12 @@ class TracePointJsonService {
     private final TraceRepository traceRepository;
     private final LiveTraceRepository liveTraceRepository;
     private final ConfigRepository configRepository;
-    private final Ticker ticker;
+    // null in central (due to shading issue, and not needed in central anyways)
+    private final @Nullable Ticker ticker;
     private final Clock clock;
 
     TracePointJsonService(TraceRepository traceRepository, LiveTraceRepository liveTraceRepository,
-            ConfigRepository configRepository, Ticker ticker, Clock clock) {
+            ConfigRepository configRepository, @Nullable Ticker ticker, Clock clock) {
         this.traceRepository = traceRepository;
         this.liveTraceRepository = liveTraceRepository;
         this.configRepository = configRepository;
@@ -126,7 +127,7 @@ class TracePointJsonService {
             List<TracePoint> activeTracePoints = Lists.newArrayList();
             long captureTime = 0;
             long captureTick = 0;
-            if (captureActiveTracePoints) {
+            if (captureActiveTracePoints && ticker != null) {
                 captureTime = clock.currentTimeMillis();
                 captureTick = ticker.read();
                 // capture active traces first to make sure that none are missed in the transition

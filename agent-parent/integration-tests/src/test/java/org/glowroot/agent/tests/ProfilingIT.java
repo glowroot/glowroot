@@ -25,11 +25,11 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.Threads;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.OptionalStringList;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
-import org.glowroot.agent.it.harness.model.ConfigUpdate.UserRecordingConfigUpdate;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.OptionalStringList;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.UserRecordingConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,7 +80,7 @@ public class ProfilingIT {
     @Test
     public void shouldReadUserRecordingProfile() throws Exception {
         // given
-        UserRecordingConfigUpdate userRecordingConfig = UserRecordingConfigUpdate.newBuilder()
+        UserRecordingConfig userRecordingConfig = UserRecordingConfig.newBuilder()
                 .setUsers(OptionalStringList.newBuilder().addValue("able").build())
                 .setProfilingIntervalMillis(ProtoOptional.of(20))
                 .build();
@@ -96,7 +96,7 @@ public class ProfilingIT {
     @Test
     public void shouldNotReadUserRecordingProfile() throws Exception {
         // given
-        UserRecordingConfigUpdate userRecordingConfig = UserRecordingConfigUpdate.newBuilder()
+        UserRecordingConfig userRecordingConfig = UserRecordingConfig.newBuilder()
                 .setUsers(OptionalStringList.newBuilder().addValue("baker").build())
                 .setProfilingIntervalMillis(ProtoOptional.of(20))
                 .build();
@@ -110,7 +110,7 @@ public class ProfilingIT {
 
     private static void setProfilingIntervalMillis(int millis) throws Exception {
         container.getConfigService().updateTransactionConfig(
-                TransactionConfigUpdate.newBuilder()
+                TransactionConfig.newBuilder()
                         .setProfilingIntervalMillis(ProtoOptional.of(millis))
                         .build());
     }
