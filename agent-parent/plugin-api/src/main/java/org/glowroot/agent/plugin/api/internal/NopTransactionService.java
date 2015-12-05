@@ -142,6 +142,9 @@ public class NopTransactionService implements TransactionService {
         private NopQueryEntry() {}
 
         @Override
+        public void rowNavigationAttempted() {}
+
+        @Override
         public void incrementCurrRow() {}
 
         @Override

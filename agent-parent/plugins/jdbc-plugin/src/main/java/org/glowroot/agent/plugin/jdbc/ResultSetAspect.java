@@ -83,7 +83,7 @@ public class ResultSetAspect {
                 // wrapping and other checks, so this optimizes the common case
                 lastQueryEntry.incrementCurrRow();
             } else {
-                lastQueryEntry.setCurrRow(0);
+                lastQueryEntry.rowNavigationAttempted();
             }
         }
         @OnAfter

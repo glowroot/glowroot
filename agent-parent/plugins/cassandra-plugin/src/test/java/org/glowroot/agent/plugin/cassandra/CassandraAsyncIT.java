@@ -64,6 +64,15 @@ public class CassandraAsyncIT {
     }
 
     @Test
+    public void shouldAsyncExecuteStatementReturningNoRecords() throws Exception {
+        Trace trace = container.execute(ExecuteAsyncStatementReturningNoRecords.class);
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(1);
+        assertThat(entries.get(0).getMessage())
+                .isEqualTo("cql execution: SELECT * FROM test.users where id = 12345 => 0 rows");
+    }
+
+    @Test
     public void shouldAsyncIterateUsingOneAndAll() throws Exception {
         Trace trace = container.execute(AsyncIterateUsingOneAndAll.class);
         List<Trace.Entry> entries = trace.getEntryList();
@@ -107,6 +116,28 @@ public class CassandraAsyncIT {
         @Override
         public void transactionMarker() throws Exception {
             ResultSet results = session.executeAsync("SELECT * FROM test.users").get();
+            for (Row row : results) {
+                row.getInt("id");
+            }
+        }
+    }
+
+    public static class ExecuteAsyncStatementReturningNoRecords
+            implements AppUnderTest, TransactionMarker {
+
+        private Session session;
+
+        @Override
+        public void executeApp() throws Exception {
+            session = Sessions.createSession();
+            transactionMarker();
+            Sessions.closeSession(session);
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            ResultSet results =
+                    session.executeAsync("SELECT * FROM test.users where id = 12345").get();
             for (Row row : results) {
                 row.getInt("id");
             }

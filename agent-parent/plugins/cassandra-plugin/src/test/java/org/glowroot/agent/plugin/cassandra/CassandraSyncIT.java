@@ -64,6 +64,15 @@ public class CassandraSyncIT {
     }
 
     @Test
+    public void shouldExecuteStatementReturningNoRecords() throws Exception {
+        Trace trace = container.execute(ExecuteStatementReturningNoRecords.class);
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(1);
+        assertThat(entries.get(0).getMessage())
+                .isEqualTo("cql execution: SELECT * FROM test.users where id = 12345 => 0 rows");
+    }
+
+    @Test
     public void shouldIterateUsingOneAndAll() throws Exception {
         Trace trace = container.execute(IterateUsingOneAndAll.class);
         List<Trace.Entry> entries = trace.getEntryList();
@@ -107,6 +116,27 @@ public class CassandraSyncIT {
         @Override
         public void transactionMarker() throws Exception {
             ResultSet results = session.execute("SELECT * FROM test.users");
+            for (Row row : results) {
+                row.getInt("id");
+            }
+        }
+    }
+
+    public static class ExecuteStatementReturningNoRecords
+            implements AppUnderTest, TransactionMarker {
+
+        private Session session;
+
+        @Override
+        public void executeApp() throws Exception {
+            session = Sessions.createSession();
+            transactionMarker();
+            Sessions.closeSession(session);
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            ResultSet results = session.execute("SELECT * FROM test.users where id = 12345");
             for (Row row : results) {
                 row.getInt("id");
             }

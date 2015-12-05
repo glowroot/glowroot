@@ -20,6 +20,8 @@ package org.glowroot.agent.plugin.api.transaction;
  */
 public interface QueryEntry extends TraceEntry {
 
+    void rowNavigationAttempted();
+
     /**
      * Call after successfully getting next row.
      */

@@ -48,6 +48,13 @@ public abstract class QueryEntryBase implements QueryEntry {
     }
 
     @Override
+    public void rowNavigationAttempted() {
+        if (currRow == -1) {
+            currRow = 0;
+        }
+    }
+
+    @Override
     public void incrementCurrRow() {
         if (currRow == -1) {
             currRow = 1;

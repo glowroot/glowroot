@@ -148,7 +148,7 @@ public class ResultSetAspect {
             if (row != null) {
                 lastQueryEntry.incrementCurrRow();
             } else {
-                lastQueryEntry.setCurrRow(0);
+                lastQueryEntry.rowNavigationAttempted();
             }
         }
         @OnAfter
@@ -156,6 +156,20 @@ public class ResultSetAspect {
             if (timer != null) {
                 timer.stop();
             }
+        }
+    }
+
+    @Pointcut(className = "com.datastax.driver.core.ResultSet", methodName = "iterator",
+            methodParameterTypes = {})
+    public static class IteratorAdvice {
+        @OnReturn
+        public static void onReturn(@BindReceiver ResultSet resultSet) {
+            QueryEntry lastQueryEntry = resultSet.glowroot$getLastQueryEntry();
+            if (lastQueryEntry == null) {
+                // tracing must be disabled (e.g. exceeded trace entry limit)
+                return;
+            }
+            lastQueryEntry.rowNavigationAttempted();
         }
     }
 
