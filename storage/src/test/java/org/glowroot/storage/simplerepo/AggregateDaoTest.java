@@ -26,13 +26,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.common.config.ImmutableAdvancedConfig;
-import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.util.Styles;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.OverallQuery;
-import org.glowroot.storage.repo.AggregateRepository.TransactionQuery;
+import org.glowroot.storage.repo.AggregateRepository.OverviewAggregate;
 import org.glowroot.storage.repo.AggregateRepository.SummarySortOrder;
+import org.glowroot.storage.repo.AggregateRepository.TransactionQuery;
+import org.glowroot.storage.repo.AggregateRepository.TransactionSummary;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
 import org.glowroot.storage.repo.ImmutableOverallQuery;

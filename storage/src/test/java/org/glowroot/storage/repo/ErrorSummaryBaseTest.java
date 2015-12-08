@@ -20,9 +20,7 @@ import java.util.List;
 import com.google.common.collect.Lists;
 import org.junit.Test;
 
-import org.glowroot.common.live.ImmutableTransactionErrorSummary;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
-import org.glowroot.storage.repo.TransactionErrorSummaryCollector;
+import org.glowroot.storage.repo.AggregateRepository.TransactionErrorSummary;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

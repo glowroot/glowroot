@@ -20,9 +20,9 @@ import java.util.List;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
-import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
+import org.glowroot.storage.repo.AggregateRepository.OverviewAggregate;
 import org.glowroot.storage.repo.MutableTimer;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.Timer;

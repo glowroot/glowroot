@@ -16,14 +16,12 @@
 package org.glowroot.agent.impl;
 
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
-import com.google.common.collect.Sets;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,12 +76,6 @@ public class Aggregator {
         processingThread.start();
     }
 
-    public Set<String> getLiveTransactionTypes() {
-        Set<String> transactionTypes = Sets.newHashSet();
-        transactionTypes.addAll(activeIntervalCollector.getTransactionTypes());
-        return transactionTypes;
-    }
-
     // from is non-inclusive
     public List<AggregateIntervalCollector> getOrderedIntervalCollectorsInRange(long from,
             long to) {
@@ -95,11 +87,6 @@ public class Aggregator {
             }
         }
         return intervalCollectors;
-    }
-
-    public void clearAll() {
-        activeIntervalCollector.clear();
-        pendingIntervalCollectors.clear();
     }
 
     long add(Transaction transaction) {

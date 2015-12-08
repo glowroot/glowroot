@@ -20,23 +20,21 @@ import java.util.List;
 import com.google.common.collect.Lists;
 
 import org.glowroot.common.config.ImmutableAdvancedConfig;
-import org.glowroot.common.live.ImmutableOverallSummary;
-import org.glowroot.common.live.ImmutableThroughputAggregate;
-import org.glowroot.common.live.LiveAggregateRepository;
-import org.glowroot.common.live.LiveAggregateRepository.LiveResult;
-import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
-import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.OverallQuery;
+import org.glowroot.storage.repo.AggregateRepository.OverallSummary;
+import org.glowroot.storage.repo.AggregateRepository.OverviewAggregate;
+import org.glowroot.storage.repo.AggregateRepository.PercentileAggregate;
 import org.glowroot.storage.repo.AggregateRepository.SummarySortOrder;
+import org.glowroot.storage.repo.AggregateRepository.ThroughputAggregate;
 import org.glowroot.storage.repo.AggregateRepository.TransactionQuery;
+import org.glowroot.storage.repo.AggregateRepository.TransactionSummary;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ImmutableOverallQuery;
+import org.glowroot.storage.repo.ImmutableOverallSummary;
+import org.glowroot.storage.repo.ImmutableThroughputAggregate;
 import org.glowroot.storage.repo.ImmutableTransactionQuery;
 import org.glowroot.storage.repo.MutableAggregate;
 import org.glowroot.storage.repo.ProfileCollector;
@@ -44,18 +42,15 @@ import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.TransactionSummaryCollector;
 import org.glowroot.storage.repo.Utils;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
 class TransactionCommonService {
 
     private final AggregateRepository aggregateRepository;
-    private final LiveAggregateRepository liveAggregateRepository;
     private final ConfigRepository configRepository;
 
     TransactionCommonService(AggregateRepository aggregateRepository,
-            LiveAggregateRepository liveAggregateRepository, ConfigRepository configRepository) {
+            ConfigRepository configRepository) {
         this.aggregateRepository = aggregateRepository;
-        this.liveAggregateRepository = liveAggregateRepository;
         this.configRepository = configRepository;
     }
 
@@ -73,22 +68,12 @@ class TransactionCommonService {
     // query.from() is INCLUSIVE
     List<OverviewAggregate> getOverviewAggregates(TransactionQuery query, long liveCaptureTime)
             throws Exception {
-        LiveResult<OverviewAggregate> liveResult =
-                liveAggregateRepository.getLiveOverviewAggregates(query.transactionType(),
-                        query.transactionName(), query.from(), query.to(), liveCaptureTime);
-        // -1 since query 'to' is inclusive
-        // this way don't need to worry about de-dupping between live and stored aggregates
-        long revisedTo = liveResult == null ? query.to() : liveResult.initialCaptureTime() - 1;
         List<OverviewAggregate> aggregates =
                 aggregateRepository.readOverviewAggregates(ImmutableTransactionQuery.builder()
                         .copyFrom(query)
-                        .to(revisedTo)
+                        .to(query.to())
                         .build());
         if (query.rollupLevel() == 0) {
-            aggregates = Lists.newArrayList(aggregates);
-            if (liveResult != null) {
-                aggregates.addAll(liveResult.get());
-            }
             return aggregates;
         }
         long nonRolledUpFrom = query.from();
@@ -101,12 +86,9 @@ class TransactionCommonService {
                 aggregateRepository.readOverviewAggregates(ImmutableTransactionQuery.builder()
                         .copyFrom(query)
                         .from(nonRolledUpFrom)
-                        .to(revisedTo)
+                        .to(query.to())
                         .rollupLevel(0)
                         .build()));
-        if (liveResult != null) {
-            orderedNonRolledUpAggregates.addAll(liveResult.get());
-        }
         aggregates = Lists.newArrayList(aggregates);
         aggregates.addAll(
                 rollUpOverviewAggregates(orderedNonRolledUpAggregates, query.rollupLevel()));
@@ -116,22 +98,12 @@ class TransactionCommonService {
     // query.from() is INCLUSIVE
     List<PercentileAggregate> getPercentileAggregates(TransactionQuery query, long liveCaptureTime)
             throws Exception {
-        LiveResult<PercentileAggregate> liveResult =
-                liveAggregateRepository.getLivePercentileAggregates(query.transactionType(),
-                        query.transactionName(), query.from(), query.to(), liveCaptureTime);
-        // -1 since query 'to' is inclusive
-        // this way don't need to worry about de-dupping between live and stored aggregates
-        long revisedTo = liveResult == null ? query.to() : liveResult.initialCaptureTime() - 1;
         List<PercentileAggregate> aggregates =
                 aggregateRepository.readPercentileAggregates(ImmutableTransactionQuery.builder()
                         .copyFrom(query)
-                        .to(revisedTo)
+                        .to(query.to())
                         .build());
         if (query.rollupLevel() == 0) {
-            aggregates = Lists.newArrayList(aggregates);
-            if (liveResult != null) {
-                aggregates.addAll(liveResult.get());
-            }
             return aggregates;
         }
         long nonRolledUpFrom = query.from();
@@ -144,12 +116,9 @@ class TransactionCommonService {
                 aggregateRepository.readPercentileAggregates(ImmutableTransactionQuery.builder()
                         .copyFrom(query)
                         .from(nonRolledUpFrom)
-                        .to(revisedTo)
+                        .to(query.to())
                         .rollupLevel(0)
                         .build()));
-        if (liveResult != null) {
-            orderedNonRolledUpAggregates.addAll(liveResult.get());
-        }
         aggregates = Lists.newArrayList(aggregates);
         aggregates.addAll(
                 rollUpPercentileAggregates(orderedNonRolledUpAggregates, query.rollupLevel()));
@@ -159,22 +128,12 @@ class TransactionCommonService {
     // query.from() is INCLUSIVE
     List<ThroughputAggregate> getThroughputAggregates(TransactionQuery query, long liveCaptureTime)
             throws Exception {
-        LiveResult<ThroughputAggregate> liveResult =
-                liveAggregateRepository.getLiveThroughputAggregates(query.transactionType(),
-                        query.transactionName(), query.from(), query.to(), liveCaptureTime);
-        // -1 since query 'to' is inclusive
-        // this way don't need to worry about de-dupping between live and stored aggregates
-        long revisedTo = liveResult == null ? query.to() : liveResult.initialCaptureTime() - 1;
         List<ThroughputAggregate> aggregates =
                 aggregateRepository.readThroughputAggregates(ImmutableTransactionQuery.builder()
                         .copyFrom(query)
-                        .to(revisedTo)
+                        .to(query.to())
                         .build());
         if (query.rollupLevel() == 0) {
-            aggregates = Lists.newArrayList(aggregates);
-            if (liveResult != null) {
-                aggregates.addAll(liveResult.get());
-            }
             return aggregates;
         }
         long nonRolledUpFrom = query.from();
@@ -187,12 +146,9 @@ class TransactionCommonService {
                 aggregateRepository.readThroughputAggregates(ImmutableTransactionQuery.builder()
                         .copyFrom(query)
                         .from(nonRolledUpFrom)
-                        .to(revisedTo)
+                        .to(query.to())
                         .rollupLevel(0)
                         .build()));
-        if (liveResult != null) {
-            orderedNonRolledUpAggregates.addAll(liveResult.get());
-        }
         aggregates = Lists.newArrayList(aggregates);
         aggregates.addAll(
                 rollUpThroughputAggregates(orderedNonRolledUpAggregates, query.rollupLevel()));
@@ -221,11 +177,6 @@ class TransactionCommonService {
     }
 
     private OverallSummary getMergedOverallSummary(OverallQuery query) throws Exception {
-        LiveResult<OverallSummary> liveResult = liveAggregateRepository
-                .getLiveOverallSummary(query.transactionType(), query.from(), query.to());
-        // -1 since query 'to' is inclusive
-        // this way don't need to worry about de-dupping between live and stored aggregates
-        long revisedTo = liveResult == null ? query.to() : liveResult.initialCaptureTime() - 1;
         long revisedFrom = query.from();
         double totalNanos = 0;
         long transactionCount = 0;
@@ -234,7 +185,7 @@ class TransactionCommonService {
             OverallQuery revisedQuery = ImmutableOverallQuery.builder()
                     .copyFrom(query)
                     .from(revisedFrom)
-                    .to(revisedTo)
+                    .to(query.to())
                     .rollupLevel(rollupLevel)
                     .build();
             OverallSummary overallSummary = aggregateRepository.readOverallSummary(revisedQuery);
@@ -243,16 +194,8 @@ class TransactionCommonService {
             lastCaptureTime = overallSummary.lastCaptureTime();
             long lastRolledUpTime = overallSummary.lastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
-            if (revisedFrom > revisedTo) {
+            if (revisedFrom > query.to()) {
                 break;
-            }
-        }
-        if (liveResult != null) {
-            for (OverallSummary overallSummary : liveResult.get()) {
-                totalNanos += overallSummary.totalNanos();
-                transactionCount += overallSummary.transactionCount();
-                // live results are ordered so no need for Math.max() here
-                lastCaptureTime = overallSummary.lastCaptureTime();
             }
         }
         return ImmutableOverallSummary.builder()
@@ -264,62 +207,41 @@ class TransactionCommonService {
 
     private Result<TransactionSummary> getMergedTransactionSummaries(OverallQuery query,
             SummarySortOrder sortOrder, int limit) throws Exception {
-        LiveResult<List<TransactionSummary>> liveResult = liveAggregateRepository
-                .getLiveTransactionSummaries(query.transactionType(), query.from(), query.to());
-        // -1 since query 'to' is inclusive
-        // this way don't need to worry about de-dupping between live and stored aggregates
-        long revisedTo = liveResult == null ? query.to() : liveResult.initialCaptureTime() - 1;
         long revisedFrom = query.from();
         TransactionSummaryCollector mergedTransactionSummaries = new TransactionSummaryCollector();
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             OverallQuery revisedQuery = ImmutableOverallQuery.builder()
                     .copyFrom(query)
                     .from(revisedFrom)
-                    .to(revisedTo)
+                    .to(query.to())
                     .rollupLevel(rollupLevel)
                     .build();
             aggregateRepository.mergeInTransactionSummaries(mergedTransactionSummaries,
                     revisedQuery, sortOrder, limit);
             long lastRolledUpTime = mergedTransactionSummaries.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
-            if (revisedFrom > revisedTo) {
+            if (revisedFrom > query.to()) {
                 break;
-            }
-        }
-        if (liveResult != null) {
-            for (List<TransactionSummary> transactionSummaries : liveResult.get()) {
-                // second arg (lastCaptureTime) doesn't matter any more (it was only needed above)
-                mergedTransactionSummaries.mergeTransactionSummaries(transactionSummaries, 0);
             }
         }
         return mergedTransactionSummaries.getResult(sortOrder, limit);
     }
 
     private MutableProfile getMergedProfile(TransactionQuery query) throws Exception {
-        LiveResult<Profile> liveResult = liveAggregateRepository.getLiveProfile(
-                query.transactionType(), query.transactionName(), query.from(), query.to());
-        // -1 since query 'to' is inclusive
-        // this way don't need to worry about de-dupping between live and stored aggregates
-        long revisedTo = liveResult == null ? query.to() : liveResult.initialCaptureTime() - 1;
         long revisedFrom = query.from();
         ProfileCollector mergedProfile = new ProfileCollector();
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
                     .copyFrom(query)
                     .from(revisedFrom)
-                    .to(revisedTo)
+                    .to(query.to())
                     .rollupLevel(rollupLevel)
                     .build();
             aggregateRepository.mergeInProfiles(mergedProfile, revisedQuery);
             long lastRolledUpTime = mergedProfile.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
-            if (revisedFrom > revisedTo) {
+            if (revisedFrom > query.to()) {
                 break;
-            }
-        }
-        if (liveResult != null) {
-            for (Profile profile : liveResult.get()) {
-                mergedProfile.mergeProfile(profile);
             }
         }
         return mergedProfile.getProfile();
@@ -327,31 +249,20 @@ class TransactionCommonService {
 
     private List<Aggregate.QueriesByType> getMergedQueries(TransactionQuery query,
             int maxAggregateQueriesPerQueryType) throws Exception {
-        LiveResult<List<Aggregate.QueriesByType>> liveResult =
-                liveAggregateRepository.getLiveQueries(query.transactionType(),
-                        query.transactionName(), query.from(), query.to());
-        // -1 since query 'to' is inclusive
-        // this way don't need to worry about de-dupping between live and stored aggregates
-        long revisedTo = liveResult == null ? query.to() : liveResult.initialCaptureTime() - 1;
         long revisedFrom = query.from();
         QueryCollector mergedQueries = new QueryCollector(maxAggregateQueriesPerQueryType, 0);
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
                     .copyFrom(query)
                     .from(revisedFrom)
-                    .to(revisedTo)
+                    .to(query.to())
                     .rollupLevel(rollupLevel)
                     .build();
             aggregateRepository.mergeInQueries(mergedQueries, revisedQuery);
             long lastRolledUpTime = mergedQueries.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
-            if (revisedFrom > revisedTo) {
+            if (revisedFrom > query.to()) {
                 break;
-            }
-        }
-        if (liveResult != null) {
-            for (List<Aggregate.QueriesByType> queries : liveResult.get()) {
-                mergedQueries.mergeQueries(queries);
             }
         }
         return mergedQueries.toProtobuf(true);

@@ -39,7 +39,6 @@ import org.glowroot.agent.init.CollectorProxy;
 import org.glowroot.agent.init.JvmInfoCreator;
 import org.glowroot.agent.init.LoggingInit;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
-import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -161,7 +160,6 @@ class FatAgentModule {
                     .repoAdmin(simpleRepoModule.getRepoAdmin())
                     .rollupLevelService(simpleRepoModule.getRollupLevelService())
                     .liveTraceRepository(agentModule.getLiveTraceRepository())
-                    .liveAggregateRepository(agentModule.getLiveAggregateRepository())
                     .liveWeavingService(agentModule.getLiveWeavingService())
                     .bindAddress(bindAddress)
                     .numWorkerThreads(2)
@@ -185,7 +183,6 @@ class FatAgentModule {
                     .repoAdmin(simpleRepoModule.getRepoAdmin())
                     .rollupLevelService(simpleRepoModule.getRollupLevelService())
                     .liveTraceRepository(new LiveTraceRepositoryNop())
-                    .liveAggregateRepository(new LiveAggregateRepositoryNop())
                     .liveWeavingService(null)
                     .bindAddress(bindAddress)
                     .numWorkerThreads(10)

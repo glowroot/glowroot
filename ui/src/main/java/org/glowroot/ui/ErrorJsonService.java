@@ -29,14 +29,14 @@ import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
-import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
-import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.ErrorPoint;
+import org.glowroot.storage.repo.AggregateRepository.OverallErrorSummary;
 import org.glowroot.storage.repo.AggregateRepository.OverallQuery;
+import org.glowroot.storage.repo.AggregateRepository.ThroughputAggregate;
+import org.glowroot.storage.repo.AggregateRepository.TransactionErrorSummary;
 import org.glowroot.storage.repo.AggregateRepository.TransactionQuery;
 import org.glowroot.storage.repo.ImmutableErrorMessageFilter;
 import org.glowroot.storage.repo.ImmutableErrorPoint;

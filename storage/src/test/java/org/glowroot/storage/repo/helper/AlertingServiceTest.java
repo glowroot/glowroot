@@ -22,12 +22,12 @@ import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.common.live.ImmutablePercentileAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.storage.repo.AggregateRepository;
+import org.glowroot.storage.repo.AggregateRepository.PercentileAggregate;
 import org.glowroot.storage.repo.ConfigRepository;
+import org.glowroot.storage.repo.ImmutablePercentileAggregate;
 import org.glowroot.storage.repo.ImmutableServerRollup;
 import org.glowroot.storage.repo.ImmutableTransactionQuery;
 import org.glowroot.storage.repo.ServerRepository;

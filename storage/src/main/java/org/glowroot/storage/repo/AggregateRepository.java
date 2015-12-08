@@ -21,13 +21,9 @@ import javax.annotation.Nullable;
 
 import org.immutables.value.Value;
 
-import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
-import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
-import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.util.Styles;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 
 public interface AggregateRepository {
@@ -100,6 +96,65 @@ public interface AggregateRepository {
         long from();
         long to();
         int rollupLevel();
+    }
+
+    @Value.Immutable
+    public interface OverallSummary {
+        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+        double totalNanos();
+        long transactionCount();
+        long lastCaptureTime();
+    }
+
+    @Value.Immutable
+    public interface TransactionSummary {
+        String transactionName();
+        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+        double totalNanos();
+        long transactionCount();
+    }
+
+    @Value.Immutable
+    public interface OverallErrorSummary {
+        long errorCount();
+        long transactionCount();
+        long lastCaptureTime();
+    }
+
+    @Value.Immutable
+    public interface TransactionErrorSummary {
+        String transactionName();
+        long errorCount();
+        long transactionCount();
+    }
+
+    @Value.Immutable
+    public interface OverviewAggregate {
+        long captureTime();
+        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+        double totalNanos();
+        long transactionCount();
+        double totalCpuNanos(); // -1 means N/A
+        double totalBlockedNanos(); // -1 means N/A
+        double totalWaitedNanos(); // -1 means N/A
+        double totalAllocatedBytes(); // -1 means N/A
+        List<Aggregate.Timer> rootTimers();
+    }
+
+    @Value.Immutable
+    public interface PercentileAggregate {
+        long captureTime();
+        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+        double totalNanos();
+        long transactionCount();
+        Aggregate.Histogram histogram();
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    public interface ThroughputAggregate {
+        long captureTime();
+        long transactionCount();
     }
 
     @Value.Immutable

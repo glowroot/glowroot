@@ -15,16 +15,12 @@
  */
 package org.glowroot.ui;
 
-import java.util.List;
-
-import org.glowroot.common.live.ImmutableOverallErrorSummary;
-import org.glowroot.common.live.LiveAggregateRepository;
-import org.glowroot.common.live.LiveAggregateRepository.LiveResult;
-import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.ErrorSummarySortOrder;
+import org.glowroot.storage.repo.AggregateRepository.OverallErrorSummary;
 import org.glowroot.storage.repo.AggregateRepository.OverallQuery;
+import org.glowroot.storage.repo.AggregateRepository.TransactionErrorSummary;
+import org.glowroot.storage.repo.ImmutableOverallErrorSummary;
 import org.glowroot.storage.repo.ImmutableOverallQuery;
 import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.TransactionErrorSummaryCollector;
@@ -32,21 +28,13 @@ import org.glowroot.storage.repo.TransactionErrorSummaryCollector;
 class ErrorCommonService {
 
     private final AggregateRepository aggregateRepository;
-    private final LiveAggregateRepository liveAggregateRepository;
 
-    ErrorCommonService(AggregateRepository aggregateRepository,
-            LiveAggregateRepository liveAggregateRepository) {
+    ErrorCommonService(AggregateRepository aggregateRepository) {
         this.aggregateRepository = aggregateRepository;
-        this.liveAggregateRepository = liveAggregateRepository;
     }
 
     // from is non-inclusive
     OverallErrorSummary readOverallErrorSummary(OverallQuery query) throws Exception {
-        LiveResult<OverallErrorSummary> liveResult = liveAggregateRepository
-                .getLiveOverallErrorSummary(query.transactionType(), query.from(), query.to());
-        // -1 since query 'to' is inclusive
-        // this way don't need to worry about de-dupping between live and stored aggregates
-        long revisedTo = liveResult == null ? query.to() : liveResult.initialCaptureTime() - 1;
         long revisedFrom = query.from();
         long errorCount = 0;
         long transactionCount = 0;
@@ -55,7 +43,7 @@ class ErrorCommonService {
             OverallQuery revisedQuery = ImmutableOverallQuery.builder()
                     .copyFrom(query)
                     .from(revisedFrom)
-                    .to(revisedTo)
+                    .to(query.to())
                     .rollupLevel(rollupLevel)
                     .build();
             OverallErrorSummary overallSummary =
@@ -65,16 +53,8 @@ class ErrorCommonService {
             lastCaptureTime = overallSummary.lastCaptureTime();
             long lastRolledUpTime = overallSummary.lastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
-            if (revisedFrom > revisedTo) {
+            if (revisedFrom > query.to()) {
                 break;
-            }
-        }
-        if (liveResult != null) {
-            for (OverallErrorSummary overallSummary : liveResult.get()) {
-                errorCount += overallSummary.errorCount();
-                transactionCount += overallSummary.transactionCount();
-                // live results are ordered so no need for Math.max() here
-                lastCaptureTime = overallSummary.lastCaptureTime();
             }
         }
         return ImmutableOverallErrorSummary.builder()
@@ -87,12 +67,6 @@ class ErrorCommonService {
     // query.from() is non-inclusive
     Result<TransactionErrorSummary> readTransactionErrorSummaries(OverallQuery query,
             ErrorSummarySortOrder sortOrder, int limit) throws Exception {
-        LiveResult<List<TransactionErrorSummary>> liveResult =
-                liveAggregateRepository.getLiveTransactionErrorSummaries(query.transactionType(),
-                        query.from(), query.to());
-        // -1 since query 'to' is inclusive
-        // this way don't need to worry about de-dupping between live and stored aggregates
-        long revisedTo = liveResult == null ? query.to() : liveResult.initialCaptureTime() - 1;
         long revisedFrom = query.from();
         TransactionErrorSummaryCollector mergedTransactionErrorSummaries =
                 new TransactionErrorSummaryCollector();
@@ -100,21 +74,15 @@ class ErrorCommonService {
             OverallQuery revisedQuery = ImmutableOverallQuery.builder()
                     .copyFrom(query)
                     .from(revisedFrom)
-                    .to(revisedTo)
+                    .to(query.to())
                     .rollupLevel(rollupLevel)
                     .build();
             aggregateRepository.mergeInTransactionErrorSummaries(mergedTransactionErrorSummaries,
                     revisedQuery, sortOrder, limit);
             long lastRolledUpTime = mergedTransactionErrorSummaries.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
-            if (revisedFrom > revisedTo) {
+            if (revisedFrom > query.to()) {
                 break;
-            }
-        }
-        if (liveResult != null) {
-            for (List<TransactionErrorSummary> transactionSummaries : liveResult.get()) {
-                // second arg (lastCaptureTime) doesn't matter any more (it was only needed above)
-                mergedTransactionErrorSummaries.mergeTransactionSummaries(transactionSummaries, 0);
             }
         }
         return mergedTransactionErrorSummaries.getResult(sortOrder, limit);

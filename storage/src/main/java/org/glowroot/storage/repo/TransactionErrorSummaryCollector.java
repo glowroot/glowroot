@@ -25,9 +25,8 @@ import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 
-import org.glowroot.common.live.ImmutableTransactionErrorSummary;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
 import org.glowroot.storage.repo.AggregateRepository.ErrorSummarySortOrder;
+import org.glowroot.storage.repo.AggregateRepository.TransactionErrorSummary;
 
 public class TransactionErrorSummaryCollector {
 

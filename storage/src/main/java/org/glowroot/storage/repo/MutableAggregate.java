@@ -22,16 +22,14 @@ import java.util.zip.DataFormatException;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-import org.glowroot.common.live.ImmutableOverviewAggregate;
-import org.glowroot.common.live.ImmutablePercentileAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
+import org.glowroot.storage.repo.AggregateRepository.OverviewAggregate;
+import org.glowroot.storage.repo.AggregateRepository.PercentileAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;

@@ -29,20 +29,6 @@ import org.glowroot.agent.model.ThreadInfoData;
 import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.config.AdvancedConfig;
-import org.glowroot.common.live.ImmutableOverallErrorSummary;
-import org.glowroot.common.live.ImmutableOverallSummary;
-import org.glowroot.common.live.ImmutableOverviewAggregate;
-import org.glowroot.common.live.ImmutablePercentileAggregate;
-import org.glowroot.common.live.ImmutableThroughputAggregate;
-import org.glowroot.common.live.ImmutableTransactionErrorSummary;
-import org.glowroot.common.live.ImmutableTransactionSummary;
-import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
-import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
-import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.common.model.MutableProfile;
@@ -51,8 +37,6 @@ import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 // must be used under an appropriate lock
 @Styles.Private
@@ -144,82 +128,6 @@ class AggregateCollector {
         }
         return builder.addAllQueriesByType(queries.toProtobuf(true))
                 .build();
-    }
-
-    OverviewAggregate buildLiveOverviewAggregate(long captureTime) throws IOException {
-        return ImmutableOverviewAggregate.builder()
-                .captureTime(captureTime)
-                .totalNanos(totalNanos)
-                .transactionCount(transactionCount)
-                .totalCpuNanos(totalCpuNanos)
-                .totalBlockedNanos(totalBlockedNanos)
-                .totalWaitedNanos(totalWaitedNanos)
-                .totalAllocatedBytes(totalAllocatedBytes)
-                .rootTimers(getRootTimersProtobuf())
-                .build();
-    }
-
-    PercentileAggregate buildLivePercentileAggregate(long captureTime)
-            throws IOException {
-        return ImmutablePercentileAggregate.builder()
-                .captureTime(captureTime)
-                .totalNanos(totalNanos)
-                .transactionCount(transactionCount)
-                .histogram(lazyHistogram.toProtobuf(new ScratchBuffer()))
-                .build();
-    }
-
-    ThroughputAggregate buildLiveThroughputAggregate(long captureTime) throws IOException {
-        return ImmutableThroughputAggregate.builder()
-                .captureTime(captureTime)
-                .transactionCount(transactionCount)
-                .build();
-    }
-
-    OverallSummary getLiveOverallSummary(long captureTime) {
-        return ImmutableOverallSummary.builder()
-                .totalNanos(totalNanos)
-                .transactionCount(transactionCount)
-                .lastCaptureTime(captureTime)
-                .build();
-    }
-
-    TransactionSummary getLiveTransactionSummary() {
-        // this method should not be called on overall aggregate
-        checkNotNull(transactionName);
-        return ImmutableTransactionSummary.builder()
-                .transactionName(transactionName)
-                .totalNanos(totalNanos)
-                .transactionCount(transactionCount)
-                .build();
-    }
-
-    OverallErrorSummary getLiveOverallErrorSummary(long captureTime) {
-        return ImmutableOverallErrorSummary.builder()
-                .errorCount(errorCount)
-                .transactionCount(transactionCount)
-                .lastCaptureTime(captureTime)
-                .build();
-    }
-
-    TransactionErrorSummary getLiveTransactionErrorSummary() {
-        // this method should not be called on overall aggregate
-        checkNotNull(transactionName);
-        return ImmutableTransactionErrorSummary.builder()
-                .transactionName(transactionName)
-                .errorCount(errorCount)
-                .transactionCount(transactionCount)
-                .build();
-    }
-
-    // needs to return copy for thread safety
-    org.glowroot.wire.api.model.ProfileOuterClass.Profile getLiveProfile() throws IOException {
-        return profile.toProtobuf();
-    }
-
-    // needs to return copy for thread safety
-    List<Aggregate.QueriesByType> getLiveQueries() {
-        return queries.toProtobuf(false);
     }
 
     private List<Aggregate.Timer> getRootTimersProtobuf() {

@@ -71,8 +71,8 @@ public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
             throw new AssertionError("Unexpected status: " + status);
         }
         container.executeNoExpectedTrace(JdbcServlet.class);
-        // sleep for a bit to give glowroot aggregator time to process these requests
-        Thread.sleep(1000);
+        // give time for aggregates to be collected
+        Thread.sleep(5000);
 
         // when
         app.open();

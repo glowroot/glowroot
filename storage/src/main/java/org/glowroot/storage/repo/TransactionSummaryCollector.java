@@ -24,9 +24,8 @@ import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 
-import org.glowroot.common.live.ImmutableTransactionSummary;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.storage.repo.AggregateRepository.SummarySortOrder;
+import org.glowroot.storage.repo.AggregateRepository.TransactionSummary;
 
 public class TransactionSummaryCollector {
 

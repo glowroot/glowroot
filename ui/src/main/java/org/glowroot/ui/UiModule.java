@@ -25,7 +25,6 @@ import com.google.common.collect.Lists;
 import org.immutables.builder.Builder;
 
 import org.glowroot.common.config.PluginDescriptor;
-import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveWeavingService;
@@ -61,7 +60,6 @@ public class UiModule {
             RepoAdmin repoAdmin,
             RollupLevelService rollupLevelService,
             LiveTraceRepository liveTraceRepository,
-            LiveAggregateRepository liveAggregateRepository,
             @Nullable LiveWeavingService liveWeavingService,
             String bindAddress,
             int numWorkerThreads,
@@ -69,15 +67,15 @@ public class UiModule {
             List<PluginDescriptor> pluginDescriptors) throws Exception {
 
         LayoutService layoutService = new LayoutService(central, version, configRepository,
-                serverRepository, transactionTypeRepository, liveAggregateRepository);
+                serverRepository, transactionTypeRepository);
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(configRepository, clock, layoutService);
         IndexHtmlHttpService indexHtmlHttpService =
                 new IndexHtmlHttpService(httpSessionManager, layoutService);
         LayoutHttpService layoutHttpService =
                 new LayoutHttpService(httpSessionManager, layoutService);
-        TransactionCommonService transactionCommonService = new TransactionCommonService(
-                aggregateRepository, liveAggregateRepository, configRepository);
+        TransactionCommonService transactionCommonService =
+                new TransactionCommonService(aggregateRepository, configRepository);
         TraceCommonService traceCommonService =
                 new TraceCommonService(traceRepository, liveTraceRepository);
         TransactionJsonService transactionJsonService =
@@ -96,8 +94,7 @@ public class UiModule {
         } else {
             glowrootLogHttpService = new GlowrootLogHttpService(logDir);
         }
-        ErrorCommonService errorCommonService =
-                new ErrorCommonService(aggregateRepository, liveAggregateRepository);
+        ErrorCommonService errorCommonService = new ErrorCommonService(aggregateRepository);
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
                 transactionCommonService, traceRepository, rollupLevelService, clock);
         ConfigJsonService configJsonService = new ConfigJsonService(configRepository, repoAdmin,
@@ -106,8 +103,7 @@ public class UiModule {
                 gaugeValueRepository, rollupLevelService, configRepository);
         AlertConfigJsonService alertJsonService = new AlertConfigJsonService(configRepository);
         AdminJsonService adminJsonService = new AdminJsonService(aggregateRepository,
-                traceRepository, gaugeValueRepository, liveAggregateRepository,
-                liveWeavingService, repoAdmin);
+                traceRepository, gaugeValueRepository, liveWeavingService, repoAdmin);
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(transactionJsonService);

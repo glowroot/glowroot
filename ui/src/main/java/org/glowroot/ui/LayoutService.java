@@ -31,7 +31,6 @@ import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
 import org.glowroot.common.config.Versions;
-import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
@@ -55,17 +54,15 @@ class LayoutService {
     private final ConfigRepository configRepository;
     private final ServerRepository serverRepository;
     private final TransactionTypeRepository transactionTypeRepository;
-    private final LiveAggregateRepository liveAggregateRepository;
 
     LayoutService(boolean central, String version, ConfigRepository configRepository,
-            ServerRepository serverRepository, TransactionTypeRepository transactionTypeRepository,
-            LiveAggregateRepository liveAggregateRepository) {
+            ServerRepository serverRepository,
+            TransactionTypeRepository transactionTypeRepository) {
         this.central = central;
         this.version = version;
         this.configRepository = configRepository;
         this.serverRepository = serverRepository;
         this.transactionTypeRepository = transactionTypeRepository;
-        this.liveAggregateRepository = liveAggregateRepository;
     }
 
     String getLayout() throws Exception {
@@ -123,7 +120,6 @@ class LayoutService {
             if (storedTransactionTypes != null) {
                 transactionTypes.addAll(storedTransactionTypes);
             }
-            transactionTypes.addAll(liveAggregateRepository.getLiveTransactionTypes(SERVER_ID));
             transactionTypes.add(defaultDisplayedTransactionType);
             serverRollups.put(SERVER_ID, ImmutableServerRollupLayout.builder()
                     .leaf(true)

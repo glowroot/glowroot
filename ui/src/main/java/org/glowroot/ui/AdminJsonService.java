@@ -20,7 +20,6 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.immutables.value.Value;
 
-import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.storage.repo.AggregateRepository;
@@ -40,18 +39,15 @@ class AdminJsonService {
     private final AggregateRepository aggregateRepository;
     private final TraceRepository traceRepository;
     private final GaugeValueRepository gaugeValueRepository;
-    private final LiveAggregateRepository liveAggregateRepository;
     private final @Nullable LiveWeavingService liveWeavingService;
     private final RepoAdmin repoAdmin;
 
     AdminJsonService(AggregateRepository aggregateRepository, TraceRepository traceRepository,
             GaugeValueRepository gaugeValueRepository,
-            LiveAggregateRepository liveAggregateRepository,
             @Nullable LiveWeavingService liveWeavingService, RepoAdmin repoAdmin) {
         this.aggregateRepository = aggregateRepository;
         this.traceRepository = traceRepository;
         this.gaugeValueRepository = gaugeValueRepository;
-        this.liveAggregateRepository = liveAggregateRepository;
         this.liveWeavingService = liveWeavingService;
         this.repoAdmin = repoAdmin;
     }
@@ -60,8 +56,6 @@ class AdminJsonService {
     void deleteAllData(String content) throws Exception {
         String serverRollup =
                 mapper.readValue(content, ImmutableRequestWithServerRollup.class).serverRollup();
-        // clear in-memory aggregates first
-        liveAggregateRepository.clearAll();
         // TODO optimize by just deleting and re-creating h2 db
         traceRepository.deleteAll(serverRollup);
         gaugeValueRepository.deleteAll(serverRollup);
