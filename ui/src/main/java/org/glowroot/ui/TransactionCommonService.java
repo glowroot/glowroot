@@ -66,8 +66,7 @@ class TransactionCommonService {
     }
 
     // query.from() is INCLUSIVE
-    List<OverviewAggregate> getOverviewAggregates(TransactionQuery query, long liveCaptureTime)
-            throws Exception {
+    List<OverviewAggregate> getOverviewAggregates(TransactionQuery query) throws Exception {
         List<OverviewAggregate> aggregates =
                 aggregateRepository.readOverviewAggregates(ImmutableTransactionQuery.builder()
                         .copyFrom(query)
@@ -96,8 +95,7 @@ class TransactionCommonService {
     }
 
     // query.from() is INCLUSIVE
-    List<PercentileAggregate> getPercentileAggregates(TransactionQuery query, long liveCaptureTime)
-            throws Exception {
+    List<PercentileAggregate> getPercentileAggregates(TransactionQuery query) throws Exception {
         List<PercentileAggregate> aggregates =
                 aggregateRepository.readPercentileAggregates(ImmutableTransactionQuery.builder()
                         .copyFrom(query)
@@ -126,8 +124,7 @@ class TransactionCommonService {
     }
 
     // query.from() is INCLUSIVE
-    List<ThroughputAggregate> getThroughputAggregates(TransactionQuery query, long liveCaptureTime)
-            throws Exception {
+    List<ThroughputAggregate> getThroughputAggregates(TransactionQuery query) throws Exception {
         List<ThroughputAggregate> aggregates =
                 aggregateRepository.readThroughputAggregates(ImmutableTransactionQuery.builder()
                         .copyFrom(query)

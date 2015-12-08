@@ -109,7 +109,7 @@ class ErrorJsonService {
                 resolutionMillis, liveCaptureTime, request.errorMessageLimit());
 
         List<ThroughputAggregate> throughputAggregates =
-                transactionCommonService.getThroughputAggregates(transactionQuery, liveCaptureTime);
+                transactionCommonService.getThroughputAggregates(transactionQuery);
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
         Map<Long, Long> transactionCountMap = Maps.newHashMap();

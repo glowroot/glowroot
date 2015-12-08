@@ -96,7 +96,7 @@ class TransactionJsonService {
         TransactionQuery query = toQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
         List<OverviewAggregate> overviewAggregates =
-                transactionCommonService.getOverviewAggregates(query, liveCaptureTime);
+                transactionCommonService.getOverviewAggregates(query);
         List<DataSeries> dataSeriesList =
                 getDataSeriesForTimerChart(request, overviewAggregates, liveCaptureTime);
         Map<Long, Long> transactionCounts = getTransactionCounts(overviewAggregates);
@@ -132,7 +132,7 @@ class TransactionJsonService {
         TransactionQuery query = toQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
         List<PercentileAggregate> percentileAggregates =
-                transactionCommonService.getPercentileAggregates(query, liveCaptureTime);
+                transactionCommonService.getPercentileAggregates(query);
         PercentileData percentileData = getDataSeriesForPercentileChart(request,
                 percentileAggregates, request.percentile(), liveCaptureTime);
         Map<Long, Long> transactionCounts = getTransactionCounts2(percentileAggregates);
@@ -155,7 +155,7 @@ class TransactionJsonService {
         TransactionQuery query = toQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates =
-                transactionCommonService.getThroughputAggregates(query, liveCaptureTime);
+                transactionCommonService.getThroughputAggregates(query);
         List<DataSeries> dataSeriesList =
                 getDataSeriesForThroughputChart(request, throughputAggregates, liveCaptureTime);
         long transactionCount = 0;
