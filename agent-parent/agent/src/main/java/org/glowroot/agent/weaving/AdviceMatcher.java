@@ -35,10 +35,11 @@ abstract class AdviceMatcher {
 
     private static final Logger logger = LoggerFactory.getLogger(AdviceMatcher.class);
 
-    static ImmutableList<AdviceMatcher> getAdviceMatchers(String className, List<Advice> advisors) {
+    static ImmutableList<AdviceMatcher> getAdviceMatchers(String className,
+            List<String> classAnnotations, List<Advice> advisors) {
         List<AdviceMatcher> adviceMatchers = Lists.newArrayList();
         for (Advice advice : advisors) {
-            if (AdviceMatcher.isDeclaringClassNameMatch(className, advice)) {
+            if (AdviceMatcher.isDeclaringClassMatch(className, classAnnotations, advice)) {
                 adviceMatchers.add(ImmutableAdviceMatcher.of(advice));
             }
         }
@@ -47,9 +48,11 @@ abstract class AdviceMatcher {
 
     abstract Advice advice();
 
-    boolean isMethodLevelMatch(String methodName, List<Type> parameterTypes, Type returnType,
-            int modifiers) {
-        if (!isMethodNameMatch(methodName) || !isMethodParameterTypesMatch(parameterTypes)) {
+    boolean isMethodLevelMatch(String methodName, List<String> methodAnnotations,
+            List<Type> parameterTypes, Type returnType, int modifiers) {
+        if (!isMethodNameMatch(methodName)
+                || !isMethodAnnotationMatch(methodAnnotations)
+                || !isMethodParameterTypesMatch(parameterTypes)) {
             return false;
         }
         return isMethodReturnMatch(returnType) && isMethodModifiersMatch(modifiers);
@@ -60,16 +63,19 @@ abstract class AdviceMatcher {
             // static initializers are not supported
             return false;
         }
-        if (methodName.equals("<init>")) {
-            // constructors only match by exact name (don't want patterns to match constructors)
-            return advice().pointcut().methodName().equals("<init>");
-        }
         Pattern pointcutMethodNamePattern = advice().pointcutMethodNamePattern();
-        if (pointcutMethodNamePattern == null) {
-            return advice().pointcut().methodName().equals(methodName);
-        } else {
-            return pointcutMethodNamePattern.matcher(methodName).matches();
+        if (pointcutMethodNamePattern != null) {
+            // don't want patterns to match constructors
+            return !methodName.equals("<init>")
+                    && pointcutMethodNamePattern.matcher(methodName).matches();
         }
+        String pointcutMethodName = advice().pointcut().methodName();
+        return pointcutMethodName.isEmpty() || pointcutMethodName.equals(methodName);
+    }
+
+    private boolean isMethodAnnotationMatch(List<String> methodAnnotations) {
+        String pointcutMethodAnnotation = advice().pointcut().methodAnnotation();
+        return isAnnotationMatch(methodAnnotations, pointcutMethodAnnotation);
     }
 
     private boolean isMethodParameterTypesMatch(List<Type> parameterTypes) {
@@ -132,12 +138,23 @@ abstract class AdviceMatcher {
         }
     }
 
-    private static boolean isDeclaringClassNameMatch(String className, Advice advice) {
+    private static boolean isDeclaringClassMatch(String className,
+            List<String> classAnnotations, Advice advice) {
+        String pointcutClassAnnotation = advice.pointcut().classAnnotation();
+        if (!isAnnotationMatch(classAnnotations, pointcutClassAnnotation)) {
+            return false;
+        }
         Pattern pointcutClassNamePattern = advice.pointcutDeclaringClassNamePattern();
-        if (pointcutClassNamePattern == null) {
-            return advice.pointcutDeclaringClassName().equals(className);
-        } else {
+        if (pointcutClassNamePattern != null) {
             return pointcutClassNamePattern.matcher(className).matches();
         }
+        String pointcutDeclaringClassName = advice.pointcutDeclaringClassName();
+        return pointcutDeclaringClassName.isEmpty() || pointcutDeclaringClassName.equals(className);
+    }
+
+    private static boolean isAnnotationMatch(List<String> annotations, String annotation) {
+        // FIXME
+        return annotation.isEmpty()
+                || annotations.contains('L' + annotation.replace('.', '/') + ';');
     }
 }

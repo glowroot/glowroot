@@ -37,8 +37,9 @@ public class ClassNames {
         return className.replace('.', '/');
     }
 
-    static ImmutableList<String> fromInternalNames(String /*@Nullable*/[] internalNames) {
-        if (internalNames == null) {
+    static ImmutableList<String> fromInternalNames(List<String> internalNames) {
+        if (internalNames.isEmpty()) {
+            // optimization for a common case
             return ImmutableList.of();
         }
         List<String> classNames = Lists.newArrayList();

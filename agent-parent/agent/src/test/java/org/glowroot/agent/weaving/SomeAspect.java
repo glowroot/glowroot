@@ -741,6 +741,39 @@ public class SomeAspect {
         }
     }
 
+    @Pointcut(classAnnotation = "org.glowroot.agent.weaving.SomeAspect$SomeClass",
+            methodAnnotation = "org.glowroot.agent.weaving.SomeAspect$SomeMethod",
+            methodParameterTypes = {".."}, timerName = "anno")
+    public static class BasicAnnotationBasedAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            SomeAspectThreadLocals.enabledCount.increment();
+            return SomeAspectThreadLocals.enabled.get();
+        }
+        @OnBefore
+        public static void onBefore() {
+            SomeAspectThreadLocals.onBeforeCount.increment();
+        }
+        @OnReturn
+        public static void onReturn() {
+            SomeAspectThreadLocals.onReturnCount.increment();
+        }
+        @OnThrow
+        public static void onThrow() {
+            SomeAspectThreadLocals.onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            SomeAspectThreadLocals.onAfterCount.increment();
+        }
+        public static void enable() {
+            SomeAspectThreadLocals.enabled.set(true);
+        }
+        public static void disable() {
+            SomeAspectThreadLocals.enabled.set(false);
+        }
+    }
+
     @Shim("org.glowroot.agent.weaving.ShimmedMisc")
     public interface Shimmy {
         @Shim("java.lang.String getString()")
@@ -1114,4 +1147,8 @@ public class SomeAspect {
             return parameterTypeNames;
         }
     }
+
+    public @interface SomeClass {}
+
+    public @interface SomeMethod {}
 }

@@ -94,7 +94,9 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       $scope.loaded = true;
       onNewData({
         config: {
+          classAnnotation: '',
           declaringClassName: '',
+          methodAnnotation: '',
           captureKind: 'transaction',
           transactionType: '',
           transactionNameTemplate: '',

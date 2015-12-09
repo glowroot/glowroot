@@ -223,8 +223,10 @@ class InstrumentationConfigJsonService {
     abstract static class InstrumentationConfigDto {
 
         abstract String className();
+        abstract String classAnnotation();
         abstract String declaringClassName();
         abstract String methodName();
+        abstract String methodAnnotation();
         abstract ImmutableList<String> methodParameterTypes();
         abstract String methodReturnType();
         abstract ImmutableList<MethodModifier> methodModifiers();
@@ -245,8 +247,10 @@ class InstrumentationConfigJsonService {
         private static InstrumentationConfigDto fromConfig(InstrumentationConfig config) {
             return ImmutableInstrumentationConfigDto.builder()
                     .className(config.className())
+                    .classAnnotation(config.classAnnotation())
                     .declaringClassName(config.declaringClassName())
                     .methodName(config.methodName())
+                    .methodAnnotation(config.methodAnnotation())
                     .addAllMethodParameterTypes(config.methodParameterTypes())
                     .methodReturnType(config.methodReturnType())
                     .addAllMethodModifiers(config.methodModifiers())

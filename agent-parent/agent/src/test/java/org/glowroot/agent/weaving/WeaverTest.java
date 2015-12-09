@@ -30,6 +30,7 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 import org.glowroot.agent.weaving.AbstractMisc.ExtendsAbstractMisc;
 import org.glowroot.agent.weaving.AbstractNotMisc.ExtendsAbstractNotMisc;
 import org.glowroot.agent.weaving.SomeAspect.BasicAdvice;
+import org.glowroot.agent.weaving.SomeAspect.BasicAnnotationBasedAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BasicLowPriorityAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BasicMiscAllConstructorAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BasicMiscConstructorAdvice;
@@ -708,6 +709,21 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(0);
+    }
+
+    // ===================== annotation-based pointcuts =====================
+
+    @Test
+    public void shouldExecuteAnnotationBasedPointcut() throws Exception {
+        // given
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BasicAnnotationBasedAdvice.class);
+        // when
+        test.executeWithReturn();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
     }
 
     // ===================== throw in lower priority @OnBefore =====================

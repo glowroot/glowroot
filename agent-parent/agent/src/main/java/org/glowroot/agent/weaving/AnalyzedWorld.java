@@ -16,6 +16,7 @@
 package org.glowroot.agent.weaving;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.security.CodeSource;
@@ -45,12 +46,9 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.advicegen.AdviceGenerator;
 import org.glowroot.agent.util.Reflections;
-import org.glowroot.agent.weaving.AnalyzingClassVisitor.ShortCircuitException;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.util.Styles;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 public class AnalyzedWorld {
 
@@ -170,8 +168,9 @@ public class AnalyzedWorld {
             return advisors;
         }
         if (loader == null) {
-            logger.warn("@Instrument annotations not currently supported in bootstrap class loader:"
-                    + " {}", className);
+            logger.warn(
+                    "@Instrument annotations not currently supported in bootstrap class loader: {}",
+                    className);
             return advisors;
         }
         ImmutableMap<Advice, LazyDefinedClass> newAdvisors =
@@ -330,17 +329,15 @@ public class AnalyzedWorld {
         byte[] bytes = Resources.toByteArray(url);
         List<Advice> advisors =
                 mergeInstrumentAnnotations(this.advisors.get(), bytes, loader, className);
-        AnalyzingClassVisitor cv = new AnalyzingClassVisitor(advisors, shimTypes, mixinTypes,
-                loader, this, null);
-        ClassReader cr = new ClassReader(bytes);
-        try {
-            cr.accept(cv, ClassReader.SKIP_CODE);
-        } catch (ShortCircuitException e) {
-            // this is ok, in either case analyzed class is now available
+        ThinClassVisitor accv = new ThinClassVisitor();
+        new ClassReader(bytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
+        ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
+                mixinTypes, loader, this, null);
+        if (classAnalyzer.isShortCircuitBeforeAnalyzeMethods()) {
+            return classAnalyzer.getAnalyzedClass();
         }
-        AnalyzedClass analyzedClass = cv.getAnalyzedClass();
-        checkNotNull(analyzedClass); // analyzedClass is non-null after visiting the class
-        return analyzedClass;
+        classAnalyzer.analyzeMethods();
+        return classAnalyzer.getAnalyzedClass();
     }
 
     private @Nullable AnalyzedClass tryToReuseFromParentLoader(String className,
@@ -426,20 +423,30 @@ public class AnalyzedWorld {
         for (Class<?> interfaceClass : clazz.getInterfaces()) {
             classBuilder.addInterfaceNames(interfaceClass.getName());
         }
+        // FIXME handle @Instrument.*
+        List<String> classAnnotations = Lists.newArrayList();
+        for (Annotation annotation : clazz.getAnnotations()) {
+            classAnnotations.add(annotation.annotationType().getName());
+        }
         List<AdviceMatcher> adviceMatchers =
-                AdviceMatcher.getAdviceMatchers(clazz.getName(), advisors);
+                AdviceMatcher.getAdviceMatchers(clazz.getName(), classAnnotations, advisors);
         for (Method method : clazz.getDeclaredMethods()) {
             if (method.isSynthetic()) {
                 // don't add synthetic methods to the analyzed model
                 continue;
+            }
+            List<String> methodAnnotations = Lists.newArrayList();
+            for (Annotation annotation : method.getAnnotations()) {
+                methodAnnotations.add(annotation.annotationType().getName());
             }
             List<Type> parameterTypes = Lists.newArrayList();
             for (Class<?> parameterType : method.getParameterTypes()) {
                 parameterTypes.add(Type.getType(parameterType));
             }
             Type returnType = Type.getType(method.getReturnType());
-            List<Advice> matchingAdvisors = getMatchingAdvisors(method.getModifiers(),
-                    method.getName(), parameterTypes, returnType, adviceMatchers);
+            List<Advice> matchingAdvisors =
+                    getMatchingAdvisors(method.getModifiers(), method.getName(), methodAnnotations,
+                            parameterTypes, returnType, adviceMatchers);
             if (!matchingAdvisors.isEmpty()) {
                 ImmutableAnalyzedMethod.Builder methodBuilder = ImmutableAnalyzedMethod.builder();
                 methodBuilder.name(method.getName());
@@ -459,10 +466,12 @@ public class AnalyzedWorld {
     }
 
     private static List<Advice> getMatchingAdvisors(int access, String name,
-            List<Type> parameterTypes, Type returnType, List<AdviceMatcher> adviceMatchers) {
+            List<String> methodAnnotations, List<Type> parameterTypes, Type returnType,
+            List<AdviceMatcher> adviceMatchers) {
         List<Advice> matchingAdvisors = Lists.newArrayList();
         for (AdviceMatcher adviceMatcher : adviceMatchers) {
-            if (adviceMatcher.isMethodLevelMatch(name, parameterTypes, returnType, access)) {
+            if (adviceMatcher.isMethodLevelMatch(name, methodAnnotations, parameterTypes,
+                    returnType, access)) {
                 matchingAdvisors.add(adviceMatcher.advice());
             }
         }

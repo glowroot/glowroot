@@ -16,7 +16,6 @@
 package org.glowroot.agent.weaving;
 
 import java.lang.reflect.Modifier;
-import java.security.CodeSource;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -36,7 +35,6 @@ import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
-import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -56,7 +54,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.plugin.api.weaving.Shim;
-import org.glowroot.agent.weaving.AnalyzingClassVisitor.ShortCircuitException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.AASTORE;
@@ -99,19 +96,22 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private static final AtomicLong metaHolderCounter = new AtomicLong();
 
-    private final ClassVisitor cv;
-
+    private final ClassWriter cw;
     private final @Nullable ClassLoader loader;
 
-    private final AnalyzingClassVisitor analyzingClassVisitor;
+    private final AnalyzedClass analyzedClass;
+    private final List<AnalyzedClass> superAnalyzedClasses;
+    private final Set<String> superClassNames;
+
+    private final List<ShimType> shimTypes;
+    private final List<MixinType> mixinTypes;
+    private final Map<String, List<Advice>> methodAdvisors;
+
     private final AnalyzedWorld analyzedWorld;
 
     private final boolean timerWrapperMethods;
 
     private @MonotonicNonNull Type type;
-
-    private boolean throwShortCircuitException;
-    private boolean interfaceSoNothingToWeave;
 
     private int innerMethodCounter;
 
@@ -121,14 +121,20 @@ class WeavingClassVisitor extends ClassVisitor {
     private @MonotonicNonNull String metaHolderInternalName;
     private int methodMetaCounter;
 
-    public WeavingClassVisitor(ClassVisitor cv, List<Advice> advisors, List<ShimType> shimTypes,
-            List<MixinType> mixinTypes, @Nullable ClassLoader loader, AnalyzedWorld analyzedWorld,
-            @Nullable CodeSource codeSource, boolean timerWrapperMethods) {
-        super(ASM5, cv);
-        this.cv = cv;
+    public WeavingClassVisitor(ClassWriter cw, @Nullable ClassLoader loader,
+            AnalyzedClass analyzedClass, List<AnalyzedClass> superAnalyzedClasses,
+            Set<String> superClassNames, List<ShimType> shimTypes, List<MixinType> mixinTypes,
+            Map<String, List<Advice>> methodAdvisors, AnalyzedWorld analyzedWorld,
+            boolean timerWrapperMethods) {
+        super(ASM5, cw);
+        this.cw = cw;
         this.loader = loader;
-        analyzingClassVisitor = new AnalyzingClassVisitor(advisors, shimTypes, mixinTypes, loader,
-                analyzedWorld, codeSource);
+        this.analyzedClass = analyzedClass;
+        this.superAnalyzedClasses = superAnalyzedClasses;
+        this.superClassNames = superClassNames;
+        this.shimTypes = shimTypes;
+        this.mixinTypes = mixinTypes;
+        this.methodAdvisors = methodAdvisors;
         this.analyzedWorld = analyzedWorld;
         this.timerWrapperMethods = timerWrapperMethods;
     }
@@ -138,90 +144,49 @@ class WeavingClassVisitor extends ClassVisitor {
             @Nullable String superInternalName,
             String /*@Nullable*/[] interfaceInternalNamesNullable) {
 
-        AnalyzedClass nonInterestingAnalyzedClass =
-                analyzingClassVisitor.visitAndSometimesReturnNonInterestingAnalyzedClass(access,
-                        internalName, superInternalName, interfaceInternalNamesNullable);
-        if (nonInterestingAnalyzedClass != null) {
-            // performance optimization
-            analyzedWorld.add(nonInterestingAnalyzedClass, loader);
-            throwShortCircuitException = true;
-            return;
-        }
-        interfaceSoNothingToWeave = Modifier.isInterface(access);
-        if (interfaceSoNothingToWeave) {
-            return;
-        }
         type = Type.getObjectType(internalName);
         String /*@Nullable*/[] interfacesIncludingMixins = getInterfacesIncludingShimsAndMixins(
-                interfaceInternalNamesNullable, analyzingClassVisitor.getMatchedShimTypes(),
-                analyzingClassVisitor.getMatchedMixinTypes());
-        cv.visit(version, access, internalName, signature, superInternalName,
+                interfaceInternalNamesNullable, shimTypes, mixinTypes);
+        cw.visit(version, access, internalName, signature, superInternalName,
                 interfacesIncludingMixins);
-    }
-
-    @Override
-    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        if (desc.equals("Lorg/glowroot/agent/plugin/api/weaving/Pointcut;")) {
-            throw PointcutClassFoundException.INSTANCE;
-        }
-        return cv.visitAnnotation(desc, visible);
     }
 
     @Override
     public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String /*@Nullable*/[] exceptions) {
-        if (throwShortCircuitException) {
-            // this is in visitMethod because need to check annotations first
-            throw ShortCircuitException.INSTANCE;
-        }
-        List<Advice> matchingAdvisors = analyzingClassVisitor.visitMethodAndReturnAdvisors(access,
-                name, desc, signature, exceptions);
-        if (interfaceSoNothingToWeave) {
-            return null;
+        List<Advice> matchingAdvisors = methodAdvisors.get(name + desc);
+        if (matchingAdvisors == null) {
+            matchingAdvisors = ImmutableList.of();
         }
         checkNotNull(type); // type is non null if there is something to weave
         if (isAbstractOrNativeOrSynthetic(access)) {
             // don't try to weave abstract, native and synthetic methods
-            return cv.visitMethod(access, name, desc, signature, exceptions);
+            return cw.visitMethod(access, name, desc, signature, exceptions);
         }
         if (isInitWithMixins(name)) {
             return visitInitWithMixins(access, name, desc, signature, exceptions, matchingAdvisors);
         }
         if (matchingAdvisors.isEmpty()) {
-            return cv.visitMethod(access, name, desc, signature, exceptions);
+            return cw.visitMethod(access, name, desc, signature, exceptions);
         }
         return visitMethodWithAdvice(access, name, desc, signature, exceptions, matchingAdvisors);
     }
 
     @Override
     public void visitEnd() {
-        if (throwShortCircuitException) {
-            // this is in visitEnd also in case there were no methods
-            throw ShortCircuitException.INSTANCE;
-        }
-        analyzingClassVisitor.visitEnd();
-        AnalyzedClass analyzedClass = analyzingClassVisitor.getAnalyzedClass();
-        checkNotNull(analyzedClass); // analyzedClass is non-null after visiting the class
         analyzedWorld.add(analyzedClass, loader);
-        if (interfaceSoNothingToWeave) {
-            return;
-        }
         checkNotNull(type); // type is non null if there is something to weave
-        for (ShimType shimType : analyzingClassVisitor.getMatchedShimTypes()) {
+        for (ShimType shimType : shimTypes) {
             addShim(shimType);
         }
-        for (MixinType mixinType : analyzingClassVisitor.getMatchedMixinTypes()) {
+        for (MixinType mixinType : mixinTypes) {
             addMixin(mixinType);
         }
         handleInheritedMethodsThatNowFulfillAdvice(analyzedClass);
         // handle metas at end, since handleInheritedMethodsThatNowFulfillAdvice()
         // above could add new metas
         handleMetaHolders();
-        cv.visitEnd();
-    }
-
-    boolean isInterfaceSoNothingToWeave() {
-        return interfaceSoNothingToWeave;
+        cw.visitEnd();
     }
 
     @RequiresNonNull("type")
@@ -399,19 +364,19 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     private static String /*@Nullable*/[] getInterfacesIncludingShimsAndMixins(
-            String /*@Nullable*/[] interfaces, List<ShimType> matchedShimTypes,
-            List<MixinType> matchedMixinTypes) {
-        if (matchedMixinTypes.isEmpty() && matchedShimTypes.isEmpty()) {
+            String /*@Nullable*/[] interfaces, List<ShimType> shimTypes,
+            List<MixinType> mixinTypes) {
+        if (mixinTypes.isEmpty() && shimTypes.isEmpty()) {
             return interfaces;
         }
         Set<String> interfacesIncludingShimsAndMixins = Sets.newHashSet();
         if (interfaces != null) {
             interfacesIncludingShimsAndMixins.addAll(Arrays.asList(interfaces));
         }
-        for (ShimType matchedShimType : matchedShimTypes) {
+        for (ShimType matchedShimType : shimTypes) {
             interfacesIncludingShimsAndMixins.add(matchedShimType.iface().getInternalName());
         }
-        for (MixinType matchedMixinType : matchedMixinTypes) {
+        for (MixinType matchedMixinType : mixinTypes) {
             for (Type mixinInterface : matchedMixinType.interfaces()) {
                 interfacesIncludingShimsAndMixins.add(mixinInterface.getInternalName());
             }
@@ -420,7 +385,7 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     private boolean isInitWithMixins(String name) {
-        return name.equals("<init>") && !analyzingClassVisitor.getMatchedMixinTypes().isEmpty();
+        return name.equals("<init>") && !mixinTypes.isEmpty();
     }
 
     @RequiresNonNull("type")
@@ -428,10 +393,8 @@ class WeavingClassVisitor extends ClassVisitor {
             @Nullable String signature, String /*@Nullable*/[] exceptions,
             List<Advice> matchingAdvisors) {
         Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, desc);
-        MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
-        checkNotNull(mv);
-        mv = new InitMixins(mv, access, name, desc, analyzingClassVisitor.getMatchedMixinTypes(),
-                type);
+        MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+        mv = new InitMixins(mv, access, name, desc, mixinTypes, type);
         for (Advice advice : matchingAdvisors) {
             if (!advice.pointcut().timerName().isEmpty()) {
                 logger.warn("cannot add timer to <clinit> or <init> methods at this time");
@@ -451,8 +414,7 @@ class WeavingClassVisitor extends ClassVisitor {
             return wrapWithSyntheticTimerMarkerMethods(access, name, desc, signature, exceptions,
                     matchingAdvisors, methodMetaUniqueNum);
         } else {
-            MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
-            checkNotNull(mv);
+            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
             return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
                     metaHolderInternalName, methodMetaUniqueNum, loader == null, null);
         }
@@ -506,8 +468,7 @@ class WeavingClassVisitor extends ClassVisitor {
             String nextMethodName = outerName + "$glowroot$timer$" + timerName.replace(' ', '$')
                     + '$' + innerMethodCounter++;
             int access = outerMethodVisitor == null ? outerAccess : innerAccess;
-            MethodVisitor mv = cv.visitMethod(access, currMethodName, desc, signature, exceptions);
-            checkNotNull(mv);
+            MethodVisitor mv = cw.visitMethod(access, currMethodName, desc, signature, exceptions);
             GeneratorAdapter mg = new GeneratorAdapter(mv, access, nextMethodName, desc);
             if (!Modifier.isStatic(outerAccess)) {
                 mg.loadThis();
@@ -526,8 +487,7 @@ class WeavingClassVisitor extends ClassVisitor {
             }
         }
         MethodVisitor mv =
-                cv.visitMethod(currMethodAccess, currMethodName, desc, signature, exceptions);
-        checkNotNull(mv);
+                cw.visitMethod(currMethodAccess, currMethodName, desc, signature, exceptions);
         return new WeavingMethodVisitor(mv, currMethodAccess, currMethodName, desc, type,
                 matchingAdvisors, metaHolderInternalName, methodMetaUniqueNum, loader == null,
                 outerMethodVisitor);
@@ -540,9 +500,8 @@ class WeavingClassVisitor extends ClassVisitor {
             Shim shim = reflectMethod.getAnnotation(Shim.class);
             checkNotNull(shim);
             Method targetMethod = Method.getMethod(shim.value());
-            MethodVisitor mv = cv.visitMethod(ACC_PUBLIC, method.getName(), method.getDescriptor(),
+            MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, method.getName(), method.getDescriptor(),
                     null, null);
-            checkNotNull(mv);
             mv.visitCode();
             int i = 0;
             mv.visitVarInsn(ALOAD, i++);
@@ -580,8 +539,7 @@ class WeavingClassVisitor extends ClassVisitor {
             @SuppressWarnings("unchecked")
             String[] exceptions = Iterables.toArray(mn.exceptions, String.class);
             MethodVisitor mv =
-                    cv.visitMethod(mn.access, mn.name, mn.desc, mn.signature, exceptions);
-            checkNotNull(mv);
+                    cw.visitMethod(mn.access, mn.name, mn.desc, mn.signature, exceptions);
             mn.accept(new RemappingMethodAdapter(mn.access, mn.desc, mv,
                     new SimpleRemapper(cn.name, type.getInternalName())));
         }
@@ -609,7 +567,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private Map<AnalyzedMethodKey, Set<Advice>> getInheritedInterfaceMethodsWithAdvice() {
         Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets = Maps.newHashMap();
-        for (AnalyzedClass superAnalyzedClass : analyzingClassVisitor.getSuperAnalyzedClasses()) {
+        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
             if (!superAnalyzedClass.isInterface()) {
                 continue;
             }
@@ -620,8 +578,8 @@ class WeavingClassVisitor extends ClassVisitor {
                     matchingAdvisorSet = Sets.newHashSet();
                     matchingAdvisorSets.put(key, matchingAdvisorSet);
                 }
-                analyzingClassVisitor.addToMatchingAdvisors(matchingAdvisorSet,
-                        superAnalyzedMethod.advisors());
+                ClassAnalyzer.addToMatchingAdvisors(matchingAdvisorSet,
+                        superAnalyzedMethod.advisors(), superClassNames);
             }
         }
         return matchingAdvisorSets;
@@ -629,7 +587,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private void removeAdviceAlreadyWovenIntoSuperClass(
             Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets) {
-        for (AnalyzedClass superAnalyzedClass : analyzingClassVisitor.getSuperAnalyzedClasses()) {
+        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
             if (superAnalyzedClass.isInterface()) {
                 continue;
             }
@@ -681,13 +639,6 @@ class WeavingClassVisitor extends ClassVisitor {
         if (invalidTimerNameSet.add(timerName)) {
             logger.warn("timer name must contain only letters, digits and spaces: {}", timerName);
         }
-    }
-
-    @SuppressWarnings("serial")
-    static class PointcutClassFoundException extends RuntimeException {
-        private static final PointcutClassFoundException INSTANCE =
-                new PointcutClassFoundException();
-        private PointcutClassFoundException() {}
     }
 
     private static class InitMixins extends AdviceAdapter {

@@ -11,6 +11,7 @@ public class ClassVisitor {
             @Nullable String signature, String @Nullable [] exceptions);
     public @Nullable FieldVisitor visitField(int access, String name, @Nullable String desc,
             @Nullable String signature, @Nullable Object value);
+    public @Nullable AnnotationVisitor visitAnnotation(String desc, boolean visible);
 }
 
 public class MethodVisitor {

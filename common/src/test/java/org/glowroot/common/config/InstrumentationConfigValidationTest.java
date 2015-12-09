@@ -54,8 +54,9 @@ public class InstrumentationConfigValidationTest {
                 .className("").methodName("").build();
         // when
         // then
-        assertThat(config.validationErrors()).containsExactly("className is empty",
-                "methodName is empty");
+        assertThat(config.validationErrors()).containsExactly(
+                "className and classAnnotation are both empty",
+                "methodName and methodAnnotation are both empty");
     }
 
     @Test

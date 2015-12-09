@@ -74,23 +74,25 @@ message Config {
 
   message InstrumentationConfig {
     string class_name = 1;
-    string declaring_class_name = 2;
-    string method_name = 3;
-    repeated string method_parameter_type = 4;
-    string method_return_type = 5;
-    repeated MethodModifier method_modifier = 6;
-    CaptureKind capture_kind = 7;
-    string timer_name = 8;
-    string trace_entry_message_template = 9;
-    OptionalInt trace_entry_stack_threshold_millis = 10; // absent means N/A
-    bool trace_entry_capture_self_nested = 11;
-    string transaction_type = 12;
-    string transaction_name_template = 13;
-    string transaction_user_template = 14;
-    map<string, string> transaction_attribute_templates = 15;
-    OptionalInt transaction_slow_threshold_millis = 16; // absent means N/A
-    string enabled_property = 17;
-    string trace_entry_enabled_property = 18;
+    string class_annotation = 2;
+    string declaring_class_name = 3;
+    string method_name = 4;
+    string method_annotation = 5;
+    repeated string method_parameter_type = 6;
+    string method_return_type = 7;
+    repeated MethodModifier method_modifier = 8;
+    CaptureKind capture_kind = 9;
+    string timer_name = 10;
+    string trace_entry_message_template = 11;
+    OptionalInt trace_entry_stack_threshold_millis = 12; // absent means N/A
+    bool trace_entry_capture_self_nested = 13;
+    string transaction_type = 14;
+    string transaction_name_template = 15;
+    string transaction_user_template = 16;
+    map<string, string> transaction_attribute_templates = 17;
+    OptionalInt transaction_slow_threshold_millis = 18; // absent means N/A
+    string enabled_property = 19;
+    string trace_entry_enabled_property = 20;
   }
 
   message OptionalInt {

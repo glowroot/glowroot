@@ -440,11 +440,10 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.AnalyzedWorld");
         types.add("org.glowroot.agent.weaving.AnalyzedWorld$1");
         types.add("org.glowroot.agent.weaving.AnalyzedWorld$ParseContext");
-        types.add("org.glowroot.agent.weaving.AnalyzingClassVisitor");
-        types.add("org.glowroot.agent.weaving.AnalyzingClassVisitor$ShortCircuitException");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$ClassMetaHolder");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$MethodMetaHolder");
+        types.add("org.glowroot.agent.weaving.ClassAnalyzer");
         types.add("org.glowroot.agent.weaving.ClassLoaders");
         types.add("org.glowroot.agent.weaving.ClassLoaders$LazyDefinedClass");
         types.add("org.glowroot.agent.weaving.ClassNames");
@@ -468,6 +467,10 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ImmutableMethodMetaGroup");
         types.add("org.glowroot.agent.weaving.ImmutableMethodMetaGroup$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableParseContext");
+        types.add("org.glowroot.agent.weaving.ImmutableThinClass");
+        types.add("org.glowroot.agent.weaving.ImmutableThinClass$Builder");
+        types.add("org.glowroot.agent.weaving.ImmutableThinMethod");
+        types.add("org.glowroot.agent.weaving.ImmutableThinMethod$Builder");
         types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor");
         types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor"
                 + "$InstrumentAnnotationMethodVisitor");
@@ -482,6 +485,10 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.PointcutClassVisitor");
         types.add("org.glowroot.agent.weaving.PointcutClassVisitor$1");
         types.add("org.glowroot.agent.weaving.ShimType");
+        types.add("org.glowroot.agent.weaving.ThinClassVisitor");
+        types.add("org.glowroot.agent.weaving.ThinClassVisitor$AnnotationCaptureMethodVisitor");
+        types.add("org.glowroot.agent.weaving.ThinClassVisitor$ThinClass");
+        types.add("org.glowroot.agent.weaving.ThinClassVisitor$ThinMethod");
         types.add("org.glowroot.agent.weaving.Weaver");
         types.add("org.glowroot.agent.weaving.Weaver$ComputeFramesClassWriter");
         types.add("org.glowroot.agent.weaving.Weaver$JSRInlinerClassVisitor");
@@ -490,7 +497,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$AnalyzedMethodKey");
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$InitMixins");
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$MethodMetaGroup");
-        types.add("org.glowroot.agent.weaving.WeavingClassVisitor$PointcutClassFoundException");
         types.add("org.glowroot.agent.weaving.WeavingMethodVisitor");
         types.add("org.glowroot.agent.weaving.WeavingMethodVisitor$CatchHandler");
         types.add("org.glowroot.agent.weaving.WeavingTimerService");
@@ -590,12 +596,15 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedClass$1");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedMethod$1");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedMethodKey$1");
-        types.add("org.glowroot.agent.weaving.ImmutableMethodMetaGroup$1");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$1");
         types.add("org.glowroot.agent.weaving.ImmutableAdviceParameter$1");
         types.add("org.glowroot.agent.weaving.ImmutableLazyDefinedClass$1");
+        types.add("org.glowroot.agent.weaving.ImmutableMethodMetaGroup$1");
+        types.add("org.glowroot.agent.weaving.ImmutableThinClass$1");
+        types.add("org.glowroot.agent.weaving.ImmutableThinMethod$1");
         types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor$1");
         types.add("org.glowroot.agent.weaving.MethodMetaGroup$1");
+        types.add("org.glowroot.agent.weaving.ThinClassVisitor$1");
         types.add("org.glowroot.agent.weaving.Weaver$1");
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$1");
         types.add("org.glowroot.common.config.ImmutableInstrumentationConfig$1");

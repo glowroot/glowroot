@@ -20,8 +20,12 @@ import java.lang.reflect.Method;
 
 import javax.annotation.Nullable;
 
+import org.glowroot.agent.weaving.SomeAspect.SomeClass;
+import org.glowroot.agent.weaving.SomeAspect.SomeMethod;
+
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+@SomeClass
 public class BasicMisc extends SuperBasicMisc implements Misc, Misc2, Misc3 {
 
     // the cascading constructor is for testing that MixinInit is called exactly once
@@ -55,6 +59,7 @@ public class BasicMisc extends SuperBasicMisc implements Misc, Misc2, Misc3 {
     }
 
     @Override
+    @SomeMethod
     public String executeWithReturn() {
         return "xyz";
     }

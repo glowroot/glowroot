@@ -34,7 +34,17 @@ import org.immutables.value.Value;
 @Value.Immutable
 public abstract class InstrumentationConfig {
 
-    public abstract String className();
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String className() {
+        return "";
+    }
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String classAnnotation() {
+        return "";
+    }
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
@@ -42,7 +52,17 @@ public abstract class InstrumentationConfig {
         return "";
     }
 
-    public abstract String methodName();
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String methodName() {
+        return "";
+    }
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String methodAnnotation() {
+        return "";
+    }
 
     // empty methodParameterTypes means match no-arg methods only
     public abstract ImmutableList<String> methodParameterTypes();
@@ -128,8 +148,10 @@ public abstract class InstrumentationConfig {
     public String version() {
         Hasher hasher = Hashing.md5().newHasher()
                 .putString(className(), Charsets.UTF_8)
+                .putString(classAnnotation(), Charsets.UTF_8)
                 .putString(declaringClassName(), Charsets.UTF_8)
                 .putString(methodName(), Charsets.UTF_8)
+                .putString(methodAnnotation(), Charsets.UTF_8)
                 .putInt(methodParameterTypes().size());
         for (String methodParameterType : methodParameterTypes()) {
             hasher.putString(methodParameterType, Charsets.UTF_8);
@@ -187,11 +209,11 @@ public abstract class InstrumentationConfig {
     @Value.Derived
     public ImmutableList<String> validationErrors() {
         List<String> errors = Lists.newArrayList();
-        if (className().isEmpty()) {
-            errors.add("className is empty");
+        if (className().isEmpty() && classAnnotation().isEmpty()) {
+            errors.add("className and classAnnotation are both empty");
         }
-        if (methodName().isEmpty()) {
-            errors.add("methodName is empty");
+        if (methodName().isEmpty() && methodAnnotation().isEmpty()) {
+            errors.add("methodName and methodAnnotation are both empty");
         }
         if (isTimerOrGreater() && timerName().isEmpty()) {
             errors.add("timerName is empty");

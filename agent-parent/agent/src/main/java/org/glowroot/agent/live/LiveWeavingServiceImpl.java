@@ -192,7 +192,10 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
         adviceCache.updateAdvisors(configs, false);
         Set<String> classNames = Sets.newHashSet();
         for (InstrumentationConfig config : configs) {
-            classNames.add(config.className());
+            String className = config.className();
+            if (!className.isEmpty()) {
+                classNames.add(className);
+            }
         }
         Set<Class<?>> classes = Sets.newHashSet();
         List<Class<?>> possibleNewReweavableClasses = getExistingSubClasses(classNames);

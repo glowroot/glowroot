@@ -57,7 +57,7 @@ class PointcutClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+    public @Nullable AnnotationVisitor visitAnnotation(String desc, boolean visible) {
         AnnotationVisitor av = cw.visitAnnotation(desc, visible);
         if (desc.equals("Lorg/glowroot/agent/plugin/api/weaving/Pointcut;")) {
             return new AnnotationVisitor(ASM5, av) {

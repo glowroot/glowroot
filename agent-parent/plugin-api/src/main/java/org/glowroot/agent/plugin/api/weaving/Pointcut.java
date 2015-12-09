@@ -26,7 +26,10 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public @interface Pointcut {
 
     // target class name
-    String className();
+    String className() default "";
+    // optionally (in addition to className or instead of className) restrict pointcut to classes
+    // with the given annotation
+    String classAnnotation() default "";
     // restrict pointcut to the given subclass and below
     // e.g. useful for pointcut on java.lang.Runnable.run(), but only for classes
     // matching com.yourcompany.*
@@ -40,7 +43,10 @@ public @interface Pointcut {
     // use "<init>" to weave constructors
     // patterns never match constructors
     // static initializers ("<clinit>") are not supported
-    String methodName();
+    String methodName() default "";
+    // optionally (in addition to methodName or instead of methodName) restrict pointcut to methods
+    // with the given annotation
+    String methodAnnotation() default "";
     // methodParameterTypes has no default since it's not obvious if default should be {} or {".."}
     String[] methodParameterTypes();
     String methodReturnType() default "";

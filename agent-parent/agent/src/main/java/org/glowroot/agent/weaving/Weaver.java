@@ -33,8 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.weaving.AnalyzedWorld.ParseContext;
-import org.glowroot.agent.weaving.AnalyzingClassVisitor.ShortCircuitException;
-import org.glowroot.agent.weaving.WeavingClassVisitor.PointcutClassFoundException;
 import org.glowroot.agent.weaving.WeavingTimerService.WeavingTimer;
 
 import static org.objectweb.asm.Opcodes.ASM5;
@@ -96,6 +94,28 @@ class Weaver {
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
         List<Advice> advisors = analyzedWorld.mergeInstrumentAnnotations(this.advisors.get(),
                 classBytes, loader, className);
+        ThinClassVisitor accv = new ThinClassVisitor();
+        new ClassReader(classBytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
+        if (accv.getThinClass().annotations()
+                .contains("Lorg/glowroot/agent/plugin/api/weaving/Pointcut;")) {
+            ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES,
+                    analyzedWorld, loader, codeSource, className);
+            PointcutClassVisitor cv = new PointcutClassVisitor(cw);
+            ClassReader cr = new ClassReader(classBytes);
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
+            return cw.toByteArray();
+        }
+        ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
+                mixinTypes, loader, analyzedWorld, codeSource);
+        if (classAnalyzer.isShortCircuitBeforeAnalyzeMethods()) {
+            analyzedWorld.add(classAnalyzer.getAnalyzedClass(), loader);
+            return null;
+        }
+        classAnalyzer.analyzeMethods();
+        if (!classAnalyzer.isWeavingRequired()) {
+            analyzedWorld.add(classAnalyzer.getAnalyzedClass(), loader);
+            return null;
+        }
         // from http://www.oracle.com/technetwork/java/javase/compatibility-417013.html:
         //
         // "Classfiles with version number 51 are exclusively verified using the type-checking
@@ -110,30 +130,14 @@ class Weaver {
         //
         ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES, analyzedWorld,
                 loader, codeSource, className);
-        WeavingClassVisitor cv = new WeavingClassVisitor(cw, advisors, shimTypes, mixinTypes,
-                loader, analyzedWorld, codeSource, timerWrapperMethods);
+        WeavingClassVisitor cv =
+                new WeavingClassVisitor(cw, loader, classAnalyzer.getAnalyzedClass(),
+                        classAnalyzer.getSuperAnalyzedClasses(), classAnalyzer.getSuperClassNames(),
+                        classAnalyzer.getMatchedShimTypes(), classAnalyzer.getMatchedMixinTypes(),
+                        classAnalyzer.getMethodAdvisors(), analyzedWorld, timerWrapperMethods);
         ClassReader cr = new ClassReader(classBytes);
-        boolean shortCircuitException = false;
-        boolean pointcutClassFoundException = false;
-        try {
-            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
-        } catch (ShortCircuitException e) {
-            shortCircuitException = true;
-        } catch (PointcutClassFoundException e) {
-            pointcutClassFoundException = true;
-        }
-        if (shortCircuitException || cv.isInterfaceSoNothingToWeave()) {
-            return null;
-        } else if (pointcutClassFoundException) {
-            ClassWriter cw2 = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES,
-                    analyzedWorld, loader, codeSource, className);
-            PointcutClassVisitor cv2 = new PointcutClassVisitor(cw2);
-            ClassReader cr2 = new ClassReader(classBytes);
-            cr2.accept(new JSRInlinerClassVisitor(cv2), ClassReader.SKIP_FRAMES);
-            return cw2.toByteArray();
-        } else {
-            return cw.toByteArray();
-        }
+        cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
+        return cw.toByteArray();
     }
 
     private static class JSRInlinerClassVisitor extends ClassVisitor {
