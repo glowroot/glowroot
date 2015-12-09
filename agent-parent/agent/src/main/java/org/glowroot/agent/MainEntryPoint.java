@@ -32,33 +32,28 @@ import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.GlowrootThinAgentInit;
-import org.glowroot.agent.init.LoggingInit;
 import org.glowroot.agent.init.fat.DataDirLocking.BaseDirLockedException;
 import org.glowroot.agent.init.fat.GlowrootFatAgentInit;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Version;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class MainEntryPoint {
 
-    private static final Logger startupLogger;
+    // need to wait to init logger until
+    private static volatile @MonotonicNonNull Logger startupLogger;
 
     @OnlyUsedByTests
     private static @MonotonicNonNull GlowrootAgentInit glowrootAgentInit;
-
-    static {
-        ch.qos.logback.classic.Logger rootLogger =
-                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        // FILE appender depends on ${glowroot.base.dir}, so need to remove it temporarily
-        rootLogger.detachAppender("FILE");
-        // log startup messages using logger name "org.glowroot"
-        startupLogger = LoggerFactory.getLogger("org.glowroot");
-    }
 
     private MainEntryPoint() {}
 
@@ -75,9 +70,9 @@ public class MainEntryPoint {
         }
         String baseDirPath = System.getProperty("glowroot.base.dir");
         File baseDir = BaseDir.getBaseDir(baseDirPath, glowrootJarFile);
+        // init logger as early as possible
+        initLogging(baseDir);
         try {
-            // init logger as early as possible
-            LoggingInit.initStaticLoggerState(baseDir);
             ImmutableMap<String, String> properties = getGlowrootProperties(baseDir);
             start(baseDir, properties, instrumentation, glowrootJarFile, jbossModules);
         } catch (BaseDirLockedException e) {
@@ -91,10 +86,10 @@ public class MainEntryPoint {
     static void runViewer(@Nullable File glowrootJarFile) throws InterruptedException {
         String baseDirPath = System.getProperty("glowroot.base.dir");
         File baseDir = BaseDir.getBaseDir(baseDirPath, glowrootJarFile);
+        // init logger as early as possible
+        initLogging(baseDir);
         String version;
         try {
-            // init logger as early as possible
-            LoggingInit.initStaticLoggerState(baseDir);
             version = Version.getVersion();
             ImmutableMap<String, String> properties = getGlowrootProperties(baseDir);
             new GlowrootFatAgentInit().init(baseDir, null, properties, null, glowrootJarFile,
@@ -112,6 +107,24 @@ public class MainEntryPoint {
         Thread.sleep(Long.MAX_VALUE);
     }
 
+    @EnsuresNonNull("startupLogger")
+    private static void initLogging(File baseDir) {
+        String prior = System.getProperty("glowroot.base.dir");
+        try {
+            System.setProperty("glowroot.base.dir", baseDir.getPath());
+            startupLogger = LoggerFactory.getLogger("org.glowroot");
+        } finally {
+            if (prior == null) {
+                System.clearProperty("glowroot.base.dir");
+            } else {
+                System.setProperty("glowroot.base.dir", prior);
+            }
+        }
+        // checker framework is not currently detecting that startupLogger is non-null here
+        checkNotNull(startupLogger);
+    }
+
+    @RequiresNonNull("startupLogger")
     private static void start(File baseDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
             boolean jbossModules) throws Exception {
@@ -157,6 +170,7 @@ public class MainEntryPoint {
         return ImmutableMap.copyOf(properties);
     }
 
+    @RequiresNonNull("startupLogger")
     private static void logBaseDirLockedException(File baseDir) {
         // this is common when stopping tomcat since 'catalina.sh stop' launches a java process
         // to stop the tomcat jvm, and it uses the same JAVA_OPTS environment variable that may
@@ -200,7 +214,7 @@ public class MainEntryPoint {
         String baseDirPath = properties.get("glowroot.base.dir");
         File baseDir = BaseDir.getBaseDir(baseDirPath, null);
         // init logger as early as possible
-        LoggingInit.initStaticLoggerState(baseDir);
+        initLogging(baseDir);
         start(baseDir, properties, null, null, false);
     }
 

@@ -37,7 +37,6 @@ import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.CollectorProxy;
 import org.glowroot.agent.init.JvmInfoCreator;
-import org.glowroot.agent.init.LoggingInit;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
 import org.glowroot.common.util.Clock;
@@ -242,8 +241,6 @@ class FatAgentModule {
                 throw new IllegalStateException("Could not terminate executor");
             }
         }
-        // finally, close logger
-        LoggingInit.close();
         // and unlock the data directory
         dataDirLockingCloseable.close();
     }

@@ -20,19 +20,14 @@ import java.io.File;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Strings;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 class BaseDir {
 
-    private static final Logger logger = LoggerFactory.getLogger(BaseDir.class);
-
     private BaseDir() {}
 
     public static File getBaseDir(@Nullable String baseDirPath, @Nullable File glowrootJarFile) {
-
         if (glowrootJarFile == null) {
             // this is only for test support
             checkNotNull(baseDirPath, "Property base.dir is required when no glowroot jar file");
@@ -68,8 +63,9 @@ class BaseDir {
         baseDir.mkdirs();
         if (!baseDir.isDirectory()) {
             File processCurrDir = new File(".");
-            logger.warn("error creating data directory: {} (using directory {} instead)",
-                    baseDir.getAbsolutePath(), processCurrDir.getAbsolutePath());
+            // not using logger since the base dir is needed to set up the logger
+            System.err.println("error creating data directory: " + baseDir.getAbsolutePath()
+                    + " (using directory " + processCurrDir.getAbsolutePath() + " instead)");
             return processCurrDir;
         }
         return baseDir;

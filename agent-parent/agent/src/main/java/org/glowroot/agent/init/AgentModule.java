@@ -300,7 +300,5 @@ public class AgentModule {
         }
         // shut down collector last since above threads can try to use it
         collector.close();
-        // finally, close logger
-        LoggingInit.close();
     }
 }
