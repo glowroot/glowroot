@@ -16,9 +16,14 @@
 package org.glowroot.agent.weaving;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.List;
 
 import com.google.common.base.StandardSystemProperty;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -738,18 +743,25 @@ public class WeaverTest {
     @Test
     public void shouldStillCallOnAfterOfHigherPriorityPointcut() throws Exception {
         // given
-        IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
-        Advice advice1 = new AdviceBuilder(BasicAdvice.class).build();
-        Advice advice3 = new AdviceBuilder(BindThrowableAdvice.class).build();
-        Advice advice2 = new AdviceBuilder(ThrowInOnBeforeAdvice.class).build();
-        Advice advice4 = new AdviceBuilder(BasicLowPriorityAdvice.class).build();
-        loader.setAdvisors(ImmutableList.of(advice1, advice2, advice3, advice4));
-        loader.setWeavingTimerService(NopWeavingTimerService.INSTANCE);
+
         // SomeAspectThreadLocals is passed as bridgeable so that the static thread locals will be
         // accessible for test verification
-        loader.addBridgeClasses(Misc.class, SomeAspectThreadLocals.class, IntegerThreadLocal.class);
-        loader.setExcludeAgentClasses(false);
-        Misc test = loader.build().newInstance(BasicMisc.class, Misc.class);
+        IsolatedWeavingClassLoader isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(
+                Misc.class, SomeAspectThreadLocals.class, IntegerThreadLocal.class);
+        List<Advice> advisors = Lists.newArrayList();
+        advisors.add(new AdviceBuilder(BasicAdvice.class).build());
+        advisors.add(new AdviceBuilder(BindThrowableAdvice.class).build());
+        advisors.add(new AdviceBuilder(ThrowInOnBeforeAdvice.class).build());
+        advisors.add(new AdviceBuilder(BasicLowPriorityAdvice.class).build());
+        Supplier<List<Advice>> advisorsSupplier =
+                Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
+        AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisorsSupplier,
+                ImmutableList.<ShimType>of(), ImmutableList.<MixinType>of(), null);
+        WeaverImpl weaver = new WeaverImpl(advisorsSupplier, ImmutableList.<ShimType>of(),
+                ImmutableList.<MixinType>of(), analyzedWorld, NopWeavingTimerService.INSTANCE,
+                true);
+        isolatedWeavingClassLoader.setWeaver(weaver);
+        Misc test = isolatedWeavingClassLoader.newInstance(BasicMisc.class, Misc.class);
         // when
         RuntimeException exception = null;
         try {
@@ -1381,28 +1393,37 @@ public class WeaverTest {
 
     public static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,
             Class<?> adviceOrShimOrMixinClass, Class<?>... extraBridgeClasses) throws Exception {
-
-        IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
-        if (adviceOrShimOrMixinClass.isAnnotationPresent(Pointcut.class)) {
-            loader.setAdvisors(
-                    ImmutableList.of(new AdviceBuilder(adviceOrShimOrMixinClass).build()));
-        }
-        Mixin mixin = adviceOrShimOrMixinClass.getAnnotation(Mixin.class);
-        if (mixin != null) {
-            loader.setMixinTypes(ImmutableList.of(MixinType.from(mixin, adviceOrShimOrMixinClass)));
-        }
-        Shim shim = adviceOrShimOrMixinClass.getAnnotation(Shim.class);
-        if (shim != null) {
-            loader.setShimTypes(ImmutableList.of(ShimType.from(shim, adviceOrShimOrMixinClass)));
-        }
-        loader.setWeavingTimerService(NopWeavingTimerService.INSTANCE);
         // SomeAspectThreadLocals is passed as bridgeable so that the static thread locals will be
         // accessible for test verification
-        loader.addBridgeClasses(bridgeClass, SomeAspectThreadLocals.class,
-                IntegerThreadLocal.class);
-        loader.addBridgeClasses(extraBridgeClasses);
-        loader.setExcludeAgentClasses(false);
-        return loader.build().newInstance(implClass, bridgeClass);
+        List<Class<?>> bridgeClasses = Lists.newArrayList();
+        bridgeClasses.add(bridgeClass);
+        bridgeClasses.add(SomeAspectThreadLocals.class);
+        bridgeClasses.add(IntegerThreadLocal.class);
+        bridgeClasses.addAll(Arrays.asList(extraBridgeClasses));
+        IsolatedWeavingClassLoader isolatedWeavingClassLoader =
+                new IsolatedWeavingClassLoader(bridgeClasses.toArray(new Class<?>[0]));
+        List<Advice> advisors = Lists.newArrayList();
+        if (adviceOrShimOrMixinClass.isAnnotationPresent(Pointcut.class)) {
+            advisors.add(new AdviceBuilder(adviceOrShimOrMixinClass).build());
+        }
+        List<MixinType> mixinTypes = Lists.newArrayList();
+        Mixin mixin = adviceOrShimOrMixinClass.getAnnotation(Mixin.class);
+        if (mixin != null) {
+            mixinTypes.add(MixinType.from(mixin, adviceOrShimOrMixinClass));
+        }
+        List<ShimType> shimTypes = Lists.newArrayList();
+        Shim shim = adviceOrShimOrMixinClass.getAnnotation(Shim.class);
+        if (shim != null) {
+            shimTypes.add(ShimType.from(shim, adviceOrShimOrMixinClass));
+        }
+        Supplier<List<Advice>> advisorsSupplier =
+                Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
+        AnalyzedWorld analyzedWorld =
+                new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes, null);
+        WeaverImpl weaver = new WeaverImpl(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
+                NopWeavingTimerService.INSTANCE, true);
+        isolatedWeavingClassLoader.setWeaver(weaver);
+        return isolatedWeavingClassLoader.newInstance(implClass, bridgeClass);
     }
 
     private static void assumeJdk7() {

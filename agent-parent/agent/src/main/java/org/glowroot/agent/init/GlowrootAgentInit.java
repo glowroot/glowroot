@@ -30,6 +30,4 @@ public interface GlowrootAgentInit {
     AgentModule getAgentModule();
 
     void close() throws Exception;
-
-    void reopen() throws Exception;
 }

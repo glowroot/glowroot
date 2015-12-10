@@ -161,7 +161,8 @@ public class Threads {
             return true;
         } else if (!isShaded()
                 && !thread.getName().startsWith("Glowroot-")
-                // TODO submit netty issue to customize threadDeathWatcher thread name
+                // TODO threadDeathWatcher thread name is customizable in Netty 4.1.0.Beta8
+                // https://github.com/netty/netty/commit/a4f3e72e7187e22f2772de542b877dece0fa4baa
                 && !thread.getName().equals("threadDeathWatcher-2-1")
                 && !thread.getName().startsWith("H2 File Lock Watchdog ")
                 && !thread.getName().startsWith("H2 Log Writer ")

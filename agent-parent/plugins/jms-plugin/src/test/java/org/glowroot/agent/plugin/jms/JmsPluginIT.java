@@ -92,6 +92,7 @@ public class JmsPluginIT {
             Message message = session.createMessage();
             producer.send(message);
             Thread.sleep(1000);
+            connection.close();
         }
     }
 
@@ -115,6 +116,7 @@ public class JmsPluginIT {
             MessageProducer producer = session.createProducer(queue);
             Message message = session.createMessage();
             producer.send(message);
+            connection.close();
         }
     }
 

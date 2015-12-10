@@ -68,10 +68,4 @@ public class GlowrootFatAgentInit implements GlowrootAgentInit {
     public void close() throws Exception {
         checkNotNull(fatAgentModule).close();
     }
-
-    @Override
-    @OnlyUsedByTests
-    public void reopen() throws Exception {
-        checkNotNull(fatAgentModule).getAgentModule().reopen();
-    }
 }

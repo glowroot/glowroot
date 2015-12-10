@@ -18,11 +18,9 @@ package org.glowroot.agent.weaving;
 import java.lang.instrument.ClassFileTransformer;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
-import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +28,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassFileTransformer.class);
 
-    private final Weaver weaver;
+    private final WeaverImpl weaver;
 
     private final boolean weaveBootstrapClassLoader;
 
@@ -41,11 +39,8 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // hard-coded results in org.glowroot.weaving.PreInitializeWeavingClassesTest)
     // note: an exception is made for WeavingTimerService, see PreInitializeWeavingClassesTest for
     // explanation
-    public WeavingClassFileTransformer(List<ShimType> shimTypes, List<MixinType> mixinTypes,
-            Supplier<List<Advice>> advisors, AnalyzedWorld analyzedWorld,
-            WeavingTimerService weavingTimerService, boolean timerWrapperMethods) {
-        weaver = new Weaver(advisors, shimTypes, mixinTypes, analyzedWorld, weavingTimerService,
-                timerWrapperMethods);
+    public WeavingClassFileTransformer(WeaverImpl weaver) {
+        this.weaver = weaver;
         // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
         // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since
         // the woven code will not be able to see glowroot classes

@@ -64,6 +64,10 @@ public class URL {
     public boolean equals(@Nullable Object obj);
 }
 
+public class URLClassLoader {
+    public URLClassLoader(URL[] urls, @Nullable ClassLoader parent);
+}
+
 /* ========================================================================== */
 package java.nio.channels;
 

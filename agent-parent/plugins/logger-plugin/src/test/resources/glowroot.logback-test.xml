@@ -8,12 +8,14 @@
   </appender>
   <appender name="FILE" class="org.glowroot.agent.shaded.qos.logback.core.FileAppender">
     <file>target/glowroot.log</file>
-    <append>false</append>
+    <!-- prudent is needed since some tests are run in a separate JVM (using JavaagentContainer)
+      and these use the same logback configuration and log to the same file -->
+    <prudent>true</prudent>
     <encoder>
       <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
-  <root level="info">
+  <root level="warn">
     <!-- unit tests do not log to console to avoid logging expected warnings and errors which can be
       confusing to new users building glowroot from source -->
     <appender-ref ref="FILE" />

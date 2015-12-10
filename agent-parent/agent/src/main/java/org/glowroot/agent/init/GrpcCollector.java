@@ -71,6 +71,8 @@ class GrpcCollector implements Collector {
 
     private final StreamObserver<ClientResponse> responseObserver;
 
+    private volatile boolean closed;
+
     GrpcCollector(String serverId, String collectorHost, int collectorPort,
             ConfigUpdateService configUpdateService, LiveJvmService liveJvmService) {
         eventLoopGroup = EventLoopGroups.create("Glowroot-grpc-worker-ELG");
@@ -139,6 +141,9 @@ class GrpcCollector implements Collector {
 
     @Override
     public void log(LogEvent logEvent) throws Exception {
+        if (closed) {
+            return;
+        }
         LogMessage logMessage = LogMessage.newBuilder()
                 .setServerId(serverId)
                 .setLogEvent(logEvent)
@@ -149,6 +154,7 @@ class GrpcCollector implements Collector {
     @Override
     @OnlyUsedByTests
     public void close() throws InterruptedException {
+        closed = true;
         responseObserver.onCompleted();
         // sleep is needed to mitigate sporadic failure to shutdown channel
         Thread.sleep(1000);

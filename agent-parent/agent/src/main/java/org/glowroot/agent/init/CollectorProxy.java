@@ -63,6 +63,8 @@ public class CollectorProxy implements Collector {
 
     @Override
     public void log(LogEvent logEvent) throws Exception {
+        // FIXME capture up to 10 log events before instance is set, then pass them to instance
+        // on startup
         if (instance != null) {
             instance.log(logEvent);
         }

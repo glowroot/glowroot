@@ -18,28 +18,23 @@ package org.glowroot.agent.it.harness.impl;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.reflect.Reflection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.MainEntryPoint;
-import org.glowroot.agent.impl.AdviceCache;
-import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.ConfigService;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TempDirs;
-import org.glowroot.agent.weaving.Advice;
 import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -56,7 +51,8 @@ public class LocalContainer implements Container {
     private final @Nullable GrpcServerWrapper server;
     private final @Nullable TraceCollector traceCollector;
     private final @Nullable ConfigService configService;
-    private final GlowrootAgentInit glowrootAgentInit;
+
+    private volatile @Nullable AgentBridge agentBridge;
 
     private volatile @Nullable Thread executingAppThread;
 
@@ -85,6 +81,10 @@ public class LocalContainer implements Container {
             traceCollector = new TraceCollector();
             server = new GrpcServerWrapper(traceCollector, collectorPort);
         }
+        isolatedWeavingClassLoader =
+                new IsolatedWeavingClassLoader(AppUnderTest.class, AgentBridge.class);
+        AgentBridge agentBridge =
+                isolatedWeavingClassLoader.newInstance(AgentBridgeImpl.class, AgentBridge.class);
         Map<String, String> properties = Maps.newHashMap();
         properties.put("glowroot.base.dir", this.baseDir.getAbsolutePath());
         if (collectorPort != 0) {
@@ -92,45 +92,11 @@ public class LocalContainer implements Container {
             properties.put("glowroot.collector.port", Integer.toString(collectorPort));
         }
         properties.putAll(extraProperties);
-        List<Class<?>> bridgeClasses = ImmutableList.<Class<?>>of(AppUnderTest.class);
-        IsolatedClassLoader midLoader = new IsolatedClassLoader(bridgeClasses);
-        ClassLoader priorContextClassLoader = Thread.currentThread().getContextClassLoader();
-        try {
-            // need to initialize MainEntryPoint first to give SLF4J a chance to load outside
-            // of the context class loader, otherwise often (but not always) end up with this:
-            //
-            // SLF4J: The following set of substitute loggers may have been accessed
-            // SLF4J: during the initialization phase. Logging calls during this
-            // SLF4J: phase were not honored. However, subsequent logging calls to these
-            // SLF4J: loggers will work as normally expected.
-            // SLF4J: See also http://www.slf4j.org/codes.html#substituteLogger
-            // SLF4J: org.glowroot.agent.weaving.IsolatedWeavingClassLoader
-
-            Reflection.initialize(MainEntryPoint.class);
-
-            Thread.currentThread().setContextClassLoader(midLoader);
-            MainEntryPoint.start(properties);
-        } finally {
-            Thread.currentThread().setContextClassLoader(priorContextClassLoader);
-        }
-        IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
-        loader.setParentClassLoader(midLoader);
-        glowrootAgentInit = checkNotNull(MainEntryPoint.getGlowrootAgentInit());
-        AgentModule agentModule = glowrootAgentInit.getAgentModule();
-        AdviceCache adviceCache = agentModule.getAdviceCache();
-        loader.setShimTypes(adviceCache.getShimTypes());
-        loader.setMixinTypes(adviceCache.getMixinTypes());
-        List<Advice> advisors = Lists.newArrayList();
-        advisors.addAll(adviceCache.getAdvisors());
-        loader.setAdvisors(advisors);
-        loader.setWeavingTimerService(agentModule.getWeavingTimerService());
-        loader.setTimerWrapperMethods(
-                agentModule.getConfigService().getAdvancedConfig().timerWrapperMethods());
-        loader.addBridgeClasses(bridgeClasses);
-        isolatedWeavingClassLoader = loader.build();
-        configService = new ConfigServiceImpl(server, false);
+        agentBridge.start(properties);
         // this is used to set slowThresholdMillis=0
-        glowrootAgentInit.getAgentModule().getConfigService().resetAllConfig();
+        agentBridge.resetConfig();
+        this.agentBridge = agentBridge;
+        configService = new ConfigServiceImpl(server, false);
     }
 
     @Override
@@ -180,7 +146,8 @@ public class LocalContainer implements Container {
 
     @Override
     public void checkAndReset() throws Exception {
-        glowrootAgentInit.getAgentModule().getConfigService().resetAllConfig();
+        checkNotNull(agentBridge);
+        agentBridge.resetConfig();
         if (traceCollector != null) {
             traceCollector.checkAndResetLogMessages();
         }
@@ -193,6 +160,7 @@ public class LocalContainer implements Container {
 
     @Override
     public void close(boolean evenIfShared) throws Exception {
+        checkNotNull(agentBridge);
         if (shared && !evenIfShared) {
             // this is the shared container and will be closed at the end of the run
             ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) LoggerFactory
@@ -202,27 +170,25 @@ public class LocalContainer implements Container {
             rootLogger.detachAppender("org.glowroot.agent.init.GrpcLogbackAppender");
             return;
         }
-        glowrootAgentInit.close();
+        agentBridge.close();
         if (server != null) {
             server.close();
         }
         if (deleteBaseDirOnClose) {
             TempDirs.deleteRecursively(baseDir);
         }
-        // release class loader to prevent OOM Perm Gen
+        // release class loader to prevent PermGen OOM during maven test
         isolatedWeavingClassLoader = null;
+        agentBridge = null;
     }
 
-    // this is used to re-open a shared container after a non-shared container was used
-    public void reopen() throws Exception {
-        glowrootAgentInit.reopen();
+    public boolean isClosed() {
+        return isolatedWeavingClassLoader == null;
     }
 
     private void executeInternal(Class<? extends AppUnderTest> appClass) throws Exception {
         IsolatedWeavingClassLoader isolatedWeavingClassLoader = this.isolatedWeavingClassLoader;
-        if (isolatedWeavingClassLoader == null) {
-            throw new AssertionError("LocalContainer has already been stopped");
-        }
+        checkNotNull(isolatedWeavingClassLoader);
         ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
         executingAppThread = Thread.currentThread();
@@ -240,5 +206,43 @@ public class LocalContainer implements Container {
         int port = serverSocket.getLocalPort();
         serverSocket.close();
         return port;
+    }
+
+    public interface AgentBridge {
+        void start(Map<String, String> properties) throws Exception;
+        void close() throws Exception;
+        void resetConfig() throws Exception;
+    }
+
+    public static class AgentBridgeImpl implements AgentBridge {
+
+        @Override
+        public void start(final Map<String, String> properties) throws Exception {
+            // start up in separate thread to avoid the main thread from being capture by netty
+            // ThreadDeathWatcher, which then causes PermGen OOM during maven test
+            Executors.newSingleThreadExecutor().submit(new Callable<Void>() {
+                @Override
+                public @Nullable Void call() throws Exception {
+                    MainEntryPoint.start(properties);
+                    return null;
+                }
+            }).get();
+        }
+
+        @Override
+        public void close() throws Exception {
+            GlowrootAgentInit glowrootAgentInit = MainEntryPoint.getGlowrootAgentInit();
+            if (glowrootAgentInit != null) {
+                glowrootAgentInit.close();
+            }
+        }
+
+        @Override
+        public void resetConfig() throws Exception {
+            GlowrootAgentInit glowrootAgentInit = MainEntryPoint.getGlowrootAgentInit();
+            if (glowrootAgentInit != null) {
+                glowrootAgentInit.getAgentModule().getConfigService().resetAllConfig();
+            }
+        }
     }
 }

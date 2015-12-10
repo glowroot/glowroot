@@ -45,9 +45,7 @@ public class PreInitializeWeavingClassesTest {
         // "call" WeavingClassFileTransformer constructor
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "org/glowroot/agent/weaving/WeavingClassFileTransformer", "<init>",
-                "(Ljava/util/List;Ljava/util/List;L" + getGuavaSupplierInternalName() + ";"
-                        + "Lorg/glowroot/agent/weaving/AnalyzedWorld;"
-                        + "Lorg/glowroot/agent/weaving/WeavingTimerService;Z)V"));
+                "(Lorg/glowroot/agent/weaving/WeaverImpl;)V"));
         // "call" WeavingClassFileTransformer.transform()
         globalCollector.processMethodFailIfNotFound(
                 ReferencedMethod.from("org/glowroot/agent/weaving/WeavingClassFileTransformer",

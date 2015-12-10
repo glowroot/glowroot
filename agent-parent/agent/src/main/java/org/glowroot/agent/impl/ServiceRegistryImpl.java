@@ -72,12 +72,11 @@ public class ServiceRegistryImpl implements ServiceRegistry {
         return INSTANCE == null ? null : INSTANCE.glowrootService;
     }
 
-    public static ServiceRegistryImpl init(GlowrootService glowrootService,
+    public static void init(GlowrootService glowrootService,
             TransactionService transactionService, ConfigServiceFactory configServiceFactory)
                     throws Exception {
         INSTANCE =
                 new ServiceRegistryImpl(glowrootService, transactionService, configServiceFactory);
-        return INSTANCE;
     }
 
     @OnlyUsedByTests

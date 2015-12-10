@@ -17,31 +17,18 @@ package org.glowroot.agent.weaving;
 
 import java.io.IOException;
 import java.net.URL;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.common.reflect.Reflection;
-import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.common.util.OnlyUsedByTests;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 // the placement of this code in the main Glowroot code base (and not inside of the tests folder) is
 // not ideal, but the alternative is to create a separate artifact (or at least classifier) for this
@@ -53,9 +40,9 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     // bridge classes can be either interfaces or base classes
     private final ImmutableList<Class<?>> bridgeClasses;
-    private final Weaver weaver;
     private final Map<String, Class<?>> classes = Maps.newConcurrentMap();
-    private final boolean excludeAgentClasses;
+
+    private volatile @MonotonicNonNull Weaver weaver;
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private final ThreadLocal<Boolean> inWeaving = new ThreadLocal<Boolean>() {
@@ -65,26 +52,17 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         }
     };
 
-    public static Builder builder() {
-        return new Builder();
+    public IsolatedWeavingClassLoader(Class<?>... bridgeClasses) {
+        super(IsolatedWeavingClassLoader.class.getClassLoader());
+        this.bridgeClasses = ImmutableList.<Class<?>>builder()
+                .add(bridgeClasses)
+                .add(IsolatedWeavingClassLoader.class)
+                .add(Weaver.class)
+                .build();
     }
 
-    private IsolatedWeavingClassLoader(@Nullable ClassLoader parentClassLoader,
-            List<Advice> advisors, List<ShimType> shimTypes, List<MixinType> mixinTypes,
-            WeavingTimerService weavingTimerService, List<Class<?>> bridgeClasses,
-            boolean timerWrapperMethods, boolean excludeAgentClasses) {
-        super(parentClassLoader);
-        this.bridgeClasses = ImmutableList.<Class<?>>builder()
-                .addAll(bridgeClasses)
-                .add(IsolatedWeavingClassLoader.class)
-                .build();
-        Supplier<List<Advice>> advisorsSupplier =
-                Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
-        AnalyzedWorld analyzedWorld =
-                new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes, null);
-        this.weaver = new Weaver(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
-                weavingTimerService, timerWrapperMethods);
-        this.excludeAgentClasses = excludeAgentClasses;
+    public void setWeaver(Weaver weaver) {
+        this.weaver = weaver;
     }
 
     public <S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)
@@ -95,7 +73,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        if (loadWithParentClassLoader(name, excludeAgentClasses)) {
+        if (loadWithParentClassLoader(name)) {
             return super.loadClass(name, resolve);
         }
         Class<?> c = classes.get(name);
@@ -138,7 +116,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     }
 
     private byte[] weaveClass(String name, byte[] bytes) throws ClassFormatError {
-        if (inWeaving.get()) {
+        if (weaver == null || inWeaving.get()) {
             return bytes;
         } else {
             // don't do recursive weaving (i.e. don't weave any of the classes which are performing
@@ -171,17 +149,15 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         throw new IllegalStateException("Class '" + name + "' is not bridgeable");
     }
 
-    public static boolean loadWithParentClassLoader(String name, boolean excludeAgentClasses) {
-        if (name.startsWith(Agent.class.getName())) {
-            return false;
-        }
+    public static boolean loadWithParentClassLoader(String name) {
         if (isInBootstrapClassLoader(name)) {
             return true;
         }
-        if (excludeAgentClasses && isGlowrootAgentClass(name)) {
-            return true;
-        }
-        if (name.equals(AdviceFlowOuterHolder.class.getName())
+        // this is needed to prevent these thread locals retaining the IsolatedWeavingClassLoader
+        // and causing PermGen OOM during maven test
+        if (name.equals(FastThreadLocal.class.getName())
+                || name.equals(FastThreadLocal.class.getName() + "$Holder")
+                || name.equals(AdviceFlowOuterHolder.class.getName())
                 || name.equals(AdviceFlowOuterHolder.AdviceFlowHolder.class.getName())) {
             return true;
         }
@@ -200,95 +176,6 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             // log exception at trace level
             logger.trace(e.getMessage(), e);
             return false;
-        }
-    }
-
-    private static boolean isGlowrootAgentClass(String className) {
-        if (!className.startsWith("org.glowroot")) {
-            // optimization for common case
-            return false;
-        }
-        return className.startsWith("org.glowroot.common.")
-                || className.startsWith("org.glowroot.wire.api.")
-                || className.startsWith("org.glowroot.agent.api.")
-                || className.startsWith("org.glowroot.agent.plugin.api.")
-                || className.startsWith("org.glowroot.agent.advicegen.")
-                || className.startsWith("org.glowroot.agent.config.")
-                || className.startsWith("org.glowroot.agent.init.fat.")
-                || className.startsWith("org.glowroot.agent.init.thin.")
-                || className.startsWith("org.glowroot.agent.impl.")
-                || className.startsWith("org.glowroot.agent.jul.")
-                || className.startsWith("org.glowroot.agent.live.")
-                || className.startsWith("org.glowroot.agent.model.")
-                || className.startsWith("org.glowroot.agent.util.")
-                || className.startsWith("org.glowroot.agent.weaving.");
-    }
-
-    public static class Builder {
-
-        private @Nullable ClassLoader parentClassLoader = Builder.class.getClassLoader();
-        private List<ShimType> shimTypes = Lists.newArrayList();
-        private List<MixinType> mixinTypes = Lists.newArrayList();
-        private List<Advice> advisors = Lists.newArrayList();
-        private @MonotonicNonNull WeavingTimerService weavingTimerService;
-        private boolean timerWrapperMethods = true;
-        private final List<Class<?>> bridgeClasses = Lists.newArrayList();
-        private boolean excludeAgentClasses = true;
-
-        private Builder() {}
-
-        public void setParentClassLoader(ClassLoader parentClassLoader) {
-            this.parentClassLoader = parentClassLoader;
-        }
-
-        public void setShimTypes(List<ShimType> shimTypes) {
-            this.shimTypes = shimTypes;
-        }
-
-        public void setMixinTypes(List<MixinType> mixinTypes) {
-            this.mixinTypes = mixinTypes;
-        }
-
-        public void setAdvisors(List<Advice> advisors) {
-            this.advisors = advisors;
-        }
-
-        @EnsuresNonNull("#1")
-        public void setWeavingTimerService(WeavingTimerService weavingTimerService) {
-            this.weavingTimerService = weavingTimerService;
-        }
-
-        public void setTimerWrapperMethods(boolean timerWrapperMethods) {
-            this.timerWrapperMethods = timerWrapperMethods;
-        }
-
-        public void addBridgeClasses(List<Class<?>> bridgeClasses) {
-            this.bridgeClasses.addAll(bridgeClasses);
-        }
-
-        void addBridgeClasses(Class<?>... bridgeClasses) {
-            this.bridgeClasses.addAll(Arrays.asList(bridgeClasses));
-        }
-
-        void setExcludeAgentClasses(boolean excludeAgentClasses) {
-            this.excludeAgentClasses = excludeAgentClasses;
-        }
-
-        @RequiresNonNull("weavingTimerService")
-        public IsolatedWeavingClassLoader build() {
-            return AccessController
-                    .doPrivileged(new PrivilegedAction<IsolatedWeavingClassLoader>() {
-                        @Override
-                        public IsolatedWeavingClassLoader run() {
-                            // weavingTimerService is non-null when outer method is called, and it
-                            // is
-                            // @MonotonicNonNull, so it must be non-null here
-                            checkNotNull(weavingTimerService);
-                            return new IsolatedWeavingClassLoader(parentClassLoader, advisors,
-                                    shimTypes, mixinTypes, weavingTimerService, bridgeClasses,
-                                    timerWrapperMethods, excludeAgentClasses);
-                        }
-                    });
         }
     }
 }

@@ -121,7 +121,8 @@ public class AdviceBuilder {
                     AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
                         @Override
                         public ClassLoader run() {
-                            return new URLClassLoader(new URL[0]);
+                            return new URLClassLoader(new URL[0],
+                                    AdviceBuilder.class.getClassLoader());
                         }
                     });
             adviceClass = ClassLoaders.defineClass(lazyAdviceClass, tempClassLoader);

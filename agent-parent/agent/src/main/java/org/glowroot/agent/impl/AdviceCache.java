@@ -90,7 +90,8 @@ public class AdviceCache {
         for (int i = 0; i < pluginJars.size(); i++) {
             pluginJarURLs[i] = pluginJars.get(i).toURI().toURL();
         }
-        ClassLoader tempIsolatedClassLoader = new IsolatedClassLoader(pluginJarURLs);
+        ClassLoader tempIsolatedClassLoader =
+                new IsolatedClassLoader(pluginJarURLs, AdviceCache.class.getClassLoader());
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             for (String aspect : pluginDescriptor.aspects()) {
                 try {
@@ -110,8 +111,8 @@ public class AdviceCache {
         }
         if (instrumentation == null) {
             // this is for tests that don't run with javaagent container
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            checkNotNull(loader, "Context class loader must be set");
+            ClassLoader loader = AdviceCache.class.getClassLoader();
+            checkNotNull(loader);
             ClassLoaders.defineClassesInClassLoader(lazyAdvisors.values(), loader);
         } else {
             File generatedJarDir = new File(baseDir, "tmp");
@@ -157,8 +158,8 @@ public class AdviceCache {
                 AdviceGenerator.createAdvisors(reweavableConfigs, null, true);
         if (instrumentation == null) {
             // this is for tests that don't run with javaagent container
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            checkNotNull(loader, "Context class loader must be set");
+            ClassLoader loader = AdviceCache.class.getClassLoader();
+            checkNotNull(loader);
             ClassLoaders.defineClassesInClassLoader(advisors.values(), loader);
         } else {
             File generatedJarDir = new File(baseDir, "tmp");
@@ -243,8 +244,8 @@ public class AdviceCache {
 
     private static class IsolatedClassLoader extends URLClassLoader {
 
-        private IsolatedClassLoader(URL[] urls) {
-            super(urls);
+        private IsolatedClassLoader(URL[] urls, @Nullable ClassLoader parent) {
+            super(urls, parent);
         }
 
         @Override

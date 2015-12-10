@@ -114,10 +114,11 @@
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <!-- needed for compiling org.glowroot.testing.SpyingLogbackFilter and needed during shading,
-        but optional as a transitive dependency of unshaded core -->
-      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>${checker.qual.group.id}</groupId>
@@ -438,9 +439,9 @@
                   <shadedPattern>org.glowroot.agent.shaded.slf4j</shadedPattern>
                 </relocation>
                 <relocation>
-                  <!-- this shades guava's internal use of java util logging which is needed to prevent
-                    java util logging from being initialized early (e.g. in the case of wildfly which
-                    wants to do some setup before jul is initialized) -->
+                  <!-- this shades guava's internal use of java util logging which is needed to
+                    prevent java util logging from being initialized early (e.g. in the case of
+                    wildfly which wants to do some setup before jul is initialized) -->
                   <pattern>java.util.logging</pattern>
                   <shadedPattern>org.glowroot.agent.jul</shadedPattern>
                   <excludes>

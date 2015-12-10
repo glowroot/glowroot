@@ -83,11 +83,9 @@ public class Containers {
         }
         LocalContainer container =
                 (LocalContainer) SharedContainerRunListener.getSharedLocalContainer();
-        if (container == null) {
+        if (container == null || container.isClosed()) {
             container = new LocalContainer(null, true, false, ImmutableMap.<String, String>of());
             SharedContainerRunListener.setSharedLocalContainer(container);
-        } else {
-            container.reopen();
         }
         return container;
     }

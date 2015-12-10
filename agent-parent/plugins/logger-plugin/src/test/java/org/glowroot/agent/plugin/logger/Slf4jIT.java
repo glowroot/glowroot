@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -40,19 +41,17 @@ public class Slf4jIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        if (isShaded()) {
-            container = Containers.getSharedContainer();
-        } else {
-            // combination of unshaded and javaagent doesn't work because javaagent uses and loads
-            // slf4j classes before the WeavingClassFileTransformer is registered, so the slf4j
-            // classes don't have a chance to get woven
-            container = Containers.getSharedLocalContainer();
-        }
+        // unshaded doesn't work because glowroot loads slf4j classes before the Weaver is
+        // registered, so the slf4j classes don't have a chance to get woven
+        Assume.assumeTrue(isShaded());
+        container = Containers.getSharedContainer();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.close();
+        if (container != null) {
+            container.close();
+        }
     }
 
     @After

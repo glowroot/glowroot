@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.tests.plugin;
 
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.glowroot.agent.plugin.api.Agent;
@@ -23,13 +24,13 @@ import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.transaction.TraceEntry;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.tests.app.TraceGenerator;
 
 public class TraceGeneratorAspect {
 
@@ -50,15 +51,24 @@ public class TraceGeneratorAspect {
         }
 
         @OnBefore
-        public static TraceEntry onBefore(@BindReceiver TraceGenerator traceGenerator) {
-            TraceEntry traceEntry = transactionService.startTransaction(
-                    traceGenerator.transactionType(), traceGenerator.transactionName(),
-                    MessageSupplier.from(traceGenerator.headline()), timerName);
-            for (Entry<String, String> entry : traceGenerator.attributes().entrySet()) {
-                transactionService.addTransactionAttribute(entry.getKey(), entry.getValue());
+        public static TraceEntry onBefore(@BindReceiver Object traceGenerator,
+                @BindClassMeta TraceGeneratorInvoker traceGeneratorInvoker) {
+            String transactionType = traceGeneratorInvoker.transactionType(traceGenerator);
+            String transactionName = traceGeneratorInvoker.transactionName(traceGenerator);
+            String headline = traceGeneratorInvoker.headline(traceGenerator);
+            Map<String, String> attributes = traceGeneratorInvoker.attributes(traceGenerator);
+            String error = traceGeneratorInvoker.error(traceGenerator);
+
+            TraceEntry traceEntry =
+                    transactionService.startTransaction(transactionType, transactionName,
+                            MessageSupplier.from(headline), timerName);
+            if (attributes != null) {
+                for (Entry<String, String> entry : attributes.entrySet()) {
+                    transactionService.addTransactionAttribute(entry.getKey(), entry.getValue());
+                }
             }
-            if (traceGenerator.error() != null) {
-                transactionService.setTransactionError(traceGenerator.error());
+            if (error != null) {
+                transactionService.setTransactionError(error);
             }
             return traceEntry;
         }

@@ -288,6 +288,14 @@ public class ConfigService {
         }
     }
 
+    // this is used to by-pass possibly shaded AdvancedConfig when called from
+    // LocalContainer.<init>(), e.g. sometimes this causes issue after build from command-line and
+    // then run a test from IDE without cleaning in IDE first
+    @OnlyUsedByTests
+    public boolean getAdvancedConfigTimerWrapperMethods() {
+        return getAdvancedConfig().timerWrapperMethods();
+    }
+
     @OnlyUsedByTests
     public void resetAllConfig() throws IOException {
         transactionConfig = ImmutableTransactionConfig.builder()

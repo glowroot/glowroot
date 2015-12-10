@@ -59,6 +59,8 @@ import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.agent.weaving.AnalyzedWorld;
 import org.glowroot.agent.weaving.ExtraBootResourceFinder;
+import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
+import org.glowroot.agent.weaving.WeaverImpl;
 import org.glowroot.agent.weaving.WeavingClassFileTransformer;
 import org.glowroot.agent.weaving.WeavingTimerService;
 import org.glowroot.common.config.PluginDescriptor;
@@ -104,8 +106,6 @@ public class AgentModule {
     private final boolean timerWrapperMethods;
     private final boolean jvmRetransformClassesSupported;
 
-    private final ServiceRegistryImpl serviceRegistry;
-
     private final LiveTraceRepository liveTraceRepository;
     private final LiveWeavingService liveWeavingService;
     private final LiveJvmService liveJvmService;
@@ -145,13 +145,20 @@ public class AgentModule {
                 aggregator, clock, ticker);
 
         timerWrapperMethods = configService.getAdvancedConfig().timerWrapperMethods();
-        // instrumentation is null when debugging with IsolatedWeavingClassLoader
-        // instead of javaagent
-        if (instrumentation != null) {
-            ClassFileTransformer transformer =
-                    new WeavingClassFileTransformer(adviceCache.getShimTypes(),
-                            adviceCache.getMixinTypes(), adviceCache.getAdvisorsSupplier(),
-                            analyzedWorld, weavingTimerService, timerWrapperMethods);
+
+        WeaverImpl weaver = new WeaverImpl(adviceCache.getAdvisorsSupplier(),
+                adviceCache.getShimTypes(), adviceCache.getMixinTypes(), analyzedWorld,
+                weavingTimerService, timerWrapperMethods);
+
+        if (instrumentation == null) {
+            // instrumentation is null when debugging with IsolatedWeavingClassLoader
+            IsolatedWeavingClassLoader isolatedWeavingClassLoader =
+                    (IsolatedWeavingClassLoader) AgentModule.class.getClassLoader();
+            checkNotNull(isolatedWeavingClassLoader);
+            isolatedWeavingClassLoader.setWeaver(weaver);
+            jvmRetransformClassesSupported = false;
+        } else {
+            ClassFileTransformer transformer = new WeavingClassFileTransformer(weaver);
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);
                 jvmRetransformClassesSupported = true;
@@ -159,8 +166,6 @@ public class AgentModule {
                 instrumentation.addTransformer(transformer);
                 jvmRetransformClassesSupported = false;
             }
-        } else {
-            jvmRetransformClassesSupported = false;
         }
 
         OptionalService<ThreadAllocatedBytes> threadAllocatedBytes = ThreadAllocatedBytes.create();
@@ -185,8 +190,7 @@ public class AgentModule {
                         pluginId);
             }
         };
-        serviceRegistry =
-                ServiceRegistryImpl.init(glowrootService, transactionService, configServiceFactory);
+        ServiceRegistryImpl.init(glowrootService, transactionService, configServiceFactory);
 
         lazyPlatformMBeanServer = new LazyPlatformMBeanServer(jbossModules);
         gaugeCollector = new GaugeCollector(configService, collector, lazyPlatformMBeanServer,
@@ -207,12 +211,7 @@ public class AgentModule {
         liveJvmService = new LiveJvmServiceImpl(lazyPlatformMBeanServer, transactionRegistry,
                 transactionCollector, threadAllocatedBytes.getAvailability());
 
-        // using context class loader in LocalContainer tests so that the plugins are instantiated
-        // inside org.glowroot.agent.it.harness.impl.IsolatedClassLoader
-        ClassLoader initPluginClassLoader =
-                instrumentation == null ? Thread.currentThread().getContextClassLoader()
-                        : AgentModule.class.getClassLoader();
-        initPlugins(pluginCache.pluginDescriptors(), initPluginClassLoader);
+        initPlugins(pluginCache.pluginDescriptors());
 
         List<PluginDescriptor> pluginDescriptors = pluginCache.pluginDescriptors();
         List<String> pluginNames = Lists.newArrayList();
@@ -269,23 +268,17 @@ public class AgentModule {
 
     // now init plugins to give them a chance to do something in their static initializer
     // e.g. append their package to jboss.modules.system.pkgs
-    private static void initPlugins(List<PluginDescriptor> pluginDescriptors,
-            @Nullable ClassLoader loader) {
+    private static void initPlugins(List<PluginDescriptor> pluginDescriptors) {
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             for (String aspect : pluginDescriptor.aspects()) {
                 try {
-                    Class.forName(aspect, true, loader);
+                    Class.forName(aspect, true, AgentModule.class.getClassLoader());
                 } catch (ClassNotFoundException e) {
                     // this would have already been logged as a warning during advice construction
                     logger.debug(e.getMessage(), e);
                 }
             }
         }
-    }
-
-    @OnlyUsedByTests
-    public void reopen() throws Exception {
-        ServiceRegistryImpl.reopen(serviceRegistry);
     }
 
     @OnlyUsedByTests

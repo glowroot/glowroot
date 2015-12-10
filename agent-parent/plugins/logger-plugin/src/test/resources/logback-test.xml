@@ -8,7 +8,9 @@
   </appender>
   <appender name="FILE" class="ch.qos.logback.core.FileAppender">
     <file>target/glowroot.log</file>
-    <append>false</append>
+    <!-- prudent is needed since some tests are run in a separate JVM (using JavaagentContainer)
+      and these use the same logback configuration and log to the same file -->
+    <prudent>true</prudent>
     <encoder>
       <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
     </encoder>

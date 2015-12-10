@@ -64,8 +64,6 @@ class BaseDir {
         if (!baseDir.isDirectory()) {
             File processCurrDir = new File(".");
             // not using logger since the base dir is needed to set up the logger
-            System.err.println("error creating data directory: " + baseDir.getAbsolutePath()
-                    + " (using directory " + processCurrDir.getAbsolutePath() + " instead)");
             return processCurrDir;
         }
         return baseDir;

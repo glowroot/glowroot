@@ -15,16 +15,13 @@
  */
 package org.glowroot.agent.weaving;
 
-import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
-import org.glowroot.agent.plugin.api.weaving.Mixin;
 import org.glowroot.agent.weaving.SomeAspect.BindPrimitiveBooleanTravelerBadAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BindPrimitiveTravelerBadAdvice;
 import org.glowroot.agent.weaving.SomeAspect.MoreVeryBadAdvice;
 import org.glowroot.agent.weaving.SomeAspect.MoreVeryBadAdvice2;
 import org.glowroot.agent.weaving.SomeAspect.VeryBadAdvice;
-import org.glowroot.agent.weaving.WeavingTimerService.WeavingTimer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -113,35 +110,10 @@ public class WeaverErrorHandlingTest {
         throw new AssertionError("Expecting IllegalStateException");
     }
 
-    public static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,
-            Class<?> adviceClass, Class<?>... extraBridgeClasses) throws Exception {
-
-        IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
-        loader.setAdvisors(ImmutableList.of(new AdviceBuilder(adviceClass).build()));
-        Mixin mixin = adviceClass.getAnnotation(Mixin.class);
-        if (mixin != null) {
-            loader.setMixinTypes(ImmutableList.of(MixinType.from(mixin, adviceClass)));
-        }
-        loader.setWeavingTimerService(NopWeavingTimerService.INSTANCE);
+    private static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,
+            Class<?> adviceClass) throws Exception {
         // adviceClass is passed as bridgeable so that the static threadlocals will be accessible
         // for test verification
-        loader.addBridgeClasses(bridgeClass, adviceClass);
-        loader.addBridgeClasses(extraBridgeClasses);
-        loader.setExcludeAgentClasses(false);
-        return loader.build().newInstance(implClass, bridgeClass);
-    }
-
-    private static class NopWeavingTimerService implements WeavingTimerService {
-        private static final NopWeavingTimerService INSTANCE = new NopWeavingTimerService();
-        @Override
-        public WeavingTimer start() {
-            return NopWeavingTimer.INSTANCE;
-        }
-    }
-
-    private static class NopWeavingTimer implements WeavingTimer {
-        private static final NopWeavingTimer INSTANCE = new NopWeavingTimer();
-        @Override
-        public void stop() {}
+        return WeaverTest.newWovenObject(implClass, bridgeClass, adviceClass);
     }
 }

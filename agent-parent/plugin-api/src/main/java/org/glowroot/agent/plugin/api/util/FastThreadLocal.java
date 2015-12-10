@@ -46,11 +46,11 @@ public class FastThreadLocal</*@Nullable*/T> {
     protected T initialValue() {
         return null;
     }
-}
 
-class Holder<T> {
-    T value;
-    Holder(T value) {
-        this.value = value;
+    private static class Holder<T> {
+        T value;
+        Holder(T value) {
+            this.value = value;
+        }
     }
 }

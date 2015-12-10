@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.agent.weaving.Weaver.ComputeFramesClassWriter;
+import org.glowroot.agent.weaving.WeaverImpl.ComputeFramesClassWriter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

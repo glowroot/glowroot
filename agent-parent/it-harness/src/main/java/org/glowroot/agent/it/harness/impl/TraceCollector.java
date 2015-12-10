@@ -83,8 +83,8 @@ class TraceCollector implements Collector {
 
     public void checkAndResetLogMessages() throws InterruptedException {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        while (stopwatch.elapsed(SECONDS) < 10
-                && (!expectedMessages.isEmpty() || !unexpectedMessages.isEmpty())) {
+        while (stopwatch.elapsed(SECONDS) < 10 && !expectedMessages.isEmpty()
+                && unexpectedMessages.isEmpty()) {
             Thread.sleep(10);
         }
         try {
