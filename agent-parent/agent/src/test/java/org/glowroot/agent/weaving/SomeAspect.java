@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.weaving;
 
+import java.lang.reflect.Method;
+
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
@@ -1120,26 +1122,22 @@ public class SomeAspect {
 
     public static class TestMethodMeta {
 
-        private final Class<?> declaringClass;
-        private final Class<?> returnType;
-        private final Class<?>[] parameterTypes;
+        private final Method method;
 
-        public TestMethodMeta(Class<?> declaringClass, Class<?> returnType,
-                Class<?>... parameterTypes) {
-            this.declaringClass = declaringClass;
-            this.returnType = returnType;
-            this.parameterTypes = parameterTypes;
+        public TestMethodMeta(Method method) {
+            this.method = method;
         }
 
         public String getDeclaringClassName() {
-            return declaringClass.getName();
+            return method.getDeclaringClass().getName();
         }
 
         public String getReturnTypeName() {
-            return returnType.getName();
+            return method.getReturnType().getName();
         }
 
         public String[] getParameterTypeNames() {
+            Class<?>[] parameterTypes = method.getParameterTypes();
             String[] parameterTypeNames = new String[parameterTypes.length];
             for (int i = 0; i < parameterTypes.length; i++) {
                 parameterTypeNames[i] = parameterTypes[i].getName();

@@ -220,8 +220,8 @@ class WeavingClassVisitor extends ClassVisitor {
                 String methodMetaFieldName = "glowroot$method$meta$" + methodMetaGroup.uniqueNum()
                         + '$' + methodMetaInternalName.replace('/', '$');
                 BootstrapMetaHolders.createMethodMetaHolder(metaHolderInternalName,
-                        methodMetaFieldName, methodMetaType, type, methodMetaGroup.returnType(),
-                        methodMetaGroup.parameterTypes());
+                        methodMetaFieldName, methodMetaType, type, methodMetaGroup.methodName(),
+                        methodMetaGroup.methodParameterTypes());
             }
         }
     }
@@ -265,19 +265,19 @@ class WeavingClassVisitor extends ClassVisitor {
                 mv.visitTypeInsn(NEW, methodMetaInternalName);
                 mv.visitInsn(DUP);
                 loadType(mv, type, metaHolderType);
-                loadType(mv, methodMetaGroup.returnType(), metaHolderType);
-
-                mv.visitIntInsn(BIPUSH, methodMetaGroup.parameterTypes().size());
+                mv.visitLdcInsn(methodMetaGroup.methodName());
+                mv.visitIntInsn(BIPUSH, methodMetaGroup.methodParameterTypes().size());
                 mv.visitTypeInsn(ANEWARRAY, "java/lang/Class");
-                for (int i = 0; i < methodMetaGroup.parameterTypes().size(); i++) {
+                for (int i = 0; i < methodMetaGroup.methodParameterTypes().size(); i++) {
                     mv.visitInsn(DUP);
                     mv.visitIntInsn(BIPUSH, i);
-                    loadType(mv, methodMetaGroup.parameterTypes().get(i), metaHolderType);
+                    loadType(mv, methodMetaGroup.methodParameterTypes().get(i), metaHolderType);
                     mv.visitInsn(AASTORE);
                 }
-
+                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getDeclaredMethod",
+                        "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;", false);
                 mv.visitMethodInsn(INVOKESPECIAL, methodMetaInternalName, "<init>",
-                        "(Ljava/lang/Class;Ljava/lang/Class;[Ljava/lang/Class;)V", false);
+                        "(Ljava/lang/reflect/Method;)V", false);
                 mv.visitFieldInsn(PUTSTATIC, metaHolderInternalName, methodMetaFieldName,
                         "L" + methodMetaInternalName + ";");
             }
@@ -392,7 +392,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private MethodVisitor visitInitWithMixins(int access, String name, String desc,
             @Nullable String signature, String /*@Nullable*/[] exceptions,
             List<Advice> matchingAdvisors) {
-        Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, desc);
+        Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, name, desc);
         MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
         mv = new InitMixins(mv, access, name, desc, mixinTypes, type);
         for (Advice advice : matchingAdvisors) {
@@ -409,7 +409,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private MethodVisitor visitMethodWithAdvice(int access, String name, String desc,
             @Nullable String signature, String /*@Nullable*/[] exceptions,
             Iterable<Advice> matchingAdvisors) {
-        Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, desc);
+        Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, name, desc);
         if (timerWrapperMethods && !name.equals("<init>")) {
             return wrapWithSyntheticTimerMarkerMethods(access, name, desc, signature, exceptions,
                     matchingAdvisors, methodMetaUniqueNum);
@@ -420,7 +420,8 @@ class WeavingClassVisitor extends ClassVisitor {
         }
     }
 
-    private @Nullable Integer collectMetasAtMethod(Iterable<Advice> matchingAdvisors, String desc) {
+    private @Nullable Integer collectMetasAtMethod(Iterable<Advice> matchingAdvisors,
+            String methodName, String methodDesc) {
         Set<Type> methodMetaTypes = Sets.newHashSet();
         for (Advice matchingAdvice : matchingAdvisors) {
             classMetaTypes.addAll(matchingAdvice.classMetaTypes());
@@ -429,11 +430,10 @@ class WeavingClassVisitor extends ClassVisitor {
         Integer methodMetaUniqueNum = null;
         if (!methodMetaTypes.isEmpty()) {
             methodMetaUniqueNum = ++methodMetaCounter;
-            List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(desc));
-            Type returnType = Type.getReturnType(desc);
+            List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(methodDesc));
             methodMetaGroups.add(ImmutableMethodMetaGroup.builder()
-                    .returnType(returnType)
-                    .addAllParameterTypes(parameterTypes)
+                    .methodName(methodName)
+                    .addAllMethodParameterTypes(parameterTypes)
                     .uniqueNum(methodMetaUniqueNum)
                     .addAllMethodMetaTypes(methodMetaTypes)
                     .build());
@@ -682,8 +682,8 @@ class WeavingClassVisitor extends ClassVisitor {
 
     @Value.Immutable
     interface MethodMetaGroup {
-        Type returnType();
-        ImmutableList<Type> parameterTypes();
+        String methodName();
+        ImmutableList<Type> methodParameterTypes();
         int uniqueNum();
         ImmutableSet<Type> methodMetaTypes();
     }

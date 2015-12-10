@@ -16,6 +16,7 @@
 package org.glowroot.agent.weaving;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -80,13 +81,13 @@ public class BootstrapMetaHolders {
     }
 
     public static void createMethodMetaHolder(String metaHolderInternalName,
-            String methodMetaFieldName, Type methodMetaType, Type type, Type returnType,
-            List<Type> parameterTypes) {
+            String methodMetaFieldName, Type methodMetaType, Type methodOwnerType,
+            String methodName, List<Type> methodParameterTypes) {
         String key = metaHolderInternalName + '.' + methodMetaFieldName;
         Integer index = methodMetaHolderIndexes.get(key);
         checkNotNull(index, "MethodMetaHolder was not reserved for key: " + key);
-        MethodMetaHolder methodMetaHolder =
-                new MethodMetaHolder(methodMetaType, type, returnType, parameterTypes);
+        MethodMetaHolder methodMetaHolder = new MethodMetaHolder(methodMetaType, methodOwnerType,
+                methodName, methodParameterTypes);
         methodMetaHolders.set(index, methodMetaHolder);
     }
 
@@ -164,17 +165,17 @@ public class BootstrapMetaHolders {
     private static class MethodMetaHolder {
 
         private final Type methodMetaType;
-        private final Type type;
-        private final Type returnType;
-        private final List<Type> parameterTypes;
+        private final Type methodOwnerType;
+        private final String methodName;
+        private final List<Type> methodParameterTypes;
         private volatile @MonotonicNonNull Object methodMeta;
 
-        private MethodMetaHolder(Type methodMetaType, Type type, Type returnType,
-                List<Type> parameterTypes) {
+        private MethodMetaHolder(Type methodMetaType, Type methodOwnerType, String methodName,
+                List<Type> methodParameterTypes) {
             this.methodMetaType = methodMetaType;
-            this.type = type;
-            this.returnType = returnType;
-            this.parameterTypes = parameterTypes;
+            this.methodOwnerType = methodOwnerType;
+            this.methodName = methodName;
+            this.methodParameterTypes = methodParameterTypes;
         }
 
         private Object getMethodMeta() throws Exception {
@@ -184,17 +185,17 @@ public class BootstrapMetaHolders {
             }
             synchronized (this) {
                 if (methodMeta == null) {
-                    Class<?> classMetaClass = getType(methodMetaType);
-                    Class<?> wovenClass = getType(type);
-                    Class<?> returnClass = getType(returnType);
-                    Class<?>[] parameterClasses = new Class[parameterTypes.size()];
-                    for (int i = 0; i < parameterTypes.size(); i++) {
-                        parameterClasses[i] = getType(parameterTypes.get(i));
+                    Class<?> methodMetaClass = getType(methodMetaType);
+                    Class<?> methodOwnerClass = getType(methodOwnerType);
+                    Class<?>[] methodParameterClasses = new Class[methodParameterTypes.size()];
+                    for (int i = 0; i < methodParameterTypes.size(); i++) {
+                        methodParameterClasses[i] = getType(methodParameterTypes.get(i));
                     }
-                    Constructor<?> constructor = Reflections.getConstructor(classMetaClass,
-                            Class.class, Class.class, Class[].class);
-                    methodMeta = Reflections.invoke(constructor, wovenClass, returnClass,
-                            parameterClasses);
+                    Method method =
+                            methodOwnerClass.getDeclaredMethod(methodName, methodParameterClasses);
+                    Constructor<?> constructor =
+                            Reflections.getConstructor(methodMetaClass, Method.class);
+                    methodMeta = Reflections.invoke(constructor, method);
                 }
             }
             return methodMeta;

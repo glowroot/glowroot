@@ -17,6 +17,7 @@ package org.glowroot.agent.advicegen;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -46,8 +47,7 @@ public class MessageTemplate {
     private final ImmutableList<ValuePathPart> returnPathParts;
 
     @UsedByGeneratedBytecode
-    public static MessageTemplate create(String template, Class<?> declaringClass,
-            Class<?> returnType, Class<?>[] parameterTypes) {
+    public static MessageTemplate create(String template, Method method) {
         List<Part> allParts = Lists.newArrayList();
         List<ValuePathPart> thisPathParts = Lists.newArrayList();
         List<ArgPathPart> argPathParts = Lists.newArrayList();
@@ -72,15 +72,15 @@ public class MessageTemplate {
                 remaining = path.substring(index + 1);
             }
             if (base.equals("this")) {
-                ValuePathPart part =
-                        new ValuePathPart(PartType.THIS_PATH, declaringClass, remaining);
+                ValuePathPart part = new ValuePathPart(PartType.THIS_PATH,
+                        method.getDeclaringClass(), remaining);
                 allParts.add(part);
                 thisPathParts.add(part);
             } else if (base.matches("[0-9]+")) {
                 int argNumber = Integer.parseInt(base);
-                if (argNumber < parameterTypes.length) {
-                    ArgPathPart part =
-                            new ArgPathPart(parameterTypes[argNumber], remaining, argNumber);
+                if (argNumber < method.getParameterTypes().length) {
+                    ArgPathPart part = new ArgPathPart(method.getParameterTypes()[argNumber],
+                            remaining, argNumber);
                     allParts.add(part);
                     argPathParts.add(part);
                 } else {
@@ -88,7 +88,8 @@ public class MessageTemplate {
                             "<requested arg index out of bounds: " + argNumber + ">"));
                 }
             } else if (base.equals("_")) {
-                ValuePathPart part = new ValuePathPart(PartType.RETURN_PATH, returnType, remaining);
+                ValuePathPart part =
+                        new ValuePathPart(PartType.RETURN_PATH, method.getReturnType(), remaining);
                 allParts.add(part);
                 returnPathParts.add(part);
             } else if (base.equals("methodName")) {
