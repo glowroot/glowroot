@@ -56,7 +56,7 @@ public class AsyncHttpClientPluginIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage())
-                .isEqualTo("http client request: GET http://www.example.com/hello1");
+                .isEqualTo("http client request: GET http://www.example.com/hello1/");
     }
 
     @Test
@@ -76,7 +76,7 @@ public class AsyncHttpClientPluginIT {
         @Override
         public void transactionMarker() throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://www.example.com/hello1").execute().get();
+            asyncHttpClient.prepareGet("http://www.example.com/hello1/").execute().get();
             asyncHttpClient.close();
         }
     }

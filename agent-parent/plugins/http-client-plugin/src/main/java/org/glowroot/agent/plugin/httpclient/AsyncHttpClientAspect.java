@@ -15,8 +15,6 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
-import java.net.URI;
-
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
@@ -91,9 +89,9 @@ public class AsyncHttpClientAspect {
             // need to start trace entry @OnBefore in case it is executed in a "same thread
             // executor" in which case will be over in @OnReturn
             String method = requestInvoker.getMethod(request);
-            URI originalURI = requestInvoker.getOriginalURI(request);
-            return transactionService
-                    .startTraceEntry(new RequestMessageSupplier(method, originalURI), timerName);
+            String url = requestInvoker.getUrl(request);
+            return transactionService.startTraceEntry(new RequestMessageSupplier(method, url),
+                    timerName);
         }
         @OnReturn
         public static void onReturn(@BindReturn ListenableFuture future,
@@ -135,17 +133,16 @@ public class AsyncHttpClientAspect {
     private static class RequestMessageSupplier extends MessageSupplier {
 
         private final String method;
-        private final @Nullable URI originalURI;
+        private final String url;
 
-        private RequestMessageSupplier(String method, @Nullable URI originalURI) {
+        private RequestMessageSupplier(String method, String url) {
             this.method = method;
-            this.originalURI = originalURI;
+            this.url = url;
         }
 
         @Override
         public Message get() {
-            String uri = originalURI == null ? "" : originalURI.toString();
-            return Message.from("http client request: {} {}", method, uri);
+            return Message.from("http client request: {} {}", method, url);
         }
     }
 }

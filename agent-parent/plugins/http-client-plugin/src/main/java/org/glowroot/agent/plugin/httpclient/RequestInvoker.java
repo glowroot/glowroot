@@ -28,13 +28,26 @@ public class RequestInvoker {
     private static final Logger logger = Agent.getLogger(RequestInvoker.class);
 
     private final @Nullable Method getMethodMethod;
-
-    private final @Nullable Method getOriginalURIMethod;
+    private final @Nullable Method getUrlMethod;
+    private final @Nullable Method getURIMethod;
 
     public RequestInvoker(Class<?> clazz) {
         Class<?> requestClass = getRequestClass(clazz);
         getMethodMethod = Invokers.getMethod(requestClass, "getMethod");
-        getOriginalURIMethod = Invokers.getMethod(requestClass, "getOriginalURI");
+        getUrlMethod = Invokers.getMethod(requestClass, "getUrl");
+        // in async-http-client versions from 1.7.12 up until just prior to 1.9.0, getUrl() stripped
+        // trailing "/"
+        // in these versions only there was method getURI that returned the non-stripped URI
+        Method getURIMethod = null;
+        if (requestClass != null) {
+            try {
+                getURIMethod = requestClass.getMethod("getURI");
+            } catch (Exception e) {
+                // log exception at debug level
+                logger.debug(e.getMessage(), e);
+            }
+        }
+        this.getURIMethod = getURIMethod;
     }
 
     String getMethod(Object request) {
@@ -42,10 +55,13 @@ public class RequestInvoker {
     }
 
     // TODO report checker framework issue that occurs without this warning suppression
-    @SuppressWarnings("return.type.incompatible")
-    @Nullable
-    URI getOriginalURI(Object request) {
-        return Invokers.invoke(getOriginalURIMethod, request, null);
+    @SuppressWarnings("assignment.type.incompatible")
+    String getUrl(Object request) {
+        if (getURIMethod == null) {
+            return Invokers.invoke(getUrlMethod, request, "");
+        }
+        URI uri = Invokers.invoke(getURIMethod, request, null);
+        return uri == null ? "" : uri.toString();
     }
 
     private static @Nullable Class<?> getRequestClass(Class<?> clazz) {

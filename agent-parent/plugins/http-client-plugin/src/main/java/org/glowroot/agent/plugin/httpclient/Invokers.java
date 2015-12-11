@@ -28,13 +28,12 @@ public class Invokers {
 
     private Invokers() {}
 
-    static @Nullable Method getMethod(@Nullable Class<?> clazz, String methodName,
-            Class<?>... parameterTypes) {
+    static @Nullable Method getMethod(@Nullable Class<?> clazz, String methodName) {
         if (clazz == null) {
             return null;
         }
         try {
-            return clazz.getMethod(methodName, parameterTypes);
+            return clazz.getMethod(methodName);
         } catch (Exception e) {
             logger.warn(e.getMessage(), e);
             return null;
