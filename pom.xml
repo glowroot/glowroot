@@ -70,9 +70,9 @@
     <protobuf.version>3.0.0-beta-1</protobuf.version>
     <netty.version>4.1.0.Beta7</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
-    <jackson.version>2.6.3</jackson.version>
+    <jackson.version>2.6.4</jackson.version>
     <logback.version>1.1.3</logback.version>
-    <immutables.version>2.1.2</immutables.version>
+    <immutables.version>2.1.3</immutables.version>
     <javax.mail.version>1.5.4</javax.mail.version>
     <jmh.version>1.11.2</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -180,7 +180,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>19.0-rc3</version>
+        <version>19.0</version>
       </dependency>
       <dependency>
         <groupId>org.hdrhistogram</groupId>
@@ -627,7 +627,7 @@
         <checker.qual.group.id>org.checkerframework</checker.qual.group.id>
         <checker.qual.artifact.id>checker-qual</checker.qual.artifact.id>
         <!-- IMPORTANT when updating version, also need to update version in travis-build.sh -->
-        <checker.qual.version>1.9.8</checker.qual.version>
+        <checker.qual.version>1.9.9</checker.qual.version>
       </properties>
       <dependencies>
         <dependency>
