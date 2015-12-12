@@ -21,12 +21,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.netty.channel.EventLoopGroup;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +51,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ConfigUpdateReque
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ServerRequest;
 
+import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class GrpcServerWrapper {
@@ -90,6 +93,11 @@ public class GrpcServerWrapper {
     }
 
     public void close() throws InterruptedException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (stopwatch.elapsed(SECONDS) < 10 && !downstreamService.closedByAgent) {
+            Thread.sleep(10);
+        }
+        checkState(downstreamService.closedByAgent);
         server.shutdown();
         if (!server.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate gRPC channel");
@@ -209,10 +217,13 @@ public class GrpcServerWrapper {
                     @Override
                     public void onCompleted() {
                         requestObserver.onCompleted();
+                        closedByAgent = true;
                     }
                 };
 
-        private volatile StreamObserver<ServerRequest> requestObserver;
+        private volatile @MonotonicNonNull StreamObserver<ServerRequest> requestObserver;
+
+        private volatile boolean closedByAgent;
 
         private void updateConfig(Config config) throws InterruptedException {
             while (requestObserver == null) {

@@ -78,4 +78,7 @@ class CollectorImpl implements Collector {
 
     @Override
     public void close() {}
+
+    @Override
+    public void awaitClose() {}
 }

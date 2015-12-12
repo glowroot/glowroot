@@ -294,4 +294,9 @@ public class AgentModule {
         // shut down collector last since above threads can try to use it
         collector.close();
     }
+
+    @OnlyUsedByTests
+    public void awaitClose() throws InterruptedException {
+        collector.awaitClose();
+    }
 }

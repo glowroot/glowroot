@@ -53,6 +53,9 @@ public class ConfiguredInstrumentationIT {
         instrumentationConfigs.add(buildInstrumentationForExecuteWithReturn());
         instrumentationConfigs.add(buildInstrumentationForExecuteWithArgs());
         container.getConfigService().updateInstrumentationConfigs(instrumentationConfigs);
+        // TODO this sleep currently resolves sporadic grpc related failure, try without sleep after
+        // next grpc update
+        Thread.sleep(1000);
         // re-start now with pointcut configs
         container.close();
         // see subclass (ReweavePointcutsTest) for JavaagentContainer test

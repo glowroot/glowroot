@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.init;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.RateLimiter;
 import io.grpc.stub.StreamObserver;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -23,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpaceResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ConfigUpdateResponse;
@@ -38,6 +40,9 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDumpResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.UnknownRequestResponse;
 
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
 
     private static final Logger logger = LoggerFactory.getLogger(DownstreamServiceObserver.class);
@@ -48,7 +53,8 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
     private final ConfigUpdateService configUpdateService;
     private final LiveJvmService liveJvmService;
 
-    public volatile @MonotonicNonNull StreamObserver<ClientResponse> responseObserver;
+    private volatile @MonotonicNonNull StreamObserver<ClientResponse> responseObserver;
+    private volatile boolean closedByServer;
 
     DownstreamServiceObserver(ConfigUpdateService configUpdateService,
             LiveJvmService liveJvmService) {
@@ -63,6 +69,24 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
         } catch (Throwable t) {
             logger.error(t.getMessage(), t);
         }
+    }
+
+    @Override
+    public void onError(Throwable t) {
+        // limit error logging to once per minute
+        if (loggingRateLimiter.tryAcquire()) {
+            // this server error will not be sent back to the server (see GrpcLogbackAppender)
+            GrpcCollector.logger.error(t.getMessage(), t);
+        }
+    }
+
+    @Override
+    public void onCompleted() {
+        closedByServer = true;
+    }
+
+    void setResponseObserver(StreamObserver<ClientResponse> responseObserver) {
+        this.responseObserver = responseObserver;
     }
 
     private void onNextInternal(ServerRequest request) throws Exception {
@@ -225,15 +249,16 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
                 .build());
     }
 
-    @Override
-    public void onError(Throwable t) {
-        // limit error logging to once per minute
-        if (loggingRateLimiter.tryAcquire()) {
-            // this server error will not be sent back to the server (see GrpcLogbackAppender)
-            GrpcCollector.logger.error(t.getMessage(), t);
+    @OnlyUsedByTests
+    void close() throws InterruptedException {
+        while (responseObserver == null) {
+            Thread.sleep(10);
         }
+        responseObserver.onCompleted();
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (stopwatch.elapsed(SECONDS) < 10 && !closedByServer) {
+            Thread.sleep(10);
+        }
+        checkState(closedByServer);
     }
-
-    @Override
-    public void onCompleted() {}
 }

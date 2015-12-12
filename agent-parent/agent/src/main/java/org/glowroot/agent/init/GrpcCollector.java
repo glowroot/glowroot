@@ -69,7 +69,7 @@ class GrpcCollector implements Collector {
     // limit error logging to once per minute
     private final RateLimiter loggingRateLimiter = RateLimiter.create(1 / 60.0);
 
-    private final StreamObserver<ClientResponse> responseObserver;
+    private final DownstreamServiceObserver downstreamServiceObserver;
 
     private volatile boolean closed;
 
@@ -88,15 +88,16 @@ class GrpcCollector implements Collector {
                 .build();
         collectorServiceStub = CollectorServiceGrpc.newStub(channel);
         downstreamServiceStub = DownstreamServiceGrpc.newStub(channel);
-        DownstreamServiceObserver requestObserver =
+        downstreamServiceObserver =
                 new DownstreamServiceObserver(configUpdateService, liveJvmService);
         // FIXME need to detect reconnect and re-issue connect/hello
-        responseObserver = downstreamServiceStub.connect(requestObserver);
+        StreamObserver<ClientResponse> responseObserver =
+                downstreamServiceStub.connect(downstreamServiceObserver);
         responseObserver.onNext(ClientResponse.newBuilder()
                 .setHello(Hello.newBuilder()
                         .setServerId(serverId))
                 .build());
-        requestObserver.responseObserver = responseObserver;
+        downstreamServiceObserver.setResponseObserver(responseObserver);
         this.serverId = serverId;
     }
 
@@ -155,10 +156,13 @@ class GrpcCollector implements Collector {
     @OnlyUsedByTests
     public void close() throws InterruptedException {
         closed = true;
-        responseObserver.onCompleted();
-        // sleep is needed to mitigate sporadic failure to shutdown channel
-        Thread.sleep(1000);
+        downstreamServiceObserver.close();
         channel.shutdown();
+    }
+
+    @Override
+    @OnlyUsedByTests
+    public void awaitClose() throws InterruptedException {
         if (!channel.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate gRPC channel");
         }

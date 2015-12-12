@@ -77,6 +77,13 @@ public class CollectorProxy implements Collector {
         }
     }
 
+    @Override
+    public void awaitClose() throws InterruptedException {
+        if (instance != null) {
+            instance.awaitClose();
+        }
+    }
+
     @VisibleForTesting
     public void setInstance(Collector instance) {
         this.instance = instance;

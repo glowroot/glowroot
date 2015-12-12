@@ -129,5 +129,8 @@ public class AggregatorTest {
 
         @Override
         public void close() {}
+
+        @Override
+        public void awaitClose() {}
     }
 }

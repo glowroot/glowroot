@@ -174,6 +174,7 @@ public class LocalContainer implements Container {
         if (server != null) {
             server.close();
         }
+        agentBridge.awaitClose();
         if (deleteBaseDirOnClose) {
             TempDirs.deleteRecursively(baseDir);
         }
@@ -210,8 +211,9 @@ public class LocalContainer implements Container {
 
     public interface AgentBridge {
         void start(Map<String, String> properties) throws Exception;
-        void close() throws Exception;
         void resetConfig() throws Exception;
+        void close() throws Exception;
+        void awaitClose() throws Exception;
     }
 
     public static class AgentBridgeImpl implements AgentBridge {
@@ -230,6 +232,14 @@ public class LocalContainer implements Container {
         }
 
         @Override
+        public void resetConfig() throws Exception {
+            GlowrootAgentInit glowrootAgentInit = MainEntryPoint.getGlowrootAgentInit();
+            if (glowrootAgentInit != null) {
+                glowrootAgentInit.getAgentModule().getConfigService().resetAllConfig();
+            }
+        }
+
+        @Override
         public void close() throws Exception {
             GlowrootAgentInit glowrootAgentInit = MainEntryPoint.getGlowrootAgentInit();
             if (glowrootAgentInit != null) {
@@ -238,10 +248,10 @@ public class LocalContainer implements Container {
         }
 
         @Override
-        public void resetConfig() throws Exception {
+        public void awaitClose() throws Exception {
             GlowrootAgentInit glowrootAgentInit = MainEntryPoint.getGlowrootAgentInit();
             if (glowrootAgentInit != null) {
-                glowrootAgentInit.getAgentModule().getConfigService().resetAllConfig();
+                glowrootAgentInit.awaitClose();
             }
         }
     }

@@ -129,6 +129,12 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         checkNotNull(agentModule).close();
     }
 
+    @Override
+    @OnlyUsedByTests
+    public void awaitClose() throws Exception {
+        checkNotNull(agentModule).awaitClose();
+    }
+
     private static @Nullable Collector loadCustomCollector(File baseDir)
             throws MalformedURLException {
         File servicesDir = new File(baseDir, "services");

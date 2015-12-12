@@ -38,4 +38,7 @@ public interface Collector {
 
     // only used by tests
     void close() throws InterruptedException;
+
+    // only used by tests
+    void awaitClose() throws InterruptedException;
 }

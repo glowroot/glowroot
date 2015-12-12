@@ -128,6 +128,9 @@ class TraceCollector implements Collector {
     @Override
     public void close() {}
 
+    @Override
+    public void awaitClose() {}
+
     private boolean isExpected(LogEvent logEvent) {
         if (expectedMessages.isEmpty()) {
             return false;
