@@ -13,6 +13,7 @@ service DownstreamService {
 message ServerRequest {
   int64 request_id = 1;
   oneof message {
+    HelloAck hello_ack = 100;
     ConfigUpdateRequest config_update_request = 200;
     ReweaveRequest reweave_request = 201;
     ThreadDumpRequest thread_dump_request = 300;
@@ -42,6 +43,9 @@ message ClientResponse {
 
 message Hello {
   string server_id = 1;
+}
+
+message HelloAck {
 }
 
 message ConfigUpdateRequest {

@@ -17,7 +17,6 @@ package org.glowroot.agent.init;
 
 import java.io.File;
 import java.lang.instrument.Instrumentation;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -30,12 +29,13 @@ import java.util.concurrent.Callable;
 import javax.annotation.Nullable;
 
 import ch.qos.logback.core.Context;
-import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.central.CentralModule;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.util.Tickers;
@@ -48,9 +48,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class GlowrootThinAgentInit implements GlowrootAgentInit {
 
-    private @Nullable GrpcLogbackAppender grpcAppender;
-
-    private @Nullable AgentModule agentModule;
+    private @MonotonicNonNull AgentModule agentModule;
+    private @MonotonicNonNull CentralModule centralModule;
 
     @Override
     public void init(final File baseDir, final @Nullable String collectorHost,
@@ -61,7 +60,6 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         if (instrumentation != null) {
             PreInitializeWeavingClasses.preInitializeClasses();
         }
-
         Ticker ticker = Tickers.getTicker();
         Clock clock = Clock.systemClock();
 
@@ -71,11 +69,12 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
 
         final CollectorProxy collectorProxy = new CollectorProxy();
 
-        grpcAppender = new GrpcLogbackAppender(collectorProxy);
-        grpcAppender.setName(GrpcLogbackAppender.class.getName());
-        grpcAppender.setContext((Context) LoggerFactory.getILoggerFactory());
-        grpcAppender.start();
-        attachGrpcAppender(grpcAppender);
+        CollectorLogbackAppender collectorLogbackAppender =
+                new CollectorLogbackAppender(collectorProxy);
+        collectorLogbackAppender.setName(CollectorLogbackAppender.class.getName());
+        collectorLogbackAppender.setContext((Context) LoggerFactory.getILoggerFactory());
+        collectorLogbackAppender.start();
+        attachAppender(collectorLogbackAppender);
 
         final AgentModule agentModule = new AgentModule(clock, ticker, pluginCache, configService,
                 collectorProxy, instrumentation, baseDir, jbossModules);
@@ -88,29 +87,9 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                     collectorProxy.setInstance(customCollector);
                     return null;
                 }
-                String serverId = properties.get("glowroot.server.id");
-                if (Strings.isNullOrEmpty(serverId)) {
-                    serverId = InetAddress.getLocalHost().getHostName();
-                }
-                String collectorPortStr = properties.get("glowroot.collector.port");
-                if (Strings.isNullOrEmpty(collectorPortStr)) {
-                    collectorPortStr = System.getProperty("glowroot.collector.port");
-                }
-                int collectorPort;
-                if (Strings.isNullOrEmpty(collectorPortStr)) {
-                    collectorPort = 80;
-                } else {
-                    collectorPort = Integer.parseInt(collectorPortStr);
-                }
-                // GlowrootThinAgentInit.init() should not be called with null collectorHost
-                checkNotNull(collectorHost);
-                GrpcCollector grpcCollector =
-                        new GrpcCollector(serverId, collectorHost, collectorPort,
-                                new ConfigUpdateService(configService,
-                                        agentModule.getLiveWeavingService()),
-                                agentModule.getLiveJvmService());
-                collectorProxy.setInstance(grpcCollector);
-                grpcCollector.collectJvmInfo(JvmInfoCreator.create());
+                centralModule = new CentralModule(properties, collectorHost, configService,
+                        agentModule.getLiveWeavingService(), agentModule.getLiveJvmService());
+                collectorProxy.setInstance(centralModule.getGrpcCollector());
                 return null;
             }
         });
@@ -127,12 +106,17 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
     @OnlyUsedByTests
     public void close() throws Exception {
         checkNotNull(agentModule).close();
+        if (centralModule != null) {
+            centralModule.close();
+        }
     }
 
     @Override
     @OnlyUsedByTests
     public void awaitClose() throws Exception {
-        checkNotNull(agentModule).awaitClose();
+        if (centralModule != null) {
+            centralModule.awaitClose();
+        }
     }
 
     private static @Nullable Collector loadCustomCollector(File baseDir)
@@ -167,11 +151,11 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         return i.next();
     }
 
-    private static void attachGrpcAppender(GrpcLogbackAppender grpcAppender) {
+    private static void attachAppender(CollectorLogbackAppender appender) {
         ch.qos.logback.classic.Logger rootLogger =
                 (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        // detaching existing GrpcLogbackAppender first is for tests
-        rootLogger.detachAppender(GrpcLogbackAppender.class.getName());
-        rootLogger.addAppender(grpcAppender);
+        // detaching existing appender first is for tests
+        rootLogger.detachAppender(appender.getClass().getName());
+        rootLogger.addAppender(appender);
     }
 }

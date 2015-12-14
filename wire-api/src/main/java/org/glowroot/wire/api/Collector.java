@@ -35,10 +35,4 @@ public interface Collector {
     void collectTrace(Trace trace) throws Exception;
 
     void log(LogEvent logEvent) throws Exception;
-
-    // only used by tests
-    void close() throws InterruptedException;
-
-    // only used by tests
-    void awaitClose() throws InterruptedException;
 }

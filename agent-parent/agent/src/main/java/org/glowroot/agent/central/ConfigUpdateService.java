@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.init;
+package org.glowroot.agent.central;
 
 import java.io.IOException;
 import java.util.List;

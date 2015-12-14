@@ -35,6 +35,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ConfigUpdateReque
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HelloAck;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
@@ -128,6 +129,9 @@ class DownstreamServiceImpl implements DownstreamService {
                         if (value.getMessageCase() == MessageCase.HELLO) {
                             connectedAgents.put(value.getHello().getServerId(),
                                     ConnectedAgent.this);
+                            requestObserver.onNext(ServerRequest.newBuilder()
+                                    .setHelloAck(HelloAck.getDefaultInstance())
+                                    .build());
                             return;
                         }
                         long requestId = value.getRequestId();
@@ -152,7 +156,7 @@ class DownstreamServiceImpl implements DownstreamService {
                     }
                 };
 
-        private volatile StreamObserver<ServerRequest> requestObserver;
+        private final StreamObserver<ServerRequest> requestObserver;
 
         private ConnectedAgent(StreamObserver<ServerRequest> requestObserver) {
             this.requestObserver = requestObserver;
@@ -216,9 +220,6 @@ class DownstreamServiceImpl implements DownstreamService {
         }
 
         private ClientResponse sendRequest(ServerRequest request) throws Exception {
-            while (requestObserver == null) {
-                Thread.sleep(10);
-            }
             ResponseHolder responseHolder = new ResponseHolder();
             responseHolders.put(request.getRequestId(), responseHolder);
             requestObserver.onNext(request);

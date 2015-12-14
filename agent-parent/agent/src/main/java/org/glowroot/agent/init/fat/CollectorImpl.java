@@ -75,10 +75,4 @@ class CollectorImpl implements Collector {
     public void log(LogEvent logEvent) {
         // do nothing, already logging locally through ConsoleAppender and RollingFileAppender
     }
-
-    @Override
-    public void close() {}
-
-    @Override
-    public void awaitClose() {}
 }

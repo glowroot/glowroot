@@ -23,12 +23,11 @@ import io.netty.buffer.AbstractByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
 
-class GrpcLogbackAppender extends AppenderBase<ILoggingEvent> {
+class CollectorLogbackAppender extends AppenderBase<ILoggingEvent> {
 
-    private static final Logger logger = LoggerFactory.getLogger(GrpcLogbackAppender.class);
+    private static final Logger logger = LoggerFactory.getLogger(CollectorLogbackAppender.class);
 
     static {
         // explicit initializations are to work around NullPointerExceptions caused by class init
@@ -37,13 +36,13 @@ class GrpcLogbackAppender extends AppenderBase<ILoggingEvent> {
         Reflection.initialize(AbstractByteBuf.class);
         try {
             Class.forName("io.netty.channel.DefaultChannelHandlerInvoker$WriteTask", true,
-                    GrpcLogbackAppender.class.getClassLoader());
+                    CollectorLogbackAppender.class.getClassLoader());
         } catch (ClassNotFoundException e) {
             throw new AssertionError(e);
         }
     }
 
-    private final Collector collector;
+    private final CollectorProxy collector;
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private final ThreadLocal<Boolean> inLogging = new ThreadLocal<Boolean>() {
@@ -53,16 +52,13 @@ class GrpcLogbackAppender extends AppenderBase<ILoggingEvent> {
         }
     };
 
-    GrpcLogbackAppender(Collector collector) {
+    CollectorLogbackAppender(CollectorProxy collector) {
         this.collector = collector;
     }
 
     @Override
     protected void append(ILoggingEvent event) {
         if (inLogging.get()) {
-            return;
-        }
-        if (Thread.currentThread().getName().startsWith("Glowroot-grpc-worker-ELG-")) {
             return;
         }
         LogEvent logEvent = LogEvent.newBuilder()

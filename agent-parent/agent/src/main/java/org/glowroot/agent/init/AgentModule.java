@@ -99,7 +99,6 @@ public class AgentModule {
     private final ImmediateTraceStoreWatcher immedateTraceStoreWatcher;
 
     private final ScheduledExecutorService scheduledExecutor;
-    private final Collector collector;
     private final GaugeCollector gaugeCollector;
     private final StackTraceCollector stackTraceCollector;
 
@@ -138,7 +137,6 @@ public class AgentModule {
                 .setNameFormat("Glowroot-Background-%d").build();
         scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
 
-        this.collector = collector;
         aggregator = new Aggregator(scheduledExecutor, collector, configService,
                 ROLLUP_0_INTERVAL_MILLIS, clock);
         transactionCollector = new TransactionCollector(scheduledExecutor, configService, collector,
@@ -291,12 +289,5 @@ public class AgentModule {
         if (!scheduledExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate agent scheduled executor");
         }
-        // shut down collector last since above threads can try to use it
-        collector.close();
-    }
-
-    @OnlyUsedByTests
-    public void awaitClose() throws InterruptedException {
-        collector.awaitClose();
     }
 }

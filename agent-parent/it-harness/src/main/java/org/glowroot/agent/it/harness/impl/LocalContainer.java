@@ -165,9 +165,9 @@ public class LocalContainer implements Container {
             // this is the shared container and will be closed at the end of the run
             ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) LoggerFactory
                     .getLogger(Logger.ROOT_LOGGER_NAME);
-            // detaching existing GrpcLogbackAppender so that it won't continue to pick up and
+            // detaching existing CollectorLogbackAppender so that it won't continue to pick up and
             // report errors that are logged to this Container
-            rootLogger.detachAppender("org.glowroot.agent.init.GrpcLogbackAppender");
+            rootLogger.detachAppender("org.glowroot.agent.init.CollectorLogbackAppender");
             return;
         }
         agentBridge.close();

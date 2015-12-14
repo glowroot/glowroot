@@ -21,6 +21,9 @@
     </encoder>
   </appender>
   <logger name="org.glowroot.agent.shaded" level="warn" />
+  <!-- this is to deal with "Sending GOAWAY failed" that occur when connection to central fails
+    (which is already logged more nicely by DownstreamServiceObserver) -->
+  <logger name="org.glowroot.agent.shaded.netty.handler.codec.http2.Http2ConnectionHandler" level="off" />
   <root level="info">
     <appender-ref ref="CONSOLE" />
     <appender-ref ref="FILE" />

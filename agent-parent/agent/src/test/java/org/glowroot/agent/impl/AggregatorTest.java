@@ -126,11 +126,5 @@ public class AggregatorTest {
 
         @Override
         public void log(LogEvent logEvent) {}
-
-        @Override
-        public void close() {}
-
-        @Override
-        public void awaitClose() {}
     }
 }
