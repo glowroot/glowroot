@@ -136,7 +136,7 @@ public class CappedDatabase {
         }
     }
 
-    public <T extends /*@NonNull*/Object> /*@Nullable*/ T readMessage(long cappedId,
+    public <T extends /*@NonNull*/ Object> /*@Nullable*/ T readMessage(long cappedId,
             Parser<T> parser) throws IOException {
         boolean overwritten;
         boolean inTheFuture;
@@ -172,7 +172,7 @@ public class CappedDatabase {
         }
     }
 
-    public <T extends /*@NonNull*/Object> List<T> readMessages(long cappedId, Parser<T> parser)
+    public <T extends /*@NonNull*/ Object> List<T> readMessages(long cappedId, Parser<T> parser)
             throws IOException {
         boolean overwritten;
         boolean inTheFuture;

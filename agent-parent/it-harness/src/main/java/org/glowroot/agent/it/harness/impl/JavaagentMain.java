@@ -61,7 +61,7 @@ public class JavaagentMain {
                 .addService(JavaagentServiceGrpc.bindService(javaagentService))
                 .build()
                 .start();
-        javaagentService.setServerCloseable(new Callable</*@Nullable*/Void>() {
+        javaagentService.setServerCloseable(new Callable</*@Nullable*/ Void>() {
             @Override
             public @Nullable Void call() throws Exception {
                 server.shutdown();

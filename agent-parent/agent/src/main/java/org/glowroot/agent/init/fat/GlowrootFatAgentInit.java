@@ -42,7 +42,7 @@ public class GlowrootFatAgentInit implements GlowrootAgentInit {
 
         fatAgentModule = new FatAgentModule(baseDir, properties, instrumentation, glowrootJarFile,
                 glowrootVersion, jbossModules, viewerMode);
-        NettyWorkaround.run(instrumentation, new Callable</*@Nullable*/Void>() {
+        NettyWorkaround.run(instrumentation, new Callable</*@Nullable*/ Void>() {
             @Override
             public @Nullable Void call() throws Exception {
                 checkNotNull(fatAgentModule);

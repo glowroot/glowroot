@@ -55,7 +55,7 @@ class ThinClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
+    public MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String /*@Nullable*/[] exceptions) {
         ImmutableThinMethod.Builder thinMethodBuilder = ImmutableThinMethod.builder();
         thinMethodBuilder.access(access);

@@ -124,8 +124,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
     private final HttpSessionManager httpSessionManager;
 
-    private final ThreadLocal</*@Nullable*/Channel> currentChannel =
-            new ThreadLocal</*@Nullable*/Channel>();
+    private final ThreadLocal</*@Nullable*/ Channel> currentChannel =
+            new ThreadLocal</*@Nullable*/ Channel>();
 
     HttpServerHandler(LayoutService layoutService, Map<Pattern, HttpService> httpServices,
             HttpSessionManager httpSessionManager, List<Object> jsonServices) {

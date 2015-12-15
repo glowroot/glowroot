@@ -154,7 +154,7 @@ class HttpServer {
         logger.debug("close(): http server stopped");
     }
 
-    private class ChangePort implements Callable</*@Nullable*/Void> {
+    private class ChangePort implements Callable</*@Nullable*/ Void> {
 
         private final int newPort;
 

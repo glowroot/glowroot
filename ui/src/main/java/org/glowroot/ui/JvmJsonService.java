@@ -270,12 +270,12 @@ class JvmJsonService {
                 stackTraceElement.getLineNumber()).toString());
     }
 
-    private static Map<String, /*@Nullable*/Object> getSortedAttributeMap(
+    private static Map<String, /*@Nullable*/ Object> getSortedAttributeMap(
             List<MBeanDump.MBeanAttribute> attributes) {
         // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
         // see https://code.google.com/p/guava-libraries/issues/detail?id=635
-        Map<String, /*@Nullable*/Object> sortedAttributeMap =
-                new TreeMap<String, /*@Nullable*/Object>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, /*@Nullable*/ Object> sortedAttributeMap =
+                new TreeMap<String, /*@Nullable*/ Object>(String.CASE_INSENSITIVE_ORDER);
         for (MBeanDump.MBeanAttribute attribute : attributes) {
             sortedAttributeMap.put(attribute.getName(), getAttributeValue(attribute.getValue()));
         }
@@ -296,13 +296,13 @@ class JvmJsonService {
             case BOOLEAN:
                 return value.getBoolean();
             case LIST:
-                List</*@Nullable*/Object> list = Lists.newArrayList();
+                List</*@Nullable*/ Object> list = Lists.newArrayList();
                 for (MBeanDump.MBeanValue val : value.getList().getValueList()) {
                     list.add(getAttributeValue(val));
                 }
                 return list;
             case MAP:
-                Map<String, /*@Nullable*/Object> map = Maps.newHashMap();
+                Map<String, /*@Nullable*/ Object> map = Maps.newHashMap();
                 for (MBeanDump.MBeanValueMapEntry val : value.getMap().getEntryList()) {
                     map.put(val.getKey(), getAttributeValue(val.getValue()));
                 }
@@ -389,10 +389,10 @@ class JvmJsonService {
         private final String nodeName;
         private final String objectName;
         private final boolean expanded;
-        private final @Nullable Map<String, /*@Nullable*/Object> attributeMap;
+        private final @Nullable Map<String, /*@Nullable*/ Object> attributeMap;
 
         public MBeanTreeLeafNode(String nodeName, String objectName, boolean expanded,
-                @Nullable Map<String, /*@Nullable*/Object> attributeMap) {
+                @Nullable Map<String, /*@Nullable*/ Object> attributeMap) {
             this.nodeName = nodeName;
             this.objectName = objectName;
             this.expanded = expanded;
@@ -416,7 +416,7 @@ class JvmJsonService {
         }
 
         @UsedByJsonSerialization
-        public @Nullable Map<String, /*@Nullable*/Object> getAttributeMap() {
+        public @Nullable Map<String, /*@Nullable*/ Object> getAttributeMap() {
             return attributeMap;
         }
     }

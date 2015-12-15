@@ -20,7 +20,7 @@ public class Checkers {
     private Checkers() {}
 
     @SuppressWarnings("return.type.incompatible")
-    public static <T> /*@Untainted*/T castUntainted(T obj) {
+    public static <T> /*@Untainted*/ T castUntainted(T obj) {
         return obj;
     }
 }

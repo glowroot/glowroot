@@ -30,8 +30,8 @@ public class TransactionRegistry {
     private final Collection<Transaction> transactions = Sets.newConcurrentHashSet();
 
     // active running transaction being executed by the current thread
-    private final FastThreadLocal</*@Nullable*/Transaction> currentTransaction =
-            new FastThreadLocal</*@Nullable*/Transaction>();
+    private final FastThreadLocal</*@Nullable*/ Transaction> currentTransaction =
+            new FastThreadLocal</*@Nullable*/ Transaction>();
 
     @Nullable
     Transaction getCurrentTransaction() {

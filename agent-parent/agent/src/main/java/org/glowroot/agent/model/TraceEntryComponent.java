@@ -46,8 +46,7 @@ class TraceEntryComponent {
 
     private final TraceEntryImpl rootEntry;
 
-    @Nullable
-    private TraceEntryImpl activeEntry;
+    private @Nullable TraceEntryImpl activeEntry;
 
     private TraceEntryImpl tailEntry;
 

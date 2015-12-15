@@ -221,7 +221,7 @@ public class Transaction {
         return ImmutableSetMultimap.copyOf(orderedAttributes);
     }
 
-    Map<String, ? extends /*@Nullable*/Object> getDetail() {
+    Map<String, ? extends /*@Nullable*/ Object> getDetail() {
         MessageSupplier messageSupplier = traceEntryComponent.getRootEntry().getMessageSupplier();
         // root trace entry messageSupplier is never be null
         checkNotNull(messageSupplier);

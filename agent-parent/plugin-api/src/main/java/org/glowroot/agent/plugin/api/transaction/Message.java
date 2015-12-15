@@ -68,7 +68,7 @@ public abstract class Message {
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
     public static Message from(@Nullable String message,
-            Map<String, ? extends /*@Nullable*/Object> detail) {
+            Map<String, ? extends /*@Nullable*/ Object> detail) {
         return new MessageImpl(message, EMPTY_ARGS, detail);
     }
 
@@ -82,10 +82,10 @@ public abstract class Message {
 
         private final @Nullable String template;
         private final @Nullable String[] args;
-        private final Map<String, ? extends /*@Nullable*/Object> detail;
+        private final Map<String, ? extends /*@Nullable*/ Object> detail;
 
         private MessageImpl(@Nullable String template, @Nullable String[] args,
-                Map<String, ? extends /*@Nullable*/Object> detail) {
+                Map<String, ? extends /*@Nullable*/ Object> detail) {
             this.template = truncateToMessageCharLimit(template);
             for (int i = 0; i < args.length; i++) {
                 args[i] = truncateToMessageCharLimit(args[i]);
@@ -128,7 +128,7 @@ public abstract class Message {
         }
 
         @Override
-        public Map<String, ? extends /*@Nullable*/Object> getDetail() {
+        public Map<String, ? extends /*@Nullable*/ Object> getDetail() {
             return detail;
         }
 

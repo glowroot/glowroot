@@ -112,7 +112,7 @@ class ConfigFile {
         }
     }
 
-    <T extends /*@NonNull*/Object> /*@Nullable*/T getNode(String key,
+    <T extends /*@NonNull*/ Object> /*@Nullable*/ T getNode(String key,
             TypeReference<T> typeReference, ObjectMapper mapper) {
         JsonNode node = rootObjectNode.get(key);
         if (node == null) {

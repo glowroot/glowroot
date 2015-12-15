@@ -50,8 +50,7 @@ public class ResultSetAspect {
         private @Nullable QueryEntry glowroot$lastQueryEntry;
 
         @Override
-        @Nullable
-        public QueryEntry glowroot$getLastQueryEntry() {
+        public @Nullable QueryEntry glowroot$getLastQueryEntry() {
             return glowroot$lastQueryEntry;
         }
 
@@ -74,8 +73,7 @@ public class ResultSetAspect {
         private @Nullable QueryEntry glowroot$queryEntry;
 
         @Override
-        @Nullable
-        public QueryEntry glowroot$getQueryEntry() {
+        public @Nullable QueryEntry glowroot$getQueryEntry() {
             return glowroot$queryEntry;
         }
 

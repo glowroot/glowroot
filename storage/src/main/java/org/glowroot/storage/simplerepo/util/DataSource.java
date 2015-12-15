@@ -63,7 +63,7 @@ public class DataSource {
     private volatile int queryTimeoutSeconds;
     private volatile boolean closing = false;
 
-    private final LoadingCache</*@Untainted*/String, PreparedStatement> preparedStatementCache =
+    private final LoadingCache</*@Untainted*/ String, PreparedStatement> preparedStatementCache =
             CacheBuilder.newBuilder().weakValues()
                     .build(new CacheLoader</*@Untainted*/String, PreparedStatement>() {
                         @Override
@@ -136,7 +136,7 @@ public class DataSource {
             if (closing) {
                 return null;
             }
-            return queryUnderLock(sql, args, new ResultSetExtractor</*@Nullable*/Long>() {
+            return queryUnderLock(sql, args, new ResultSetExtractor</*@Nullable*/ Long>() {
                 @Override
                 public @Nullable Long extractData(ResultSet resultSet) throws SQLException {
                     if (!resultSet.next()) {
@@ -205,7 +205,7 @@ public class DataSource {
         }
     }
 
-    public <T extends /*@NonNull*/Object> /*@Nullable*/ T queryAtMostOne(JdbcRowQuery<T> jdbcQuery)
+    public <T extends /*@NonNull*/ Object> /*@Nullable*/ T queryAtMostOne(JdbcRowQuery<T> jdbcQuery)
             throws SQLException {
         List<T> list = query(jdbcQuery);
         if (list.isEmpty()) {
@@ -217,7 +217,7 @@ public class DataSource {
         return list.get(0);
     }
 
-    public <T extends /*@NonNull*/Object> List<T> query(JdbcRowQuery<T> jdbcQuery)
+    public <T extends /*@NonNull*/ Object> List<T> query(JdbcRowQuery<T> jdbcQuery)
             throws SQLException {
         synchronized (lock) {
             if (closing) {
@@ -371,7 +371,7 @@ public class DataSource {
     }
 
     // lock must be acquired prior to calling this method
-    private <T extends /*@Nullable*/Object> T queryUnderLock(@Untainted String sql, Object[] args,
+    private <T extends /*@Nullable*/ Object> T queryUnderLock(@Untainted String sql, Object[] args,
             ResultSetExtractor<T> rse) throws SQLException {
         PreparedStatement preparedStatement = prepareStatement(sql);
         for (int i = 0; i < args.length; i++) {
@@ -474,7 +474,7 @@ public class DataSource {
         void bind(PreparedStatement preparedStatement) throws SQLException;
     }
 
-    interface ResultSetExtractor<T extends /*@Nullable*/Object> {
+    interface ResultSetExtractor<T extends /*@Nullable*/ Object> {
         T extractData(ResultSet resultSet) throws Exception;
     }
 

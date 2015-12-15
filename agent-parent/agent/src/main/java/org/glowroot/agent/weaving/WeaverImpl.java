@@ -151,7 +151,6 @@ public class WeaverImpl implements Weaver {
         }
 
         @Override
-        @Nullable
         public MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, String/*@Nullable*/[] exceptions) {
             MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
@@ -163,8 +162,7 @@ public class WeaverImpl implements Weaver {
     static class ComputeFramesClassWriter extends ClassWriter {
 
         private final AnalyzedWorld analyzedWorld;
-        @Nullable
-        private final ClassLoader loader;
+        private final @Nullable ClassLoader loader;
         private final ParseContext parseContext;
 
         public ComputeFramesClassWriter(int flags, AnalyzedWorld analyzedWorld,

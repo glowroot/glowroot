@@ -49,13 +49,13 @@ class DetailMapWriter {
     private DetailMapWriter() {}
 
     static List<Trace.DetailEntry> toProtobufDetail(
-            Map<String, ? extends /*@Nullable*/Object> detail) {
+            Map<String, ? extends /*@Nullable*/ Object> detail) {
         return writeMap(detail);
     }
 
     private static List<Trace.DetailEntry> writeMap(Map<?, ?> detail) {
         List<Trace.DetailEntry> entries = Lists.newArrayListWithCapacity(detail.size());
-        for (Entry<?, ? extends /*@Nullable*/Object> entry : detail.entrySet()) {
+        for (Entry<?, ? extends /*@Nullable*/ Object> entry : detail.entrySet()) {
             Object key = entry.getKey();
             if (key == null) {
                 // skip invalid data

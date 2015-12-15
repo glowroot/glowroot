@@ -74,7 +74,7 @@ public class ConfigDao {
         }
     }
 
-    <T extends /*@NonNull*/Object> /*@Nullable*/T read(String key, TypeReference<T> typeReference,
+    <T extends /*@NonNull*/ Object> /*@Nullable*/ T read(String key, TypeReference<T> typeReference,
             ObjectMapper mapper) {
 
         ResultSet results = session.execute("select value from config where key = ?", key);

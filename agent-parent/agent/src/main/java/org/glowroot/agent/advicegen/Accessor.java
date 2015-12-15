@@ -79,7 +79,7 @@ class Accessor {
     @Nullable
     Object evaluate(Object object) throws Exception {
         if (isArrayEvaluation(object)) {
-            return evaluateArray((/*@Nullable*/Object[]) object);
+            return evaluateArray((/*@Nullable*/ Object[]) object);
         }
         switch (accessorType) {
             case METHOD:
@@ -99,8 +99,8 @@ class Accessor {
         return object instanceof Object[] && accessorType != AccessorType.ARRAY_LENGTH;
     }
 
-    private Object evaluateArray(/*@Nullable*/Object[] array) throws Exception {
-        /*@Nullable*/Object[] values = new Object[array.length];
+    private Object evaluateArray(/*@Nullable*/ Object[] array) throws Exception {
+        /*@Nullable*/ Object[] values = new Object[array.length];
         for (int i = 0; i < array.length; i++) {
             Object item = array[i];
             values[i] = item == null ? null : evaluate(item);

@@ -19,7 +19,7 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
-public class Result<T extends /*@NonNull*/Object> {
+public class Result<T extends /*@NonNull*/ Object> {
 
     private final ImmutableList<T> records;
     private final boolean moreAvailable;
@@ -37,7 +37,7 @@ public class Result<T extends /*@NonNull*/Object> {
         return moreAvailable;
     }
 
-    public static <T extends /*@NonNull*/Object> Result<T> from(List<T> records, int limit) {
+    public static <T extends /*@NonNull*/ Object> Result<T> from(List<T> records, int limit) {
         if (limit == 0) {
             return new Result<T>(records, false);
         } else if (records.size() > limit) {

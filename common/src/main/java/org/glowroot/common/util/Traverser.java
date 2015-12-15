@@ -20,7 +20,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.ListIterator;
 
-public abstract class Traverser<T extends /*@NonNull*/Object, E extends Exception> {
+public abstract class Traverser<T extends /*@NonNull*/ Object, E extends Exception> {
 
     private static final Object ALREADY_TRAVERSED_MARKER = new Object();
 

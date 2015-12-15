@@ -403,7 +403,7 @@ public class AggregateDao implements AggregateRepository {
         return i;
     }
 
-    private static <T extends /*@NonNull*/Object> List<T> readMessages(byte[] bytes,
+    private static <T extends /*@NonNull*/ Object> List<T> readMessages(byte[] bytes,
             Parser<T> parser) throws InvalidProtocolBufferException {
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
         List<T> messages = Lists.newArrayList();
@@ -564,7 +564,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private class TransactionSummaryQuery implements JdbcQuery</*@Nullable*/Void> {
+    private class TransactionSummaryQuery implements JdbcQuery</*@Nullable*/ Void> {
 
         private final OverallQuery query;
         private final SummarySortOrder sortOrder;
@@ -677,7 +677,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private class TransactionErrorSummaryQuery implements JdbcQuery</*@Nullable*/Void> {
+    private class TransactionErrorSummaryQuery implements JdbcQuery</*@Nullable*/ Void> {
 
         private final OverallQuery query;
         private final ErrorSummarySortOrder sortOrder;
@@ -887,7 +887,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private class RollupOverallAggregates implements JdbcQuery</*@Nullable*/Void> {
+    private class RollupOverallAggregates implements JdbcQuery</*@Nullable*/ Void> {
 
         private final long rollupCaptureTime;
         private final long fixedIntervalMillis;
@@ -950,7 +950,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private class RollupTransactionAggregates implements JdbcQuery</*@Nullable*/Void> {
+    private class RollupTransactionAggregates implements JdbcQuery</*@Nullable*/ Void> {
 
         private final long rollupCaptureTime;
         private final long fixedIntervalMillis;

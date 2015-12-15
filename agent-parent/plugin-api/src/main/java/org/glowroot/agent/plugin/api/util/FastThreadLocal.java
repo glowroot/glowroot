@@ -25,7 +25,7 @@ package org.glowroot.agent.plugin.api.util;
  * 
  * Important: this thread local will live in ThreadLocalMap forever, so use with care.
  */
-public class FastThreadLocal</*@Nullable*/T> {
+public class FastThreadLocal</*@Nullable*/ T> {
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private final ThreadLocal<Holder<T>> threadLocal = new ThreadLocal<Holder<T>>() {

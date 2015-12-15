@@ -79,7 +79,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         final AgentModule agentModule = new AgentModule(clock, ticker, pluginCache, configService,
                 collectorProxy, instrumentation, baseDir, jbossModules);
 
-        NettyWorkaround.run(instrumentation, new Callable</*@Nullable*/Void>() {
+        NettyWorkaround.run(instrumentation, new Callable</*@Nullable*/ Void>() {
             @Override
             public @Nullable Void call() throws Exception {
                 Collector customCollector = loadCustomCollector(baseDir);

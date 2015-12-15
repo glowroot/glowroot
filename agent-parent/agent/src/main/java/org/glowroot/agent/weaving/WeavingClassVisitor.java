@@ -152,7 +152,7 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
+    public MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String /*@Nullable*/[] exceptions) {
         List<Advice> matchingAdvisors = methodAdvisors.get(name + desc);
         if (matchingAdvisors == null) {

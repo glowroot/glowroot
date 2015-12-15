@@ -75,7 +75,6 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
         this.configUpdateService = configUpdateService;
         this.liveJvmService = liveJvmService;
         this.serverId = serverId;
-        connectAsync();
     }
 
     @Override
@@ -149,7 +148,7 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
         closedByServer = true;
     }
 
-    private void connectAsync() {
+    void connectAsync() {
         // these are async so never fail, onError() will be called on failure
         StreamObserver<ClientResponse> responseObserver = downstreamServiceStub.connect(this);
         currResponseObserver = responseObserver;

@@ -246,12 +246,12 @@ public class ConfigService {
         notifyConfigListeners();
     }
 
-    public <T extends /*@NonNull*/Object> /*@Nullable*/T getOtherConfig(String key,
+    public <T extends /*@NonNull*/ Object> /*@Nullable*/ T getOtherConfig(String key,
             Class<T> clazz) {
         return configFile.getNode(key, clazz, mapper);
     }
 
-    public <T extends /*@NonNull*/Object> /*@Nullable*/T getOtherConfig(String key,
+    public <T extends /*@NonNull*/ Object> /*@Nullable*/ T getOtherConfig(String key,
             TypeReference<T> typeReference) {
         return configFile.getNode(key, typeReference, mapper);
     }
@@ -399,7 +399,7 @@ public class ConfigService {
         return propertyValue;
     }
 
-    public static class ShadeProtectedTypeReference<T extends /*@NonNull*/Object>
+    public static class ShadeProtectedTypeReference<T extends /*@NonNull*/ Object>
             extends TypeReference<T> {}
 
     private static class PluginDescriptorOrdering extends Ordering<PluginDescriptor> {

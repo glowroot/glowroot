@@ -170,7 +170,7 @@ class ServletMessageSupplier extends MessageSupplier {
 
     @RequiresNonNull("sessionAttributeUpdatedValueMap")
     private void addMidRequestSessionAttributeDetail(Map<String, Object> detail) {
-        Map<String, /*@Nullable*/Object> sessionAttributeInitialValuePlusMap = Maps.newHashMap();
+        Map<String, /*@Nullable*/ Object> sessionAttributeInitialValuePlusMap = Maps.newHashMap();
         sessionAttributeInitialValuePlusMap.putAll(sessionAttributeInitialValueMap);
         // add empty values into initial values for any updated attributes that are not
         // already present in initial values nested detail map

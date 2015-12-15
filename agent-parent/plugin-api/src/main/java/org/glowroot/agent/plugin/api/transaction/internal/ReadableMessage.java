@@ -23,5 +23,5 @@ public interface ReadableMessage {
 
     String getText();
 
-    Map<String, ? extends /*@Nullable*/Object> getDetail();
+    Map<String, ? extends /*@Nullable*/ Object> getDetail();
 }

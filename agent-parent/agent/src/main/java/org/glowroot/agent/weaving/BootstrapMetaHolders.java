@@ -40,9 +40,9 @@ public class BootstrapMetaHolders {
             new ConcurrentHashMap<String, Integer>();
     private static final Map<String, Integer> methodMetaHolderIndexes =
             new ConcurrentHashMap<String, Integer>();
-    private static final List</*@Nullable*/ClassMetaHolder> classMetaHolders =
+    private static final List</*@Nullable*/ ClassMetaHolder> classMetaHolders =
             Lists.newCopyOnWriteArrayList();
-    private static final List</*@Nullable*/MethodMetaHolder> methodMetaHolders =
+    private static final List</*@Nullable*/ MethodMetaHolder> methodMetaHolders =
             Lists.newCopyOnWriteArrayList();
 
     private BootstrapMetaHolders() {}

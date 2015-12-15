@@ -50,14 +50,14 @@ public class ServletAspect {
     private static final TransactionService transactionService = Agent.getTransactionService();
     private static final ConfigService configService = Agent.getConfigService("servlet");
 
-    private static final FastThreadLocal</*@Nullable*/ServletMessageSupplier> topLevel =
-            new FastThreadLocal</*@Nullable*/ServletMessageSupplier>();
+    private static final FastThreadLocal</*@Nullable*/ ServletMessageSupplier> topLevel =
+            new FastThreadLocal</*@Nullable*/ ServletMessageSupplier>();
 
     // the life of this thread local is tied to the life of the topLevel thread local
     // it is only created if the topLevel thread local exists, and it is cleared when topLevel
     // thread local is cleared
-    private static final FastThreadLocal</*@Nullable*/String> sendError =
-            new FastThreadLocal</*@Nullable*/String>();
+    private static final FastThreadLocal</*@Nullable*/ String> sendError =
+            new FastThreadLocal</*@Nullable*/ String>();
 
     @Shim("javax.servlet.http.HttpServletRequest")
     public interface HttpServletRequest {

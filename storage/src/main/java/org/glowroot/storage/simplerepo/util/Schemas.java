@@ -196,7 +196,7 @@ public class Schemas {
     @VisibleForTesting
     static ImmutableSet<Index> getIndexes(String tableName, Connection connection)
             throws SQLException {
-        ListMultimap</*@Untainted*/String, /*@Untainted*/String> indexColumns =
+        ListMultimap</*@Untainted*/ String, /*@Untainted*/ String> indexColumns =
                 ArrayListMultimap.create();
         ResultSet resultSet = getMetaDataIndexInfo(connection, tableName);
         ResultSetCloser closer = new ResultSetCloser(resultSet);
@@ -216,7 +216,7 @@ public class Schemas {
             closer.close();
         }
         ImmutableSet.Builder<Index> indexes = ImmutableSet.builder();
-        for (Entry</*@Untainted*/String, Collection</*@Untainted*/String>> entry : indexColumns
+        for (Entry</*@Untainted*/ String, Collection</*@Untainted*/ String>> entry : indexColumns
                 .asMap().entrySet()) {
             String name = entry.getKey().toLowerCase(Locale.ENGLISH);
             List<String> columns = Lists.newArrayList();
@@ -307,6 +307,6 @@ public class Schemas {
         @Value.Parameter
         abstract @Untainted String name();
         @Value.Parameter
-        abstract ImmutableList</*@Untainted*/String> columns();
+        abstract ImmutableList</*@Untainted*/ String> columns();
     }
 }

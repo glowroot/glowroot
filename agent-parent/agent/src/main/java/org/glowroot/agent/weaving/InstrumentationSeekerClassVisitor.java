@@ -57,7 +57,6 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
     }
 
     @Override
-    @Nullable
     public MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions) {
         return new InstrumentAnnotationMethodVisitor(name, desc);

@@ -42,7 +42,7 @@ public class Messages {
         return ByteBuffer.wrap(output.toByteArray());
     }
 
-    public static <T extends /*@NonNull*/AbstractMessageLite> List<T> parseDelimitedFrom(
+    public static <T extends /*@NonNull*/ AbstractMessageLite> List<T> parseDelimitedFrom(
             @Nullable ByteBuffer byteBuf, Parser<T> parser) throws IOException {
         if (byteBuf == null) {
             return ImmutableList.of();

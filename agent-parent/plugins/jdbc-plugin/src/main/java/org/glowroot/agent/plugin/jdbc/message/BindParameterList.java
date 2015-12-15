@@ -23,7 +23,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.Iterators;
 
 // micro-optimized list for bind parameters
-public class BindParameterList implements Iterable</*@Nullable*/Object> {
+public class BindParameterList implements Iterable</*@Nullable*/ Object> {
 
     private @Nullable Object[] parameters;
     private int size;
@@ -79,7 +79,7 @@ public class BindParameterList implements Iterable</*@Nullable*/Object> {
     }
 
     @Override
-    public Iterator</*@Nullable*/Object> iterator() {
+    public Iterator</*@Nullable*/ Object> iterator() {
         return Iterators.limit(Iterators.forArray(parameters), size);
     }
 }

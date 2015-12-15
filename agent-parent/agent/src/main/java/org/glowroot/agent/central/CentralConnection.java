@@ -72,7 +72,7 @@ class CentralConnection {
     }
 
     // important that these calls are idempotent (at least in central implementation)
-    <T> void callWithAFewRetries(GrpcOneWayCall<T> call) {
+    <T extends /*@NonNull*/ Object> void callWithAFewRetries(GrpcOneWayCall<T> call) {
         if (closed) {
             return;
         }
@@ -88,7 +88,7 @@ class CentralConnection {
     }
 
     // important that these calls are idempotent (at least in central implementation)
-    <T> void callUntilSuccessful(GrpcOneWayCall<T> call) {
+    <T extends /*@NonNull*/ Object> void callUntilSuccessful(GrpcOneWayCall<T> call) {
         if (closed) {
             return;
         }

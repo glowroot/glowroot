@@ -62,6 +62,7 @@ public class CentralModule {
         grpcCollector = new CentralCollectorImpl(centralConnection, serverId);
         downstreamServiceObserver = new DownstreamServiceObserver(centralConnection,
                 configUpdateService, liveJvmService, serverId);
+        downstreamServiceObserver.connectAsync();
 
         grpcCollector.collectJvmInfo(JvmInfoCreator.create());
     }
