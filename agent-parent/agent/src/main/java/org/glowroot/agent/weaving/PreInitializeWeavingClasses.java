@@ -448,6 +448,9 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ClassLoaders$LazyDefinedClass");
         types.add("org.glowroot.agent.weaving.ClassNames");
         types.add("org.glowroot.agent.weaving.ExtraBootResourceFinder");
+        types.add("org.glowroot.agent.weaving.FelixOsgiHackClassVisitor");
+        types.add("org.glowroot.agent.weaving.FelixOsgiHackClassVisitor"
+                + "$FelixOsgiHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.GeneratedBytecodeUtil");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$Builder");
@@ -594,6 +597,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.AnalyzedMethod$1");
         types.add("org.glowroot.agent.weaving.AnalyzedMethodKey$1");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$1");
+        types.add("org.glowroot.agent.weaving.FelixOsgiHackClassVisitor$1");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedClass$1");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedMethod$1");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedMethodKey$1");

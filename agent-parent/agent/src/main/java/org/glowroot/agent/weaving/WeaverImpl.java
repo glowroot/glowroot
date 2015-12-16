@@ -106,16 +106,25 @@ public class WeaverImpl implements Weaver {
             cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
             return cw.toByteArray();
         }
+        byte[] maybeFelixBytes = null;
+        if (className.equals("org/apache/felix/framework/BundleWiringImpl")) {
+            ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES, analyzedWorld,
+                    loader, codeSource, className);
+            ClassVisitor cv = new FelixOsgiHackClassVisitor(cw);
+            ClassReader cr = new ClassReader(classBytes);
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
+            maybeFelixBytes = cw.toByteArray();
+        }
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
                 mixinTypes, loader, analyzedWorld, codeSource);
         if (classAnalyzer.isShortCircuitBeforeAnalyzeMethods()) {
             analyzedWorld.add(classAnalyzer.getAnalyzedClass(), loader);
-            return null;
+            return maybeFelixBytes;
         }
         classAnalyzer.analyzeMethods();
         if (!classAnalyzer.isWeavingRequired()) {
             analyzedWorld.add(classAnalyzer.getAnalyzedClass(), loader);
-            return null;
+            return maybeFelixBytes;
         }
         // from http://www.oracle.com/technetwork/java/javase/compatibility-417013.html:
         //
@@ -136,7 +145,7 @@ public class WeaverImpl implements Weaver {
                         classAnalyzer.getSuperAnalyzedClasses(), classAnalyzer.getSuperClassNames(),
                         classAnalyzer.getMatchedShimTypes(), classAnalyzer.getMatchedMixinTypes(),
                         classAnalyzer.getMethodAdvisors(), analyzedWorld, timerWrapperMethods);
-        ClassReader cr = new ClassReader(classBytes);
+        ClassReader cr = new ClassReader(maybeFelixBytes == null ? classBytes : maybeFelixBytes);
         cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
         return cw.toByteArray();
     }
