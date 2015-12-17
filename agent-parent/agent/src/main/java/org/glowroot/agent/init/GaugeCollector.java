@@ -48,7 +48,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.LazyPlatformMBeanServer.InitListener;
-import org.glowroot.agent.util.PatternObjectNameQueryExp;
 import org.glowroot.agent.util.Reflections;
 import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.GaugeConfig.MBeanAttribute;
@@ -146,28 +145,28 @@ class GaugeCollector extends ScheduledRunnable {
     @RequiresNonNull("priorRawCounterValues")
     List<GaugeValue> collectGaugeValues(GaugeConfig gaugeConfig) throws InterruptedException {
         String mbeanObjectName = gaugeConfig.mbeanObjectName();
-        if (!mbeanObjectName.contains("*")) {
-            ObjectName objectName;
-            try {
-                objectName = ObjectName.getInstance(mbeanObjectName);
-            } catch (MalformedObjectNameException e) {
-                logger.debug(e.getMessage(), e);
-                // using toString() instead of getMessage() in order to capture exception class name
-                logFirstTimeMBeanException(mbeanObjectName, e.toString());
-                return ImmutableList.of();
-            }
+        ObjectName objectName;
+        try {
+            objectName = ObjectName.getInstance(mbeanObjectName);
+        } catch (MalformedObjectNameException e) {
+            logger.debug(e.getMessage(), e);
+            // using toString() instead of getMessage() in order to capture exception class name
+            logFirstTimeMBeanException(mbeanObjectName, e.toString());
+            return ImmutableList.of();
+        }
+        if (!objectName.isPattern()) {
             return collectGaugeValues(objectName, gaugeConfig.mbeanAttributes(), mbeanObjectName);
         }
-        Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null,
-                new PatternObjectNameQueryExp(mbeanObjectName));
-        if (objectNames.isEmpty()) {
+        Set<ObjectName> matchingObjectNames = lazyPlatformMBeanServer.queryNames(objectName, null);
+        if (matchingObjectNames.isEmpty()) {
             logFirstTimeMBeanNotMatchedOrFound(mbeanObjectName);
             return ImmutableList.of();
         }
         List<GaugeValue> gaugeValues = Lists.newArrayList();
-        for (ObjectName objectName : objectNames) {
-            gaugeValues.addAll(collectGaugeValues(objectName, gaugeConfig.mbeanAttributes(),
-                    objectName.getDomain() + ":" + objectName.getKeyPropertyListString()));
+        for (ObjectName matchingObjectName : matchingObjectNames) {
+            gaugeValues.addAll(collectGaugeValues(matchingObjectName, gaugeConfig.mbeanAttributes(),
+                    matchingObjectName.getDomain() + ":"
+                            + matchingObjectName.getKeyPropertyListString()));
         }
         return gaugeValues;
     }

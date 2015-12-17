@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
-import org.glowroot.agent.util.PatternObjectNameQueryExp;
 import org.glowroot.common.live.ImmutableAvailability;
 import org.glowroot.common.live.ImmutableCapabilities;
 import org.glowroot.common.live.ImmutableMBeanMeta;
@@ -188,11 +187,17 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     @Override
     public List<String> getMatchingMBeanObjectNames(String serverId, String partialMBeanObjectName,
             int limit) throws InterruptedException {
-        Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null,
-                new ObjectNameQueryExp(partialMBeanObjectName));
+        ObjectNameQueryExp queryExp = new ObjectNameQueryExp(partialMBeanObjectName);
+        Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null, queryExp);
+        // unfortunately Wildfly returns lots of mbean object names without checking them against
+        // the query (see TODO comment in org.jboss.as.jmx.model.ModelControllerMBeanHelper)
+        // so must re-filter
         List<String> names = Lists.newArrayList();
         for (ObjectName objectName : objectNames) {
-            names.add(objectName.toString());
+            String objectNameStr = objectName.toString();
+            if (queryExp.apply(objectNameStr)) {
+                names.add(objectNameStr);
+            }
         }
         ImmutableList<String> sortedNames =
                 Ordering.from(String.CASE_INSENSITIVE_ORDER).immutableSortedCopy(names);
@@ -354,12 +359,12 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                 .build();
     }
 
-    private Set<ObjectName> getObjectNames(String objectName) throws Exception {
-        if (objectName.contains("*")) {
-            return lazyPlatformMBeanServer.queryNames(null,
-                    new PatternObjectNameQueryExp(objectName));
+    private Set<ObjectName> getObjectNames(String mbeanObjectName) throws Exception {
+        ObjectName objectName = ObjectName.getInstance(mbeanObjectName);
+        if (objectName.isPattern()) {
+            return lazyPlatformMBeanServer.queryNames(objectName, null);
         } else {
-            return ImmutableSet.of(ObjectName.getInstance(objectName));
+            return ImmutableSet.of(objectName);
         }
     }
 
@@ -489,7 +494,11 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
         @Override
         public boolean apply(ObjectName name) {
-            return name.toString().toUpperCase(Locale.ENGLISH).contains(textUpper);
+            return apply(name.toString());
+        }
+
+        private boolean apply(String nameStr) {
+            return nameStr.toUpperCase(Locale.ENGLISH).contains(textUpper);
         }
 
         @Override
