@@ -17,21 +17,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.framework</artifactId>
-      <version>4.2.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish.hk2</groupId>
-      <artifactId>osgi-adapter</artifactId>
-      <version>2.4.0-b31</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish.main.core</groupId>
-      <artifactId>glassfish</artifactId>
-      <version>4.1.1</version>
-    </dependency>
-    <dependency>
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-plugin-api</artifactId>
       <version>${project.version}</version>
