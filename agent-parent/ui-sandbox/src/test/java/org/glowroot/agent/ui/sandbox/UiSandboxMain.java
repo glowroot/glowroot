@@ -33,7 +33,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class UiSandboxMain {
 
     private static final boolean useJavaagent = false;
-    private static final boolean useCentral = true;
+    private static final boolean useCentral = false;
     private static final boolean useReverseProxy = false;
 
     static {

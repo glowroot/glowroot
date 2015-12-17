@@ -355,9 +355,6 @@ public class JavaagentContainer implements Container {
                 paths.add(path);
             } else if (file.isDirectory() && file.getName().equals("test-classes")) {
                 paths.add(path);
-            } else if (file.isDirectory() && file.getAbsolutePath().contains(File.separator
-                    + "ui-sandbox" + File.separator + "target" + File.separator + "classes")) {
-                paths.add(path);
             } else {
                 bootPaths.add(path);
             }
