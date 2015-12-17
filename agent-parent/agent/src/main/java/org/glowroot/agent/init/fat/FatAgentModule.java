@@ -73,7 +73,7 @@ class FatAgentModule {
 
     FatAgentModule(File baseDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
-            String glowrootVersion, boolean jbossModules, boolean viewerMode) throws Exception {
+            String glowrootVersion, boolean viewerMode) throws Exception {
 
         dataDirLockingCloseable = DataDirLocking.lockDataDir(baseDir);
 
@@ -114,7 +114,7 @@ class FatAgentModule {
             ConfigService configService =
                     ConfigService.create(baseDir, pluginCache.pluginDescriptors());
             agentModule = new AgentModule(clock, null, pluginCache, configService, collectorProxy,
-                    instrumentation, baseDir, jbossModules);
+                    instrumentation, baseDir);
 
             PreInitializeStorageShutdownClasses.preInitializeClasses();
             ConfigRepository configRepository =

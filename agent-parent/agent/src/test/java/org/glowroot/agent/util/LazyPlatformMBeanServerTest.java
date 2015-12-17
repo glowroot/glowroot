@@ -45,7 +45,7 @@ public class LazyPlatformMBeanServerTest {
         String julManager = System.getProperty("java.util.logging.manager");
         System.setProperty("java.util.logging.manager", "abc");
         try {
-            LazyPlatformMBeanServer lazyPlatformMBeanServer = new LazyPlatformMBeanServer(true);
+            LazyPlatformMBeanServer lazyPlatformMBeanServer = new LazyPlatformMBeanServer();
             lazyPlatformMBeanServer.getMBeanInfo(ObjectName.getInstance("java.lang:type=Memory"));
         } finally {
             if (julManager == null) {

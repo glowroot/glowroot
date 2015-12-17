@@ -21,6 +21,7 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
+import javax.management.JMRuntimeException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -41,19 +42,27 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 // this is needed for jboss-modules because calling ManagementFactory.getPlatformMBeanServer()
 // before jboss-modules has set up its own logger will trigger the default JUL LogManager to be
 // used, and then jboss/wildfly will fail to start
+//
+// it is also needed for glassfish because it sets the "javax.management.builder.initial" system
+// property during startup (instead of from command line)
+// see com.sun.enterprise.admin.launcher.JvmOptions.filter() that filters out from command line
+// and see com.sun.enterprise.v3.server.SystemTasksImpl.resolveJavaConfig() that adds it back during
+// startup
 public class LazyPlatformMBeanServer {
 
     private static final Logger logger = LoggerFactory.getLogger(LazyPlatformMBeanServer.class);
 
-    private final boolean jbossModules;
-
     @GuardedBy("initListeners")
     private final List<InitListener> initListeners = Lists.newArrayList();
 
+    private final boolean jbossModules;
+    private final boolean glassfish;
+
     private volatile @MonotonicNonNull MBeanServer mbeanServer;
 
-    public LazyPlatformMBeanServer(boolean jbossModules) {
-        this.jbossModules = jbossModules;
+    public LazyPlatformMBeanServer() {
+        jbossModules = AppServerDetection.isJBossModules();
+        glassfish = AppServerDetection.isGlassfish();
     }
 
     public void invoke(ObjectName name, String operationName, Object[] params, String[] signature)
@@ -100,10 +109,15 @@ public class LazyPlatformMBeanServer {
 
     @EnsuresNonNull("mbeanServer")
     private void ensureInit() throws InterruptedException {
-        if (needsDelayedInit()) {
+        if (mbeanServer == null && jbossModules) {
             // if running under jboss-modules, wait for it to set up JUL before calling
             // getPlatformMBeanServer()
             waitForJBossModuleInitialization(Stopwatch.createUnstarted());
+        }
+        if (mbeanServer == null && glassfish) {
+            // if running under glassfish, wait for it to set up javax.management.builder.initial
+            // before calling getPlatformMBeanServer()
+            waitForGlassfishInitialization(Stopwatch.createUnstarted());
         }
         synchronized (initListeners) {
             if (mbeanServer == null) {
@@ -119,10 +133,6 @@ public class LazyPlatformMBeanServer {
         }
     }
 
-    private boolean needsDelayedInit() {
-        return mbeanServer == null && jbossModules;
-    }
-
     @VisibleForTesting
     public static void waitForJBossModuleInitialization(Stopwatch stopwatch)
             throws InterruptedException {
@@ -136,6 +146,39 @@ public class LazyPlatformMBeanServer {
         // something has gone wrong
         logger.error("this jvm appears to be running jboss-modules, but it did not set up"
                 + " java.util.logging.manager");
+    }
+
+    private static void waitForGlassfishInitialization(Stopwatch stopwatch)
+            throws InterruptedException {
+        stopwatch.start();
+        while (stopwatch.elapsed(SECONDS) < 60) {
+            if (System.getProperty("javax.management.builder.initial") != null) {
+                waitForMBeanServerBuilderSetup(stopwatch);
+                return;
+            }
+            Thread.sleep(100);
+        }
+        // something has gone wrong
+        logger.error("this jvm appears to be running glassfish, but it did not set up"
+                + " javax.management.builder.initial");
+    }
+
+    private static void waitForMBeanServerBuilderSetup(Stopwatch stopwatch)
+            throws InterruptedException {
+        while (stopwatch.elapsed(SECONDS) < 60) {
+            try {
+                ManagementFactory.getPlatformMBeanServer();
+                return;
+            } catch (JMRuntimeException e) {
+                // this is caused by ClassNotFoundException until glassfish calls
+                // ManagementFactory.getPlatformMBeanServer() using a context class loader
+                // that has the "javax.management.builder.initial" class
+            }
+            Thread.sleep(100);
+        }
+        // something has gone wrong
+        logger.error("this jvm appears to be running glassfish, but glassfish never"
+                + " finished setting up javax.management.builder.initial");
     }
 
     public interface InitListener {

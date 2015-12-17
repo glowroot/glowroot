@@ -114,8 +114,7 @@ public class AgentModule {
     // accepts @Nullable Ticker to deal with shading issues when called from GlowrootModule
     public AgentModule(Clock clock, @Nullable Ticker nullableTicker, final PluginCache pluginCache,
             final ConfigService configService, Collector collector,
-            @Nullable Instrumentation instrumentation, File baseDir,
-            boolean jbossModules) throws Exception {
+            @Nullable Instrumentation instrumentation, File baseDir) throws Exception {
 
         Ticker ticker = nullableTicker == null ? Tickers.getTicker() : nullableTicker;
         this.pluginCache = pluginCache;
@@ -190,7 +189,7 @@ public class AgentModule {
         };
         ServiceRegistryImpl.init(glowrootService, transactionService, configServiceFactory);
 
-        lazyPlatformMBeanServer = new LazyPlatformMBeanServer(jbossModules);
+        lazyPlatformMBeanServer = new LazyPlatformMBeanServer();
         gaugeCollector = new GaugeCollector(configService, collector, lazyPlatformMBeanServer,
                 clock, ticker);
         // using fixed rate to keep gauge collections close to on the second mark

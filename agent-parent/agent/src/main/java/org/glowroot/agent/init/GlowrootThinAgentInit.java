@@ -54,8 +54,8 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
     @Override
     public void init(final File baseDir, final @Nullable String collectorHost,
             final Map<String, String> properties, final @Nullable Instrumentation instrumentation,
-            @Nullable File glowrootJarFile, String glowrootVersion, boolean jbossModules,
-            boolean viewerMode) throws Exception {
+            @Nullable File glowrootJarFile, String glowrootVersion, boolean viewerMode)
+                    throws Exception {
 
         if (instrumentation != null) {
             PreInitializeWeavingClasses.preInitializeClasses();
@@ -77,7 +77,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         attachAppender(collectorLogbackAppender);
 
         final AgentModule agentModule = new AgentModule(clock, ticker, pluginCache, configService,
-                collectorProxy, instrumentation, baseDir, jbossModules);
+                collectorProxy, instrumentation, baseDir);
 
         NettyWorkaround.run(instrumentation, new Callable</*@Nullable*/ Void>() {
             @Override

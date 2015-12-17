@@ -27,7 +27,6 @@ import java.util.Properties;
 
 import javax.annotation.Nullable;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
@@ -42,6 +41,7 @@ import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.GlowrootThinAgentInit;
 import org.glowroot.agent.init.fat.DataDirLocking.BaseDirLockedException;
 import org.glowroot.agent.init.fat.GlowrootFatAgentInit;
+import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Version;
 
@@ -58,7 +58,7 @@ public class MainEntryPoint {
     private MainEntryPoint() {}
 
     public static void premain(Instrumentation instrumentation, @Nullable File glowrootJarFile) {
-        boolean jbossModules = isJBossModules();
+        boolean jbossModules = AppServerDetection.isJBossModules();
         if (jbossModules) {
             String jbossModulesSystemPkgs = System.getProperty("jboss.modules.system.pkgs");
             if (Strings.isNullOrEmpty(jbossModulesSystemPkgs)) {
@@ -74,7 +74,7 @@ public class MainEntryPoint {
         initLogging(baseDir);
         try {
             ImmutableMap<String, String> properties = getGlowrootProperties(baseDir);
-            start(baseDir, properties, instrumentation, glowrootJarFile, jbossModules);
+            start(baseDir, properties, instrumentation, glowrootJarFile);
         } catch (BaseDirLockedException e) {
             logBaseDirLockedException(baseDir);
         } catch (Throwable t) {
@@ -93,7 +93,7 @@ public class MainEntryPoint {
             version = Version.getVersion();
             ImmutableMap<String, String> properties = getGlowrootProperties(baseDir);
             new GlowrootFatAgentInit().init(baseDir, null, properties, null, glowrootJarFile,
-                    version, false, true);
+                    version, true);
         } catch (BaseDirLockedException e) {
             logBaseDirLockedException(baseDir);
             return;
@@ -126,8 +126,8 @@ public class MainEntryPoint {
 
     @RequiresNonNull("startupLogger")
     private static void start(File baseDir, Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
-            boolean jbossModules) throws Exception {
+            @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile)
+                    throws Exception {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion();
@@ -141,7 +141,7 @@ public class MainEntryPoint {
             glowrootAgentInit = new GlowrootThinAgentInit();
         }
         glowrootAgentInit.init(baseDir, collectorHost, properties, instrumentation, glowrootJarFile,
-                version, false, jbossModules);
+                version, false);
         startupLogger.info("Glowroot started (version {})", version);
     }
 
@@ -194,28 +194,13 @@ public class MainEntryPoint {
                 "org.apache.catalina.startup.Bootstrap stop");
     }
 
-    private static boolean isJBossModules() {
-        return isJBossModules(System.getProperty("sun.java.command"));
-    }
-
-    @VisibleForTesting
-    static boolean isJBossModules(@Nullable String command) {
-        if (command == null) {
-            return false;
-        }
-        int index = command.indexOf(' ');
-        String className = index == -1 ? command : command.substring(0, index);
-        return className.equals("org.jboss.modules.Main")
-                || className.endsWith("jboss-modules.jar");
-    }
-
     @OnlyUsedByTests
     public static void start(Map<String, String> properties) throws Exception {
         String baseDirPath = properties.get("glowroot.base.dir");
         File baseDir = BaseDir.getBaseDir(baseDirPath, null);
         // init logger as early as possible
         initLogging(baseDir);
-        start(baseDir, properties, null, null, false);
+        start(baseDir, properties, null, null);
     }
 
     @OnlyUsedByTests
