@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -171,8 +172,9 @@ public class AgentModule {
                 transactionRegistry, transactionCollector, configService, ticker);
         immedateTraceStoreWatcher.scheduleWithFixedDelay(scheduledExecutor, 0,
                 ImmediateTraceStoreWatcher.PERIOD_MILLIS, MILLISECONDS);
+        Random random = new Random();
         UserProfileScheduler userProfileScheduler =
-                new UserProfileScheduler(scheduledExecutor, configService);
+                new UserProfileScheduler(scheduledExecutor, configService, random);
         GlowrootService glowrootService =
                 new GlowrootServiceImpl(transactionRegistry, userProfileScheduler);
         TransactionService transactionService = TransactionServiceImpl.create(transactionRegistry,
@@ -198,8 +200,8 @@ public class AgentModule {
                 - (clock.currentTimeMillis() % gaugeCollectionIntervalMillis);
         gaugeCollector.scheduleWithFixedDelay(initialDelay, gaugeCollectionIntervalMillis,
                 MILLISECONDS);
-        stackTraceCollector =
-                StackTraceCollector.create(transactionRegistry, configService, scheduledExecutor);
+        stackTraceCollector = StackTraceCollector.create(transactionRegistry, configService,
+                scheduledExecutor, random);
 
         liveTraceRepository = new LiveTraceRepositoryImpl(transactionRegistry, transactionCollector,
                 clock, ticker);

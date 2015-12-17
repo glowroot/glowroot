@@ -18,29 +18,37 @@ package org.glowroot.agent.impl;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.model.Transaction.OverrideSource;
 import org.glowroot.common.config.UserRecordingConfig;
-import org.glowroot.common.util.ScheduledRunnable;
+import org.glowroot.common.util.Cancellable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class UserProfileScheduler {
 
+    private static final Logger logger = LoggerFactory.getLogger(UserProfileRunnable.class);
+
     private final ScheduledExecutorService scheduledExecutor;
     private final ConfigService configService;
+    private final Random random;
 
     public UserProfileScheduler(ScheduledExecutorService scheduledExecutor,
-            ConfigService configService) {
+            ConfigService configService, Random random) {
         this.scheduledExecutor = scheduledExecutor;
         this.configService = configService;
+        this.random = random;
     }
 
     void maybeScheduleUserProfiling(Transaction transaction, String user) {
@@ -62,39 +70,68 @@ public class UserProfileScheduler {
         if (intervalMillis == null || intervalMillis <= 0) {
             return;
         }
-        ScheduledRunnable userProfileRunnable = new UserProfileRunnable(transaction, configService);
-        long initialDelay =
-                Math.max(0, intervalMillis - NANOSECONDS.toMillis(transaction.getDurationNanos()));
-        userProfileRunnable.scheduleWithFixedDelay(scheduledExecutor, initialDelay, intervalMillis,
-                MILLISECONDS);
+        UserProfileRunnable userProfileRunnable =
+                new UserProfileRunnable(transaction, intervalMillis);
+        userProfileRunnable.scheduleFirst();
         transaction.setUserProfileRunnable(userProfileRunnable);
     }
 
     @VisibleForTesting
-    static class UserProfileRunnable extends ScheduledRunnable {
+    class UserProfileRunnable implements Runnable, Cancellable {
 
         private final Transaction transaction;
-        private final ConfigService configService;
+        private final int intervalMillis;
+
+        private volatile @MonotonicNonNull ScheduledFuture<?> currentFuture;
+        private volatile long remainingInInterval;
 
         @VisibleForTesting
-        UserProfileRunnable(Transaction transaction, ConfigService configService) {
+        UserProfileRunnable(Transaction transaction, int intervalMillis) {
             this.transaction = transaction;
-            this.configService = configService;
+            this.intervalMillis = intervalMillis;
         }
 
         @Override
-        public void runInternal() {
+        public void run() {
             if (transaction.isCompleted()) {
-                // there is a small window between trace completion and cancellation of this
-                // command,
-                // plus, should a stop-the-world gc occur in this small window, even two command
-                // executions can fire one right after the other in the small window (assuming the
-                // first
-                // didn't throw an exception which it does now), since this command is scheduled
-                // using
-                // ScheduledExecutorService.scheduleWithFixedDelay()
-                throw new TerminateSubsequentExecutionsException();
+                // there is a small window between trace completion and cancellation of this command
+                return;
             }
+            try {
+                runInternal();
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
+            }
+            try {
+                scheduleNext();
+            } catch (Throwable t) {
+                // this is not good, no further stack trace will be captured for this transaction
+                logger.error(t.getMessage(), t);
+            }
+        }
+
+        @Override
+        public void cancel() {
+            if (currentFuture != null) {
+                currentFuture.cancel(false);
+            }
+        }
+
+        private void scheduleFirst() {
+            long randomDelayFromIntervalStart = (long) (random.nextFloat() * intervalMillis);
+            currentFuture =
+                    scheduledExecutor.schedule(this, randomDelayFromIntervalStart, MILLISECONDS);
+            remainingInInterval = intervalMillis - randomDelayFromIntervalStart;
+        }
+
+        private void scheduleNext() {
+            long randomDelayFromIntervalStart = (long) (random.nextFloat() * intervalMillis);
+            scheduledExecutor.schedule(this, remainingInInterval + randomDelayFromIntervalStart,
+                    MILLISECONDS);
+            remainingInInterval = intervalMillis - randomDelayFromIntervalStart;
+        }
+
+        private void runInternal() {
             ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
             ThreadInfo threadInfo =
                     threadBean.getThreadInfo(transaction.getThreadId(), Integer.MAX_VALUE);

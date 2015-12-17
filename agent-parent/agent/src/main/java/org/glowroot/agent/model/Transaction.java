@@ -45,7 +45,7 @@ import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.transaction.internal.ReadableMessage;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.config.AdvancedConfig;
-import org.glowroot.common.util.ScheduledRunnable;
+import org.glowroot.common.util.Cancellable;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -123,8 +123,8 @@ public class Transaction {
 
     // these are stored in the trace so they are only scheduled a single time, and also so they can
     // be canceled at trace completion
-    private volatile @MonotonicNonNull ScheduledRunnable userProfileRunnable;
-    private volatile @MonotonicNonNull ScheduledRunnable immedateTraceStoreRunnable;
+    private volatile @MonotonicNonNull Cancellable userProfileRunnable;
+    private volatile @MonotonicNonNull Cancellable immedateTraceStoreRunnable;
 
     private volatile boolean partiallyStored;
 
@@ -327,11 +327,11 @@ public class Transaction {
         return slowThresholdMillis;
     }
 
-    public @Nullable ScheduledRunnable getUserProfileRunnable() {
+    public @Nullable Cancellable getUserProfileRunnable() {
         return userProfileRunnable;
     }
 
-    public @Nullable ScheduledRunnable getImmedateTraceStoreRunnable() {
+    public @Nullable Cancellable getImmedateTraceStoreRunnable() {
         return immedateTraceStoreRunnable;
     }
 
@@ -399,19 +399,19 @@ public class Transaction {
         }
     }
 
-    public void setUserProfileRunnable(ScheduledRunnable scheduledRunnable) {
-        if (userProfileRunnable != null) {
+    public void setUserProfileRunnable(Cancellable userProfileRunnable) {
+        if (this.userProfileRunnable != null) {
             logger.warn("setUserProfileRunnable(): overwriting non-null userProfileRunnable");
         }
-        this.userProfileRunnable = scheduledRunnable;
+        this.userProfileRunnable = userProfileRunnable;
     }
 
-    public void setImmediateTraceStoreRunnable(ScheduledRunnable scheduledRunnable) {
-        if (immedateTraceStoreRunnable != null) {
+    public void setImmediateTraceStoreRunnable(Cancellable immedateTraceStoreRunnable) {
+        if (this.immedateTraceStoreRunnable != null) {
             logger.warn("setImmediateTraceStoreRunnable(): overwriting non-null"
                     + " immedateTraceStoreRunnable");
         }
-        this.immedateTraceStoreRunnable = scheduledRunnable;
+        this.immedateTraceStoreRunnable = immedateTraceStoreRunnable;
     }
 
     public void setPartiallyStored() {

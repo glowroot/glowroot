@@ -34,7 +34,9 @@
            gt-width="7em"
            gt-addon="milliseconds">
         <div class="help-block">
-          The interval at which the profiler captures stack traces.
+          The interval at which the profiler samples stack traces. Each sampling time is randomized within its given
+          interval in order to avoid
+          <a href="http://www.slideshare.net/RichardWarburton/jvm-profiling-under-the-hood/13">periodicity bias</a>.
         </div>
       </div>
       <div gt-form-group

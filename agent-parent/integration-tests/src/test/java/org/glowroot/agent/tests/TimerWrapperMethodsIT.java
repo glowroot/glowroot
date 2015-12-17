@@ -47,6 +47,10 @@ public class TimerWrapperMethodsIT {
         container = Containers.create(baseDir);
         // capture one trace to warm up the system, otherwise sometimes there are delays in class
         // loading and the profiler captures too many or too few samples
+        container.getConfigService().updateTransactionConfig(
+                TransactionConfig.newBuilder()
+                        .setProfilingIntervalMillis(ProtoOptional.of(20))
+                        .build());
         container.execute(ShouldGenerateTraceWithProfile.class);
         container.checkAndReset();
         container.getConfigService().updateAdvancedConfig(

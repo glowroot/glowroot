@@ -23,7 +23,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class ScheduledRunnable implements Runnable {
+public abstract class ScheduledRunnable implements Runnable, Cancellable {
 
     private static final Logger logger = LoggerFactory.getLogger(ScheduledRunnable.class);
 
@@ -53,6 +53,7 @@ public abstract class ScheduledRunnable implements Runnable {
         }
     }
 
+    @Override
     public void cancel() {
         if (future != null) {
             future.cancel(false);
