@@ -38,6 +38,15 @@ public class JavaagentServiceImpl implements JavaagentService {
 
     private static final Logger logger = LoggerFactory.getLogger(JavaagentServiceImpl.class);
 
+    private static final boolean checkThreads;
+
+    static {
+        // only check threads for glowroot-agent-integration-tests
+        // it is not always possible to clean up threads in plugin tests, e.g. OkHttp starts a
+        // couple of threads that are not stoppable
+        checkThreads = Boolean.getBoolean("glowroot.test.checkThreads");
+    }
+
     private volatile @Nullable Thread executingAppThread;
 
     private volatile @Nullable Set<Thread> preExistingThreads;
@@ -108,11 +117,11 @@ public class JavaagentServiceImpl implements JavaagentService {
     @Override
     public void shutdown(Void request, StreamObserver<Void> responseObserver) {
         try {
-            if (preExistingThreads != null) {
+            if (checkThreads && preExistingThreads != null) {
                 Threads.preShutdownCheck(preExistingThreads);
             }
             MainEntryPoint.getGlowrootAgentInit().close();
-            if (preExistingThreads != null) {
+            if (checkThreads && preExistingThreads != null) {
                 Threads.postShutdownCheck(preExistingThreads);
             }
         } catch (Throwable t) {

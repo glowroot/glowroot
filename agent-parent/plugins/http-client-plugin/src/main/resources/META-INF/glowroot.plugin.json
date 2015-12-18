@@ -36,6 +36,15 @@
       "captureKind": "trace-entry",
       "timerName": "http client request",
       "traceEntryMessageTemplate": "http client request: {{1.name}} {{1.URI}}"
+    },
+    {
+      "className": "com.squareup.okhttp.Call",
+      "methodName": "execute",
+      "methodParameterTypes": [
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "http client request",
+      "traceEntryMessageTemplate": "http client request: {{this.originalRequest.method}} {{this.originalRequest.url}}"
     }
   ],
   "aspects": [

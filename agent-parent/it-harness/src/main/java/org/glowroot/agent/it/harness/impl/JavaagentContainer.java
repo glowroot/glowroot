@@ -405,7 +405,7 @@ public class JavaagentContainer implements Container {
                 continue;
             }
             String key = (String) keyObject;
-            if (key.startsWith("glowroot.internal.")) {
+            if (key.startsWith("glowroot.internal.") || key.startsWith("glowroot.test.")) {
                 command.add("-D" + key + "=" + entry.getValue());
             }
         }
