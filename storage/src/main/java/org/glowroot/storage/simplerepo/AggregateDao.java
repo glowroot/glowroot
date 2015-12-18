@@ -1081,7 +1081,7 @@ public class AggregateDao implements AggregateRepository {
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws Exception {
-            int i = 0;
+            int i = 1;
             preparedStatement.setString(i++, query.transactionType());
             String transactionName = query.transactionName();
             if (transactionName != null) {
