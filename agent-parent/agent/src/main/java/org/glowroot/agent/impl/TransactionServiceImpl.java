@@ -345,6 +345,9 @@ public class TransactionServiceImpl implements TransactionService, ConfigListene
                     transactionName, messageSupplier, timerName, startTick, captureThreadInfo,
                     captureGcActivity, maxAggregateQueriesPerQueryType, threadAllocatedBytes,
                     transactionCompletionCallback, ticker);
+            if (transactionType.equals("Startup")) {
+                transaction.setSlowThresholdMillis(0, OverrideSource.STARTUP);
+            }
             transactionRegistry.addTransaction(transaction);
             return transaction.getRootEntry();
         } else {

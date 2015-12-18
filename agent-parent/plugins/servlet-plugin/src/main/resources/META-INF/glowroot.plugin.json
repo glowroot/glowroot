@@ -41,10 +41,63 @@
       "description": "Comma-separated list of response headers to capture in the root trace entry. The wildcard '*' is supported anywhere in the parameter."
     }
   ],
+  "instrumentation": [
+    {
+      "className": "javax.servlet.ServletContextListener",
+      "methodName": "contextInitialized",
+      "methodParameterTypes": [
+        "javax.servlet.ServletContextEvent"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "listener init",
+      "traceEntryMessageTemplate": "listener init: {{this.class.name}}"
+    },
+    {
+      "className": "javax.servlet.Servlet",
+      "methodName": "init",
+      "methodParameterTypes": [
+        "javax.servlet.ServletConfig"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "servlet init",
+      "traceEntryMessageTemplate": "servlet init: {{this.class.name}}"
+    },
+    {
+      "className": "javax.servlet.Filter",
+      "methodName": "init",
+      "methodParameterTypes": [
+        "javax.servlet.FilterConfig"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "filter init",
+      "traceEntryMessageTemplate": "filter init: {{this.class.name}}"
+    },
+    {
+      "className": "io.undertow.servlet.api.DeploymentManager",
+      "methodName": "start",
+      "methodParameterTypes": [
+      ],
+      "captureKind": "transaction",
+      "timerName": "application startup",
+      "transactionType": "Startup",
+      "transactionNameTemplate": "Servlet context: {{this.deployment.deploymentInfo.contextPath}}"
+    },
+    {
+      "className": "org.eclipse.jetty.webapp.WebAppContext",
+      "methodName": "doStart",
+      "methodParameterTypes": [
+      ],
+      "captureKind": "transaction",
+      "timerName": "application startup",
+      "transactionType": "Startup",
+      "transactionNameTemplate": "Servlet context: {{this.contextPath}}"
+    }
+  ],
   "aspects": [
     "org.glowroot.agent.plugin.servlet.ServletAspect",
     "org.glowroot.agent.plugin.servlet.RequestParameterAspect",
     "org.glowroot.agent.plugin.servlet.ResponseHeaderAspect",
-    "org.glowroot.agent.plugin.servlet.SessionAspect"
+    "org.glowroot.agent.plugin.servlet.SessionAspect",
+    "org.glowroot.agent.plugin.servlet.CatalinaAppStartupAspect"
   ]
 }

@@ -35,7 +35,7 @@
        ng-click="clickTab('traces', $event)"
        ng-keydown="keydownTab('tab_profile', 'tab_queries', $event)"
        id="tab_traces">
-      Slow traces ({{traceCount()}})
+      {{transactionType === 'Startup' ? 'Traces' : 'Slow traces'}} ({{traceCount()}})
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'queries'}">

@@ -569,7 +569,8 @@ public class Transaction {
     public enum OverrideSource {
 
         // higher priority wins
-        PLUGIN_API(1), USER_API(2), USER_RECORDING(3);
+        // STARTUP is max to ensure startup threshold (which is 0) cannot be accidentally overridden
+        PLUGIN_API(1), USER_API(2), USER_RECORDING(3), STARTUP(1000);
 
         private final int priority;
 
