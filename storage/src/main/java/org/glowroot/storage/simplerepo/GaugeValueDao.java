@@ -167,9 +167,9 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     @Override
     public void deleteAll(String serverRollup) throws Exception {
-        dataSource.execute("truncate table gauge_point_rollup_0");
+        dataSource.execute("truncate table gauge_value_rollup_0");
         for (int i = 1; i <= configRepository.getRollupConfigs().size(); i++) {
-            dataSource.execute("truncate table gauge_point_rollup_" + castUntainted(i));
+            dataSource.execute("truncate table gauge_value_rollup_" + castUntainted(i));
         }
         gaugeMetaDao.deleteAll();
     }
