@@ -62,9 +62,9 @@ public class MainEntryPoint {
         if (jbossModules) {
             String jbossModulesSystemPkgs = System.getProperty("jboss.modules.system.pkgs");
             if (Strings.isNullOrEmpty(jbossModulesSystemPkgs)) {
-                jbossModulesSystemPkgs = "org.glowroot";
+                jbossModulesSystemPkgs = "org.glowroot.agent";
             } else {
-                jbossModulesSystemPkgs += ",org.glowroot";
+                jbossModulesSystemPkgs += ",org.glowroot.agent";
             }
             System.setProperty("jboss.modules.system.pkgs", jbossModulesSystemPkgs);
         }
