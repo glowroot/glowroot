@@ -20,10 +20,11 @@ glowroot.controller('ErrorMessagesCtrl', [
   '$scope',
   '$http',
   '$location',
+  'locationChanges',
   'charts',
   'queryStrings',
   'httpErrors',
-  function ($scope, $http, $location, charts, queryStrings, httpErrors) {
+  function ($scope, $http, $location, locationChanges, charts, queryStrings, httpErrors) {
 
     $scope.$parent.activeTabItem = 'messages';
 
@@ -141,7 +142,7 @@ glowroot.controller('ErrorMessagesCtrl', [
       $scope.$parent.chartRefresh++;
     };
 
-    function onLocationChangeSuccess() {
+    locationChanges.on($scope, function () {
       var priorAppliedFilter = appliedFilter;
       appliedFilter = $location.search().filter || '';
 
@@ -150,10 +151,7 @@ glowroot.controller('ErrorMessagesCtrl', [
         $scope.$parent.chartRefresh++;
       }
       $scope.filter = appliedFilter;
-    }
-
-    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
-    onLocationChangeSuccess();
+    });
 
     // 100% yaxis max just for initial empty chart rendering
     var chartOptions = {

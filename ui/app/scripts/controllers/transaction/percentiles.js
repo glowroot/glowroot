@@ -21,9 +21,10 @@ glowroot.controller('TransactionPercentilesCtrl', [
   '$location',
   '$filter',
   '$timeout',
+  'locationChanges',
   'charts',
   'modals',
-  function ($scope, $location, $filter, $timeout, charts, modals) {
+  function ($scope, $location, $filter, $timeout, locationChanges, charts, modals) {
 
     $scope.$parent.activeTabItem = 'time';
 
@@ -87,7 +88,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
       $scope.$parent.chartRefresh++;
     };
 
-    function onLocationChangeSuccess() {
+    locationChanges.on($scope, function () {
       var priorAppliedPercentiles = appliedPercentiles;
       if ($location.search().percentile) {
         appliedPercentiles = [];
@@ -103,16 +104,13 @@ glowroot.controller('TransactionPercentilesCtrl', [
         $scope.$parent.chartRefresh++;
       }
       $scope.percentiles = appliedPercentiles;
-    }
+    });
 
     function sortNumbers(arr) {
       arr.sort(function (a, b) {
         return a - b;
       });
     }
-
-    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
-    onLocationChangeSuccess();
 
     function addToQuery(query) {
       query.percentile = appliedPercentiles;

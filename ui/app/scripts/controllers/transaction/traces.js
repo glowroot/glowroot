@@ -21,12 +21,13 @@ glowroot.controller('TracesCtrl', [
   '$location',
   '$http',
   '$q',
+  'locationChanges',
   'charts',
   'httpErrors',
   'traceModal',
   'queryStrings',
   'traceKind',
-  function ($scope, $location, $http, $q, charts, httpErrors, traceModal, queryStrings, traceKind) {
+  function ($scope, $location, $http, $q, locationChanges, charts, httpErrors, traceModal, queryStrings, traceKind) {
 
     $scope.$parent.activeTabItem = 'traces';
 
@@ -387,7 +388,7 @@ glowroot.controller('TracesCtrl', [
       }
     ];
 
-    function onLocationChangeSuccess() {
+    locationChanges.on($scope, function () {
       var priorAppliedFilter = appliedFilter;
       appliedFilter = {};
       appliedFilter.transactionType = $scope.transactionType;
@@ -433,10 +434,7 @@ glowroot.controller('TracesCtrl', [
       } else {
         $('#traceModal').modal('hide');
       }
-    }
-
-    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
-    onLocationChangeSuccess();
+    });
 
     $scope.$watch('filterResponseTimeComparator', function (value) {
       if (value === 'greater') {

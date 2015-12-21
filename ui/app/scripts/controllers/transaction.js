@@ -107,6 +107,10 @@ glowroot.controller('TransactionCtrl', [
     };
 
     function onLocationChangeSuccess() {
+      // can't use locationChanges service here because transaction.js covers multiple url paths
+      if ($location.path().lastIndexOf('/' + shortName + '/', 0) === -1) {
+        return;
+      }
       $scope.transactionType = $location.search()['transaction-type'];
       $scope.transactionName = $location.search()['transaction-name'];
       $scope.last = Number($location.search().last);

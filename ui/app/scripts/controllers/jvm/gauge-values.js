@@ -22,11 +22,12 @@ glowroot.controller('JvmGaugeValuesCtrl', [
   '$filter',
   '$http',
   '$timeout',
+  'locationChanges',
   'charts',
   'keyedColorPools',
   'queryStrings',
   'httpErrors',
-  function ($scope, $location, $filter, $http, $timeout, charts, keyedColorPools, queryStrings, httpErrors) {
+  function ($scope, $location, $filter, $http, $timeout, locationChanges, charts, keyedColorPools, queryStrings, httpErrors) {
 
     var DEFAULT_GAUGES = ['java.lang:type=Memory:HeapMemoryUsage/used'];
 
@@ -142,7 +143,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       }
     }
 
-    function onLocationChangeSuccess() {
+    locationChanges.on($scope, function () {
       var priorLocation = location;
       location = {};
       location.last = Number($location.search().last);
@@ -164,11 +165,6 @@ glowroot.controller('JvmGaugeValuesCtrl', [
         angular.extend($scope, location);
         $scope.applyLast();
       }
-    }
-
-    // need to defer listener registration, otherwise captures initial location change sometimes
-    $timeout(function () {
-      $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
     });
 
     $http.get('backend/jvm/all-gauges?server-rollup=' + $scope.serverRollup)
@@ -499,6 +495,5 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     charts.init(chartState, $('#chart'), $scope);
     charts.plot([[]], chartOptions, chartState, $('#chart'), $scope);
     charts.initResize(chartState.plot, $scope);
-    onLocationChangeSuccess();
   }
 ]);

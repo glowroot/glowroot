@@ -21,10 +21,11 @@ glowroot.controller('TransactionQueriesCtrl', [
   '$http',
   '$location',
   '$timeout',
+  'locationChanges',
   'modals',
   'queryStrings',
   'httpErrors',
-  function ($scope, $http, $location, $timeout, modals, queryStrings, httpErrors) {
+  function ($scope, $http, $location, $timeout, locationChanges, modals, queryStrings, httpErrors) {
 
     $scope.$parent.activeTabItem = 'queries';
 
@@ -67,7 +68,7 @@ glowroot.controller('TransactionQueriesCtrl', [
       }
     };
 
-    function onLocationChangeSuccess() {
+    locationChanges.on($scope, function () {
       $scope.sortAttribute = $location.search()['sort-attribute'] || 'total-time';
       $scope.sortReverse = $location.search()['sort-direction'] === 'asc';
       if ($scope.sortAttribute === 'total-time') {
@@ -79,10 +80,7 @@ glowroot.controller('TransactionQueriesCtrl', [
       } else if ($scope.sortAttribute === 'rows-per-execution') {
         $scope.sortAttr = '-rowsPerExecution';
       }
-    }
-
-    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
-    onLocationChangeSuccess();
+    });
 
     $scope.showQueryModal = function (query) {
       // clear previous styling and content

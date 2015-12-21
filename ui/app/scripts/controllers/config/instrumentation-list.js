@@ -22,9 +22,10 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
   '$http',
   '$timeout',
   '$q',
+  'locationChanges',
   'httpErrors',
   'modals',
-  function ($scope, $location, $http, $timeout, $q, httpErrors, modals) {
+  function ($scope, $location, $http, $timeout, $q, locationChanges, httpErrors, modals) {
 
     $scope.display = function (config) {
       return config.className + '::' + config.methodName;
@@ -132,7 +133,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
 
     refresh();
 
-    function onLocationChangeSuccess() {
+    locationChanges.on($scope, function () {
       if ($location.search().import) {
         $scope.jsonToImport = '';
         $scope.importErrorMessage = '';
@@ -145,9 +146,6 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
       } else {
         $('#importModal').modal('hide');
       }
-    }
-
-    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
-    onLocationChangeSuccess();
+    });
   }
 ]);

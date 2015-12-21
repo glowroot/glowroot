@@ -20,9 +20,10 @@ glowroot.controller('TransactionProfileCtrl', [
   '$scope',
   '$http',
   '$location',
+  'locationChanges',
   'queryStrings',
   'httpErrors',
-  function ($scope, $http, $location, queryStrings, httpErrors) {
+  function ($scope, $http, $location, locationChanges, queryStrings, httpErrors) {
 
     $scope.$parent.activeTabItem = 'profile';
 
@@ -68,7 +69,7 @@ glowroot.controller('TransactionProfileCtrl', [
       $scope.$parent.chartRefresh++;
     };
 
-    function onLocationChangeSuccess() {
+    locationChanges.on($scope, function () {
       var priorAppliedFilter = appliedFilter;
       appliedFilter = $location.search().filter || '';
 
@@ -78,10 +79,7 @@ glowroot.controller('TransactionProfileCtrl', [
       }
       $scope.filter = appliedFilter;
       $scope.truncateBranchPercentage = $location.search()['truncate-branch-percentage'] || 0.1;
-    }
-
-    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
-    onLocationChangeSuccess();
+    });
 
     $('.gt-profile-text-filter').on('gtClearProfileFilter', function (event, response) {
       $scope.$apply(function () {
