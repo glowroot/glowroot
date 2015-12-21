@@ -28,6 +28,8 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.AbstractMessageLite;
 import com.google.protobuf.Parser;
 
+import org.glowroot.storage.simplerepo.util.SizeLimitBypassingParser;
+
 public class Messages {
 
     private Messages() {}
@@ -47,10 +49,12 @@ public class Messages {
         if (byteBuf == null) {
             return ImmutableList.of();
         }
+        SizeLimitBypassingParser<T> sizeLimitBypassingParser =
+                new SizeLimitBypassingParser<T>(parser);
         List<T> messages = Lists.newArrayList();
         try (InputStream input = new ByteBufferInputStream(byteBuf)) {
             T message;
-            while ((message = parser.parseDelimitedFrom(input)) != null) {
+            while ((message = sizeLimitBypassingParser.parseDelimitedFrom(input)) != null) {
                 messages.add(message);
             }
         }

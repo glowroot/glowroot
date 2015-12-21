@@ -39,6 +39,7 @@ import com.google.common.io.CharSource;
 import com.google.common.io.CountingOutputStream;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.AbstractMessageLite;
+import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
 import com.ning.compress.lzf.LZFInputStream;
 import com.ning.compress.lzf.LZFOutputStream;
@@ -172,7 +173,7 @@ public class CappedDatabase {
         }
     }
 
-    public <T extends /*@NonNull*/ Object> List<T> readMessages(long cappedId, Parser<T> parser)
+    public <T extends /*@NonNull*/MessageLite> List<T> readMessages(long cappedId, Parser<T> parser)
             throws IOException {
         boolean overwritten;
         boolean inTheFuture;
@@ -196,10 +197,12 @@ public class CappedDatabase {
         final int bufferSize = 32768;
         InputStream input = new LZFInputStream(
                 new BufferedInputStream(new CappedBlockInputStream(cappedId), bufferSize));
+        SizeLimitBypassingParser<T> sizeLimitBypassingParser =
+                new SizeLimitBypassingParser<T>(parser);
         List<T> messages = Lists.newArrayList();
         try {
             T message;
-            while ((message = parser.parseDelimitedFrom(input)) != null) {
+            while ((message = sizeLimitBypassingParser.parseDelimitedFrom(input)) != null) {
                 messages.add(message);
             }
         } catch (Exception e) {
