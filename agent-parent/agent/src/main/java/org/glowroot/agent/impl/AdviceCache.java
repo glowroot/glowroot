@@ -284,7 +284,9 @@ public class AdviceCache {
         private boolean useBootstrapClassLoader(String name) {
             return name.startsWith("java.") || name.startsWith("sun.")
                     || name.startsWith("javax.management.")
-                    || name.startsWith("org.glowroot.agent.plugin.api.");
+                    || name.startsWith("org.glowroot.agent.plugin.api.")
+                    // this is just special case to support running glowroot and jrebel at same time
+                    || name.startsWith("org.zeroturnaround.javarebel.");
         }
 
         private void createPackageIfNecessary(String packageName) {
