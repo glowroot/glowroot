@@ -75,6 +75,12 @@ public class TransactionTypeDao implements TransactionTypeRepository {
         return builder.build();
     }
 
+    @Override
+    public void deleteAll(String serverRollup) throws Exception {
+        // this is not currently supported (to avoid row key range query)
+        throw new UnsupportedOperationException();
+    }
+
     void updateLastCaptureTime(String serverRollup, String transactionType) {
         BoundStatement boundStatement = insertPS.bind();
         boundStatement.setString(0, serverRollup);

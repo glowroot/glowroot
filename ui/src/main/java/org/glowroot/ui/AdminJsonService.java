@@ -26,6 +26,7 @@ import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.RepoAdmin;
 import org.glowroot.storage.repo.TraceRepository;
+import org.glowroot.storage.repo.TransactionTypeRepository;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -38,15 +39,18 @@ class AdminJsonService {
 
     private final AggregateRepository aggregateRepository;
     private final TraceRepository traceRepository;
+    private final TransactionTypeRepository transactionTypeRepository;
     private final GaugeValueRepository gaugeValueRepository;
     private final @Nullable LiveWeavingService liveWeavingService;
     private final RepoAdmin repoAdmin;
 
     AdminJsonService(AggregateRepository aggregateRepository, TraceRepository traceRepository,
+            TransactionTypeRepository transactionTypeRepository,
             GaugeValueRepository gaugeValueRepository,
             @Nullable LiveWeavingService liveWeavingService, RepoAdmin repoAdmin) {
         this.aggregateRepository = aggregateRepository;
         this.traceRepository = traceRepository;
+        this.transactionTypeRepository = transactionTypeRepository;
         this.gaugeValueRepository = gaugeValueRepository;
         this.liveWeavingService = liveWeavingService;
         this.repoAdmin = repoAdmin;
@@ -58,8 +62,9 @@ class AdminJsonService {
                 mapper.readValue(content, ImmutableRequestWithServerRollup.class).serverRollup();
         // TODO optimize by just deleting and re-creating h2 db
         traceRepository.deleteAll(serverRollup);
-        gaugeValueRepository.deleteAll(serverRollup);
         aggregateRepository.deleteAll(serverRollup);
+        transactionTypeRepository.deleteAll(serverRollup);
+        gaugeValueRepository.deleteAll(serverRollup);
         repoAdmin.defrag();
     }
 
