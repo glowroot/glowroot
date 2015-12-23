@@ -26,8 +26,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.MainEntryPoint;
 import org.glowroot.agent.init.GlowrootAgentInit;
@@ -45,23 +43,21 @@ public class LocalContainer implements Container {
 
     private final File baseDir;
     private final boolean deleteBaseDirOnClose;
-    private final boolean shared;
 
     private volatile @Nullable IsolatedWeavingClassLoader isolatedWeavingClassLoader;
     private final @Nullable GrpcServerWrapper server;
     private final @Nullable TraceCollector traceCollector;
+    private final GlowrootAgentInit glowrootAgentInit;
     private final @Nullable ConfigService configService;
-
-    private volatile @Nullable AgentBridge agentBridge;
 
     private volatile @Nullable Thread executingAppThread;
 
     public static LocalContainer create(File baseDir) throws Exception {
-        return new LocalContainer(baseDir, false, false, ImmutableMap.<String, String>of());
+        return new LocalContainer(baseDir, false, ImmutableMap.<String, String>of());
     }
 
-    public LocalContainer(@Nullable File baseDir, boolean shared, boolean fat,
-            Map<String, String> extraProperties) throws Exception {
+    public LocalContainer(@Nullable File baseDir, boolean fat, Map<String, String> extraProperties)
+            throws Exception {
         if (baseDir == null) {
             this.baseDir = TempDirs.createTempDir("glowroot-test-basedir");
             deleteBaseDirOnClose = true;
@@ -69,7 +65,6 @@ public class LocalContainer implements Container {
             this.baseDir = baseDir;
             deleteBaseDirOnClose = false;
         }
-        this.shared = shared;
 
         int collectorPort;
         if (fat) {
@@ -81,21 +76,27 @@ public class LocalContainer implements Container {
             traceCollector = new TraceCollector();
             server = new GrpcServerWrapper(traceCollector, collectorPort);
         }
-        isolatedWeavingClassLoader =
-                new IsolatedWeavingClassLoader(AppUnderTest.class, AgentBridge.class);
-        AgentBridge agentBridge =
-                isolatedWeavingClassLoader.newInstance(AgentBridgeImpl.class, AgentBridge.class);
-        Map<String, String> properties = Maps.newHashMap();
+        isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(AppUnderTest.class);
+        final Map<String, String> properties = Maps.newHashMap();
         properties.put("glowroot.base.dir", this.baseDir.getAbsolutePath());
         if (collectorPort != 0) {
             properties.put("glowroot.collector.host", "localhost");
             properties.put("glowroot.collector.port", Integer.toString(collectorPort));
         }
         properties.putAll(extraProperties);
-        agentBridge.start(properties);
+        // start up in separate thread to avoid the main thread from being capture by netty
+        // ThreadDeathWatcher, which then causes PermGen OOM during maven test
+        Executors.newSingleThreadExecutor().submit(new Callable<Void>() {
+            @Override
+            public @Nullable Void call() throws Exception {
+                Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
+                MainEntryPoint.start(properties);
+                return null;
+            }
+        }).get();
+        glowrootAgentInit = checkNotNull(MainEntryPoint.getGlowrootAgentInit());
         // this is used to set slowThresholdMillis=0
-        agentBridge.resetConfig();
-        this.agentBridge = agentBridge;
+        resetConfig();
         configService = new ConfigServiceImpl(server, false);
     }
 
@@ -146,8 +147,7 @@ public class LocalContainer implements Container {
 
     @Override
     public void checkAndReset() throws Exception {
-        checkNotNull(agentBridge);
-        agentBridge.resetConfig();
+        resetConfig();
         if (traceCollector != null) {
             traceCollector.checkAndResetLogMessages();
         }
@@ -155,32 +155,16 @@ public class LocalContainer implements Container {
 
     @Override
     public void close() throws Exception {
-        close(false);
-    }
-
-    @Override
-    public void close(boolean evenIfShared) throws Exception {
-        checkNotNull(agentBridge);
-        if (shared && !evenIfShared) {
-            // this is the shared container and will be closed at the end of the run
-            ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) LoggerFactory
-                    .getLogger(Logger.ROOT_LOGGER_NAME);
-            // detaching existing CollectorLogbackAppender so that it won't continue to pick up and
-            // report errors that are logged to this Container
-            rootLogger.detachAppender("org.glowroot.agent.init.CollectorLogbackAppender");
-            return;
-        }
-        agentBridge.close();
+        glowrootAgentInit.close();
         if (server != null) {
             server.close();
         }
-        agentBridge.awaitClose();
+        glowrootAgentInit.awaitClose();
         if (deleteBaseDirOnClose) {
             TempDirs.deleteRecursively(baseDir);
         }
         // release class loader to prevent PermGen OOM during maven test
         isolatedWeavingClassLoader = null;
-        agentBridge = null;
     }
 
     public boolean isClosed() {
@@ -202,57 +186,14 @@ public class LocalContainer implements Container {
         }
     }
 
+    private void resetConfig() throws IOException {
+        glowrootAgentInit.getAgentModule().getConfigService().resetAllConfig();
+    }
+
     static int getAvailablePort() throws IOException {
         ServerSocket serverSocket = new ServerSocket(0);
         int port = serverSocket.getLocalPort();
         serverSocket.close();
         return port;
-    }
-
-    public interface AgentBridge {
-        void start(Map<String, String> properties) throws Exception;
-        void resetConfig() throws Exception;
-        void close() throws Exception;
-        void awaitClose() throws Exception;
-    }
-
-    public static class AgentBridgeImpl implements AgentBridge {
-
-        @Override
-        public void start(final Map<String, String> properties) throws Exception {
-            // start up in separate thread to avoid the main thread from being capture by netty
-            // ThreadDeathWatcher, which then causes PermGen OOM during maven test
-            Executors.newSingleThreadExecutor().submit(new Callable<Void>() {
-                @Override
-                public @Nullable Void call() throws Exception {
-                    MainEntryPoint.start(properties);
-                    return null;
-                }
-            }).get();
-        }
-
-        @Override
-        public void resetConfig() throws Exception {
-            GlowrootAgentInit glowrootAgentInit = MainEntryPoint.getGlowrootAgentInit();
-            if (glowrootAgentInit != null) {
-                glowrootAgentInit.getAgentModule().getConfigService().resetAllConfig();
-            }
-        }
-
-        @Override
-        public void close() throws Exception {
-            GlowrootAgentInit glowrootAgentInit = MainEntryPoint.getGlowrootAgentInit();
-            if (glowrootAgentInit != null) {
-                glowrootAgentInit.close();
-            }
-        }
-
-        @Override
-        public void awaitClose() throws Exception {
-            GlowrootAgentInit glowrootAgentInit = MainEntryPoint.getGlowrootAgentInit();
-            if (glowrootAgentInit != null) {
-                glowrootAgentInit.awaitClose();
-            }
-        }
     }
 }

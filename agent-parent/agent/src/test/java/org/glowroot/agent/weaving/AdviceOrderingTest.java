@@ -45,48 +45,48 @@ public class AdviceOrderingTest {
 
     private final Advice advicePriority1 = ImmutableAdvice.builder()
             .pointcut(pointcutPriority1)
-            .pointcutDeclaringClassName("dummy")
-            .pointcutTargetClassName("")
+            .pointcutClassName("")
+            .pointcutMethodDeclaringClassName("")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .build();
 
     private final Advice advicePriority2 = ImmutableAdvice.builder()
             .pointcut(pointcutPriority2)
-            .pointcutDeclaringClassName("dummy")
-            .pointcutTargetClassName("")
+            .pointcutClassName("")
+            .pointcutMethodDeclaringClassName("")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .build();
 
     private final Advice adviceTimerNameA = ImmutableAdvice.builder()
             .pointcut(pointcutTimerNameA)
-            .pointcutDeclaringClassName("dummy")
-            .pointcutTargetClassName("")
+            .pointcutClassName("")
+            .pointcutMethodDeclaringClassName("")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .build();
 
     private final Advice adviceTimerNameB = ImmutableAdvice.builder()
             .pointcut(pointcutTimerNameB)
-            .pointcutDeclaringClassName("dummy")
-            .pointcutTargetClassName("")
+            .pointcutClassName("")
+            .pointcutMethodDeclaringClassName("")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .build();
 
     private final Advice adviceTimerNameEmpty1 = ImmutableAdvice.builder()
             .pointcut(pointcutTimerNameEmpty1)
-            .pointcutDeclaringClassName("dummy")
-            .pointcutTargetClassName("")
+            .pointcutClassName("")
+            .pointcutMethodDeclaringClassName("")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .build();
 
     private final Advice adviceTimerNameEmpty2 = ImmutableAdvice.builder()
             .pointcut(pointcutTimerNameEmpty2)
-            .pointcutDeclaringClassName("dummy")
-            .pointcutTargetClassName("")
+            .pointcutClassName("")
+            .pointcutMethodDeclaringClassName("")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .build();

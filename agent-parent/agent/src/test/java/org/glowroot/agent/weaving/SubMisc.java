@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,4 @@
  */
 package org.glowroot.agent.weaving;
 
-public class SubBasicMisc extends BasicMisc implements Misc {
-
-    @Override
-    void superBasic() {}
-}
+public interface SubMisc extends Misc {}

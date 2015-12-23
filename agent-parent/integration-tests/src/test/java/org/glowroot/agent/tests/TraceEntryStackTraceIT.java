@@ -39,7 +39,7 @@ public class TraceEntryStackTraceIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.getSharedContainer();
+        container = Containers.create();
     }
 
     @AfterClass

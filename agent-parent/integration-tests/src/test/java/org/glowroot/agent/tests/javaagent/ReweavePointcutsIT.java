@@ -32,7 +32,7 @@ public class ReweavePointcutsIT extends ConfiguredInstrumentationIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.getSharedJavaagentContainer();
+        container = Containers.createJavaagent();
         // make sure the classes are loaded once before re-weaving
         container.execute(ShouldExecute1.class);
         container.execute(ShouldExecuteWithReturn.class);

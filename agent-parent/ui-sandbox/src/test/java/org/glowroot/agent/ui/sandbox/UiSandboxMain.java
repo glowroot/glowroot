@@ -54,15 +54,14 @@ public class UiSandboxMain {
                     Charsets.UTF_8);
         }
         if (useJavaagent) {
-            container =
-                    new JavaagentContainer(baseDir, false, true, false, ImmutableList.<String>of());
+            container = new JavaagentContainer(baseDir, true, false, ImmutableList.<String>of());
         } else if (useCentral) {
-            container = new LocalContainer(baseDir, false, false,
+            container = new LocalContainer(baseDir, false,
                     ImmutableMap.of("glowroot.server.id", "UI Sandbox",
                             "glowroot.collector.host", "localhost",
                             "glowroot.collector.port", "8181"));
         } else {
-            container = new LocalContainer(baseDir, false, true, ImmutableMap.<String, String>of());
+            container = new LocalContainer(baseDir, true, ImmutableMap.<String, String>of());
         }
         container.executeNoExpectedTrace(GenerateTraces.class);
     }

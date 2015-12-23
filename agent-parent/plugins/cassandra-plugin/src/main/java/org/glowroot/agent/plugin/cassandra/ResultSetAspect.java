@@ -172,7 +172,7 @@ public class ResultSetAspect {
     }
 
     @Pointcut(className = "com.datastax.driver.core.ResultSetFuture",
-            declaringClassName = "java.util.concurrent.Future", methodName = "get",
+            methodDeclaringClassName = "java.util.concurrent.Future", methodName = "get",
             methodParameterTypes = {".."})
     public static class FutureGetAdvice {
         @OnBefore

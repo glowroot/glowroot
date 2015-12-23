@@ -444,6 +444,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$ClassMetaHolder");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$MethodMetaHolder");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer");
+        types.add("org.glowroot.agent.weaving.ClassAnalyzer$AnalyzedMethodKey");
         types.add("org.glowroot.agent.weaving.ClassLoaders");
         types.add("org.glowroot.agent.weaving.ClassLoaders$LazyDefinedClass");
         types.add("org.glowroot.agent.weaving.ClassNames");
@@ -498,7 +499,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.WeaverImpl$JSRInlinerClassVisitor");
         types.add("org.glowroot.agent.weaving.WeavingClassFileTransformer");
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor");
-        types.add("org.glowroot.agent.weaving.WeavingClassVisitor$AnalyzedMethodKey");
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$InitMixins");
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$MethodMetaGroup");
         types.add("org.glowroot.agent.weaving.WeavingMethodVisitor");

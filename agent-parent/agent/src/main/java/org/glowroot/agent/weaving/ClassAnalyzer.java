@@ -18,19 +18,23 @@ package org.glowroot.agent.weaving;
 import java.lang.reflect.Modifier;
 import java.security.CodeSource;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.immutables.value.Value;
 import org.objectweb.asm.Type;
 
 import org.glowroot.agent.weaving.AnalyzedWorld.ParseContext;
@@ -52,10 +56,10 @@ class ClassAnalyzer {
 
     private final ImmutableSet<String> superClassNames;
 
-    private final boolean weavingDefinitelyRequired;
     private final boolean shortCircuitBeforeAnalyzeMethods;
 
     private @MonotonicNonNull Map<String, List<Advice>> methodAdvisors;
+    private @MonotonicNonNull List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice;
 
     ClassAnalyzer(ThinClass thinClass, List<Advice> advisors, List<ShimType> shimTypes,
             List<MixinType> mixinTypes, @Nullable ClassLoader loader, AnalyzedWorld analyzedWorld,
@@ -80,7 +84,6 @@ class ClassAnalyzer {
             matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className,
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
             analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
-            weavingDefinitelyRequired = false;
             shortCircuitBeforeAnalyzeMethods = adviceMatchers.isEmpty();
         } else {
             ParseContext parseContext = ImmutableParseContext.of(className, codeSource);
@@ -105,10 +108,9 @@ class ClassAnalyzer {
             matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className, superAnalyzedHierarchy,
                     interfaceAnalyzedHierarchy);
             analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
-            weavingDefinitelyRequired = hasSuperAdvice(superAnalyzedClasses)
-                    || !matchedShimTypes.isEmpty() || !matchedMixinTypes.isEmpty();
             shortCircuitBeforeAnalyzeMethods =
-                    !weavingDefinitelyRequired && adviceMatchers.isEmpty();
+                    !hasSuperAdvice(superAnalyzedClasses) && matchedShimTypes.isEmpty()
+                            && matchedMixinTypes.isEmpty() && adviceMatchers.isEmpty();
         }
         Set<String> superClassNames = Sets.newHashSet();
         superClassNames.add(className);
@@ -130,14 +132,19 @@ class ClassAnalyzer {
                 methodAdvisors.put(thinMethod.name() + thinMethod.desc(), advisors);
             }
         }
+        AnalyzedClass mostlyAnalyzedClass = analyzedClassBuilder.build();
+        methodsThatOnlyNowFulfillAdvice = getMethodsThatOnlyNowFulfillAdvice(mostlyAnalyzedClass);
+        analyzedClassBuilder.addAllAnalyzedMethods(methodsThatOnlyNowFulfillAdvice);
     }
 
     boolean isWeavingRequired() {
         checkNotNull(methodAdvisors);
+        checkNotNull(methodsThatOnlyNowFulfillAdvice);
         if (Modifier.isInterface(thinClass.access())) {
             return false;
         }
-        return weavingDefinitelyRequired || !methodAdvisors.isEmpty();
+        return !methodAdvisors.isEmpty() || !methodsThatOnlyNowFulfillAdvice.isEmpty()
+                || !matchedShimTypes.isEmpty() || !matchedMixinTypes.isEmpty();
     }
 
     ImmutableList<ShimType> getMatchedShimTypes() {
@@ -164,30 +171,47 @@ class ClassAnalyzer {
         return analyzedClassBuilder.build();
     }
 
+    List<AnalyzedMethod> getMethodsThatOnlyNowFulfillAdvice() {
+        return checkNotNull(methodsThatOnlyNowFulfillAdvice);
+    }
+
     private List<Advice> analyzeMethod(ThinMethod thinMethod) {
         List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(thinMethod.desc()));
         Type returnType = Type.getReturnType(thinMethod.desc());
         List<String> methodAnnotations = thinMethod.annotations();
         List<Advice> matchingAdvisors = getMatchingAdvisors(thinMethod.name(), methodAnnotations,
                 parameterTypes, returnType, thinMethod.access());
-        if (!matchingAdvisors.isEmpty()) {
-            ImmutableAnalyzedMethod.Builder builder = ImmutableAnalyzedMethod.builder();
-            builder.name(thinMethod.name());
-            for (Type parameterType : parameterTypes) {
-                builder.addParameterTypes(parameterType.getClassName());
-            }
-            builder.returnType(returnType.getClassName())
-                    .modifiers(thinMethod.access())
-                    .signature(thinMethod.signature());
-            for (String exception : thinMethod.exceptions()) {
-                builder.addExceptions(ClassNames.fromInternalName(exception));
-            }
-            builder.addAllAdvisors(matchingAdvisors);
-            analyzedClassBuilder.addAnalyzedMethods(builder.build());
+        if (matchingAdvisors.isEmpty()) {
+            return ImmutableList.of();
         }
+        ImmutableAnalyzedMethod.Builder builder = ImmutableAnalyzedMethod.builder();
+        builder.name(thinMethod.name());
+        for (Type parameterType : parameterTypes) {
+            builder.addParameterTypes(parameterType.getClassName());
+        }
+        builder.returnType(returnType.getClassName())
+                .modifiers(thinMethod.access())
+                .signature(thinMethod.signature());
+        for (String exception : thinMethod.exceptions()) {
+            builder.addExceptions(ClassNames.fromInternalName(exception));
+        }
+        List<Advice> declaredOnlyMatchingAdvisors = Lists.newArrayList();
+        for (Iterator<Advice> i = matchingAdvisors.iterator(); i.hasNext();) {
+            Advice advice = i.next();
+            if (advice.pointcutClassName().equals(advice.pointcutMethodDeclaringClassName())) {
+                continue;
+            } else if (!isTargetClassNameMatch(advice, superClassNames)) {
+                declaredOnlyMatchingAdvisors.add(advice);
+                i.remove();
+            }
+        }
+        builder.addAllAdvisors(matchingAdvisors);
+        builder.addAllDeclaredOnlyAdvisors(declaredOnlyMatchingAdvisors);
+        analyzedClassBuilder.addAnalyzedMethods(builder.build());
         return matchingAdvisors;
     }
 
+    // returns mutable list if non-empty
     private List<Advice> getMatchingAdvisors(String methodName, List<String> methodAnnotations,
             List<Type> parameterTypes, Type returnType, int modifiers) {
         Set<Advice> matchingAdvisors = Sets.newHashSet();
@@ -201,8 +225,8 @@ class ClassAnalyzer {
         for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
             for (AnalyzedMethod analyzedMethod : superAnalyzedClass.analyzedMethods()) {
                 if (analyzedMethod.isOverriddenBy(methodName, parameterTypes)) {
-                    addToMatchingAdvisors(matchingAdvisors, analyzedMethod.advisors(),
-                            superClassNames);
+                    matchingAdvisors.addAll(analyzedMethod.advisors());
+                    matchingAdvisors.addAll(analyzedMethod.declaredOnlyAdvisors());
                 }
             }
         }
@@ -210,15 +234,76 @@ class ClassAnalyzer {
         return sortAdvisors(matchingAdvisors);
     }
 
-    static void addToMatchingAdvisors(Set<Advice> matchingAdvisors, List<Advice> advisors,
+    private List<AnalyzedMethod> getMethodsThatOnlyNowFulfillAdvice(AnalyzedClass analyzedClass) {
+        if (analyzedClass.isInterface() || analyzedClass.isAbstract()) {
+            ImmutableMap.of();
+        }
+        Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets =
+                getInheritedInterfaceMethodsWithAdvice();
+        for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
+            matchingAdvisorSets.remove(AnalyzedMethodKey.wrap(analyzedMethod));
+        }
+        removeAdviceAlreadyWovenIntoSuperClass(matchingAdvisorSets);
+        List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice = Lists.newArrayList();
+        for (Entry<AnalyzedMethodKey, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
+            AnalyzedMethod inheritedMethod = entry.getKey().analyzedMethod();
+            Set<Advice> advisors = entry.getValue();
+            if (!advisors.isEmpty()) {
+                methodsThatOnlyNowFulfillAdvice.add(ImmutableAnalyzedMethod.builder()
+                        .copyFrom(inheritedMethod)
+                        .advisors(advisors)
+                        .declaredOnlyAdvisors(ImmutableList.<Advice>of())
+                        .build());
+            }
+        }
+        return methodsThatOnlyNowFulfillAdvice;
+    }
+
+    private Map<AnalyzedMethodKey, Set<Advice>> getInheritedInterfaceMethodsWithAdvice() {
+        Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets = Maps.newHashMap();
+        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
+            for (AnalyzedMethod superAnalyzedMethod : superAnalyzedClass.analyzedMethods()) {
+                AnalyzedMethodKey key = AnalyzedMethodKey.wrap(superAnalyzedMethod);
+                Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(key);
+                if (matchingAdvisorSet == null) {
+                    matchingAdvisorSet = Sets.newHashSet();
+                    matchingAdvisorSets.put(key, matchingAdvisorSet);
+                }
+                if (superAnalyzedClass.isInterface()) {
+                    addToMatchingAdvisorsIfTargetClassNameMatch(matchingAdvisorSet,
+                            superAnalyzedMethod.advisors(), superClassNames);
+                } else {
+                    addToMatchingAdvisorsIfTargetClassNameMatch(matchingAdvisorSet,
+                            superAnalyzedMethod.declaredOnlyAdvisors(), superClassNames);
+                }
+            }
+        }
+        return matchingAdvisorSets;
+    }
+
+    private void removeAdviceAlreadyWovenIntoSuperClass(
+            Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets) {
+        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
+            if (superAnalyzedClass.isInterface()) {
+                continue;
+            }
+            for (AnalyzedMethod superAnalyzedMethod : superAnalyzedClass.analyzedMethods()) {
+                Set<Advice> matchingAdvisorSet =
+                        matchingAdvisorSets.get(AnalyzedMethodKey.wrap(superAnalyzedMethod));
+                if (matchingAdvisorSet == null) {
+                    continue;
+                }
+                matchingAdvisorSet.removeAll(superAnalyzedMethod.advisors());
+            }
+        }
+    }
+
+    private static void addToMatchingAdvisorsIfTargetClassNameMatch(Set<Advice> matchingAdvisors,
+            List<Advice> advisors,
             Set<String> superClassNames) {
         for (Advice advice : advisors) {
-            if (advice.pointcut().declaringClassName().equals("")) {
+            if (isTargetClassNameMatch(advice, superClassNames)) {
                 matchingAdvisors.add(advice);
-            } else {
-                if (isTargetClassNameMatch(advice, superClassNames)) {
-                    matchingAdvisors.add(advice);
-                }
             }
         }
     }
@@ -276,27 +361,47 @@ class ClassAnalyzer {
     }
 
     private static boolean isTargetClassNameMatch(Advice advice, Set<String> superClassNames) {
-        Pattern targetClassNamePattern = advice.pointcutTargetClassNamePattern();
-        if (targetClassNamePattern == null) {
-            return advice.pointcutTargetClassName().isEmpty()
-                    || superClassNames.contains(advice.pointcutTargetClassName());
+        Pattern classNamePattern = advice.pointcutClassNamePattern();
+        if (classNamePattern == null) {
+            String className = advice.pointcutClassName();
+            return className.isEmpty() || superClassNames.contains(className);
         }
         for (String superClassName : superClassNames) {
-            if (targetClassNamePattern.matcher(superClassName).matches()) {
+            if (classNamePattern.matcher(superClassName).matches()) {
                 return true;
             }
         }
         return false;
     }
 
+    // returns mutable list if non-empty
     private static List<Advice> sortAdvisors(Set<Advice> matchingAdvisors) {
         switch (matchingAdvisors.size()) {
             case 0:
                 return ImmutableList.of();
             case 1:
-                return ImmutableList.copyOf(matchingAdvisors);
+                return Lists.newArrayList(matchingAdvisors);
             default:
-                return Advice.ordering.immutableSortedCopy(matchingAdvisors);
+                return Advice.ordering.sortedCopy(matchingAdvisors);
+        }
+    }
+
+    // AnalyzedMethod equivalence defined only in terms of method name and parameter types
+    // so that overridden methods will be equivalent
+    @Value.Immutable
+    abstract static class AnalyzedMethodKey {
+
+        abstract String name();
+        abstract ImmutableList<String> parameterTypes();
+        @Value.Auxiliary
+        abstract AnalyzedMethod analyzedMethod();
+
+        private static AnalyzedMethodKey wrap(AnalyzedMethod analyzedMethod) {
+            return ImmutableAnalyzedMethodKey.builder()
+                    .name(analyzedMethod.name())
+                    .addAllParameterTypes(analyzedMethod.parameterTypes())
+                    .analyzedMethod(analyzedMethod)
+                    .build();
         }
     }
 }

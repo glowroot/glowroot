@@ -39,7 +39,7 @@ public class AnalyzedClassPlanBeeIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.getSharedJavaagentContainer();
+        container = Containers.createJavaagent();
     }
 
     @AfterClass

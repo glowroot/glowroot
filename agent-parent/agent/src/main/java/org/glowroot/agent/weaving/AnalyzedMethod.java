@@ -42,6 +42,9 @@ abstract class AnalyzedMethod {
     // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
     abstract ImmutableList<String> exceptions();
     abstract ImmutableList<Advice> advisors();
+    // this is for advisors which match using @Pointcut methodDeclaringClassName but do not match
+    // using @Pointcut className
+    abstract ImmutableList<Advice> declaredOnlyAdvisors();
 
     // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
     String getDesc() {

@@ -39,10 +39,10 @@ public abstract class Advice {
 
     abstract Pointcut pointcut();
     abstract Type adviceType();
-    abstract String pointcutDeclaringClassName();
-    abstract String pointcutTargetClassName();
-    abstract @Nullable Pattern pointcutDeclaringClassNamePattern();
-    abstract @Nullable Pattern pointcutTargetClassNamePattern();
+    abstract String pointcutClassName();
+    abstract @Nullable Pattern pointcutClassNamePattern();
+    abstract String pointcutMethodDeclaringClassName();
+    abstract @Nullable Pattern pointcutMethodDeclaringClassNamePattern();
     abstract @Nullable Pattern pointcutMethodNamePattern();
     abstract @Nullable Type travelerType();
     abstract @Nullable Method isEnabledAdvice();

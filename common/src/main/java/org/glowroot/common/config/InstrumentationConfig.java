@@ -48,7 +48,7 @@ public abstract class InstrumentationConfig {
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
-    public String declaringClassName() {
+    public String methodDeclaringClassName() {
         return "";
     }
 
@@ -154,7 +154,7 @@ public abstract class InstrumentationConfig {
         Hasher hasher = Hashing.md5().newHasher()
                 .putString(className(), Charsets.UTF_8)
                 .putString(classAnnotation(), Charsets.UTF_8)
-                .putString(declaringClassName(), Charsets.UTF_8)
+                .putString(methodDeclaringClassName(), Charsets.UTF_8)
                 .putString(methodName(), Charsets.UTF_8)
                 .putString(methodAnnotation(), Charsets.UTF_8)
                 .putInt(methodParameterTypes().size());

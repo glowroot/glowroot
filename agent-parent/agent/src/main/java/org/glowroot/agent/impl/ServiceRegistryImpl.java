@@ -26,7 +26,6 @@ import org.glowroot.agent.api.internal.GlowrootService;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.internal.ServiceRegistry;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
-import org.glowroot.common.util.OnlyUsedByTests;
 
 public class ServiceRegistryImpl implements ServiceRegistry {
 
@@ -72,16 +71,10 @@ public class ServiceRegistryImpl implements ServiceRegistry {
         return INSTANCE == null ? null : INSTANCE.glowrootService;
     }
 
-    public static void init(GlowrootService glowrootService,
-            TransactionService transactionService, ConfigServiceFactory configServiceFactory)
-                    throws Exception {
+    public static void init(GlowrootService glowrootService, TransactionService transactionService,
+            ConfigServiceFactory configServiceFactory) throws Exception {
         INSTANCE =
                 new ServiceRegistryImpl(glowrootService, transactionService, configServiceFactory);
-    }
-
-    @OnlyUsedByTests
-    public static void reopen(ServiceRegistryImpl pluginServiceRegistry) throws Exception {
-        INSTANCE = pluginServiceRegistry;
     }
 
     public interface ConfigServiceFactory {

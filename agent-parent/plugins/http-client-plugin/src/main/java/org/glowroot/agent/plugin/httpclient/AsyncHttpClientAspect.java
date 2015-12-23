@@ -107,7 +107,7 @@ public class AsyncHttpClientAspect {
     }
 
     @Pointcut(className = "com.ning.http.client.ListenableFuture",
-            declaringClassName = "java.util.concurrent.Future", methodName = "get",
+            methodDeclaringClassName = "java.util.concurrent.Future", methodName = "get",
             methodParameterTypes = {".."})
     public static class FutureGetAdvice {
         @OnBefore

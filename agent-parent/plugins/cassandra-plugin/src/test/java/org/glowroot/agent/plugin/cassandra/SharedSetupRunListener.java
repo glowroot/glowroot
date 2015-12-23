@@ -29,7 +29,7 @@ public class SharedSetupRunListener extends RunListener {
     public static Container getContainer() throws Exception {
         if (sharedContainer == null) {
             startCassandra();
-            Container container = Containers.getSharedContainer();
+            Container container = Containers.create();
             return container;
         }
         return sharedContainer;
@@ -45,7 +45,7 @@ public class SharedSetupRunListener extends RunListener {
     @Override
     public void testRunStarted(Description description) throws Exception {
         startCassandra();
-        sharedContainer = Containers.getSharedContainer();
+        sharedContainer = Containers.create();
     }
 
     @Override

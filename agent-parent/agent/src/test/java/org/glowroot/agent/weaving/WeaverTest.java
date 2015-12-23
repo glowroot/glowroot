@@ -91,6 +91,8 @@ import org.glowroot.agent.weaving.SomeAspect.Shimmy;
 import org.glowroot.agent.weaving.SomeAspect.StaticAdvice;
 import org.glowroot.agent.weaving.SomeAspect.SuperBasicAdvice;
 import org.glowroot.agent.weaving.SomeAspect.TargetedAdvice;
+import org.glowroot.agent.weaving.SomeAspect.TargetedFromAbstractBaseAdvice;
+import org.glowroot.agent.weaving.SomeAspect.TargetedFromSubAbstractBaseAdvice;
 import org.glowroot.agent.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice;
 import org.glowroot.agent.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice2;
 import org.glowroot.agent.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice3;
@@ -675,7 +677,7 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
     }
 
-    // ===================== @Pointcut.classHierarchyRestriction =====================
+    // ===================== @Pointcut.methodDeclaringClassName =====================
 
     @Test
     public void shouldExecuteTargetedAdvice() throws Exception {
@@ -707,6 +709,90 @@ public class WeaverTest {
     public void shouldNotExecuteNotTargetedAdvice() throws Exception {
         // given
         Misc test = newWovenObject(NestingMisc.class, Misc.class, TargetedAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldExecuteTargetedAdviceFromAbstractBase() throws Exception {
+        // given
+        SuperBasic test = newWovenObject(BasicMisc.class, SuperBasic.class,
+                TargetedFromAbstractBaseAdvice.class);
+        // when
+        test.callSuperBasic();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldExecuteSubTargetedAdviceFromAbstractBase() throws Exception {
+        // given
+        SuperBasic test = newWovenObject(SubBasicMisc.class, SuperBasic.class,
+                TargetedFromAbstractBaseAdvice.class);
+        // when
+        test.callSuperBasic();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldNotExecuteNotTargetedAdviceFromAbstractBase() throws Exception {
+        // given
+        SuperBasic test = newWovenObject(SuperBasicMisc.class, SuperBasic.class,
+                TargetedFromAbstractBaseAdvice.class);
+        // when
+        test.callSuperBasic();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldExecuteSubTargetedAdviceFromSubAbstractBase() throws Exception {
+        // given
+        Misc test = newWovenObject(SubBasicMisc.class, Misc.class,
+                TargetedFromSubAbstractBaseAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldNotExecuteTargetedAdviceFromSubAbstractBase() throws Exception {
+        // given
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                TargetedFromSubAbstractBaseAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldNotExecuteNotTargetedAdviceFromSubAbstractBase() throws Exception {
+        // given
+        Misc test = newWovenObject(NestingMisc.class, Misc.class,
+                TargetedFromSubAbstractBaseAdvice.class);
         // when
         test.execute1();
         // then

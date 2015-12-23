@@ -45,7 +45,7 @@ public class Slf4jMarkerIT {
         // unshaded doesn't work because glowroot loads slf4j classes before the Weaver is
         // registered, so the slf4j classes don't have a chance to get woven
         Assume.assumeTrue(Slf4jIT.isShaded());
-        container = Containers.getSharedContainer();
+        container = Containers.create();
     }
 
     @AfterClass

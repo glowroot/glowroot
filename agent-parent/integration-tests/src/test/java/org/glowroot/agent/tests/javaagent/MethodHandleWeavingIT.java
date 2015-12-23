@@ -43,7 +43,7 @@ public class MethodHandleWeavingIT {
     @BeforeClass
     public static void setUp() throws Exception {
         assumeJdk7();
-        container = Containers.getSharedJavaagentContainer();
+        container = Containers.createJavaagent();
     }
 
     @AfterClass

@@ -50,15 +50,6 @@
     <plugins>
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <properties>
-            <property>
-              <!-- this is just a test performance optimization -->
-              <name>listener</name>
-              <value>org.glowroot.agent.it.harness.SharedContainerRunListener</value>
-            </property>
-          </properties>
-        </configuration>
         <executions>
           <execution>
             <goals>

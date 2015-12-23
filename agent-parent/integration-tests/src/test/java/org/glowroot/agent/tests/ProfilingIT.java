@@ -40,7 +40,7 @@ public class ProfilingIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.getSharedContainer();
+        container = Containers.create();
         // capture one header to warm up the system, otherwise sometimes there are delays in class
         // loading and the profiler captures too many or too few samples
         container.execute(ShouldGenerateTraceWithProfile.class);

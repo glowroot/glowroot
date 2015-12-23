@@ -48,7 +48,7 @@ public class JettyHandlerIT {
     @BeforeClass
     public static void setUp() throws Exception {
         assumeJdk8();
-        container = Containers.getSharedContainer();
+        container = Containers.create();
     }
 
     @AfterClass

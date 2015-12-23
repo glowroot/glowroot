@@ -38,7 +38,7 @@ public class MethodHandleRelatedCrashIT {
     @BeforeClass
     public static void setUp() throws Exception {
         assumeJdk8();
-        container = Containers.getSharedJavaagentContainer();
+        container = Containers.createJavaagent();
     }
 
     @AfterClass

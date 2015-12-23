@@ -17,10 +17,8 @@ package org.glowroot.agent.weaving;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -30,7 +28,6 @@ import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -100,8 +97,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private final @Nullable ClassLoader loader;
 
     private final AnalyzedClass analyzedClass;
-    private final List<AnalyzedClass> superAnalyzedClasses;
-    private final Set<String> superClassNames;
+    private final List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice;
 
     private final List<ShimType> shimTypes;
     private final List<MixinType> mixinTypes;
@@ -122,16 +118,15 @@ class WeavingClassVisitor extends ClassVisitor {
     private int methodMetaCounter;
 
     public WeavingClassVisitor(ClassWriter cw, @Nullable ClassLoader loader,
-            AnalyzedClass analyzedClass, List<AnalyzedClass> superAnalyzedClasses,
-            Set<String> superClassNames, List<ShimType> shimTypes, List<MixinType> mixinTypes,
+            AnalyzedClass analyzedClass, List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice,
+            List<ShimType> shimTypes, List<MixinType> mixinTypes,
             Map<String, List<Advice>> methodAdvisors, AnalyzedWorld analyzedWorld,
             boolean timerWrapperMethods) {
         super(ASM5, cw);
         this.cw = cw;
         this.loader = loader;
         this.analyzedClass = analyzedClass;
-        this.superAnalyzedClasses = superAnalyzedClasses;
-        this.superClassNames = superClassNames;
+        this.methodsThatOnlyNowFulfillAdvice = methodsThatOnlyNowFulfillAdvice;
         this.shimTypes = shimTypes;
         this.mixinTypes = mixinTypes;
         this.methodAdvisors = methodAdvisors;
@@ -182,7 +177,9 @@ class WeavingClassVisitor extends ClassVisitor {
         for (MixinType mixinType : mixinTypes) {
             addMixin(mixinType);
         }
-        handleInheritedMethodsThatNowFulfillAdvice(analyzedClass);
+        for (AnalyzedMethod methodThatOnlyNowFulfillAdvice : methodsThatOnlyNowFulfillAdvice) {
+            overrideAndWeaveInheritedMethod(methodThatOnlyNowFulfillAdvice);
+        }
         // handle metas at end, since handleInheritedMethodsThatNowFulfillAdvice()
         // above could add new metas
         handleMetaHolders();
@@ -546,65 +543,7 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     @RequiresNonNull("type")
-    private void handleInheritedMethodsThatNowFulfillAdvice(AnalyzedClass analyzedClass) {
-        if (analyzedClass.isInterface() || analyzedClass.isAbstract()) {
-            return;
-        }
-        Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets =
-                getInheritedInterfaceMethodsWithAdvice();
-        for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
-            matchingAdvisorSets.remove(AnalyzedMethodKey.wrap(analyzedMethod));
-        }
-        removeAdviceAlreadyWovenIntoSuperClass(matchingAdvisorSets);
-        for (Entry<AnalyzedMethodKey, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
-            AnalyzedMethod inheritedMethod = entry.getKey().analyzedMethod();
-            Set<Advice> advisors = entry.getValue();
-            if (!advisors.isEmpty()) {
-                overrideAndWeaveInheritedMethod(analyzedClass, inheritedMethod, advisors);
-            }
-        }
-    }
-
-    private Map<AnalyzedMethodKey, Set<Advice>> getInheritedInterfaceMethodsWithAdvice() {
-        Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets = Maps.newHashMap();
-        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
-            if (!superAnalyzedClass.isInterface()) {
-                continue;
-            }
-            for (AnalyzedMethod superAnalyzedMethod : superAnalyzedClass.analyzedMethods()) {
-                AnalyzedMethodKey key = AnalyzedMethodKey.wrap(superAnalyzedMethod);
-                Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(key);
-                if (matchingAdvisorSet == null) {
-                    matchingAdvisorSet = Sets.newHashSet();
-                    matchingAdvisorSets.put(key, matchingAdvisorSet);
-                }
-                ClassAnalyzer.addToMatchingAdvisors(matchingAdvisorSet,
-                        superAnalyzedMethod.advisors(), superClassNames);
-            }
-        }
-        return matchingAdvisorSets;
-    }
-
-    private void removeAdviceAlreadyWovenIntoSuperClass(
-            Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets) {
-        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
-            if (superAnalyzedClass.isInterface()) {
-                continue;
-            }
-            for (AnalyzedMethod superAnalyzedMethod : superAnalyzedClass.analyzedMethods()) {
-                Set<Advice> matchingAdvisorSet =
-                        matchingAdvisorSets.get(AnalyzedMethodKey.wrap(superAnalyzedMethod));
-                if (matchingAdvisorSet == null) {
-                    continue;
-                }
-                matchingAdvisorSet.removeAll(superAnalyzedMethod.advisors());
-            }
-        }
-    }
-
-    @RequiresNonNull("type")
-    private void overrideAndWeaveInheritedMethod(AnalyzedClass analyzedClass,
-            AnalyzedMethod inheritedMethod, Collection<Advice> matchingAdvisors) {
+    private void overrideAndWeaveInheritedMethod(AnalyzedMethod inheritedMethod) {
         String superName = analyzedClass.superName();
         // superName is null only for java.lang.Object which doesn't inherit anything
         // so safe to assume superName not null here
@@ -615,7 +554,7 @@ class WeavingClassVisitor extends ClassVisitor {
         }
         MethodVisitor mv =
                 visitMethodWithAdvice(ACC_PUBLIC, inheritedMethod.name(), inheritedMethod.getDesc(),
-                        inheritedMethod.signature(), exceptions, matchingAdvisors);
+                        inheritedMethod.signature(), exceptions, inheritedMethod.advisors());
         checkNotNull(mv);
         GeneratorAdapter mg = new GeneratorAdapter(mv, ACC_PUBLIC, inheritedMethod.name(),
                 inheritedMethod.getDesc());
@@ -686,24 +625,5 @@ class WeavingClassVisitor extends ClassVisitor {
         ImmutableList<Type> methodParameterTypes();
         int uniqueNum();
         ImmutableSet<Type> methodMetaTypes();
-    }
-
-    // AnalyzedMethod equivalence defined only in terms of method name and parameter types
-    // so that overridden methods will be equivalent
-    @Value.Immutable
-    abstract static class AnalyzedMethodKey {
-
-        abstract String name();
-        abstract ImmutableList<String> parameterTypes();
-        @Value.Auxiliary
-        abstract AnalyzedMethod analyzedMethod();
-
-        private static AnalyzedMethodKey wrap(AnalyzedMethod analyzedMethod) {
-            return ImmutableAnalyzedMethodKey.builder()
-                    .name(analyzedMethod.name())
-                    .addAllParameterTypes(analyzedMethod.parameterTypes())
-                    .analyzedMethod(analyzedMethod)
-                    .build();
-        }
     }
 }

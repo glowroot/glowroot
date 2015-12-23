@@ -142,7 +142,7 @@ public class WeaverImpl implements Weaver {
                 loader, codeSource, className);
         WeavingClassVisitor cv =
                 new WeavingClassVisitor(cw, loader, classAnalyzer.getAnalyzedClass(),
-                        classAnalyzer.getSuperAnalyzedClasses(), classAnalyzer.getSuperClassNames(),
+                        classAnalyzer.getMethodsThatOnlyNowFulfillAdvice(),
                         classAnalyzer.getMatchedShimTypes(), classAnalyzer.getMatchedMixinTypes(),
                         classAnalyzer.getMethodAdvisors(), analyzedWorld, timerWrapperMethods);
         ClassReader cr = new ClassReader(maybeFelixBytes == null ? classBytes : maybeFelixBytes);

@@ -149,9 +149,9 @@ public class AgentModule {
                 weavingTimerService, timerWrapperMethods);
 
         if (instrumentation == null) {
-            // instrumentation is null when debugging with IsolatedWeavingClassLoader
+            // instrumentation is null when debugging with LocalContainer
             IsolatedWeavingClassLoader isolatedWeavingClassLoader =
-                    (IsolatedWeavingClassLoader) AgentModule.class.getClassLoader();
+                    (IsolatedWeavingClassLoader) Thread.currentThread().getContextClassLoader();
             checkNotNull(isolatedWeavingClassLoader);
             isolatedWeavingClassLoader.setWeaver(weaver);
             jvmRetransformClassesSupported = false;

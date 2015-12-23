@@ -37,6 +37,4 @@ public interface Container {
     void checkAndReset() throws Exception;
 
     void close() throws Exception;
-
-    void close(boolean evenIfShared) throws Exception;
 }

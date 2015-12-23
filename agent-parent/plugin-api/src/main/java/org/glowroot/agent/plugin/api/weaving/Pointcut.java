@@ -35,7 +35,7 @@ public @interface Pointcut {
     // matching com.yourcompany.*
     // also useful for pointcut on java.util.concurrent.Future.get(), but only for classes
     // under com.ning.http.client.ListenableFuture
-    String declaringClassName() default "";
+    String methodDeclaringClassName() default "";
     /**
      * | and * can be used for limited regular expressions. Full regular expressions can be used by
      * starting and ending methodName with /.

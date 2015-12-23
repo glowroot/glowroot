@@ -32,21 +32,13 @@ public class Agent {
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Agent.class);
 
-    private static final TransactionService transactionService;
-
-    private static final @Nullable ServiceRegistry serviceRegistry;
+    private static final Class<?> registryClass;
+    private static final Method getInstanceMethod;
 
     static {
         try {
-            Class<?> registryClass =
-                    Class.forName("org.glowroot.agent.impl.ServiceRegistryImpl");
-            Method getInstanceMethod = registryClass.getMethod("getInstance");
-            serviceRegistry = (ServiceRegistry) getInstanceMethod.invoke(null);
-            if (serviceRegistry == null) {
-                transactionService = NopTransactionService.INSTANCE;
-            } else {
-                transactionService = serviceRegistry.getTransactionService();
-            }
+            registryClass = Class.forName("org.glowroot.agent.impl.ServiceRegistryImpl");
+            getInstanceMethod = registryClass.getMethod("getInstance");
         } catch (Exception e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
@@ -63,7 +55,19 @@ public class Agent {
      * looking it up every time it is needed (which is often).
      */
     public static TransactionService getTransactionService() {
-        return transactionService;
+        ServiceRegistry serviceRegistry;
+        try {
+            serviceRegistry = (ServiceRegistry) getInstanceMethod.invoke(null);
+        } catch (Exception e) {
+            // this really really really shouldn't happen
+            logger.error(e.getMessage(), e);
+            return NopTransactionService.INSTANCE;
+        }
+        if (serviceRegistry == null) {
+            return NopTransactionService.INSTANCE;
+        } else {
+            return serviceRegistry.getTransactionService();
+        }
     }
 
     /**
@@ -73,8 +77,19 @@ public class Agent {
      * looking it up every time it is needed (which is often).
      */
     public static ConfigService getConfigService(String pluginId) {
-        return serviceRegistry == null ? NopConfigService.INSTANCE
-                : serviceRegistry.getConfigService(pluginId);
+        ServiceRegistry serviceRegistry;
+        try {
+            serviceRegistry = (ServiceRegistry) getInstanceMethod.invoke(null);
+        } catch (Exception e) {
+            // this really really really shouldn't happen
+            logger.error(e.getMessage(), e);
+            return NopConfigService.INSTANCE;
+        }
+        if (serviceRegistry == null) {
+            return NopConfigService.INSTANCE;
+        } else {
+            return serviceRegistry.getConfigService(pluginId);
+        }
     }
 
     public static Logger getLogger(Class<?> clazz) {

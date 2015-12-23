@@ -161,8 +161,12 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                 || name.equals(AdviceFlowOuterHolder.AdviceFlowHolder.class.getName())) {
             return true;
         }
-        if (name.startsWith("com.google.common.")) {
-            // this is just a performance optimization to not keep re-loading guava classes
+        // these are the classes that plugins depend on, either directly (api classes) or indirectly
+        // (weaving)
+        if (name.startsWith("org.glowroot.agent.api.")
+                || name.startsWith("org.glowroot.agent.plugin.api.")
+                || name.startsWith("org.glowroot.agent.advicegen.GeneratedAdvice")
+                || name.startsWith("org.glowroot.agent.advicegen.GeneratedMethodMeta")) {
             return true;
         }
         return false;

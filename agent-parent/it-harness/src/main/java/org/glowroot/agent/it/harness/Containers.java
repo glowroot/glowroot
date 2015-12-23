@@ -17,8 +17,6 @@ package org.glowroot.agent.it.harness;
 
 import java.io.File;
 
-import javax.annotation.Nullable;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
@@ -52,69 +50,37 @@ public class Containers {
 
     private Containers() {}
 
-    public static Container getSharedContainer() throws Exception {
-        switch (harness) {
-            case JAVAAGENT:
-                return getSharedJavaagentContainer();
-            case LOCAL:
-                return getSharedLocalContainer();
-            default:
-                throw new IllegalStateException("Unexpected harness enum value: " + harness);
-        }
+    public static Container create() throws Exception {
+        return create(null);
     }
 
-    public static Container getSharedJavaagentContainer() throws Exception {
-        if (!SharedContainerRunListener.useSharedContainer()) {
-            return JavaagentContainer.create();
-        }
-        JavaagentContainer container =
-                (JavaagentContainer) SharedContainerRunListener.getSharedJavaagentContainer();
-        if (container == null) {
-            container =
-                    new JavaagentContainer(null, true, false, false, ImmutableList.<String>of());
-            SharedContainerRunListener.setSharedJavaagentContainer(container);
-        }
-        return container;
+    public static Container createJavaagent() throws Exception {
+        return JavaagentContainer.create();
     }
 
-    public static Container getSharedLocalContainer() throws Exception {
-        if (!SharedContainerRunListener.useSharedContainer()) {
-            return new LocalContainer(null, false, false, ImmutableMap.<String, String>of());
-        }
-        LocalContainer container =
-                (LocalContainer) SharedContainerRunListener.getSharedLocalContainer();
-        if (container == null || container.isClosed()) {
-            container = new LocalContainer(null, true, false, ImmutableMap.<String, String>of());
-            SharedContainerRunListener.setSharedLocalContainer(container);
-        }
-        return container;
+    public static Container createLocal() throws Exception {
+        return new LocalContainer(null, false, ImmutableMap.<String, String>of());
     }
 
     // since baseDir is passed to the container, the container will not delete baseDir on close
     public static Container create(File baseDir) throws Exception {
-        return create(baseDir, false);
-    }
-
-    public static boolean useJavaagent() {
-        return harness == Harness.JAVAAGENT;
-    }
-
-    private static Container create(@Nullable File baseDir, boolean shared) throws Exception {
         switch (harness) {
             case JAVAAGENT:
                 // this is the most realistic way to run tests because it launches an external JVM
                 // process using -javaagent:glowroot.jar
                 logger.debug("create(): using javaagent container");
-                return new JavaagentContainer(baseDir, shared, false, false,
-                        ImmutableList.<String>of());
+                return new JavaagentContainer(baseDir, false, false, ImmutableList.<String>of());
             case LOCAL:
                 // this is the easiest way to run/debug tests inside of Eclipse
                 logger.debug("create(): using local container");
-                return new LocalContainer(baseDir, shared, false,
-                        ImmutableMap.<String, String>of());
+                return new LocalContainer(baseDir, false, ImmutableMap.<String, String>of());
             default:
                 throw new IllegalStateException("Unexpected harness enum value: " + harness);
         }
+    }
+
+    public static boolean useJavaagent() {
+        return harness == Harness.JAVAAGENT;
     }
 
     private enum Harness {

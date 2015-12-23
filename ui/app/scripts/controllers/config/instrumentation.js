@@ -95,7 +95,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       onNewData({
         config: {
           classAnnotation: '',
-          declaringClassName: '',
+          methodDeclaringClassName: '',
           methodAnnotation: '',
           captureKind: 'transaction',
           transactionType: '',

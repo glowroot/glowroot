@@ -70,7 +70,6 @@ public class JavaagentContainer implements Container {
 
     private final File baseDir;
     private final boolean deleteBaseDirOnClose;
-    private final boolean shared;
 
     private final ServerSocket heartbeatListenerSocket;
     private final ExecutorService heartbeatListenerExecutor;
@@ -87,20 +86,20 @@ public class JavaagentContainer implements Container {
     private final Thread shutdownHook;
 
     public static JavaagentContainer create() throws Exception {
-        return new JavaagentContainer(null, false, false, false, ImmutableList.<String>of());
+        return new JavaagentContainer(null, false, false, ImmutableList.<String>of());
     }
 
     public static JavaagentContainer create(File baseDir) throws Exception {
-        return new JavaagentContainer(baseDir, false, false, false, ImmutableList.<String>of());
+        return new JavaagentContainer(baseDir, false, false, ImmutableList.<String>of());
     }
 
     public static JavaagentContainer createWithExtraJvmArgs(List<String> extraJvmArgs)
             throws Exception {
-        return new JavaagentContainer(null, false, false, false, extraJvmArgs);
+        return new JavaagentContainer(null, false, false, extraJvmArgs);
     }
 
-    public JavaagentContainer(@Nullable File baseDir, boolean shared, boolean fat,
-            boolean captureConsoleOutput, List<String> extraJvmArgs) throws Exception {
+    public JavaagentContainer(@Nullable File baseDir, boolean fat, boolean captureConsoleOutput,
+            List<String> extraJvmArgs) throws Exception {
         if (baseDir == null) {
             this.baseDir = TempDirs.createTempDir("glowroot-test-basedir");
             deleteBaseDirOnClose = true;
@@ -108,7 +107,6 @@ public class JavaagentContainer implements Container {
             this.baseDir = baseDir;
             deleteBaseDirOnClose = false;
         }
-        this.shared = shared;
 
         // need to start heartbeat socket listener before spawning process
         heartbeatListenerSocket = new ServerSocket(0);
@@ -245,15 +243,6 @@ public class JavaagentContainer implements Container {
 
     @Override
     public void close() throws Exception {
-        close(false);
-    }
-
-    @Override
-    public void close(boolean evenIfShared) throws Exception {
-        if (shared && !evenIfShared) {
-            // this is the shared container and will be closed at the end of the run
-            return;
-        }
         javaagentService.shutdown(Void.getDefaultInstance());
         javaagentService.kill(Void.getDefaultInstance());
         channel.shutdown();

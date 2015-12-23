@@ -31,7 +31,7 @@ public class BadPluginIdIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.getSharedContainer();
+        container = Containers.create();
     }
 
     @AfterClass

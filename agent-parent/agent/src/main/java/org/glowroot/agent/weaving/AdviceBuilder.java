@@ -134,16 +134,15 @@ public class AdviceBuilder {
         builder.adviceType(Type.getType(adviceClass));
 
         String pointcutClassName = pointcut.className();
-        if (pointcut.declaringClassName().equals("")) {
-            builder.pointcutDeclaringClassName(pointcutClassName);
-            builder.pointcutDeclaringClassNamePattern(buildPattern(pointcutClassName));
-            builder.pointcutTargetClassName("");
-            builder.pointcutTargetClassNamePattern(null);
+        builder.pointcutClassName(pointcutClassName);
+        builder.pointcutClassNamePattern(buildPattern(pointcutClassName));
+        if (pointcut.methodDeclaringClassName().equals("")) {
+            builder.pointcutMethodDeclaringClassName(pointcutClassName);
+            builder.pointcutMethodDeclaringClassNamePattern(buildPattern(pointcutClassName));
         } else {
-            builder.pointcutDeclaringClassName(pointcut.declaringClassName());
-            builder.pointcutDeclaringClassNamePattern(buildPattern(pointcut.declaringClassName()));
-            builder.pointcutTargetClassName(pointcutClassName);
-            builder.pointcutTargetClassNamePattern(buildPattern(pointcutClassName));
+            builder.pointcutMethodDeclaringClassName(pointcut.methodDeclaringClassName());
+            builder.pointcutMethodDeclaringClassNamePattern(
+                    buildPattern(pointcut.methodDeclaringClassName()));
         }
         builder.pointcutMethodNamePattern(buildPattern(pointcut.methodName()));
         for (java.lang.reflect.Method method : adviceClass.getMethods()) {

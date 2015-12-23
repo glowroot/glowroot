@@ -45,7 +45,7 @@ public class MaxEntriesLimitIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.getSharedContainer();
+        container = Containers.create();
         // capture one header to warm up the system since this test involves some timing
         container.execute(WarmupTrace.class);
     }

@@ -39,7 +39,7 @@ abstract class AdviceMatcher {
             List<String> classAnnotations, List<Advice> advisors) {
         List<AdviceMatcher> adviceMatchers = Lists.newArrayList();
         for (Advice advice : advisors) {
-            if (AdviceMatcher.isDeclaringClassMatch(className, classAnnotations, advice)) {
+            if (isDeclaringClassMatch(className, classAnnotations, advice)) {
                 adviceMatchers.add(ImmutableAdviceMatcher.of(advice));
             }
         }
@@ -138,18 +138,18 @@ abstract class AdviceMatcher {
         }
     }
 
-    private static boolean isDeclaringClassMatch(String className,
-            List<String> classAnnotations, Advice advice) {
+    private static boolean isDeclaringClassMatch(String className, List<String> classAnnotations,
+            Advice advice) {
         String pointcutClassAnnotation = advice.pointcut().classAnnotation();
         if (!isAnnotationMatch(classAnnotations, pointcutClassAnnotation)) {
             return false;
         }
-        Pattern pointcutClassNamePattern = advice.pointcutDeclaringClassNamePattern();
-        if (pointcutClassNamePattern != null) {
-            return pointcutClassNamePattern.matcher(className).matches();
+        Pattern methodDeclaringClassNamePattern = advice.pointcutMethodDeclaringClassNamePattern();
+        if (methodDeclaringClassNamePattern != null) {
+            return methodDeclaringClassNamePattern.matcher(className).matches();
         }
-        String pointcutDeclaringClassName = advice.pointcutDeclaringClassName();
-        return pointcutDeclaringClassName.isEmpty() || pointcutDeclaringClassName.equals(className);
+        String methodDeclaringClassName = advice.pointcutMethodDeclaringClassName();
+        return methodDeclaringClassName.isEmpty() || methodDeclaringClassName.equals(className);
     }
 
     private static boolean isAnnotationMatch(List<String> annotations, String annotation) {

@@ -42,7 +42,7 @@ public class CommitRollbackIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.getSharedContainer();
+        container = Containers.create();
     }
 
     @AfterClass

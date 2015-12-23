@@ -711,9 +711,75 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.weaving.BasicMisc",
-            declaringClassName = "org.glowroot.agent.weaving.Misc", methodName = "execute1",
+            methodDeclaringClassName = "org.glowroot.agent.weaving.Misc", methodName = "execute1",
             methodParameterTypes = {})
     public static class TargetedAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            SomeAspectThreadLocals.enabledCount.increment();
+            return SomeAspectThreadLocals.enabled.get();
+        }
+        @OnBefore
+        public static void onBefore() {
+            SomeAspectThreadLocals.onBeforeCount.increment();
+        }
+        @OnReturn
+        public static void onReturn() {
+            SomeAspectThreadLocals.onReturnCount.increment();
+        }
+        @OnThrow
+        public static void onThrow() {
+            SomeAspectThreadLocals.onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            SomeAspectThreadLocals.onAfterCount.increment();
+        }
+        public static void enable() {
+            SomeAspectThreadLocals.enabled.set(true);
+        }
+        public static void disable() {
+            SomeAspectThreadLocals.enabled.set(false);
+        }
+    }
+
+    @Pointcut(className = "org.glowroot.agent.weaving.BasicMisc",
+            methodDeclaringClassName = "org.glowroot.agent.weaving.SuperBasicMisc",
+            methodName = "callSuperBasic", methodParameterTypes = {})
+    public static class TargetedFromAbstractBaseAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            SomeAspectThreadLocals.enabledCount.increment();
+            return SomeAspectThreadLocals.enabled.get();
+        }
+        @OnBefore
+        public static void onBefore() {
+            SomeAspectThreadLocals.onBeforeCount.increment();
+        }
+        @OnReturn
+        public static void onReturn() {
+            SomeAspectThreadLocals.onReturnCount.increment();
+        }
+        @OnThrow
+        public static void onThrow() {
+            SomeAspectThreadLocals.onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            SomeAspectThreadLocals.onAfterCount.increment();
+        }
+        public static void enable() {
+            SomeAspectThreadLocals.enabled.set(true);
+        }
+        public static void disable() {
+            SomeAspectThreadLocals.enabled.set(false);
+        }
+    }
+
+    @Pointcut(className = "org.glowroot.agent.weaving.SubBasicMisc",
+            methodDeclaringClassName = "org.glowroot.agent.weaving.Misc", methodName = "execute1",
+            methodParameterTypes = {})
+    public static class TargetedFromSubAbstractBaseAdvice {
         @IsEnabled
         public static boolean isEnabled() {
             SomeAspectThreadLocals.enabledCount.increment();
