@@ -55,5 +55,18 @@ public @interface Pointcut {
     // timers already handle self nested calls, so it is only needed for trace entries
     boolean ignoreSelfNested() default false;
     String timerName() default "";
+    // two pointcuts on the same method will be ordered by priority
+    // priority 0 is "higher priority" than priority 10
+    // often priority is used to nest pointcut inside another, e.g. creating a pointcut on
+    // HttpServlet.service() to override transaction type, in which case the pointcut's @OnBefore
+    // needs to occur after the servlet plugin's @OnBefore which starts the transaction
+    //
+    // priorities be negative if a "higher priority" than 0 is needed
+    //
+    // given a pointcut A with priority 10 and a pointcut B with priority 0:
+    // * A's @OnBefore will be called before B's @OnBefore
+    // * A's @OnReturn will be called after B's @OnReturn
+    // * A's @OnThrow will be called after B's @OnThrow
+    // * A's @OnAfter will be called after B's @OnAfter
     int priority() default 0;
 }

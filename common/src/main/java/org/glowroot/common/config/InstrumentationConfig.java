@@ -77,6 +77,11 @@ public abstract class InstrumentationConfig {
     @JsonInclude(value = Include.NON_EMPTY)
     public abstract ImmutableList<MethodModifier> methodModifiers();
 
+    // need to write zero since it is treated different from null
+    // (although @Pointcut default priority is zero so ends up being the same thing)
+    @JsonInclude(value = Include.NON_NULL)
+    public abstract @Nullable Integer priority();
+
     public abstract CaptureKind captureKind();
 
     @Value.Default

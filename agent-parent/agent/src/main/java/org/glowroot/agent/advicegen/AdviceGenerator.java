@@ -177,6 +177,10 @@ public class AdviceGenerator {
         if (config.isTraceEntryOrGreater() && !config.traceEntryCaptureSelfNested()) {
             annotationVisitor.visit("ignoreSelfNested", true);
         }
+        Integer priority = config.priority();
+        if (priority != null) {
+            annotationVisitor.visit("priority", priority);
+        }
         annotationVisitor.visitEnd();
     }
 
