@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,9 @@ class JvmJsonService {
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
         jg.writeStartObject();
+        if (jvmInfo.hasProcessId()) {
+            jg.writeNumberField("processId", jvmInfo.getProcessId().getValue());
+        }
         jg.writeNumberField("startTime", jvmInfo.getStartTime());
         jg.writeStringField("java", jvmInfo.getJava());
         jg.writeStringField("jvm", jvmInfo.getJvm());

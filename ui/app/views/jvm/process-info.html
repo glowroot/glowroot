@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2015 the original author or authors.
+  Copyright 2013-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -20,6 +20,14 @@
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+    <div class="row gt-jvm-general-row">
+      <div class="col-md-2">
+        <label>Process ID</label>
+      </div>
+      <div class="col-md-10">
+        {{data.processId === undefined ? 'N/A' : data.processId}}
+      </div>
+    </div>
     <div class="row gt-jvm-general-row">
       <div class="col-md-2">
         <label>Start time</label>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,17 +21,24 @@ import java.lang.management.RuntimeMXBean;
 
 import javax.annotation.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.StandardSystemProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
+import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo.OptionalInt;
 
 public class JvmInfoCreator {
+
+    private static final Logger logger = LoggerFactory.getLogger(JvmInfoCreator.class);
 
     private JvmInfoCreator() {}
 
     public static JvmInfo create() {
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+        Long processId = parseProcessId(ManagementFactory.getRuntimeMXBean().getName());
         String jvm = "";
         String javaVmName = StandardSystemProperty.JAVA_VM_NAME.value();
         if (javaVmName != null) {
@@ -50,13 +57,33 @@ public class JvmInfoCreator {
                     MoreObjects.firstNonNull(StandardSystemProperty.JAVA_IO_TMPDIR.value(), ".");
             heapDumpPath = new File(javaTempDir).getAbsolutePath();
         }
-        return JvmInfo.newBuilder()
+        JvmInfo.Builder builder = JvmInfo.newBuilder();
+        if (processId != null) {
+            builder.setProcessId(OptionalInt.newBuilder().setValue(processId).build());
+        }
+        return builder
                 .setStartTime(runtimeMXBean.getStartTime())
                 .setJvm(jvm)
                 .setJava(java)
                 .addAllJvmArg(runtimeMXBean.getInputArguments())
                 .setHeapDumpDefaultDir(heapDumpPath)
                 .build();
+    }
+
+    @VisibleForTesting
+    static @Nullable Long parseProcessId(String runtimeName) {
+        int index = runtimeName.indexOf('@');
+        if (index > 0) {
+            String pid = runtimeName.substring(0, index);
+            try {
+                return Long.parseLong(pid);
+            } catch (NumberFormatException e) {
+                logger.debug(e.getMessage(), e);
+                return null;
+            }
+        } else {
+            return null;
+        }
     }
 
     private static @Nullable String getHeapDumpPathFromCommandLine() {

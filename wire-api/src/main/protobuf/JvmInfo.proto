@@ -5,9 +5,14 @@ package org_glowroot_wire_api_model;
 option java_package = "org.glowroot.wire.api.model";
 
 message JvmInfo {
+  OptionalInt process_id = 1;
   int64 start_time = 2;
   string java = 3;
   string jvm = 4;
   repeated string jvm_arg = 5;
   string heap_dump_default_dir = 6;
+
+  message OptionalInt {
+    int64 value = 1;
+  }
 }
