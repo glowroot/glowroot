@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,16 @@ package org.glowroot.wire.api;
 
 import java.util.List;
 
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
-import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
-import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
-import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface Collector {
 
-    void collectJvmInfo(JvmInfo jvmInfo) throws Exception;
+    void collectInit(ProcessInfo processInfo, AgentConfig agentConfig) throws Exception;
 
     void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType)
             throws Exception;

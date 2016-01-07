@@ -1,32 +1,26 @@
 syntax = "proto3";
 
-import "JvmInfo.proto";
+import "AgentConfig.proto";
 import "Aggregate.proto";
-import "GaugeValue.proto";
 import "Trace.proto";
-import "LogEvent.proto";
+import "Common.proto";
 
 package org_glowroot_wire_api_model;
 
 option java_package = "org.glowroot.wire.api.model";
 
 service CollectorService {
-  rpc collectJvmInfo(JvmInfoMessage) returns (EmptyMessage);
-  rpc collectConfig(ConfigMessage) returns (EmptyMessage);
+  rpc collectInit(InitMessage) returns (EmptyMessage);
   rpc collectAggregates(AggregateMessage) returns (EmptyMessage);
   rpc collectGaugeValues(GaugeValueMessage) returns (EmptyMessage);
   rpc collectTrace(TraceMessage) returns (EmptyMessage);
   rpc log(LogMessage) returns (EmptyMessage);
 }
 
-message JvmInfoMessage {
+message InitMessage {
   string server_id = 1;
-  JvmInfo jvm_info = 2;
-}
-
-message ConfigMessage {
-  string server_id = 1;
-  string config_json = 2;
+  ProcessInfo process_info = 2;
+  AgentConfig agent_config = 3;
 }
 
 message AggregateMessage {
@@ -48,6 +42,50 @@ message TraceMessage {
 message LogMessage {
   string server_id = 1;
   LogEvent log_event = 2;
+}
+
+message ProcessInfo {
+  string host_name = 1;
+  OptionalInt64 process_id = 2;
+  int64 start_time = 3;
+  string java = 4;
+  string jvm = 5;
+  repeated string jvm_arg = 6;
+  string heap_dump_default_dir = 7;
+  string glowroot_agent_version = 100;
+}
+
+message ConfigMessage {
+  string server_id = 1;
+  string config_json = 2;
+}
+
+message GaugeValue {
+  string gauge_name = 1;
+  int64 capture_time = 2;
+  // for counter gauges, value is the "average delta per second" of the counter, and weight is the
+  // number of nanoseconds over which this average delta was calculated
+  // for non-counter gauges, value is just the gauge value, and weight is 1
+  double value = 3;
+  int64 weight = 4;
+}
+
+message LogEvent {
+
+  int64 timestamp = 1;
+  Level level = 2;
+  string logger_name = 3;
+  string formatted_message = 4;
+  Throwable throwable = 5;
+
+  enum Level {
+    NONE = 0;
+    TRACE = 1;
+    DEBUG = 2;
+    INFO = 3;
+    WARN = 4;
+    ERROR = 5;
+  }
 }
 
 message EmptyMessage {}

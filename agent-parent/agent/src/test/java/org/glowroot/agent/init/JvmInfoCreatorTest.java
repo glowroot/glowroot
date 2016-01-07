@@ -23,15 +23,15 @@ public class JvmInfoCreatorTest {
 
     @Test
     public void testNonParseable() {
-        assertThat(JvmInfoCreator.parseProcessId("")).isNull();
-        assertThat(JvmInfoCreator.parseProcessId("x")).isNull();
-        assertThat(JvmInfoCreator.parseProcessId("x:y")).isNull();
-        assertThat(JvmInfoCreator.parseProcessId("@y")).isNull();
-        assertThat(JvmInfoCreator.parseProcessId("x@y")).isNull();
+        assertThat(ProcessInfoCreator.parseProcessId("")).isNull();
+        assertThat(ProcessInfoCreator.parseProcessId("x")).isNull();
+        assertThat(ProcessInfoCreator.parseProcessId("x:y")).isNull();
+        assertThat(ProcessInfoCreator.parseProcessId("@y")).isNull();
+        assertThat(ProcessInfoCreator.parseProcessId("x@y")).isNull();
     }
 
     @Test
     public void testParseable() {
-        assertThat(JvmInfoCreator.parseProcessId("123456@host")).isEqualTo(123456);
+        assertThat(ProcessInfoCreator.parseProcessId("123456@host")).isEqualTo(123456);
     }
 }

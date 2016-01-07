@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,11 @@ import javax.annotation.Nullable;
 import com.google.common.base.Strings;
 
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.init.JvmInfoCreator;
+import org.glowroot.agent.init.ProcessInfoCreator;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -38,7 +39,7 @@ public class CentralModule {
 
     public CentralModule(Map<String, String> properties, @Nullable String collectorHost,
             ConfigService configService, LiveWeavingService liveWeavingService,
-            LiveJvmService liveJvmService) throws Exception {
+            LiveJvmService liveJvmService, String glowrootVersion) throws Exception {
 
         String serverId = properties.get("glowroot.server.id");
         if (Strings.isNullOrEmpty(serverId)) {
@@ -64,7 +65,9 @@ public class CentralModule {
                 configUpdateService, liveJvmService, serverId);
         downstreamServiceObserver.connectAsync();
 
-        grpcCollector.collectJvmInfo(JvmInfoCreator.create());
+        // FIXME build agent config
+        grpcCollector.collectInit(ProcessInfoCreator.create(glowrootVersion),
+                AgentConfig.getDefaultInstance());
     }
 
     public CentralCollectorImpl getGrpcCollector() {

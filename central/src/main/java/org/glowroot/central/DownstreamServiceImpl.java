@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,12 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.wire.api.model.ConfigOuterClass.Config;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamService;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpaceRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse.MessageCase;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ConfigUpdateRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpRequest;
@@ -57,12 +57,12 @@ class DownstreamServiceImpl implements DownstreamService {
         return connectedAgent.responseObserver;
     }
 
-    void updateConfig(String serverId, Config config) throws Exception {
+    void updateAgentConfig(String serverId, AgentConfig agentConfig) throws Exception {
         ConnectedAgent connectedAgent = connectedAgents.get(serverId);
         if (connectedAgent == null) {
             throw new AgentNotConnectedException();
         }
-        connectedAgent.updateConfig(config);
+        connectedAgent.updateAgentConfig(agentConfig);
     }
 
     int reweave(String serverId) throws Exception {
@@ -162,11 +162,11 @@ class DownstreamServiceImpl implements DownstreamService {
             this.requestObserver = requestObserver;
         }
 
-        private void updateConfig(Config config) throws Exception {
+        private void updateAgentConfig(AgentConfig agentConfig) throws Exception {
             sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
-                    .setConfigUpdateRequest(ConfigUpdateRequest.newBuilder()
-                            .setConfig(config))
+                    .setAgentConfigUpdateRequest(AgentConfigUpdateRequest.newBuilder()
+                            .setAgentConfig(agentConfig))
                     .build());
         }
 

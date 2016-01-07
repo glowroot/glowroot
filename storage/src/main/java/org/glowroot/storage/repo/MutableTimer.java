@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,14 +93,14 @@ public class MutableTimer {
         }
     }
 
-    Aggregate.Timer toProtobuf() {
+    Aggregate.Timer toProto() {
         Aggregate.Timer.Builder builder = Aggregate.Timer.newBuilder()
                 .setName(name)
                 .setExtended(extended)
                 .setTotalNanos(totalNanos)
                 .setCount(count);
         for (MutableTimer childTimer : childTimers) {
-            builder.addChildTimer(childTimer.toProtobuf());
+            builder.addChildTimer(childTimer.toProto());
         }
         return builder.build();
     }

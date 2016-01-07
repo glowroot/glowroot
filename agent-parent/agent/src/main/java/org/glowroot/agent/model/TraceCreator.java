@@ -30,6 +30,7 @@ import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile.ProfileNode;
+import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -122,11 +123,11 @@ public class TraceCreator {
                     .setName(entry.getKey())
                     .addAllValue(entry.getValue());
         }
-        builder.addAllDetailEntry(DetailMapWriter.toProtobufDetail(transaction.getDetail()));
+        builder.addAllDetailEntry(DetailMapWriter.toProto(transaction.getDetail()));
         if (errorMessage != null) {
             Trace.Error.Builder errorBuilder = builder.getErrorBuilder();
             errorBuilder.setMessage(errorMessage.message());
-            Trace.Throwable throwable = errorMessage.throwable();
+            Proto.Throwable throwable = errorMessage.throwable();
             if (throwable != null) {
                 errorBuilder.setException(throwable);
             }
@@ -139,7 +140,7 @@ public class TraceCreator {
             builder.addAllAuxThreadRootTimer(mergeRootTimers(
                     Iterables.concat(ImmutableList.of(mainThreadRootTimer), auxThreadRootTimers)));
         } else {
-            builder.setMainThreadRootTimer(mainThreadRootTimer.toProtobuf());
+            builder.setMainThreadRootTimer(mainThreadRootTimer.toProto());
             builder.addAllAuxThreadRootTimer(mergeRootTimers(auxThreadRootTimers));
         }
         builder.addAllAsyncRootTimer(mergeRootTimers(transaction.getAsyncRootTimers()));
@@ -189,7 +190,7 @@ public class TraceCreator {
         }
         List<Trace.Timer> rootTimers = Lists.newArrayList();
         for (MutableTimer rootMutableTimer : rootMutableTimers) {
-            rootTimers.add(rootMutableTimer.toProtobuf());
+            rootTimers.add(rootMutableTimer.toProto());
         }
         return rootTimers;
     }
@@ -273,7 +274,7 @@ public class TraceCreator {
         return builder.build();
     }
 
-    private static Trace.OptionalInt getOptionalInt(long value) {
-        return Trace.OptionalInt.newBuilder().setValue(value).build();
+    private static Proto.OptionalInt64 getOptionalInt(long value) {
+        return Proto.OptionalInt64.newBuilder().setValue(value).build();
     }
 }

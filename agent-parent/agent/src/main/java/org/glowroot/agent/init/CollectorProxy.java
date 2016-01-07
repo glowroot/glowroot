@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,11 @@ import com.google.common.annotations.VisibleForTesting;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.wire.api.Collector;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
-import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
-import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
-import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 @VisibleForTesting
@@ -33,9 +34,9 @@ public class CollectorProxy implements Collector {
     private volatile @MonotonicNonNull Collector instance;
 
     @Override
-    public void collectJvmInfo(JvmInfo jvmInfo) throws Exception {
+    public void collectInit(ProcessInfo processInfo, AgentConfig agentConfig) throws Exception {
         if (instance != null) {
-            instance.collectJvmInfo(jvmInfo);
+            instance.collectInit(processInfo, agentConfig);
         }
     }
 

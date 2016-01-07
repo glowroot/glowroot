@@ -36,7 +36,7 @@ import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.CollectorProxy;
-import org.glowroot.agent.init.JvmInfoCreator;
+import org.glowroot.agent.init.ProcessInfoCreator;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
 import org.glowroot.common.util.Clock;
@@ -47,6 +47,7 @@ import org.glowroot.storage.simplerepo.SimpleRepoModule;
 import org.glowroot.storage.simplerepo.util.DataSource;
 import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.UiModule;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -132,7 +133,9 @@ class FatAgentModule {
                             simpleRepoModule.getGaugeValueRepository(),
                             simpleRepoModule.getAlertingService());
             collectorProxy.setInstance(collectorImpl);
-            collectorImpl.collectJvmInfo(JvmInfoCreator.create());
+            // fat agent's CollectorImpl does nothing with agent config parameter
+            collectorImpl.collectInit(ProcessInfoCreator.create(glowrootVersion),
+                    AgentConfig.getDefaultInstance());
             viewerAgentModule = null;
         }
 

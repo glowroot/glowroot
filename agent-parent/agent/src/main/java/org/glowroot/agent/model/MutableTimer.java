@@ -77,7 +77,7 @@ class MutableTimer {
         }
     }
 
-    Trace.Timer toProtobuf() {
+    Trace.Timer toProto() {
         Trace.Timer.Builder builder = Trace.Timer.newBuilder()
                 .setName(name)
                 .setExtended(extended)
@@ -85,7 +85,7 @@ class MutableTimer {
                 .setCount(count)
                 .setActive(active);
         for (MutableTimer childTimer : childTimers) {
-            builder.addChildTimer(childTimer.toProtobuf());
+            builder.addChildTimer(childTimer.toProto());
         }
         return builder.build();
     }

@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2015 the original author or authors.
+  Copyright 2012-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -13,44 +13,81 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="gt-header" style="margin-bottom: 16px;">
+<div class="gt-header" style="margin-bottom: 6px;">
   <div class="gt-header-page-name">
-    Configuration
+    <div ng-show="hideServerRollupDropdown()">
+      Configuration
+    </div>
+    <div style="margin-top: -16px;" ng-hide="hideServerRollupDropdown()">
+      <span class="gt-inline-block gt-header-menu" ng-if="activeNavbarItem !== 'configCentral'">
+        <span class="dropdown">
+          <a href="#" role="button" data-toggle="dropdown" class="dropdown-toggle">
+            {{serverRollup || '&lt;server&gt;'}}
+            <span class="gt-large-caret"></span>
+          </a>
+          <ul class="dropdown-menu" role="menu">
+            <li ng-repeat="(rollup, value) in layout.serverRollups"
+                ng-hide="rollup === serverRollup">
+              <a role="menuitem"
+                 tabindex="-1"
+                 ng-href="{{serverRollupUrl(rollup, value.leaf)}}">
+                {{rollup}}
+              </a>
+            </li>
+          </ul>
+        </span>
+      </span>
+      <span ng-if="activeNavbarItem === 'configCentral'">
+        Central
+      </span>
+      <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
+           while chrome guesses the placement of the border based on default font and then it moves slightly
+           once font is available -->
+      <span class="gt-inline-block gt-separator">
+        |
+      </span>
+      <span class="gt-inline-block">
+        Configuration
+      </span>
+    </div>
   </div>
 </div>
 <div class="gt-sidebar hidden-print">
   <div class="panel panel-default"
-       ng-hide="layout.central">
+       ng-if="activeNavbarItem === 'config'">
     <ul class="list-group">
       <div gt-sidebar-item
            gt-display="Transactions"
-           gt-url="config/transaction">
+           gt-url="config/transaction{{serverQueryString()}}"
+           gt-active="currentUrl() === 'config/transaction'">
       </div>
       <div gt-sidebar-item
            gt-display="Gauges"
-           gt-url="config/gauge-list"
+           gt-url="config/gauge-list{{serverQueryString()}}"
            gt-active="currentUrl() === 'config/gauge-list'"
            gt-sub-active="currentUrl() === 'config/gauge'">
       </div>
       <div gt-sidebar-item
            gt-display="Plugins"
-           gt-url="config/plugin-list"
+           gt-url="config/plugin-list{{serverQueryString()}}"
            gt-active="currentUrl() === 'config/plugin-list'"
            gt-sub-active="currentUrl() === 'config/plugin'">
       </div>
       <div gt-sidebar-item
            gt-display="Instrumentation"
-           gt-url="config/instrumentation-list"
+           gt-url="config/instrumentation-list{{serverQueryString()}}"
            gt-active="currentUrl() === 'config/instrumentation-list'"
            gt-sub-active="currentUrl() === 'config/instrumentation'">
       </div>
       <div gt-sidebar-item
            gt-display="Advanced"
-           gt-url="config/advanced">
+           gt-url="config/advanced{{serverQueryString()}}"
+           gt-active="currentUrl() === 'config/advanced'">
       </div>
     </ul>
   </div>
-  <div class="panel panel-default">
+  <div class="panel panel-default"
+       ng-if="!layout.central || activeNavbarItem === 'configCentral'">
     <ul class="list-group">
       <div gt-sidebar-item
            gt-display="Glowroot UI"
@@ -59,7 +96,7 @@
       <div gt-sidebar-item
            gt-display="Storage"
            gt-url="config/storage"
-           ng-hide="layout.central">
+           ng-if="!layout.central">
       </div>
       <div gt-sidebar-item
            gt-display="Alerts"

@@ -29,10 +29,10 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TempDirs;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.LocalContainer;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.CaptureKind;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.InstrumentationConfig;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.MethodModifier;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CaptureKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MethodModifier;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;

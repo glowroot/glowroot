@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,15 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.it.harness.ConfigService;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.AdvancedConfig;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.InstrumentationConfig;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.InstrumentationConfigList;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.OptionalBool;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.PluginConfig;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.PluginProperty;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.UserRecordingConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfigList;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
+import org.glowroot.wire.api.model.Proto.OptionalBool;
 
 class ConfigServiceImpl implements ConfigService {
 
@@ -42,35 +42,35 @@ class ConfigServiceImpl implements ConfigService {
 
     @Override
     public void updateTransactionConfig(TransactionConfig config) throws Exception {
-        server.updateConfig(Config.newBuilder()
+        server.updateAgentConfig(AgentConfig.newBuilder()
                 .setTransactionConfig(config)
                 .build());
     }
 
     @Override
     public void updateUserRecordingConfig(UserRecordingConfig config) throws Exception {
-        server.updateConfig(Config.newBuilder()
+        server.updateAgentConfig(AgentConfig.newBuilder()
                 .setUserRecordingConfig(config)
                 .build());
     }
 
     @Override
     public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
-        server.updateConfig(Config.newBuilder()
+        server.updateAgentConfig(AgentConfig.newBuilder()
                 .setAdvancedConfig(config)
                 .build());
     }
 
     @Override
     public void updatePluginConfig(PluginConfig config) throws Exception {
-        server.updateConfig(Config.newBuilder()
+        server.updateAgentConfig(AgentConfig.newBuilder()
                 .addPluginConfig(config)
                 .build());
     }
 
     @Override
     public int updateInstrumentationConfigs(List<InstrumentationConfig> configs) throws Exception {
-        server.updateConfig(Config.newBuilder()
+        server.updateAgentConfig(AgentConfig.newBuilder()
                 .setInstrumentationConfigList(InstrumentationConfigList.newBuilder()
                         .addAllInstrumentationConfig(configs))
                 .build());

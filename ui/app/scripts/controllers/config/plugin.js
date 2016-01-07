@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ glowroot.controller('ConfigPluginCtrl', [
 
     $scope.save = function (deferred) {
       var postData = {
+        serverId: $scope.serverId,
         pluginId: $stateParams.id,
         enabled: $scope.config.enabled,
         properties: {},
@@ -65,7 +66,7 @@ glowroot.controller('ConfigPluginCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/plugins?plugin-id=' + $stateParams.id)
+    $http.get('backend/config/plugins?server-id=' + $scope.serverId + '&plugin-id=' + $stateParams.id)
         .success(function (data) {
           onNewData(data);
         })

@@ -75,14 +75,14 @@ class MutableTimer {
         }
     }
 
-    Aggregate.Timer toProtobuf() {
+    Aggregate.Timer toProto() {
         Aggregate.Timer.Builder builder = Aggregate.Timer.newBuilder()
                 .setName(name)
                 .setExtended(extended)
                 .setTotalNanos(totalNanos)
                 .setCount(count);
         for (MutableTimer childTimer : childTimers) {
-            builder.addChildTimer(childTimer.toProtobuf());
+            builder.addChildTimer(childTimer.toProto());
         }
         return builder.build();
     }

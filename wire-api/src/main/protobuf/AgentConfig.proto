@@ -1,42 +1,50 @@
 syntax = "proto3";
 
+import "Common.proto";
+
 package org_glowroot_wire_api_model;
 
 option java_package = "org.glowroot.wire.api.model";
 
-message Config {
+message AgentConfig {
 
   TransactionConfig transaction_config = 1;
   UserRecordingConfig user_recording_config = 2;
   AdvancedConfig advanced_config = 3;
   repeated PluginConfig plugin_config = 4;
-  // need to use list wrapper to differentiate between "no update" and "update to empty"
+  // need to use list wrappers to differentiate between "no update" and "update to empty" when agent
+  // reads update from central
   GaugeConfigList gauge_config_list = 5;
-  // need to use list wrapper to differentiate between "no update" and "update to empty"
   InstrumentationConfigList instrumentation_config_list = 6;
 
+  // all attributes are optional to ease config evolution
+  // e.g. if profiling_interval_millis is removed in the future, then want agent to read "absent"
+  // instead of 0 when reading update from central
   message TransactionConfig {
-    OptionalInt profiling_interval_millis = 1;
-    OptionalInt slow_threshold_millis = 2;
-    OptionalBool capture_thread_stats = 8;
+    OptionalInt32 profiling_interval_millis = 1;
+    OptionalInt32 slow_threshold_millis = 2;
+    OptionalBool capture_thread_stats = 3;
   }
 
+  // all attributes are optional to ease config evolution
   message UserRecordingConfig {
     OptionalStringList users = 1;
-    OptionalInt profiling_interval_millis = 2;
+    OptionalInt32 profiling_interval_millis = 2;
   }
 
+  // all attributes are optional to ease config evolution
   message AdvancedConfig {
     OptionalBool timer_wrapper_methods = 1;
     OptionalBool weaving_timer = 2;
-    OptionalInt immediate_partial_store_threshold_seconds = 3;
-    OptionalInt max_aggregate_transactions_per_transaction_type = 4;
-    OptionalInt max_aggregate_queries_per_query_type = 5;
-    OptionalInt max_trace_entries_per_transaction = 6;
-    OptionalInt max_stack_trace_samples_per_transaction = 7;
-    OptionalInt mbean_gauge_not_found_delay_seconds = 8;
+    OptionalInt32 immediate_partial_store_threshold_seconds = 3;
+    OptionalInt32 max_aggregate_transactions_per_transaction_type = 4;
+    OptionalInt32 max_aggregate_queries_per_query_type = 5;
+    OptionalInt32 max_trace_entries_per_transaction = 6;
+    OptionalInt32 max_stack_trace_samples_per_transaction = 7;
+    OptionalInt32 mbean_gauge_not_found_delay_seconds = 8;
   }
 
+  // all attributes are optional to ease config evolution
   message PluginConfig {
     string id = 1;
     OptionalBool enabled = 2;
@@ -53,14 +61,20 @@ message Config {
 
   message PluginProperty {
     string name = 1;
+    // label, checkbox_label and description are used when sending config from agent to central
+    // but not when sending config updates from central to agent
+    string label = 2;
+    string checkbox_label = 3;
+    string description = 4;
     oneof val {
-      bool bval = 2;
-      bool dval_null = 3; // simple one field NullableDouble won't work inside "oneof"
-      double dval = 4;
-      string sval = 5;
+      bool bval = 5;
+      bool dval_null = 6; // simple one field OptionalDouble won't work inside "oneof"
+      double dval = 7;
+      string sval = 8;
     }
   }
 
+  // attributes are not optional since they work together (config evolution will require care)
   message GaugeConfig {
     string mbean_object_name = 1;
     repeated MBeanAttribute mbean_attribute = 2;
@@ -71,6 +85,7 @@ message Config {
     bool counter = 2;
   }
 
+  // attributes are not optional since they work together (config evolution will require care)
   message InstrumentationConfig {
     string class_name = 1;
     string class_annotation = 2;
@@ -83,23 +98,15 @@ message Config {
     CaptureKind capture_kind = 9;
     string timer_name = 10;
     string trace_entry_message_template = 11;
-    OptionalInt trace_entry_stack_threshold_millis = 12; // absent means N/A
+    OptionalInt32 trace_entry_stack_threshold_millis = 12; // absent means N/A
     bool trace_entry_capture_self_nested = 13;
     string transaction_type = 14;
     string transaction_name_template = 15;
     string transaction_user_template = 16;
     map<string, string> transaction_attribute_templates = 17;
-    OptionalInt transaction_slow_threshold_millis = 18; // absent means N/A
+    OptionalInt32 transaction_slow_threshold_millis = 18; // absent means N/A
     string enabled_property = 19;
     string trace_entry_enabled_property = 20;
-  }
-
-  message OptionalInt {
-    int32 value = 1;
-  }
-
-  message OptionalBool {
-    bool value = 1;
   }
 
   message OptionalStringList {

@@ -113,14 +113,12 @@
             <argument>--java_out=${project.build.directory}/generated-sources/protobuf</argument>
             <argument>--grpc-java_out=${project.build.directory}/generated-sources/protobuf</argument>
             <argument>src/main/protobuf/CollectorService.proto</argument>
-            <argument>src/main/protobuf/JvmInfo.proto</argument>
             <argument>src/main/protobuf/Aggregate.proto</argument>
-            <argument>src/main/protobuf/GaugeValue.proto</argument>
             <argument>src/main/protobuf/Trace.proto</argument>
-            <argument>src/main/protobuf/LogEvent.proto</argument>
             <argument>src/main/protobuf/Profile.proto</argument>
             <argument>src/main/protobuf/DownstreamService.proto</argument>
-            <argument>src/main/protobuf/Config.proto</argument>
+            <argument>src/main/protobuf/AgentConfig.proto</argument>
+            <argument>src/main/protobuf/Common.proto</argument>
           </arguments>
         </configuration>
         <executions>

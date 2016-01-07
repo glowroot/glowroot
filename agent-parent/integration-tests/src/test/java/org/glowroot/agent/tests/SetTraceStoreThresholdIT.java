@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.tests.app.LevelOne;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 

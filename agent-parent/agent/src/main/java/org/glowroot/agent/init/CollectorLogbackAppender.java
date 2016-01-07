@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,17 @@ package org.glowroot.agent.init;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.IThrowableProxy;
+import ch.qos.logback.classic.spi.StackTraceElementProxy;
 import ch.qos.logback.core.AppenderBase;
 import com.google.common.reflect.Reflection;
 import io.netty.buffer.AbstractByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
+import org.glowroot.agent.model.ErrorMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
+import org.glowroot.wire.api.model.Proto;
 
 class CollectorLogbackAppender extends AppenderBase<ILoggingEvent> {
 
@@ -61,12 +65,16 @@ class CollectorLogbackAppender extends AppenderBase<ILoggingEvent> {
         if (inLogging.get()) {
             return;
         }
-        LogEvent logEvent = LogEvent.newBuilder()
+        LogEvent.Builder builder = LogEvent.newBuilder()
                 .setTimestamp(event.getTimeStamp())
-                .setLevel(convert(event.getLevel()))
+                .setLevel(toProto(event.getLevel()))
                 .setLoggerName(event.getLoggerName())
-                .setFormattedMessage(event.getFormattedMessage())
-                .build();
+                .setFormattedMessage(event.getFormattedMessage());
+        IThrowableProxy throwable = event.getThrowableProxy();
+        if (throwable != null) {
+            builder.setThrowable(toProto(throwable));
+        }
+        LogEvent logEvent = builder.build();
         inLogging.set(true);
         try {
             collector.log(logEvent);
@@ -78,7 +86,7 @@ class CollectorLogbackAppender extends AppenderBase<ILoggingEvent> {
         }
     }
 
-    private static LogEvent.Level convert(Level level) {
+    private static LogEvent.Level toProto(Level level) {
         switch (level.toInt()) {
             case Level.TRACE_INT:
                 return LogEvent.Level.TRACE;
@@ -94,5 +102,26 @@ class CollectorLogbackAppender extends AppenderBase<ILoggingEvent> {
                 // do not log (could end up in recursive loop)
                 return LogEvent.Level.NONE;
         }
+    }
+
+    private static Proto.Throwable toProto(IThrowableProxy t) {
+        Proto.Throwable.Builder builder = Proto.Throwable.newBuilder()
+                .setClassName(t.getClassName());
+        String message = t.getMessage();
+        if (message != null) {
+            builder.setMessage(message);
+        }
+        for (StackTraceElementProxy element : t.getStackTraceElementProxyArray()) {
+            builder.addStackTraceElement(ErrorMessage.toProto(element.getStackTraceElement()));
+        }
+        builder.setFramesInCommonWithEnclosing(t.getCommonFrames());
+        IThrowableProxy cause = t.getCause();
+        if (cause != null) {
+            builder.setCause(toProto(cause));
+        }
+        for (IThrowableProxy suppressed : t.getSuppressed()) {
+            builder.addSuppressed(toProto(suppressed));
+        }
+        return builder.build();
     }
 }

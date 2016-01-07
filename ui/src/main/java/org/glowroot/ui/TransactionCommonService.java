@@ -265,7 +265,7 @@ class TransactionCommonService {
                 break;
             }
         }
-        return mergedQueries.toProtobuf(true);
+        return mergedQueries.toProto(true);
     }
 
     private List<OverviewAggregate> rollUpOverviewAggregates(

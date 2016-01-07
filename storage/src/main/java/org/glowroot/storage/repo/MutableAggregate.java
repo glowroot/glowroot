@@ -107,7 +107,7 @@ public class MutableAggregate {
                 .addAllMainThreadRootTimer(getRootTimersProtobuf(mainThreadRootTimers))
                 .addAllAuxThreadRootTimer(getRootTimersProtobuf(auxThreadRootTimers))
                 .addAllAsyncRootTimer(getRootTimersProtobuf(asyncRootTimers))
-                .setTotalNanosHistogram(lazyHistogram.toProtobuf(scratchBuffer));
+                .setTotalNanosHistogram(lazyHistogram.toProto(scratchBuffer));
         if (!mainThreadStats.isEmpty()) {
             builder.setMainThreadStats(mainThreadStats.toProto());
         }
@@ -115,12 +115,12 @@ public class MutableAggregate {
             builder.setAuxThreadStats(auxThreadStats.toProto());
         }
         if (mainThreadProfile != null) {
-            builder.setMainThreadProfile(mainThreadProfile.toProtobuf());
+            builder.setMainThreadProfile(mainThreadProfile.toProto());
         }
         if (auxThreadProfile != null) {
-            builder.setAuxThreadProfile(auxThreadProfile.toProtobuf());
+            builder.setAuxThreadProfile(auxThreadProfile.toProto());
         }
-        return builder.addAllQueriesByType(queries.toProtobuf(true))
+        return builder.addAllQueriesByType(queries.toProto(true))
                 .build();
     }
 
@@ -142,7 +142,7 @@ public class MutableAggregate {
                 .captureTime(captureTime)
                 .totalNanos(totalDurationNanos)
                 .transactionCount(transactionCount)
-                .histogram(lazyHistogram.toProtobuf(new ScratchBuffer()))
+                .histogram(lazyHistogram.toProto(new ScratchBuffer()))
                 .build();
     }
 
@@ -182,7 +182,7 @@ public class MutableAggregate {
         List<Aggregate.Timer> protobufRootTimers =
                 Lists.newArrayListWithCapacity(rootTimers.size());
         for (MutableTimer rootTimer : rootTimers) {
-            protobufRootTimers.add(rootTimer.toProtobuf());
+            protobufRootTimers.add(rootTimer.toProto());
         }
         return protobufRootTimers;
     }

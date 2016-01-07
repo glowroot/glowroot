@@ -42,7 +42,6 @@ import org.immutables.value.Value;
 import org.glowroot.central.util.ByteBufferInputStream;
 import org.glowroot.central.util.Messages;
 import org.glowroot.common.model.QueryCollector;
-import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
@@ -57,7 +56,7 @@ import org.glowroot.storage.repo.TransactionErrorSummaryCollector;
 import org.glowroot.storage.repo.TransactionSummaryCollector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.QueriesByType;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.ThreadStats;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.Timer;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
@@ -88,7 +87,7 @@ public class AggregateDao implements AggregateRepository {
             .addColumns(ImmutableColumn.of("transaction_count", "bigint"))
             .addColumns(ImmutableColumn.of("main_thread_root_timers", "blob"))
             .addColumns(ImmutableColumn.of("aux_thread_root_timers", "blob"))
-            .addColumns(ImmutableColumn.of("root_async_timers", "blob"))
+            .addColumns(ImmutableColumn.of("async_root_timers", "blob"))
             .addColumns(ImmutableColumn.of("main_thread_stats", "blob"))
             .addColumns(ImmutableColumn.of("aux_thread_stats", "blob"))
             .summary(false)
@@ -677,14 +676,36 @@ public class AggregateDao implements AggregateRepository {
         int i = startIndex;
         boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
         boundStatement.setLong(i++, aggregate.getTransactionCount());
-        if (aggregate.hasMainThreadStats()) {
-
+        List<Timer> mainThreadRootTimers = aggregate.getMainThreadRootTimerList();
+        if (!mainThreadRootTimers.isEmpty()) {
+            boundStatement.setBytes(i++, Messages.toByteBuffer(mainThreadRootTimers));
+        } else {
+            boundStatement.setToNull(i++);
         }
-        ThreadStats mainThreadStats = aggregate.getMainThreadStats();
-
-        boundStatement.setBytes(i++, Messages.toByteBuffer(aggregate.getMainThreadRootTimerList()));
-        boundStatement.setBytes(i++, Messages.toByteBuffer(aggregate.getAuxThreadRootTimerList()));
-        boundStatement.setBytes(i++, Messages.toByteBuffer(aggregate.getAsyncRootTimerList()));
+        List<Timer> auxThreadRootTimers = aggregate.getAuxThreadRootTimerList();
+        if (!auxThreadRootTimers.isEmpty()) {
+            boundStatement.setBytes(i++, Messages.toByteBuffer(auxThreadRootTimers));
+        } else {
+            boundStatement.setToNull(i++);
+        }
+        List<Timer> asyncRootTimers = aggregate.getAsyncRootTimerList();
+        if (!asyncRootTimers.isEmpty()) {
+            boundStatement.setBytes(i++, Messages.toByteBuffer(asyncRootTimers));
+        } else {
+            boundStatement.setToNull(i++);
+        }
+        if (aggregate.hasMainThreadStats()) {
+            boundStatement.setBytes(i++,
+                    ByteBuffer.wrap(aggregate.getMainThreadStats().toByteArray()));
+        } else {
+            boundStatement.setToNull(i++);
+        }
+        if (aggregate.hasAuxThreadStats()) {
+            boundStatement.setBytes(i++,
+                    ByteBuffer.wrap(aggregate.getAuxThreadStats().toByteArray()));
+        } else {
+            boundStatement.setToNull(i++);
+        }
     }
 
     private BoundStatement createBoundStatement(Table table, TransactionQuery query) {
@@ -728,15 +749,6 @@ public class AggregateDao implements AggregateRepository {
         }
         boundStatement.setTimestamp(i++, new Date(query.from()));
         boundStatement.setTimestamp(i++, new Date(query.to()));
-    }
-
-    private static double getNotAvailableAwareDouble(Row row, int columnIndex) {
-        double value = row.getDouble(columnIndex);
-        if (row.isNull(columnIndex)) {
-            return NotAvailableAware.NA;
-        } else {
-            return value;
-        }
     }
 
     private static String createTablePS(Table table, boolean transaction, int i) {

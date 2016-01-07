@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,21 +33,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.wire.api.Collector;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorService;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.JvmInfoMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamService;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse.MessageCase;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ConfigUpdateRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ServerRequest;
 
@@ -84,8 +83,8 @@ public class GrpcServerWrapper {
                 .start();
     }
 
-    void updateConfig(Config config) throws InterruptedException {
-        downstreamService.updateConfig(config);
+    void updateAgentConfig(AgentConfig agentConfig) throws InterruptedException {
+        downstreamService.updateAgentConfig(agentConfig);
     }
 
     int reweave() throws InterruptedException {
@@ -123,14 +122,7 @@ public class GrpcServerWrapper {
         }
 
         @Override
-        public void collectJvmInfo(JvmInfoMessage request,
-                StreamObserver<EmptyMessage> responseObserver) {
-            responseObserver.onNext(EmptyMessage.getDefaultInstance());
-            responseObserver.onCompleted();
-        }
-
-        @Override
-        public void collectConfig(ConfigMessage request,
+        public void collectInit(InitMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
@@ -225,7 +217,7 @@ public class GrpcServerWrapper {
 
         private volatile boolean closedByAgent;
 
-        private void updateConfig(Config config) throws InterruptedException {
+        private void updateAgentConfig(AgentConfig agentConfig) throws InterruptedException {
             while (requestObserver == null) {
                 Thread.sleep(10);
             }
@@ -235,8 +227,8 @@ public class GrpcServerWrapper {
             requestObserver.onNext(
                     ServerRequest.newBuilder()
                             .setRequestId(requestId)
-                            .setConfigUpdateRequest(ConfigUpdateRequest.newBuilder()
-                                    .setConfig(config))
+                            .setAgentConfigUpdateRequest(AgentConfigUpdateRequest.newBuilder()
+                                    .setAgentConfig(agentConfig))
                             .build());
             synchronized (responseHolder) {
                 while (responseHolder.response == null) {

@@ -96,7 +96,8 @@ glowroot.run([
   '$location',
   '$state',
   'login',
-  function ($rootScope, $http, $location, $state, login) {
+  'queryStrings',
+  function ($rootScope, $http, $location, $state, login, queryStrings) {
 
     $rootScope.serverId = '';
 
@@ -104,6 +105,32 @@ glowroot.run([
       $rootScope.serverId = $location.search()['server-id'] || '';
       $rootScope.serverRollup = $location.search()['server-rollup'] || $rootScope.serverId;
     });
+
+    $rootScope.serverQueryString = function () {
+      if ($rootScope.layout.central) {
+        if ($rootScope.serverId) {
+          return '?server-id=' + encodeURIComponent($rootScope.serverId);
+        } else if ($rootScope.serverRollup) {
+          return '?server-rollup=' + encodeURIComponent($rootScope.serverRollup);
+        }
+      }
+      return '';
+    };
+
+    $rootScope.serverRollupUrl = function (serverRollup, leaf) {
+      var url = $location.path().substring(1);
+      // preserve query string
+      var query = angular.copy($location.search());
+      if ($rootScope.layout.central) {
+        if (leaf) {
+          query['server-id'] = serverRollup;
+        } else {
+          query['server-rollup'] = serverRollup;
+        }
+      }
+      url += queryStrings.encodeObject(query);
+      return url;
+    };
 
     $rootScope.transactionTypes = function () {
       if (!$rootScope.layout) {

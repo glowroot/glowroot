@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
     @Override
     public void init(final File baseDir, final @Nullable String collectorHost,
             final Map<String, String> properties, final @Nullable Instrumentation instrumentation,
-            @Nullable File glowrootJarFile, String glowrootVersion, boolean viewerMode)
+            @Nullable File glowrootJarFile, final String glowrootVersion, boolean viewerMode)
                     throws Exception {
 
         if (instrumentation != null) {
@@ -88,7 +88,8 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                     return null;
                 }
                 centralModule = new CentralModule(properties, collectorHost, configService,
-                        agentModule.getLiveWeavingService(), agentModule.getLiveJvmService());
+                        agentModule.getLiveWeavingService(), agentModule.getLiveJvmService(),
+                        glowrootVersion);
                 collectorProxy.setInstance(centralModule.getGrpcCollector());
                 return null;
             }

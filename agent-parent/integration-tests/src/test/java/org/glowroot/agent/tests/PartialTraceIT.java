@@ -31,8 +31,8 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.tests.app.Pause;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.AdvancedConfig;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.SECONDS;

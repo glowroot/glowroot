@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import com.google.common.collect.Lists;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.helper.Gauges;
-import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.storage.simplerepo.util.Checkers.castUntainted;

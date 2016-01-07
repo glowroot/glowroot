@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,11 @@ import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.wire.api.Collector;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
-import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
-import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
-import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class CollectorImpl implements Collector {
@@ -50,8 +51,8 @@ class CollectorImpl implements Collector {
     }
 
     @Override
-    public void collectJvmInfo(JvmInfo jvmInfo) throws Exception {
-        serverRepository.storeJvmInfo(SERVER_ID, jvmInfo);
+    public void collectInit(ProcessInfo processInfo, AgentConfig agentConfig) throws Exception {
+        serverRepository.storeProcessInfo(SERVER_ID, processInfo);
     }
 
     @Override

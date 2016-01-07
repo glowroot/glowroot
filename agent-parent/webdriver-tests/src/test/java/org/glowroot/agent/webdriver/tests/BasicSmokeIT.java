@@ -54,15 +54,17 @@ public class BasicSmokeIT extends WebDriverIT {
     public static void setUp() throws Exception {
         AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
         Request request = asyncHttpClient
-                .prepareGet("http://localhost:" + getUiPort() + "/backend/config/transaction")
+                .prepareGet("http://localhost:" + getUiPort()
+                        + "/backend/config/transaction?server-id=")
                 .build();
         Response response = asyncHttpClient.executeRequest(request).get();
         JsonNode responseNode = new ObjectMapper().readTree(response.getResponseBody());
         String version = responseNode.get("version").asText();
         request = asyncHttpClient
                 .preparePost("http://localhost:" + getUiPort() + "/backend/config/transaction")
-                .setBody("{\"slowThresholdMillis\":0,\"profilingIntervalMillis\":10,"
-                        + "\"captureThreadStats\":false,\"version\":\"" + version + "\"}")
+                .setBody("{\"serverId\":\"\",\"slowThresholdMillis\":0,"
+                        + "\"profilingIntervalMillis\":10,\"captureThreadStats\":false,"
+                        + "\"version\":\"" + version + "\"}")
                 .build();
         int status = asyncHttpClient.executeRequest(request).get().getStatusCode();
         asyncHttpClient.close();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,9 @@ import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceStub;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpaceResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ConfigUpdateResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ExceptionResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
@@ -165,7 +165,7 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
             responseObserver = currResponseObserver;
         }
         switch (request.getMessageCase()) {
-            case CONFIG_UPDATE_REQUEST:
+            case AGENT_CONFIG_UPDATE_REQUEST:
                 updateConfigAndRespond(request, responseObserver);
                 return;
             case REWEAVE_REQUEST:
@@ -198,7 +198,8 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
     private void updateConfigAndRespond(ServerRequest request,
             StreamObserver<ClientResponse> responseObserver) {
         try {
-            configUpdateService.updateConfig(request.getConfigUpdateRequest().getConfig());
+            configUpdateService
+                    .updateAgentConfig(request.getAgentConfigUpdateRequest().getAgentConfig());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);
@@ -206,7 +207,7 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
         }
         responseObserver.onNext(ClientResponse.newBuilder()
                 .setRequestId(request.getRequestId())
-                .setConfigUpdateResponse(ConfigUpdateResponse.getDefaultInstance())
+                .setAgentConfigUpdateResponse(AgentConfigUpdateResponse.getDefaultInstance())
                 .build());
     }
 

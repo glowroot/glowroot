@@ -31,8 +31,8 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.OptionalInt;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -64,7 +64,7 @@ public class ExecutorIT {
         // given
         container.getConfigService().updateTransactionConfig(
                 TransactionConfig.newBuilder()
-                        .setProfilingIntervalMillis(OptionalInt.newBuilder().setValue(20).build())
+                        .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
                         .build());
         // when
         Trace trace = container.execute(DoSomeCallableAsyncWork.class);
@@ -77,7 +77,7 @@ public class ExecutorIT {
         // given
         container.getConfigService().updateTransactionConfig(
                 TransactionConfig.newBuilder()
-                        .setProfilingIntervalMillis(OptionalInt.newBuilder().setValue(20).build())
+                        .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
                         .build());
         // when
         Trace trace = container.execute(DoSomeRunnableAndCallableAsyncWork.class);
@@ -90,7 +90,7 @@ public class ExecutorIT {
         // given
         container.getConfigService().updateTransactionConfig(
                 TransactionConfig.newBuilder()
-                        .setProfilingIntervalMillis(OptionalInt.newBuilder().setValue(20).build())
+                        .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
                         .build());
         // when
         Trace trace = container.execute(DoSomeSimpleRunnableWork.class);

@@ -75,7 +75,7 @@ public class MutableProfile {
     // this method is not used that often (only for traces with > 20 stack trace samples) so ok
     // that it does not have most optimal implementation (converts unnecessarily to profile tree)
     public void merge(MutableProfile profile) {
-        merge(profile.toProtobuf());
+        merge(profile.toProto());
     }
 
     public void merge(Profile profile) {
@@ -213,7 +213,7 @@ public class MutableProfile {
         }
     }
 
-    public Profile toProtobuf() {
+    public Profile toProto() {
         List<Profile.ProfileNode> nodes = Lists.newArrayList();
         for (ProfileNode rootNode : rootNodes) {
             new ProfileNodeCollector(rootNode, nodes).traverse();

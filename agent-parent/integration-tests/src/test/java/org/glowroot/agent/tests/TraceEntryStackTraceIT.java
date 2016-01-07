@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.tests.app.Pause;
+import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,14 +63,14 @@ public class TraceEntryStackTraceIT {
         // then
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        List<Trace.StackTraceElement> stackTraceElements =
+        List<Proto.StackTraceElement> stackTraceElements =
                 entries.get(0).getLocationStackTraceElementList();
         assertThat(stackTraceElements).isNotEmpty();
         assertThat(stackTraceElements.get(0).getClassName()).isEqualTo(Pause.class.getName());
         assertThat(stackTraceElements.get(0).getMethodName()).isEqualTo("pauseOneMillisecond");
         assertThat(stackTraceElements.get(0).getFileName())
                 .isEqualTo(Pause.class.getSimpleName() + ".java");
-        for (Trace.StackTraceElement stackTraceElement : stackTraceElements) {
+        for (Proto.StackTraceElement stackTraceElement : stackTraceElements) {
             assertThat(stackTraceElement.getMethodName()).doesNotContain("$glowroot$");
         }
     }

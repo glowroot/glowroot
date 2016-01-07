@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,11 +58,16 @@ glowroot.controller('TransactionCtrl', [
     };
 
     $scope.headerQueryString = function (serverRollup, transactionType) {
+      var serverRollupObj = $scope.layout.serverRollups[serverRollup];
       var query = {};
       if ($scope.layout.central) {
-        query['server-rollup'] = serverRollup;
+        if (serverRollupObj.leaf) {
+          query['server-id'] = serverRollup;
+        } else {
+          query['server-rollup'] = serverRollup;
+        }
       }
-      var transactionTypes = $scope.layout.serverRollups[serverRollup].transactionTypes;
+      var transactionTypes = serverRollupObj.transactionTypes;
       if (transactionTypes.length === 0) {
         query['transaction-type'] = '';
       } else if (transactionTypes.indexOf(transactionType) !== -1) {

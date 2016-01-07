@@ -55,7 +55,7 @@ glowroot.config([
     });
     $stateProvider.state('transaction', {
       abstract: true,
-      url: '/transaction?server-rollup&transaction-type',
+      url: '/transaction?server-id&server-rollup&transaction-type',
       templateUrl: 'views/transaction.html',
       controller: 'TransactionCtrl',
       resolve: {
@@ -225,7 +225,7 @@ glowroot.config([
     });
     $stateProvider.state('error', {
       abstract: true,
-      url: '/error?server-rollup&transaction-type',
+      url: '/error?server-id&server-rollup&transaction-type',
       templateUrl: 'views/transaction.html',
       controller: 'TransactionCtrl',
       resolve: {
@@ -304,32 +304,32 @@ glowroot.config([
       }
     });
     $stateProvider.state('jvm.gauges', {
-      url: '/gauges?server-rollup',
+      url: '/gauges?server-id&server-rollup',
       templateUrl: 'views/jvm/gauge-values.html',
       controller: 'JvmGaugeValuesCtrl'
     });
     $stateProvider.state('jvm.processInfo', {
-      url: '/process-info?server-id',
+      url: '/process-info?server-id&server-rollup',
       templateUrl: 'views/jvm/process-info.html',
       controller: 'JvmProcessInfoCtrl'
     });
     $stateProvider.state('jvm.threadDump', {
-      url: '/thread-dump',
+      url: '/thread-dump?server-id&server-rollup',
       templateUrl: 'views/jvm/thread-dump.html',
       controller: 'JvmThreadDumpCtrl'
     });
     $stateProvider.state('jvm.heapDump', {
-      url: '/heap-dump',
+      url: '/heap-dump?server-id&server-rollup',
       templateUrl: 'views/jvm/heap-dump.html',
       controller: 'JvmHeapDumpCtrl'
     });
     $stateProvider.state('jvm.mbeanTree', {
-      url: '/mbean-tree',
+      url: '/mbean-tree?server-id&server-rollup',
       templateUrl: 'views/jvm/mbean-tree.html',
       controller: 'JvmMBeanTreeCtrl'
     });
     $stateProvider.state('jvm.capabilities', {
-      url: '/capabilities',
+      url: '/capabilities?server-id&server-rollup',
       templateUrl: 'views/jvm/capabilities.html',
       controller: 'JvmCapabilitiesCtrl'
     });

@@ -21,7 +21,15 @@
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div class="row gt-jvm-general-row">
-      <div class="col-md-2">
+      <div class="col-md-2" style="text-align: right;">
+        <label>Host name</label>
+      </div>
+      <div class="col-md-10">
+        <div>{{data.hostName}}</div>
+      </div>
+    </div>
+    <div class="row gt-jvm-general-row">
+      <div class="col-md-2" style="text-align: right;">
         <label>Process ID</label>
       </div>
       <div class="col-md-10">
@@ -29,7 +37,7 @@
       </div>
     </div>
     <div class="row gt-jvm-general-row">
-      <div class="col-md-2">
+      <div class="col-md-2" style="text-align: right;">
         <label>Start time</label>
       </div>
       <div class="col-md-10">
@@ -37,7 +45,7 @@
       </div>
     </div>
     <div class="row gt-jvm-general-row">
-      <div class="col-md-2">
+      <div class="col-md-2" style="text-align: right;">
         <label>Java</label>
       </div>
       <div class="col-md-10">
@@ -45,7 +53,7 @@
       </div>
     </div>
     <div class="row gt-jvm-general-row">
-      <div class="col-md-2">
+      <div class="col-md-2" style="text-align: right;">
         <label>JVM</label>
       </div>
       <div class="col-md-10">
@@ -53,7 +61,7 @@
       </div>
     </div>
     <div class="row gt-jvm-general-row">
-      <div class="col-md-2">
+      <div class="col-md-2" style="text-align: right;">
         <label>JVM args</label>
       </div>
       <div class="col-md-10">
@@ -63,6 +71,14 @@
             {{arg}}
           </div>
         </div>
+      </div>
+    </div>
+    <div class="row gt-jvm-general-row">
+      <div class="col-md-2" style="text-align: right;">
+        <label>Glowroot agent</label>
+      </div>
+      <div class="col-md-10">
+        <div>{{data.glowrootAgentVersion}}</div>
       </div>
     </div>
   </div>

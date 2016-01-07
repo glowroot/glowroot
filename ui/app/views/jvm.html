@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2015 the original author or authors.
+  Copyright 2013-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="gt-header" style="margin-bottom: 16px;">
+<div class="gt-header" style="margin-bottom: 6px;">
   <div class="gt-header-page-name">
     <div ng-show="hideServerRollupDropdown()">
       JVM
@@ -30,7 +30,7 @@
                 ng-hide="rollup === serverRollup">
               <a role="menuitem"
                  tabindex="-1"
-                 ng-href="{{serverRollupUrl(rollup)}}">
+                 ng-href="{{serverRollupUrl(rollup, value.leaf)}}">
                 {{rollup}}
               </a>
             </li>
@@ -54,26 +54,29 @@
     <ul class="list-group">
       <div gt-sidebar-item
            gt-display="Gauges"
-           gt-url="jvm/gauges{{serverRollupQueryString()}}"
+           gt-url="jvm/gauges{{serverQueryString()}}"
            gt-active="currentUrl() === 'jvm/gauges'">
       </div>
       <div gt-sidebar-item
            gt-display="Process info"
-           gt-url="jvm/process-info{{serverIdQueryString()}}"
+           gt-url="jvm/process-info{{serverQueryString()}}"
            ng-if="layout.serverRollups[serverRollup].leaf"
            gt-active="currentUrl() === 'jvm/process-info'">
       </div>
       <div gt-sidebar-item
            gt-display="Thread dump"
-           gt-url="jvm/thread-dump{{serverIdQueryString()}}">
+           gt-url="jvm/thread-dump{{serverQueryString()}}"
+           gt-active="currentUrl() === 'jvm/thread-dump'">
       </div>
       <div gt-sidebar-item
            gt-display="Heap dump"
-           gt-url="jvm/heap-dump{{serverIdQueryString()}}">
+           gt-url="jvm/heap-dump{{serverQueryString()}}"
+           gt-active="currentUrl() === 'jvm/heap-dump'">
       </div>
       <div gt-sidebar-item
            gt-display="MBean tree"
-           gt-url="jvm/mbean-tree{{serverIdQueryString()}}">
+           gt-url="jvm/mbean-tree{{serverQueryString()}}"
+           gt-active="currentUrl() === 'jvm/mbean-tree'">
       </div>
     </ul>
   </div>

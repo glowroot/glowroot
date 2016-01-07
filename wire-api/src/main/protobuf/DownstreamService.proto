@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "Config.proto";
+import "AgentConfig.proto";
 
 package org_glowroot_wire_api_model;
 
@@ -14,7 +14,7 @@ message ServerRequest {
   int64 request_id = 1;
   oneof message {
     HelloAck hello_ack = 100;
-    ConfigUpdateRequest config_update_request = 200;
+    AgentConfigUpdateRequest agent_config_update_request = 200;
     ReweaveRequest reweave_request = 201;
     ThreadDumpRequest thread_dump_request = 300;
     AvailableDiskSpaceRequest available_disk_space_request = 301;
@@ -28,7 +28,7 @@ message ClientResponse {
   int64 request_id = 1;
   oneof message {
     Hello hello = 100;
-    ConfigUpdateResponse config_update_response = 200;
+    AgentConfigUpdateResponse agent_config_update_response = 200;
     ReweaveResponse reweave_response = 201;
     ThreadDumpResponse thread_dump_response = 300;
     AvailableDiskSpaceResponse available_disk_space_response = 301;
@@ -48,11 +48,11 @@ message Hello {
 message HelloAck {
 }
 
-message ConfigUpdateRequest {
-  Config config = 1;
+message AgentConfigUpdateRequest {
+  AgentConfig agent_config = 1;
 }
 
-message ConfigUpdateResponse {
+message AgentConfigUpdateResponse {
 }
 
 message ReweaveRequest {

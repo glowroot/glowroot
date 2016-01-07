@@ -101,13 +101,19 @@
                gt-item-name="jvm"
                gt-url="jvm/gauges{{queryString(true)}}">
           </div>
+          <div gt-navbar-item
+               ng-if="layout.central"
+               gt-display="Config"
+               gt-item-name="config"
+               gt-url="config/transaction{{queryString(true)}}">
+          </div>
         </ul>
         <ul class="nav navbar-nav navbar-right"
             style="margin-right: 0;">
           <div class="ng-cloak"
                gt-navbar-item
                gt-display=""
-               gt-item-name="config"
+               gt-item-name="{{layout.central ? 'configCentral' : 'config'}}"
                gt-url="{{layout.central ? 'config/ui' : 'config/transaction'}}">
             <i title="Configuration"
                class="fa fa-gears"

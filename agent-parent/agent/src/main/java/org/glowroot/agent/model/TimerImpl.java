@@ -97,7 +97,7 @@ public class TimerImpl implements Timer, CommonTimerImpl {
 
     // safe to be called from another thread when transaction is still active transaction
     @JsonIgnore
-    Trace.Timer toProtobuf() {
+    Trace.Timer toProto() {
         Trace.Timer.Builder builder = Trace.Timer.newBuilder();
         builder.setName(timerName.name());
         builder.setExtended(timerName.extended());
@@ -111,7 +111,7 @@ public class TimerImpl implements Timer, CommonTimerImpl {
             List<Trace.Timer> nestedTimers = Lists.newArrayList();
             TimerImpl curr = headChild;
             while (curr != null) {
-                nestedTimers.add(curr.toProtobuf());
+                nestedTimers.add(curr.toProto());
                 curr = curr.nextSibling;
             }
             builder.addAllChildTimer(nestedTimers);

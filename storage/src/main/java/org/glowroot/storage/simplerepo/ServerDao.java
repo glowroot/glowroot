@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import org.glowroot.storage.simplerepo.util.DataSource.JdbcUpdate;
 import org.glowroot.storage.simplerepo.util.ImmutableColumn;
 import org.glowroot.storage.simplerepo.util.Schemas.Column;
 import org.glowroot.storage.simplerepo.util.Schemas.ColumnType;
-import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -41,7 +41,7 @@ import static com.google.common.base.Preconditions.checkState;
 class ServerDao implements ServerRepository {
 
     private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
-            ImmutableColumn.of("jvm_info", ColumnType.VARBINARY));
+            ImmutableColumn.of("process_info", ColumnType.VARBINARY));
 
     private final DataSource dataSource;
 
@@ -50,7 +50,7 @@ class ServerDao implements ServerRepository {
         dataSource.syncTable("server", columns);
         long rowCount = dataSource.queryForLong("select count(*) from server");
         if (rowCount == 0) {
-            dataSource.execute("insert into server (jvm_info) values (null)");
+            dataSource.execute("insert into server (process_info) values (null)");
         } else {
             checkState(rowCount == 1);
         }
@@ -65,50 +65,50 @@ class ServerDao implements ServerRepository {
     }
 
     @Override
-    public void storeJvmInfo(String serverId, JvmInfo jvmInfo) throws Exception {
-        dataSource.update(new JvmInfoBinder(jvmInfo));
+    public void storeProcessInfo(String serverId, ProcessInfo processInfo) throws Exception {
+        dataSource.update(new ProcessInfoBinder(processInfo));
     }
 
     @Override
-    public @Nullable JvmInfo readJvmInfo(String serverId) throws Exception {
-        return dataSource.queryAtMostOne(new JvmInfoRowMapper());
+    public @Nullable ProcessInfo readProcessInfo(String serverId) throws Exception {
+        return dataSource.queryAtMostOne(new ProcessInfoRowMapper());
     }
 
-    private static class JvmInfoBinder implements JdbcUpdate {
+    private static class ProcessInfoBinder implements JdbcUpdate {
 
-        private final JvmInfo jvmInfo;
+        private final ProcessInfo processInfo;
 
-        private JvmInfoBinder(JvmInfo jvmInfo) {
-            this.jvmInfo = jvmInfo;
+        private ProcessInfoBinder(ProcessInfo processInfo) {
+            this.processInfo = processInfo;
         }
 
         @Override
         public @Untainted String getSql() {
-            return "update server set jvm_info = ?";
+            return "update server set process_info = ?";
         }
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws SQLException {
-            preparedStatement.setBytes(1, jvmInfo.toByteArray());
+            preparedStatement.setBytes(1, processInfo.toByteArray());
         }
     }
 
-    private static class JvmInfoRowMapper implements JdbcRowQuery<JvmInfo> {
+    private static class ProcessInfoRowMapper implements JdbcRowQuery<ProcessInfo> {
 
         @Override
         public @Untainted String getSql() {
-            return "select jvm_info from server where jvm_info is not null";
+            return "select process_info from server where process_info is not null";
         }
 
         @Override
         public void bind(PreparedStatement preparedStatement) {}
 
         @Override
-        public JvmInfo mapRow(ResultSet resultSet) throws Exception {
+        public ProcessInfo mapRow(ResultSet resultSet) throws Exception {
             byte[] bytes = resultSet.getBytes(1);
-            // query already filters out null jvm_info
+            // query already filters out null process_info
             checkNotNull(bytes);
-            return JvmInfo.parseFrom(bytes);
+            return ProcessInfo.parseFrom(bytes);
         }
     }
 }

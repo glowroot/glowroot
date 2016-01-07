@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ScheduledRunnable;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.Collector;
-import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 

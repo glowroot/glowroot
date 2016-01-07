@@ -39,12 +39,12 @@ import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.UsedByJsonSerialization;
 import org.glowroot.storage.repo.ServerRepository;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpKind;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
-import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -65,24 +65,26 @@ class JvmJsonService {
     @GET("/backend/jvm/process-info")
     String getProcessInfo(String queryString) throws Exception {
         String serverId = getServerId(queryString);
-        JvmInfo jvmInfo = serverRepository.readJvmInfo(serverId);
-        if (jvmInfo == null) {
+        ProcessInfo processInfo = serverRepository.readProcessInfo(serverId);
+        if (processInfo == null) {
             return "{}";
         }
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
         jg.writeStartObject();
-        if (jvmInfo.hasProcessId()) {
-            jg.writeNumberField("processId", jvmInfo.getProcessId().getValue());
+        jg.writeStringField("hostName", processInfo.getHostName());
+        if (processInfo.hasProcessId()) {
+            jg.writeNumberField("processId", processInfo.getProcessId().getValue());
         }
-        jg.writeNumberField("startTime", jvmInfo.getStartTime());
-        jg.writeStringField("java", jvmInfo.getJava());
-        jg.writeStringField("jvm", jvmInfo.getJvm());
+        jg.writeNumberField("startTime", processInfo.getStartTime());
+        jg.writeStringField("java", processInfo.getJava());
+        jg.writeStringField("jvm", processInfo.getJvm());
         jg.writeArrayFieldStart("jvmArgs");
-        for (String jvmArg : jvmInfo.getJvmArgList()) {
+        for (String jvmArg : processInfo.getJvmArgList()) {
             jg.writeString(jvmArg);
         }
         jg.writeEndArray();
+        jg.writeStringField("glowrootAgentVersion", processInfo.getGlowrootAgentVersion());
         jg.writeEndObject();
         jg.close();
         return sw.toString();
@@ -117,9 +119,9 @@ class JvmJsonService {
     String getHeapDumpDefaultDir(String queryString) throws Exception {
         checkNotNull(liveJvmService);
         String serverId = getServerId(queryString);
-        JvmInfo jvmInfo = serverRepository.readJvmInfo(serverId);
-        checkNotNull(jvmInfo);
-        return mapper.writeValueAsString(jvmInfo.getHeapDumpDefaultDir());
+        ProcessInfo processInfo = serverRepository.readProcessInfo(serverId);
+        checkNotNull(processInfo);
+        return mapper.writeValueAsString(processInfo.getHeapDumpDefaultDir());
     }
 
     @POST("/backend/jvm/available-disk-space")

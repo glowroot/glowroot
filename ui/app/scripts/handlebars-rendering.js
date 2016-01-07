@@ -291,8 +291,11 @@ HandlebarsRendering = (function () {
     var html = '<div style="white-space: pre;">';
     html += '<div style="font-weight: bold; white-space: pre-wrap;">';
     while (throwable) {
-      var message = throwable.display.replace(/\n/g, '\n    ');
-      html += escapeHtml(message) + '\n</div>';
+      var message = throwable.message;
+      if (message) {
+        message = ': ' + message.replace(/\n/g, '\n    ');
+      }
+      html += escapeHtml(throwable.className + message) + '\n</div>';
       var i;
       for (i = 0; i < throwable.stackTraceElements.length; i++) {
         html += 'at ' + escapeHtml(throwable.stackTraceElements[i]) + '\n';

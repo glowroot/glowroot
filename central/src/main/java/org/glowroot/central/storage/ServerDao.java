@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 
 import org.glowroot.storage.repo.ImmutableServerRollup;
 import org.glowroot.storage.repo.ServerRepository;
-import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -42,19 +42,19 @@ public class ServerDao implements ServerRepository {
     private final Session session;
 
     private final PreparedStatement insertPS;
-    private final PreparedStatement insertJvmInfoPS;
+    private final PreparedStatement insertProcessInfoPS;
 
     public ServerDao(Session session) {
         this.session = session;
 
         session.execute("create table if not exists server (one int, server_rollup varchar,"
-                + " leaf boolean, jvm_info blob, primary key (one, server_rollup))");
+                + " leaf boolean, process_info blob, primary key (one, server_rollup))");
 
         insertPS =
                 session.prepare("insert into server (one, server_rollup, leaf) values (1, ?, ?)");
 
-        insertJvmInfoPS = session.prepare(
-                "insert into server (one, server_rollup, leaf, jvm_info) values (1, ?, true, ?)");
+        insertProcessInfoPS = session.prepare("insert into server (one, server_rollup, leaf,"
+                + " process_info) values (1, ?, true, ?)");
     }
 
     @Override
@@ -70,16 +70,17 @@ public class ServerDao implements ServerRepository {
     }
 
     @Override
-    public void storeJvmInfo(String serverId, JvmInfo jvmInfo) {
-        BoundStatement boundStatement = insertJvmInfoPS.bind();
+    public void storeProcessInfo(String serverId, ProcessInfo processInfo) {
+        BoundStatement boundStatement = insertProcessInfoPS.bind();
         boundStatement.setString(0, serverId);
-        boundStatement.setBytes(1, jvmInfo.toByteString().asReadOnlyByteBuffer());
+        boundStatement.setBytes(1, processInfo.toByteString().asReadOnlyByteBuffer());
         session.execute(boundStatement);
     }
 
     @Override
-    public @Nullable JvmInfo readJvmInfo(String serverId) throws InvalidProtocolBufferException {
-        ResultSet results = session.execute("select jvm_info from server where one = 1"
+    public @Nullable ProcessInfo readProcessInfo(String serverId)
+            throws InvalidProtocolBufferException {
+        ResultSet results = session.execute("select process_info from server where one = 1"
                 + " and server_rollup = ?", serverId);
         Row row = results.one();
         if (row == null) {
@@ -89,7 +90,7 @@ public class ServerDao implements ServerRepository {
         if (bytes == null) {
             return null;
         }
-        return JvmInfo.parseFrom(ByteString.copyFrom(bytes));
+        return ProcessInfo.parseFrom(ByteString.copyFrom(bytes));
     }
 
     void updateLastCaptureTime(String serverRollup, boolean leaf) {

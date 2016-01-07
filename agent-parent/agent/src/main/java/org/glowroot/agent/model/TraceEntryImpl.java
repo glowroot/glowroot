@@ -34,6 +34,7 @@ import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.Timer;
 import org.glowroot.agent.plugin.api.transaction.internal.ReadableMessage;
 import org.glowroot.agent.util.Tickers;
+import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -108,7 +109,7 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
         return errorMessage;
     }
 
-    Trace.Entry toProtobuf(long transactionStartTick, long captureTick,
+    Trace.Entry toProto(long transactionStartTick, long captureTick,
             List<Trace.Entry> childEntries) {
         long offsetNanos = startTick - transactionStartTick;
         long durationNanos;
@@ -134,13 +135,13 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
         // async root entry always has empty message and empty detail
         builder.setMessage(message == null ? "" : message.getText() + getRowCountSuffix());
         if (message != null) {
-            builder.addAllDetailEntry(DetailMapWriter.toProtobufDetail(message.getDetail()));
+            builder.addAllDetailEntry(DetailMapWriter.toProto(message.getDetail()));
         }
         ErrorMessage errorMessage = this.errorMessage;
         if (errorMessage != null) {
             Trace.Error.Builder errorBuilder = builder.getErrorBuilder();
             errorBuilder.setMessage(errorMessage.message());
-            Trace.Throwable throwable = errorMessage.throwable();
+            Proto.Throwable throwable = errorMessage.throwable();
             if (throwable != null) {
                 errorBuilder.setException(throwable);
             }

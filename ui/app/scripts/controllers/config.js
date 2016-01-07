@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,14 @@ glowroot.controller('ConfigCtrl', [
   function ($scope, $location) {
     // \u00b7 is &middot;
     document.title = 'Configuration \u00b7 Glowroot';
-    $scope.$parent.activeNavbarItem = 'config';
+
+    $scope.hideServerRollupDropdown = function () {
+      if (!$scope.layout) {
+        // this is ok, under grunt serve and layout hasn't loaded yet
+        return true;
+      }
+      return !$scope.layout.central || $scope.layout.serverRollups.length === 1;
+    };
 
     $scope.percentileSuffix = function (percentile) {
       var text = String(percentile);
@@ -66,5 +73,20 @@ glowroot.controller('ConfigCtrl', [
         }
       }
     });
+
+    $scope.currentUrl = function () {
+      return $location.path().substring(1);
+    };
+
+    function onLocationChangeSuccess() {
+      if ($scope.layout.central && ($location.path() === '/config/ui' || $scope.isAlerts())) {
+        $scope.$parent.activeNavbarItem = 'configCentral';
+      } else {
+        $scope.$parent.activeNavbarItem = 'config';
+      }
+    }
+
+    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
+    onLocationChangeSuccess();
   }
 ]);

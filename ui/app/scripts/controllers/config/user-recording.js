@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ glowroot.controller('ConfigUserRecordingCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
+      postData.serverId = $scope.serverId;
       $http.post('backend/config/user-recording', postData)
           .success(function (data) {
             onNewData(data);
@@ -62,7 +63,7 @@ glowroot.controller('ConfigUserRecordingCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/user-recording')
+    $http.get('backend/config/user-recording?server-id=' + $scope.serverId)
         .success(onNewData)
         .error(httpErrors.handler($scope));
   }

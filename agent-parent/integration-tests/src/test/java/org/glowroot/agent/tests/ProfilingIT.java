@@ -27,9 +27,9 @@ import org.glowroot.agent.it.harness.Threads;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.OptionalStringList;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.UserRecordingConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.OptionalStringList;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;

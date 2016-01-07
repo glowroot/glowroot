@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import org.glowroot.common.config.ImmutableGaugeConfig;
 import org.glowroot.common.config.ImmutableMBeanAttribute;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.Collector;
-import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;

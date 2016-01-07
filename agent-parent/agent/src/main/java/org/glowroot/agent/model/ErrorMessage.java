@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,14 +26,14 @@ import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.wire.api.model.Proto;
 
 @Value.Immutable
 @Styles.AllParameters
 public abstract class ErrorMessage {
 
     public abstract String message();
-    public abstract @Nullable Trace.Throwable throwable();
+    public abstract @Nullable Proto.Throwable throwable();
 
     public static ErrorMessage from(Throwable t) {
         return from(null, t);
@@ -59,7 +59,7 @@ public abstract class ErrorMessage {
         return ImmutableErrorMessage.of(msg, buildThrowableInfo(t, null));
     }
 
-    private static Trace.Throwable buildThrowableInfo(Throwable t,
+    private static Proto.Throwable buildThrowableInfo(Throwable t,
             @Nullable List<StackTraceElement> causedStackTrace) {
         int framesInCommonWithEnclosing = 0;
         ImmutableList<StackTraceElement> stackTrace = ImmutableList.copyOf(t.getStackTrace());
@@ -80,10 +80,14 @@ public abstract class ErrorMessage {
                 stackTrace = stackTrace.subList(0, stackTrace.size() - framesInCommonWithEnclosing);
             }
         }
-        Trace.Throwable.Builder builder = Trace.Throwable.newBuilder()
-                .setDisplay(t.toString());
+        Proto.Throwable.Builder builder = Proto.Throwable.newBuilder()
+                .setClassName(t.getClass().getName());
+        String message = t.getMessage();
+        if (message != null) {
+            builder.setMessage(message);
+        }
         for (StackTraceElement element : stackTrace) {
-            builder.addStackTraceElement(toProtobuf(element));
+            builder.addStackTraceElement(toProto(element));
         }
         builder.setFramesInCommonWithEnclosing(framesInCommonWithEnclosing);
         Throwable cause = t.getCause();
@@ -95,12 +99,18 @@ public abstract class ErrorMessage {
         return builder.build();
     }
 
-    private static Trace.StackTraceElement toProtobuf(StackTraceElement ste) {
-        return Trace.StackTraceElement.newBuilder()
-                .setClassName(ste.getClassName())
-                .setMethodName(Strings.nullToEmpty(ste.getMethodName()))
-                .setFileName(Strings.nullToEmpty(ste.getFileName()))
-                .setLineNumber(ste.getLineNumber())
+    public static Proto.StackTraceElement toProto(StackTraceElement ste) {
+        Proto.StackTraceElement.Builder builder = Proto.StackTraceElement.newBuilder()
+                .setClassName(ste.getClassName());
+        String methodName = ste.getMethodName();
+        if (methodName != null) {
+            builder.setMethodName(methodName);
+        }
+        String fileName = ste.getFileName();
+        if (fileName != null) {
+            builder.setFileName(fileName);
+        }
+        return builder.setLineNumber(ste.getLineNumber())
                 .build();
     }
 }

@@ -368,7 +368,7 @@ public class Transaction {
         if (mainThreadProfile == null) {
             return null;
         }
-        return mainThreadProfile.toProtobuf();
+        return mainThreadProfile.toProto();
     }
 
     boolean isMainThreadProfileSampleLimitExceeded() {
@@ -392,7 +392,7 @@ public class Transaction {
         if (auxThreadProfile == null) {
             return null;
         }
-        return auxThreadProfile.toProtobuf();
+        return auxThreadProfile.toProto();
     }
 
     boolean isAuxThreadProfileSampleLimitExceeded() {

@@ -34,16 +34,16 @@ import org.glowroot.common.config.ImmutableUserRecordingConfig;
 import org.glowroot.common.config.InstrumentationConfig.CaptureKind;
 import org.glowroot.common.config.PropertyValue;
 import org.glowroot.common.live.LiveWeavingService;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.AdvancedConfig;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.GaugeConfig;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.InstrumentationConfig;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.MBeanAttribute;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.MethodModifier;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.PluginConfig;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.PluginProperty;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.UserRecordingConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MBeanAttribute;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MethodModifier;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -59,26 +59,26 @@ class ConfigUpdateService {
         this.liveWeavingService = liveWeavingService;
     }
 
-    void updateConfig(Config config) throws IOException {
+    void updateAgentConfig(AgentConfig agentConfig) throws IOException {
         synchronized (lock) {
-            if (config.hasTransactionConfig()) {
-                updateTransactionConfig(config.getTransactionConfig());
+            if (agentConfig.hasTransactionConfig()) {
+                updateTransactionConfig(agentConfig.getTransactionConfig());
             }
-            if (config.hasUserRecordingConfig()) {
-                updateUserRecordingConfig(config.getUserRecordingConfig());
+            if (agentConfig.hasUserRecordingConfig()) {
+                updateUserRecordingConfig(agentConfig.getUserRecordingConfig());
             }
-            if (config.hasAdvancedConfig()) {
-                updateAdvancedConfig(config.getAdvancedConfig());
+            if (agentConfig.hasAdvancedConfig()) {
+                updateAdvancedConfig(agentConfig.getAdvancedConfig());
             }
-            for (PluginConfig pluginConfig : config.getPluginConfigList()) {
+            for (PluginConfig pluginConfig : agentConfig.getPluginConfigList()) {
                 updatePluginConfig(pluginConfig);
             }
-            if (config.hasGaugeConfigList()) {
-                updateGaugeConfigs(config.getGaugeConfigList().getGaugeConfigList());
+            if (agentConfig.hasGaugeConfigList()) {
+                updateGaugeConfigs(agentConfig.getGaugeConfigList().getGaugeConfigList());
             }
-            if (config.hasInstrumentationConfigList()) {
+            if (agentConfig.hasInstrumentationConfigList()) {
                 updateInstrumentationConfigs(
-                        config.getInstrumentationConfigList().getInstrumentationConfigList());
+                        agentConfig.getInstrumentationConfigList().getInstrumentationConfigList());
             }
         }
     }
@@ -111,8 +111,7 @@ class ConfigUpdateService {
             builder.users(config.getUsers().getValueList());
         }
         if (config.hasProfilingIntervalMillis()) {
-            builder.profilingIntervalMillis(
-                    config.getProfilingIntervalMillis().getValue());
+            builder.profilingIntervalMillis(config.getProfilingIntervalMillis().getValue());
         }
         configService.updateUserRecordingConfig(builder.build());
     }

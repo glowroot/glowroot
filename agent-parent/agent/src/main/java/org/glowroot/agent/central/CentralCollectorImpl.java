@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,18 +23,19 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.central.CentralConnection.GrpcOneWayCall;
 import org.glowroot.wire.api.Collector;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceStub;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.JvmInfoMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
-import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
-import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
-import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class CentralCollectorImpl implements Collector {
@@ -52,15 +53,16 @@ class CentralCollectorImpl implements Collector {
     }
 
     @Override
-    public void collectJvmInfo(JvmInfo jvmInfo) {
-        final JvmInfoMessage jvmInfoMessage = JvmInfoMessage.newBuilder()
+    public void collectInit(ProcessInfo jvmInfo, AgentConfig agentConfig) {
+        final InitMessage initMessage = InitMessage.newBuilder()
                 .setServerId(serverId)
-                .setJvmInfo(jvmInfo)
+                .setProcessInfo(jvmInfo)
+                .setAgentConfig(agentConfig)
                 .build();
         centralConnection.callUntilSuccessful(new GrpcOneWayCall<EmptyMessage>() {
             @Override
             public void call(StreamObserver<EmptyMessage> responseObserver) {
-                collectorServiceStub.collectJvmInfo(jvmInfoMessage, responseObserver);
+                collectorServiceStub.collectInit(initMessage, responseObserver);
             }
         });
     }

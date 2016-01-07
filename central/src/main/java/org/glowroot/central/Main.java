@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@ package org.glowroot.central;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import org.glowroot.central.storage.AggregateDao;
+import org.glowroot.central.storage.CentralConfigDao;
 import org.glowroot.central.storage.ConfigDao;
 import org.glowroot.central.storage.ConfigRepositoryImpl;
 import org.glowroot.central.storage.GaugeValueDao;
@@ -43,19 +45,24 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
+        // install jul-to-slf4j bridge for protobuf which logs to jul
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
+
         Clock clock = Clock.systemClock();
         String version = Version.getVersion();
 
         // FIXME
         Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
         Session session = cluster.connect();
-//        session.execute("drop keyspace if exists glowroot");
+        // session.execute("drop keyspace if exists glowroot");
         session.execute("create keyspace if not exists glowroot with replication ="
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
         session.execute("use glowroot");
 
         ConfigDao configDao = new ConfigDao(session);
-        ConfigRepository configRepository = new ConfigRepositoryImpl(configDao);
+        CentralConfigDao centralConfigDao = new CentralConfigDao(session);
+        ConfigRepository configRepository = new ConfigRepositoryImpl(configDao, centralConfigDao);
 
         ServerDao serverDao = new ServerDao(session);
         TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session);

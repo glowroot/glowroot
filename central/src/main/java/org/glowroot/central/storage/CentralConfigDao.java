@@ -30,34 +30,34 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConfigDao {
+public class CentralConfigDao {
 
-    private static final Logger logger = LoggerFactory.getLogger(ConfigDao.class);
+    private static final Logger logger = LoggerFactory.getLogger(CentralConfigDao.class);
 
     private final Session session;
 
     private final PreparedStatement insertPS;
 
-    public ConfigDao(Session session) {
+    public CentralConfigDao(Session session) {
         this.session = session;
-        session.execute("create table if not exists config (server_id varchar, key varchar,"
-                + " value varchar, primary key (server_id, key))");
-        insertPS = session.prepare("insert into config (server_id, key, value) values (?, ?, ?)");
+
+        session.execute("create table if not exists central_config (key varchar, value varchar,"
+                + " primary key (key))");
+
+        insertPS = session.prepare("insert into central_config (key, value) values (?, ?)");
     }
 
-    void write(String serverId, String key, Object config, ObjectMapper mapper)
-            throws JsonProcessingException {
+    void write(String key, Object config, ObjectMapper mapper) throws JsonProcessingException {
         BoundStatement boundStatement = insertPS.bind();
-        boundStatement.setString(0, serverId);
-        boundStatement.setString(1, key);
-        boundStatement.setString(2, mapper.writeValueAsString(config));
+        boundStatement.setString(0, key);
+        boundStatement.setString(1, mapper.writeValueAsString(config));
         session.execute(boundStatement);
     }
 
     @Nullable
-    <T> T read(String serverId, String key, Class<T> clazz, ObjectMapper mapper) {
-        ResultSet results = session.execute("select value from config where server_id = ?"
-                + " and key = ?", serverId, key);
+    <T> T read(String key, Class<T> clazz, ObjectMapper mapper) {
+
+        ResultSet results = session.execute("select value from central_config where key = ?", key);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -74,10 +74,10 @@ public class ConfigDao {
         }
     }
 
-    <T extends /*@NonNull*/ Object> /*@Nullable*/ T read(String serverId, String key,
-            TypeReference<T> typeReference, ObjectMapper mapper) {
-        ResultSet results = session.execute("select value from config where server_id = ?"
-                + " and key = ?", serverId, key);
+    <T extends /*@NonNull*/ Object> /*@Nullable*/ T read(String key, TypeReference<T> typeReference,
+            ObjectMapper mapper) {
+
+        ResultSet results = session.execute("select value from central_config where key = ?", key);
         Row row = results.one();
         if (row == null) {
             return null;

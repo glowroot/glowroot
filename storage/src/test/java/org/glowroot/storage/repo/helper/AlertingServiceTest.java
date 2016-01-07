@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,7 +156,7 @@ public class AlertingServiceTest {
                 .captureTime(120000)
                 .totalNanos(1000000)
                 .transactionCount(1)
-                .histogram(lazyHistogram.toProtobuf(new ScratchBuffer()))
+                .histogram(lazyHistogram.toProto(new ScratchBuffer()))
                 .build();
         when(configRepository.getAlertConfigs(SERVER_ID))
                 .thenReturn(ImmutableList.of(alertConfig));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ glowroot.controller('ConfigCommonCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
+      postData.serverId = $scope.serverId;
       $http.post(backendUrl, postData)
           .success(function (data) {
             onNewData(data);
@@ -52,7 +53,7 @@ glowroot.controller('ConfigCommonCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get(backendUrl)
+    $http.get(backendUrl + '?server-id=' + $scope.serverId)
         .success(onNewData)
         .error(httpErrors.handler($scope));
   }

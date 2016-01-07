@@ -130,7 +130,7 @@ class AggregateCollector {
                 .addAllMainThreadRootTimer(getRootTimersProtobuf(mainThreadRootTimers))
                 .addAllAuxThreadRootTimer(getRootTimersProtobuf(auxThreadRootTimers))
                 .addAllAsyncRootTimer(getRootTimersProtobuf(asyncRootTimers))
-                .setTotalNanosHistogram(lazyHistogram.toProtobuf(scratchBuffer));
+                .setTotalNanosHistogram(lazyHistogram.toProto(scratchBuffer));
         if (!mainThreadStats.isEmpty()) {
             builder.setMainThreadStats(mainThreadStats.toProto());
         }
@@ -138,12 +138,12 @@ class AggregateCollector {
             builder.setAuxThreadStats(auxThreadStats.toProto());
         }
         if (mainThreadProfile.getSampleCount() > 0) {
-            builder.setMainThreadProfile(mainThreadProfile.toProtobuf());
+            builder.setMainThreadProfile(mainThreadProfile.toProto());
         }
         if (auxThreadProfile.getSampleCount() > 0) {
-            builder.setAuxThreadProfile(auxThreadProfile.toProtobuf());
+            builder.setAuxThreadProfile(auxThreadProfile.toProto());
         }
-        return builder.addAllQueriesByType(queries.toProtobuf(true))
+        return builder.addAllQueriesByType(queries.toProto(true))
                 .build();
     }
 
@@ -165,7 +165,7 @@ class AggregateCollector {
         List<Aggregate.Timer> protobufRootTimers =
                 Lists.newArrayListWithCapacity(rootTimers.size());
         for (MutableTimer rootTimer : rootTimers) {
-            protobufRootTimers.add(rootTimer.toProtobuf());
+            protobufRootTimers.add(rootTimer.toProto());
         }
         return protobufRootTimers;
     }

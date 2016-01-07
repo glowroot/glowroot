@@ -29,10 +29,11 @@ import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.Collector;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
-import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
-import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
-import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -102,7 +103,7 @@ public class AggregatorTest {
         }
 
         @Override
-        public void collectJvmInfo(JvmInfo jvmInfo) {}
+        public void collectInit(ProcessInfo processInfo, AgentConfig agentConfig) {}
 
         @Override
         public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType) {

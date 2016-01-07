@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,7 +99,7 @@ public class LazyHistogramTest {
         for (int i = num; i > 0; i -= 1000) {
             lazyHistogram.add(i);
         }
-        Aggregate.Histogram histogram = lazyHistogram.toProtobuf(new ScratchBuffer());
+        Aggregate.Histogram histogram = lazyHistogram.toProto(new ScratchBuffer());
         lazyHistogram = new LazyHistogram();
         // when
         lazyHistogram.merge(histogram);
@@ -117,7 +117,7 @@ public class LazyHistogramTest {
         for (int i = num; i > 0; i -= 1000) {
             lazyHistogram.add(i);
         }
-        Aggregate.Histogram histogram = lazyHistogram.toProtobuf(new ScratchBuffer());
+        Aggregate.Histogram histogram = lazyHistogram.toProto(new ScratchBuffer());
         lazyHistogram = new LazyHistogram();
         // when
         lazyHistogram.merge(histogram);
@@ -137,7 +137,7 @@ public class LazyHistogramTest {
         for (int i = encodedSize; i > 0; i -= 1000) {
             lazyHistogram.add(i);
         }
-        Aggregate.Histogram histogram = lazyHistogram.toProtobuf(new ScratchBuffer());
+        Aggregate.Histogram histogram = lazyHistogram.toProto(new ScratchBuffer());
         lazyHistogram = new LazyHistogram();
         // when
         for (int i = nonEncodedSize + encodedSize; i > encodedSize; i -= 1000) {

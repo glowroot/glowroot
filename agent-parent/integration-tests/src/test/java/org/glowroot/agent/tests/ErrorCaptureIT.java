@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,8 @@ import org.glowroot.agent.tests.app.LevelOne;
 import org.glowroot.agent.tests.app.LogCause;
 import org.glowroot.agent.tests.app.LogError;
 import org.glowroot.agent.tests.plugin.LogCauseAspect.LogCauseAdvice;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
+import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -95,7 +96,7 @@ public class ErrorCaptureIT {
         List<Trace.Entry> childEntries = entries.get(0).getChildEntryList();
         assertThat(childEntries).hasSize(1);
         assertThat(childEntries.get(0).getError().getMessage()).isNotEmpty();
-        List<Trace.StackTraceElement> stackTraceElements =
+        List<Proto.StackTraceElement> stackTraceElements =
                 childEntries.get(0).getLocationStackTraceElementList();
         assertThat(stackTraceElements.get(0).getClassName()).isEqualTo(LogError.class.getName());
         assertThat(stackTraceElements.get(0).getMethodName()).isEqualTo("addNestedErrorEntry");
@@ -114,37 +115,37 @@ public class ErrorCaptureIT {
         Trace.Entry entry = entries.get(0);
         assertThat(entry.getError().getMessage()).isNotEmpty();
         assertThat(entry.getMessage()).isEqualTo("ERROR -- abc");
-        Trace.Throwable throwable = entry.getError().getException();
-        assertThat(throwable.getDisplay()).isEqualTo(
-                "java.lang.IllegalStateException: java.lang.IllegalArgumentException: Cause 3");
+        Proto.Throwable throwable = entry.getError().getException();
+        assertThat(throwable.getClassName()).isEqualTo("java.lang.IllegalStateException");
+        assertThat(throwable.getMessage()).isEqualTo("java.lang.IllegalArgumentException: Cause 3");
         assertThat(throwable.getStackTraceElementList().get(0).getClassName())
                 .isEqualTo(LogCauseAdvice.class.getName());
         assertThat(throwable.getStackTraceElementList().get(0).getMethodName())
                 .isEqualTo("onAfter");
         assertThat(throwable.getFramesInCommonWithEnclosing()).isZero();
-        Trace.Throwable cause = throwable.getCause();
-        assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalArgumentException: Cause 3");
+        Proto.Throwable cause = throwable.getCause();
+        assertThat(cause.getClassName()).isEqualTo("java.lang.IllegalArgumentException");
+        assertThat(cause.getMessage()).isEqualTo("Cause 3");
         assertThat(cause.getStackTraceElementList().get(0).getClassName())
                 .isEqualTo(LogCauseAdvice.class.getName());
-        assertThat(cause.getStackTraceElementList().get(0).getMethodName())
-                .isEqualTo("onAfter");
+        assertThat(cause.getStackTraceElementList().get(0).getMethodName()).isEqualTo("onAfter");
         assertThat(cause.getFramesInCommonWithEnclosing()).isGreaterThan(0);
         Set<Integer> causeLineNumbers = Sets.newHashSet();
         causeLineNumbers.add(cause.getStackTraceElementList().get(0).getLineNumber());
         cause = cause.getCause();
-        assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalStateException: Cause 2");
+        assertThat(cause.getClassName()).isEqualTo("java.lang.IllegalStateException");
+        assertThat(cause.getMessage()).isEqualTo("Cause 2");
         assertThat(cause.getStackTraceElementList().get(0).getClassName())
                 .isEqualTo(LogCauseAdvice.class.getName());
-        assertThat(cause.getStackTraceElementList().get(0).getMethodName())
-                .isEqualTo("onAfter");
+        assertThat(cause.getStackTraceElementList().get(0).getMethodName()).isEqualTo("onAfter");
         assertThat(cause.getFramesInCommonWithEnclosing()).isGreaterThan(0);
         causeLineNumbers.add(cause.getStackTraceElementList().get(0).getLineNumber());
         cause = cause.getCause();
-        assertThat(cause.getDisplay()).isEqualTo("java.lang.NullPointerException: Cause 1");
+        assertThat(cause.getClassName()).isEqualTo("java.lang.NullPointerException");
+        assertThat(cause.getMessage()).isEqualTo("Cause 1");
         assertThat(cause.getStackTraceElementList().get(0).getClassName())
                 .isEqualTo(LogCauseAdvice.class.getName());
-        assertThat(cause.getStackTraceElementList().get(0).getMethodName())
-                .isEqualTo("onAfter");
+        assertThat(cause.getStackTraceElementList().get(0).getMethodName()).isEqualTo("onAfter");
         assertThat(cause.getFramesInCommonWithEnclosing()).isGreaterThan(0);
         causeLineNumbers.add(cause.getStackTraceElementList().get(0).getLineNumber());
         // make sure they are all different line numbers

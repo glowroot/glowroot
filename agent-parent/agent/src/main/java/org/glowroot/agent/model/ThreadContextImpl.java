@@ -109,7 +109,7 @@ public class ThreadContextImpl {
 
     public List<Trace.Entry> getEntriesProtobuf(long captureTick,
             Multimap<TraceEntryImpl, TraceEntryImpl> asyncRootTraceEntries) {
-        return traceEntryComponent.toProtobuf(captureTick, asyncRootTraceEntries);
+        return traceEntryComponent.toProto(captureTick, asyncRootTraceEntries);
     }
 
     public @Nullable ThreadStats getThreadStats() {

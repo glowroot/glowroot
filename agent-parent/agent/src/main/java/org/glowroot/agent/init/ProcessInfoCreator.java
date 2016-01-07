@@ -18,6 +18,8 @@ package org.glowroot.agent.init;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import javax.annotation.Nullable;
 
@@ -27,16 +29,17 @@ import com.google.common.base.StandardSystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
-import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo.OptionalInt;
+import org.glowroot.common.util.Version;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
+import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
-public class JvmInfoCreator {
+public class ProcessInfoCreator {
 
-    private static final Logger logger = LoggerFactory.getLogger(JvmInfoCreator.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProcessInfoCreator.class);
 
-    private JvmInfoCreator() {}
+    private ProcessInfoCreator() {}
 
-    public static JvmInfo create() {
+    public static ProcessInfo create(String glowrootVersion) {
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
         Long processId = parseProcessId(ManagementFactory.getRuntimeMXBean().getName());
         String jvm = "";
@@ -57,16 +60,23 @@ public class JvmInfoCreator {
                     MoreObjects.firstNonNull(StandardSystemProperty.JAVA_IO_TMPDIR.value(), ".");
             heapDumpPath = new File(javaTempDir).getAbsolutePath();
         }
-        JvmInfo.Builder builder = JvmInfo.newBuilder();
-        if (processId != null) {
-            builder.setProcessId(OptionalInt.newBuilder().setValue(processId).build());
+        ProcessInfo.Builder builder = ProcessInfo.newBuilder();
+        try {
+            builder.setHostName(InetAddress.getLocalHost().getHostName());
+        } catch (UnknownHostException e) {
+            logger.warn(e.getMessage(), e);
         }
+        if (processId != null) {
+            builder.setProcessId(OptionalInt64.newBuilder().setValue(processId).build());
+        }
+        Version.getVersion();
         return builder
                 .setStartTime(runtimeMXBean.getStartTime())
                 .setJvm(jvm)
                 .setJava(java)
                 .addAllJvmArg(runtimeMXBean.getInputArguments())
                 .setHeapDumpDefaultDir(heapDumpPath)
+                .setGlowrootAgentVersion(glowrootVersion)
                 .build();
     }
 

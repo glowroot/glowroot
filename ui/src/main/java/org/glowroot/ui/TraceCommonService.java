@@ -34,6 +34,7 @@ import org.glowroot.common.util.Styles;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.TraceRepository.HeaderPlus;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
+import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class TraceCommonService {
@@ -293,11 +294,11 @@ class TraceCommonService {
             jg.writeFieldName("detail");
             writeDetailEntries(detailEntries, jg);
         }
-        List<Trace.StackTraceElement> locationStackTraceElements =
+        List<Proto.StackTraceElement> locationStackTraceElements =
                 entry.getLocationStackTraceElementList();
         if (!locationStackTraceElements.isEmpty()) {
             jg.writeArrayFieldStart("locationStackTraceElements");
-            for (Trace.StackTraceElement stackTraceElement : locationStackTraceElements) {
+            for (Proto.StackTraceElement stackTraceElement : locationStackTraceElements) {
                 writeStackTraceElement(stackTraceElement, jg);
             }
             jg.writeEndArray();
@@ -370,12 +371,13 @@ class TraceCommonService {
         jg.writeEndObject();
     }
 
-    private static void writeThrowable(Trace.Throwable throwable, boolean hasEnclosing,
+    private static void writeThrowable(Proto.Throwable throwable, boolean hasEnclosing,
             JsonGenerator jg) throws IOException {
         jg.writeStartObject();
-        jg.writeStringField("display", throwable.getDisplay());
+        jg.writeStringField("className", throwable.getClassName());
+        jg.writeStringField("message", throwable.getMessage());
         jg.writeArrayFieldStart("stackTraceElements");
-        for (Trace.StackTraceElement stackTraceElement : throwable.getStackTraceElementList()) {
+        for (Proto.StackTraceElement stackTraceElement : throwable.getStackTraceElementList()) {
             writeStackTraceElement(stackTraceElement, jg);
         }
         jg.writeEndArray();
@@ -435,7 +437,7 @@ class TraceCommonService {
         jg.writeEndObject();
     }
 
-    private static void writeStackTraceElement(Trace.StackTraceElement stackTraceElement,
+    private static void writeStackTraceElement(Proto.StackTraceElement stackTraceElement,
             JsonGenerator jg) throws IOException {
         jg.writeString(new StackTraceElement(stackTraceElement.getClassName(),
                 stackTraceElement.getMethodName(), stackTraceElement.getFileName(),

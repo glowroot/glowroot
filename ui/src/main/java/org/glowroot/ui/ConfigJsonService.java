@@ -21,8 +21,6 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
@@ -34,6 +32,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
@@ -77,8 +76,6 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 @JsonService
 class ConfigJsonService {
 
-    private static final String SERVER_ID = "";
-
     private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
@@ -107,31 +104,35 @@ class ConfigJsonService {
     }
 
     @GET("/backend/config/transaction")
-    String getTransactionConfig() throws Exception {
-        return getTransactionConfigInternal();
+    String getTransactionConfig(String queryString) throws Exception {
+        String serverId = getServerId(queryString);
+        return getTransactionConfigInternal(serverId);
     }
 
     @GET("/backend/config/user-recording")
-    String getUserRecordingConfig() throws Exception {
-        return getUserRecordingConfigInternal();
+    String getUserRecordingConfig(String queryString) throws Exception {
+        String serverId = getServerId(queryString);
+        return getUserRecordingConfigInternal(serverId);
     }
 
     @GET("/backend/config/advanced")
-    String getAdvancedConfig() throws Exception {
-        return getAdvancedConfigInternal();
+    String getAdvancedConfig(String queryString) throws Exception {
+        String serverId = getServerId(queryString);
+        return getAdvancedConfigInternal(serverId);
     }
 
     @GET("/backend/config/plugins")
     String getPluginConfig(String queryString) throws Exception {
         PluginConfigRequest request = QueryStrings.decode(queryString, PluginConfigRequest.class);
+        String serverId = checkNotNull(request.serverId());
         Optional<String> pluginId = request.pluginId();
         if (pluginId.isPresent()) {
-            return getPluginConfigInternal(request.pluginId().get());
+            return getPluginConfigInternal(serverId, request.pluginId().get());
         } else {
             List<PluginResponse> pluginResponses = Lists.newArrayList();
             for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
                 PluginConfig pluginConfig =
-                        configRepository.getPluginConfig(SERVER_ID, pluginDescriptor.id());
+                        configRepository.getPluginConfig(serverId, pluginDescriptor.id());
                 checkNotNull(pluginConfig);
                 pluginResponses.add(ImmutablePluginResponse.builder()
                         .id(pluginDescriptor.id())
@@ -143,8 +144,9 @@ class ConfigJsonService {
         }
     }
 
-    private String getPluginConfigInternal(String pluginId) throws JsonProcessingException {
-        PluginConfig config = configRepository.getPluginConfig(SERVER_ID, pluginId);
+    private String getPluginConfigInternal(String serverId, String pluginId)
+            throws JsonProcessingException {
+        PluginConfig config = configRepository.getPluginConfig(serverId, pluginId);
         PluginDescriptor pluginDescriptor = null;
         for (PluginDescriptor descriptor : pluginDescriptors) {
             if (descriptor.id().equals(pluginId)) {
@@ -189,51 +191,55 @@ class ConfigJsonService {
     String updateTransactionConfig(String content) throws Exception {
         TransactionConfigDto configDto =
                 mapper.readValue(content, ImmutableTransactionConfigDto.class);
+        String serverId = checkNotNull(configDto.serverId());
         try {
-            configRepository.updateTransactionConfig(SERVER_ID, configDto.toConfig(),
+            configRepository.updateTransactionConfig(serverId, configDto.toConfig(),
                     configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getTransactionConfigInternal();
+        return getTransactionConfigInternal(serverId);
     }
 
     @POST("/backend/config/user-recording")
     String updateUserRecordingConfig(String content) throws Exception {
         UserRecordingConfigDto configDto =
                 mapper.readValue(content, ImmutableUserRecordingConfigDto.class);
+        String serverId = checkNotNull(configDto.serverId());
         try {
-            configRepository.updateUserRecordingConfig(SERVER_ID, configDto.toConfig(),
+            configRepository.updateUserRecordingConfig(serverId, configDto.toConfig(),
                     configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getUserRecordingConfigInternal();
+        return getUserRecordingConfigInternal(serverId);
     }
 
     @POST("/backend/config/advanced")
     String updateAdvancedConfig(String content) throws Exception {
         AdvancedConfigDto configDto = mapper.readValue(content, ImmutableAdvancedConfigDto.class);
+        String serverId = checkNotNull(configDto.serverId());
         try {
-            configRepository.updateAdvancedConfig(SERVER_ID, configDto.toConfig(),
+            configRepository.updateAdvancedConfig(serverId, configDto.toConfig(),
                     configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getAdvancedConfigInternal();
+        return getAdvancedConfigInternal(serverId);
     }
 
     @POST("/backend/config/plugins")
     String updatePluginConfig(String content) throws Exception {
         PluginConfigDto configDto = mapper.readValue(content, ImmutablePluginConfigDto.class);
+        String serverId = checkNotNull(configDto.serverId());
         String pluginId = checkNotNull(configDto.pluginId());
         try {
-            configRepository.updatePluginConfig(SERVER_ID, configDto.toConfig(pluginId),
+            configRepository.updatePluginConfig(serverId, configDto.toConfig(pluginId),
                     configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getPluginConfigInternal(pluginId);
+        return getPluginConfigInternal(serverId, pluginId);
     }
 
     @POST("/backend/config/ui")
@@ -290,23 +296,25 @@ class ConfigJsonService {
                 mailService);
     }
 
-    private String getTransactionConfigInternal() throws JsonProcessingException {
-        TransactionConfig config = configRepository.getTransactionConfig(SERVER_ID);
+    private String getTransactionConfigInternal(String serverId) throws JsonProcessingException {
+        TransactionConfig config = configRepository.getTransactionConfig(serverId);
+        if (config == null) {
+            return "{\"empty\": true}";
+        }
         return mapper.writeValueAsString(TransactionConfigDto.fromConfig(config));
     }
 
-    private String getUserRecordingConfigInternal() throws JsonProcessingException {
-        UserRecordingConfig config = configRepository.getUserRecordingConfig(SERVER_ID);
+    private String getUserRecordingConfigInternal(String serverId) throws JsonProcessingException {
+        UserRecordingConfig config = configRepository.getUserRecordingConfig(serverId);
         return mapper.writeValueAsString(UserRecordingConfigDto.fromConfig(config));
     }
 
-    private String getAdvancedConfigInternal() throws JsonProcessingException {
+    private String getAdvancedConfigInternal(String serverId) throws JsonProcessingException {
         checkNotNull(liveWeavingService);
-        AdvancedConfig config = configRepository.getAdvancedConfig(SERVER_ID);
+        AdvancedConfig config = configRepository.getAdvancedConfig(serverId);
         return mapper.writeValueAsString(ImmutableAdvancedConfigResponse.builder()
                 .config(AdvancedConfigDto.fromConfig(config))
-                .timerWrapperMethodsActive(
-                        liveWeavingService.isTimerWrapperMethodsActive(SERVER_ID))
+                .timerWrapperMethodsActive(liveWeavingService.isTimerWrapperMethodsActive(serverId))
                 .build());
     }
 
@@ -424,6 +432,10 @@ class ConfigJsonService {
         return builder.build();
     }
 
+    private static String getServerId(String queryString) {
+        return QueryStringDecoder.decodeComponent(queryString.substring("server-id".length() + 1));
+    }
+
     private static class AdminPasswordHelper {
 
         private final String currentPassword;
@@ -492,6 +504,7 @@ class ConfigJsonService {
 
     @Value.Immutable
     interface PluginConfigRequest {
+        String serverId();
         Optional<String> pluginId();
     }
 
@@ -515,6 +528,7 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class TransactionConfigDto {
 
+        abstract @Nullable String serverId(); // only used in request
         abstract int slowThresholdMillis();
         abstract int profilingIntervalMillis();
         abstract boolean captureThreadStats();
@@ -540,6 +554,7 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class UserRecordingConfigDto {
 
+        abstract @Nullable String serverId(); // only used in request
         abstract ImmutableList<String> users();
         abstract @Nullable Integer profilingIntervalMillis();
         abstract String version();
@@ -563,6 +578,7 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class AdvancedConfigDto {
 
+        abstract @Nullable String serverId(); // only used in request
         abstract boolean timerWrapperMethods();
         abstract boolean weavingTimer();
         abstract int immediatePartialStoreThresholdSeconds();
@@ -608,7 +624,7 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class PluginConfigDto {
 
-        @JsonInclude(value = Include.NON_EMPTY)
+        abstract @Nullable String serverId(); // only used in request
         abstract @Nullable String pluginId(); // only used in request
         abstract boolean enabled();
         abstract Map<String, PropertyValue> properties();

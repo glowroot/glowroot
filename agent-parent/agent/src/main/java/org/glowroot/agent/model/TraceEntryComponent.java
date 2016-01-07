@@ -73,7 +73,7 @@ class TraceEntryComponent {
     }
 
     // this does not include the root trace entry
-    public List<Trace.Entry> toProtobuf(long captureTick,
+    public List<Trace.Entry> toProto(long captureTick,
             Multimap<TraceEntryImpl, TraceEntryImpl> asyncRootTraceEntries) {
         if (captureTick < startTick) {
             return ImmutableList.of();
@@ -220,7 +220,7 @@ class TraceEntryComponent {
         for (TraceEntryImpl childEntry : childEntries) {
             List<Trace.Entry> subChildEntries = getProtobufChildEntries(childEntry, parentChildMap,
                     transactionStartTick, captureTick);
-            protobufChildEntries.add(childEntry.toProtobuf(transactionStartTick, captureTick,
+            protobufChildEntries.add(childEntry.toProto(transactionStartTick, captureTick,
                     subChildEntries));
         }
         return protobufChildEntries;

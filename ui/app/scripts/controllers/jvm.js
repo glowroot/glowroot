@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular */
+/* global glowroot */
 
 glowroot.controller('JvmCtrl', [
   '$scope',
@@ -31,48 +31,6 @@ glowroot.controller('JvmCtrl', [
         return true;
       }
       return !$scope.layout.central || $scope.layout.serverRollups.length === 1;
-    };
-
-    $scope.serverRollupUrl = function (serverRollup) {
-      var url;
-      var leaf = $scope.layout.serverRollups[serverRollup].leaf;
-      if (leaf) {
-        // ok to stay on current tab
-        url = $location.path().substring(1);
-      } else {
-        // only tab supporting non-leaf is gauges
-        url = 'jvm/gauges';
-      }
-      var query;
-      if (url === $location.path().substring(1)) {
-        // preserve query string
-        query = angular.copy($location.search());
-      } else {
-        query = {};
-      }
-      if ($scope.layout.central) {
-        if (url === 'jvm/gauges') {
-          query['server-rollup'] = serverRollup;
-        } else {
-          query['server-id'] = serverRollup;
-        }
-      }
-      url += queryStrings.encodeObject(query);
-      return url;
-    };
-
-    $scope.serverRollupQueryString = function () {
-      if ($scope.layout.central) {
-        return '?server-rollup=' + encodeURIComponent($scope.serverRollup);
-      }
-      return '';
-    };
-
-    $scope.serverIdQueryString = function () {
-      if ($scope.layout.central) {
-        return '?server-id=' + encodeURIComponent($scope.serverRollup);
-      }
-      return '';
     };
 
     $scope.currentUrl = function () {

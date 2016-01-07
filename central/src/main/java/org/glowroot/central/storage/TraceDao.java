@@ -67,6 +67,10 @@ public class TraceDao implements TraceRepository {
 
     private final PreparedStatement insertOverallSlowPoint;
     private final PreparedStatement insertTransactionSlowPoint;
+
+    private final PreparedStatement insertOverallSlowCount;
+    private final PreparedStatement insertTransactionSlowCount;
+
     private final PreparedStatement insertOverallErrorPoint;
     private final PreparedStatement insertTransactionErrorPoint;
 
@@ -96,42 +100,41 @@ public class TraceDao implements TraceRepository {
         this.serverDao = serverDao;
         this.transactionTypeDao = transactionTypeDao;
 
-        session.execute("create table if not exists trace_overall_slow_point"
-                + " (server_rollup varchar, transaction_type varchar, capture_time timestamp,"
-                + " server_id varchar, trace_id varchar, duration_nanos bigint, error boolean,"
-                + " user varchar, attributes blob, primary key ((server_rollup, transaction_type),"
-                + " capture_time, server_id, trace_id))");
-
-        session.execute("create table if not exists trace_transaction_slow_point"
-                + " (server_rollup varchar, transaction_type varchar, transaction_name varchar,"
-                + " capture_time timestamp, server_id varchar, trace_id varchar,"
-                + " duration_nanos bigint, error boolean, user varchar, attributes blob, "
-                + " primary key ((server_rollup, transaction_type, transaction_name), capture_time,"
+        session.execute("create table if not exists trace_tt_slow_point (server_rollup varchar,"
+                + " transaction_type varchar, capture_time timestamp, server_id varchar,"
+                + " trace_id varchar, duration_nanos bigint, error boolean, user varchar,"
+                + " attributes blob, primary key ((server_rollup, transaction_type), capture_time,"
                 + " server_id, trace_id))");
 
-        session.execute("create table if not exists trace_overall_error_point"
-                + " (server_rollup varchar, transaction_type varchar, capture_time timestamp,"
+        session.execute("create table if not exists trace_tn_slow_point (server_rollup varchar,"
+                + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
+                + " server_id varchar, trace_id varchar, duration_nanos bigint, error boolean,"
+                + " user varchar, attributes blob, primary key ((server_rollup, transaction_type,"
+                + " transaction_name), capture_time, server_id, trace_id))");
+
+        session.execute("create table if not exists trace_tt_error_point (server_rollup varchar,"
+                + " transaction_type varchar, capture_time timestamp, server_id varchar,"
+                + " trace_id varchar, duration_nanos bigint, error_message varchar, user varchar,"
+                + " attributes blob, primary key ((server_rollup, transaction_type), capture_time,"
+                + " server_id, trace_id))");
+
+        session.execute("create table if not exists trace_tn_error_point (server_rollup varchar,"
+                + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
                 + " server_id varchar, trace_id varchar, duration_nanos bigint,"
                 + " error_message varchar, user varchar, attributes blob, primary key"
-                + " ((server_rollup, transaction_type), capture_time, server_id, trace_id))");
+                + " ((server_rollup, transaction_type, transaction_name), capture_time, server_id,"
+                + " trace_id))");
 
-        session.execute("create table if not exists trace_transaction_error_point"
-                + " (server_rollup varchar, transaction_type varchar, transaction_name varchar,"
-                + " capture_time timestamp, server_id varchar, trace_id varchar,"
-                + " duration_nanos bigint, error_message varchar, user varchar, attributes blob,"
-                + " primary key ((server_rollup, transaction_type, transaction_name), capture_time,"
-                + " server_id, trace_id))");
+        session.execute("create table if not exists trace_tt_error_message (server_rollup varchar,"
+                + " transaction_type varchar, capture_time timestamp, server_id varchar,"
+                + " trace_id varchar, error_message varchar, primary key ((server_rollup,"
+                + " transaction_type), capture_time, server_id, trace_id))");
 
-        session.execute("create table if not exists trace_overall_error_message"
-                + " (server_rollup varchar, transaction_type varchar, capture_time timestamp,"
+        session.execute("create table if not exists trace_tn_error_message (server_rollup varchar,"
+                + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
                 + " server_id varchar, trace_id varchar, error_message varchar, primary key"
-                + " ((server_rollup, transaction_type), capture_time, server_id, trace_id))");
-
-        session.execute("create table if not exists trace_transaction_error_message"
-                + " (server_rollup varchar, transaction_type varchar, transaction_name varchar,"
-                + " capture_time timestamp, server_id varchar, trace_id varchar,"
-                + " error_message varchar, primary key ((server_rollup, transaction_type,"
-                + " transaction_name), capture_time, server_id, trace_id))");
+                + " ((server_rollup, transaction_type, transaction_name), capture_time, server_id,"
+                + " trace_id))");
 
         session.execute("create table if not exists trace_header (server_id varchar,"
                 + " trace_id varchar, header blob, primary key (server_id, trace_id))");
@@ -150,60 +153,64 @@ public class TraceDao implements TraceRepository {
         // using a counter would be nice since only need sum over capture_time range
         // but counter has no TTL, see https://issues.apache.org/jira/browse/CASSANDRA-2103
         // so adding trace_id to provide uniqueness
-        session.execute("create table if not exists trace_overall_slow (server_rollup varchar,"
+        session.execute("create table if not exists trace_tt_slow_count (server_rollup varchar,"
                 + " transaction_type varchar, capture_time timestamp, server_id varchar,"
                 + " trace_id varchar, primary key ((server_rollup, transaction_type), capture_time,"
                 + " server_id, trace_id))");
 
-        session.execute("create table if not exists trace_transaction_slow (server_rollup varchar,"
+        session.execute("create table if not exists trace_tn_slow_count (server_rollup varchar,"
                 + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
                 + " server_id varchar, trace_id varchar, primary key ((server_rollup,"
                 + " transaction_type, transaction_name), capture_time, server_id, trace_id))");
 
-        session.execute("create table if not exists trace_overall_error (server_rollup varchar,"
+        session.execute("create table if not exists trace_tt_error (server_rollup varchar,"
                 + " transaction_type varchar, capture_time timestamp, server_id varchar,"
                 + " trace_id varchar, primary key ((server_rollup, transaction_type), capture_time,"
                 + " server_id, trace_id))");
 
-        session.execute("create table if not exists trace_transaction_error (server_rollup varchar,"
+        session.execute("create table if not exists trace_tn_error (server_rollup varchar,"
                 + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
                 + " server_id varchar, trace_id varchar, primary key ((server_rollup,"
                 + " transaction_type, transaction_name), capture_time, server_id, trace_id))");
 
-        insertOverallSlowPoint = session.prepare("insert into trace_overall_slow_point"
-                + " (server_rollup, transaction_type, capture_time, server_id, trace_id,"
-                + " duration_nanos, error, user, attributes) values"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        insertOverallSlowPoint = session.prepare("insert into trace_tt_slow_point (server_rollup,"
+                + " transaction_type, capture_time, server_id, trace_id, duration_nanos, error,"
+                + " user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-        insertTransactionSlowPoint = session.prepare("insert into trace_transaction_slow_point"
+        insertTransactionSlowPoint = session.prepare("insert into trace_tn_slow_point"
                 + " (server_rollup, transaction_type, transaction_name, capture_time, server_id,"
                 + " trace_id, duration_nanos, error, user, attributes) values"
                 + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-        insertOverallErrorPoint = session.prepare("insert into trace_overall_error_point"
-                + " (server_rollup, transaction_type, capture_time, server_id, trace_id,"
-                + " duration_nanos, error_message, user, attributes) values"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        insertOverallSlowCount = session.prepare("insert into trace_tt_slow_count (server_rollup,"
+                + " transaction_type, capture_time, server_id, trace_id) values (?, ?, ?, ?, ?)");
 
-        insertTransactionErrorPoint = session.prepare("insert into trace_transaction_error_point"
+        insertTransactionSlowCount = session.prepare("insert into trace_tn_slow_count"
+                + " (server_rollup, transaction_type, transaction_name, capture_time, server_id,"
+                + " trace_id) values (?, ?, ?, ?, ?, ?)");
+
+        insertOverallErrorPoint = session.prepare("insert into trace_tt_error_point (server_rollup,"
+                + " transaction_type, capture_time, server_id, trace_id, duration_nanos,"
+                + " error_message, user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+        insertTransactionErrorPoint = session.prepare("insert into trace_tn_error_point"
                 + " (server_rollup, transaction_type, transaction_name, capture_time, server_id,"
                 + " trace_id, duration_nanos, error_message, user, attributes) values"
                 + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-        insertOverallErrorMessage = session.prepare("insert into trace_overall_error_message"
+        insertOverallErrorMessage = session.prepare("insert into trace_tt_error_message"
                 + " (server_rollup, transaction_type, capture_time, server_id, trace_id,"
                 + " error_message) values (?, ?, ?, ?, ?, ?)");
 
-        insertTransactionErrorMessage = session.prepare(
-                "insert into trace_transaction_error_message (server_rollup, transaction_type,"
-                        + " transaction_name, capture_time, server_id, trace_id, error_message)"
-                        + " values (?, ?, ?, ?, ?, ?, ?)");
+        insertTransactionErrorMessage = session.prepare("insert into trace_tn_error_message"
+                + " (server_rollup, transaction_type, transaction_name, capture_time, server_id,"
+                + " trace_id, error_message) values (?, ?, ?, ?, ?, ?, ?)");
 
-        insertHeader = session.prepare("insert into trace_header (server_id, trace_id, header)"
-                + " values (?, ?, ?)");
+        insertHeader = session
+                .prepare("insert into trace_header (server_id, trace_id, header) values (?, ?, ?)");
 
-        insertEntries = session.prepare("insert into trace_entries (server_id, trace_id, entriesx)"
-                + " values (?, ?, ?)");
+        insertEntries = session.prepare(
+                "insert into trace_entries (server_id, trace_id, entriesx) values (?, ?, ?)");
 
         insertMainThreadProfile = session.prepare("insert into trace_main_thread_profile"
                 + " (server_id, trace_id, profile) values (?, ?, ?)");
@@ -212,46 +219,43 @@ public class TraceDao implements TraceRepository {
                 + " (server_id, trace_id, profile) values (?, ?, ?)");
 
         readOverallSlowPoint = session.prepare("select server_id, trace_id, capture_time,"
-                + " duration_nanos, error, user, attributes from trace_overall_slow_point"
+                + " duration_nanos, error, user, attributes from trace_tt_slow_point"
                 + " where server_rollup = ? and transaction_type = ? and capture_time > ?"
                 + " and capture_time <= ?");
 
         readTransactionSlowPoint = session.prepare("select server_id, trace_id, capture_time,"
-                + " duration_nanos, error, user, attributes from trace_transaction_slow_point"
+                + " duration_nanos, error, user, attributes from trace_tn_slow_point"
                 + " where server_rollup = ? and transaction_type = ? and transaction_name = ?"
                 + " and capture_time > ? and capture_time <= ?");
 
         readOverallErrorPoint = session.prepare("select server_id, trace_id, capture_time,"
-                + " duration_nanos, error_message, user, attributes from trace_overall_error_point"
+                + " duration_nanos, error_message, user, attributes from trace_tt_error_point"
                 + " where server_rollup = ? and transaction_type = ? and capture_time > ?"
                 + " and capture_time <= ?");
 
         readTransactionErrorPoint = session.prepare("select server_id, trace_id, capture_time,"
-                + " duration_nanos, error_message, user, attributes from"
-                + " trace_transaction_error_point where server_rollup = ? and transaction_type = ?"
+                + " duration_nanos, error_message, user, attributes from trace_tn_error_point"
+                + " where server_rollup = ? and transaction_type = ? and transaction_name = ?"
+                + " and capture_time > ? and capture_time <= ?");
+
+        readOverallErrorMessage = session.prepare("select capture_time, error_message"
+                + " from trace_tt_error_message where server_rollup = ? and transaction_type = ?"
+                + " and capture_time > ? and capture_time <= ?");
+
+        readTransactionErrorMessage = session.prepare("select capture_time, error_message"
+                + " from trace_tn_error_message where server_rollup = ? and transaction_type = ?"
                 + " and transaction_name = ? and capture_time > ? and capture_time <= ?");
-
-        readOverallErrorMessage = session.prepare(
-                "select capture_time, error_message from trace_overall_error_message"
-                        + " where server_rollup = ? and transaction_type = ? and capture_time > ?"
-                        + " and capture_time <= ?");
-
-        readTransactionErrorMessage = session.prepare(
-                "select capture_time, error_message from trace_transaction_error_message"
-                        + " where server_rollup = ? and transaction_type = ?"
-                        + " and transaction_name = ? and capture_time > ? and capture_time <= ?");
 
         readHeader = session
                 .prepare("select header from trace_header where server_id = ? and trace_id = ?");
 
-        deletePartialOverallSlowPoint = session.prepare("delete from trace_overall_slow_point"
+        deletePartialOverallSlowPoint = session.prepare("delete from trace_tt_slow_point"
                 + " where server_rollup = ? and transaction_type = ? and capture_time = ?"
                 + " and server_id = ? and trace_id = ?");
 
-        deletePartialTransactionSlowPoint = session.prepare(
-                "delete from trace_transaction_slow_point where server_rollup = ?"
-                        + " and transaction_type = ? and transaction_name = ?"
-                        + " and capture_time = ? and server_id = ? and trace_id = ?");
+        deletePartialTransactionSlowPoint = session.prepare("delete from trace_tn_slow_point"
+                + " where server_rollup = ? and transaction_type = ? and transaction_name = ?"
+                + " and capture_time = ? and server_id = ? and trace_id = ?");
     }
 
     @Override
@@ -291,6 +295,25 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setBool(i++, header.hasError());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
                 boundStatement.setBytes(i++, Messages.toByteBuffer(header.getAttributeList()));
+                session.execute(boundStatement);
+
+                boundStatement = insertOverallSlowCount.bind();
+                i = 0;
+                boundStatement.setString(i++, serverRollup);
+                boundStatement.setString(i++, header.getTransactionType());
+                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
+                boundStatement.setString(i++, serverId);
+                boundStatement.setString(i++, trace.getId());
+                session.execute(boundStatement);
+
+                boundStatement = insertTransactionSlowCount.bind();
+                i = 0;
+                boundStatement.setString(i++, serverRollup);
+                boundStatement.setString(i++, header.getTransactionType());
+                boundStatement.setString(i++, header.getTransactionName());
+                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
+                boundStatement.setString(i++, serverId);
+                boundStatement.setString(i++, trace.getId());
                 session.execute(boundStatement);
 
                 if (priorHeader != null) {
@@ -460,14 +483,14 @@ public class TraceDao implements TraceRepository {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             ResultSet results = session.execute(
-                    "select count(*) from trace_overall_slow where server_rollup = ?"
+                    "select count(*) from trace_tt_slow_count where server_rollup = ?"
                             + " and transaction_type = ? and capture_time > ?"
                             + " and capture_time <= ?",
                     query.serverRollup(), query.transactionType(), query.from(), query.to());
             return results.one().getLong(0);
         } else {
             ResultSet results = session.execute(
-                    "select count(*) from trace_transaction_slow where server_rollup = ?"
+                    "select count(*) from trace_tn_slow_count where server_rollup = ?"
                             + " and transaction_type = ? and transaction_name = ?"
                             + " and capture_time > ? and capture_time <= ?",
                     query.serverRollup(), query.transactionType(), transactionName, query.from(),
@@ -481,14 +504,14 @@ public class TraceDao implements TraceRepository {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             ResultSet results = session.execute(
-                    "select count(*) from trace_overall_error where server_rollup = ?"
+                    "select count(*) from trace_tt_error where server_rollup = ?"
                             + " and transaction_type = ? and capture_time > ?"
                             + " and capture_time <= ?",
                     query.serverRollup(), query.transactionType(), query.from(), query.to());
             return results.one().getLong(0);
         } else {
             ResultSet results = session.execute(
-                    "select count(*) from trace_transaction_error where server_rollup = ?"
+                    "select count(*) from trace_tn_error where server_rollup = ?"
                             + " and transaction_type = ? and transaction_name = ?"
                             + " and capture_time > ? and capture_time <= ?",
                     query.serverRollup(), query.transactionType(), transactionName, query.from(),

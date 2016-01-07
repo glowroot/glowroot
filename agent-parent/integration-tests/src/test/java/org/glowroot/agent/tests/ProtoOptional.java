@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,18 @@
  */
 package org.glowroot.agent.tests;
 
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.OptionalBool;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.OptionalInt;
+import org.glowroot.wire.api.model.Proto.OptionalBool;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
+import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
 public class ProtoOptional {
 
-    public static OptionalInt of(int value) {
-        return OptionalInt.newBuilder().setValue(value).build();
+    public static OptionalInt32 of(int value) {
+        return OptionalInt32.newBuilder().setValue(value).build();
+    }
+
+    public static OptionalInt64 of(long value) {
+        return OptionalInt64.newBuilder().setValue(value).build();
     }
 
     public static OptionalBool of(boolean value) {

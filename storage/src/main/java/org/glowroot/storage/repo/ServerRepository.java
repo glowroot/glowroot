@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,16 +22,16 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
-import org.glowroot.wire.api.model.JvmInfoOuterClass.JvmInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
 
 public interface ServerRepository {
 
     List<ServerRollup> readServerRollups() throws Exception;
 
-    void storeJvmInfo(String serverId, JvmInfo jvmInfo) throws Exception;
+    void storeProcessInfo(String serverId, ProcessInfo ProcessInfo) throws Exception;
 
     @Nullable
-    JvmInfo readJvmInfo(String serverId) throws Exception;
+    ProcessInfo readProcessInfo(String serverId) throws Exception;
 
     @Value.Immutable
     @Styles.AllParameters

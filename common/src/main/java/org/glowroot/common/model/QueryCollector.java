@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public class QueryCollector {
         return lastCaptureTime;
     }
 
-    public List<Aggregate.QueriesByType> toProtobuf(boolean orderAndLimit) {
+    public List<Aggregate.QueriesByType> toProto(boolean orderAndLimit) {
         if (queries.isEmpty()) {
             return ImmutableList.of();
         }
@@ -60,7 +60,7 @@ public class QueryCollector {
         for (Entry<String, Map<String, MutableQuery>> entry : queries.entrySet()) {
             List<Query> queries = Lists.newArrayListWithCapacity(entry.getValue().values().size());
             for (MutableQuery query : entry.getValue().values()) {
-                queries.add(query.toProtobuf());
+                queries.add(query.toProto());
             }
             if (orderAndLimit) {
                 order(queries);

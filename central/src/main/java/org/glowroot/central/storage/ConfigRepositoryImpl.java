@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,18 +54,20 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     private final ConfigDao configDao;
+    private final CentralConfigDao centralConfigDao;
 
     private final ImmutableList<RollupConfig> rollupConfigs;
 
-    public ConfigRepositoryImpl(ConfigDao configDao) {
+    public ConfigRepositoryImpl(ConfigDao configDao, CentralConfigDao centralConfigDao) {
         this.configDao = configDao;
+        this.centralConfigDao = centralConfigDao;
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
     }
 
     @Override
     public UserInterfaceConfig getUserInterfaceConfig() {
         UserInterfaceConfig config =
-                configDao.read(UI_KEY, ImmutableUserInterfaceConfig.class, mapper);
+                centralConfigDao.read(UI_KEY, ImmutableUserInterfaceConfig.class, mapper);
         if (config == null) {
             return ImmutableUserInterfaceConfig.builder().build();
         }
@@ -74,7 +76,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public SmtpConfig getSmtpConfig() {
-        SmtpConfig config = configDao.read(SMTP_KEY, ImmutableSmtpConfig.class, mapper);
+        SmtpConfig config = centralConfigDao.read(SMTP_KEY, ImmutableSmtpConfig.class, mapper);
         if (config == null) {
             return ImmutableSmtpConfig.builder().build();
         }
@@ -83,7 +85,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public List<AlertConfig> getAlertConfigs(String serverRollup) throws JsonProcessingException {
-        List<ImmutableAlertConfig> configs = configDao.read(ALERTS_KEY,
+        List<ImmutableAlertConfig> configs = centralConfigDao.read(ALERTS_KEY,
                 new TypeReference<List<ImmutableAlertConfig>>() {}, mapper);
         if (configs == null) {
             return ImmutableList.of();
@@ -108,7 +110,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         if (!getUserInterfaceConfig().version().equals(priorVersion)) {
             throw new OptimisticLockException();
         }
-        configDao.write(UI_KEY, userInterfaceConfig, mapper);
+        centralConfigDao.write(UI_KEY, userInterfaceConfig, mapper);
     }
 
     @Override
@@ -116,7 +118,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         if (!getSmtpConfig().version().equals(priorVersion)) {
             throw new OptimisticLockException();
         }
-        configDao.write(SMTP_KEY, smtpConfig, mapper);
+        centralConfigDao.write(SMTP_KEY, smtpConfig, mapper);
     }
 
     @Override
@@ -124,7 +126,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             throws JsonProcessingException {
         List<AlertConfig> configs = Lists.newArrayList(getAlertConfigs(serverRollup));
         configs.add(alertConfig);
-        configDao.write(ALERTS_KEY, configs, mapper);
+        centralConfigDao.write(ALERTS_KEY, configs, mapper);
     }
 
     @Override
@@ -140,7 +142,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
         }
         checkState(found, "Alert config not found: %s", priorVersion);
-        configDao.write(ALERTS_KEY, configs, mapper);
+        centralConfigDao.write(ALERTS_KEY, configs, mapper);
     }
 
     @Override
@@ -156,7 +158,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
         }
         checkState(found, "Alert config not found: %s", version);
-        configDao.write(ALERTS_KEY, configs, mapper);
+        centralConfigDao.write(ALERTS_KEY, configs, mapper);
     }
 
     @Override
@@ -222,20 +224,29 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void updateTransactionConfig(String serverId, TransactionConfig transactionConfig,
-            String priorVersion) {
-        throw new UnsupportedOperationException();
+            String priorVersion) throws Exception {
+        if (!getTransactionConfig(serverId).version().equals(priorVersion)) {
+            throw new OptimisticLockException();
+        }
+        configDao.write(serverId, "transactions", transactionConfig, mapper);
     }
 
     @Override
     public void updateUserRecordingConfig(String serverId, UserRecordingConfig userRecordingConfig,
-            String priorVersion) {
-        throw new UnsupportedOperationException();
+            String priorVersion) throws Exception {
+        if (!getUserRecordingConfig(serverId).version().equals(priorVersion)) {
+            throw new OptimisticLockException();
+        }
+        configDao.write(serverId, "userRecording", userRecordingConfig, mapper);
     }
 
     @Override
     public void updateAdvancedConfig(String serverId, AdvancedConfig advancedConfig,
-            String priorVersion) {
-        throw new UnsupportedOperationException();
+            String priorVersion) throws Exception {
+        if (!getAdvancedConfig(serverId).version().equals(priorVersion)) {
+            throw new OptimisticLockException();
+        }
+        configDao.write(serverId, "advanced", advancedConfig, mapper);
     }
 
     @Override

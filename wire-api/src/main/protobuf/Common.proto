@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package org_glowroot_wire_api_model;
+
+option java_package = "org.glowroot.wire.api.model";
+
+option java_outer_classname = "Proto";
+
+message Throwable {
+  string className = 1;
+  string message = 2;
+  // for inner "cause" throwable, stack trace only includes frames not in common with the
+  // enclosing throwable
+  repeated StackTraceElement stack_trace_element = 3;
+  // this is for printing '... 18 more' at end of inner "cause" instead of the entire stack trace
+  int32 frames_in_common_with_enclosing = 4;
+  Throwable cause = 5;
+  repeated Throwable suppressed = 6;
+}
+
+message StackTraceElement {
+  string class_name = 1;
+  string method_name = 2;
+  string file_name = 3;
+  // sint since can be negative
+  sint32 line_number = 4;
+}
+
+message OptionalInt64 {
+  int64 value = 1;
+}
+
+message OptionalInt32 {
+  int32 value = 1;
+}
+
+message OptionalBool {
+  bool value = 1;
+}
+
+message OptionalString {
+  string value = 1;
+}

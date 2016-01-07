@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ glowroot.controller('ConfigGaugeCtrl', [
     }
 
     if (version) {
-      $http.get('backend/config/gauges?version=' + version)
+      $http.get('backend/config/gauges?server-id=' + $scope.serverId + '&version=' + version)
           .success(function (data) {
             $scope.loaded = true;
             onNewData(data);
@@ -131,6 +131,7 @@ glowroot.controller('ConfigGaugeCtrl', [
         return [suggestion];
       }
       var queryData = {
+        serverId: $scope.serverId,
         partialMBeanObjectName: suggestion,
         limit: 10
       };
@@ -168,6 +169,7 @@ glowroot.controller('ConfigGaugeCtrl', [
 
     function fetchMBeanAttributes(mbeanObjectName) {
       var queryData = {
+        serverId: $scope.serverId,
         mbeanObjectName: mbeanObjectName,
         gaugeVersion: $scope.config.version || ''
       };
@@ -206,6 +208,7 @@ glowroot.controller('ConfigGaugeCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
+      postData.serverId = $scope.serverId;
       postData.mbeanAttributes = $scope.config.mbeanAttributes;
       var url;
       if (version) {
@@ -238,6 +241,7 @@ glowroot.controller('ConfigGaugeCtrl', [
 
     $scope.delete = function (deferred) {
       var postData = {
+        serverId: $scope.serverId,
         version: $scope.config.version
       };
       $http.post('backend/config/gauges/remove', postData)

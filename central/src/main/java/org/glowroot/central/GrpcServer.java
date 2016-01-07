@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,14 +29,14 @@ import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorService;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.JvmInfoMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc;
-import org.glowroot.wire.api.model.LogEventOuterClass.LogEvent;
+import org.glowroot.wire.api.model.Proto;
 
 public class GrpcServer {
 
@@ -74,22 +74,16 @@ public class GrpcServer {
     private class CollectorServiceImpl implements CollectorService {
 
         @Override
-        public void collectJvmInfo(JvmInfoMessage request,
+        public void collectInit(InitMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
+            // FIXME store request.getConfig()
             try {
-                serverRepository.storeJvmInfo(request.getServerId(), request.getJvmInfo());
+                serverRepository.storeProcessInfo(request.getServerId(), request.getProcessInfo());
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
-            responseObserver.onNext(EmptyMessage.getDefaultInstance());
-            responseObserver.onCompleted();
-        }
-
-        @Override
-        public void collectConfig(ConfigMessage request,
-                StreamObserver<EmptyMessage> responseObserver) {
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
         }
@@ -140,9 +134,17 @@ public class GrpcServer {
         @Override
         public void log(LogMessage request, StreamObserver<EmptyMessage> responseObserver) {
             try {
+                // FIXME put these in Cassandra and render in central UI
                 LogEvent logEvent = request.getLogEvent();
-                // FIXME put these in Cassandra?
-                System.out.println(logEvent);
+                Proto.Throwable t = logEvent.getThrowable();
+                if (t == null) {
+                    logger.warn("{} -- {} -- {} -- {}", request.getServerId(), logEvent.getLevel(),
+                            logEvent.getLoggerName(), logEvent.getFormattedMessage());
+                } else {
+                    logger.warn("{} -- {} -- {} -- {}\n{}", request.getServerId(),
+                            logEvent.getLevel(), logEvent.getLoggerName(),
+                            logEvent.getFormattedMessage(), t);
+                }
             } catch (Throwable t) {
                 responseObserver.onError(t);
                 return;
