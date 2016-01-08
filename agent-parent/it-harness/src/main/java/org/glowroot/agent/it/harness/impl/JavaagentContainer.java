@@ -337,12 +337,17 @@ public class JavaagentContainer implements Container {
                 // module builds, which causes the glowroot artifacts to be included
                 // when running "mvn clean install" from the project root, see MSHADE-206
                 maybeShadedInsideAgentJars.add(path);
-            } else if (name.matches("glowroot-agent-it-harness-[0-9.]+(-SNAPSHOT)?.jar")) {
+            } else if (name.matches("glowroot-agent-it-harness-[0-9.]+(-SNAPSHOT)?\\.jar")) {
                 paths.add(path);
             } else if (file.getAbsolutePath().contains(File.separator + "it-harness"
                     + File.separator + "target" + File.separator + "classes")) {
                 paths.add(path);
-            } else if (file.isDirectory() && file.getName().equals("test-classes")) {
+            } else if (file.isDirectory() && name.equals("test-classes")) {
+                paths.add(path);
+            } else if (name.matches("tomcat-.*\\.jar")) {
+                // ideally all test dependencies would be in system classpath, but not sure how to
+                // differentiate here
+                // so just hard-coding test dependencies as necessary
                 paths.add(path);
             } else {
                 bootPaths.add(path);

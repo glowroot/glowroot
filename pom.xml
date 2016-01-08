@@ -50,10 +50,10 @@
     <module>agent-parent/plugins/http-client-plugin</module>
     <module>agent-parent/plugins/jdbc-plugin</module>
     <module>agent-parent/plugins/jms-plugin</module>
+    <module>agent-parent/plugins/jsp-plugin</module>
     <module>agent-parent/plugins/logger-plugin</module>
     <module>agent-parent/plugins/quartz-plugin</module>
     <module>agent-parent/plugins/servlet-plugin</module>
-    <module>agent-parent/plugins/jsp-plugin</module>
     <module>agent-parent/benchmarks</module>
     <module>agent-parent/webdriver-tests</module>
     <module>agent-parent/ui-sandbox</module>
