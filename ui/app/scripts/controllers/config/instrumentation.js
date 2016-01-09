@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,6 +94,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       $scope.loaded = true;
       onNewData({
         config: {
+          // when these are updated, make sure to update similar list in importFromJson (see instrumentation-list.js)
           classAnnotation: '',
           methodDeclaringClassName: '',
           methodAnnotation: '',
@@ -282,6 +283,15 @@ glowroot.controller('ConfigInstrumentationCtrl', [
     $scope.exportToJson = function () {
       var data = angular.copy($scope.config);
       delete data.version;
+      if (!data.classAnnotation) {
+        delete data.classAnnotation;
+      }
+      if (!data.methodDeclaringClassName) {
+        delete data.methodDeclaringClassName;
+      }
+      if (!data.methodAnnotation) {
+        delete data.methodAnnotation;
+      }
       if (!data.methodReturnType) {
         delete data.methodReturnType;
       }
