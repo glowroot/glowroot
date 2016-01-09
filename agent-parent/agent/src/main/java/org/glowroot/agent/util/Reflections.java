@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,16 +32,30 @@ public class Reflections {
 
     public static Method getMethod(Class<?> clazz, String name, Class<?>... parameterTypes)
             throws Exception {
-        Method method = clazz.getMethod(name, parameterTypes);
-        method.setAccessible(true);
-        return method;
+        try {
+            Method method = clazz.getMethod(name, parameterTypes);
+            method.setAccessible(true);
+            return method;
+        } catch (NoClassDefFoundError e) {
+            // NoClassDefFoundError is thrown if any method signature in clazz references a missing
+            // class (see MissingOptionalDependenciesReflectionTest.java)
+            // seems best to treat same as NoSuchMethodException
+            throw new NoSuchMethodException();
+        }
     }
 
     public static Method getDeclaredMethod(Class<?> clazz, String name, Class<?>... parameterTypes)
             throws Exception {
-        Method method = clazz.getDeclaredMethod(name, parameterTypes);
-        method.setAccessible(true);
-        return method;
+        try {
+            Method method = clazz.getDeclaredMethod(name, parameterTypes);
+            method.setAccessible(true);
+            return method;
+        } catch (NoClassDefFoundError e) {
+            // NoClassDefFoundError is thrown if any method signature in clazz references a missing
+            // class (see MissingOptionalDependenciesReflectionTest.java)
+            // seems best to treat same as NoSuchMethodException
+            throw new NoSuchMethodException();
+        }
     }
 
     public static Method getAnyMethod(Class<?> clazz, String name, Class<?>... parameterTypes)
@@ -67,6 +81,18 @@ public class Reflections {
             Class<?> superClass = clazz.getSuperclass();
             if (superClass == null) {
                 throw e;
+            }
+            return getAnyDeclaredMethod(superClass, name, parameterTypes);
+        } catch (NoClassDefFoundError e) {
+            // NoClassDefFoundError is thrown if any method signature in clazz references a missing
+            // class (see MissingOptionalDependenciesReflectionTest.java)
+            // seems best to treat same as NoSuchMethodException
+
+            // log exception at trace level
+            logger.trace(e.getMessage(), e);
+            Class<?> superClass = clazz.getSuperclass();
+            if (superClass == null) {
+                throw new NoSuchMethodException();
             }
             return getAnyDeclaredMethod(superClass, name, parameterTypes);
         }
