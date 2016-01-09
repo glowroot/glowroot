@@ -42,7 +42,7 @@
     <dependency>
       <groupId>com.datastax.cassandra</groupId>
       <artifactId>cassandra-driver-core</artifactId>
-      <version>2.2.0-rc3</version>
+      <version>3.0.0-rc1</version>
     </dependency>
     <dependency>
       <groupId>org.immutables</groupId>

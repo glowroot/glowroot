@@ -95,7 +95,7 @@ module.exports = function (grunt) {
               connect().use('/bower_components', serveStatic('bower_components')),
               serveStatic(appConfig.app),
               connect().use('/fonts', serveStatic('bower_components/fontawesome/fonts')),
-              connect().use('/template', serveStatic('bower_components/angular-ui-bootstrap/template'))
+              connect().use('/uib/template', serveStatic('bower_components/angular-ui-bootstrap/template'))
             ];
           }
         }
@@ -203,7 +203,8 @@ module.exports = function (grunt) {
       },
       uiBootstrapTemplates: {
         options: {
-          module: 'ui.bootstrap.typeahead'
+          module: 'ui.bootstrap.typeahead',
+          prefix: 'uib'
         },
         cwd: 'bower_components/angular-ui-bootstrap',
         src: [

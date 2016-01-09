@@ -181,7 +181,7 @@
       <!-- this is included to test weaving against jdk 1.7 bytecode -->
       <groupId>io.undertow</groupId>
       <artifactId>undertow-core</artifactId>
-      <version>1.3.10.Final</version>
+      <version>1.3.12.Final</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -308,6 +308,7 @@
                   <artifact>com.google.protobuf:protobuf-java</artifact>
                   <excludes>
                     <exclude>google/protobuf/*.proto</exclude>
+                    <exclude>google/protobuf/compiler/*.proto</exclude>
                   </excludes>
                 </filter>
                 <filter>
