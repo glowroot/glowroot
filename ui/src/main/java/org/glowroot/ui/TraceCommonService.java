@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ class TraceCommonService {
         if (header != null) {
             return toJsonLiveHeader(header);
         }
-        HeaderPlus headerPlus = traceRepository.readHeader(serverId, traceId);
+        HeaderPlus headerPlus = traceRepository.readHeaderPlus(serverId, traceId);
         if (headerPlus != null) {
             return toJsonRepoHeader(headerPlus);
         }
@@ -80,12 +80,25 @@ class TraceCommonService {
     // overwritten profile will return {"overwritten":true}
     // expired (not found) trace will return {"expired":true}
     @Nullable
-    String getProfileJson(String serverId, String traceId) throws Exception {
+    String getMainThreadProfileJson(String serverId, String traceId) throws Exception {
         // check active/pending traces first, and lastly stored traces to make sure that the trace
         // is not missed if it is in transition between these states
-        Profile profile = liveTraceRepository.getProfile(serverId, traceId);
+        Profile profile = liveTraceRepository.getMainThreadProfile(serverId, traceId);
         if (profile == null) {
-            profile = traceRepository.readProfile(serverId, traceId);
+            profile = traceRepository.readMainThreadProfile(serverId, traceId);
+        }
+        return toJson(profile);
+    }
+
+    // overwritten profile will return {"overwritten":true}
+    // expired (not found) trace will return {"expired":true}
+    @Nullable
+    String getAuxThreadProfileJson(String serverId, String traceId) throws Exception {
+        // check active/pending traces first, and lastly stored traces to make sure that the trace
+        // is not missed if it is in transition between these states
+        Profile profile = liveTraceRepository.getAuxThreadProfile(serverId, traceId);
+        if (profile == null) {
+            profile = traceRepository.readAuxThreadProfile(serverId, traceId);
         }
         return toJson(profile);
     }
@@ -101,23 +114,23 @@ class TraceCommonService {
                     .fileName(getFileName(header))
                     .headerJson(toJsonLiveHeader(header))
                     .entriesJson(toJson(trace.getEntryList()))
-                    .profileJson(toJson(trace.getProfile()))
+                    .mainThreadProfileJson(toJson(trace.getMainThreadProfile()))
+                    .auxThreadProfileJson(toJson(trace.getAuxThreadProfile()))
                     .build();
         }
 
-        HeaderPlus header = traceRepository.readHeader(serverId, traceId);
+        HeaderPlus header = traceRepository.readHeaderPlus(serverId, traceId);
         if (header == null) {
             return null;
         }
         ImmutableTraceExport.Builder builder = ImmutableTraceExport.builder()
                 .fileName(getFileName(header.header()))
                 .headerJson(toJsonRepoHeader(header));
-        if (header.entriesExistence() == Existence.YES) {
-            builder.entriesJson(toJson(traceRepository.readEntries(serverId, traceId)));
-        }
-        if (header.profileExistence() == Existence.YES) {
-            builder.profileJson(toJson(traceRepository.readProfile(serverId, traceId)));
-        }
+        builder.entriesJson(toJson(traceRepository.readEntries(serverId, traceId)));
+        builder.mainThreadProfileJson(
+                toJson(traceRepository.readMainThreadProfile(serverId, traceId)));
+        builder.auxThreadProfileJson(
+                toJson(traceRepository.readAuxThreadProfile(serverId, traceId)));
         return builder.build();
     }
 
@@ -146,9 +159,11 @@ class TraceCommonService {
     }
 
     private static String toJsonLiveHeader(Trace.Header header) throws IOException {
+        boolean hasProfile = header.getMainThreadProfileSampleCount() > 0
+                || header.getAuxThreadProfileSampleCount() > 0;
         return toJson(header, header.getPartial(),
                 header.getEntryCount() > 0 ? Existence.YES : Existence.NO,
-                header.getProfileSampleCount() > 0 ? Existence.YES : Existence.NO);
+                hasProfile ? Existence.YES : Existence.NO);
     }
 
     private static String toJsonRepoHeader(HeaderPlus header) throws IOException {
@@ -201,25 +216,32 @@ class TraceCommonService {
             jg.writeFieldName("error");
             writeError(header.getError(), jg);
         }
-        jg.writeFieldName("rootTimer");
-        writeTimer(header.getRootTimer(), jg);
-        if (header.hasThreadCpuNanos()) {
-            jg.writeNumberField("threadCpuNanos", header.getThreadCpuNanos().getValue());
+        if (header.hasMainThreadRootTimer()) {
+            jg.writeFieldName("mainThreadRootTimer");
+            writeTimer(header.getMainThreadRootTimer(), jg);
         }
-        if (header.hasThreadBlockedNanos()) {
-            jg.writeNumberField("threadBlockedNanos", header.getThreadBlockedNanos().getValue());
+        jg.writeArrayFieldStart("auxThreadRootTimers");
+        for (Trace.Timer asyncRootTimer : header.getAuxThreadRootTimerList()) {
+            writeTimer(asyncRootTimer, jg);
         }
-        if (header.hasThreadWaitedNanos()) {
-            jg.writeNumberField("threadWaitedNanos", header.getThreadWaitedNanos().getValue());
+        jg.writeEndArray();
+        jg.writeArrayFieldStart("asyncRootTimers");
+        for (Trace.Timer asyncRootTimer : header.getAsyncRootTimerList()) {
+            writeTimer(asyncRootTimer, jg);
         }
-        if (header.hasThreadAllocatedBytes()) {
-            jg.writeNumberField("threadAllocatedBytes",
-                    header.getThreadAllocatedBytes().getValue());
+        jg.writeEndArray();
+        if (header.hasMainThreadStats()) {
+            jg.writeFieldName("mainThreadStats");
+            writeThreadStats(header.getMainThreadStats(), jg);
         }
-        List<Trace.GarbageCollectionActivity> gcActivities = header.getGcActivityList();
-        if (!gcActivities.isEmpty()) {
-            jg.writeArrayFieldStart("gcActivities");
-            for (Trace.GarbageCollectionActivity gcActivity : gcActivities) {
+        if (header.hasAuxThreadStats()) {
+            jg.writeFieldName("auxThreadStats");
+            writeThreadStats(header.getAuxThreadStats(), jg);
+        }
+        List<Trace.GarbageCollectionActivity> gcActivityList = header.getGcActivityList();
+        if (!gcActivityList.isEmpty()) {
+            jg.writeArrayFieldStart("gcActivity");
+            for (Trace.GarbageCollectionActivity gcActivity : gcActivityList) {
                 jg.writeStartObject();
                 jg.writeStringField("collectorName", gcActivity.getCollectorName());
                 jg.writeNumberField("totalMillis", gcActivity.getTotalMillis());
@@ -233,10 +255,21 @@ class TraceCommonService {
         if (entryLimitExceeded) {
             jg.writeBooleanField("entryLimitExceeded", entryLimitExceeded);
         }
-        jg.writeNumberField("profileSampleCount", header.getProfileSampleCount());
-        boolean profileSampleLimitExceeded = header.getProfileSampleLimitExceeded();
-        if (profileSampleLimitExceeded) {
-            jg.writeBooleanField("profileSampleLimitExceeded", profileSampleLimitExceeded);
+        jg.writeNumberField("mainThreadProfileSampleCount",
+                header.getMainThreadProfileSampleCount());
+        boolean mainThreadProfileSampleLimitExceeded =
+                header.getMainThreadProfileSampleLimitExceeded();
+        if (mainThreadProfileSampleLimitExceeded) {
+            jg.writeBooleanField("mainThreadProfileSampleLimitExceeded",
+                    mainThreadProfileSampleLimitExceeded);
+        }
+        jg.writeNumberField("auxThreadProfileSampleCount",
+                header.getAuxThreadProfileSampleCount());
+        boolean auxThreadProfileSampleLimitExceeded =
+                header.getAuxThreadProfileSampleLimitExceeded();
+        if (auxThreadProfileSampleLimitExceeded) {
+            jg.writeBooleanField("auxThreadProfileSampleLimitExceeded",
+                    auxThreadProfileSampleLimitExceeded);
         }
         jg.writeStringField("entriesExistence",
                 entriesExistence.name().toLowerCase(Locale.ENGLISH));
@@ -251,8 +284,7 @@ class TraceCommonService {
         jg.writeStartObject();
         jg.writeNumberField("startOffsetNanos", entry.getStartOffsetNanos());
         jg.writeNumberField("durationNanos", entry.getDurationNanos());
-        boolean active = entry.getActive();
-        if (active) {
+        if (entry.getActive()) {
             jg.writeBooleanField("active", true);
         }
         jg.writeStringField("message", entry.getMessage());
@@ -382,6 +414,27 @@ class TraceCommonService {
         jg.writeEndObject();
     }
 
+    private static void writeThreadStats(Trace.ThreadStats threadStats, JsonGenerator jg)
+            throws IOException {
+        jg.writeStartObject();
+        if (threadStats.hasTotalCpuNanos()) {
+            jg.writeNumberField("totalCpuNanos", threadStats.getTotalCpuNanos().getValue());
+        }
+        if (threadStats.hasTotalBlockedNanos()) {
+            jg.writeNumberField("totalBlockedNanos",
+                    threadStats.getTotalBlockedNanos().getValue());
+        }
+        if (threadStats.hasTotalWaitedNanos()) {
+            jg.writeNumberField("totalWaitedNanos",
+                    threadStats.getTotalWaitedNanos().getValue());
+        }
+        if (threadStats.hasTotalAllocatedBytes()) {
+            jg.writeNumberField("totalAllocatedBytes",
+                    threadStats.getTotalAllocatedBytes().getValue());
+        }
+        jg.writeEndObject();
+    }
+
     private static void writeStackTraceElement(Trace.StackTraceElement stackTraceElement,
             JsonGenerator jg) throws IOException {
         jg.writeString(new StackTraceElement(stackTraceElement.getClassName(),
@@ -401,6 +454,8 @@ class TraceCommonService {
         @Nullable
         String entriesJson();
         @Nullable
-        String profileJson();
+        String mainThreadProfileJson();
+        @Nullable
+        String auxThreadProfileJson();
     }
 }

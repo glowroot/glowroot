@@ -47,6 +47,7 @@
     <module>agent-parent/it-harness</module>
     <module>agent-parent/integration-tests</module>
     <module>agent-parent/plugins/cassandra-plugin</module>
+    <module>agent-parent/plugins/executor-plugin</module>
     <module>agent-parent/plugins/http-client-plugin</module>
     <module>agent-parent/plugins/jdbc-plugin</module>
     <module>agent-parent/plugins/jms-plugin</module>

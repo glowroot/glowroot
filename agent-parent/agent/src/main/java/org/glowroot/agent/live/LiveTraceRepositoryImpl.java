@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     public @Nullable Trace.Header getHeader(String serverId, String traceId) throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
-            if (transaction.getId().equals(traceId)) {
+            if (transaction.getTraceId().equals(traceId)) {
                 return createTraceHeader(transaction);
             }
         }
@@ -74,20 +74,32 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     public List<Trace.Entry> getEntries(String serverId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
-            if (transaction.getId().equals(traceId)) {
-                return transaction.getEntriesProtobuf();
+            if (transaction.getTraceId().equals(traceId)) {
+                return transaction.getEntriesProtobuf(ticker.read());
             }
         }
         return ImmutableList.of();
     }
 
     @Override
-    public @Nullable Profile getProfile(String serverId, String traceId)
+    public @Nullable Profile getMainThreadProfile(String serverId, String traceId)
             throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
-            if (transaction.getId().equals(traceId)) {
-                return transaction.getProfileProtobuf();
+            if (transaction.getTraceId().equals(traceId)) {
+                return transaction.getMainThreadProfileProtobuf();
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public @Nullable Profile getAuxThreadProfile(String serverId, String traceId)
+            throws IOException {
+        for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
+                transactionCollector.getPendingTransactions())) {
+            if (transaction.getTraceId().equals(traceId)) {
+                return transaction.getAuxThreadProfileProtobuf();
             }
         }
         return null;
@@ -97,7 +109,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     public @Nullable Trace getFullTrace(String serverId, String traceId) throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
-            if (transaction.getId().equals(traceId)) {
+            if (transaction.getTraceId().equals(traceId)) {
                 return createFullTrace(transaction);
             }
         }
@@ -131,7 +143,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                     && startTick < captureTick) {
                 activeTracePoints.add(ImmutableTracePoint.builder()
                         .serverId(serverId)
-                        .traceId(transaction.getId())
+                        .traceId(transaction.getTraceId())
                         .captureTime(captureTime)
                         .durationNanos(captureTick - startTick)
                         .error(transaction.getErrorMessage() != null)
@@ -161,7 +173,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
             if (matches(transaction, traceKind, transactionType, transactionName, filter)) {
                 points.add(ImmutableTracePoint.builder()
                         .serverId(serverId)
-                        .traceId(transaction.getId())
+                        .traceId(transaction.getTraceId())
                         .captureTime(captureTime)
                         .durationNanos(transaction.getDurationNanos())
                         .error(transaction.getErrorMessage() != null)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.config.ConfigService;
+import org.glowroot.agent.plugin.api.transaction.AdvancedService;
 import org.glowroot.agent.plugin.api.transaction.Message;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.QueryEntry;
@@ -42,6 +43,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 public class ExpensiveCallAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final AdvancedService advancedService = Agent.getAdvancedService();
     private static final ConfigService configService =
             Agent.getConfigService("glowroot-ui-sandbox");
 
@@ -344,12 +346,12 @@ public class ExpensiveCallAspect {
         double value = random.nextDouble();
         if (traceEntry == null) {
             if (value < 0.5) {
-                transactionService.addErrorEntry(new IllegalStateException(
+                advancedService.addErrorEntry(new IllegalStateException(
                         "Exception in execute" + num
                                 + "\nwith no trace entry text and no custom error message",
                         getRandomCause()));
             } else {
-                transactionService.addErrorEntry("randomized error\nwith no trace entry text",
+                advancedService.addErrorEntry("randomized error\nwith no trace entry text",
                         new IllegalStateException(
                                 "Exception in execute" + num + "\nwith no trace entry text",
                                 getRandomCause()));

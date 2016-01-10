@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.glowroot.agent.tests.plugin;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.config.ConfigService;
+import org.glowroot.agent.plugin.api.transaction.AdvancedService;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.transaction.TraceEntry;
@@ -31,6 +32,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 public class LogErrorAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final AdvancedService advancedService = Agent.getAdvancedService();
     private static final ConfigService configService =
             Agent.getConfigService("glowroot-integration-tests");
 
@@ -75,7 +77,7 @@ public class LogErrorAspect {
         public static TraceEntry onBefore() {
             TraceEntry traceEntry = transactionService.startTraceEntry(
                     MessageSupplier.from("outer entry to test nesting level"), timerName);
-            transactionService.addErrorEntry("test add nested error entry message");
+            advancedService.addErrorEntry("test add nested error entry message");
             return traceEntry;
         }
 

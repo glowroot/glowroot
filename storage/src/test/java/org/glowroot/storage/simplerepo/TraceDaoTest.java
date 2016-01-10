@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ public class TraceDaoTest {
                 .build();
         Result<TracePoint> queryResult = traceDao.readSlowPoints(query, filter, 1);
         Trace.Header header =
-                traceDao.readHeader(SERVER_ID, queryResult.records().get(0).traceId()).header();
+                traceDao.readHeaderPlus(SERVER_ID, queryResult.records().get(0).traceId()).header();
         // then
         assertThat(header.getPartial()).isEqualTo(trace.getHeader().getPartial());
         assertThat(header.getStartTime()).isEqualTo(trace.getHeader().getStartTime());
@@ -281,6 +281,6 @@ public class TraceDaoTest {
         // when
         traceDao.deleteBefore(100);
         // then
-        assertThat(traceDao.readHeader(SERVER_ID, trace.getId())).isNull();
+        assertThat(traceDao.readHeaderPlus(SERVER_ID, trace.getId())).isNull();
     }
 }

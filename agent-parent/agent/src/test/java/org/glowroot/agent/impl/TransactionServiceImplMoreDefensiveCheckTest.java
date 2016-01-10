@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ public class TransactionServiceImplMoreDefensiveCheckTest {
 
     @Test
     public void testEndDummyWithStackTrace() {
-        when(mockTransaction.getEntryCount()).thenReturn(100);
+        when(mockTransaction.allowAnotherEntry()).thenReturn(false);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerName timerName = ImmutableTimerNameImpl.of("test", false);
         TraceEntry traceEntry = transactionService.startTraceEntry(messageSupplier, timerName);
@@ -75,7 +75,7 @@ public class TransactionServiceImplMoreDefensiveCheckTest {
 
     @Test
     public void testEndDummyWithStackTraceGood() {
-        when(mockTransaction.getEntryCount()).thenReturn(100);
+        when(mockTransaction.allowAnotherEntry()).thenReturn(false);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerName timerName = ImmutableTimerNameImpl.of("test", false);
         TraceEntry traceEntry = transactionService.startTraceEntry(messageSupplier, timerName);
@@ -84,7 +84,7 @@ public class TransactionServiceImplMoreDefensiveCheckTest {
 
     @Test
     public void testEndDummyWithErrorGood() {
-        when(mockTransaction.getEntryCount()).thenReturn(100);
+        when(mockTransaction.allowAnotherEntry()).thenReturn(false);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerName timerName = ImmutableTimerNameImpl.of("test", false);
         TraceEntry traceEntry = transactionService.startTraceEntry(messageSupplier, timerName);

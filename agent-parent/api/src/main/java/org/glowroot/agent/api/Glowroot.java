@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,47 +69,6 @@ public class Glowroot {
      */
     public static void setTransactionName(@Nullable String transactionName) {
         glowrootService.setTransactionName(transactionName);
-    }
-
-    /**
-     * Marks the transaction as an error with the given message.
-     * 
-     * The error message text is captured from {@code Throwable#getMessage()}.
-     * 
-     * If this is called multiple times within a single transaction, only the first call has any
-     * effect, and subsequent calls are ignored.
-     * 
-     * If there is no current transaction, this method does nothing.
-     */
-    public static void setTransactionError(Throwable t) {
-        glowrootService.setTransactionError(t);
-    }
-
-    /**
-     * Marks the transaction as an error with the given message.
-     * 
-     * If {@code message} is empty or null, then the error message text is captured from
-     * {@code Throwable#getMessage()}.
-     * 
-     * If this is called multiple times within a single transaction, only the first call has any
-     * effect, and subsequent calls are ignored.
-     * 
-     * If there is no current transaction, this method does nothing.
-     */
-    public static void setTransactionError(@Nullable String message) {
-        glowrootService.setTransactionError(message);
-    }
-
-    /**
-     * Marks the transaction as an error with the given message.
-     * 
-     * If this is called multiple times within a single transaction, only the first call has any
-     * effect, and subsequent calls are ignored.
-     * 
-     * If there is no current transaction, this method does nothing.
-     */
-    public static void setTransactionError(@Nullable String message, Throwable t) {
-        glowrootService.setTransactionError(message, t);
     }
 
     /**

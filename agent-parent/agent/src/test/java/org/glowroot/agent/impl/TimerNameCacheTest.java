@@ -30,7 +30,7 @@ public class TimerNameCacheTest {
         // given
         TimerNameCache timerNameCache = new TimerNameCache();
         // when
-        TimerName timerName = timerNameCache.getName(null);
+        TimerName timerName = timerNameCache.getTimerName(null);
         // then
         assertThat(((TimerNameImpl) timerName).name()).isEqualTo("unknown");
     }
@@ -40,7 +40,7 @@ public class TimerNameCacheTest {
         // given
         TimerNameCache timerNameCache = new TimerNameCache();
         // when
-        TimerName timerName = timerNameCache.getName(A.class);
+        TimerName timerName = timerNameCache.getTimerName(A.class);
         // then
         assertThat(((TimerNameImpl) timerName).name()).isEqualTo("unknown");
     }
@@ -50,7 +50,7 @@ public class TimerNameCacheTest {
         // given
         TimerNameCache timerNameCache = new TimerNameCache();
         // when
-        TimerName timerName = timerNameCache.getName(B.class);
+        TimerName timerName = timerNameCache.getTimerName(B.class);
         // then
         assertThat(((TimerNameImpl) timerName).name()).isEqualTo("unknown");
     }
@@ -60,7 +60,7 @@ public class TimerNameCacheTest {
         // given
         TimerNameCache timerNameCache = new TimerNameCache();
         // when
-        TimerName timerName = timerNameCache.getName(C.class);
+        TimerName timerName = timerNameCache.getTimerName(C.class);
         // then
         assertThat(((TimerNameImpl) timerName).name()).isEqualTo("z");
     }

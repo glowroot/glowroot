@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015 the original author or authors.
+  Copyright 2015-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'profile'}">
-    <a ng-href="transaction/profile{{tabQueryString()}}"
+    <a ng-href="transaction/main-thread-profile{{tabQueryString()}}"
        ng-click="clickTab('profile', $event)"
        ng-keydown="keydownTab('tab_time', 'tab_traces', $event)"
        id="tab_profile">

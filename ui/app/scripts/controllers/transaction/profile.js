@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,11 @@ glowroot.controller('TransactionProfileCtrl', [
   'locationChanges',
   'queryStrings',
   'httpErrors',
-  function ($scope, $http, $location, locationChanges, queryStrings, httpErrors) {
+  'auxiliary',
+  function ($scope, $http, $location, locationChanges, queryStrings, httpErrors, auxiliary) {
 
     $scope.$parent.activeTabItem = 'profile';
+    $scope.auxiliary = auxiliary;
 
     if ($scope.last) {
       // force the sidebar to update
@@ -42,7 +44,26 @@ glowroot.controller('TransactionProfileCtrl', [
       refreshData();
     });
 
-    $scope.flameGraphQueryString = function () {
+    $scope.clickTopRadioButton = function (item) {
+      if (($scope.auxiliary && item === 'aux-thread-profile') || (!$scope.auxiliary && item === 'main-thread-profile')) {
+        $scope.$parent.chartRefresh++;
+      } else {
+        $location.url('transaction/' + item + $scope.tabQueryString());
+      }
+    };
+
+    $scope.clickActiveTopLink = function (event, item) {
+      if (($scope.auxiliary && item === 'aux-thread-profile') || (!$scope.auxiliary && item === 'main-thread-profile')) {
+        if (!event.ctrlKey) {
+          $scope.$parent.chartRefresh++;
+          // suppress normal link
+          event.preventDefault();
+          return false;
+        }
+      }
+    };
+
+    $scope.flameGraphHref = function () {
       var query = {};
       if ($scope.layout.central) {
         query['server-rollup'] = $scope.serverRollup;
@@ -60,7 +81,11 @@ glowroot.controller('TransactionProfileCtrl', [
       if ($scope.filter) {
         query.filter = $scope.filter;
       }
-      return queryStrings.encodeObject(query);
+      if ($scope.auxiliary) {
+        return 'transaction/aux-thread-flame-graph' + queryStrings.encodeObject(query);
+      } else {
+        return 'transaction/main-thread-flame-graph' + queryStrings.encodeObject(query);
+      }
     };
 
     $scope.refreshButtonClick = function () {
@@ -106,6 +131,7 @@ glowroot.controller('TransactionProfileCtrl', [
         transactionName: $scope.transactionName,
         from: $scope.chartFrom,
         to: $scope.chartTo,
+        auxiliary: $scope.auxiliary,
         include: parseResult.includes,
         exclude: parseResult.excludes,
         truncateBranchPercentage: $scope.truncateBranchPercentage
@@ -114,16 +140,17 @@ glowroot.controller('TransactionProfileCtrl', [
       $http.get('backend/transaction/profile' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.showSpinner--;
-            if (data.overwritten) {
-              $scope.showOverwrittenMessage = true;
+            $scope.showOverwrittenMessage = data.overwritten;
+            $scope.hasUnfilteredAuxThreadProfile = data.hasUnfilteredAuxThreadProfile;
+            if ($scope.showOverwrittenMessage) {
               $scope.showProfile = false;
               return;
             }
-            $scope.showProfile = data.unfilteredSampleCount;
+            $scope.showProfile = data.profile.unfilteredSampleCount;
             if ($scope.showProfile) {
-              $scope.sampleCount = data.unfilteredSampleCount;
+              $scope.sampleCount = data.profile.unfilteredSampleCount;
               $('#profileOuter').removeData('gtLoaded');
-              HandlebarsRendering.profileToggle(undefined, '#profileOuter', data);
+              HandlebarsRendering.profileToggle(undefined, '#profileOuter', data.profile);
             }
           })
           .error(function (data, status) {

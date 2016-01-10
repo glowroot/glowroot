@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,8 @@ public class TraceDao implements TraceRepository {
 
     private final PreparedStatement insertHeader;
     private final PreparedStatement insertEntries;
-    private final PreparedStatement insertProfile;
+    private final PreparedStatement insertMainThreadProfile;
+    private final PreparedStatement insertAuxThreadProfile;
 
     private final PreparedStatement readOverallSlowPoint;
     private final PreparedStatement readTransactionSlowPoint;
@@ -139,7 +140,10 @@ public class TraceDao implements TraceRepository {
         session.execute("create table if not exists trace_entries (server_id varchar,"
                 + " trace_id varchar, entriesx blob, primary key (server_id, trace_id))");
 
-        session.execute("create table if not exists trace_profile (server_id varchar,"
+        session.execute("create table if not exists trace_main_thread_profile (server_id varchar,"
+                + " trace_id varchar, profile blob, primary key (server_id, trace_id))");
+
+        session.execute("create table if not exists trace_aux_thread_profile (server_id varchar,"
                 + " trace_id varchar, profile blob, primary key (server_id, trace_id))");
 
         // server_rollup/capture_time is not necessarily unique
@@ -201,8 +205,11 @@ public class TraceDao implements TraceRepository {
         insertEntries = session.prepare("insert into trace_entries (server_id, trace_id, entriesx)"
                 + " values (?, ?, ?)");
 
-        insertProfile = session.prepare("insert into trace_profile (server_id, trace_id, profile)"
-                + " values (?, ?, ?)");
+        insertMainThreadProfile = session.prepare("insert into trace_main_thread_profile"
+                + " (server_id, trace_id, profile) values (?, ?, ?)");
+
+        insertAuxThreadProfile = session.prepare("insert into trace_aux_thread_profile"
+                + " (server_id, trace_id, profile) values (?, ?, ?)");
 
         readOverallSlowPoint = session.prepare("select server_id, trace_id, capture_time,"
                 + " duration_nanos, error, user, attributes from trace_overall_slow_point"
@@ -250,7 +257,7 @@ public class TraceDao implements TraceRepository {
     @Override
     public void collect(String serverId, Trace trace) throws IOException {
 
-        Trace.Header priorHeader = readHdr(serverId, trace.getId());
+        Trace.Header priorHeader = readHeader(serverId, trace.getId());
 
         Trace.Header header = trace.getHeader();
 
@@ -375,11 +382,21 @@ public class TraceDao implements TraceRepository {
             session.execute(boundStatement);
         }
 
-        if (trace.hasProfile()) {
-            boundStatement = insertProfile.bind();
+        if (trace.hasMainThreadProfile()) {
+            boundStatement = insertMainThreadProfile.bind();
             boundStatement.setString(0, serverId);
             boundStatement.setString(1, trace.getId());
-            boundStatement.setBytes(2, trace.getProfile().toByteString().asReadOnlyByteBuffer());
+            boundStatement.setBytes(2,
+                    trace.getMainThreadProfile().toByteString().asReadOnlyByteBuffer());
+            session.execute(boundStatement);
+        }
+
+        if (trace.hasAuxThreadProfile()) {
+            boundStatement = insertAuxThreadProfile.bind();
+            boundStatement.setString(0, serverId);
+            boundStatement.setString(1, trace.getId());
+            boundStatement.setBytes(2,
+                    trace.getAuxThreadProfile().toByteString().asReadOnlyByteBuffer());
             session.execute(boundStatement);
         }
     }
@@ -537,18 +554,25 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable HeaderPlus readHeader(String serverId, String traceId)
+    public @Nullable HeaderPlus readHeaderPlus(String serverId, String traceId)
             throws InvalidProtocolBufferException {
-        Trace.Header header = readHdr(serverId, traceId);
+        Trace.Header header = readHeader(serverId, traceId);
         if (header == null) {
             return null;
         }
         ResultSet results = session.execute("select count(*) from trace_entries where server_id = ?"
                 + " and trace_id = ?", serverId, traceId);
         Existence entriesExistence = results.one().getLong(0) == 0 ? Existence.NO : Existence.YES;
-        results = session.execute("select count(*) from trace_PROFILE where server_id = ?"
-                + " and trace_id = ?", serverId, traceId);
-        Existence profileExistence = results.one().getLong(0) == 0 ? Existence.NO : Existence.YES;
+        Existence profileExistence;
+        results = session.execute("select count(*) from trace_main_thread_profile"
+                + " where server_id = ? and trace_id = ?", serverId, traceId);
+        if (results.one().getLong(0) == 0) {
+            results = session.execute("select count(*) from trace_aux_thread_profile"
+                    + " where server_id = ? and trace_id = ?", serverId, traceId);
+            profileExistence = results.one().getLong(0) == 0 ? Existence.NO : Existence.YES;
+        } else {
+            profileExistence = Existence.YES;
+        }
         return ImmutableHeaderPlus.of(header, entriesExistence, profileExistence);
     }
 
@@ -565,10 +589,23 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable Profile readProfile(String serverId, String traceId)
+    public @Nullable Profile readMainThreadProfile(String serverId, String traceId)
             throws InvalidProtocolBufferException {
-        ResultSet results = session.execute("select profile from trace_profile where server_id = ?"
-                + " and trace_id = ?", serverId, traceId);
+        ResultSet results = session.execute("select profile from trace_main_thread_profile"
+                + " where server_id = ? and trace_id = ?", serverId, traceId);
+        Row row = results.one();
+        if (row == null) {
+            return null;
+        }
+        ByteBuffer bytes = checkNotNull(row.getBytes(0));
+        return Profile.parseFrom(ByteString.copyFrom(bytes));
+    }
+
+    @Override
+    public @Nullable Profile readAuxThreadProfile(String serverId, String traceId)
+            throws InvalidProtocolBufferException {
+        ResultSet results = session.execute("select profile from trace_aux_thread_profile"
+                + " where server_id = ? and trace_id = ?", serverId, traceId);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -583,7 +620,7 @@ public class TraceDao implements TraceRepository {
         throw new UnsupportedOperationException();
     }
 
-    private Trace.Header readHdr(String serverId, String traceId)
+    private Trace.Header readHeader(String serverId, String traceId)
             throws InvalidProtocolBufferException {
         BoundStatement boundStatement = readHeader.bind();
         boundStatement.setString(0, serverId);

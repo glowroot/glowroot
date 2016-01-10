@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.lang.management.ThreadMXBean;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
@@ -30,15 +31,18 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
+import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 class ThreadDumpService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ThreadDumpService.class);
 
     private final TransactionRegistry transactionRegistry;
     private final TransactionCollector transactionCollector;
@@ -51,57 +55,98 @@ class ThreadDumpService {
 
     ThreadDump getThreadDump() {
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-        Map<Long, Transaction> transactionsBefore = Maps.newHashMap();
+        List<ThreadContextImpl> activeThreadContexts = Lists.newArrayList();
         for (Transaction transaction : transactionRegistry.getTransactions()) {
-            transactionsBefore.put(transaction.getThreadId(), transaction);
+            ThreadContextImpl mainThreadContext = transaction.getMainThreadContext();
+            if (!mainThreadContext.isCompleted()) {
+                activeThreadContexts.add(mainThreadContext);
+            }
+            for (ThreadContextImpl threadContext : transaction.getAuxThreadContexts()) {
+                if (!threadContext.isCompleted()) {
+                    activeThreadContexts.add(threadContext);
+                }
+            }
         }
+        @Nullable
         ThreadInfo[] threadInfos =
                 threadBean.getThreadInfo(threadBean.getAllThreadIds(), Integer.MAX_VALUE);
-        final Map<Long, Transaction> matchedTransactions = Maps.newHashMap();
-        for (Transaction transaction : transactionRegistry.getTransactions()) {
-            if (transactionsBefore.get(transaction.getThreadId()) == transaction) {
-                matchedTransactions.put(transaction.getThreadId(), transaction);
-            }
-        }
         long currentThreadId = Thread.currentThread().getId();
+        Map<Long, ThreadInfo> unmatchedThreadInfos = Maps.newHashMap();
         ThreadInfo currentThreadInfo = null;
-        List<ThreadInfo> matchedThreadInfos = Lists.newArrayList();
-        List<ThreadInfo> unmatchedThreadInfos = Lists.newArrayList();
         for (ThreadInfo threadInfo : threadInfos) {
-            long threadId = threadInfo.getThreadId();
-            if (threadId == currentThreadId) {
+            if (threadInfo == null) {
+                continue;
+            }
+            if (threadInfo.getThreadId() == currentThreadId) {
                 currentThreadInfo = threadInfo;
-            } else if (matchedTransactions.containsKey(threadId)) {
-                matchedThreadInfos.add(threadInfo);
             } else {
-                unmatchedThreadInfos.add(threadInfo);
+                unmatchedThreadInfos.put(threadInfo.getThreadId(), threadInfo);
             }
         }
-        // sort descending by total time
-        Collections.sort(matchedThreadInfos, new MatchedThreadInfoOrdering(matchedTransactions));
-        // sort descending by stack trace length
-        Collections.sort(unmatchedThreadInfos, new UnmatchedThreadInfoOrdering());
+        Map<String, TransactionThreadInfo> transactionThreadInfos = Maps.newHashMap();
+        // active thread contexts for a given transaction are already sorted by age
+        // so that main thread context will always appear first within a given matched transaction,
+        // and its auxiliary threads will be then sorted by age
+        for (ThreadContextImpl threadContext : activeThreadContexts) {
+            if (threadContext.isCompleted()) {
+                continue;
+            }
+            long threadId = threadContext.getThreadId();
+            ThreadInfo threadInfo = unmatchedThreadInfos.remove(threadId);
+            if (threadInfo == null) {
+                // this should not happen since this thread context was active before and after the
+                // thread dump
+                logger.warn("thread dump not captured for thread: {}", threadId);
+                continue;
+            }
+            Transaction transaction = threadContext.getTransaction();
+            String traceId = transaction.getTraceId();
+            TransactionThreadInfo transactionThreadInfo = transactionThreadInfos.get(traceId);
+            if (transactionThreadInfo == null) {
+                transactionThreadInfo = new TransactionThreadInfo(
+                        transaction.getTransactionType(), transaction.getTransactionName(),
+                        transaction.getDurationNanos(),
+                        transactionCollector.shouldStoreSlow(transaction));
+                transactionThreadInfos.put(traceId, transactionThreadInfo);
+            }
+            transactionThreadInfo.threadInfos.add(threadInfo);
+        }
+        List<ThreadDump.Transaction> transactions = Lists.newArrayList();
+        for (Entry<String, TransactionThreadInfo> entry : transactionThreadInfos.entrySet()) {
+            TransactionThreadInfo value = entry.getValue();
+            ThreadDump.Transaction.Builder builder = ThreadDump.Transaction.newBuilder()
+                    .setTransactionType(value.transactionType)
+                    .setTransactionName(value.transactionName)
+                    .setTransactionTotalNanos(value.transactionTotalNanos);
+            if (value.shouldStoreSlow) {
+                builder.setTraceId(entry.getKey());
+            }
+            for (ThreadInfo auxThreadInfo : value.threadInfos) {
+                builder.addThread(createProtobuf(auxThreadInfo));
+            }
+            transactions.add(builder.build());
+        }
+        List<ThreadDump.Thread> unmatchedThreads = Lists.newArrayList();
+        for (ThreadInfo unmatchedThreadInfo : unmatchedThreadInfos.values()) {
+            unmatchedThreads.add(createProtobuf(unmatchedThreadInfo));
+        }
 
-        ThreadDump.Builder builder = ThreadDump.newBuilder();
-        for (ThreadInfo threadInfo : matchedThreadInfos) {
-            Transaction matchedTransaction = matchedTransactions.get(threadInfo.getThreadId());
-            builder.addMatchedThread(createThreadInfo(threadInfo, matchedTransaction));
-        }
-        for (ThreadInfo threadInfo : unmatchedThreadInfos) {
-            builder.addUnmatchedThread(createThreadInfo(threadInfo, null));
-        }
+        // sort descending by total time
+        Collections.sort(transactions, new TransactionOrdering());
+        // sort descending by stack trace length
+        Collections.sort(unmatchedThreads, new UnmatchedThreadOrdering());
+
+        ThreadDump.Builder builder = ThreadDump.newBuilder()
+                .addAllTransaction(transactions)
+                .addAllUnmatchedThread(unmatchedThreads);
         if (currentThreadInfo != null) {
-            Transaction matchedTransaction =
-                    matchedTransactions.get(currentThreadInfo.getThreadId());
-            builder.setThreadDumpingThread(
-                    createThreadInfo(currentThreadInfo, matchedTransaction));
+            builder.setThreadDumpingThread(createProtobuf(currentThreadInfo));
         }
         return builder.build();
     }
 
-    private ThreadDump.ThreadInfo createThreadInfo(ThreadInfo threadInfo,
-            @Nullable Transaction matchedTransaction) {
-        ThreadDump.ThreadInfo.Builder builder = ThreadDump.ThreadInfo.newBuilder();
+    private ThreadDump.Thread createProtobuf(ThreadInfo threadInfo) {
+        ThreadDump.Thread.Builder builder = ThreadDump.Thread.newBuilder();
         builder.setName(threadInfo.getThreadName());
         builder.setState(threadInfo.getThreadState().name());
         builder.setLockName(Strings.nullToEmpty(threadInfo.getLockName()));
@@ -113,51 +158,44 @@ class ThreadDumpService {
                             .setFileName(Strings.nullToEmpty(stackTraceElement.getFileName()))
                             .setLineNumber(stackTraceElement.getLineNumber()));
         }
-
-        if (matchedTransaction != null) {
-            builder.setTransactionType(matchedTransaction.getTransactionType());
-            builder.setTransactionName(matchedTransaction.getTransactionName());
-            builder.setTransactionTotalNanos(matchedTransaction.getDurationNanos());
-            if (transactionCollector.shouldStoreSlow(matchedTransaction)) {
-                builder.setTraceId(matchedTransaction.getId());
-            }
-        }
         return builder.build();
     }
 
-    private static class MatchedThreadInfoOrdering extends Ordering<ThreadInfo> {
-
-        private final Map<Long, Transaction> matchedTransactions;
-
-        private MatchedThreadInfoOrdering(Map<Long, Transaction> matchedTransactions) {
-            this.matchedTransactions = matchedTransactions;
-        }
+    private static class TransactionOrdering extends Ordering<ThreadDump.Transaction> {
 
         @Override
-        public int compare(ThreadInfo left, ThreadInfo right) {
-            Transaction leftTransaction = matchedTransactions.get(left.getThreadId());
-            Transaction rightTransaction = matchedTransactions.get(right.getThreadId());
-            // left and right are from matchedThreadInfos so have corresponding transactions
-            checkNotNull(leftTransaction);
-            checkNotNull(rightTransaction);
-            return Longs.compare(rightTransaction.getDurationNanos(),
-                    leftTransaction.getDurationNanos());
+        public int compare(ThreadDump.Transaction left, ThreadDump.Transaction right) {
+            return Longs.compare(right.getTransactionTotalNanos(), left.getTransactionTotalNanos());
         }
     }
 
-    private static class UnmatchedThreadInfoOrdering extends Ordering<ThreadInfo> {
+    private static class UnmatchedThreadOrdering extends Ordering<ThreadDump.Thread> {
         @Override
-        public int compare(ThreadInfo left, ThreadInfo right) {
-            if (left.getThreadId() == Thread.currentThread().getId()) {
-                return 1;
-            } else if (right.getThreadId() == Thread.currentThread().getId()) {
-                return -1;
-            }
-            int result = Ints.compare(right.getStackTrace().length, left.getStackTrace().length);
+        public int compare(ThreadDump.Thread left, ThreadDump.Thread right) {
+            int result = Ints.compare(right.getStackTraceElementCount(),
+                    left.getStackTraceElementCount());
             if (result == 0) {
-                return left.getThreadName().compareToIgnoreCase(right.getThreadName());
+                return left.getName().compareToIgnoreCase(right.getName());
             }
             return result;
+        }
+    }
+
+    private static class TransactionThreadInfo {
+
+        private final String transactionType;
+        private final String transactionName;
+        private final long transactionTotalNanos;
+        private final boolean shouldStoreSlow;
+
+        private final List<ThreadInfo> threadInfos = Lists.newArrayList();
+
+        private TransactionThreadInfo(String transactionType, String transactionName,
+                long transactionTotalNanos, boolean shouldStoreSlow) {
+            this.transactionType = transactionType;
+            this.transactionName = transactionName;
+            this.transactionTotalNanos = transactionTotalNanos;
+            this.shouldStoreSlow = shouldStoreSlow;
         }
     }
 }

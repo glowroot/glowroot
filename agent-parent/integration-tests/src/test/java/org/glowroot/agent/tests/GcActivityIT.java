@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.AdvancedConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,25 +48,12 @@ public class GcActivityIT {
     }
 
     @Test
-    public void shouldReadTraceGcActivityConfigEnabled() throws Exception {
+    public void shouldReadTraceGcActivity() throws Exception {
         // given
         // when
         Trace trace = container.execute(GenerateTraceWithGcActivity.class);
         // then
         assertThat(trace.getHeader().getGcActivityList()).isNotEmpty();
-    }
-
-    @Test
-    public void shouldReadTraceGcActivityConfigDisabled() throws Exception {
-        // given
-        container.getConfigService().updateAdvancedConfig(
-                AdvancedConfig.newBuilder()
-                        .setCaptureGcActivity(ProtoOptional.of(false))
-                        .build());
-        // when
-        Trace trace = container.execute(GenerateTraceWithGcActivity.class);
-        // then
-        assertThat(trace.getHeader().getGcActivityList()).isEmpty();
     }
 
     public static class GenerateTraceWithGcActivity implements AppUnderTest, TransactionMarker {

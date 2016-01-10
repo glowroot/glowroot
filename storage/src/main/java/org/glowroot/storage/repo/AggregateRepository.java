@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,12 @@ public interface AggregateRepository {
     List<ThroughputAggregate> readThroughputAggregates(TransactionQuery query) throws Exception;
 
     // query.from() is non-inclusive
-    void mergeInProfiles(ProfileCollector mergedProfile, TransactionQuery query) throws Exception;
+    void mergeInMainThreadProfiles(ProfileCollector mergedProfile, TransactionQuery query)
+            throws Exception;
+
+    // query.from() is non-inclusive
+    void mergeInAuxThreadProfiles(ProfileCollector mergedProfile, TransactionQuery query)
+            throws Exception;
 
     // query.from() is non-inclusive
     void mergeInQueries(QueryCollector mergedQueries, TransactionQuery query) throws Exception;
@@ -71,7 +76,13 @@ public interface AggregateRepository {
     List<ErrorPoint> readErrorPoints(TransactionQuery query) throws Exception;
 
     // query.from() is non-inclusive
-    boolean shouldHaveProfile(TransactionQuery query) throws Exception;
+    boolean hasAuxThreadProfile(TransactionQuery query) throws Exception;
+
+    // query.from() is non-inclusive
+    boolean shouldHaveMainThreadProfile(TransactionQuery query) throws Exception;
+
+    // query.from() is non-inclusive
+    boolean shouldHaveAuxThreadProfile(TransactionQuery query) throws Exception;
 
     // query.from() is non-inclusive
     boolean shouldHaveQueries(TransactionQuery query) throws Exception;
@@ -132,13 +143,15 @@ public interface AggregateRepository {
     public interface OverviewAggregate {
         long captureTime();
         // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
-        double totalNanos();
+        double totalDurationNanos();
         long transactionCount();
-        double totalCpuNanos(); // -1 means N/A
-        double totalBlockedNanos(); // -1 means N/A
-        double totalWaitedNanos(); // -1 means N/A
-        double totalAllocatedBytes(); // -1 means N/A
-        List<Aggregate.Timer> rootTimers();
+        List<Aggregate.Timer> mainThreadRootTimers();
+        List<Aggregate.Timer> auxThreadRootTimers();
+        List<Aggregate.Timer> asyncRootTimers();
+        @Nullable
+        Aggregate.ThreadStats mainThreadStats();
+        @Nullable
+        Aggregate.ThreadStats auxThreadStats();
     }
 
     @Value.Immutable

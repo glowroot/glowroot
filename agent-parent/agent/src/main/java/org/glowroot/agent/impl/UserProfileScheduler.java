@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,22 @@ package org.glowroot.agent.impl;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
+import javax.annotation.Nullable;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.model.Transaction.OverrideSource;
 import org.glowroot.common.config.UserRecordingConfig;
@@ -132,12 +136,36 @@ public class UserProfileScheduler {
         }
 
         private void runInternal() {
-            ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-            ThreadInfo threadInfo =
-                    threadBean.getThreadInfo(transaction.getThreadId(), Integer.MAX_VALUE);
-            transaction.captureStackTrace(threadInfo,
-                    configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction(),
-                    configService.getAdvancedConfig().timerWrapperMethods());
+            List<ThreadContextImpl> activeThreadContexts = Lists.newArrayList();
+            ThreadContextImpl mainThreadContext = transaction.getMainThreadContext();
+            if (!mainThreadContext.isCompleted()) {
+                activeThreadContexts.add(mainThreadContext);
+            }
+            for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
+                if (!auxThreadContext.isCompleted()) {
+                    activeThreadContexts.add(auxThreadContext);
+                }
+            }
+            captureStackTraces(activeThreadContexts);
+        }
+
+        private void captureStackTraces(List<ThreadContextImpl> threadContexts) {
+            long[] threadIds = new long[threadContexts.size()];
+            for (int i = 0; i < threadContexts.size(); i++) {
+                threadIds[i] = threadContexts.get(i).getThreadId();
+            }
+            @Nullable
+            ThreadInfo[] threadInfos =
+                    ManagementFactory.getThreadMXBean().getThreadInfo(threadIds, Integer.MAX_VALUE);
+            int limit = configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction();
+            boolean timerWrapperMethods = configService.getAdvancedConfig().timerWrapperMethods();
+            for (int i = 0; i < threadContexts.size(); i++) {
+                ThreadContextImpl threadContext = threadContexts.get(i);
+                ThreadInfo threadInfo = threadInfos[i];
+                if (threadInfo != null) {
+                    threadContext.captureStackTrace(threadInfo, limit, timerWrapperMethods);
+                }
+            }
         }
     }
 }

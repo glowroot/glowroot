@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
@@ -86,10 +87,10 @@ public class WeavingTimerServiceImplTest {
     public void testWithCurrentTransactionAndCurrentTimer() {
         // given
         TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
-        Transaction transaction = mock(Transaction.class);
+        ThreadContextImpl threadContext = mock(ThreadContextImpl.class);
         TimerImpl currentTimer = mock(TimerImpl.class);
-        when(transactionRegistry.getCurrentTransaction()).thenReturn(transaction);
-        when(transaction.getCurrentTimer()).thenReturn(currentTimer);
+        when(transactionRegistry.getCurrentThreadContext()).thenReturn(threadContext);
+        when(threadContext.getCurrentTimer()).thenReturn(currentTimer);
         WeavingTimerServiceImpl weavingTimerServiceImpl =
                 new WeavingTimerServiceImpl(transactionRegistry, configService, timerNameCache);
         // when

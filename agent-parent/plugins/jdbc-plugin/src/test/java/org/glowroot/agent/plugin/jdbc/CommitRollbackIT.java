@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ public class CommitRollbackIT {
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
         Trace.Entry jdbcCommitEntry = entries.get(1);
         assertThat(jdbcCommitEntry.getMessage()).isEqualTo("jdbc commit");
-        Trace.Timer rootTimer = trace.getHeader().getRootTimer();
+        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
         assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
         assertThat(rootTimer.getChildTimerList()).hasSize(2);
         // ordering is by total desc, so order is not fixed
@@ -92,7 +92,7 @@ public class CommitRollbackIT {
         Trace.Entry jdbcCommitEntry = entries.get(1);
         assertThat(jdbcCommitEntry.getMessage()).isEqualTo("jdbc commit");
         assertThat(jdbcCommitEntry.getError().getMessage()).isEqualTo("A commit failure");
-        Trace.Timer rootTimer = trace.getHeader().getRootTimer();
+        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
         assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
         assertThat(rootTimer.getChildTimerList()).hasSize(2);
         // ordering is by total desc, so order is not fixed
@@ -115,7 +115,7 @@ public class CommitRollbackIT {
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
         Trace.Entry jdbcCommitEntry = entries.get(1);
         assertThat(jdbcCommitEntry.getMessage()).isEqualTo("jdbc rollback");
-        Trace.Timer rootTimer = trace.getHeader().getRootTimer();
+        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
         assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
         assertThat(rootTimer.getChildTimerList()).hasSize(2);
         // ordering is by total desc, so order is not fixed
@@ -139,7 +139,7 @@ public class CommitRollbackIT {
         Trace.Entry jdbcCommitEntry = entries.get(1);
         assertThat(jdbcCommitEntry.getMessage()).isEqualTo("jdbc rollback");
         assertThat(jdbcCommitEntry.getError().getMessage()).isEqualTo("A rollback failure");
-        Trace.Timer rootTimer = trace.getHeader().getRootTimer();
+        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
         assertThat(rootTimer.getChildTimerList()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();

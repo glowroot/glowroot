@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ public class ProfilingIT {
         Trace trace = container.execute(ShouldGenerateTraceWithProfile.class);
         // then
         // profiler should have captured about 10 stack traces
-        assertThat(trace.getHeader().getProfileSampleCount()).isBetween(5L, 15L);
+        assertThat(trace.getHeader().getMainThreadProfileSampleCount()).isBetween(5L, 15L);
     }
 
     @Test
@@ -74,7 +74,7 @@ public class ProfilingIT {
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithProfile.class);
         // then
-        assertThat(trace.getHeader().getProfileSampleCount()).isZero();
+        assertThat(trace.getHeader().getMainThreadProfileSampleCount()).isZero();
     }
 
     @Test
@@ -89,7 +89,7 @@ public class ProfilingIT {
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithProfileForAble.class);
         // then
-        assertThat(trace.getHeader().getProfileSampleCount()).isBetween(5L, 15L);
+        assertThat(trace.getHeader().getMainThreadProfileSampleCount()).isBetween(5L, 15L);
         // profiler should have captured about 10 stack traces
     }
 
@@ -105,7 +105,7 @@ public class ProfilingIT {
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithProfileForAble.class);
         // then
-        assertThat(trace.getHeader().getProfileSampleCount()).isZero();
+        assertThat(trace.getHeader().getMainThreadProfileSampleCount()).isZero();
     }
 
     private static void setProfilingIntervalMillis(int millis) throws Exception {

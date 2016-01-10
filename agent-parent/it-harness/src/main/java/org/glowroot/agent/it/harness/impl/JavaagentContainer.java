@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class JavaagentContainer implements Container {
+
+    private static final boolean XDEBUG = Boolean.getBoolean("glowroot.test.xdbug");
 
     private static final Logger logger = LoggerFactory.getLogger(JavaagentContainer.class);
 
@@ -399,6 +401,10 @@ public class JavaagentContainer implements Container {
             if (key.startsWith("glowroot.internal.") || key.startsWith("glowroot.test.")) {
                 command.add("-D" + key + "=" + entry.getValue());
             }
+        }
+        if (XDEBUG) {
+            command.add("-Xdebug");
+            command.add("-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=y");
         }
         command.add(JavaagentMain.class.getName());
         command.add(Integer.toString(heartbeatPort));

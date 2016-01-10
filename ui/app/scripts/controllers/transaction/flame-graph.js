@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ glowroot.controller('TransactionFlameGraphCtrl', [
   '$http',
   'httpErrors',
   'queryStrings',
-  function ($scope, $location, $http, httpErrors, queryStrings) {
+    'auxiliary',
+  function ($scope, $location, $http, httpErrors, queryStrings, auxiliary) {
     // \u00b7 is &middot;
     document.title = 'Transactions \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'transaction';
@@ -61,6 +62,7 @@ glowroot.controller('TransactionFlameGraphCtrl', [
         transactionName: $scope.transactionName,
         from: $scope.from,
         to: $scope.to,
+        auxiliary: auxiliary,
         include: parseResult.includes,
         exclude: parseResult.excludes,
         truncateBranchPercentage: $scope.truncateBranchPercentage
@@ -87,9 +89,6 @@ glowroot.controller('TransactionFlameGraphCtrl', [
                   .height(height * 18)
                   .width(960)
                   .cellHeight(18)
-                  .tooltip(true)
-                  .tooltipDirection('s')
-                  .tooltipOffset([8, 0])
                   .transitionDuration(750)
                   .transitionEase('cubic-in-out')
                   .title('');

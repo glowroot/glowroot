@@ -1,13 +1,13 @@
-{{#if matchedThreads}}<strong>Matched threads</strong> (matched to currently executing transactions):<br>
-{{#each matchedThreads}}{{#if transactionType}}Transaction type: {{transactionType}}
-Transaction name: {{transactionName}}
-Transaction duration: {{nanosToMillis transactionDuration}} milliseconds {{#if traceId}}<a href="jvm/thread-dump?modal-trace-id={{traceId}}">view trace</a>{{/if}}
-{{/if}}"{{name}}"
+{{#if transactions}}<strong>Matched threads</strong> (matched to currently executing transactions):<br>
+{{#each transactions}}{{#if transactionType}}<strong>Transaction type: </strong>{{transactionType}}
+<strong>Transaction name:</strong> {{transactionName}}
+<strong>Transaction duration:</strong> {{nanosToMillis transactionTotalNanos}} milliseconds {{#if traceId}}<a href="jvm/thread-dump?modal-trace-id={{traceId}}">view trace</a>{{/if}}
+{{/if}}{{#each threads}}"{{name}}"
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{state}}
 {{#ifBlocked state}}        - blocked on {{lockName}}
 {{/ifBlocked}}{{#ifWaiting state}}{{#if lockName}}        - waiting on {{lockName}}
 {{/if}}{{/ifWaiting}}{{#each stackTraceElements}}        {{.}}
-{{/each}}<br>{{/each}}{{/if}}{{#if unmatchedThreads}}<strong>Unmatched threads</strong> (this may possibly include currently executing transactions that just started or just ended):<br>
+{{/each}}{{/each}}<br>{{/each}}{{/if}}{{#if unmatchedThreads}}<strong>Unmatched threads</strong> (this may possibly include currently executing transactions that just started or just ended):<br>
 {{#each unmatchedThreads}}"{{name}}"
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{state}}
 {{#ifBlocked state}}        - blocked on {{lockName}}

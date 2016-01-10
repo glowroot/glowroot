@@ -64,110 +64,278 @@
 {{#if detail}}
   {{{headerDetailHtml detail}}}
 {{/if}}
-<div class="gt-bold">
-  Breakdown:
-</div>
-<div class="gt-timers" style="margin-top: -10px;">
-  <table class="gt-timers-table gt-indent2" style="border-spacing: 0;">
-    <thead>
-    <tr>
-      <td></td>
-      <td style="font-weight: 600;">total&nbsp;(ms)</td>
-      <td style="font-weight: 600;">count</td>
-      <td>
-        <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
-                style="margin-top: -6px; margin-bottom: -6px;">
-          switch to tree view
-        </button>
-      </td>
-    </tr>
-    </thead>
-    <tbody>
-    {{#eachTimerFlattenedOrdered rootTimer}}
-      <tr class="align-top">
-        <td style="text-align: left;">
-          <div style="margin-left: {{timerIndent .}}em;">
-            <div class="gt-break-word gt-second-line-indent">{{name}}</div>
-          </div>
+{{#if mainThreadRootTimer}}
+  <div class="gt-timers">
+    <table class="gt-timers-table" style="border-spacing: 0;">
+      <thead>
+      <tr>
+        <td class="gt-bold gt-breakdown-header" style="text-align: left;">
+          Breakdown{{#if auxThreadRootTimers}} (Main Thread){{/if}}:
         </td>
-        <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
-        <td>{{count}}</td>
-        <td></td>
+        <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+        <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
+        <td class="gt-breakdown-header">
+          <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
+                  style="margin-top: -6px; margin-bottom: -6px;">
+            switch to tree view
+          </button>
+        </td>
       </tr>
-    {{/eachTimerFlattenedOrdered}}
-    </tbody>
-  </table>
-  <table class="hide gt-timers-table gt-indent2" style="border-spacing: 0;">
-    <thead>
-    <tr>
-      <td></td>
-      <td style="font-weight: 600;">total&nbsp;(ms)</td>
-      <td style="font-weight: 600;">count</td>
-      <td>
-        <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
-                style="margin-top: -6px; margin-bottom: -6px;">
-          switch to flattened view
-        </button>
-      </td>
-    </tr>
-    </thead>
-    <tbody>
-    {{#eachTimerOrdered rootTimer}}
-      <tr class="align-top">
-        <td style="text-align: left;">
-          <div style="margin-left: {{timerIndent .}}em;">
-            <div class="gt-break-word gt-second-line-indent">
-              {{name}}{{#if extended}} (extended){{/if}}
+      </thead>
+      <tbody>
+      {{#eachTimerFlattenedOrdered mainThreadRootTimer}}
+        <tr class="align-top">
+          <td style="text-align: left;">
+            <div class="gt-indent2 gt-break-word gt-second-line-indent">
+              {{name}}
             </div>
-          </div>
+          </td>
+          <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+          <td>{{count}}</td>
+          <td></td>
+        </tr>
+      {{/eachTimerFlattenedOrdered}}
+      </tbody>
+    </table>
+    <table class="hide gt-timers-table" style="border-spacing: 0;">
+      <thead>
+      <tr>
+        <td class="gt-bold gt-breakdown-header" style="text-align: left;">
+          Breakdown{{#if auxThreadRootTimers}} (Main Thread){{/if}}:
         </td>
-        <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
-        <td>{{count}}</td>
-        <td></td>
+        <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+        <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
+        <td class="gt-breakdown-header">
+          <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
+                  style="margin-top: -6px; margin-bottom: -6px;">
+            switch to flattened view
+          </button>
+        </td>
       </tr>
-    {{/eachTimerOrdered}}
-    </tbody>
-  </table>
-</div>
-{{#ifAnyThreadInfo .}}
-  <div class="gt-bold">
-    JVM thread metrics
+      </thead>
+      <tbody>
+      {{#eachTimerOrdered mainThreadRootTimer}}
+        <tr class="align-top">
+          <td style="text-align: left;">
+            <div class="gt-indent2">
+              <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}em;">
+                {{name}}{{#if extended}} (extended){{/if}}
+              </div>
+            </div>
+          </td>
+          <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+          <td>{{count}}</td>
+          <td></td>
+        </tr>
+      {{/eachTimerOrdered}}
+      </tbody>
+    </table>
   </div>
-  {{#ifNotNA threadCpuNanos}}
+{{/if}}
+{{#if auxThreadRootTimers}}
+  <div class="gt-timers">
+    <table class="gt-timers-table" style="border-spacing: 0;">
+      <thead>
+      <tr>
+        <td class="gt-bold gt-breakdown-header" style="text-align: left;">
+          Breakdown{{#if mainThreadRootTimer}} (Auxiliary Threads){{/if}}:
+        </td>
+        <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+        <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
+        <td class="gt-breakdown-header">
+          <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
+                  style="margin-top: -6px; margin-bottom: -6px;">
+            switch to tree view
+          </button>
+        </td>
+      </tr>
+      </thead>
+      <tbody>
+      {{#eachTimerFlattenedOrdered auxThreadRootTimers}}
+        <tr class="align-top">
+          <td style="text-align: left;">
+            <div class="gt-indent2 gt-break-word gt-second-line-indent">
+              {{name}}
+            </div>
+          </td>
+          <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+          <td>{{count}}</td>
+          <td></td>
+        </tr>
+      {{/eachTimerFlattenedOrdered}}
+      </tbody>
+    </table>
+    <table class="hide gt-timers-table" style="border-spacing: 0;">
+      <thead>
+      <tr>
+        <td class="gt-bold gt-breakdown-header" style="text-align: left;">
+          Breakdown{{#if mainThreadRootTimer}} (Auxiliary Threads){{/if}}:
+        </td>
+        <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+        <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
+        <td class="gt-breakdown-header">
+          <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
+                  style="margin-top: -6px; margin-bottom: -6px;">
+            switch to flattened view
+          </button>
+        </td>
+      </tr>
+      </thead>
+      <tbody>
+      {{#eachTimerOrdered auxThreadRootTimers}}
+        <tr class="align-top">
+          <td style="text-align: left;">
+            <div class="gt-indent2">
+              <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}em;">
+                {{name}}{{#if extended}} (extended){{/if}}
+              </div>
+            </div>
+          </td>
+          <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+          <td>{{count}}</td>
+          <td></td>
+        </tr>
+      {{/eachTimerOrdered}}
+      </tbody>
+    </table>
+  </div>
+{{/if}}
+{{#if asyncRootTimers}}
+  <div class="gt-timers">
+    <table class="gt-timers-table" style="border-spacing: 0;">
+      <thead>
+      <tr>
+        <td class="gt-bold gt-breakdown-header" style="text-align: left;">
+          Breakdown (Async Timers):
+        </td>
+        <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+        <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
+        <td class="gt-breakdown-header">
+          <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
+                  style="margin-top: -6px; margin-bottom: -6px;">
+            switch to tree view
+          </button>
+        </td>
+      </tr>
+      </thead>
+      <tbody>
+      {{#eachTimerFlattenedOrdered asyncRootTimers}}
+        <tr class="align-top">
+          <td style="text-align: left;">
+            <div class="gt-indent2 gt-break-word gt-second-line-indent">
+              {{name}}
+            </div>
+          </td>
+          <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+          <td>{{count}}</td>
+          <td></td>
+        </tr>
+      {{/eachTimerFlattenedOrdered}}
+      </tbody>
+    </table>
+    <table class="hide gt-timers-table" style="border-spacing: 0;">
+      <thead>
+      <tr>
+        <td class="gt-bold gt-breakdown-header" style="text-align: left;">
+          Breakdown (Async Timers):
+        </td>
+        <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+        <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
+        <td class="gt-breakdown-header">
+          <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
+                  style="margin-top: -6px; margin-bottom: -6px;">
+            switch to flattened view
+          </button>
+        </td>
+      </tr>
+      </thead>
+      <tbody>
+      {{#eachTimerOrdered asyncRootTimers}}
+        <tr class="align-top">
+          <td style="text-align: left;">
+            <div class="gt-indent2">
+              <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}em;">
+                {{name}}{{#if extended}} (extended){{/if}}
+              </div>
+            </div>
+          </td>
+          <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+          <td>{{count}}</td>
+          <td></td>
+        </tr>
+      {{/eachTimerOrdered}}
+      </tbody>
+    </table>
+  </div>
+{{/if}}
+{{#if mainThreadStats}}
+  <div class="gt-bold gt-breakdown-header">
+    JVM Thread Stats{{#if auxThreadStats}} (Main Thread){{/if}}
+  </div>
+  {{#ifNotNA mainThreadStats/totalCpuNanos}}
     <div class="gt-indent2">
       <span>CPU time:</span>
-      {{nanosToMillis threadCpuNanos}} milliseconds
+      {{nanosToMillis mainThreadStats/totalCpuNanos}} milliseconds
     </div>
   {{/ifNotNA}}
-  {{#ifNotNA threadBlockedNanos}}
+  {{#ifNotNA mainThreadStats/totalBlockedNanos}}
     <div class="gt-indent2">
       <span>Blocked time:</span>
-      {{nanosToMillis threadBlockedNanos}} milliseconds
+      {{nanosToMillis mainThreadStats/totalBlockedNanos}} milliseconds
     </div>
   {{/ifNotNA}}
-  {{#ifNotNA threadWaitedNanos}}
+  {{#ifNotNA mainThreadStats/totalWaitedNanos}}
     <div class="gt-indent2">
       <span>Waited time:</span>
-      {{nanosToMillis threadWaitedNanos}} milliseconds
+      {{nanosToMillis mainThreadStats/totalWaitedNanos}} milliseconds
     </div>
   {{/ifNotNA}}
-  {{#ifNotNA threadAllocatedBytes}}
+  {{#ifNotNA mainThreadStats/totalAllocatedBytes}}
     <div class="gt-indent2">
       <span>Allocated memory:</span>
-      {{formatAllocatedBytes threadAllocatedBytes}}
+      {{formatAllocatedBytes mainThreadStats/totalAllocatedBytes}}
     </div>
   {{/ifNotNA}}
-{{/ifAnyThreadInfo}}
+{{/if}}
+{{#if auxThreadStats}}
+  <div class="gt-bold gt-breakdown-header">
+    JVM Thread Stats{{#if mainThreadStats}} (Auxiliary Threads){{/if}}
+  </div>
+  {{#ifNotNA auxThreadStats/totalCpuNanos}}
+    <div class="gt-indent2">
+      <span>CPU time:</span>
+      {{nanosToMillis auxThreadStats/totalCpuNanos}} milliseconds
+    </div>
+  {{/ifNotNA}}
+  {{#ifNotNA auxThreadStats/totalBlockedNanos}}
+    <div class="gt-indent2">
+      <span>Blocked time:</span>
+      {{nanosToMillis auxThreadStats/totalBlockedNanos}} milliseconds
+    </div>
+  {{/ifNotNA}}
+  {{#ifNotNA auxThreadStats/totalWaitedNanos}}
+    <div class="gt-indent2">
+      <span>Waited time:</span>
+      {{nanosToMillis auxThreadStats/totalWaitedNanos}} milliseconds
+    </div>
+  {{/ifNotNA}}
+  {{#ifNotNA auxThreadStats/totalAllocatedBytes}}
+    <div class="gt-indent2">
+      <span>Allocated memory:</span>
+      {{formatAllocatedBytes auxThreadStats/totalAllocatedBytes}}
+    </div>
+  {{/ifNotNA}}
+{{/if}}
 {{#ifNonEmptyObject gcActivity}}
-  <div class="gt-bold">
+  <div class="gt-bold gt-breakdown-header">
     GC activity
   </div>
-  {{#eachGcActivityOrdered gcActivity}}
+  {{#each gcActivity}}
     <div class="gt-indent2">
-      <span>{{key}}:</span>
-      {{collectionTime}} milliseconds ({{collectionCount}} collection{{#ifNotOne collectionCount}}s{{/ifNotOne}})
+      <span>{{collectorName}}:</span>
+      {{totalMillis}} milliseconds ({{count}} collection{{#ifNotOne count}}s{{/ifNotOne}})
     </div>
-  {{/eachGcActivityOrdered}}
+  {{/each}}
 {{/ifNonEmptyObject}}
 <br>
 {{#ifExistenceYes entriesExistence}}
@@ -185,30 +353,62 @@
   </div>
 {{/ifExistenceYes}}
 {{#ifExistenceYes profileExistence}}
-  <div>
-    <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-profile-toggle">
-      <span class="gt-link-color">Profile ({{profileSampleCount}})</span>
-    </button>
-    {{! spinner is not used in export file }}
+  {{#if mainThreadProfileSampleCount}}
     <div>
-      <div class="hide gt-trace-detail-spinner"></div>
-    </div>
-  </div>
-  <div class="gt-nowrap hide" id="profileOuter" style="margin: 10px 0;">
-    <div style="padding-bottom: 10px;">
-      <input class="form-control gt-profile-text-filter hide"
-             style="display: inline-block; width: 25em;"
-             placeholder="filter the profile tree">
-      <select class="form-control gt-profile-filter gt-input-xlarge hide" onchange="this.blur()"
-              style="display: inline-block; vertical-align: middle;">
-      </select>
-      <button type="button" class="btn btn-default gt-profile-view-toggle hide" style="margin-left: 20px;">
-        Switch to text filter
+      <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-main-thread-profile-toggle">
+        <span class="gt-link-color">Profile ({{mainThreadProfileSampleCount}})</span>
       </button>
+      {{! spinner is not used in export file }}
+      <div>
+        <div class="hide gt-trace-detail-spinner"></div>
+      </div>
     </div>
+    <div style="margin: 10px 0;">
+      <div class="gt-nowrap hide" id="mainThreadProfileOuter">
+        <div style="padding-bottom: 10px;">
+          <input class="form-control gt-profile-text-filter hide"
+                 style="display: inline-block; width: 25em;"
+                 placeholder="filter the profile tree">
+          <select class="form-control gt-profile-filter gt-input-xlarge hide" onchange="this.blur()"
+                  style="display: inline-block; vertical-align: middle;">
+          </select>
+          <button type="button" class="btn btn-default gt-profile-view-toggle hide" style="margin-left: 20px;">
+            Switch to text filter
+          </button>
+        </div>
 
-    <div class="gt-profile gt-indent1"></div>
-  </div>
+        <div class="gt-profile gt-indent1"></div>
+      </div>
+    </div>
+  {{/if}}
+  {{#if auxThreadProfileSampleCount}}
+    <div>
+      <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-aux-thread-profile-toggle">
+        <span class="gt-link-color">Auxiliary Thread Profile ({{auxThreadProfileSampleCount}})</span>
+      </button>
+      {{! spinner is not used in export file }}
+      <div>
+        <div class="hide gt-trace-detail-spinner"></div>
+      </div>
+    </div>
+    <div style="margin: 10px 0;">
+      <div class="gt-nowrap hide" id="auxThreadProfileOuter">
+        <div style="padding-bottom: 10px;">
+          <input class="form-control gt-profile-text-filter hide"
+                 style="display: inline-block; width: 25em;"
+                 placeholder="filter the profile tree">
+          <select class="form-control gt-profile-filter gt-input-xlarge hide" onchange="this.blur()"
+                  style="display: inline-block; vertical-align: middle;">
+          </select>
+          <button type="button" class="btn btn-default gt-profile-view-toggle hide" style="margin-left: 20px;">
+            Switch to text filter
+          </button>
+        </div>
+
+        <div class="gt-profile gt-indent1"></div>
+      </div>
+    </div>
+  {{/if}}
 {{/ifExistenceYes}}
 {{#ifExistenceExpired entriesExistence}}
   {{#ifExistenceExpired profileExistence}}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 package org.glowroot.agent.impl;
 
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.TimerImpl;
-import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
@@ -39,7 +39,7 @@ public class WeavingTimerServiceImpl implements WeavingTimerService {
                 enabled = configService.getAdvancedConfig().weavingTimer();
             }
         });
-        this.timerName = timerNameCache.getName(OnlyForTheTimerName.class);
+        this.timerName = timerNameCache.getTimerName(OnlyForTheTimerName.class);
     }
 
     @Override
@@ -47,11 +47,11 @@ public class WeavingTimerServiceImpl implements WeavingTimerService {
         if (!enabled) {
             return NopWeavingTimer.INSTANCE;
         }
-        Transaction transaction = transactionRegistry.getCurrentTransaction();
-        if (transaction == null) {
+        ThreadContextImpl threadContext = transactionRegistry.getCurrentThreadContext();
+        if (threadContext == null) {
             return NopWeavingTimer.INSTANCE;
         }
-        TimerImpl currentTimer = transaction.getCurrentTimer();
+        TimerImpl currentTimer = threadContext.getCurrentTimer();
         if (currentTimer == null) {
             return NopWeavingTimer.INSTANCE;
         }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,8 @@ public class JmsPluginIT {
     @Test
     public void shouldSendMessage() throws Exception {
         Trace trace = container.execute(SendMessage.class);
-        List<Trace.Timer> nestedTimers = trace.getHeader().getRootTimer().getChildTimerList();
+        List<Trace.Timer> nestedTimers =
+                trace.getHeader().getMainThreadRootTimer().getChildTimerList();
         assertThat(nestedTimers).hasSize(1);
         assertThat(nestedTimers.get(0).getName()).isEqualTo("jms send message");
     }

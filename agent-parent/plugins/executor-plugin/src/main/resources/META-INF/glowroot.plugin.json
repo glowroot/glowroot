@@ -1,0 +1,7 @@
+{
+  "name": "Executor Plugin",
+  "id": "executor",
+  "aspects": [
+    "org.glowroot.agent.plugin.executor.ExecutorAspect"
+  ]
+}

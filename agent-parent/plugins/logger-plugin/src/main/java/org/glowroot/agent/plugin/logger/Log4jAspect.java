@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.config.ConfigService;
+import org.glowroot.agent.plugin.api.transaction.AdvancedService;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.transaction.TraceEntry;
@@ -39,6 +40,7 @@ public class Log4jAspect {
     private static final String TIMER_NAME = "logging";
 
     private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final AdvancedService advancedService = Agent.getAdvancedService();
     private static final ConfigService configService = Agent.getConfigService("logger");
 
     // constants from org.apache.log4j.Priority
@@ -105,7 +107,7 @@ public class Log4jAspect {
             String messageText = String.valueOf(message);
             int lvl = level == null ? 0 : level.toInt();
             if (LoggerPlugin.markTraceAsError(lvl >= ERROR_INT, lvl >= WARN_INT, t != null)) {
-                transactionService.setTransactionError(messageText);
+                advancedService.setTransactionError(messageText);
             }
             if (lvl <= DEBUG_INT) {
                 // include logger name for debug or lower

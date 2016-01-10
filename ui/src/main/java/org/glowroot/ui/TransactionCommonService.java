@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.TransactionSummaryCollector;
 import org.glowroot.storage.repo.Utils;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.ThreadStats;
 
 class TransactionCommonService {
 
@@ -67,11 +68,7 @@ class TransactionCommonService {
 
     // query.from() is INCLUSIVE
     List<OverviewAggregate> getOverviewAggregates(TransactionQuery query) throws Exception {
-        List<OverviewAggregate> aggregates =
-                aggregateRepository.readOverviewAggregates(ImmutableTransactionQuery.builder()
-                        .copyFrom(query)
-                        .to(query.to())
-                        .build());
+        List<OverviewAggregate> aggregates = aggregateRepository.readOverviewAggregates(query);
         if (query.rollupLevel() == 0) {
             return aggregates;
         }
@@ -85,7 +82,6 @@ class TransactionCommonService {
                 aggregateRepository.readOverviewAggregates(ImmutableTransactionQuery.builder()
                         .copyFrom(query)
                         .from(nonRolledUpFrom)
-                        .to(query.to())
                         .rollupLevel(0)
                         .build()));
         aggregates = Lists.newArrayList(aggregates);
@@ -96,11 +92,7 @@ class TransactionCommonService {
 
     // query.from() is INCLUSIVE
     List<PercentileAggregate> getPercentileAggregates(TransactionQuery query) throws Exception {
-        List<PercentileAggregate> aggregates =
-                aggregateRepository.readPercentileAggregates(ImmutableTransactionQuery.builder()
-                        .copyFrom(query)
-                        .to(query.to())
-                        .build());
+        List<PercentileAggregate> aggregates = aggregateRepository.readPercentileAggregates(query);
         if (query.rollupLevel() == 0) {
             return aggregates;
         }
@@ -114,7 +106,6 @@ class TransactionCommonService {
                 aggregateRepository.readPercentileAggregates(ImmutableTransactionQuery.builder()
                         .copyFrom(query)
                         .from(nonRolledUpFrom)
-                        .to(query.to())
                         .rollupLevel(0)
                         .build()));
         aggregates = Lists.newArrayList(aggregates);
@@ -125,11 +116,7 @@ class TransactionCommonService {
 
     // query.from() is INCLUSIVE
     List<ThroughputAggregate> getThroughputAggregates(TransactionQuery query) throws Exception {
-        List<ThroughputAggregate> aggregates =
-                aggregateRepository.readThroughputAggregates(ImmutableTransactionQuery.builder()
-                        .copyFrom(query)
-                        .to(query.to())
-                        .build());
+        List<ThroughputAggregate> aggregates = aggregateRepository.readThroughputAggregates(query);
         if (query.rollupLevel() == 0) {
             return aggregates;
         }
@@ -143,7 +130,6 @@ class TransactionCommonService {
                 aggregateRepository.readThroughputAggregates(ImmutableTransactionQuery.builder()
                         .copyFrom(query)
                         .from(nonRolledUpFrom)
-                        .to(query.to())
                         .rollupLevel(0)
                         .build()));
         aggregates = Lists.newArrayList(aggregates);
@@ -153,9 +139,10 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    MutableProfile getMergedProfile(TransactionQuery query, List<String> includes,
-            List<String> excludes, double truncateBranchPercentage) throws Exception {
-        MutableProfile profile = getMergedProfile(query);
+    MutableProfile getMergedProfile(TransactionQuery query, boolean auxiliary,
+            List<String> includes, List<String> excludes, double truncateBranchPercentage)
+                    throws Exception {
+        MutableProfile profile = getMergedProfile(query, auxiliary);
         if (!includes.isEmpty() || !excludes.isEmpty()) {
             profile.filter(includes, excludes);
         }
@@ -166,6 +153,19 @@ class TransactionCommonService {
             profile.truncateBranches(minSamples);
         }
         return profile;
+    }
+
+    boolean hasAuxThreadProfile(TransactionQuery query) throws Exception {
+        for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
+            TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
+                    .copyFrom(query)
+                    .rollupLevel(rollupLevel)
+                    .build();
+            if (aggregateRepository.hasAuxThreadProfile(revisedQuery)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // query.from() is non-inclusive
@@ -224,17 +224,21 @@ class TransactionCommonService {
         return mergedTransactionSummaries.getResult(sortOrder, limit);
     }
 
-    private MutableProfile getMergedProfile(TransactionQuery query) throws Exception {
+    private MutableProfile getMergedProfile(TransactionQuery query, boolean auxiliary)
+            throws Exception {
         long revisedFrom = query.from();
         ProfileCollector mergedProfile = new ProfileCollector();
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
                     .copyFrom(query)
                     .from(revisedFrom)
-                    .to(query.to())
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeInProfiles(mergedProfile, revisedQuery);
+            if (auxiliary) {
+                aggregateRepository.mergeInAuxThreadProfiles(mergedProfile, revisedQuery);
+            } else {
+                aggregateRepository.mergeInMainThreadProfiles(mergedProfile, revisedQuery);
+            }
             long lastRolledUpTime = mergedProfile.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > query.to()) {
@@ -252,7 +256,6 @@ class TransactionCommonService {
             TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
                     .copyFrom(query)
                     .from(revisedFrom)
-                    .to(query.to())
                     .rollupLevel(rollupLevel)
                     .build();
             aggregateRepository.mergeInQueries(mergedQueries, revisedQuery);
@@ -283,17 +286,24 @@ class TransactionCommonService {
                 currMergedAggregate = new MutableAggregate(0);
             }
             currRollupTime = rollupTime;
-            currMergedAggregate.addTotalNanos(nonRolledUpOverviewAggregate.totalNanos());
+            currMergedAggregate
+                    .addTotalDurationNanos(nonRolledUpOverviewAggregate.totalDurationNanos());
             currMergedAggregate
                     .addTransactionCount(nonRolledUpOverviewAggregate.transactionCount());
-            currMergedAggregate.addTotalCpuNanos(nonRolledUpOverviewAggregate.totalCpuNanos());
             currMergedAggregate
-                    .addTotalBlockedNanos(nonRolledUpOverviewAggregate.totalBlockedNanos());
+                    .mergeMainThreadRootTimers(nonRolledUpOverviewAggregate.mainThreadRootTimers());
             currMergedAggregate
-                    .addTotalWaitedNanos(nonRolledUpOverviewAggregate.totalWaitedNanos());
+                    .mergeAuxThreadRootTimers(nonRolledUpOverviewAggregate.auxThreadRootTimers());
             currMergedAggregate
-                    .addTotalAllocatedBytes(nonRolledUpOverviewAggregate.totalAllocatedBytes());
-            currMergedAggregate.mergeRootTimers(nonRolledUpOverviewAggregate.rootTimers());
+                    .mergeAsyncRootTimers(nonRolledUpOverviewAggregate.asyncRootTimers());
+            ThreadStats mainThreadStats = nonRolledUpOverviewAggregate.mainThreadStats();
+            if (mainThreadStats != null) {
+                currMergedAggregate.mergeMainThreadStats(mainThreadStats);
+            }
+            ThreadStats auxThreadStats = nonRolledUpOverviewAggregate.auxThreadStats();
+            if (auxThreadStats != null) {
+                currMergedAggregate.mergeAuxThreadStats(auxThreadStats);
+            }
         }
         if (!currMergedAggregate.isEmpty()) {
             // roll up final one
@@ -320,7 +330,7 @@ class TransactionCommonService {
                 currMergedAggregate = new MutableAggregate(0);
             }
             currRollupTime = rollupTime;
-            currMergedAggregate.addTotalNanos(nonRolledUpPercentileAggregate.totalNanos());
+            currMergedAggregate.addTotalDurationNanos(nonRolledUpPercentileAggregate.totalNanos());
             currMergedAggregate
                     .addTransactionCount(nonRolledUpPercentileAggregate.transactionCount());
             currMergedAggregate.mergeHistogram(nonRolledUpPercentileAggregate.histogram());

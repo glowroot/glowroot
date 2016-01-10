@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -177,8 +177,10 @@ class WeavingClassVisitor extends ClassVisitor {
         for (MixinType mixinType : mixinTypes) {
             addMixin(mixinType);
         }
-        for (AnalyzedMethod methodThatOnlyNowFulfillAdvice : methodsThatOnlyNowFulfillAdvice) {
-            overrideAndWeaveInheritedMethod(methodThatOnlyNowFulfillAdvice);
+        if (!Modifier.isAbstract(analyzedClass.modifiers())) {
+            for (AnalyzedMethod methodThatOnlyNowFulfillAdvice : methodsThatOnlyNowFulfillAdvice) {
+                overrideAndWeaveInheritedMethod(methodThatOnlyNowFulfillAdvice);
+            }
         }
         // handle metas at end, since handleInheritedMethodsThatNowFulfillAdvice()
         // above could add new metas

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,16 @@
  */
 package org.glowroot.agent.weaving;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 @UsedByGeneratedBytecode
 public class AdviceFlowOuterHolder {
 
-    private static final LoadingCache<String, AdviceFlowOuterHolder> cache = CacheBuilder
-            .newBuilder().weakKeys().build(new CacheLoader<String, AdviceFlowOuterHolder>() {
-                @Override
-                public AdviceFlowOuterHolder load(String key) throws Exception {
-                    return new AdviceFlowOuterHolder();
-                }
-            });
+    private static final ConcurrentMap<String, AdviceFlowOuterHolder> cache =
+            new ConcurrentHashMap<String, AdviceFlowOuterHolder>();
 
     // it is faster to use a mutable holder object and always perform ThreadLocal.get() and never
     // use ThreadLocal.set(), because the value is more likely to be found in the ThreadLocalMap
@@ -50,7 +44,15 @@ public class AdviceFlowOuterHolder {
 
     @UsedByGeneratedBytecode
     public static AdviceFlowOuterHolder get(String timerName) {
-        return cache.getUnchecked(timerName);
+        AdviceFlowOuterHolder outerHolder = cache.get(timerName);
+        if (outerHolder == null) {
+            outerHolder = new AdviceFlowOuterHolder();
+            AdviceFlowOuterHolder priorOuterHolder = cache.putIfAbsent(timerName, outerHolder);
+            if (priorOuterHolder != null) {
+                outerHolder = priorOuterHolder;
+            }
+        }
+        return outerHolder;
     }
 
     private AdviceFlowOuterHolder() {}

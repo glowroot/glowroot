@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.transaction.QueryEntry;
 
-// ideally this would a component of it's subclasses instead of a parent class, but it is not for
-// micro-optimization purposes (to prevent extra object instances/memory addresses that must be
-// navigated)
+// ideally this would a component of it's subclasses instead of a parent class, but for
+// micro-optimization purposes it is not (in order to prevent extra object instances/memory
+// addresses that must be navigated)
 public abstract class QueryEntryBase implements QueryEntry {
 
     private final @Nullable QueryData queryData;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,11 +92,13 @@ class ConfigUpdateService {
         ImmutableTransactionConfig.Builder builder = ImmutableTransactionConfig.builder()
                 .copyFrom(configService.getTransactionConfig());
         if (config.hasProfilingIntervalMillis()) {
-            builder.profilingIntervalMillis(
-                    config.getProfilingIntervalMillis().getValue());
+            builder.profilingIntervalMillis(config.getProfilingIntervalMillis().getValue());
         }
         if (config.hasSlowThresholdMillis()) {
             builder.slowThresholdMillis(config.getSlowThresholdMillis().getValue());
+        }
+        if (config.hasCaptureThreadStats()) {
+            builder.captureThreadStats(config.getCaptureThreadStats().getValue());
         }
         configService.updateTransactionConfig(builder.build());
     }
@@ -143,12 +145,6 @@ class ConfigUpdateService {
         if (config.hasMaxStackTraceSamplesPerTransaction()) {
             builder.maxStackTraceSamplesPerTransaction(
                     config.getMaxStackTraceSamplesPerTransaction().getValue());
-        }
-        if (config.hasCaptureThreadInfo()) {
-            builder.captureThreadInfo(config.getCaptureThreadInfo().getValue());
-        }
-        if (config.hasCaptureGcActivity()) {
-            builder.captureGcActivity(config.getCaptureGcActivity().getValue());
         }
         if (config.hasMbeanGaugeNotFoundDelaySeconds()) {
             builder.mbeanGaugeNotFoundDelaySeconds(

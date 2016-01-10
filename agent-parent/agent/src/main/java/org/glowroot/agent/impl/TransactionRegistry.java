@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.Sets;
 
+import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 
@@ -29,23 +30,40 @@ public class TransactionRegistry {
     // collection of active running transactions
     private final Collection<Transaction> transactions = Sets.newConcurrentHashSet();
 
-    // active running transaction being executed by the current thread
-    private final FastThreadLocal</*@Nullable*/ Transaction> currentTransaction =
-            new FastThreadLocal</*@Nullable*/ Transaction>();
+    // active thread context being executed by the current thread
+    private final FastThreadLocal</*@Nullable*/ ThreadContextImpl> currentThreadContext =
+            new FastThreadLocal</*@Nullable*/ ThreadContextImpl>();
 
     @Nullable
     Transaction getCurrentTransaction() {
-        return currentTransaction.get();
+        ThreadContextImpl threadContext = currentThreadContext.get();
+        if (threadContext == null) {
+            return null;
+        }
+        return threadContext.getTransaction();
+    }
+
+    @Nullable
+    ThreadContextImpl getCurrentThreadContext() {
+        return currentThreadContext.get();
     }
 
     void addTransaction(Transaction transaction) {
-        currentTransaction.set(transaction);
+        currentThreadContext.set(transaction.getMainThreadContext());
         transactions.add(transaction);
     }
 
     void removeTransaction(Transaction transaction) {
-        currentTransaction.set(null);
+        currentThreadContext.set(null);
         transactions.remove(transaction);
+    }
+
+    public void setAuxThreadContext(ThreadContextImpl auxThreadContext) {
+        currentThreadContext.set(auxThreadContext);
+    }
+
+    public void removeAuxThreadContext() {
+        currentThreadContext.set(null);
     }
 
     public Collection<Transaction> getTransactions() {

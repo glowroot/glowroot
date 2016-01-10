@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.config.ConfigService;
+import org.glowroot.agent.plugin.api.transaction.AdvancedService;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.QueryEntry;
 import org.glowroot.agent.plugin.api.transaction.Timer;
@@ -56,6 +57,7 @@ public class StatementAspect {
     private static final String QUERY_TYPE = "SQL";
 
     private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final AdvancedService advancedService = Agent.getAdvancedService();
     private static final ConfigService configService = Agent.getConfigService("jdbc");
 
     private static final BooleanProperty captureBindParameters =
@@ -584,7 +586,7 @@ public class StatementAspect {
                     messageSupplier =
                             new BatchPreparedStatementMessageSupplier2(queryText, batchSize);
                 }
-                QueryEntry queryEntry = transactionService.startQueryEntry(QUERY_TYPE, queryText,
+                QueryEntry queryEntry = advancedService.startQueryEntry(QUERY_TYPE, queryText,
                         batchSize, messageSupplier, timerName);
                 mirror.setLastQuery(queryEntry);
                 mirror.clearBatch();

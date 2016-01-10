@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ public class UiSandboxMain {
 
     public static class GenerateTraces implements AppUnderTest {
         @Override
-        public void executeApp() throws InterruptedException {
+        public void executeApp() throws Exception {
             while (true) {
                 Stopwatch stopwatch = Stopwatch.createStarted();
                 while (stopwatch.elapsed(SECONDS) < 300) {

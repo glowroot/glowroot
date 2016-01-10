@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ public class ExpensiveCall {
         this.maxTraceEntryMessageLength = maxTraceEntryMessageLength;
     }
 
-    void execute() throws InterruptedException {
-        int route = random.nextInt(10);
+    void execute() throws Exception {
+        int route = random.nextInt(11);
         switch (route) {
             case 0:
                 execute0();
@@ -68,6 +68,8 @@ public class ExpensiveCall {
             case 9:
                 execute9();
                 return;
+            default:
+                new AsyncWrapperCall(maxTimeMillis, maxTraceEntryMessageLength).execute();
         }
     }
 

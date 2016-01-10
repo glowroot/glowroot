@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,8 +80,9 @@ public class TimerWrapperMethodsIT {
         Trace trace = container.execute(ShouldGenerateTraceWithProfile.class);
         // then
         // profiler should have captured about 10 stack traces
-        assertThat(trace.getHeader().getProfileSampleCount()).isBetween(5L, 15L);
-        assertThat(trace.getProfile().getTimerNameList()).containsExactly("mock trace marker");
+        assertThat(trace.getHeader().getMainThreadProfileSampleCount()).isBetween(5L, 15L);
+        assertThat(trace.getMainThreadProfile().getTimerNameList())
+                .containsExactly("mock trace marker");
     }
 
     public static class ShouldGenerateTraceWithProfile implements AppUnderTest, TransactionMarker {

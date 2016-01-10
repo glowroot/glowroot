@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,12 @@ import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.jackrabbit.spi.commons.iterator.Iterators;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.QueryData;
-import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.util.Clock;
@@ -66,13 +64,9 @@ public class AggregatorTest {
                 configService, 1000, Clock.systemClock());
 
         Transaction transaction = mock(Transaction.class);
-        TimerImpl timer = mock(TimerImpl.class);
-        when(timer.getName()).thenReturn("test 123");
-        when(timer.getChildTimers()).thenReturn(Iterators.<TimerImpl>empty());
         when(transaction.getTransactionType()).thenReturn("a type");
         when(transaction.getTransactionName()).thenReturn("a name");
         when(transaction.getDurationNanos()).thenReturn(MILLISECONDS.toNanos(123));
-        when(transaction.getRootTimer()).thenReturn(timer);
         when(transaction.getQueries()).thenReturn(ImmutableList.<QueryData>of().iterator());
         // when
         int count = 0;
@@ -114,7 +108,7 @@ public class AggregatorTest {
         public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType) {
             // only capture first non-zero value
             if (totalNanos == 0 && !aggregatesByType.isEmpty()) {
-                totalNanos = aggregatesByType.get(0).getOverallAggregate().getTotalNanos();
+                totalNanos = aggregatesByType.get(0).getOverallAggregate().getTotalDurationNanos();
             }
         }
 

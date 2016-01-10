@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,28 +26,27 @@ import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.QueryCollector;
-import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.storage.repo.AggregateRepository.OverviewAggregate;
 import org.glowroot.storage.repo.AggregateRepository.PercentileAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
 @Styles.Private
 public class MutableAggregate {
 
-    private double totalNanos;
+    private double totalDurationNanos;
     private long transactionCount;
     private long errorCount;
-    private double totalCpuNanos = NotAvailableAware.NA;
-    private double totalBlockedNanos = NotAvailableAware.NA;
-    private double totalWaitedNanos = NotAvailableAware.NA;
-    private double totalAllocatedBytes = NotAvailableAware.NA;
-    private final List<MutableTimer> rootTimers = Lists.newArrayList();
+    private final List<MutableTimer> mainThreadRootTimers = Lists.newArrayList();
+    private final List<MutableTimer> auxThreadRootTimers = Lists.newArrayList();
+    private final List<MutableTimer> asyncRootTimers = Lists.newArrayList();
+    private final MutableThreadStats mainThreadStats = new MutableThreadStats();
+    private final MutableThreadStats auxThreadStats = new MutableThreadStats();
     private final LazyHistogram lazyHistogram = new LazyHistogram();
     // lazy instantiated to reduce memory footprint
-    private @MonotonicNonNull MutableProfile profile;
+    private @MonotonicNonNull MutableProfile mainThreadProfile;
+    private @MonotonicNonNull MutableProfile auxThreadProfile;
     private QueryCollector queries;
 
     public MutableAggregate(int maxAggregateQueriesPerQueryType) {
@@ -58,8 +57,8 @@ public class MutableAggregate {
         return transactionCount == 0;
     }
 
-    public void addTotalNanos(double totalNanos) {
-        this.totalNanos += totalNanos;
+    public void addTotalDurationNanos(double totalDurationNanos) {
+        this.totalDurationNanos += totalDurationNanos;
     }
 
     public void addTransactionCount(long transactionCount) {
@@ -70,34 +69,103 @@ public class MutableAggregate {
         this.errorCount += errorCount;
     }
 
-    public void addTotalCpuNanos(double totalCpuNanos) {
-        this.totalCpuNanos = NotAvailableAware.add(this.totalCpuNanos, totalCpuNanos);
-    }
-
-    public void addTotalBlockedNanos(double totalBlockedNanos) {
-        this.totalBlockedNanos = NotAvailableAware.add(this.totalBlockedNanos, totalBlockedNanos);
-    }
-
-    public void addTotalWaitedNanos(double totalWaitedNanos) {
-        this.totalWaitedNanos = NotAvailableAware.add(this.totalWaitedNanos, totalWaitedNanos);
-    }
-
-    public void addTotalAllocatedBytes(double totalAllocatedBytes) {
-        this.totalAllocatedBytes =
-                NotAvailableAware.add(this.totalAllocatedBytes, totalAllocatedBytes);
-    }
-
-    public void mergeRootTimers(List<Aggregate.Timer> toBeMergedRootTimers) {
+    public void mergeMainThreadRootTimers(List<Aggregate.Timer> toBeMergedRootTimers) {
         for (Aggregate.Timer toBeMergedRootTimer : toBeMergedRootTimers) {
-            mergeRootTimer(toBeMergedRootTimer);
+            mergeRootTimer(toBeMergedRootTimer, mainThreadRootTimers);
         }
+    }
+
+    public void mergeAuxThreadRootTimers(List<Aggregate.Timer> toBeMergedRootTimers) {
+        for (Aggregate.Timer toBeMergedRootTimer : toBeMergedRootTimers) {
+            mergeRootTimer(toBeMergedRootTimer, auxThreadRootTimers);
+        }
+    }
+
+    public void mergeAsyncRootTimers(List<Aggregate.Timer> toBeMergedRootTimers) {
+        for (Aggregate.Timer toBeMergedRootTimer : toBeMergedRootTimers) {
+            mergeRootTimer(toBeMergedRootTimer, asyncRootTimers);
+        }
+    }
+
+    public void mergeMainThreadStats(Aggregate.ThreadStats threadStats) {
+        mainThreadStats.addThreadStats(threadStats);
+    }
+
+    public void mergeAuxThreadStats(Aggregate.ThreadStats threadStats) {
+        auxThreadStats.addThreadStats(threadStats);
     }
 
     public void mergeHistogram(Aggregate.Histogram toBeMergedHistogram) throws DataFormatException {
         lazyHistogram.merge(toBeMergedHistogram);
     }
 
-    private void mergeRootTimer(Aggregate.Timer toBeMergedRootTimer) {
+    public Aggregate toAggregate(ScratchBuffer scratchBuffer) throws IOException {
+        Aggregate.Builder builder = Aggregate.newBuilder()
+                .setTotalDurationNanos(totalDurationNanos)
+                .setTransactionCount(transactionCount)
+                .setErrorCount(errorCount)
+                .addAllMainThreadRootTimer(getRootTimersProtobuf(mainThreadRootTimers))
+                .addAllAuxThreadRootTimer(getRootTimersProtobuf(auxThreadRootTimers))
+                .addAllAsyncRootTimer(getRootTimersProtobuf(asyncRootTimers))
+                .setTotalNanosHistogram(lazyHistogram.toProtobuf(scratchBuffer));
+        if (!mainThreadStats.isEmpty()) {
+            builder.setMainThreadStats(mainThreadStats.toProto());
+        }
+        if (!auxThreadStats.isEmpty()) {
+            builder.setAuxThreadStats(auxThreadStats.toProto());
+        }
+        if (mainThreadProfile != null) {
+            builder.setMainThreadProfile(mainThreadProfile.toProtobuf());
+        }
+        if (auxThreadProfile != null) {
+            builder.setAuxThreadProfile(auxThreadProfile.toProtobuf());
+        }
+        return builder.addAllQueriesByType(queries.toProtobuf(true))
+                .build();
+    }
+
+    public OverviewAggregate toOverviewAggregate(long captureTime) throws IOException {
+        return ImmutableOverviewAggregate.builder()
+                .captureTime(captureTime)
+                .totalDurationNanos(totalDurationNanos)
+                .transactionCount(transactionCount)
+                .mainThreadRootTimers(getRootTimersProtobuf(mainThreadRootTimers))
+                .auxThreadRootTimers(getRootTimersProtobuf(auxThreadRootTimers))
+                .asyncRootTimers(getRootTimersProtobuf(asyncRootTimers))
+                .mainThreadStats(mainThreadStats.toProto())
+                .auxThreadStats(auxThreadStats.toProto())
+                .build();
+    }
+
+    public PercentileAggregate toPercentileAggregate(long captureTime) throws IOException {
+        return ImmutablePercentileAggregate.builder()
+                .captureTime(captureTime)
+                .totalNanos(totalDurationNanos)
+                .transactionCount(transactionCount)
+                .histogram(lazyHistogram.toProtobuf(new ScratchBuffer()))
+                .build();
+    }
+
+    public void mergeMainThreadProfile(Profile toBeMergedProfile) throws IOException {
+        if (mainThreadProfile == null) {
+            mainThreadProfile = new MutableProfile();
+        }
+        mainThreadProfile.merge(toBeMergedProfile);
+    }
+
+    public void mergeAuxThreadProfile(Profile toBeMergedProfile) throws IOException {
+        if (auxThreadProfile == null) {
+            auxThreadProfile = new MutableProfile();
+        }
+        auxThreadProfile.merge(toBeMergedProfile);
+    }
+
+    public void mergeQueries(List<Aggregate.QueriesByType> toBeMergedQueries) throws IOException {
+        queries.mergeQueries(toBeMergedQueries);
+    }
+
+    private static void mergeRootTimer(Aggregate.Timer toBeMergedRootTimer,
+            List<MutableTimer> rootTimers) {
         for (MutableTimer rootTimer : rootTimers) {
             if (toBeMergedRootTimer.getName().equals(rootTimer.getName())) {
                 rootTimer.merge(toBeMergedRootTimer);
@@ -110,70 +178,12 @@ public class MutableAggregate {
         rootTimers.add(rootTimer);
     }
 
-    public Aggregate toAggregate(ScratchBuffer scratchBuffer) throws IOException {
-        Aggregate.Builder builder = Aggregate.newBuilder()
-                .setTotalNanos(totalNanos)
-                .setTransactionCount(transactionCount)
-                .setErrorCount(errorCount)
-                .setTotalCpuNanos(toOptionalDouble(totalCpuNanos))
-                .setTotalBlockedNanos(toOptionalDouble(totalBlockedNanos))
-                .setTotalWaitedNanos(toOptionalDouble(totalWaitedNanos))
-                .setTotalAllocatedBytes(toOptionalDouble(totalAllocatedBytes))
-                .addAllRootTimer(getRootTimersProtobuf())
-                .setTotalNanosHistogram(lazyHistogram.toProtobuf(scratchBuffer));
-        if (profile != null) {
-            builder.setProfile(profile.toProtobuf());
+    private static List<Aggregate.Timer> getRootTimersProtobuf(List<MutableTimer> rootTimers) {
+        List<Aggregate.Timer> protobufRootTimers =
+                Lists.newArrayListWithCapacity(rootTimers.size());
+        for (MutableTimer rootTimer : rootTimers) {
+            protobufRootTimers.add(rootTimer.toProtobuf());
         }
-        return builder.addAllQueriesByType(queries.toProtobuf(true))
-                .build();
-    }
-
-    public OverviewAggregate toOverviewAggregate(long captureTime) throws IOException {
-        return ImmutableOverviewAggregate.builder()
-                .captureTime(captureTime)
-                .totalNanos(totalNanos)
-                .transactionCount(transactionCount)
-                .totalCpuNanos(totalCpuNanos)
-                .totalBlockedNanos(totalBlockedNanos)
-                .totalWaitedNanos(totalWaitedNanos)
-                .totalAllocatedBytes(totalAllocatedBytes)
-                .rootTimers(getRootTimersProtobuf())
-                .build();
-    }
-
-    public PercentileAggregate toPercentileAggregate(long captureTime) throws IOException {
-        return ImmutablePercentileAggregate.builder()
-                .captureTime(captureTime)
-                .totalNanos(totalNanos)
-                .transactionCount(transactionCount)
-                .histogram(lazyHistogram.toProtobuf(new ScratchBuffer()))
-                .build();
-    }
-
-    public void mergeProfile(Profile toBeMergedProfile) throws IOException {
-        if (profile == null) {
-            profile = new MutableProfile();
-        }
-        profile.merge(toBeMergedProfile);
-    }
-
-    public void mergeQueries(List<Aggregate.QueriesByType> toBeMergedQueries) throws IOException {
-        queries.mergeQueries(toBeMergedQueries);
-    }
-
-    private List<Aggregate.Timer> getRootTimersProtobuf() {
-        List<Aggregate.Timer> rootTimers = Lists.newArrayListWithCapacity(this.rootTimers.size());
-        for (MutableTimer rootTimer : this.rootTimers) {
-            rootTimers.add(rootTimer.toProtobuf());
-        }
-        return rootTimers;
-    }
-
-    private static OptionalDouble toOptionalDouble(double value) {
-        if (value == NotAvailableAware.NA) {
-            return OptionalDouble.getDefaultInstance();
-        } else {
-            return OptionalDouble.newBuilder().setValue(value).build();
-        }
+        return protobufRootTimers;
     }
 }

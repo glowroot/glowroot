@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,8 +65,14 @@ HandlebarsRendering = (function () {
       }
     }
 
-    // add the root node
-    traverse(rootTimer, 0);
+    // add the root node(s)
+    if ($.isArray(rootTimer)) {
+      $.each(rootTimer, function(index, item) {
+        traverse(item, 0);
+      });
+    } else {
+      traverse(rootTimer, 0);
+    }
     return buffer;
   });
 
@@ -99,8 +105,14 @@ HandlebarsRendering = (function () {
       }
     }
 
-    // add the root node
-    traverse(rootTimer, []);
+    // add the root node(s)
+    if ($.isArray(rootTimer)) {
+      $.each(rootTimer, function(index, item) {
+        traverse(item, []);
+      });
+    } else {
+      traverse(rootTimer, []);
+    }
 
     flattenedTimers.sort(function (a, b) {
       return b.totalNanos - a.totalNanos;
@@ -120,8 +132,8 @@ HandlebarsRendering = (function () {
   });
 
   // allows empty string ""
-  Handlebars.registerHelper('ifDisplayMessage', function (header, options) {
-    if (header.message || !header.error) {
+  Handlebars.registerHelper('ifDisplayMessage', function (traceEntry, options) {
+    if (traceEntry.message || !traceEntry.error) {
       return options.fn(this);
     }
     return options.inverse(this);
@@ -136,23 +148,6 @@ HandlebarsRendering = (function () {
 
   Handlebars.registerHelper('formatAllocatedBytes', function (bytes) {
     return formatBytes(bytes);
-  });
-
-  Handlebars.registerHelper('eachGcActivityOrdered', function (gcActivity, options) {
-    // mutating original list seems fine here
-    var list = [];
-    $.each(gcActivity, function (key, value) {
-      value.key = key;
-      list.push(value);
-    });
-    list.sort(function (a, b) {
-      return b.collectionTime - a.collectionTime;
-    });
-    var buffer = '';
-    $.each(list, function (index, item) {
-      buffer += options.fn(item);
-    });
-    return buffer;
   });
 
   Handlebars.registerHelper('ifNotOne', function (num, options) {
@@ -414,17 +409,30 @@ HandlebarsRendering = (function () {
     }
   });
 
-  $(document).on('click', '.gt-profile-toggle', function () {
+  $(document).on('click', '.gt-main-thread-profile-toggle', function () {
     var $traceParent = $(this).parents('.gt-trace-parent');
     var $button = $(this);
-    var profile = $traceParent.data('gtProfile');
+    var profile = $traceParent.data('gtMainThreadProfile');
     var url;
     if (!profile) {
       var serverId = $traceParent.data('gtServerId');
       var traceId = $traceParent.data('gtTraceId');
-      url = 'backend/trace/profile' + '?server-id=' + serverId + '&trace-id=' + traceId;
+      url = 'backend/trace/main-thread-profile' + '?server-id=' + serverId + '&trace-id=' + traceId;
     }
-    profileToggle($button, '#profileOuter', profile, url);
+    profileToggle($button, '#mainThreadProfileOuter', profile, url);
+  });
+
+  $(document).on('click', '.gt-aux-thread-profile-toggle', function () {
+    var $traceParent = $(this).parents('.gt-trace-parent');
+    var $button = $(this);
+    var profile = $traceParent.data('gtAuxThreadProfile');
+    var url;
+    if (!profile) {
+      var serverId = $traceParent.data('gtServerId');
+      var traceId = $traceParent.data('gtTraceId');
+      url = 'backend/trace/aux-thread-profile' + '?server-id=' + serverId + '&trace-id=' + traceId;
+    }
+    profileToggle($button, '#auxThreadProfileOuter', profile, url);
   });
 
   var MULTIPLE_ROOT_NODES = '<multiple root nodes>';
@@ -1220,9 +1228,10 @@ HandlebarsRendering = (function () {
         $selector.data('gtTraceId', traceId);
       }
     },
-    renderTraceFromExport: function (traceHeader, $selector, traceEntries, profile) {
+    renderTraceFromExport: function (traceHeader, $selector, traceEntries, mainThreadProfile, auxThreadProfile) {
       $selector.data('gtTraceEntries', traceEntries);
-      $selector.data('gtProfile', profile);
+      $selector.data('gtMainThreadProfile', mainThreadProfile);
+      $selector.data('gtAuxThreadProfile', auxThreadProfile);
       this.renderTrace(traceHeader, undefined, undefined, $selector);
     },
     formatBytes: formatBytes,

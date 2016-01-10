@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.glowroot.agent.api.internal.GlowrootService;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.internal.ServiceRegistry;
+import org.glowroot.agent.plugin.api.transaction.AdvancedService;
+import org.glowroot.agent.plugin.api.transaction.AsyncService;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
 
 public class ServiceRegistryImpl implements ServiceRegistry {
@@ -33,14 +35,18 @@ public class ServiceRegistryImpl implements ServiceRegistry {
 
     private final GlowrootService glowrootService;
     private final TransactionService transactionService;
+    private final AsyncService asyncService;
+    private final AdvancedService advancedService;
 
     private final LoadingCache<String, ConfigService> configServices;
 
     private ServiceRegistryImpl(GlowrootService glowrootService,
-            TransactionService transactionService,
-            final ConfigServiceFactory configServiceFactory) {
+            TransactionService transactionService, AsyncService asyncService,
+            AdvancedService advancedService, final ConfigServiceFactory configServiceFactory) {
         this.glowrootService = glowrootService;
         this.transactionService = transactionService;
+        this.asyncService = asyncService;
+        this.advancedService = advancedService;
         configServices = CacheBuilder.newBuilder().build(new CacheLoader<String, ConfigService>() {
             @Override
             public ConfigService load(String pluginId) {
@@ -55,8 +61,18 @@ public class ServiceRegistryImpl implements ServiceRegistry {
     }
 
     @Override
+    public AsyncService getAsyncService() {
+        return asyncService;
+    }
+
+    @Override
     public ConfigService getConfigService(String pluginId) {
         return configServices.getUnchecked(pluginId);
+    }
+
+    @Override
+    public AdvancedService getAdvancedService() {
+        return advancedService;
     }
 
     // called via reflection from org.glowroot.agent.plugin.api.Agent
@@ -72,9 +88,10 @@ public class ServiceRegistryImpl implements ServiceRegistry {
     }
 
     public static void init(GlowrootService glowrootService, TransactionService transactionService,
+            AsyncService asyncService, AdvancedService advancedService,
             ConfigServiceFactory configServiceFactory) throws Exception {
-        INSTANCE =
-                new ServiceRegistryImpl(glowrootService, transactionService, configServiceFactory);
+        INSTANCE = new ServiceRegistryImpl(glowrootService, transactionService, asyncService,
+                advancedService, configServiceFactory);
     }
 
     public interface ConfigServiceFactory {

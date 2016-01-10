@@ -18,6 +18,7 @@ message Config {
   message TransactionConfig {
     OptionalInt profiling_interval_millis = 1;
     OptionalInt slow_threshold_millis = 2;
+    OptionalBool capture_thread_stats = 8;
   }
 
   message UserRecordingConfig {
@@ -33,9 +34,7 @@ message Config {
     OptionalInt max_aggregate_queries_per_query_type = 5;
     OptionalInt max_trace_entries_per_transaction = 6;
     OptionalInt max_stack_trace_samples_per_transaction = 7;
-    OptionalBool capture_thread_info = 8;
-    OptionalBool capture_gc_activity = 9;
-    OptionalInt mbean_gauge_not_found_delay_seconds = 10;
+    OptionalInt mbean_gauge_not_found_delay_seconds = 8;
   }
 
   message PluginConfig {

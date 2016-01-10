@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,13 +30,14 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TraceThreadInfoIT {
+public class TraceThreadStatsIT {
 
     private static Container container;
 
@@ -58,29 +59,44 @@ public class TraceThreadInfoIT {
     @Test
     public void shouldTestCpuTime() throws Exception {
         // given
+        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(ShouldUseCpu.class);
         // then
-        assertThat(trace.getHeader().getThreadCpuNanos().getValue())
+        assertThat(trace.getHeader().getMainThreadStats().getTotalCpuNanos().getValue())
                 .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(10));
+        assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
     }
 
     @Test
     public void shouldTestWaitTime() throws Exception {
         // given
+        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(ShouldWait.class);
         // then
-        assertThat(trace.getHeader().getThreadWaitedNanos().getValue()).isGreaterThanOrEqualTo(5);
+        assertThat(trace.getHeader().getMainThreadStats().getTotalWaitedNanos().getValue())
+                .isGreaterThanOrEqualTo(5);
+        assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
     }
 
     @Test
     public void shouldTestBlockTime() throws Exception {
         // given
+        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(ShouldBlock.class);
         // then
-        assertThat(trace.getHeader().getThreadBlockedNanos().getValue()).isGreaterThanOrEqualTo(5);
+        assertThat(trace.getHeader().getMainThreadStats().getTotalBlockedNanos().getValue())
+                .isGreaterThanOrEqualTo(5);
+        assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
+    }
+
+    private static void enableCaptureThreadStats() throws Exception {
+        container.getConfigService().updateTransactionConfig(
+                TransactionConfig.newBuilder()
+                        .setCaptureThreadStats(ProtoOptional.of(true))
+                        .build());
     }
 
     public static class ShouldUseCpu implements AppUnderTest, TransactionMarker {

@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015 the original author or authors.
+  Copyright 2015-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -13,8 +13,31 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div style="position: relative; min-height: 100px;">
+<!-- 106px is to compensate for -6px margin-top below -->
+<div style="position: relative;"
+     ng-style="{'min-height': async || hasUnfilteredAuxThreadProfile ? '106px' : '100px'}">
   <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+  <div style="text-align: center; margin-top: -6px; margin-bottom: 2px; color: #555;"
+       ng-if="auxiliary || hasUnfilteredAuxThreadProfile">
+    <label class="radio-inline">
+      <input type="radio" name="view" value="main" ng-click="clickTopRadioButton('main-thread-profile')"
+             ng-checked="!auxiliary">
+      <a class="gt-radio-link"
+         href="transaction/main-thread-profile{{tabQueryString()}}"
+         ng-click="clickActiveTopLink($event, 'main-thread-profile')">
+        Main thread profile
+      </a>
+    </label>
+    <label class="radio-inline">
+      <input type="radio" name="view" value="aux" ng-click="clickTopRadioButton('aux-thread-profile')"
+             ng-checked="auxiliary">
+      <a class="gt-radio-link"
+         href="transaction/aux-thread-profile{{tabQueryString()}}"
+         ng-click="clickActiveTopLink($event, 'aux-thread-profile')">
+        Auxiliary thread profile
+      </a>
+    </label>
+  </div>
   <div gt-spinner
        gt-show="showSpinner && !showProfile"
        class="gt-left-aligned-spinner">
@@ -30,7 +53,8 @@
        style="right: -20px;">
   </div>
   <div ng-show="!showSpinner && !showProfile && !httpError"
-       style="display: table; width: 100%; height: 100%; margin-top: 50px;">
+       style="display: table; width: 100%; height: 100%;"
+       ng-style="{'padding-top': auxiliary || hasUnfilteredAuxThreadProfile ? '25px' : '30px'}">
     <div style="display: table-cell; text-align: center; vertical-align: middle;">
       <div class="gt-chart-no-data"
            ng-hide="showOverwrittenMessage">
@@ -49,7 +73,7 @@
     <div class="gt-nowrap hide" id="profileOuter">
       <div class="clearfix" style="padding: 10px 0;">
         <!-- margin-bottom: 15px is for smaller screens where the link is above the select -->
-        <a class="pull-right" ng-href="transaction/flame-graph{{flameGraphQueryString()}}">
+        <a class="pull-right" ng-href="{{flameGraphHref()}}">
           <em>View flame graph (experimental)</em>
         </a>
 

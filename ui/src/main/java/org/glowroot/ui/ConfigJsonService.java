@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -517,18 +517,21 @@ class ConfigJsonService {
 
         abstract int slowThresholdMillis();
         abstract int profilingIntervalMillis();
+        abstract boolean captureThreadStats();
         abstract String version();
 
         private TransactionConfig toConfig() {
             return ImmutableTransactionConfig.builder()
                     .slowThresholdMillis(slowThresholdMillis())
                     .profilingIntervalMillis(profilingIntervalMillis())
+                    .captureThreadStats(captureThreadStats())
                     .build();
         }
         private static TransactionConfigDto fromConfig(TransactionConfig config) {
             return ImmutableTransactionConfigDto.builder()
                     .slowThresholdMillis(config.slowThresholdMillis())
                     .profilingIntervalMillis(config.profilingIntervalMillis())
+                    .captureThreadStats(config.captureThreadStats())
                     .version(config.version())
                     .build();
         }
@@ -567,8 +570,6 @@ class ConfigJsonService {
         abstract int maxAggregateQueriesPerQueryType();
         abstract int maxTraceEntriesPerTransaction();
         abstract int maxStackTraceSamplesPerTransaction();
-        abstract boolean captureThreadInfo();
-        abstract boolean captureGcActivity();
         abstract int mbeanGaugeNotFoundDelaySeconds();
         abstract String version();
 
@@ -582,8 +583,6 @@ class ConfigJsonService {
                     .maxAggregateQueriesPerQueryType(maxAggregateQueriesPerQueryType())
                     .maxTraceEntriesPerTransaction(maxTraceEntriesPerTransaction())
                     .maxStackTraceSamplesPerTransaction(maxStackTraceSamplesPerTransaction())
-                    .captureThreadInfo(captureThreadInfo())
-                    .captureGcActivity(captureGcActivity())
                     .mbeanGaugeNotFoundDelaySeconds(mbeanGaugeNotFoundDelaySeconds())
                     .build();
         }
@@ -600,8 +599,6 @@ class ConfigJsonService {
                     .maxTraceEntriesPerTransaction(config.maxTraceEntriesPerTransaction())
                     .maxStackTraceSamplesPerTransaction(
                             config.maxStackTraceSamplesPerTransaction())
-                    .captureThreadInfo(config.captureThreadInfo())
-                    .captureGcActivity(config.captureGcActivity())
                     .mbeanGaugeNotFoundDelaySeconds(config.mbeanGaugeNotFoundDelaySeconds())
                     .version(config.version())
                     .build();

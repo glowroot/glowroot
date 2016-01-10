@@ -122,6 +122,8 @@ case "$1" in
                set -e
 
                find -name *.java -print0 | xargs -0 sed -i 's|/\*>>>@UnknownInitialization|/*>>>@org.checkerframework.checker.initialization.qual.UnknownInitialization|g'
+               find -name *.java -print0 | xargs -0 sed -i 's|/\*@UnderInitialization\*/|/*@org.checkerframework.checker.initialization.qual.UnderInitialization*/|g'
+               find -name *.java -print0 | xargs -0 sed -i 's|/\*@Initialized\*/|/*@org.checkerframework.checker.initialization.qual.Initialized*/|g'
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@Untainted\*/|/*@org.checkerframework.checker.tainting.qual.Untainted*/|g'
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@\([A-Za-z]*\)\*/|/*@org.checkerframework.checker.nullness.qual.\1*/|g'
 

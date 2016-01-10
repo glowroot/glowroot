@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,10 @@ public interface LiveTraceRepository {
     List<Trace.Entry> getEntries(String serverId, String traceId) throws IOException;
 
     @Nullable
-    Profile getProfile(String serverId, String traceId) throws IOException;
+    Profile getMainThreadProfile(String serverId, String traceId) throws IOException;
+
+    @Nullable
+    Profile getAuxThreadProfile(String serverId, String traceId) throws IOException;
 
     @Nullable
     Trace getFullTrace(String serverId, String traceId) throws IOException;
@@ -147,7 +150,12 @@ public interface LiveTraceRepository {
         }
 
         @Override
-        public @Nullable Profile getProfile(String serverId, String traceId) {
+        public @Nullable Profile getMainThreadProfile(String serverId, String traceId) {
+            return null;
+        }
+
+        @Override
+        public @Nullable Profile getAuxThreadProfile(String serverId, String traceId) {
             return null;
         }
 

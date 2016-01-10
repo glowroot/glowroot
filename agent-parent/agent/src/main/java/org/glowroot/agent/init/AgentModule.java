@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,6 @@ import org.glowroot.agent.impl.WeavingTimerServiceImpl;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.OptionalService;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
@@ -132,16 +131,6 @@ public class AgentModule {
         final TimerNameCache timerNameCache = new TimerNameCache();
         weavingTimerService =
                 new WeavingTimerServiceImpl(transactionRegistry, configService, timerNameCache);
-
-        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
-                .setNameFormat("Glowroot-Background-%d").build();
-        scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
-
-        aggregator = new Aggregator(scheduledExecutor, collector, configService,
-                ROLLUP_0_INTERVAL_MILLIS, clock);
-        transactionCollector = new TransactionCollector(scheduledExecutor, configService, collector,
-                aggregator, clock, ticker);
-
         timerWrapperMethods = configService.getAdvancedConfig().timerWrapperMethods();
 
         WeaverImpl weaver = new WeaverImpl(adviceCache.getAdvisorsSupplier(),
@@ -166,19 +155,24 @@ public class AgentModule {
             }
         }
 
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
+                .setNameFormat("Glowroot-Background-%d").build();
+        scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
+
+        aggregator = new Aggregator(scheduledExecutor, collector, configService,
+                ROLLUP_0_INTERVAL_MILLIS, clock);
+        transactionCollector = new TransactionCollector(scheduledExecutor, configService, collector,
+                aggregator, clock, ticker);
+
         OptionalService<ThreadAllocatedBytes> threadAllocatedBytes = ThreadAllocatedBytes.create();
 
-        immedateTraceStoreWatcher = new ImmediateTraceStoreWatcher(scheduledExecutor,
-                transactionRegistry, transactionCollector, configService, ticker);
-        immedateTraceStoreWatcher.scheduleWithFixedDelay(scheduledExecutor, 0,
-                ImmediateTraceStoreWatcher.PERIOD_MILLIS, MILLISECONDS);
         Random random = new Random();
         UserProfileScheduler userProfileScheduler =
                 new UserProfileScheduler(scheduledExecutor, configService, random);
         GlowrootService glowrootService =
                 new GlowrootServiceImpl(transactionRegistry, userProfileScheduler);
-        TransactionService transactionService = TransactionServiceImpl.create(transactionRegistry,
-                transactionCollector, configService, timerNameCache,
+        TransactionServiceImpl transactionService = TransactionServiceImpl.create(
+                transactionRegistry, transactionCollector, configService, timerNameCache,
                 threadAllocatedBytes.getService(), userProfileScheduler, ticker, clock);
         ConfigServiceFactory configServiceFactory = new ConfigServiceFactory() {
             @Override
@@ -189,7 +183,8 @@ public class AgentModule {
                         pluginId);
             }
         };
-        ServiceRegistryImpl.init(glowrootService, transactionService, configServiceFactory);
+        ServiceRegistryImpl.init(glowrootService, transactionService, transactionService,
+                transactionService, configServiceFactory);
 
         lazyPlatformMBeanServer = new LazyPlatformMBeanServer();
         gaugeCollector = new GaugeCollector(configService, collector, lazyPlatformMBeanServer,
@@ -202,6 +197,11 @@ public class AgentModule {
                 MILLISECONDS);
         stackTraceCollector = StackTraceCollector.create(transactionRegistry, configService,
                 scheduledExecutor, random);
+
+        immedateTraceStoreWatcher = new ImmediateTraceStoreWatcher(scheduledExecutor,
+                transactionRegistry, transactionCollector, configService, ticker);
+        immedateTraceStoreWatcher.scheduleWithFixedDelay(scheduledExecutor, 0,
+                ImmediateTraceStoreWatcher.PERIOD_MILLIS, MILLISECONDS);
 
         liveTraceRepository = new LiveTraceRepositoryImpl(transactionRegistry, transactionCollector,
                 clock, ticker);

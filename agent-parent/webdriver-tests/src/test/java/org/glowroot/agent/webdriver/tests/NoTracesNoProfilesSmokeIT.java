@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,8 @@ public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
         request = asyncHttpClient
                 .preparePost("http://localhost:" + getUiPort() + "/backend/config/transaction")
                 .setBody("{\"slowThresholdMillis\":" + Integer.MAX_VALUE
-                        + ",\"profilingIntervalMillis\":0,\"version\":\"" + version + "\"}")
+                        + ",\"profilingIntervalMillis\":0,\"captureThreadStats\":false,"
+                        + "\"version\":\"" + version + "\"}")
                 .build();
         int status = asyncHttpClient.executeRequest(request).get().getStatusCode();
         asyncHttpClient.close();

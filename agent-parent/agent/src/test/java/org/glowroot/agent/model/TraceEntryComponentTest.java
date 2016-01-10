@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +28,12 @@ public class TraceEntryComponentTest {
     @Test
     public void testTooManyPops() {
         // given
+        ThreadContextImpl threadContext = mock(ThreadContextImpl.class);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerImpl timer = mock(TimerImpl.class);
         Ticker ticker = mock(Ticker.class);
         TraceEntryComponent traceEntryComponent =
-                new TraceEntryComponent(messageSupplier, timer, 0, ticker);
+                new TraceEntryComponent(threadContext, messageSupplier, timer, 0, ticker);
         // when
         traceEntryComponent.popEntry(traceEntryComponent.getRootEntry(), 0);
         traceEntryComponent.popEntry(traceEntryComponent.getRootEntry(), 0);
@@ -42,13 +43,14 @@ public class TraceEntryComponentTest {
     @Test
     public void testMissedPop() {
         // given
+        ThreadContextImpl threadContext = mock(ThreadContextImpl.class);
         MessageSupplier messageSupplier1 = mock(MessageSupplier.class);
         MessageSupplier messageSupplier2 = mock(MessageSupplier.class);
         TimerImpl timer1 = mock(TimerImpl.class);
         TimerImpl timer2 = mock(TimerImpl.class);
         Ticker ticker = mock(Ticker.class);
         TraceEntryComponent traceEntryComponent =
-                new TraceEntryComponent(messageSupplier1, timer1, 0, ticker);
+                new TraceEntryComponent(threadContext, messageSupplier1, timer1, 0, ticker);
         // when
         traceEntryComponent.pushEntry(0, messageSupplier2, null, 0, timer2);
         traceEntryComponent.popEntry(traceEntryComponent.getRootEntry(), 0);
@@ -59,13 +61,14 @@ public class TraceEntryComponentTest {
     @Test
     public void testPopNonExisting() {
         // given
+        ThreadContextImpl threadContext = mock(ThreadContextImpl.class);
         MessageSupplier messageSupplier1 = mock(MessageSupplier.class);
         MessageSupplier messageSupplier2 = mock(MessageSupplier.class);
         TimerImpl timer1 = mock(TimerImpl.class);
         TimerImpl timer2 = mock(TimerImpl.class);
         Ticker ticker = mock(Ticker.class);
         TraceEntryComponent traceEntryComponent =
-                new TraceEntryComponent(messageSupplier1, timer1, 0, ticker);
+                new TraceEntryComponent(threadContext, messageSupplier1, timer1, 0, ticker);
         // when
         traceEntryComponent.pushEntry(0, messageSupplier2, null, 0, timer2);
         traceEntryComponent.popEntry(mock(TraceEntryImpl.class), 0);

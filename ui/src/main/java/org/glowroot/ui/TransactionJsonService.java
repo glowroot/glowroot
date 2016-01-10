@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,9 +57,8 @@ import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.TraceRepository.TraceQuery;
 import org.glowroot.storage.repo.Utils;
 import org.glowroot.storage.repo.helper.RollupLevelService;
+import org.glowroot.ui.AggregateMerging.MergedAggregate;
 import org.glowroot.ui.AggregateMerging.PercentileValue;
-import org.glowroot.ui.AggregateMerging.ThreadInfoAggregate;
-import org.glowroot.ui.AggregateMerging.TimerMergedAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -106,20 +105,14 @@ class TransactionJsonService {
             // prior capture times
             overviewAggregates = overviewAggregates.subList(1, overviewAggregates.size());
         }
-        TimerMergedAggregate timerMergedAggregate =
-                AggregateMerging.getTimerMergedAggregate(overviewAggregates);
-        ThreadInfoAggregate threadInfoAggregate =
-                AggregateMerging.getThreadInfoAggregate(overviewAggregates);
+        MergedAggregate mergedAggregate = AggregateMerging.getMergedAggregate(overviewAggregates);
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeObjectField("dataSeries", dataSeriesList);
         jg.writeObjectField("transactionCounts", transactionCounts);
-        jg.writeObjectField("mergedAggregate", timerMergedAggregate);
-        if (!threadInfoAggregate.isEmpty()) {
-            jg.writeObjectField("threadInfoAggregate", threadInfoAggregate);
-        }
+        jg.writeObjectField("mergedAggregate", mergedAggregate);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -190,13 +183,32 @@ class TransactionJsonService {
         TransactionProfileRequest request =
                 QueryStrings.decode(queryString, TransactionProfileRequest.class);
         TransactionQuery query = toQuery(request);
-        MutableProfile profile = transactionCommonService.getMergedProfile(query, request.include(),
-                request.exclude(), request.truncateBranchPercentage());
-        if (profile.getSampleCount() == 0 && request.include().isEmpty()
-                && request.exclude().isEmpty() && aggregateRepository.shouldHaveProfile(query)) {
-            return "{\"overwritten\":true}";
+        MutableProfile profile =
+                transactionCommonService.getMergedProfile(query, request.auxiliary(),
+                        request.include(), request.exclude(), request.truncateBranchPercentage());
+        boolean hasUnfilteredAuxThreadProfile;
+        if (request.auxiliary()) {
+            hasUnfilteredAuxThreadProfile = profile.getUnfilteredSampleCount() > 0;
+        } else {
+            hasUnfilteredAuxThreadProfile = transactionCommonService.hasAuxThreadProfile(query);
         }
-        return profile.toJson();
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeBooleanField("hasUnfilteredAuxThreadProfile", hasUnfilteredAuxThreadProfile);
+        if (profile.getUnfilteredSampleCount() == 0) {
+            if (request.auxiliary() && aggregateRepository.shouldHaveAuxThreadProfile(query)) {
+                jg.writeBooleanField("overwritten", true);
+            } else if (!request.auxiliary()
+                    && aggregateRepository.shouldHaveMainThreadProfile(query)) {
+                jg.writeBooleanField("overwritten", true);
+            }
+        }
+        jg.writeFieldName("profile");
+        profile.writeJson(jg);
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
     }
 
     @GET("/backend/transaction/queries")
@@ -290,8 +302,9 @@ class TransactionJsonService {
     String getFlameGraph(String queryString) throws Exception {
         FlameGraphRequest request = QueryStrings.decode(queryString, FlameGraphRequest.class);
         TransactionQuery query = toQuery(request);
-        MutableProfile profile = transactionCommonService.getMergedProfile(query, request.include(),
-                request.exclude(), request.truncateBranchPercentage());
+        MutableProfile profile =
+                transactionCommonService.getMergedProfile(query, request.auxiliary(),
+                        request.include(), request.exclude(), request.truncateBranchPercentage());
         return profile.toFlameGraphJson();
     }
 
@@ -471,7 +484,7 @@ class TransactionJsonService {
             }
             lastOverviewAggregate = overviewAggregate;
             MutableDoubleMap<String> stackedTimers = stackedPoint.getStackedTimers();
-            double totalOtherNanos = overviewAggregate.totalNanos();
+            double totalOtherNanos = overviewAggregate.totalDurationNanos();
             for (DataSeries dataSeries : dataSeriesList) {
                 MutableDouble totalNanos = stackedTimers.get(dataSeries.getName());
                 if (totalNanos == null) {
@@ -541,7 +554,7 @@ class TransactionJsonService {
 
         private static StackedPoint create(OverviewAggregate overviewAggregate) throws IOException {
             MutableDoubleMap<String> stackedTimers = new MutableDoubleMap<String>();
-            for (Aggregate.Timer rootTimer : overviewAggregate.rootTimers()) {
+            for (Aggregate.Timer rootTimer : overviewAggregate.mainThreadRootTimers()) {
                 // skip root timers
                 for (Aggregate.Timer topLevelTimer : rootTimer.getChildTimerList()) {
                     // traverse tree starting at top-level (under root) timers
@@ -628,6 +641,7 @@ class TransactionJsonService {
 
     @Value.Immutable
     interface TransactionProfileRequest extends RequestBase {
+        boolean auxiliary();
         // intentionally not plural since maps from query string
         ImmutableList<String> include();
         // intentionally not plural since maps from query string
@@ -637,6 +651,7 @@ class TransactionJsonService {
 
     @Value.Immutable
     interface FlameGraphRequest extends RequestBase {
+        boolean auxiliary();
         // intentionally not plural since maps from query string
         ImmutableList<String> include();
         // intentionally not plural since maps from query string

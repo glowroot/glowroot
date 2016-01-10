@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.TransactionRegistry;
+import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -159,16 +161,39 @@ class StackTraceCollector {
             if (transactions.isEmpty()) {
                 return;
             }
-            long[] threadIds = new long[transactions.size()];
+            List<ThreadContextImpl> activeThreadContexts =
+                    Lists.newArrayListWithCapacity(2 * transactions.size());
             for (int i = 0; i < transactions.size(); i++) {
-                threadIds[i] = transactions.get(i).getThreadId();
+                Transaction transaction = transactions.get(i);
+                ThreadContextImpl mainThreadContext = transaction.getMainThreadContext();
+                if (!mainThreadContext.isCompleted()) {
+                    activeThreadContexts.add(mainThreadContext);
+                }
+                for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
+                    if (!auxThreadContext.isCompleted()) {
+                        activeThreadContexts.add(auxThreadContext);
+                    }
+                }
             }
+            captureStackTraces(activeThreadContexts);
+        }
+
+        private void captureStackTraces(List<ThreadContextImpl> threadContexts) {
+            long[] threadIds = new long[threadContexts.size()];
+            for (int i = 0; i < threadContexts.size(); i++) {
+                threadIds[i] = threadContexts.get(i).getThreadId();
+            }
+            @Nullable
             ThreadInfo[] threadInfos =
                     ManagementFactory.getThreadMXBean().getThreadInfo(threadIds, Integer.MAX_VALUE);
-            for (int i = 0; i < transactions.size(); i++) {
-                transactions.get(i).captureStackTrace(threadInfos[i],
-                        configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction(),
-                        configService.getAdvancedConfig().timerWrapperMethods());
+            int limit = configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction();
+            boolean timerWrapperMethods = configService.getAdvancedConfig().timerWrapperMethods();
+            for (int i = 0; i < threadContexts.size(); i++) {
+                ThreadContextImpl threadContext = threadContexts.get(i);
+                ThreadInfo threadInfo = threadInfos[i];
+                if (threadInfo != null) {
+                    threadContext.captureStackTrace(threadInfo, limit, timerWrapperMethods);
+                }
             }
         }
 

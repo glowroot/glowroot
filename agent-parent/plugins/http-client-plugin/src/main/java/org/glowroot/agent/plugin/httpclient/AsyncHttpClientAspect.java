@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,21 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.config.ConfigService;
+import org.glowroot.agent.plugin.api.transaction.AsyncService;
+import org.glowroot.agent.plugin.api.transaction.AsyncTraceEntry;
 import org.glowroot.agent.plugin.api.transaction.Message;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.Timer;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
@@ -38,39 +43,57 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
+import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class AsyncHttpClientAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final AsyncService asyncService = Agent.getAsyncService();
     private static final ConfigService configService = Agent.getConfigService("http-client");
+
+    @SuppressWarnings("nullness:type.argument.type.incompatible")
+    private static final FastThreadLocal<Boolean> ignoreFutureGet = new FastThreadLocal<Boolean>() {
+        @Override
+        protected Boolean initialValue() {
+            return false;
+        }
+    };
 
     // the field and method names are verbose to avoid conflict since they will become fields
     // and methods in all classes that extend com.ning.http.client.ListenableFuture
     @Mixin("com.ning.http.client.ListenableFuture")
-    public static class ListenableFutureImpl implements ListenableFuture {
+    public abstract static class ListenableFutureImpl implements ListenableFutureMixin {
 
-        // only accessed by transaction thread
-        private @Nullable TraceEntry glowroot$traceEntry;
+        // volatile not needed, only accessed by the main thread
+        private @Nullable AsyncTraceEntry glowroot$asyncTraceEntry;
 
         @Override
-        public @Nullable TraceEntry glowroot$getTraceEntry() {
-            return glowroot$traceEntry;
+        public @Nullable AsyncTraceEntry glowroot$getAsyncTraceEntry() {
+            return glowroot$asyncTraceEntry;
         }
 
         @Override
-        public void glowroot$setTraceEntry(@Nullable TraceEntry traceEntry) {
-            this.glowroot$traceEntry = traceEntry;
+        public void glowroot$setAsyncTraceEntry(@Nullable AsyncTraceEntry asyncTraceEntry) {
+            this.glowroot$asyncTraceEntry = asyncTraceEntry;
         }
     }
 
     // the method names are verbose to avoid conflict since they will become methods in all classes
     // that extend com.ning.http.client.ListenableFuture
-    public interface ListenableFuture {
+    public interface ListenableFutureMixin {
 
         @Nullable
-        TraceEntry glowroot$getTraceEntry();
+        AsyncTraceEntry glowroot$getAsyncTraceEntry();
 
-        void glowroot$setTraceEntry(@Nullable TraceEntry traceEntry);
+        void glowroot$setAsyncTraceEntry(@Nullable AsyncTraceEntry asyncTraceEntry);
+    }
+
+    @Shim("com.ning.http.client.ListenableFuture")
+    public interface ListenableFutureShim<V> extends Future<V> {
+
+        @Shim("com.ning.http.client.ListenableFuture"
+                + " addListener(java.lang.Runnable, java.util.concurrent.Executor)")
+        ListenableFutureShim<V> addListener(Runnable listener, Executor exec);
     }
 
     @Pointcut(className = "com.ning.http.client.AsyncHttpClient", methodName = "executeRequest",
@@ -84,25 +107,42 @@ public class AsyncHttpClientAspect {
             return configService.isEnabled();
         }
         @OnBefore
-        public static TraceEntry onBefore(@BindParameter Object request,
+        public static AsyncTraceEntry onBefore(@BindParameter Object request,
                 @BindClassMeta RequestInvoker requestInvoker) {
             // need to start trace entry @OnBefore in case it is executed in a "same thread
             // executor" in which case will be over in @OnReturn
             String method = requestInvoker.getMethod(request);
             String url = requestInvoker.getUrl(request);
-            return transactionService.startTraceEntry(new RequestMessageSupplier(method, url),
-                    timerName);
+            return asyncService.startAsyncTraceEntry(new RequestMessageSupplier(method, url),
+                    timerName, timerName);
         }
         @OnReturn
-        public static void onReturn(@BindReturn ListenableFuture future,
-                @BindTraveler TraceEntry traceEntry) {
-            traceEntry.end();
-            future.glowroot$setTraceEntry(traceEntry);
+        public static void onReturn(@BindReturn @Nullable ListenableFutureMixin future,
+                final @BindTraveler AsyncTraceEntry asyncTraceEntry) {
+            asyncTraceEntry.stopSyncTimer();
+            if (future == null) {
+                asyncTraceEntry.end();
+                return;
+            }
+            future.glowroot$setAsyncTraceEntry(asyncTraceEntry);
+            final ListenableFutureShim<?> listenableFuture = (ListenableFutureShim<?>) future;
+            listenableFuture.addListener(new Runnable() {
+                @Override
+                public void run() {
+                    Throwable t = getException(listenableFuture);
+                    if (t == null) {
+                        asyncTraceEntry.end();
+                    } else {
+                        asyncTraceEntry.endWithError(t);
+                    }
+                }
+            }, DirectExecutor.INSTANCE);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable throwable,
-                @BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithError(throwable);
+                @BindTraveler AsyncTraceEntry asyncTraceEntry) {
+            asyncTraceEntry.stopSyncTimer();
+            asyncTraceEntry.endWithError(throwable);
         }
     }
 
@@ -111,23 +151,32 @@ public class AsyncHttpClientAspect {
             methodParameterTypes = {".."})
     public static class FutureGetAdvice {
         @OnBefore
-        public static @Nullable Timer onBefore(@BindReceiver ListenableFuture future) {
-            TraceEntry traceEntry = future.glowroot$getTraceEntry();
-            if (traceEntry != null) {
-                return traceEntry.extend();
+        public static @Nullable Timer onBefore(@BindReceiver ListenableFutureMixin future) {
+            AsyncTraceEntry asyncTraceEntry = future.glowroot$getAsyncTraceEntry();
+            if (asyncTraceEntry == null) {
+                return null;
             }
-            return null;
-        }
-        @OnReturn
-        public static void onReturn(@BindReceiver ListenableFuture future) {
-            future.glowroot$setTraceEntry(null);
+            return asyncTraceEntry.extendSyncTimer();
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Timer timer) {
-            if (timer != null) {
-                timer.stop();
+        public static void onAfter(@BindTraveler @Nullable Timer syncTimer) {
+            if (syncTimer != null) {
+                syncTimer.stop();
             }
         }
+    }
+
+    // this is hacky way to find out if future ended with exception or not
+    private static @Nullable Throwable getException(ListenableFutureShim<?> future) {
+        ignoreFutureGet.set(true);
+        try {
+            future.get();
+        } catch (Throwable t) {
+            return t;
+        } finally {
+            ignoreFutureGet.set(true);
+        }
+        return null;
     }
 
     private static class RequestMessageSupplier extends MessageSupplier {
@@ -143,6 +192,16 @@ public class AsyncHttpClientAspect {
         @Override
         public Message get() {
             return Message.from("http client request: {} {}", method, url);
+        }
+    }
+
+    private static class DirectExecutor implements Executor {
+
+        private static DirectExecutor INSTANCE = new DirectExecutor();
+
+        @Override
+        public void execute(Runnable command) {
+            command.run();
         }
     }
 }

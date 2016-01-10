@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ class TraceTestData {
 
     static Trace createTrace() {
         Trace.Header header = Trace.Header.newBuilder()
-                .setPartial(false)
                 .setSlow(true)
                 .setStartTime(1)
                 .setCaptureTime(11)
@@ -48,14 +47,11 @@ class TraceTestData {
                 .addDetailEntry(Trace.DetailEntry.newBuilder()
                         .setName("xyz2")
                         .addValue(Trace.DetailValue.newBuilder().setString("abc2").build()))
-                .setRootTimer(Trace.Timer.newBuilder()
+                .setMainThreadRootTimer(Trace.Timer.newBuilder()
                         .setName("the top")
                         .setExtended(false)
                         .setTotalNanos(123)
-                        .setCount(1)
-                        .setActive(false))
-                .setEntryLimitExceeded(false)
-                .setProfileSampleLimitExceeded(false)
+                        .setCount(1))
                 .build();
         return Trace.newBuilder()
                 .setId(UUID.randomUUID().toString())

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,9 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.agent.model.Profile;
+import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.wire.api.Collector;
@@ -136,15 +138,7 @@ public class AggregateIntervalCollector {
         }
 
         private void add(Transaction transaction) {
-            Profile profile = transaction.getProfile();
-            synchronized (overallAggregateCollector) {
-                overallAggregateCollector.add(transaction);
-                overallAggregateCollector.mergeRootTimer(transaction.getRootTimer());
-                overallAggregateCollector.mergeQueries(transaction.getQueries());
-                if (profile != null) {
-                    overallAggregateCollector.mergeProfile(profile);
-                }
-            }
+            merge(transaction, overallAggregateCollector);
             AggregateCollector transactionAggregateCollector =
                     transactionAggregateCollectors.get(transaction.getTransactionName());
             if (transactionAggregateCollector == null && transactionAggregateCollectors
@@ -164,14 +158,39 @@ public class AggregateIntervalCollector {
                 }
                 return;
             }
-            synchronized (transactionAggregateCollector) {
-                transactionAggregateCollector.add(transaction);
-                transactionAggregateCollector.mergeRootTimer(transaction.getRootTimer());
-                transactionAggregateCollector.mergeQueries(transaction.getQueries());
-                if (profile != null) {
-                    overallAggregateCollector.mergeProfile(profile);
-                    transactionAggregateCollector.mergeProfile(profile);
+            merge(transaction, transactionAggregateCollector);
+        }
+
+        private void merge(Transaction transaction, AggregateCollector aggregateCollector) {
+            synchronized (aggregateCollector) {
+                aggregateCollector.add(transaction);
+                TimerImpl mainThreadRootTimer = transaction.getMainThreadRootTimer();
+                if (transaction.isAsynchronous()) {
+                    // the main thread is treated as just another auxiliary thread
+                    aggregateCollector.mergeAuxThreadRootTimer(mainThreadRootTimer);
+                } else {
+                    aggregateCollector.mergeMainThreadRootTimer(mainThreadRootTimer);
                 }
+                for (TimerImpl rootTimer : transaction.getAuxThreadRootTimers()) {
+                    aggregateCollector.mergeAuxThreadRootTimer(rootTimer);
+                }
+                for (CommonTimerImpl rootTimer : transaction.getAsyncRootTimers()) {
+                    aggregateCollector.mergeAsyncRootTimer(rootTimer);
+                }
+                Profile mainThreadProfile = transaction.getMainThreadProfile();
+                if (mainThreadProfile != null) {
+                    if (transaction.isAsynchronous()) {
+                        // the main thread is treated as just another auxiliary thread
+                        aggregateCollector.mergeAuxThreadProfile(mainThreadProfile);
+                    } else {
+                        aggregateCollector.mergeMainThreadProfile(mainThreadProfile);
+                    }
+                }
+                Profile auxThreadProfile = transaction.getAuxThreadProfile();
+                if (auxThreadProfile != null) {
+                    aggregateCollector.mergeAuxThreadProfile(auxThreadProfile);
+                }
+                aggregateCollector.mergeQueries(transaction.getQueries());
             }
         }
     }

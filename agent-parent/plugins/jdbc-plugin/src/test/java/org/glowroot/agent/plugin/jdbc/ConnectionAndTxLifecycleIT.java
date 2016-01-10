@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,8 +81,10 @@ public class ConnectionAndTxLifecycleIT {
         // when
         Trace trace = container.execute(ExecuteGetConnectionAndConnectionClose.class);
         // then
-        assertThat(trace.getHeader().getRootTimer().getChildTimerList()).isEmpty();
-        assertThat(trace.getHeader().getEntryCount()).isZero();
+        Trace.Header header = trace.getHeader();
+        Trace.Timer rootTimer = header.getMainThreadRootTimer();
+        assertThat(rootTimer.getChildTimerList()).isEmpty();
+        assertThat(header.getEntryCount()).isZero();
     }
 
     @Test
@@ -92,11 +94,12 @@ public class ConnectionAndTxLifecycleIT {
         Trace trace = container.execute(ExecuteGetConnectionAndConnectionClose.class);
         // then
         Trace.Header header = trace.getHeader();
-        assertThat(header.getRootTimer().getChildTimerList()).hasSize(2);
+        Trace.Timer rootTimer = header.getMainThreadRootTimer();
+        assertThat(rootTimer.getChildTimerList()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
-        childTimerNames.add(header.getRootTimer().getChildTimerList().get(0).getName());
-        childTimerNames.add(header.getRootTimer().getChildTimerList().get(1).getName());
+        childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
+        childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
         assertThat(childTimerNames).containsOnly("jdbc get connection", "jdbc connection close");
         assertThat(header.getEntryCount()).isZero();
     }
@@ -124,8 +127,10 @@ public class ConnectionAndTxLifecycleIT {
         // when
         Trace trace = container.execute(ExecuteGetConnectionOnThrowingDataSource.class);
         // then
-        assertThat(trace.getHeader().getRootTimer().getChildTimerList()).isEmpty();
-        assertThat(trace.getHeader().getEntryCount()).isZero();
+        Trace.Header header = trace.getHeader();
+        Trace.Timer rootTimer = header.getMainThreadRootTimer();
+        assertThat(rootTimer.getChildTimerList()).isEmpty();
+        assertThat(header.getEntryCount()).isZero();
     }
 
     @Test
@@ -135,9 +140,9 @@ public class ConnectionAndTxLifecycleIT {
         Trace trace = container.execute(ExecuteGetConnectionOnThrowingDataSource.class);
         // then
         Trace.Header header = trace.getHeader();
-        assertThat(header.getRootTimer().getChildTimerList()).hasSize(1);
-        assertThat(header.getRootTimer().getChildTimerList().get(0).getName())
-                .isEqualTo("jdbc get connection");
+        Trace.Timer rootTimer = header.getMainThreadRootTimer();
+        assertThat(rootTimer.getChildTimerList()).hasSize(1);
+        assertThat(rootTimer.getChildTimerList().get(0).getName()).isEqualTo("jdbc get connection");
         assertThat(header.getEntryCount()).isZero();
     }
 
@@ -166,8 +171,10 @@ public class ConnectionAndTxLifecycleIT {
         // when
         Trace trace = container.execute(ExecuteCloseConnectionOnThrowingDataSource.class);
         // then
-        assertThat(trace.getHeader().getRootTimer().getChildTimerList()).isEmpty();
-        assertThat(trace.getHeader().getEntryCount()).isZero();
+        Trace.Header header = trace.getHeader();
+        Trace.Timer rootTimer = header.getMainThreadRootTimer();
+        assertThat(rootTimer.getChildTimerList()).isEmpty();
+        assertThat(header.getEntryCount()).isZero();
     }
 
     @Test
@@ -177,11 +184,12 @@ public class ConnectionAndTxLifecycleIT {
         Trace trace = container.execute(ExecuteCloseConnectionOnThrowingDataSource.class);
         // then
         Trace.Header header = trace.getHeader();
-        assertThat(header.getRootTimer().getChildTimerList()).hasSize(2);
+        Trace.Timer rootTimer = header.getMainThreadRootTimer();
+        assertThat(rootTimer.getChildTimerList()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
-        childTimerNames.add(header.getRootTimer().getChildTimerList().get(0).getName());
-        childTimerNames.add(header.getRootTimer().getChildTimerList().get(1).getName());
+        childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
+        childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
         assertThat(childTimerNames).containsOnly("jdbc get connection", "jdbc connection close");
         assertThat(header.getEntryCount()).isZero();
     }

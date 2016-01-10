@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,13 @@ import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.plugin.api.config.ConfigService;
+import org.glowroot.agent.plugin.api.internal.NopAdvancedService;
+import org.glowroot.agent.plugin.api.internal.NopAsyncService;
 import org.glowroot.agent.plugin.api.internal.NopConfigService;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService;
 import org.glowroot.agent.plugin.api.internal.ServiceRegistry;
+import org.glowroot.agent.plugin.api.transaction.AdvancedService;
+import org.glowroot.agent.plugin.api.transaction.AsyncService;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
 
 public class Agent {
@@ -55,18 +59,26 @@ public class Agent {
      * looking it up every time it is needed (which is often).
      */
     public static TransactionService getTransactionService() {
-        ServiceRegistry serviceRegistry;
-        try {
-            serviceRegistry = (ServiceRegistry) getInstanceMethod.invoke(null);
-        } catch (Exception e) {
-            // this really really really shouldn't happen
-            logger.error(e.getMessage(), e);
-            return NopTransactionService.INSTANCE;
-        }
+        ServiceRegistry serviceRegistry = getServiceRegistry();
         if (serviceRegistry == null) {
             return NopTransactionService.INSTANCE;
         } else {
             return serviceRegistry.getTransactionService();
+        }
+    }
+
+    /**
+     * Returns the {@code AsyncService} instance.
+     * 
+     * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
+     * looking it up every time it is needed (which is often).
+     */
+    public static AsyncService getAsyncService() {
+        ServiceRegistry serviceRegistry = getServiceRegistry();
+        if (serviceRegistry == null) {
+            return NopAsyncService.INSTANCE;
+        } else {
+            return serviceRegistry.getAsyncService();
         }
     }
 
@@ -77,14 +89,7 @@ public class Agent {
      * looking it up every time it is needed (which is often).
      */
     public static ConfigService getConfigService(String pluginId) {
-        ServiceRegistry serviceRegistry;
-        try {
-            serviceRegistry = (ServiceRegistry) getInstanceMethod.invoke(null);
-        } catch (Exception e) {
-            // this really really really shouldn't happen
-            logger.error(e.getMessage(), e);
-            return NopConfigService.INSTANCE;
-        }
+        ServiceRegistry serviceRegistry = getServiceRegistry();
         if (serviceRegistry == null) {
             return NopConfigService.INSTANCE;
         } else {
@@ -94,6 +99,31 @@ public class Agent {
 
     public static Logger getLogger(Class<?> clazz) {
         return new LoggerImpl(LoggerFactory.getLogger(clazz));
+    }
+
+    /**
+     * Returns the {@code AdvancedService} instance.
+     * 
+     * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
+     * looking it up every time it is needed (which is often).
+     */
+    public static AdvancedService getAdvancedService() {
+        ServiceRegistry serviceRegistry = getServiceRegistry();
+        if (serviceRegistry == null) {
+            return NopAdvancedService.INSTANCE;
+        } else {
+            return serviceRegistry.getAdvancedService();
+        }
+    }
+
+    private static @Nullable ServiceRegistry getServiceRegistry() {
+        try {
+            return (ServiceRegistry) getInstanceMethod.invoke(null);
+        } catch (Exception e) {
+            // this really really really shouldn't happen
+            logger.error(e.getMessage(), e);
+            return null;
+        }
     }
 
     @VisibleForTesting

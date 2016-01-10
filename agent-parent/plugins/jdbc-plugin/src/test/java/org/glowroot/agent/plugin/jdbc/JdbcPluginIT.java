@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,8 @@ public class JdbcPluginIT {
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
-        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
+        boolean found =
+                findExtendedTimerName(trace.getHeader().getMainThreadRootTimer(), "jdbc execute");
         assertThat(found).isFalse();
     }
 
@@ -89,7 +90,7 @@ public class JdbcPluginIT {
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
-        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc execute");
         assertThat(found).isFalse();
     }
 
@@ -99,7 +100,7 @@ public class JdbcPluginIT {
         // when
         Trace trace = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
         // then
-        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc execute");
         assertThat(found).isFalse();
     }
 
@@ -110,7 +111,7 @@ public class JdbcPluginIT {
         // when
         Trace trace = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
         // then
-        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc execute");
         assertThat(found).isTrue();
     }
 
@@ -121,7 +122,7 @@ public class JdbcPluginIT {
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResultsUsingColumnName.class);
         // then
-        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc execute");
         assertThat(found).isFalse();
     }
 
@@ -133,7 +134,7 @@ public class JdbcPluginIT {
         Trace trace = container.execute(
                 ExecuteStatementAndIterateOverResultsUsingColumnNameUnderSeparateTraceEntry.class);
         // then
-        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc execute");
         assertThat(found).isTrue();
     }
 
@@ -143,7 +144,7 @@ public class JdbcPluginIT {
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
-        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc execute");
         assertThat(found).isFalse();
     }
 
@@ -153,7 +154,7 @@ public class JdbcPluginIT {
         // when
         Trace trace = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
         // then
-        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc execute");
         assertThat(found).isTrue();
     }
 
@@ -165,7 +166,7 @@ public class JdbcPluginIT {
         // when
         Trace trace = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
         // then
-        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc execute");
         assertThat(found).isFalse();
     }
 
@@ -224,7 +225,11 @@ public class JdbcPluginIT {
         assertThat(trace.getHeader().getEntryCount()).isZero();
     }
 
-    private boolean findExtendedTimerName(Trace.Timer timer, String timerName) {
+    private static boolean findExtendedTimerName(Trace trace, String timerName) {
+        return findExtendedTimerName(trace.getHeader().getMainThreadRootTimer(), timerName);
+    }
+
+    private static boolean findExtendedTimerName(Trace.Timer timer, String timerName) {
         if (timer.getName().equals(timerName) && timer.getExtended()) {
             return true;
         }

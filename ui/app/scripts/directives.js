@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -422,3 +422,26 @@ glowroot.directive('gtSelectpicker', [
     };
   }
 ]);
+
+glowroot.directive('gtTimerDisplay', function() {
+  return {
+    scope: {
+      heading: '=',
+      flattenedTimers: '=',
+      treeTimers: '=',
+      transactionCount: '='
+    },
+    templateUrl: 'template/gt-timer-display.html'
+  };
+});
+
+
+glowroot.directive('gtThreadStats', function() {
+  return {
+    scope: {
+      threadStats: '=',
+      transactionCount: '='
+    },
+    templateUrl: 'template/gt-thread-stats.html'
+  };
+});

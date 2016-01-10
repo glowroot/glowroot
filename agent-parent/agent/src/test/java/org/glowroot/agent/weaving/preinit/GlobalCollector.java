@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ public class GlobalCollector {
                 return;
             }
             for (ReferencedMethod override : overrides) {
-                logger.debug("{} (processing overrides)", override);
+                logger.info("{} (processing overrides)", override);
                 processMethod(override);
             }
             overrides.clear();
@@ -98,7 +98,7 @@ public class GlobalCollector {
             // method on an Array, e.g. new String[] {}.clone()
             return;
         }
-        logger.debug("{}{}", indent, rootMethod);
+        logger.info("{}{}", indent, rootMethod);
         // add the containing class and its super classes if not already added
         Optional<ClassCollector> optional = classCollectors.get(owner);
         if (optional == null) {
@@ -124,7 +124,7 @@ public class GlobalCollector {
                 && rootMethod.getName().equals("toString")
                 && rootMethod.getDesc().equals("()Ljava/lang/String;")) {
             // special case since Transaction.toString() would otherwise pull in many other classes
-            // but it only exists for debugging so no need to worry about these classes
+            // but it only exists for infoging so no need to worry about these classes
             return;
         }
         ClassCollector classCollector = optional.get();
@@ -182,7 +182,7 @@ public class GlobalCollector {
                 allSuperInternalNames.addAll(loopOptional.get().getAllSuperInternalNames());
                 allSuperInternalNames.add(interfaceInternalName);
             } else {
-                logger.debug("could not find class: {}", interfaceInternalName);
+                logger.info("could not find class: {}", interfaceInternalName);
                 classCollector.setAllSuperInternalNames(allSuperInternalNames);
                 return Optional.absent();
             }

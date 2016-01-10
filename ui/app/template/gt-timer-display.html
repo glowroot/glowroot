@@ -1,0 +1,64 @@
+<table class="gt-timers-table"
+       ng-hide="showTreeView"
+       style="border-spacing: 0;">
+  <thead>
+  <tr>
+    <td class="gt-breakdown-header gt-bold" style="text-align: left;">{{heading}}</td>
+    <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+    <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
+    <td class="gt-breakdown-header">
+      <button class="gt-flat-btn gt-flat-btn-big gt-link-color"
+              ng-click="showTreeView = true"
+              style="margin-top: -6px; margin-bottom: -6px;">
+        switch to tree view
+      </button>
+    </td>
+  </tr>
+  </thead>
+  <tbody>
+  <tr class="align-top"
+      ng-repeat="flattenedTimer in flattenedTimers">
+    <td style="text-align: left;">
+      <div class="gt-indent2">
+        <div class="gt-break-word gt-second-line-indent">{{flattenedTimer.name}}</div>
+      </div>
+    </td>
+    <td>{{flattenedTimer.totalNanos / (1000000 * transactionCount) | gtMillis}}</td>
+    <td>{{flattenedTimer.count / transactionCount | gtCount}}</td>
+    <td></td>
+  </tr>
+  </tbody>
+</table>
+<table class="gt-timers-table"
+       ng-show="showTreeView"
+       style="border-spacing: 0;">
+  <thead>
+  <tr>
+    <td class="gt-breakdown-header gt-bold" style="text-align: left;">{{heading}}</td>
+    <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+    <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
+    <td class="gt-breakdown-header">
+      <button class="gt-flat-btn gt-flat-btn-big gt-link-color"
+              ng-click="showTreeView = false"
+              style="margin-top: -6px; margin-bottom: -6px;">
+        switch to flattened view
+      </button>
+    </td>
+  </tr>
+  </thead>
+  <tbody>
+  <tr class="align-top"
+      ng-repeat="treeTimer in treeTimers">
+    <td style="text-align: left;">
+      <div class="gt-indent2">
+        <div class="gt-break-word gt-second-line-indent" ng-style="{'margin-left': treeTimer.nestingLevel + 'em'}">
+          {{treeTimer.name}}{{treeTimer.extended ? ' (extended)' : ''}}
+        </div>
+      </div>
+    </td>
+    <td>{{treeTimer.totalNanos / (1000000 * transactionCount) | gtMillis}}</td>
+    <td>{{treeTimer.count / transactionCount | gtCount}}</td>
+    <td></td>
+  </tr>
+  </tbody>
+</table>

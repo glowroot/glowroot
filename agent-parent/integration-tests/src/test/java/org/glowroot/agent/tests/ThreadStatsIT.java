@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,12 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.tests.app.LevelOne;
-import org.glowroot.wire.api.model.ConfigOuterClass.Config.AdvancedConfig;
+import org.glowroot.wire.api.model.ConfigOuterClass.Config.TransactionConfig;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ThreadInfoIT {
+public class ThreadStatsIT {
 
     private static Container container;
 
@@ -52,95 +52,111 @@ public class ThreadInfoIT {
     }
 
     @Test
-    public void shouldReadTraceThreadInfoConfigEnabled() throws Exception {
+    public void shouldReadTraceThreadStatsConfigEnabled() throws Exception {
         // given
+        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(Normal.class);
         // then
-        assertThat(trace.getHeader().hasThreadCpuNanos()).isTrue();
-        assertThat(trace.getHeader().hasThreadBlockedNanos()).isTrue();
-        assertThat(trace.getHeader().hasThreadWaitedNanos()).isTrue();
+        assertThat(trace.getHeader().hasMainThreadStats()).isTrue();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalCpuNanos()).isTrue();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalBlockedNanos()).isTrue();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalWaitedNanos()).isTrue();
+        assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
     }
 
     @Test
-    public void shouldReadTraceThreadInfoConfigDisabled() throws Exception {
+    public void shouldReadTraceThreadStatsConfigDisabled() throws Exception {
         // given
-        container.getConfigService().updateAdvancedConfig(
-                AdvancedConfig.newBuilder()
-                        .setCaptureThreadInfo(ProtoOptional.of(false))
-                        .build());
         // when
         Trace trace = container.execute(Normal.class);
         // then
-        assertThat(trace.getHeader().hasThreadCpuNanos()).isFalse();
-        assertThat(trace.getHeader().hasThreadBlockedNanos()).isFalse();
-        assertThat(trace.getHeader().hasThreadWaitedNanos()).isFalse();
+        assertThat(trace.getHeader().hasMainThreadStats()).isFalse();
+        assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
     }
 
     @Test
     public void shouldReadTraceCpuTimeDisabled() throws Exception {
         // given
+        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(ThreadCpuTimeDisabled.class);
         // then
-        assertThat(trace.getHeader().hasThreadCpuNanos()).isFalse();
-        assertThat(trace.getHeader().hasThreadBlockedNanos()).isTrue();
-        assertThat(trace.getHeader().hasThreadWaitedNanos()).isTrue();
+        assertThat(trace.getHeader().hasMainThreadStats()).isTrue();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalCpuNanos()).isFalse();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalBlockedNanos()).isTrue();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalWaitedNanos()).isTrue();
+        assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
     }
 
     @Test
     public void shouldReadTraceCpuTimeDisabledMid() throws Exception {
         // given
+        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(ThreadCpuTimeDisabledMid.class);
         // then
-        assertThat(trace.getHeader().hasThreadCpuNanos()).isFalse();
-        assertThat(trace.getHeader().hasThreadBlockedNanos()).isTrue();
-        assertThat(trace.getHeader().hasThreadWaitedNanos()).isTrue();
+        assertThat(trace.getHeader().hasMainThreadStats()).isTrue();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalCpuNanos()).isFalse();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalBlockedNanos()).isTrue();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalWaitedNanos()).isTrue();
+        assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
     }
 
     @Test
     public void shouldReadTraceCpuTimeEnabledMid() throws Exception {
         // given
+        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(ThreadCpuTimeEnabledMid.class);
         // then
-        assertThat(trace.getHeader().hasThreadCpuNanos()).isFalse();
-        assertThat(trace.getHeader().hasThreadBlockedNanos()).isTrue();
-        assertThat(trace.getHeader().hasThreadWaitedNanos()).isTrue();
+        assertThat(trace.getHeader().hasMainThreadStats()).isTrue();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalCpuNanos()).isFalse();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalBlockedNanos()).isTrue();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalWaitedNanos()).isTrue();
+        assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
     }
 
     @Test
     public void shouldReadTraceContentionMonitoringDisabled() throws Exception {
         // given
+        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(ThreadContentionMonitoringDisabled.class);
         // then
-        assertThat(trace.getHeader().hasThreadCpuNanos()).isTrue();
-        assertThat(trace.getHeader().hasThreadBlockedNanos()).isFalse();
-        assertThat(trace.getHeader().hasThreadWaitedNanos()).isFalse();
+        assertThat(trace.getHeader().hasMainThreadStats()).isTrue();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalCpuNanos()).isTrue();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalBlockedNanos()).isFalse();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalWaitedNanos()).isFalse();
+        assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
     }
 
     @Test
     public void shouldReadTraceContentionMonitoringDisabledMid() throws Exception {
         // given
+        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(ThreadContentionMonitoringDisabledMid.class);
         // then
-        assertThat(trace.getHeader().hasThreadCpuNanos()).isTrue();
-        assertThat(trace.getHeader().hasThreadBlockedNanos()).isFalse();
-        assertThat(trace.getHeader().hasThreadWaitedNanos()).isFalse();
+        assertThat(trace.getHeader().hasMainThreadStats()).isTrue();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalCpuNanos()).isTrue();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalBlockedNanos()).isFalse();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalWaitedNanos()).isFalse();
+        assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
     }
 
     @Test
     public void shouldReadTraceContentionMonitoringEnabledMid() throws Exception {
         // given
+        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(ThreadContentionMonitoringEnabledMid.class);
         // then
-        assertThat(trace.getHeader().hasThreadCpuNanos()).isTrue();
-        assertThat(trace.getHeader().hasThreadBlockedNanos()).isFalse();
-        assertThat(trace.getHeader().hasThreadWaitedNanos()).isFalse();
+        assertThat(trace.getHeader().hasMainThreadStats()).isTrue();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalCpuNanos()).isTrue();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalBlockedNanos()).isFalse();
+        assertThat(trace.getHeader().getMainThreadStats().hasTotalWaitedNanos()).isFalse();
+        assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
     }
 
     @Test
@@ -149,9 +165,15 @@ public class ThreadInfoIT {
         // when
         Trace trace = container.execute(BothDisabled.class);
         // then
-        assertThat(trace.getHeader().hasThreadCpuNanos()).isFalse();
-        assertThat(trace.getHeader().hasThreadBlockedNanos()).isFalse();
-        assertThat(trace.getHeader().hasThreadWaitedNanos()).isFalse();
+        assertThat(trace.getHeader().hasMainThreadStats()).isFalse();
+        assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
+    }
+
+    private static void enableCaptureThreadStats() throws Exception {
+        container.getConfigService().updateTransactionConfig(
+                TransactionConfig.newBuilder()
+                        .setCaptureThreadStats(ProtoOptional.of(true))
+                        .build());
     }
 
     public static class Normal implements AppUnderTest {

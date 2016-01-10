@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,6 @@ public interface GlowrootService {
     void setTransactionType(@Nullable String transactionType);
 
     void setTransactionName(@Nullable String transactionName);
-
-    void setTransactionError(@Nullable Throwable t);
-
-    void setTransactionError(@Nullable String message);
-
-    void setTransactionError(@Nullable String message, @Nullable Throwable t);
 
     void setTransactionUser(@Nullable String user);
 

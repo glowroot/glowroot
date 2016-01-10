@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ import org.glowroot.storage.repo.TransactionErrorSummaryCollector;
 import org.glowroot.storage.repo.TransactionSummaryCollector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.QueriesByType;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.ThreadStats;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
@@ -67,7 +68,7 @@ public class AggregateDao implements AggregateRepository {
 
     private static final Table summaryTable = ImmutableTable.builder()
             .partialName("summary")
-            .addColumns(ImmutableColumn.of("total_nanos", "double"))
+            .addColumns(ImmutableColumn.of("total_duration_nanos", "double"))
             .addColumns(ImmutableColumn.of("transaction_count", "bigint"))
             .summary(true)
             .fromInclusive(false)
@@ -83,20 +84,20 @@ public class AggregateDao implements AggregateRepository {
 
     private static final Table overviewTable = ImmutableTable.builder()
             .partialName("overview")
-            .addColumns(ImmutableColumn.of("total_nanos", "double"))
+            .addColumns(ImmutableColumn.of("total_duration_nanos", "double"))
             .addColumns(ImmutableColumn.of("transaction_count", "bigint"))
-            .addColumns(ImmutableColumn.of("total_cpu_nanos", "double"))
-            .addColumns(ImmutableColumn.of("total_blocked_nanos", "double"))
-            .addColumns(ImmutableColumn.of("total_waited_nanos", "double"))
-            .addColumns(ImmutableColumn.of("total_allocated_bytes", "double"))
-            .addColumns(ImmutableColumn.of("root_timers", "blob"))
+            .addColumns(ImmutableColumn.of("main_thread_root_timers", "blob"))
+            .addColumns(ImmutableColumn.of("aux_thread_root_timers", "blob"))
+            .addColumns(ImmutableColumn.of("root_async_timers", "blob"))
+            .addColumns(ImmutableColumn.of("main_thread_stats", "blob"))
+            .addColumns(ImmutableColumn.of("aux_thread_stats", "blob"))
             .summary(false)
             .fromInclusive(true)
             .build();
 
     private static final Table histogramTable = ImmutableTable.builder()
             .partialName("histogram")
-            .addColumns(ImmutableColumn.of("total_nanos", "double"))
+            .addColumns(ImmutableColumn.of("total_duration_nanos", "double"))
             .addColumns(ImmutableColumn.of("transaction_count", "bigint"))
             .addColumns(ImmutableColumn.of("histogram", "blob"))
             .summary(false)
@@ -110,9 +111,16 @@ public class AggregateDao implements AggregateRepository {
             .fromInclusive(true)
             .build();
 
-    private static final Table profileTable = ImmutableTable.builder()
-            .partialName("profile")
-            .addColumns(ImmutableColumn.of("profile", "blob"))
+    private static final Table mainThreadProfileTable = ImmutableTable.builder()
+            .partialName("main_thread_profile")
+            .addColumns(ImmutableColumn.of("main_thread_profile", "blob"))
+            .summary(false)
+            .fromInclusive(false)
+            .build();
+
+    private static final Table auxThreadProfileTable = ImmutableTable.builder()
+            .partialName("aux_thread_profile")
+            .addColumns(ImmutableColumn.of("aux_thread_profile", "blob"))
             .summary(false)
             .fromInclusive(false)
             .build();
@@ -135,6 +143,9 @@ public class AggregateDao implements AggregateRepository {
     private final Map<Table, List<PreparedStatement>> readOverallPS;
     private final Map<Table, List<PreparedStatement>> readTransactionPS;
 
+    private final List<PreparedStatement> existsAuxThreadProfileOverallPS;
+    private final List<PreparedStatement> existsAuxThreadProfileTransactionPS;
+
     private final List<PreparedStatement> insertNeedsRollup;
     private final List<PreparedStatement> readNeedsRollup;
 
@@ -148,7 +159,8 @@ public class AggregateDao implements AggregateRepository {
         int count = configRepository.getRollupConfigs().size();
 
         List<Table> tables = ImmutableList.of(summaryTable, errorSummaryTable, overviewTable,
-                histogramTable, throughputTable, profileTable, queriesTable);
+                histogramTable, throughputTable, mainThreadProfileTable, auxThreadProfileTable,
+                queriesTable);
         Map<Table, List<PreparedStatement>> insertOverallMap = Maps.newHashMap();
         Map<Table, List<PreparedStatement>> insertTransactionMap = Maps.newHashMap();
         Map<Table, List<PreparedStatement>> readOverallMap = Maps.newHashMap();
@@ -184,6 +196,17 @@ public class AggregateDao implements AggregateRepository {
         this.insertTransactionPS = ImmutableMap.copyOf(insertTransactionMap);
         this.readOverallPS = ImmutableMap.copyOf(readOverallMap);
         this.readTransactionPS = ImmutableMap.copyOf(readTransactionMap);
+
+        List<PreparedStatement> existsAuxThreadProfileOverallPS = Lists.newArrayList();
+        List<PreparedStatement> existsAuxThreadProfileTransactionPS = Lists.newArrayList();
+        for (int i = 0; i < count; i++) {
+            existsAuxThreadProfileOverallPS
+                    .add(session.prepare(existsPS(auxThreadProfileTable, false, i)));
+            existsAuxThreadProfileTransactionPS
+                    .add(session.prepare(existsPS(auxThreadProfileTable, true, i)));
+        }
+        this.existsAuxThreadProfileOverallPS = existsAuxThreadProfileOverallPS;
+        this.existsAuxThreadProfileTransactionPS = existsAuxThreadProfileTransactionPS;
 
         List<PreparedStatement> insertNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
@@ -333,24 +356,32 @@ public class AggregateDao implements AggregateRepository {
         for (Row row : results) {
             int i = 0;
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
-            double totalNanos = row.getDouble(i++);
+            double totalDurationNanos = row.getDouble(i++);
             long transactionCount = row.getLong(i++);
-            double totalCpuNanos = getNotAvailableAwareDouble(row, i++);
-            double totalBlockedNanos = getNotAvailableAwareDouble(row, i++);
-            double totalWaitedNanos = getNotAvailableAwareDouble(row, i++);
-            double totalAllocatedBytes = getNotAvailableAwareDouble(row, i++);
-            List<Aggregate.Timer> rootTimers =
+            List<Aggregate.Timer> mainThreadRootTimers =
                     Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
-            overviewAggregates.add(ImmutableOverviewAggregate.builder()
+            List<Aggregate.Timer> auxThreadRootTimers =
+                    Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
+            List<Aggregate.Timer> asyncRootTimers =
+                    Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
+            ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
                     .captureTime(captureTime)
-                    .totalNanos(totalNanos)
+                    .totalDurationNanos(totalDurationNanos)
                     .transactionCount(transactionCount)
-                    .totalCpuNanos(totalCpuNanos)
-                    .totalBlockedNanos(totalBlockedNanos)
-                    .totalWaitedNanos(totalWaitedNanos)
-                    .totalAllocatedBytes(totalAllocatedBytes)
-                    .addAllRootTimers(rootTimers)
-                    .build());
+                    .addAllMainThreadRootTimers(mainThreadRootTimers)
+                    .addAllAuxThreadRootTimers(auxThreadRootTimers)
+                    .addAllAsyncRootTimers(asyncRootTimers);
+            ByteBuffer mainThreadStats = row.getBytes(i++);
+            if (mainThreadStats != null) {
+                builder.mainThreadStats(
+                        Aggregate.ThreadStats.parseFrom(ByteString.copyFrom(mainThreadStats)));
+            }
+            ByteBuffer auxThreadStats = row.getBytes(i++);
+            if (auxThreadStats != null) {
+                builder.auxThreadStats(
+                        Aggregate.ThreadStats.parseFrom(ByteString.copyFrom(auxThreadStats)));
+            }
+            overviewAggregates.add(builder.build());
         }
         return overviewAggregates;
     }
@@ -398,20 +429,15 @@ public class AggregateDao implements AggregateRepository {
     }
 
     @Override
-    public void mergeInProfiles(ProfileCollector mergedProfile, TransactionQuery query)
+    public void mergeInMainThreadProfiles(ProfileCollector mergedProfile, TransactionQuery query)
             throws InvalidProtocolBufferException {
-        BoundStatement boundStatement = createBoundStatement(profileTable, query);
-        bindQuery(boundStatement, query);
-        ResultSet results = session.execute(boundStatement);
-        long captureTime = Long.MIN_VALUE;
-        for (Row row : results) {
-            captureTime = Math.max(captureTime, checkNotNull(row.getTimestamp(0)).getTime());
-            ByteBuffer bytes = checkNotNull(row.getBytes(1));
-            // TODO optimize this byte copying
-            Profile profile = Profile.parseFrom(ByteString.copyFrom(bytes));
-            mergedProfile.mergeProfile(profile);
-            mergedProfile.updateLastCaptureTime(captureTime);
-        }
+        mergeInProfiles(mergedProfile, query, mainThreadProfileTable);
+    }
+
+    @Override
+    public void mergeInAuxThreadProfiles(ProfileCollector mergedProfile, TransactionQuery query)
+            throws InvalidProtocolBufferException {
+        mergeInProfiles(mergedProfile, query, auxThreadProfileTable);
     }
 
     @Override
@@ -441,7 +467,22 @@ public class AggregateDao implements AggregateRepository {
     }
 
     @Override
-    public boolean shouldHaveProfile(TransactionQuery query) {
+    public boolean hasAuxThreadProfile(TransactionQuery query) throws Exception {
+        BoundStatement boundStatement = query.transactionName() == null
+                ? existsAuxThreadProfileOverallPS.get(query.rollupLevel()).bind()
+                : existsAuxThreadProfileTransactionPS.get(query.rollupLevel()).bind();
+        bindQuery(boundStatement, query);
+        ResultSet results = session.execute(boundStatement);
+        return results.one() != null;
+    }
+
+    @Override
+    public boolean shouldHaveMainThreadProfile(TransactionQuery query) {
+        return false;
+    }
+
+    @Override
+    public boolean shouldHaveAuxThreadProfile(TransactionQuery query) {
         return false;
     }
 
@@ -463,7 +504,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setString(0, serverRollup);
         boundStatement.setString(1, transactionType);
         boundStatement.setTimestamp(2, new Date(captureTime));
-        boundStatement.setDouble(3, aggregate.getTotalNanos());
+        boundStatement.setDouble(3, aggregate.getTotalDurationNanos());
         boundStatement.setLong(4, aggregate.getTransactionCount());
         session.execute(boundStatement);
 
@@ -488,7 +529,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setString(0, serverRollup);
         boundStatement.setString(1, transactionType);
         boundStatement.setTimestamp(2, new Date(captureTime));
-        boundStatement.setDouble(3, aggregate.getTotalNanos());
+        boundStatement.setDouble(3, aggregate.getTotalDurationNanos());
         boundStatement.setLong(4, aggregate.getTransactionCount());
         boundStatement.setBytes(5,
                 aggregate.getTotalNanosHistogram().toByteString().asReadOnlyByteBuffer());
@@ -501,9 +542,18 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setLong(3, aggregate.getTransactionCount());
         session.execute(boundStatement);
 
-        if (aggregate.hasProfile()) {
-            Profile profile = aggregate.getProfile();
-            boundStatement = getInsertOverallPS(profileTable, rollupLevel).bind();
+        if (aggregate.hasMainThreadProfile()) {
+            Profile profile = aggregate.getMainThreadProfile();
+            boundStatement = getInsertOverallPS(mainThreadProfileTable, rollupLevel).bind();
+            boundStatement.setString(0, serverRollup);
+            boundStatement.setString(1, transactionType);
+            boundStatement.setTimestamp(2, new Date(captureTime));
+            boundStatement.setBytes(3, profile.toByteString().asReadOnlyByteBuffer());
+            session.execute(boundStatement);
+        }
+        if (aggregate.hasAuxThreadProfile()) {
+            Profile profile = aggregate.getAuxThreadProfile();
+            boundStatement = getInsertOverallPS(auxThreadProfileTable, rollupLevel).bind();
             boundStatement.setString(0, serverRollup);
             boundStatement.setString(1, transactionType);
             boundStatement.setTimestamp(2, new Date(captureTime));
@@ -535,7 +585,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setString(1, transactionType);
         boundStatement.setTimestamp(2, new Date(captureTime));
         boundStatement.setString(3, transactionName);
-        boundStatement.setDouble(4, aggregate.getTotalNanos());
+        boundStatement.setDouble(4, aggregate.getTotalDurationNanos());
         boundStatement.setLong(5, aggregate.getTransactionCount());
         session.execute(boundStatement);
 
@@ -563,7 +613,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setString(1, transactionType);
         boundStatement.setString(2, transactionName);
         boundStatement.setTimestamp(3, new Date(captureTime));
-        boundStatement.setDouble(4, aggregate.getTotalNanos());
+        boundStatement.setDouble(4, aggregate.getTotalDurationNanos());
         boundStatement.setLong(5, aggregate.getTransactionCount());
         boundStatement.setBytes(6,
                 aggregate.getTotalNanosHistogram().toByteString().asReadOnlyByteBuffer());
@@ -577,9 +627,19 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setLong(4, aggregate.getTransactionCount());
         session.execute(boundStatement);
 
-        if (aggregate.hasProfile()) {
-            Profile profile = aggregate.getProfile();
-            boundStatement = getInsertTransactionPS(profileTable, rollupLevel).bind();
+        if (aggregate.hasMainThreadProfile()) {
+            Profile profile = aggregate.getMainThreadProfile();
+            boundStatement = getInsertTransactionPS(mainThreadProfileTable, rollupLevel).bind();
+            boundStatement.setString(0, serverRollup);
+            boundStatement.setString(1, transactionType);
+            boundStatement.setString(2, transactionName);
+            boundStatement.setTimestamp(3, new Date(captureTime));
+            boundStatement.setBytes(4, profile.toByteString().asReadOnlyByteBuffer());
+            session.execute(boundStatement);
+        }
+        if (aggregate.hasAuxThreadProfile()) {
+            Profile profile = aggregate.getAuxThreadProfile();
+            boundStatement = getInsertTransactionPS(auxThreadProfileTable, rollupLevel).bind();
             boundStatement.setString(0, serverRollup);
             boundStatement.setString(1, transactionType);
             boundStatement.setString(2, transactionName);
@@ -615,29 +675,16 @@ public class AggregateDao implements AggregateRepository {
     private void bindAggregate(BoundStatement boundStatement, Aggregate aggregate, int startIndex)
             throws IOException {
         int i = startIndex;
-        boundStatement.setDouble(i++, aggregate.getTotalNanos());
+        boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
         boundStatement.setLong(i++, aggregate.getTransactionCount());
-        if (aggregate.hasTotalCpuNanos()) {
-            boundStatement.setDouble(i++, aggregate.getTotalCpuNanos().getValue());
-        } else {
-            boundStatement.setToNull(i++);
+        if (aggregate.hasMainThreadStats()) {
+
         }
-        if (aggregate.hasTotalBlockedNanos()) {
-            boundStatement.setDouble(i++, aggregate.getTotalBlockedNanos().getValue());
-        } else {
-            boundStatement.setToNull(i++);
-        }
-        if (aggregate.hasTotalWaitedNanos()) {
-            boundStatement.setDouble(i++, aggregate.getTotalWaitedNanos().getValue());
-        } else {
-            boundStatement.setToNull(i++);
-        }
-        if (aggregate.hasTotalAllocatedBytes()) {
-            boundStatement.setDouble(i++, aggregate.getTotalAllocatedBytes().getValue());
-        } else {
-            boundStatement.setToNull(i++);
-        }
-        boundStatement.setBytes(i++, Messages.toByteBuffer(aggregate.getRootTimerList()));
+        ThreadStats mainThreadStats = aggregate.getMainThreadStats();
+
+        boundStatement.setBytes(i++, Messages.toByteBuffer(aggregate.getMainThreadRootTimerList()));
+        boundStatement.setBytes(i++, Messages.toByteBuffer(aggregate.getAuxThreadRootTimerList()));
+        boundStatement.setBytes(i++, Messages.toByteBuffer(aggregate.getAsyncRootTimerList()));
     }
 
     private BoundStatement createBoundStatement(Table table, TransactionQuery query) {
@@ -645,6 +692,22 @@ public class AggregateDao implements AggregateRepository {
             return checkNotNull(readOverallPS.get(table)).get(query.rollupLevel()).bind();
         }
         return checkNotNull(readTransactionPS.get(table)).get(query.rollupLevel()).bind();
+    }
+
+    private void mergeInProfiles(ProfileCollector mergedProfile, TransactionQuery query,
+            Table profileTable) throws InvalidProtocolBufferException {
+        BoundStatement boundStatement = createBoundStatement(profileTable, query);
+        bindQuery(boundStatement, query);
+        ResultSet results = session.execute(boundStatement);
+        long captureTime = Long.MIN_VALUE;
+        for (Row row : results) {
+            captureTime = Math.max(captureTime, checkNotNull(row.getTimestamp(0)).getTime());
+            ByteBuffer bytes = checkNotNull(row.getBytes(1));
+            // TODO optimize this byte copying
+            Profile profile = Profile.parseFrom(ByteString.copyFrom(bytes));
+            mergedProfile.mergeProfile(profile);
+            mergedProfile.updateLastCaptureTime(captureTime);
+        }
     }
 
     private static void bindQuery(BoundStatement boundStatement, OverallQuery query) {
@@ -743,6 +806,23 @@ public class AggregateDao implements AggregateRepository {
         return sb.toString();
     }
 
+    private static String existsPS(Table table, boolean transaction, int i) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("select server_rollup");
+        sb.append(" from ");
+        sb.append(getTableName(table.partialName(), transaction, i));
+        sb.append(" where server_rollup = ? and transaction_type = ?");
+        if (transaction) {
+            sb.append(" and transaction_name = ?");
+        }
+        sb.append(" and capture_time >");
+        if (table.fromInclusive()) {
+            sb.append("=");
+        }
+        sb.append(" ? and capture_time <= ? limit 1");
+        return sb.toString();
+    }
+
     private static String createSummaryTablePS(Table table, boolean transaction, int i) {
         StringBuilder sb = new StringBuilder();
         sb.append("create table if not exists ");
@@ -815,9 +895,9 @@ public class AggregateDao implements AggregateRepository {
         StringBuilder sb = new StringBuilder();
         sb.append("aggregate_");
         if (transaction) {
-            sb.append("transaction_");
+            sb.append("tn_");
         } else {
-            sb.append("overall_");
+            sb.append("tt_");
         }
         sb.append(partialName);
         sb.append("_rollup_");

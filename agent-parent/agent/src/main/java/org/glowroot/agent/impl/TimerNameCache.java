@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,28 +42,31 @@ public class TimerNameCache {
                 }
             });
 
-    TimerName getName(Class<?> adviceClass) {
+    private final TimerName unknownTimerName = names.getUnchecked("unknown");
+    private final TimerName auxThreadTimerName = names.getUnchecked("auxiliary thread");
+
+    TimerName getTimerName(Class<?> adviceClass) {
         if (adviceClass == null) {
             logger.error("get(): argument 'adviceClass' must be non-null");
-            return getUnknownName();
+            return unknownTimerName;
         }
         Pointcut pointcut = adviceClass.getAnnotation(Pointcut.class);
         if (pointcut == null) {
             logger.warn("advice has no @Pointcut: {}", adviceClass.getName());
-            return getUnknownName();
+            return unknownTimerName;
         } else if (pointcut.timerName().isEmpty()) {
             logger.warn("advice @Pointcut has no timerName() attribute: {}", adviceClass.getName());
-            return getUnknownName();
+            return unknownTimerName;
         } else {
             return getName(pointcut.timerName());
         }
     }
 
-    private TimerName getName(String name) {
-        return names.getUnchecked(name);
+    TimerName getAuxThreadTimerName() {
+        return auxThreadTimerName;
     }
 
-    private TimerName getUnknownName() {
-        return names.getUnchecked("unknown");
+    private TimerName getName(String name) {
+        return names.getUnchecked(name);
     }
 }

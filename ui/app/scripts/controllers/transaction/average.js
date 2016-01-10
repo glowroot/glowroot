@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, $ */
+/* global glowroot, angular, $ */
 
 glowroot.controller('TransactionAverageCtrl', [
   '$scope',
@@ -57,33 +57,36 @@ glowroot.controller('TransactionAverageCtrl', [
     };
 
     function onRefreshData(data) {
-      var rootTimers = data.mergedAggregate.rootTimers;
-      if (rootTimers.length === 1) {
-        data.mergedAggregate.rootTimer = rootTimers[0];
+      var mainThreadRootTimers = data.mergedAggregate.mainThreadRootTimers;
+      if (mainThreadRootTimers.length === 1) {
+        data.mergedAggregate.mainThreadRootTimer = mainThreadRootTimers[0];
       } else {
-        var rootTimer = {
+        var mainThreadRootTimer = {
           name: '<multiple root nodes>',
           totalNanos: 0,
           count: 0,
-          childTimers: rootTimers
+          childTimers: mainThreadRootTimers
         };
         var i;
-        for (i = 0; i < rootTimers.length; i++) {
-          rootTimer.totalNanos += rootTimers[i].totalNanos;
-          rootTimer.count += rootTimers[i].count;
+        for (i = 0; i < mainThreadRootTimers.length; i++) {
+          mainThreadRootTimer.totalNanos += mainThreadRootTimers[i].totalNanos;
+          mainThreadRootTimer.count += mainThreadRootTimers[i].count;
         }
-        data.mergedAggregate.rootTimer = rootTimer;
+        data.mergedAggregate.mainThreadRootTimer = mainThreadRootTimer;
       }
       $scope.transactionCounts = data.transactionCounts;
       $scope.mergedAggregate = data.mergedAggregate;
-      $scope.threadInfoAggregate = data.threadInfoAggregate;
       if ($scope.mergedAggregate.transactionCount) {
-        updateTreeTimers();
-        updateFlattenedTimers();
+        $scope.mainThreadTreeTimers = createTreeTimers($scope.mergedAggregate.mainThreadRootTimer);
+        $scope.auxThreadTreeTimers = createTreeTimers($scope.mergedAggregate.auxThreadRootTimers);
+        $scope.asyncTreeTimers = createTreeTimers($scope.mergedAggregate.asyncRootTimers);
+        $scope.mainThreadFlattenedTimers = createFlattenedTimers($scope.mergedAggregate.mainThreadRootTimer);
+        $scope.auxThreadFlattenedTimers = createFlattenedTimers($scope.mergedAggregate.auxThreadRootTimers);
+        $scope.asyncFlattenedTimers = createFlattenedTimers($scope.mergedAggregate.asyncRootTimers);
       }
     }
 
-    function updateTreeTimers() {
+    function createTreeTimers(rootTimer) {
       var treeTimers = [];
 
       function traverse(timer, nestingLevel) {
@@ -99,12 +102,18 @@ glowroot.controller('TransactionAverageCtrl', [
         }
       }
 
-      traverse($scope.mergedAggregate.rootTimer, 0);
-
-      $scope.treeTimers = treeTimers;
+      // add the root node(s)
+      if (angular.isArray(rootTimer)) {
+        angular.forEach(rootTimer, function(item) {
+          traverse(item, 0);
+        });
+      } else {
+        traverse(rootTimer, 0);
+      }
+      return treeTimers;
     }
 
-    function updateFlattenedTimers() {
+    function createFlattenedTimers(rootTimer) {
       var flattenedTimerMap = {};
       var flattenedTimers = [];
 
@@ -131,13 +140,20 @@ glowroot.controller('TransactionAverageCtrl', [
         }
       }
 
-      traverse($scope.mergedAggregate.rootTimer, []);
+      // add the root node(s)
+      if (angular.isArray(rootTimer)) {
+        angular.forEach(rootTimer, function(item) {
+          traverse(item, []);
+        });
+      } else {
+        traverse(rootTimer, []);
+      }
 
       flattenedTimers.sort(function (a, b) {
         return b.totalNanos - a.totalNanos;
       });
 
-      $scope.flattenedTimers = flattenedTimers;
+      return flattenedTimers;
     }
 
     var chartOptions = {

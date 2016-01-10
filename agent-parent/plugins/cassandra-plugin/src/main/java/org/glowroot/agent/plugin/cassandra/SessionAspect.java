@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import javax.annotation.Nullable;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.config.ConfigService;
+import org.glowroot.agent.plugin.api.transaction.AsyncQueryEntry;
+import org.glowroot.agent.plugin.api.transaction.AsyncService;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.QueryEntry;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
@@ -40,7 +42,7 @@ import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
 import org.glowroot.agent.plugin.cassandra.ResultSetAspect.ResultSet;
-import org.glowroot.agent.plugin.cassandra.ResultSetAspect.ResultSetFuture;
+import org.glowroot.agent.plugin.cassandra.ResultSetFutureAspect.ResultSetFutureMixin;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -49,6 +51,7 @@ public class SessionAspect {
     private static final String QUERY_TYPE = "CQL";
 
     private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final AsyncService asyncService = Agent.getAsyncService();
     private static final ConfigService configService = Agent.getConfigService("cassandra");
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
@@ -117,7 +120,12 @@ public class SessionAspect {
         @OnBefore
         public static @Nullable QueryEntry onBefore(@BindParameter @Nullable Object arg) {
             inAdvice.set(true);
-            return commonBefore(arg, timerName);
+            QueryEntryInfo queryEntryInfo = getQueryEntryInfo(arg);
+            if (queryEntryInfo == null) {
+                return null;
+            }
+            return transactionService.startQueryEntry(QUERY_TYPE, queryEntryInfo.queryText,
+                    queryEntryInfo.messageSupplier, timerName);
         }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable ResultSet resultSet,
@@ -153,25 +161,34 @@ public class SessionAspect {
             return !inAdvice.get() && configService.isEnabled();
         }
         @OnBefore
-        public static @Nullable QueryEntry onBefore(@BindParameter @Nullable Object arg) {
+        public static @Nullable AsyncQueryEntry onBefore(@BindParameter @Nullable Object arg) {
             inAdvice.set(true);
-            return commonBefore(arg, timerName);
+            QueryEntryInfo queryEntryInfo = getQueryEntryInfo(arg);
+            if (queryEntryInfo == null) {
+                return null;
+            }
+            return asyncService.startAsyncQueryEntry(QUERY_TYPE, queryEntryInfo.queryText,
+                    queryEntryInfo.messageSupplier, timerName, timerName);
         }
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable ResultSetFuture resultSetFuture,
-                @BindTraveler @Nullable QueryEntry queryEntry) {
-            if (queryEntry != null) {
-                if (resultSetFuture != null) {
-                    resultSetFuture.glowroot$setQueryEntry(queryEntry);
-                }
-                queryEntry.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+        public static void onReturn(@BindReturn @Nullable ResultSetFutureMixin future,
+                final @BindTraveler @Nullable AsyncQueryEntry asyncQueryEntry) {
+            if (asyncQueryEntry == null) {
+                return;
             }
+            asyncQueryEntry.stopSyncTimer();
+            if (future == null) {
+                asyncQueryEntry.end();
+                return;
+            }
+            future.glowroot$setAsyncQueryEntry(asyncQueryEntry);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable QueryEntry queryEntry) {
-            if (queryEntry != null) {
-                queryEntry.endWithError(t);
+                @BindTraveler @Nullable AsyncQueryEntry asyncQueryEntry) {
+            if (asyncQueryEntry != null) {
+                asyncQueryEntry.stopSyncTimer();
+                asyncQueryEntry.endWithError(t);
             }
         }
         @OnAfter
@@ -180,7 +197,7 @@ public class SessionAspect {
         }
     }
 
-    private static @Nullable QueryEntry commonBefore(@Nullable Object arg, TimerName timerName) {
+    private static @Nullable QueryEntryInfo getQueryEntryInfo(@Nullable Object arg) {
         if (arg == null) {
             // seems nothing sensible to do here other than ignore
             return null;
@@ -208,11 +225,21 @@ public class SessionAspect {
         } else {
             return null;
         }
-        return transactionService.startQueryEntry(QUERY_TYPE, queryText, messageSupplier,
-                timerName);
+        return new QueryEntryInfo(queryText, messageSupplier);
     }
 
     private static String nullToEmpty(@Nullable String string) {
         return string == null ? "" : string;
+    }
+
+    private static class QueryEntryInfo {
+
+        private final String queryText;
+        private final MessageSupplier messageSupplier;
+
+        private QueryEntryInfo(String queryText, MessageSupplier messageSupplier) {
+            this.queryText = queryText;
+            this.messageSupplier = messageSupplier;
+        }
     }
 }

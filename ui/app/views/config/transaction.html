@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2015 the original author or authors.
+  Copyright 2013-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -50,6 +50,17 @@
         <div class="help-block">
           Any transaction that exceeds this amount of time will be viewable immediately as
           an active trace and the trace will be stored to disk at its completion.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Capture JVM thread stats"
+           gt-checkbox-label="Capture JVM thread stats"
+           gt-model="config.captureThreadStats"
+           gt-type="checkbox">
+        <div class="help-block">
+          Capture CPU time, blocked time, waited time and allocated memory if available.
+          See <a href="jvm/capabilities">JVM Capabilities</a>.
+          Capturing this data has some overhead (around 5 microseconds).
         </div>
       </div>
       <div class="form-group gt-form-buttons">

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,16 @@ $(document).ready(function () {
   if (entriesJson) {
     entries = JSON.parse(entriesJson);
   }
-  var profileJson = $('#profileJson').html();
-  var profile;
-  if (profileJson) {
-    profile = JSON.parse(profileJson);
+  var mainThreadProfileJson = $('#mainThreadProfileJson').html();
+  var mainThreadProfile;
+  if (mainThreadProfileJson) {
+    mainThreadProfile = JSON.parse(mainThreadProfileJson);
   }
-  HandlebarsRendering.renderTraceFromExport(header, $('#tracePlaceholder'), entries, profile);
+  var auxThreadProfileJson = $('#auxThreadProfileJson').html();
+  var auxThreadProfile;
+  if (auxThreadProfileJson) {
+    auxThreadProfile = JSON.parse(auxThreadProfileJson);
+  }
+  HandlebarsRendering.renderTraceFromExport(header, $('#tracePlaceholder'), entries, mainThreadProfile,
+      auxThreadProfile);
 });

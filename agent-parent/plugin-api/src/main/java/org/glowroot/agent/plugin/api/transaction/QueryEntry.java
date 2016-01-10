@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,17 @@ package org.glowroot.agent.plugin.api.transaction;
  * A {@link TraceEntry} that also captures query data for aggregation.
  */
 public interface QueryEntry extends TraceEntry {
+
+    /**
+     * Example of query and subsequent iterating over results which goes back to database and pulls
+     * more results.
+     * 
+     * Special note for async trace entries (those created by
+     * {@link AsyncService#startAsyncTraceEntry(MessageSupplier)} and
+     * {@link AsyncService#startAsyncQueryEntry(String, String, MessageSupplier)}): this method is
+     * designed to be (and must be) called by the same thread that created the async trace entry.
+     */
+    Timer extend();
 
     void rowNavigationAttempted();
 

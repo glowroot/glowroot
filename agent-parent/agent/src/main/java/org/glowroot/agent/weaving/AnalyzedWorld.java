@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,11 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.security.CodeSource;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -30,9 +32,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Supplier;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -71,20 +70,12 @@ public class AnalyzedWorld {
     // to through another instance, e.g. Optional<ClassLoader>) so that the keys won't be cleared
     // while their associated class loaders are still being used
     //
-    // note, not using nested loading cache since the nested loading cache maintains a strong
-    // reference to the class loader
-    private final LoadingCache<ClassLoader, ConcurrentMap<String, AnalyzedClass>> world =
-            CacheBuilder.newBuilder().weakKeys()
-                    .build(new CacheLoader<ClassLoader, ConcurrentMap<String, AnalyzedClass>>() {
-                        @Override
-                        public ConcurrentMap<String, AnalyzedClass> load(ClassLoader loader) {
-                            // intentionally avoiding Maps.newConcurrentMap() since it uses many
-                            // additional classes that must then be pre-initialized since this
-                            // is called from inside ClassFileTransformer.transform()
-                            // (see PreInitializeClasses)
-                            return new ConcurrentHashMap<String, AnalyzedClass>();
-                        }
-                    });
+    // not using the much more convenient (and concurrent) guava CacheBuilder since it uses many
+    // additional classes that must then be pre-initialized since this is called from inside
+    // ClassFileTransformer.transform() (see PreInitializeClasses)
+    private final Map<ClassLoader, ConcurrentMap<String, AnalyzedClass>> world =
+            Collections.synchronizedMap(
+                    new WeakHashMap<ClassLoader, ConcurrentMap<String, AnalyzedClass>>());
 
     // the analyzed classes for the bootstrap class loader (null) have to be stored separately since
     // LoadingCache doesn't accept null keys, and using an Optional<ClassLoader> for the key makes
@@ -111,7 +102,7 @@ public class AnalyzedWorld {
 
     public List<Class<?>> getClassesWithReweavableAdvice(boolean remove) {
         List<Class<?>> classes = Lists.newArrayList();
-        for (ClassLoader loader : world.asMap().keySet()) {
+        for (ClassLoader loader : getClassLoaders()) {
             classes.addAll(getClassesWithReweavableAdvice(loader, remove));
         }
         classes.addAll(getClassesWithReweavableAdvice(null, remove));
@@ -119,7 +110,7 @@ public class AnalyzedWorld {
     }
 
     public void removeClasses(List<Class<?>> classes) {
-        for (Map<String, AnalyzedClass> map : world.asMap().values()) {
+        for (Map<String, AnalyzedClass> map : getWorldValues()) {
             for (Class<?> clazz : classes) {
                 map.remove(clazz.getName());
             }
@@ -130,7 +121,9 @@ public class AnalyzedWorld {
     }
 
     public ImmutableList<ClassLoader> getClassLoaders() {
-        return ImmutableList.copyOf(world.asMap().keySet());
+        synchronized (world) {
+            return ImmutableList.copyOf(world.keySet());
+        }
     }
 
     void add(AnalyzedClass analyzedClass, @Nullable ClassLoader loader) {
@@ -408,7 +401,21 @@ public class AnalyzedWorld {
         if (loader == null) {
             return bootstrapLoaderWorld;
         } else {
-            return world.getUnchecked(loader);
+            // this synchronization is for atomicity of get/put
+            synchronized (world) {
+                ConcurrentMap<String, AnalyzedClass> map = world.get(loader);
+                if (map == null) {
+                    map = new ConcurrentHashMap<String, AnalyzedClass>();
+                    world.put(loader, map);
+                }
+                return map;
+            }
+        }
+    }
+
+    private ImmutableList<ConcurrentMap<String, AnalyzedClass>> getWorldValues() {
+        synchronized (world) {
+            return ImmutableList.copyOf(world.values());
         }
     }
 

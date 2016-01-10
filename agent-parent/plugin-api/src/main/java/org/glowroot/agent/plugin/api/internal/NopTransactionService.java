@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,10 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
+import org.glowroot.agent.plugin.api.internal.NopAsyncService.NopAsyncContext;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.QueryEntry;
+import org.glowroot.agent.plugin.api.transaction.ThreadContext;
 import org.glowroot.agent.plugin.api.transaction.Timer;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.transaction.TraceEntry;
@@ -55,39 +57,20 @@ public class NopTransactionService implements TransactionService {
     }
 
     @Override
-    public QueryEntry startQueryEntry(String queryType, String queryText, long queryExecutionCount,
-            MessageSupplier messageSupplier, TimerName timerName) {
-        return NopQueryEntry.INSTANCE;
-    }
-
-    @Override
     public Timer startTimer(TimerName timerName) {
         return NopTimer.INSTANCE;
     }
 
     @Override
-    public void addErrorEntry(Throwable t) {}
-
-    @Override
-    public void addErrorEntry(@Nullable String message) {}
-
-    @Override
-    public void addErrorEntry(@Nullable String message, Throwable t) {}
+    public ThreadContext createThreadContext() {
+        return NopAsyncContext.INSTANCE;
+    }
 
     @Override
     public void setTransactionType(@Nullable String transactionType) {}
 
     @Override
     public void setTransactionName(@Nullable String transactionName) {}
-
-    @Override
-    public void setTransactionError(@Nullable Throwable t) {}
-
-    @Override
-    public void setTransactionError(@Nullable String message) {}
-
-    @Override
-    public void setTransactionError(@Nullable String message, @Nullable Throwable t) {}
 
     @Override
     public void setTransactionUser(@Nullable String user) {}
@@ -97,11 +80,6 @@ public class NopTransactionService implements TransactionService {
 
     @Override
     public void setTransactionSlowThreshold(long threshold, TimeUnit unit) {}
-
-    @Override
-    public boolean isInTransaction() {
-        return false;
-    }
 
     public static class NopTraceEntry implements TraceEntry {
 
@@ -125,11 +103,6 @@ public class NopTransactionService implements TransactionService {
         public void endWithError(@Nullable String message, Throwable t) {}
 
         @Override
-        public Timer extend() {
-            return NopTimer.INSTANCE;
-        }
-
-        @Override
         public @Nullable MessageSupplier getMessageSupplier() {
             return null;
         }
@@ -140,6 +113,11 @@ public class NopTransactionService implements TransactionService {
         public static final NopQueryEntry INSTANCE = new NopQueryEntry();
 
         private NopQueryEntry() {}
+
+        @Override
+        public Timer extend() {
+            return NopTimer.INSTANCE;
+        }
 
         @Override
         public void rowNavigationAttempted() {}
@@ -159,6 +137,11 @@ public class NopTransactionService implements TransactionService {
 
         @Override
         public void stop() {}
+
+        @Override
+        public Timer extend() {
+            return INSTANCE;
+        }
     }
 
     private static class NopTimerName implements TimerName {

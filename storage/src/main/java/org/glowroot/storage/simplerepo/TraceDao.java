@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,8 @@ public class TraceDao implements TraceRepository {
             ImmutableColumn.of("error_message", ColumnType.VARCHAR),
             ImmutableColumn.of("header", ColumnType.VARBINARY), // protobuf
             ImmutableColumn.of("entries_capped_id", ColumnType.BIGINT),
-            ImmutableColumn.of("profile_capped_id", ColumnType.BIGINT));
+            ImmutableColumn.of("main_thread_profile_capped_id", ColumnType.BIGINT),
+            ImmutableColumn.of("aux_thread_profile_capped_id", ColumnType.BIGINT));
 
     // capture_time column is used for expiring records without using FK with on delete cascade
     private static final ImmutableList<Column> traceAttributeColumns =
@@ -208,7 +209,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable HeaderPlus readHeader(String serverId, String traceId) throws Exception {
+    public @Nullable HeaderPlus readHeaderPlus(String serverId, String traceId) throws Exception {
         return dataSource.queryAtMostOne(new TraceHeaderQuery(traceId));
     }
 
@@ -224,9 +225,22 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable Profile readProfile(String serverId, String traceId) throws Exception {
-        Long cappedId = dataSource
-                .queryForOptionalLong("select profile_capped_id from trace where id = ?", traceId);
+    public @Nullable Profile readMainThreadProfile(String serverId, String traceId)
+            throws Exception {
+        Long cappedId = dataSource.queryForOptionalLong(
+                "select main_thread_profile_capped_id from trace where id = ?", traceId);
+        if (cappedId == null) {
+            // trace must have just expired while user was viewing it, or data source is closing
+            return null;
+        }
+        return traceCappedDatabase.readMessage(cappedId, Profile.parser());
+    }
+
+    @Override
+    public @Nullable Profile readAuxThreadProfile(String serverId, String traceId)
+            throws Exception {
+        Long cappedId = dataSource.queryForOptionalLong(
+                "select aux_thread_profile_capped_id from trace where id = ?", traceId);
         if (cappedId == null) {
             // trace must have just expired while user was viewing it, or data source is closing
             return null;
@@ -297,7 +311,8 @@ public class TraceDao implements TraceRepository {
         private final String traceId;
         private final Trace.Header header;
         private final @Nullable Long entriesId;
-        private final @Nullable Long profileId;
+        private final @Nullable Long mainThreadProfileId;
+        private final @Nullable Long auxThreadProfileId;
 
         private TraceUpsert(Trace trace, boolean update) throws IOException {
             this.update = update;
@@ -311,12 +326,17 @@ public class TraceDao implements TraceRepository {
                 entriesId = traceCappedDatabase.writeMessages(entries,
                         TraceCappedDatabaseStats.TRACE_ENTRIES);
             }
-
-            if (trace.hasProfile()) {
-                profileId = traceCappedDatabase.writeMessage(trace.getProfile(),
+            if (trace.hasMainThreadProfile()) {
+                mainThreadProfileId = traceCappedDatabase.writeMessage(trace.getMainThreadProfile(),
                         TraceCappedDatabaseStats.TRACE_PROFILES);
             } else {
-                profileId = null;
+                mainThreadProfileId = null;
+            }
+            if (trace.hasMainThreadProfile()) {
+                auxThreadProfileId = traceCappedDatabase.writeMessage(
+                        trace.getAuxThreadProfile(), TraceCappedDatabaseStats.TRACE_PROFILES);
+            } else {
+                auxThreadProfileId = null;
             }
         }
 
@@ -326,12 +346,14 @@ public class TraceDao implements TraceRepository {
                 return "update trace set partial = ?, slow = ?, error = ?, start_time = ?,"
                         + " capture_time = ?, duration_nanos = ?, transaction_type = ?,"
                         + " transaction_name = ?, headline = ?, user = ?, error_message = ?,"
-                        + " header = ?, entries_capped_id = ?, profile_capped_id = ? where id = ?";
+                        + " header = ?, entries_capped_id = ?, main_thread_profile_capped_id = ?,"
+                        + " aux_thread_profile_capped_id = ? where id = ?";
             } else {
                 return "insert into trace (partial, slow, error, start_time, capture_time,"
                         + " duration_nanos, transaction_type, transaction_name, headline,"
-                        + " user, error_message, header, entries_capped_id, profile_capped_id,"
-                        + " id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        + " user, error_message, header, entries_capped_id,"
+                        + " main_thread_profile_capped_id, aux_thread_profile_capped_id, id)"
+                        + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             }
         }
 
@@ -356,7 +378,8 @@ public class TraceDao implements TraceRepository {
             }
             preparedStatement.setBytes(i++, header.toByteArray());
             RowMappers.setLong(preparedStatement, i++, entriesId);
-            RowMappers.setLong(preparedStatement, i++, profileId);
+            RowMappers.setLong(preparedStatement, i++, mainThreadProfileId);
+            RowMappers.setLong(preparedStatement, i++, auxThreadProfileId);
             preparedStatement.setString(i++, traceId);
         }
     }
@@ -435,7 +458,8 @@ public class TraceDao implements TraceRepository {
 
         @Override
         public @Untainted String getSql() {
-            return "select header, entries_capped_id, profile_capped_id from trace where id = ?";
+            return "select header, entries_capped_id, main_thread_profile_capped_id,"
+                    + " aux_thread_profile_capped_id from trace where id = ?";
         }
 
         @Override
@@ -447,7 +471,20 @@ public class TraceDao implements TraceRepository {
         public HeaderPlus mapRow(ResultSet resultSet) throws Exception {
             byte[] header = checkNotNull(resultSet.getBytes(1));
             Existence entriesExistence = RowMappers.getExistence(resultSet, 2, traceCappedDatabase);
-            Existence profileExistence = RowMappers.getExistence(resultSet, 3, traceCappedDatabase);
+            Existence mainThreadProfileExistence =
+                    RowMappers.getExistence(resultSet, 3, traceCappedDatabase);
+            Existence auxThreadProfileExistence =
+                    RowMappers.getExistence(resultSet, 3, traceCappedDatabase);
+            Existence profileExistence;
+            if (mainThreadProfileExistence == Existence.EXPIRED
+                    || auxThreadProfileExistence == Existence.EXPIRED) {
+                profileExistence = Existence.EXPIRED;
+            } else if (mainThreadProfileExistence == Existence.YES
+                    || auxThreadProfileExistence == Existence.YES) {
+                profileExistence = Existence.YES;
+            } else {
+                profileExistence = Existence.NO;
+            }
             return ImmutableHeaderPlus.builder()
                     .header(Trace.Header.parseFrom(header))
                     .entriesExistence(entriesExistence)

@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2015 the original author or authors.
+  Copyright 2013-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -107,29 +107,6 @@
           This is used to limit the memory of very long transactions that would capture
           potentially hundreds of thousands of stack traces (e.g. large batch or background
           operations).
-        </div>
-      </div>
-      <div gt-form-group
-           gt-label="Thread info"
-           gt-checkbox-label="Capture thread info per transaction"
-           gt-model="config.captureThreadInfo"
-           gt-type="checkbox"
-           gt-col-class1="col-lg-4"
-           gt-col-class2="col-lg-8">
-        <div class="help-block">
-          Capture thread info per transaction (CPU time, blocked time, waited time and allocated memory) if available.
-          See <a href="jvm/capabilities">JVM Capabilities</a>.
-        </div>
-      </div>
-      <div gt-form-group
-           gt-label="GC activity"
-           gt-checkbox-label="Capture garbage collection activity per transaction"
-           gt-model="config.captureGcActivity"
-           gt-type="checkbox"
-           gt-col-class1="col-lg-4"
-           gt-col-class2="col-lg-8">
-        <div class="help-block">
-          Capture global garbage collection activity per transaction.
         </div>
       </div>
       <div class="form-group gt-form-buttons">

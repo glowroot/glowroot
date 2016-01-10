@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 
-import org.glowroot.agent.model.TimerImpl;
+import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 class MutableTimer {
@@ -50,12 +50,12 @@ class MutableTimer {
         return name;
     }
 
-    void merge(TimerImpl timer) {
+    void merge(CommonTimerImpl timer) {
         count += timer.getCount();
         totalNanos += timer.getTotalNanos();
-        Iterator<TimerImpl> i = timer.getChildTimers();
+        Iterator<? extends CommonTimerImpl> i = timer.getChildTimers();
         while (i.hasNext()) {
-            TimerImpl toBeMergedChildTimer = i.next();
+            CommonTimerImpl toBeMergedChildTimer = i.next();
             String toBeMergedChildTimerName = toBeMergedChildTimer.getName();
             boolean extended = toBeMergedChildTimer.isExtended();
             MutableTimer matchingChildTimer = null;

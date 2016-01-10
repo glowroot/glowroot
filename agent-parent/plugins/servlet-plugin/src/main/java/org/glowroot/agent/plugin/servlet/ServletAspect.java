@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.config.ConfigService;
+import org.glowroot.agent.plugin.api.transaction.AdvancedService;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.transaction.TraceEntry;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
@@ -48,6 +49,7 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 public class ServletAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final AdvancedService advancedService = Agent.getAdvancedService();
     private static final ConfigService configService = Agent.getConfigService("servlet");
 
     private static final FastThreadLocal</*@Nullable*/ ServletMessageSupplier> topLevel =
@@ -249,7 +251,7 @@ public class ServletAspect {
         public static void onAfter(@BindParameter Integer statusCode) {
             // only capture 5xx server errors
             if (statusCode >= 500 && topLevel.get() != null && sendError.get() == null) {
-                transactionService.addErrorEntry("sendError, HTTP status code " + statusCode);
+                advancedService.addErrorEntry("sendError, HTTP status code " + statusCode);
                 sendError.set("sendError, HTTP status code " + statusCode);
             }
         }
@@ -264,7 +266,7 @@ public class ServletAspect {
         public static void onAfter(@BindParameter Integer statusCode) {
             // only capture 5xx server errors
             if (statusCode >= 500 && topLevel.get() != null && sendError.get() == null) {
-                transactionService.addErrorEntry("setStatus, HTTP status code " + statusCode);
+                advancedService.addErrorEntry("setStatus, HTTP status code " + statusCode);
                 sendError.set("setStatus, HTTP status code " + statusCode);
             }
         }

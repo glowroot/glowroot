@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ public class ConfigIT extends WebDriverIT {
         page.getSlowThresholdTextField().sendKeys("2345");
         page.getProfilingIntervalTextField().clear();
         page.getProfilingIntervalTextField().sendKeys("3456");
+        page.getCaptureThreadStatsCheckBox().click();
         page.clickSaveButton();
 
         // then
@@ -52,6 +53,7 @@ public class ConfigIT extends WebDriverIT {
         globalNavbar.getConfigurationLink().click();
         assertThat(page.getSlowThresholdTextField().getAttribute("value")).isEqualTo("2345");
         assertThat(page.getProfilingIntervalTextField().getAttribute("value")).isEqualTo("3456");
+        assertThat(page.getCaptureThreadStatsCheckBox().isSelected()).isTrue();
     }
 
     @Test
@@ -218,8 +220,6 @@ public class ConfigIT extends WebDriverIT {
         page.getMaxTraceEntriesPerTransactionTextField().sendKeys("2345");
         page.getMaxStackTraceSamplesPerTransactionTextField().clear();
         page.getMaxStackTraceSamplesPerTransactionTextField().sendKeys("3456");
-        page.getThreadInfoCheckBox().click();
-        page.getGcActivityCheckBox().click();
         page.clickSaveButton();
 
         // then
@@ -234,8 +234,6 @@ public class ConfigIT extends WebDriverIT {
                 .isEqualTo("2345");
         assertThat(page.getMaxStackTraceSamplesPerTransactionTextField().getAttribute("value"))
                 .isEqualTo("3456");
-        assertThat(page.getThreadInfoCheckBox().isSelected()).isFalse();
-        assertThat(page.getGcActivityCheckBox().isSelected()).isFalse();
     }
 
     // TODO test servlet, jdbc and logger plugin config pages

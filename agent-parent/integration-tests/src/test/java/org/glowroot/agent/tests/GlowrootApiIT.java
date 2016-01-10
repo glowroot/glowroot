@@ -68,38 +68,6 @@ public class GlowrootApiIT {
     }
 
     @Test
-    public void shouldSetTransactionErrorWithThrowable() throws Exception {
-        // given
-        // when
-        Trace trace = container.execute(SetTransactionErrorWithThrowable.class);
-        // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("abc");
-        assertThat(trace.getHeader().getError().getException().getDisplay())
-                .isEqualTo("java.lang.IllegalStateException: abc");
-    }
-
-    @Test
-    public void shouldSetTransactionErrorWithMessage() throws Exception {
-        // given
-        // when
-        Trace trace = container.execute(SetTransactionErrorWithMessage.class);
-        // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("xyz");
-        assertThat(trace.getHeader().getError().hasException()).isFalse();
-    }
-
-    @Test
-    public void shouldSetTransactionErrorWithMessageAndThrowable() throws Exception {
-        // given
-        // when
-        Trace trace = container.execute(SetTransactionErrorWithMessageAndThrowable.class);
-        // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg");
-        assertThat(trace.getHeader().getError().getException().getDisplay())
-                .isEqualTo("java.lang.IllegalStateException: tuv");
-    }
-
-    @Test
     public void shouldSetTransactionUser() throws Exception {
         // given
         // when
@@ -151,47 +119,6 @@ public class GlowrootApiIT {
         @Override
         public void transactionMarker() throws Exception {
             Glowroot.setTransactionName("a name");
-        }
-    }
-
-    public static class SetTransactionErrorWithThrowable
-            implements AppUnderTest, TransactionMarker {
-
-        @Override
-        public void executeApp() throws Exception {
-            transactionMarker();
-        }
-
-        @Override
-        public void transactionMarker() throws Exception {
-            Glowroot.setTransactionError(new IllegalStateException("abc"));
-        }
-    }
-
-    public static class SetTransactionErrorWithMessage implements AppUnderTest, TransactionMarker {
-
-        @Override
-        public void executeApp() throws Exception {
-            transactionMarker();
-        }
-
-        @Override
-        public void transactionMarker() throws Exception {
-            Glowroot.setTransactionError("xyz");
-        }
-    }
-
-    public static class SetTransactionErrorWithMessageAndThrowable
-            implements AppUnderTest, TransactionMarker {
-
-        @Override
-        public void executeApp() throws Exception {
-            transactionMarker();
-        }
-
-        @Override
-        public void transactionMarker() throws Exception {
-            Glowroot.setTransactionError("efg", new IllegalStateException("tuv"));
         }
     }
 

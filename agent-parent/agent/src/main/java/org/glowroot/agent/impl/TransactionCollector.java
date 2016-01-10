@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,8 +91,6 @@ public class TransactionCollector {
     }
 
     void onCompletedTransaction(final Transaction transaction) {
-
-        transaction.onCompleteCaptureThreadInfo();
         // capture time is calculated by the aggregator because it depends on monotonically
         // increasing capture times so it can flush aggregates without concern for new data
         // arriving with a prior capture time
@@ -109,9 +107,8 @@ public class TransactionCollector {
         }
         pendingTransactions.add(transaction);
 
-        // these onComplete.. methods need to be called inside the transaction thread
-        transaction.onCompleteCaptureGcActivity();
-        transaction.onComplete(captureTime);
+        // this need to be called inside the transaction thread
+        transaction.onCompleteWillStoreTrace(captureTime);
 
         Runnable command = new Runnable() {
             @Override
@@ -126,6 +123,8 @@ public class TransactionCollector {
                 }
             }
         };
+        // transaction is ended, so Executor Plugin won't tie this async work to the transaction
+        // (which is good)
         executor.execute(command);
     }
 

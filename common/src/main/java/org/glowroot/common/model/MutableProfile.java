@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -205,6 +205,14 @@ public class MutableProfile {
         return sampleCount;
     }
 
+    public long getUnfilteredSampleCount() {
+        if (unfilteredSampleCount == -1) {
+            return getSampleCount();
+        } else {
+            return unfilteredSampleCount;
+        }
+    }
+
     public Profile toProtobuf() {
         List<Profile.ProfileNode> nodes = Lists.newArrayList();
         for (ProfileNode rootNode : rootNodes) {
@@ -223,20 +231,20 @@ public class MutableProfile {
     public String toJson() throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        writeJson(jg);
+        jg.close();
+        return sb.toString();
+    }
+
+    public void writeJson(JsonGenerator jg) throws IOException {
         jg.writeStartObject();
-        if (unfilteredSampleCount == -1) {
-            jg.writeNumberField("unfilteredSampleCount", getSampleCount());
-        } else {
-            jg.writeNumberField("unfilteredSampleCount", unfilteredSampleCount);
-        }
+        jg.writeNumberField("unfilteredSampleCount", getUnfilteredSampleCount());
         jg.writeArrayFieldStart("rootNodes");
         for (ProfileNode rootNode : rootNodes) {
             new ProfileWriter(rootNode, jg).traverse();
         }
         jg.writeEndArray();
         jg.writeEndObject();
-        jg.close();
-        return sb.toString();
     }
 
     public String toFlameGraphJson() throws IOException {

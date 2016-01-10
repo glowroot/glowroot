@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,16 @@ public class AsyncHttpClientPluginIT {
     @Test
     public void shouldCaptureHttpGet() throws Exception {
         Trace trace = container.execute(ExecuteHttpGet.class);
+        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
+        assertThat(rootTimer.getChildTimerCount()).isEqualTo(1);
+        assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("http client request");
+        assertThat(rootTimer.getChildTimer(0).getCount()).isEqualTo(1);
+        assertThat(trace.getHeader().getAuxThreadRootTimerCount()).isZero();
+        assertThat(trace.getHeader().getAsyncRootTimerCount()).isEqualTo(1);
+        Trace.Timer asyncRootTimer = trace.getHeader().getAsyncRootTimer(0);
+        assertThat(asyncRootTimer.getChildTimerCount()).isZero();
+        assertThat(asyncRootTimer.getName()).isEqualTo("http client request");
+        assertThat(asyncRootTimer.getCount()).isEqualTo(1);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage())
@@ -62,6 +72,16 @@ public class AsyncHttpClientPluginIT {
     @Test
     public void shouldCaptureHttpPost() throws Exception {
         Trace trace = container.execute(ExecuteHttpPost.class);
+        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
+        assertThat(rootTimer.getChildTimerCount()).isEqualTo(1);
+        assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("http client request");
+        assertThat(rootTimer.getChildTimer(0).getCount()).isEqualTo(1);
+        assertThat(trace.getHeader().getAuxThreadRootTimerCount()).isZero();
+        assertThat(trace.getHeader().getAsyncRootTimerCount()).isEqualTo(1);
+        Trace.Timer asyncRootTimer = trace.getHeader().getAsyncRootTimer(0);
+        assertThat(asyncRootTimer.getChildTimerCount()).isZero();
+        assertThat(asyncRootTimer.getName()).isEqualTo("http client request");
+        assertThat(asyncRootTimer.getCount()).isEqualTo(1);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage())

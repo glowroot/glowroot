@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,13 @@ public interface TraceEntry {
      * dummy entry and its total time exceeds the specified threshold, then this dummy entry is
      * escalated into a real entry. A hard cap ({@code maxTraceEntriesPerTransaction * 2}) on the
      * total number of (real) entries is applied when escalating dummy entries to real entries.
+     * 
+     * This is a no-op for async trace entries (those created by
+     * {@link AdvancedService#startAsyncTraceEntry(MessageSupplier)} and
+     * {@link AdvancedService#startAsyncQueryEntry(String, String, MessageSupplier)}). This is
+     * because async trace entries are used when their end is performed by a different thread, and
+     * so a stack trace at that time does not point to the code which executed triggered the trace
+     * entry creation.
      */
     void endWithStackTrace(long threshold, TimeUnit unit);
 
@@ -88,12 +95,6 @@ public interface TraceEntry {
      * when escalating dummy entries to real entries.
      */
     void endWithError(@Nullable String message, Throwable t);
-
-    /**
-     * Example of query and subsequent iterating over results which goes back to database and pulls
-     * more results.
-     */
-    Timer extend();
 
     /**
      * Returns the {@code MessageSupplier} that was supplied when the {@code TraceEntry} was

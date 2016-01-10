@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,14 +47,6 @@ public class AdvancedConfigPage {
 
     public WebElement getMaxStackTraceSamplesPerTransactionTextField() {
         return withWait(xpath("//div[@gt-label='Max stack trace samples per transaction']//input"));
-    }
-
-    public WebElement getThreadInfoCheckBox() {
-        return withWait(xpath("//div[@gt-label='Thread info']//input"));
-    }
-
-    public WebElement getGcActivityCheckBox() {
-        return withWait(xpath("//div[@gt-label='GC activity']//input"));
     }
 
     public void clickSaveButton() {

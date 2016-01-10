@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015 the original author or authors.
+  Copyright 2015-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -108,100 +108,52 @@
         </div>
       </div>
     </div>
-    <div ng-show="mergedAggregate.transactionCount"
+    <div ng-if="mergedAggregate.transactionCount"
          style="position: relative; padding-top: 30px; margin-left: 40px;">
-      <div>
-        <label>
-          Complete timer breakdown:
-        </label>
+      <div ng-if="mainThreadFlattenedTimers.length">
+        <div gt-timer-display
+             heading="'Breakdown' + (auxThreadFlattenedTimers.length ? ' (Main Thread):' : ':')"
+             flattened-timers="mainThreadFlattenedTimers"
+             tree-timers="mainThreadTreeTimers"
+             transaction-count="mergedAggregate.transactionCount">
+        </div>
       </div>
-      <table class="gt-timers-table gt-indent2"
-             ng-hide="showTreeView"
-             style="border-spacing: 0;">
-        <thead>
-        <tr>
-          <td></td>
-          <td style="font-weight: 600;">total&nbsp;(ms)</td>
-          <td style="font-weight: 600;">count</td>
-          <td>
-            <button class="gt-flat-btn gt-flat-btn-big gt-link-color"
-                    ng-click="showTreeView = true"
-                    style="margin-top: -6px; margin-bottom: -6px;">
-              switch to tree view
-            </button>
-          </td>
-        </tr>
-        </thead>
-        <tbody>
-        <tr class="align-top"
-            ng-repeat="flattenedTimer in flattenedTimers">
-          <td style="text-align: left;">
-            <div>
-              <div class="gt-break-word gt-second-line-indent">{{flattenedTimer.name}}</div>
-            </div>
-          </td>
-          <td>{{flattenedTimer.totalNanos / (1000000 * mergedAggregate.transactionCount) | gtMillis}}</td>
-          <td>{{flattenedTimer.count / mergedAggregate.transactionCount | gtCount}}</td>
-          <td></td>
-        </tr>
-        </tbody>
-      </table>
-      <table class="gt-timers-table gt-indent2"
-             ng-show="showTreeView"
-             style="border-spacing: 0;">
-        <thead>
-        <tr>
-          <td></td>
-          <td style="font-weight: 600;">total&nbsp;(ms)</td>
-          <td style="font-weight: 600;">count</td>
-          <td>
-            <button class="gt-flat-btn gt-flat-btn-big gt-link-color"
-                    ng-click="showTreeView = false"
-                    style="margin-top: -6px; margin-bottom: -6px;">
-              switch to flattened view
-            </button>
-          </td>
-        </tr>
-        </thead>
-        <tbody>
-        <tr class="align-top"
-            ng-repeat="treeTimer in treeTimers">
-          <td style="text-align: left;">
-            <div ng-style="{'margin-left': treeTimer.nestingLevel + 'em'}">
-              <div class="gt-break-word gt-second-line-indent">
-                {{treeTimer.name}}{{treeTimer.extended ? ' (extended)' : ''}}
-              </div>
-            </div>
-          </td>
-          <td>{{treeTimer.totalNanos / (1000000 * mergedAggregate.transactionCount) | gtMillis}}</td>
-          <td>{{treeTimer.count / mergedAggregate.transactionCount | gtCount}}</td>
-          <td></td>
-        </tr>
-        </tbody>
-      </table>
 
-      <div ng-show="threadInfoAggregate" style="margin-top: 20px;">
+      <div ng-if="auxThreadFlattenedTimers.length" style="margin-top: 10px;">
+        <div gt-timer-display
+             heading="'Breakdown' + (mainThreadFlattenedTimers.length ? ' (Auxiliary Threads):' : ':')"
+             flattened-timers="auxThreadFlattenedTimers"
+             tree-timers="auxThreadTreeTimers"
+             transaction-count="mergedAggregate.transactionCount">
+        </div>
+      </div>
+
+      <div ng-if="asyncFlattenedTimers.length" style="margin-top: 10px;">
+        <div gt-timer-display
+             heading="'Breakdown (Async Timers):"
+             flattened-timers="asyncFlattenedTimers"
+             tree-timers="asyncTreeTimers"
+             transaction-count="mergedAggregate.transactionCount">
+        </div>
+      </div>
+
+      <div ng-if="mergedAggregate.mainThreadStats" style="margin-top: 15px;">
         <label>
-          Average JVM thread info:
+          JVM Thread Stats<span ng-if="mergedAggregate.auxThreadStats"> (Main Thread)</span>:
         </label>
+        <div gt-thread-stats
+             thread-stats="mergedAggregate.mainThreadStats"
+             transaction-count="mergedAggregate.transactionCount">
+        </div>
+      </div>
 
-        <div class="gt-indent2">
-          <div ng-show="threadInfoAggregate.totalCpuNanos">
-            CPU time:
-            {{threadInfoAggregate.totalCpuNanos / (1000000 * mergedAggregate.transactionCount) | gtMillis}} ms
-          </div>
-          <div ng-show="threadInfoAggregate.totalBlockedNanos">
-            Blocked time:
-            {{threadInfoAggregate.totalBlockedNanos / (1000000 * mergedAggregate.transactionCount) | gtMillis}} ms
-          </div>
-          <div ng-show="threadInfoAggregate.totalWaitedNanos">
-            Waited time:
-            {{threadInfoAggregate.totalWaitedNanos / (1000000 * mergedAggregate.transactionCount) | gtMillis}} ms
-          </div>
-          <div ng-show="threadInfoAggregate.totalAllocatedBytes">
-            Allocated memory:
-            {{threadInfoAggregate.totalAllocatedBytes / mergedAggregate.transactionCount | gtBytes}}
-          </div>
+      <div ng-if="mergedAggregate.auxThreadStats" style="margin-top: 15px;">
+        <label>
+          JVM Thread Stats<span ng-if="mergedAggregate.mainThreadStats"> (Auxiliary Threads)</span>:
+        </label>
+        <div gt-thread-stats
+             thread-stats="mergedAggregate.mainThreadStats"
+             transaction-count="mergedAggregate.transactionCount">
         </div>
       </div>
     </div>

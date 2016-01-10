@@ -108,20 +108,25 @@ message ExceptionResponse {
 
 message ThreadDump {
 
-  repeated ThreadInfo matched_thread = 1;
-  repeated ThreadInfo unmatched_thread = 2;
-  ThreadInfo thread_dumping_thread = 3;
+  repeated Transaction transaction = 1;
+  repeated Thread unmatched_thread = 2;
+  Thread thread_dumping_thread = 3;
 
-  message ThreadInfo {
+  message Transaction {
+    string transaction_type = 1;
+    string transaction_name = 2;
+    int64 transaction_total_nanos = 3;
+    // trace id is only included if a trace will be stored for this transaction
+    // (e.g. the transaction exceeds the slow threshold)
+    string trace_id = 4;
+    repeated Thread thread = 5;
+  }
+
+  message Thread {
     string name = 1;
     string state = 2;
     string lock_name = 3;
     repeated StackTraceElement stack_trace_element = 4;
-
-    string transaction_type = 100;
-    string transaction_name = 101;
-    int64 transaction_total_nanos = 102;
-    string trace_id = 103;
   }
 
   message StackTraceElement {

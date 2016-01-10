@@ -20,17 +20,19 @@ message TransactionAggregate {
 // aggregate uses double instead of int64 to avoid (unlikely) 292 year nanosecond rollover
 message Aggregate {
 
-  double total_nanos = 1;
+  double total_duration_nanos = 1;
   int64 transaction_count = 2;
   int64 error_count = 3;
-  OptionalDouble total_cpu_nanos = 4;
-  OptionalDouble total_blocked_nanos = 5;
-  OptionalDouble total_waited_nanos = 6;
-  OptionalDouble total_allocated_bytes = 7;
-  repeated Timer root_timer = 8;
+  repeated Timer main_thread_root_timer = 4;
+  repeated Timer aux_thread_root_timer = 5;
+  repeated Timer async_root_timer = 6; // children are also async, so sum of time in children can
+                                       // be greater than time in parent
+  ThreadStats main_thread_stats = 7;
+  ThreadStats aux_thread_stats = 8;
   Histogram total_nanos_histogram = 9;
-  Profile profile = 10;
-  repeated QueriesByType queries_by_type = 11;
+  Profile main_thread_profile = 10;
+  Profile aux_thread_profile = 11;
+  repeated QueriesByType queries_by_type = 12;
 
   message OptionalDouble {
     double value = 1;
@@ -51,6 +53,13 @@ message Aggregate {
     double total_nanos = 3;
     int64 count = 4;
     repeated Timer child_timer = 5;
+  }
+
+  message ThreadStats {
+    OptionalDouble total_cpu_nanos = 1;
+    OptionalDouble total_blocked_nanos = 2;
+    OptionalDouble total_waited_nanos = 3;
+    OptionalDouble total_allocated_bytes = 4;
   }
 
   message QueriesByType {

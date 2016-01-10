@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,12 +49,15 @@ public interface TraceRepository {
             long resolutionMillis, long liveCaptureTime, int limit) throws Exception;
 
     @Nullable
-    HeaderPlus readHeader(String serverId, String traceId) throws Exception;
+    HeaderPlus readHeaderPlus(String serverId, String traceId) throws Exception;
 
     List<Trace.Entry> readEntries(String serverId, String traceId) throws Exception;
 
     @Nullable
-    Profile readProfile(String serverId, String traceId) throws Exception;
+    Profile readMainThreadProfile(String serverId, String traceId) throws Exception;
+
+    @Nullable
+    Profile readAuxThreadProfile(String serverId, String traceId) throws Exception;
 
     void deleteAll(String serverRollup) throws Exception;
 
@@ -99,6 +102,9 @@ public interface TraceRepository {
     public interface HeaderPlus {
         Trace.Header header();
         Existence entriesExistence();
+        // EXPIRED if either main thread or auxiliary thread profile exist and are expired
+        // YES if either main thread or auxiliary thread profile exists
+        // NO if both main thread or auxiliary thread profile do not exists
         Existence profileExistence();
     }
 }

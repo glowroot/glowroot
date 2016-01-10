@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ public class PartialTraceIT {
         Trace trace = null;
         while (stopwatch.elapsed(SECONDS) < 10) {
             trace = container.getCollectedPartialTrace();
-            if (trace.getHeader().getProfileSampleCount() > 0) {
+            if (trace.getHeader().getMainThreadProfileSampleCount() > 0) {
                 break;
             }
             Thread.sleep(10);
@@ -106,7 +106,7 @@ public class PartialTraceIT {
             stopwatch = Stopwatch.createStarted();
             while (stopwatch.elapsed(SECONDS) < 10) {
                 trace = container.getCollectedPartialTrace();
-                if (!trace.getHeader().getRootTimer().getChildTimerList().isEmpty()) {
+                if (!trace.getHeader().getMainThreadRootTimer().getChildTimerList().isEmpty()) {
                     break;
                 }
                 Thread.sleep(10);
@@ -119,7 +119,7 @@ public class PartialTraceIT {
         } else {
             assertThat(trace.getEntryCount()).isZero();
         }
-        assertThat(trace.hasProfile()).isTrue();
+        assertThat(trace.hasMainThreadProfile()).isTrue();
         // interrupt trace
         container.interruptAppUnderTest();
         trace = future.get();

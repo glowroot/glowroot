@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ public class CassandraAsyncIT {
     @Test
     public void shouldAsyncExecuteStatement() throws Exception {
         Trace trace = container.execute(ExecuteAsyncStatement.class);
+        checkTimers(trace);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage())
@@ -67,6 +68,7 @@ public class CassandraAsyncIT {
     @Test
     public void shouldAsyncExecuteStatementReturningNoRecords() throws Exception {
         Trace trace = container.execute(ExecuteAsyncStatementReturningNoRecords.class);
+        checkTimers(trace);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage())
@@ -76,6 +78,7 @@ public class CassandraAsyncIT {
     @Test
     public void shouldAsyncIterateUsingOneAndAll() throws Exception {
         Trace trace = container.execute(AsyncIterateUsingOneAndAll.class);
+        checkTimers(trace);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage())
@@ -85,6 +88,7 @@ public class CassandraAsyncIT {
     @Test
     public void shouldAsyncExecuteBoundStatement() throws Exception {
         Trace trace = container.execute(AsyncExecuteBoundStatement.class);
+        checkTimers(trace);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage()).isEqualTo(
@@ -94,6 +98,7 @@ public class CassandraAsyncIT {
     @Test
     public void shouldAsyncExecuteBatchStatement() throws Exception {
         Trace trace = container.execute(AsyncExecuteBatchStatement.class);
+        checkTimers(trace);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage()).isEqualTo("cql execution:"
@@ -101,6 +106,19 @@ public class CassandraAsyncIT {
                 + " INSERT INTO test.users (id,  fname, lname) VALUES (101, 'f101', 'l101'),"
                 + " 10 x INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?),"
                 + " INSERT INTO test.users (id,  fname, lname) VALUES (300, 'f300', 'l300')");
+    }
+
+    private static void checkTimers(Trace trace) {
+        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
+        assertThat(rootTimer.getChildTimerCount()).isEqualTo(1);
+        assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("cql execute");
+        assertThat(rootTimer.getChildTimer(0).getCount()).isEqualTo(1);
+        assertThat(trace.getHeader().getAuxThreadRootTimerCount()).isZero();
+        assertThat(trace.getHeader().getAsyncRootTimerCount()).isEqualTo(1);
+        Trace.Timer asyncRootTimer = trace.getHeader().getAsyncRootTimer(0);
+        assertThat(asyncRootTimer.getChildTimerCount()).isZero();
+        assertThat(asyncRootTimer.getName()).isEqualTo("cql execute");
+        assertThat(asyncRootTimer.getCount()).isEqualTo(1);
     }
 
     public static class ExecuteAsyncStatement implements AppUnderTest, TransactionMarker {

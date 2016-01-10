@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,31 +15,40 @@
  */
 package org.glowroot.agent.model;
 
+import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
+import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.impl.TransactionRegistry;
+import org.glowroot.agent.plugin.api.transaction.Message;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.transaction.internal.ReadableMessage;
@@ -66,6 +75,8 @@ public class Transaction {
     // this is just to limit memory (and also to limit display size of trace)
     private static final long ATTRIBUTE_VALUES_PER_KEY_LIMIT = 10000;
 
+    private static final AtomicBoolean loggedBackgroundTransactionSuggestion = new AtomicBoolean();
+
     private final Supplier<UUID> uuid = Suppliers.memoize(new Supplier<UUID>() {
         @Override
         public UUID get() {
@@ -73,9 +84,8 @@ public class Transaction {
         }
     });
 
-    // timing data is tracked in nano seconds which cannot be converted into dates
-    // (see javadoc for System.nanoTime()), so the start time is also tracked here
     private final long startTime;
+    private final long startTick;
 
     private volatile String transactionType;
     private volatile @Nullable OverrideSource transactionTypeOverrideSource;
@@ -94,27 +104,15 @@ public class Transaction {
     private volatile @Nullable ErrorMessage errorMessage;
     private volatile @Nullable OverrideSource errorMessageOverrideSource;
 
-    private final TimerImpl rootTimer;
-    // currentTimer doesn't need to be thread safe as it is only accessed by transaction thread
-    private @Nullable TimerImpl currentTimer;
+    private final boolean captureThreadStats;
+    private final GcActivityComponent gcActivityComponent;
 
-    private final @Nullable ThreadInfoComponent threadInfoComponent;
-    private final @Nullable GcActivityComponent gcActivityComponent;
-
-    // root entry for this trace
-    private final TraceEntryComponent traceEntryComponent;
-
-    // linked list of QueryData instances for safe concurrent access
-    private @MonotonicNonNull QueryData headQueryData;
-    // these maps are only accessed by the transaction thread
-    private @MonotonicNonNull Map<String, QueryData> firstQueryTypeQueries;
-    private @MonotonicNonNull Map<String, Map<String, QueryData>> allQueryTypesMap;
+    private final int maxTraceEntriesPerTransaction;
     private final int maxAggregateQueriesPerQueryType;
 
     // stack trace data constructed from profiling
-    private volatile @MonotonicNonNull Profile profile;
-
-    private final long threadId;
+    private volatile @MonotonicNonNull Profile mainThreadProfile;
+    private volatile @MonotonicNonNull Profile auxThreadProfile;
 
     // overrides general store threshold
     // -1 means don't override the general store threshold
@@ -141,53 +139,80 @@ public class Transaction {
 
     private final CompletionCallback completionCallback;
 
-    public Transaction(long startTime, String transactionType, String transactionName,
-            MessageSupplier messageSupplier, TimerName timerName, long startTick,
-            boolean captureThreadInfo, boolean captureGcActivity,
+    private final AtomicInteger entryLimitCounter = new AtomicInteger();
+    private final AtomicInteger extraErrorEntryLimitCounter = new AtomicInteger();
+    private final AtomicInteger aggregateQueryLimitCounter = new AtomicInteger();
+
+    private final ThreadContextImpl mainThreadContext;
+    // FIXME impose simple max on number of auxiliary thread contexts (AdvancedConfig)
+    private final List<ThreadContextImpl> auxThreadContexts = Lists.newCopyOnWriteArrayList();
+    // async root timers are the root timers which do not have corresponding thread context
+    // (those corresponding to async trace entries)
+    // FIXME impose simple max on number of async root timers (AdvancedConfig)
+    private final List<AsyncTimerImpl> asyncRootTimers = Lists.newCopyOnWriteArrayList();
+
+    private volatile boolean completed;
+    private volatile long endTick;
+
+    private final Ticker ticker;
+
+    private final TransactionRegistry transactionRegistry;
+
+    public Transaction(long startTime, long startTick, String transactionType,
+            String transactionName, MessageSupplier messageSupplier, TimerName timerName,
+            boolean captureThreadStats, int maxTraceEntriesPerTransaction,
             int maxAggregateQueriesPerQueryType,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes,
-            CompletionCallback completionCallback, Ticker ticker) {
+            CompletionCallback completionCallback, Ticker ticker,
+            TransactionRegistry transactionRegistry) {
         this.startTime = startTime;
+        this.startTick = startTick;
         this.transactionType = transactionType;
         this.transactionName = transactionName;
-        // suppress warning for passing @UnderInitialization this
-        @SuppressWarnings("argument.type.incompatible")
-        TimerImpl rootTimer = TimerImpl.createRootTimer(this, (TimerNameImpl) timerName);
-        this.rootTimer = rootTimer;
-        rootTimer.start(startTick);
-        traceEntryComponent =
-                new TraceEntryComponent(messageSupplier, rootTimer, startTick, ticker);
-        threadId = Thread.currentThread().getId();
-        threadInfoComponent =
-                captureThreadInfo ? new ThreadInfoComponent(threadAllocatedBytes) : null;
-        gcActivityComponent = captureGcActivity ? new GcActivityComponent() : null;
+        this.captureThreadStats = captureThreadStats;
+        gcActivityComponent = new GcActivityComponent();
+        this.maxTraceEntriesPerTransaction = maxTraceEntriesPerTransaction;
         this.maxAggregateQueriesPerQueryType = maxAggregateQueriesPerQueryType;
         this.completionCallback = completionCallback;
+        this.ticker = ticker;
+        this.transactionRegistry = transactionRegistry;
+        mainThreadContext = new ThreadContextImpl(castInitialized(this), null, messageSupplier,
+                timerName, startTick, captureThreadStats, threadAllocatedBytes, false, ticker);
+    }
+
+    public TraceEntryImpl startAuxThreadContext(TraceEntryImpl parentTraceEntry,
+            TimerName auxTimerName, long startTick,
+            @Nullable ThreadAllocatedBytes threadAllocatedBytes) {
+        ThreadContextImpl auxThreadContext = new ThreadContextImpl(this, parentTraceEntry,
+                AuxThreadRootMessageSupplier.INSTANCE, auxTimerName, startTick,
+                captureThreadStats, threadAllocatedBytes, true, ticker);
+        auxThreadContexts.add(auxThreadContext);
+        transactionRegistry.setAuxThreadContext(auxThreadContext);
+        return auxThreadContext.getRootEntry();
     }
 
     long getStartTime() {
         return startTime;
     }
 
-    public String getId() {
+    public String getTraceId() {
         return uuid.get().toString();
     }
 
-    // a couple of properties make sense to expose as part of trace
     public long getStartTick() {
-        return traceEntryComponent.getStartTick();
+        return startTick;
     }
 
     public boolean isCompleted() {
-        return traceEntryComponent.isCompleted();
+        return completed;
     }
 
     long getEndTick() {
-        return traceEntryComponent.getEndTick();
+        return endTick;
     }
 
     public long getDurationNanos() {
-        return traceEntryComponent.getDurationNanos();
+        return completed ? endTick - startTick : ticker.read() - startTick;
     }
 
     public String getTransactionType() {
@@ -199,7 +224,7 @@ public class Transaction {
     }
 
     public String getHeadline() {
-        MessageSupplier messageSupplier = traceEntryComponent.getRootEntry().getMessageSupplier();
+        MessageSupplier messageSupplier = mainThreadContext.getRootEntry().getMessageSupplier();
         // root trace entry messageSupplier is never be null
         checkNotNull(messageSupplier);
         return ((ReadableMessage) messageSupplier.get()).getText();
@@ -222,7 +247,7 @@ public class Transaction {
     }
 
     Map<String, ? extends /*@Nullable*/ Object> getDetail() {
-        MessageSupplier messageSupplier = traceEntryComponent.getRootEntry().getMessageSupplier();
+        MessageSupplier messageSupplier = mainThreadContext.getRootEntry().getMessageSupplier();
         // root trace entry messageSupplier is never be null
         checkNotNull(messageSupplier);
         return ((ReadableMessage) messageSupplier.get()).getDetail();
@@ -234,92 +259,144 @@ public class Transaction {
         if (errorMessage != null) {
             return errorMessage;
         }
-        return traceEntryComponent.getRootEntry().getErrorMessage();
+        return mainThreadContext.getRootEntry().getErrorMessage();
     }
 
-    // this is called from a non-transaction thread
-    public TimerImpl getRootTimer() {
+    public boolean isAsynchronous() {
+        // TODO
+        return false;
+    }
+
+    public TimerImpl getMainThreadRootTimer() {
         readMemoryBarrier();
-        return rootTimer;
+        return mainThreadContext.getRootTimer();
     }
 
-    public @Nullable TimerImpl getCurrentTimer() {
-        return currentTimer;
+    public Iterable<TimerImpl> getAuxThreadRootTimers() {
+        readMemoryBarrier();
+        if (auxThreadContexts.isEmpty()) {
+            // optimization for common case
+            return ImmutableList.of();
+        }
+        return Iterables.transform(auxThreadContexts, GetRootTimerFunction.INSTANCE);
+    }
+
+    public List<AsyncTimerImpl> getAsyncRootTimers() {
+        readMemoryBarrier();
+        return asyncRootTimers;
     }
 
     // can be called from a non-transaction thread
-    public @Nullable ThreadInfoData getThreadInfo() {
-        return threadInfoComponent == null ? null : threadInfoComponent.getThreadInfo();
+    public @Nullable ThreadStats getMainThreadStats() {
+        return mainThreadContext.getThreadStats();
+    }
+
+    // can be called from a non-transaction thread
+    public Iterable<ThreadStats> getAuxThreadStats() {
+        if (!captureThreadStats || auxThreadContexts.isEmpty()) {
+            return ImmutableList.of();
+        }
+        return Iterables.transform(auxThreadContexts, GetThreadStatsFunction.INSTANCE);
     }
 
     // can be called from a non-transaction thread
     List<Trace.GarbageCollectionActivity> getGcActivity() {
-        return gcActivityComponent == null ? ImmutableList.<Trace.GarbageCollectionActivity>of()
-                : gcActivityComponent.getGcActivity();
-    }
-
-    public TraceEntryImpl getRootEntry() {
-        return traceEntryComponent.getRootEntry();
-    }
-
-    public int getEntryCount() {
-        return traceEntryComponent.getEntryCount();
+        return gcActivityComponent.getGcActivity();
     }
 
     public Iterator<QueryData> getQueries() {
-        // read memory barrier is for QueryData values
         readMemoryBarrier();
-        if (headQueryData == null) {
-            return ImmutableList.<QueryData>of().iterator();
+        if (auxThreadContexts.size() == 1) {
+            // optimization for common case
+            return mainThreadContext.getQueries();
         }
-        return new Iterator<QueryData>() {
-            private @Nullable QueryData next = headQueryData;
-            @Override
-            public boolean hasNext() {
-                return next != null;
-            }
-            @Override
-            public QueryData next() {
-                QueryData curr = next;
-                if (curr == null) {
-                    throw new NoSuchElementException();
-                }
-                next = curr.getNextQueryData();
-                return curr;
-            }
-            @Override
-            public void remove() {
-                throw new UnsupportedOperationException();
-            }
-        };
+        List<Iterator<QueryData>> queries =
+                Lists.newArrayListWithCapacity(auxThreadContexts.size() + 1);
+        queries.add(mainThreadContext.getQueries());
+        for (ThreadContextImpl threadContext : auxThreadContexts) {
+            queries.add(threadContext.getQueries());
+        }
+        return Iterators.concat(queries.iterator());
     }
 
-    public List<Trace.Entry> getEntriesProtobuf() {
+    public boolean allowAnotherEntry() {
+        return entryLimitCounter.getAndIncrement() < maxTraceEntriesPerTransaction;
+    }
+
+    public boolean allowAnotherErrorEntry() {
+        // use higher entry limit when adding errors, but still need some kind of cap
+        return entryLimitCounter.getAndIncrement() < maxTraceEntriesPerTransaction
+                || extraErrorEntryLimitCounter.getAndIncrement() < 2
+                        * maxTraceEntriesPerTransaction;
+    }
+
+    public boolean allowAnotherAggregateQuery() {
+        return aggregateQueryLimitCounter.getAndIncrement() < maxAggregateQueriesPerQueryType
+                * AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER;
+    }
+
+    public List<Trace.Entry> getEntriesProtobuf(long captureTick) {
         readMemoryBarrier();
-        return traceEntryComponent.toProtobuf();
+        Multimap<TraceEntryImpl, TraceEntryImpl> auxRootTraceEntries = ArrayListMultimap.create();
+        for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
+            // checkNotNull is safe b/c auxiliary thread contexts have non-null parent trace entry
+            TraceEntryImpl parentTraceEntry =
+                    checkNotNull(auxThreadContext.getParentTraceEntry());
+            TraceEntryImpl rootEntry = auxThreadContext.getRootEntry();
+            if (rootEntry.getNextTraceEntry() != null) {
+                // root entry is just "auxiliary thread" root placeholder, don't include if there
+                // are no sub entries
+                auxRootTraceEntries.put(parentTraceEntry, rootEntry);
+            }
+        }
+        return mainThreadContext.getEntriesProtobuf(captureTick, auxRootTraceEntries);
     }
 
-    long getProfileSampleCount() {
-        if (profile == null) {
+    long getMainThreadProfileSampleCount() {
+        if (mainThreadProfile == null) {
             return 0;
         } else {
-            return profile.getSampleCount();
+            return mainThreadProfile.getSampleCount();
         }
     }
 
-    public @Nullable Profile getProfile() {
-        return profile;
+    public @Nullable Profile getMainThreadProfile() {
+        return mainThreadProfile;
     }
 
-    public @Nullable org.glowroot.wire.api.model.ProfileOuterClass.Profile getProfileProtobuf() {
-        if (profile == null) {
+    public @Nullable org.glowroot.wire.api.model.ProfileOuterClass.Profile getMainThreadProfileProtobuf() {
+        if (mainThreadProfile == null) {
             return null;
         }
-        return profile.toProtobuf();
+        return mainThreadProfile.toProtobuf();
     }
 
-    // TODO implement profile limit
-    boolean isProfileSampleLimitExceeded() {
+    boolean isMainThreadProfileSampleLimitExceeded() {
+        // TODO implement profile limit
+        return false;
+    }
+
+    long getAuxThreadProfileSampleCount() {
+        if (auxThreadProfile == null) {
+            return 0;
+        } else {
+            return auxThreadProfile.getSampleCount();
+        }
+    }
+
+    public @Nullable Profile getAuxThreadProfile() {
+        return auxThreadProfile;
+    }
+
+    public @Nullable org.glowroot.wire.api.model.ProfileOuterClass.Profile getAuxThreadProfileProtobuf() {
+        if (auxThreadProfile == null) {
+            return null;
+        }
+        return auxThreadProfile.toProtobuf();
+    }
+
+    boolean isAuxThreadProfileSampleLimitExceeded() {
+        // TODO implement profile limit
         return false;
     }
 
@@ -339,8 +416,12 @@ public class Transaction {
         return partiallyStored;
     }
 
-    public long getThreadId() {
-        return threadId;
+    public ThreadContextImpl getMainThreadContext() {
+        return mainThreadContext;
+    }
+
+    public List<ThreadContextImpl> getAuxThreadContexts() {
+        return auxThreadContexts;
     }
 
     public void setTransactionType(String transactionType, OverrideSource overrideSource) {
@@ -418,69 +499,26 @@ public class Transaction {
         partiallyStored = true;
     }
 
-    public TraceEntryImpl pushEntry(long startTick, MessageSupplier messageSupplier,
-            @Nullable String queryType, @Nullable String queryText, long queryExecutionCount,
-            TimerImpl timer) {
-        QueryData queryData = null;
-        if (queryType != null && queryText != null) {
-            queryData = getOrCreateQueryDataIfPossible(queryType, queryText);
-        }
-        return traceEntryComponent.pushEntry(startTick, messageSupplier, queryData,
-                queryExecutionCount, timer);
-    }
-
-    // only called by transaction thread
-    public @Nullable QueryData getOrCreateQueryDataIfPossible(String queryType, String queryText) {
-        if (headQueryData == null) {
-            QueryData queryData = new QueryData(queryType, queryText, null);
-            // TODO build a micro-optimized query data map, e.g. NestedTimerMap
-            firstQueryTypeQueries = new HashMap<String, QueryData>(4);
-            firstQueryTypeQueries.put(queryText, queryData);
-            headQueryData = queryData;
-            return headQueryData;
-        }
-        Map<String, QueryData> currentQueryTypeQueries;
-        if (queryType.equals(headQueryData.getQueryType())) {
-            currentQueryTypeQueries = checkNotNull(firstQueryTypeQueries);
-        } else {
-            currentQueryTypeQueries = getOrCreateQueriesForQueryType(queryType);
-        }
-        QueryData queryData = currentQueryTypeQueries.get(queryText);
-        if (queryData == null && currentQueryTypeQueries.size() < maxAggregateQueriesPerQueryType
-                * AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER) {
-            queryData = new QueryData(queryType, queryText, headQueryData);
-            currentQueryTypeQueries.put(queryText, queryData);
-            headQueryData = queryData;
-        }
-        return queryData;
-    }
-
-    public TraceEntryImpl addEntry(long startTick, long endTick,
-            @Nullable MessageSupplier messageSupplier, @Nullable ErrorMessage errorMessage,
-            boolean limitBypassed) {
-        TraceEntryImpl entry = traceEntryComponent.addEntry(startTick, endTick, messageSupplier,
-                errorMessage, limitBypassed);
-        memoryBarrier = true;
-        return entry;
-    }
-
-    public void setEntryLimitExceeded() {
-        traceEntryComponent.setEntryLimitExceeded();
-        memoryBarrier = true;
+    public AsyncTimerImpl startAsyncTimer(TimerName asyncTimerName, long startTick) {
+        AsyncTimerImpl asyncTimer = new AsyncTimerImpl((TimerNameImpl) asyncTimerName, startTick);
+        asyncRootTimers.add(asyncTimer);
+        return asyncTimer;
     }
 
     boolean isEntryLimitExceeded() {
-        return traceEntryComponent.isEntryLimitExceeded();
+        return entryLimitCounter.get() > maxTraceEntriesPerTransaction;
     }
 
-    public void captureStackTrace(@Nullable ThreadInfo threadInfo, int limit,
+    public void captureStackTrace(boolean auxiliary, ThreadInfo threadInfo, int limit,
             boolean mayHaveSyntheticTimerMethods) {
-        if (threadInfo == null) {
-            // thread is no longer alive
+        if (completed) {
             return;
         }
-        if (traceEntryComponent.isCompleted()) {
-            return;
+        Profile profile;
+        if (auxiliary) {
+            profile = auxThreadProfile;
+        } else {
+            profile = mainThreadProfile;
         }
         if (profile == null) {
             // initialization possible race condition (between StackTraceCollector and
@@ -490,76 +528,74 @@ public class Transaction {
             // profile is constructed and first stack trace is added prior to setting the
             // transaction profile field, so that it is not possible to read a profile that doesn't
             // have at least one stack trace
-            Profile profile = new Profile(mayHaveSyntheticTimerMethods);
+            profile = new Profile(mayHaveSyntheticTimerMethods);
             profile.addStackTrace(threadInfo, limit);
-            this.profile = profile;
-        } else {
-            profile.addStackTrace(threadInfo, limit);
+            if (auxiliary) {
+                auxThreadProfile = profile;
+            } else {
+                mainThreadProfile = profile;
+            }
+            return;
         }
+        profile.addStackTrace(threadInfo, limit);
+    }
+
+    void end(long endTick) {
+        completed = true;
+        this.endTick = endTick;
+        for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
+            // FIXME how to suppress false positives??
+            if (!loggedBackgroundTransactionSuggestion.get()) {
+                ThreadInfo threadInfo = ManagementFactory.getThreadMXBean()
+                        .getThreadInfo(auxThreadContext.getThreadId(), Integer.MAX_VALUE);
+                if (threadInfo != null && !auxThreadContext.isCompleted()) {
+                    // still not complete, got a valid stack trace from auxiliary thread
+
+                    // race condition getting/setting the static atomic boolean is ok, at worst it
+                    // logs the message 2x
+                    loggedBackgroundTransactionSuggestion.set(true);
+                    StringBuilder sb = new StringBuilder();
+                    for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
+                        sb.append("    ");
+                        sb.append(stackTraceElement.toString());
+                        sb.append('\n');
+                    }
+                    logger.warn("auxiliary thread extended beyond the transaction which started it,"
+                            + " maybe this should be captured as a background transaction instead"
+                            + " -- this message will be logged only once\n{}", sb);
+                }
+            }
+            // FIXME detach transaction from auxiliary thread context for memory consideration
+        }
+        if (immedateTraceStoreRunnable != null) {
+            immedateTraceStoreRunnable.cancel();
+        }
+        if (userProfileRunnable != null) {
+            userProfileRunnable.cancel();
+        }
+        completionCallback.completed(this);
+    }
+
+    void endAuxThreadContext() {
+        transactionRegistry.removeAuxThreadContext();
     }
 
     // called by the transaction thread
-    public void onCompleteCaptureThreadInfo() {
-        if (threadInfoComponent != null) {
-            threadInfoComponent.onComplete();
-        }
-    }
-
-    // called by the transaction thread
-    public void onCompleteCaptureGcActivity() {
-        if (gcActivityComponent != null) {
-            gcActivityComponent.onComplete();
-        }
-    }
-
-    // called by the transaction thread
-    public void onComplete(long captureTime) {
+    public void onCompleteWillStoreTrace(long captureTime) {
         this.captureTime = captureTime;
+        gcActivityComponent.onComplete();
     }
 
     long getCaptureTime() {
         return captureTime;
     }
 
-    // typically pop() methods don't require the objects to pop, but for safety, the entry to pop is
-    // passed in just to make sure it is the one on top (and if not, then pop until is is found,
-    // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    void popEntry(TraceEntryImpl entry, long endTick) {
-        traceEntryComponent.popEntry(entry, endTick);
-        memoryBarrier = true;
-        if (isCompleted()) {
-            // the root entry has been popped off
-            if (immedateTraceStoreRunnable != null) {
-                immedateTraceStoreRunnable.cancel();
-            }
-            if (userProfileRunnable != null) {
-                userProfileRunnable.cancel();
-            }
-            completionCallback.completed(this);
-        }
-    }
-
-    void setCurrentTimer(@Nullable TimerImpl currentTimer) {
-        this.currentTimer = currentTimer;
-    }
-
-    private Map<String, QueryData> getOrCreateQueriesForQueryType(String queryType) {
-        if (allQueryTypesMap == null) {
-            allQueryTypesMap = new HashMap<String, Map<String, QueryData>>(2);
-            Map<String, QueryData> currentQueryTypeQueries = new HashMap<String, QueryData>(4);
-            allQueryTypesMap.put(queryType, currentQueryTypeQueries);
-            return currentQueryTypeQueries;
-        }
-        Map<String, QueryData> currentQueryTypeQueries = allQueryTypesMap.get(queryType);
-        if (currentQueryTypeQueries == null) {
-            currentQueryTypeQueries = new HashMap<String, QueryData>(4);
-            allQueryTypesMap.put(queryType, currentQueryTypeQueries);
-        }
-        return currentQueryTypeQueries;
-    }
-
     private boolean readMemoryBarrier() {
         return memoryBarrier;
+    }
+
+    void writeMemoryBarrier() {
+        memoryBarrier = true;
     }
 
     public static interface CompletionCallback {
@@ -576,6 +612,47 @@ public class Transaction {
 
         private OverrideSource(int priority) {
             this.priority = priority;
+        }
+    }
+
+    @SuppressWarnings("return.type.incompatible")
+    private static <T> /*@Initialized*/ T castInitialized(/*@UnderInitialization*/ T obj) {
+        return obj;
+    }
+
+    private static class AuxThreadRootMessageSupplier extends MessageSupplier {
+
+        private static final AuxThreadRootMessageSupplier INSTANCE =
+                new AuxThreadRootMessageSupplier();
+
+        private final Message message = Message.from("auxiliary thread");
+
+        @Override
+        public Message get() {
+            return message;
+        }
+    }
+
+    private static class GetRootTimerFunction implements Function<ThreadContextImpl, TimerImpl> {
+
+        private static final GetRootTimerFunction INSTANCE = new GetRootTimerFunction();
+
+        @Override
+        public TimerImpl apply(@Nullable ThreadContextImpl input) {
+            checkNotNull(input);
+            return input.getRootTimer();
+        }
+    }
+
+    private static class GetThreadStatsFunction
+            implements Function<ThreadContextImpl, ThreadStats> {
+
+        private static final GetThreadStatsFunction INSTANCE = new GetThreadStatsFunction();
+
+        @Override
+        public @Nullable ThreadStats apply(@Nullable ThreadContextImpl input) {
+            checkNotNull(input);
+            return input.getThreadStats();
         }
     }
 }

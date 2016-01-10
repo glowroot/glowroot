@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,10 +62,10 @@ public class InstrumentationConfigEnabledPropertyIT {
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("Level One");
         assertThat(header.getTransactionName()).isEqualTo("basic test");
-        assertThat(header.getRootTimer().getName()).isEqualTo("level one");
-        assertThat(header.getRootTimer().getChildTimerList().get(0).getName())
-                .isEqualTo("level two");
-        Trace.Timer levelTwoTimer = header.getRootTimer().getChildTimerList().get(0);
+        Trace.Timer rootTimer = header.getMainThreadRootTimer();
+        assertThat(rootTimer.getName()).isEqualTo("level one");
+        assertThat(rootTimer.getChildTimerList().get(0).getName()).isEqualTo("level two");
+        Trace.Timer levelTwoTimer = rootTimer.getChildTimerList().get(0);
         assertThat(levelTwoTimer.getChildTimerList().get(0).getName()).isEqualTo("level three");
         Trace.Timer levelThreeTimer = levelTwoTimer.getChildTimerList().get(0);
         assertThat(levelThreeTimer.getChildTimerList().get(0).getName()).isEqualTo("level four");
@@ -100,10 +100,10 @@ public class InstrumentationConfigEnabledPropertyIT {
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("Level One");
         assertThat(header.getTransactionName()).isEqualTo("basic test");
-        assertThat(header.getRootTimer().getName()).isEqualTo("level one");
-        assertThat(header.getRootTimer().getChildTimerList().get(0).getName())
-                .isEqualTo("level two");
-        Trace.Timer levelTwoTimer = header.getRootTimer().getChildTimerList().get(0);
+        Trace.Timer rootTimer = header.getMainThreadRootTimer();
+        assertThat(rootTimer.getName()).isEqualTo("level one");
+        assertThat(rootTimer.getChildTimerList().get(0).getName()).isEqualTo("level two");
+        Trace.Timer levelTwoTimer = rootTimer.getChildTimerList().get(0);
         assertThat(levelTwoTimer.getChildTimerList().get(0).getName()).isEqualTo("level three");
         Trace.Timer levelThreeTimer = levelTwoTimer.getChildTimerList().get(0);
         assertThat(levelThreeTimer.getChildTimerList().get(0).getName()).isEqualTo("level four");

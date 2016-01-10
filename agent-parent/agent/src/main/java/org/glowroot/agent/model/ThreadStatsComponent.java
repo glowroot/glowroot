@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,15 +24,12 @@ import javax.annotation.concurrent.GuardedBy;
 
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
-import org.immutables.value.Value;
 
 import org.glowroot.agent.util.ThreadAllocatedBytes;
-import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-class ThreadInfoComponent {
+class ThreadStatsComponent {
 
     private static final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
     private static final boolean IS_THREAD_CPU_TIME_SUPPORTED =
@@ -41,126 +38,134 @@ class ThreadInfoComponent {
             threadMXBean.isThreadContentionMonitoringSupported();
 
     private final long threadId;
-    private final ThreadInfoSnapshot startingSnapshot;
+    private final long startingCpuNanos;
+    private final long startingBlockedMillis;
+    private final long startingWaitedMillis;
+    private final long startingAllocatedBytes;
 
     private final @Nullable ThreadAllocatedBytes threadAllocatedBytes;
 
     @GuardedBy("lock")
-    private volatile @MonotonicNonNull ThreadInfoData completedThreadInfo;
+    private volatile @MonotonicNonNull ThreadStats completedThreadStats;
 
     private final Object lock = new Object();
 
-    ThreadInfoComponent(@Nullable ThreadAllocatedBytes threadAllocatedBytes) {
+    ThreadStatsComponent(@Nullable ThreadAllocatedBytes threadAllocatedBytes) {
         threadId = Thread.currentThread().getId();
         ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId, 0);
         // thread info for current thread cannot be null
         checkNotNull(threadInfo);
-        ThreadInfoSnapshotBuilder builder = new ThreadInfoSnapshotBuilder();
         if (IS_THREAD_CPU_TIME_SUPPORTED) {
-            builder.threadCpuNanos(threadMXBean.getCurrentThreadCpuTime());
+            startingCpuNanos = threadMXBean.getCurrentThreadCpuTime();
+        } else {
+            startingCpuNanos = -1;
         }
         if (IS_THREAD_CONTENTION_MONITORING_SUPPORTED) {
-            builder.threadBlockedMillis(threadInfo.getBlockedTime());
-            builder.threadWaitedMillis(threadInfo.getWaitedTime());
+            startingBlockedMillis = threadInfo.getBlockedTime();
+            startingWaitedMillis = threadInfo.getWaitedTime();
+        } else {
+            startingBlockedMillis = -1;
+            startingWaitedMillis = -1;
         }
         if (threadAllocatedBytes != null) {
-            builder.threadAllocatedBytes(
-                    threadAllocatedBytes.getThreadAllocatedBytesSafely(threadId));
+            startingAllocatedBytes = threadAllocatedBytes.getThreadAllocatedBytesSafely(threadId);
+        } else {
+            startingAllocatedBytes = -1;
         }
         this.threadAllocatedBytes = threadAllocatedBytes;
-        startingSnapshot = builder.build();
     }
 
     // must be called from transaction thread
     void onComplete() {
         synchronized (lock) {
-            completedThreadInfo = getThreadInfo();
+            completedThreadStats = getThreadStats();
         }
     }
 
     // safe to be called from another thread
-    ThreadInfoData getThreadInfo() {
+    ThreadStats getThreadStats() {
         synchronized (lock) {
-            if (completedThreadInfo == null) {
+            if (completedThreadStats == null) {
                 // transaction thread is still alive (and cannot terminate in the middle of this
                 // method because of above lock), so safe to capture ThreadMXBean.getThreadInfo()
                 // and ThreadMXBean.getThreadCpuTime() for the transaction thread
-                return getThreadInfoInternal();
+                return getThreadStatsInternal();
             } else {
-                return completedThreadInfo;
+                return completedThreadStats;
             }
         }
     }
 
-    private ThreadInfoData getThreadInfoInternal() {
-        ThreadInfoDataBuilder builder = new ThreadInfoDataBuilder();
+    private ThreadStats getThreadStatsInternal() {
         ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId, 0);
         if (threadInfo == null) {
             // thread must have just recently terminated
-            return builder.build();
+            return new ThreadStats(-1, -1, -1, -1);
         }
+        long totalCpuNanos;
         if (IS_THREAD_CPU_TIME_SUPPORTED) {
-            addThreadCpuTime(builder);
+            totalCpuNanos = getTotalCpuNanos();
+        } else {
+            totalCpuNanos = -1;
         }
+        long totalBlockedMillis;
+        long totalWaitedMillis;
         if (IS_THREAD_CONTENTION_MONITORING_SUPPORTED) {
-            addThreadBlockedAndWaitedTime(builder, threadInfo);
+            totalBlockedMillis = getTotalBlockedMillis(threadInfo);
+            totalWaitedMillis = getTotalWaitedMillis(threadInfo);
+        } else {
+            totalBlockedMillis = -1;
+            totalWaitedMillis = -1;
         }
-        if (threadAllocatedBytes != null) {
-            addThreadAllocatedBytes(builder);
+        long totalAllocatedBytes;
+        if (this.threadAllocatedBytes != null) {
+            totalAllocatedBytes = getThreadAllocatedBytes();
+        } else {
+            totalAllocatedBytes = -1;
         }
-        return builder.build();
+        return new ThreadStats(totalCpuNanos, totalBlockedMillis, totalWaitedMillis,
+                totalAllocatedBytes);
     }
 
-    private void addThreadCpuTime(ThreadInfoDataBuilder builder) {
+    private long getTotalCpuNanos() {
         // getThreadCpuTime() returns -1 if CPU time measurement is disabled (which is different
         // than whether or not it is supported)
         long threadCpuNanos = threadMXBean.getThreadCpuTime(threadId);
-        if (startingSnapshot.threadCpuNanos() != -1 && threadCpuNanos != -1) {
-            builder.threadCpuNanos(threadCpuNanos - startingSnapshot.threadCpuNanos());
+        if (startingCpuNanos != -1 && threadCpuNanos != -1) {
+            return threadCpuNanos - startingCpuNanos;
+        } else {
+            return -1;
         }
     }
 
-    private void addThreadBlockedAndWaitedTime(ThreadInfoDataBuilder builder,
-            ThreadInfo threadInfo) {
-        // getBlockedTime() and getWaitedTime() return -1 if thread contention monitoring is
-        // disabled (which is different than whether or not it is supported)
+    private long getTotalBlockedMillis(ThreadInfo threadInfo) {
+        // getBlockedTime() return -1 if thread contention monitoring is disabled (which is
+        // different than whether or not it is supported)
         long threadBlockedTimeMillis = threadInfo.getBlockedTime();
-        if (startingSnapshot.threadBlockedMillis() != -1 && threadBlockedTimeMillis != -1) {
-            builder.threadBlockedNanos(MILLISECONDS
-                    .toNanos(threadBlockedTimeMillis - startingSnapshot.threadBlockedMillis()));
+        if (startingBlockedMillis != -1 && threadBlockedTimeMillis != -1) {
+            return threadBlockedTimeMillis - startingBlockedMillis;
+        } else {
+            return -1;
         }
+    }
+
+    private long getTotalWaitedMillis(ThreadInfo threadInfo) {
+        // getWaitedTime() returns -1 if thread contention monitoring is disabled (which is
+        // different than whether or not it is supported)
         long threadWaitedTimeMillis = threadInfo.getWaitedTime();
-        if (startingSnapshot.threadWaitedMillis() != -1 && threadWaitedTimeMillis != -1) {
-            builder.threadWaitedNanos(MILLISECONDS
-                    .toNanos(threadWaitedTimeMillis - startingSnapshot.threadWaitedMillis()));
+        if (startingWaitedMillis != -1 && threadWaitedTimeMillis != -1) {
+            return threadWaitedTimeMillis - startingWaitedMillis;
+        } else {
+            return -1;
         }
     }
 
     @RequiresNonNull("threadAllocatedBytes")
-    private void addThreadAllocatedBytes(ThreadInfoDataBuilder builder) {
+    private long getThreadAllocatedBytes() {
         long allocatedBytes = threadAllocatedBytes.getThreadAllocatedBytesSafely(threadId);
-        if (startingSnapshot.threadAllocatedBytes() != -1 && allocatedBytes != -1) {
-            builder.threadAllocatedBytes(allocatedBytes - startingSnapshot.threadAllocatedBytes());
-        }
-    }
-
-    @Styles.Private
-    @Value.Immutable
-    abstract static class ThreadInfoSnapshot {
-        @Value.Default
-        long threadCpuNanos() {
-            return -1;
-        }
-        @Value.Default
-        long threadBlockedMillis() { // milliseconds (native resolution from jvm)
-            return -1;
-        }
-        @Value.Default
-        long threadWaitedMillis() { // milliseconds (native resolution from jvm)
-            return -1;
-        }
-        @Value.Default
-        long threadAllocatedBytes() {
+        if (startingAllocatedBytes != -1 && allocatedBytes != -1) {
+            return allocatedBytes - startingAllocatedBytes;
+        } else {
             return -1;
         }
     }

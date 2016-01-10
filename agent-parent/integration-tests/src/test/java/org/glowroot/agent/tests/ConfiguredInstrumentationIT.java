@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,13 +88,13 @@ public class ConfiguredInstrumentationIT {
         Trace.Header header = trace.getHeader();
         assertThat(header.getTransactionType()).isEqualTo("test override type");
         assertThat(header.getTransactionName()).isEqualTo("test override name");
-        assertThat(header.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(header.getRootTimer().getChildTimerList()).hasSize(1);
-        assertThat(header.getRootTimer().getChildTimerList().get(0).getName())
-                .isEqualTo("execute one");
-        assertThat(header.getRootTimer().getChildTimerList().get(0).getChildTimerList()).hasSize(1);
-        assertThat(header.getRootTimer().getChildTimerList().get(0).getChildTimerList().get(0)
-                .getName()).isEqualTo("execute one timer only");
+        Trace.Timer rootTimer = header.getMainThreadRootTimer();
+        assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
+        assertThat(rootTimer.getChildTimerList()).hasSize(1);
+        assertThat(rootTimer.getChildTimerList().get(0).getName()).isEqualTo("execute one");
+        assertThat(rootTimer.getChildTimerList().get(0).getChildTimerList()).hasSize(1);
+        assertThat(rootTimer.getChildTimerList().get(0).getChildTimerList().get(0).getName())
+                .isEqualTo("execute one timer only");
         Trace.Entry entry = entries.get(0);
         assertThat(entry.getMessage()).isEqualTo("execute1() => void");
         assertThat(entry.getLocationStackTraceElementList()).isNotEmpty();
@@ -106,11 +106,10 @@ public class ConfiguredInstrumentationIT {
         // when
         Trace trace = container.execute(ShouldExecuteWithReturn.class);
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(header.getRootTimer().getChildTimerList()).hasSize(1);
-        assertThat(header.getRootTimer().getChildTimerList().get(0).getName())
-                .isEqualTo("execute with return");
+        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
+        assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
+        assertThat(rootTimer.getChildTimerList()).hasSize(1);
+        assertThat(rootTimer.getChildTimerList().get(0).getName()).isEqualTo("execute with return");
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage()).isEqualTo("executeWithReturn() => xyz");
@@ -126,8 +125,9 @@ public class ConfiguredInstrumentationIT {
         assertThat(header.getHeadline()).isEqualTo("executeWithArgs(): abc, 123, the name");
         assertThat(header.getTransactionType()).isEqualTo("Pointcut config test");
         assertThat(header.getTransactionName()).isEqualTo("Misc / executeWithArgs");
-        assertThat(header.getRootTimer().getName()).isEqualTo("execute with args");
-        assertThat(header.getRootTimer().getChildTimerList()).isEmpty();
+        Trace.Timer rootTimer = header.getMainThreadRootTimer();
+        assertThat(rootTimer.getName()).isEqualTo("execute with args");
+        assertThat(rootTimer.getChildTimerList()).isEmpty();
         assertThat(header.getEntryCount()).isZero();
     }
 

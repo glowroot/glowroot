@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.model;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -27,6 +26,7 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,13 +54,13 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 //
 // all timing data is in nanoseconds
 @Styles.Private
-public class TimerImpl implements Timer {
+public class TimerImpl implements Timer, CommonTimerImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(TimerImpl.class);
 
     private static final Ticker ticker = Tickers.getTicker();
 
-    private final Transaction transaction;
+    private final ThreadContextImpl threadContext;
     private final @Nullable TimerImpl parent;
     private final TimerNameImpl timerName;
 
@@ -82,52 +82,30 @@ public class TimerImpl implements Timer {
     private @MonotonicNonNull TimerImpl headChild;
     private final @Nullable TimerImpl nextSibling;
 
-    public static TimerImpl createRootTimer(Transaction transaction, TimerNameImpl timerName) {
-        return new TimerImpl(transaction, null, null, timerName);
+    public static TimerImpl createRootTimer(ThreadContextImpl threadContext,
+            TimerNameImpl timerName) {
+        return new TimerImpl(threadContext, null, null, timerName);
     }
 
-    private TimerImpl(Transaction transaction, @Nullable TimerImpl parent,
+    private TimerImpl(ThreadContextImpl threadContext, @Nullable TimerImpl parent,
             @Nullable TimerImpl nextSibling, TimerNameImpl timerName) {
         this.timerName = timerName;
         this.parent = parent;
         this.nextSibling = nextSibling;
-        this.transaction = transaction;
+        this.threadContext = threadContext;
     }
 
     // safe to be called from another thread when transaction is still active transaction
     @JsonIgnore
-    Trace.Timer toProtobuf() throws IOException {
-
+    Trace.Timer toProtobuf() {
         Trace.Timer.Builder builder = Trace.Timer.newBuilder();
         builder.setName(timerName.name());
         builder.setExtended(timerName.extended());
 
-        boolean active = selfNestingLevel > 0;
-
-        if (active) {
-            // try to grab a quick, consistent view, but no guarantee on consistency since the
-            // transaction is active
-            //
-            // grab total before curr, to avoid case where total is updated in between
-            // these two lines and then "total + curr" would overstate the correct value
-            // (it seems better to understate the correct value if there is an update to the
-            // timer values in between these two lines)
-            long theTotalNanos = totalNanos;
-            // capture startTick before ticker.read() so curr is never < 0
-            long theStartTick = startTick;
-            long curr = ticker.read() - theStartTick;
-            if (theTotalNanos == 0) {
-                builder.setTotalNanos(curr);
-                builder.setCount(1);
-            } else {
-                builder.setTotalNanos(theTotalNanos + curr);
-                builder.setCount(count + 1);
-            }
-        } else {
-            builder.setTotalNanos(totalNanos);
-            builder.setCount(count);
-        }
-        builder.setActive(active);
+        TimerImplSnapshot snapshot = getSnapshot();
+        builder.setTotalNanos(snapshot.totalNanos());
+        builder.setCount(snapshot.count());
+        builder.setActive(snapshot.active());
 
         if (headChild != null) {
             List<Trace.Timer> nestedTimers = Lists.newArrayList();
@@ -142,10 +120,39 @@ public class TimerImpl implements Timer {
     }
 
     @Override
+    public TimerImplSnapshot getSnapshot() {
+        if (selfNestingLevel > 0) {
+            // try to grab a quick, consistent view, but no guarantee on consistency since the
+            // transaction is active
+            //
+            // grab total before curr, to avoid case where total is updated in between
+            // these two lines and then "total + curr" would overstate the correct value
+            // (it seems better to understate the correct value if there is an update to the
+            // timer values in between these two lines)
+            long theTotalNanos = totalNanos;
+            // capture startTick before ticker.read() so curr is never < 0
+            long theStartTick = startTick;
+            long curr = ticker.read() - theStartTick;
+            if (theTotalNanos == 0) {
+                return ImmutableTimerImplSnapshot.of(curr, 1, true);
+            } else {
+                return ImmutableTimerImplSnapshot.of(theTotalNanos + curr, count + 1, true);
+            }
+        } else {
+            return ImmutableTimerImplSnapshot.of(totalNanos, count, false);
+        }
+    }
+
+    @Override
     public void stop() {
         if (--selfNestingLevel == 0) {
             endInternal(ticker.read());
         }
+    }
+
+    @Override
+    public Timer extend() {
+        return extend(ticker.read());
     }
 
     public void end(long endTick) {
@@ -154,25 +161,30 @@ public class TimerImpl implements Timer {
         }
     }
 
+    @Override
     public String getName() {
         return timerName.name();
     }
 
+    @Override
     public boolean isExtended() {
         return timerName.extended();
     }
 
     // only called after transaction completion
+    @Override
     public long getTotalNanos() {
         return totalNanos;
     }
 
     // only called after transaction completion
+    @Override
     public long getCount() {
         return count;
     }
 
     // only called after transaction completion
+    @Override
     @JsonIgnore
     public Iterator<TimerImpl> getChildTimers() {
         if (headChild == null) {
@@ -223,7 +235,7 @@ public class TimerImpl implements Timer {
     }
 
     public TimerImpl extend(long startTick) {
-        TimerImpl currentTimer = transaction.getCurrentTimer();
+        TimerImpl currentTimer = threadContext.getCurrentTimer();
         if (currentTimer == null) {
             logger.warn("extend() transaction currentTimer is null");
             return this;
@@ -251,17 +263,17 @@ public class TimerImpl implements Timer {
     void start(long startTick) {
         this.startTick = startTick;
         selfNestingLevel++;
-        transaction.setCurrentTimer(this);
+        threadContext.setCurrentTimer(this);
     }
 
-    Transaction getTransaction() {
-        return transaction;
+    ThreadContextImpl getThreadContext() {
+        return threadContext;
     }
 
     private void endInternal(long endTick) {
         totalNanos += endTick - startTick;
         count++;
-        transaction.setCurrentTimer(parent);
+        threadContext.setCurrentTimer(parent);
     }
 
     private TimerImpl startNestedTimerInternal(TimerName timerName, long nestedTimerStartTick) {
@@ -274,10 +286,18 @@ public class TimerImpl implements Timer {
             nestedTimer.start(nestedTimerStartTick);
             return nestedTimer;
         }
-        nestedTimer = new TimerImpl(transaction, this, headChild, timerNameImpl);
+        nestedTimer = new TimerImpl(threadContext, this, headChild, timerNameImpl);
         nestedTimer.start(nestedTimerStartTick);
         nestedTimers.put(timerNameImpl, nestedTimer);
         headChild = nestedTimer;
         return nestedTimer;
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface TimerImplSnapshot {
+        long totalNanos();
+        long count();
+        boolean active();
     }
 }

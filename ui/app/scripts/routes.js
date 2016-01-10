@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,8 @@ glowroot.config([
             $location.search('transaction-type', $rootScope.defaultTransactionType());
             $location.replace();
           }
-          return function () {};
+          return function () {
+          };
         } else {
           var deferred = $q.defer();
           var unregisterWatch = $rootScope.$watch('layout', function (value) {
@@ -142,12 +143,31 @@ glowroot.config([
         }
       }
     });
-    $stateProvider.state('transaction.detail.profile', {
-      url: '/profile?transaction-name',
+    $stateProvider.state('transaction.detail.mainThreadProfile', {
+      url: '/main-thread-profile?transaction-name',
       views: {
         'main@transaction': {
           templateUrl: 'views/transaction/profile.html',
-          controller: 'TransactionProfileCtrl'
+          controller: 'TransactionProfileCtrl',
+          resolve: {
+            auxiliary: function () {
+              return false;
+            }
+          }
+        }
+      }
+    });
+    $stateProvider.state('transaction.detail.auxThreadProfile', {
+      url: '/aux-thread-profile?transaction-name',
+      views: {
+        'main@transaction': {
+          templateUrl: 'views/transaction/profile.html',
+          controller: 'TransactionProfileCtrl',
+          resolve: {
+            auxiliary: function () {
+              return true;
+            }
+          }
         }
       }
     });
@@ -165,25 +185,41 @@ glowroot.config([
         }
       }
     });
-    $stateProvider.state('transaction-flame-graph', {
-      url: '/transaction/flame-graph',
+    var waitForD3 = ['$q', '$timeout', function ($q, $timeout) {
+      var deferred = $q.defer();
+
+      function checkForD3() {
+        if (window.d3) {
+          deferred.resolve();
+        } else {
+          $timeout(checkForD3, 100);
+        }
+      }
+
+      $timeout(checkForD3, 100);
+      return deferred.promise;
+    }];
+    $stateProvider.state('transaction-main-thread-flame-graph', {
+      url: '/transaction/main-thread-flame-graph',
       templateUrl: 'views/transaction/flame-graph.html',
       controller: 'TransactionFlameGraphCtrl',
       resolve: {
-        dummy: ['$q', '$timeout', function ($q, $timeout) {
-          var deferred = $q.defer();
-
-          function checkForD3() {
-            if (window.d3) {
-              deferred.resolve();
-            } else {
-              $timeout(checkForD3, 100);
-            }
-          }
-
-          $timeout(checkForD3, 100);
-          return deferred.promise;
-        }],
+        auxiliary: function () {
+          return false;
+        },
+        waitForD3: waitForD3,
+        waitForLayout: waitForLayout(true)
+      }
+    });
+    $stateProvider.state('transaction-aux-thread-flame-graph', {
+      url: '/transaction/aux-thread-flame-graph',
+      templateUrl: 'views/transaction/flame-graph.html',
+      controller: 'TransactionFlameGraphCtrl',
+      resolve: {
+        auxiliary: function () {
+          return true;
+        },
+        waitForD3: waitForD3,
         waitForLayout: waitForLayout(true)
       }
     });

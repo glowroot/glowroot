@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,8 +58,8 @@ public class BasicSmokeIT extends WebDriverIT {
         String version = responseNode.get("version").asText();
         request = asyncHttpClient
                 .preparePost("http://localhost:" + getUiPort() + "/backend/config/transaction")
-                .setBody("{\"slowThresholdMillis\":0,\"profilingIntervalMillis\":10,\"version\":\""
-                        + version + "\"}")
+                .setBody("{\"slowThresholdMillis\":0,\"profilingIntervalMillis\":10,"
+                        + "\"captureThreadStats\":false,\"version\":\"" + version + "\"}")
                 .build();
         int status = asyncHttpClient.executeRequest(request).get().getStatusCode();
         asyncHttpClient.close();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
 
-import org.glowroot.agent.plugin.api.transaction.Timer;
 import org.glowroot.agent.util.Tickers;
 
 // TODO update this comment that was copied from TimerImpl
@@ -41,7 +40,7 @@ import org.glowroot.agent.util.Tickers;
 // in-flight (e.g. partial traces and active traces displayed in the UI) may not be visible
 //
 // all timing data is in nanoseconds
-public class QueryData implements Timer {
+public class QueryData {
 
     private static final Ticker ticker = Tickers.getTicker();
 
@@ -83,7 +82,6 @@ public class QueryData implements Timer {
         }
     }
 
-    @Override
     public void stop() {
         if (--selfNestingLevel == 0) {
             endInternal(ticker.read());

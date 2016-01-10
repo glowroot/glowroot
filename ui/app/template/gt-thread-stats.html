@@ -1,0 +1,14 @@
+<div class="gt-indent2">
+  <div ng-show="threadStats.totalCpuNanos != -1">
+    CPU time: {{threadStats.totalCpuNanos / (1000000 * transactionCount) | gtMillis}} ms
+  </div>
+  <div ng-show="threadStats.totalBlockedNanos != -1">
+    Blocked time: {{threadStats.totalBlockedNanos / (1000000 * transactionCount) | gtMillis}} ms
+  </div>
+  <div ng-show="threadStats.totalWaitedNanos != -1">
+    Waited time: {{threadStats.totalWaitedNanos / (1000000 * transactionCount) | gtMillis}} ms
+  </div>
+  <div ng-show="threadStats.totalAllocatedBytes != -1">
+    Allocated memory: {{threadStats.totalAllocatedBytes / transactionCount | gtBytes}}
+  </div>
+</div>

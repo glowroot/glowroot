@@ -43,6 +43,7 @@ package java.lang.management;
 
 public interface ThreadMXBean {
     public @Nullable ThreadInfo getThreadInfo(long id, int maxDepth);
+    public @Nullable ThreadInfo[] getThreadInfo(long[] ids, int maxDepth);
 }
 
 /* ========================================================================== */
@@ -92,6 +93,9 @@ public interface ConcurrentMap<K, V> {
 
 public interface ExecutorService {
     <T extends @Nullable Object> Future<T> submit(Callable<T> task);
+}
+
+public interface Future<V extends @Nullable Object> {
 }
 
 /* ========================================================================== */

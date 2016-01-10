@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,9 +101,6 @@ class FatAgentModule {
             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
                     configRepository, null, true);
         } else {
-            ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
-                    .setNameFormat("Glowroot-Background-%d").build();
-            scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
             // trace module needs to be started as early as possible, so that weaving will be
             // applied to as many classes as possible
             // in particular, it needs to be started before StorageModule which uses shaded H2,
@@ -119,11 +116,13 @@ class FatAgentModule {
             PreInitializeStorageShutdownClasses.preInitializeClasses();
             ConfigRepository configRepository =
                     ConfigRepositoryImpl.create(baseDir, agentModule.getConfigService());
-            PlatformMBeanServerLifecycle platformMBeanServerLifecycle =
-                    new PlatformMBeanServerLifecycleImpl(agentModule.getLazyPlatformMBeanServer());
+            ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
+                    .setNameFormat("Glowroot-Background-%d").build();
+            scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
                     configRepository, scheduledExecutor, false);
-            simpleRepoModule.registerMBeans(platformMBeanServerLifecycle);
+            simpleRepoModule.registerMBeans(
+                    new PlatformMBeanServerLifecycleImpl(agentModule.getLazyPlatformMBeanServer()));
 
             // now inject the real collector into the proxy
             CollectorImpl collectorImpl =

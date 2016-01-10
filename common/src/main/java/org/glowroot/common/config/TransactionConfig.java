@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package org.glowroot.common.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -31,6 +33,12 @@ public abstract class TransactionConfig {
     @Value.Default
     public int slowThresholdMillis() {
         return 2000;
+    }
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public boolean captureThreadStats() {
+        return false;
     }
 
     @Value.Derived

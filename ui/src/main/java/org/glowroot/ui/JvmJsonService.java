@@ -96,18 +96,18 @@ class JvmJsonService {
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
         jg.writeStartObject();
-        jg.writeArrayFieldStart("matchedThreads");
-        for (ThreadDump.ThreadInfo threadInfo : threadDump.getMatchedThreadList()) {
-            writeThreadInfo(threadInfo, jg);
+        jg.writeArrayFieldStart("transactions");
+        for (ThreadDump.Transaction transaction : threadDump.getTransactionList()) {
+            writeTransactionThread(transaction, jg);
         }
         jg.writeEndArray();
         jg.writeArrayFieldStart("unmatchedThreads");
-        for (ThreadDump.ThreadInfo threadInfo : threadDump.getUnmatchedThreadList()) {
-            writeThreadInfo(threadInfo, jg);
+        for (ThreadDump.Thread thread : threadDump.getUnmatchedThreadList()) {
+            writeThread(thread, jg);
         }
         jg.writeEndArray();
         jg.writeFieldName("threadDumpingThread");
-        writeThreadInfo(threadDump.getThreadDumpingThread(), jg);
+        writeThread(threadDump.getThreadDumpingThread(), jg);
         jg.writeEndObject();
         jg.close();
         return sw.toString();
@@ -247,22 +247,32 @@ class JvmJsonService {
         return QueryStringDecoder.decodeComponent(queryString.substring("server-id".length() + 1));
     }
 
-    private static void writeThreadInfo(ThreadDump.ThreadInfo threadInfo, JsonGenerator jg)
-            throws IOException {
+    private static void writeTransactionThread(ThreadDump.Transaction transaction,
+            JsonGenerator jg) throws IOException {
         jg.writeStartObject();
-        jg.writeStringField("name", threadInfo.getName());
-        jg.writeStringField("state", threadInfo.getState());
-        jg.writeStringField("lockName", threadInfo.getLockName());
+        jg.writeStringField("traceId", transaction.getTraceId());
+        jg.writeStringField("transactionType", transaction.getTransactionType());
+        jg.writeStringField("transactionName", transaction.getTransactionName());
+        jg.writeNumberField("transactionTotalNanos", transaction.getTransactionTotalNanos());
+        jg.writeArrayFieldStart("threads");
+        for (ThreadDump.Thread thread : transaction.getThreadList()) {
+            writeThread(thread, jg);
+        }
+        jg.writeEndArray();
+        jg.writeEndObject();
+    }
+
+    private static void writeThread(ThreadDump.Thread thread, JsonGenerator jg) throws IOException {
+        jg.writeStartObject();
+        jg.writeStringField("name", thread.getName());
+        jg.writeStringField("state", thread.getState());
+        jg.writeStringField("lockName", thread.getLockName());
         jg.writeArrayFieldStart("stackTraceElements");
-        for (ThreadDump.StackTraceElement stackTraceElement : threadInfo
+        for (ThreadDump.StackTraceElement stackTraceElement : thread
                 .getStackTraceElementList()) {
             writeStackTraceElement(stackTraceElement, jg);
         }
         jg.writeEndArray();
-        jg.writeStringField("transactionType", threadInfo.getTransactionType());
-        jg.writeStringField("transactionName", threadInfo.getTransactionName());
-        jg.writeNumberField("transactionTotalNanos", threadInfo.getTransactionTotalNanos());
-        jg.writeStringField("traceId", threadInfo.getTraceId());
         jg.writeEndObject();
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,8 +61,9 @@ public class TimerIT {
         Trace trace = container.execute(ShouldGenerateTraceWithTimers.class);
         // then
         Trace.Header header = trace.getHeader();
-        assertThat(header.getRootTimer().getChildTimerList()).isEmpty();
-        assertThat(header.getRootTimer().getName()).isEqualTo("mock trace marker");
+        Trace.Timer rootTimer = header.getMainThreadRootTimer();
+        assertThat(rootTimer.getChildTimerList()).isEmpty();
+        assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
     }
 
     @Test
@@ -72,9 +73,10 @@ public class TimerIT {
         Trace trace = container.execute(ShouldGenerateTraceWithRootAndSelfNestedTimer.class);
         // then
         Trace.Header header = trace.getHeader();
-        assertThat(header.getRootTimer().getChildTimerList()).isEmpty();
-        assertThat(header.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(header.getRootTimer().getCount()).isEqualTo(1);
+        Trace.Timer rootTimer = header.getMainThreadRootTimer();
+        assertThat(rootTimer.getChildTimerList()).isEmpty();
+        assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
+        assertThat(rootTimer.getCount()).isEqualTo(1);
     }
 
     @Test
@@ -96,10 +98,11 @@ public class TimerIT {
         // then
         Trace trace = container.getCollectedPartialTrace();
         Trace.Header header = trace.getHeader();
-        assertThat(header.getRootTimer().getChildTimerList()).isEmpty();
-        assertThat(header.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(header.getRootTimer().getCount()).isEqualTo(1);
-        assertThat(header.getRootTimer().getActive()).isTrue();
+        Trace.Timer rootTimer = header.getMainThreadRootTimer();
+        assertThat(rootTimer.getChildTimerList()).isEmpty();
+        assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
+        assertThat(rootTimer.getCount()).isEqualTo(1);
+        assertThat(rootTimer.getActive()).isTrue();
         // cleanup
         container.interruptAppUnderTest();
         future.get();

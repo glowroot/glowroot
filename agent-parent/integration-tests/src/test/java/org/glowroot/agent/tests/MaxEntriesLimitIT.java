@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,24 +94,6 @@ public class MaxEntriesLimitIT {
         assertThat(header.getEntryCount()).isEqualTo(100);
         assertThat(header.getEntryLimitExceeded()).isTrue();
 
-        // part 2 of this test, extend the max trace entries limit in the middle of transaction
-        container.getConfigService().updateAdvancedConfig(AdvancedConfig.newBuilder()
-                .setMaxTraceEntriesPerTransaction(ProtoOptional.of(200))
-                .build());
-        stopwatch.stop().reset().start();
-        while (stopwatch.elapsed(SECONDS) < 10) {
-            trace = container.getCollectedPartialTrace();
-            header = trace.getHeader();
-            if (header.getEntryCount() == 200 && header.getEntryLimitExceeded()) {
-                break;
-            }
-            // otherwise continue
-            Thread.sleep(10);
-        }
-        assertThat(header).isNotNull();
-        assertThat(header.getPartial()).isTrue();
-        assertThat(header.getEntryCount()).isEqualTo(200);
-        assertThat(header.getEntryLimitExceeded()).isTrue();
         // cleanup trace
         container.interruptAppUnderTest();
         future.get();
