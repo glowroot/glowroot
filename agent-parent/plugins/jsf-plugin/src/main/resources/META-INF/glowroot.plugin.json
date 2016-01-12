@@ -1,0 +1,16 @@
+{
+  "name": "JSF Plugin",
+  "id": "jsf",
+  "instrumentation": [
+    {
+      "className": "com.sun.faces.lifecycle.RenderResponsePhase",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        "javax.faces.context.FacesContext"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "jsf render",
+      "traceEntryMessageTemplate": "jsf render: {{0.viewRoot.viewId}}"
+    }
+  ]
+}
