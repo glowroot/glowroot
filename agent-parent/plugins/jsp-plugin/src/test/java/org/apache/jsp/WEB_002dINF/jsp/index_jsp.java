@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.jsp.WEB_002dINF.jsps;
+package org.apache.jsp.WEB_002dINF.jsp;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletRequest;
@@ -22,7 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.HttpJspPage;
 
-public class home_jsp implements HttpJspPage {
+public class index_jsp implements HttpJspPage {
 
     @Override
     public void _jspService(HttpServletRequest httpServletRequest,

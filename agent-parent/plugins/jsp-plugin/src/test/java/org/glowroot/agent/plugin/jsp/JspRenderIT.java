@@ -17,6 +17,7 @@ package org.glowroot.agent.plugin.jsp;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -26,9 +27,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.ning.http.client.AsyncHttpClient;
 import org.apache.catalina.Context;
+import org.apache.catalina.loader.WebappLoader;
 import org.apache.catalina.startup.Tomcat;
 import org.apache.jasper.servlet.JspServlet;
-import org.apache.jsp.WEB_002dINF.jsps.home_jsp;
+import org.apache.jsp.WEB_002dINF.jsp.index_jsp;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -42,7 +44,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class HttpJspPageIT {
+public class JspRenderIT {
 
     private static Container container;
 
@@ -72,7 +74,7 @@ public class HttpJspPageIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("jsp render: /WEB-INF/jsps/home.jsp");
+        assertThat(entry.getMessage()).isEqualTo("jsp render: /WEB-INF/jsp/index.jsp");
     }
 
     @Test
@@ -84,10 +86,11 @@ public class HttpJspPageIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("jsp render: /WEB-INF/jsps/home.jsp");
+        assertThat(entry.getMessage()).isEqualTo("jsp render: /WEB-INF/jsp/index.jsp");
     }
 
     public static class RenderJsp implements AppUnderTest, TransactionMarker {
+
         @Override
         public void executeApp() throws Exception {
             transactionMarker();
@@ -95,47 +98,23 @@ public class HttpJspPageIT {
 
         @Override
         public void transactionMarker() throws Exception {
-            new home_jsp()._jspService(null, null);
-        }
-    }
-
-    private static void deleteRecursively(File file) throws IOException {
-        if (!file.exists()) {
-            throw new IOException("Could not find file to delete: " + file.getCanonicalPath());
-        } else if (file.isDirectory()) {
-            File[] files = file.listFiles();
-            if (files == null) {
-                // strangely, listFiles() returns null if an I/O error occurs
-                throw new IOException();
-            }
-            for (File f : files) {
-                deleteRecursively(f);
-            }
-            if (!file.delete()) {
-                throw new IOException("Could not delete directory: " + file.getCanonicalPath());
-            }
-        } else if (!file.delete()) {
-            throw new IOException("Could not delete file: " + file.getCanonicalPath());
+            new index_jsp()._jspService(null, null);
         }
     }
 
     public static class RenderJspInTomcat implements AppUnderTest {
 
-        private Context context;
-        private Tomcat tomcat;
-
         @Override
         public void executeApp() throws Exception {
+            int port = getAvailablePort();
+            Tomcat tomcat = new Tomcat();
+            tomcat.setBaseDir("target/tomcat");
+            tomcat.setPort(port);
+            Context context =
+                    tomcat.addContext("", new File("src/test/resources").getAbsolutePath());
 
-            // clean tomcat directory in order to delete previously compiled jsp page
-            File tomcatDir = new File("tomcat.8081");
-            if (tomcatDir.exists()) {
-                deleteRecursively(tomcatDir);
-            }
-
-            tomcat = new Tomcat();
-            tomcat.setPort(8081);
-            context = tomcat.addContext("", new File("src/test/resources").getAbsolutePath());
+            WebappLoader webappLoader = new WebappLoader(RenderJspInTomcat.class.getClassLoader());
+            context.setLoader(webappLoader);
 
             Tomcat.addServlet(context, "hello", new ForwardingServlet());
             context.addServletMapping("/hello", "hello");
@@ -144,23 +123,29 @@ public class HttpJspPageIT {
 
             tomcat.start();
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://localhost:8081/hello").execute().get();
+            asyncHttpClient.prepareGet("http://localhost:" + port + "/hello").execute().get();
             asyncHttpClient.close();
             tomcat.stop();
             tomcat.destroy();
+        }
+
+        private static int getAvailablePort() throws IOException {
+            ServerSocket serverSocket = new ServerSocket(0);
+            int port = serverSocket.getLocalPort();
+            serverSocket.close();
+            return port;
         }
     }
 
     @SuppressWarnings("serial")
     private static class ForwardingServlet extends HttpServlet {
-
         @Override
         protected void service(final HttpServletRequest req, final HttpServletResponse resp)
                 throws ServletException, IOException {
             TransactionMarker transactionMarker = new TransactionMarker() {
                 @Override
                 public void transactionMarker() throws Exception {
-                    req.getRequestDispatcher("/WEB-INF/jsps/home.jsp").forward(req, resp);
+                    req.getRequestDispatcher("/WEB-INF/jsp/index.jsp").forward(req, resp);
                 }
             };
             try {
