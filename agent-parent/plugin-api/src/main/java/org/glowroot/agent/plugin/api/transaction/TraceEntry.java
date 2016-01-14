@@ -42,11 +42,11 @@ public interface TraceEntry {
      * total number of (real) entries is applied when escalating dummy entries to real entries.
      * 
      * This is a no-op for async trace entries (those created by
-     * {@link AdvancedService#startAsyncTraceEntry(MessageSupplier)} and
-     * {@link AdvancedService#startAsyncQueryEntry(String, String, MessageSupplier)}). This is
-     * because async trace entries are used when their end is performed by a different thread, and
-     * so a stack trace at that time does not point to the code which executed triggered the trace
-     * entry creation.
+     * {@link AsyncService#startAsyncTraceEntry(MessageSupplier, TimerName, TimerName)} and
+     * {@link AsyncService#startAsyncQueryEntry(String, String, MessageSupplier, TimerName, TimerName)}
+     * ). This is because async trace entries are used when their end is performed by a different
+     * thread, and so a stack trace at that time does not point to the code which executed triggered
+     * the trace entry creation.
      */
     void endWithStackTrace(long threshold, TimeUnit unit);
 

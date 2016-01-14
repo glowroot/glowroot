@@ -86,8 +86,7 @@ public interface AdvancedService {
     /**
      * Adds a trace entry with the specified error message and total time of zero. It does not set
      * the error attribute on the transaction, which must be done with
-     * {@link TransactionService#setTransactionError} or with {@code endWithError} on the root
-     * entry.
+     * {@link AdvancedService#setTransactionError} or with {@code endWithError} on the root entry.
      * 
      * The error message text is captured from {@code Throwable#getMessage()}.
      * 
@@ -103,8 +102,7 @@ public interface AdvancedService {
     /**
      * Adds a trace entry with the specified error message and total time of zero. It does not set
      * the error attribute on the transaction, which must be done with
-     * {@link TransactionService#setTransactionError} or with {@code endWithError} on the root
-     * entry.
+     * {@link AdvancedService#setTransactionError} or with {@code endWithError} on the root entry.
      * 
      * Since there is no throwable passed to this variant, a stack trace is captured and displayed
      * in the UI as a location stack trace (as opposed to an exception stack trace), similar to
@@ -122,8 +120,7 @@ public interface AdvancedService {
     /**
      * Adds a trace entry with the specified error message and total time of zero. It does not set
      * the error attribute on the transaction, which must be done with
-     * {@link TransactionService#setTransactionError} or with {@code endWithError} on the root
-     * entry.
+     * {@link AdvancedService#setTransactionError} or with {@code endWithError} on the root entry.
      * 
      * If {@code message} is null, then the error message is captured from
      * {@code Throwable#getMessage()}.
