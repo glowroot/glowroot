@@ -78,29 +78,6 @@ public class PreInitializeWeavingClasses {
 
     private static List<String> getGuavaUsedTypes() {
         List<String> types = Lists.newArrayList();
-        types.add("com.google.common.base.CharMatcher");
-        types.add("com.google.common.base.CharMatcher$Any");
-        types.add("com.google.common.base.CharMatcher$Ascii");
-        types.add("com.google.common.base.CharMatcher$BreakingWhitespace");
-        types.add("com.google.common.base.CharMatcher$Digit");
-        types.add("com.google.common.base.CharMatcher$FastMatcher");
-        types.add("com.google.common.base.CharMatcher$Invisible");
-        types.add("com.google.common.base.CharMatcher$Is");
-        types.add("com.google.common.base.CharMatcher$IsNot");
-        types.add("com.google.common.base.CharMatcher$JavaDigit");
-        types.add("com.google.common.base.CharMatcher$JavaIsoControl");
-        types.add("com.google.common.base.CharMatcher$JavaLetter");
-        types.add("com.google.common.base.CharMatcher$JavaLetterOrDigit");
-        types.add("com.google.common.base.CharMatcher$JavaLowerCase");
-        types.add("com.google.common.base.CharMatcher$JavaUpperCase");
-        types.add("com.google.common.base.CharMatcher$NamedFastMatcher");
-        types.add("com.google.common.base.CharMatcher$Negated");
-        types.add("com.google.common.base.CharMatcher$NegatedFastMatcher");
-        types.add("com.google.common.base.CharMatcher$None");
-        types.add("com.google.common.base.CharMatcher$Or");
-        types.add("com.google.common.base.CharMatcher$RangesMatcher");
-        types.add("com.google.common.base.CharMatcher$SingleWidth");
-        types.add("com.google.common.base.CharMatcher$Whitespace");
         types.add("com.google.common.base.Charsets");
         types.add("com.google.common.base.Function");
         types.add("com.google.common.base.Joiner");

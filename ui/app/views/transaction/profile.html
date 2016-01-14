@@ -84,18 +84,18 @@
       <div ng-form
            gt-form-with-primary-button
            style="margin-bottom: 10px;">
-        <input class="form-control gt-profile-text-filter hide"
+        <input class="form-control gt-profile-text-filter"
                ng-model="filter"
                style="display: inline-block; vertical-align: middle; width: 25em;"
                placeholder="filter the profile tree">
-        <button class="btn btn-primary gt-profile-text-filter-refresh hide"
+        <button class="btn btn-primary gt-profile-text-filter-refresh"
                 ng-click="refreshButtonClick()"
                 style="vertical-align: middle; margin-left: 5px;">
           Refresh
         </button>
         <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
         <a role="button"
-           class="gt-chart-button gt-inline-block gt-profile-text-filter-help hide"
+           class="gt-chart-button gt-inline-block gt-profile-text-filter-help"
            href="#"
            uib-popover-template="'template/help/profile-filter.html'"
            popover-placement="top"
@@ -104,13 +104,6 @@
              class="fa fa-question-circle"
              style="font-size: 28px; vertical-align: middle; margin-left: 3px;"></i><!-- lack of space here is significant
      --></a>
-        <select class="form-control gt-profile-filter gt-input-xlarge hide"
-                onchange="this.blur()"
-                style="display: inline-block; vertical-align: middle;">
-        </select>
-        <button type="button" class="btn btn-default gt-profile-view-toggle hide" style="margin-left: 100px;">
-          Switch to text filter
-        </button>
         <div ng-if="parsingError" class="gt-red" style="margin-top: 10px; margin-bottom: -5px;">
           {{parsingError}}
         </div>

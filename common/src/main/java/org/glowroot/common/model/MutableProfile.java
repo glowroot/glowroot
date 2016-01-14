@@ -22,8 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -44,28 +42,21 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Traverser;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 public class MutableProfile {
 
     private static final Logger logger = LoggerFactory.getLogger(MutableProfile.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
-
-    private static final Pattern timerMarkerMethodPattern =
-            Pattern.compile("^.*\\$glowroot\\$timer\\$(.*)\\$[0-9]+$");
 
     // TODO use primitive maps, e.g. from GS collections
     private final Map<String, Integer> packageNameIndexes = Maps.newHashMap();
     private final Map<String, Integer> classNameIndexes = Maps.newHashMap();
     private final Map<String, Integer> methodNameIndexes = Maps.newHashMap();
     private final Map<String, Integer> fileNameIndexes = Maps.newHashMap();
-    private final Map<String, Integer> timerNameIndexes = Maps.newHashMap();
 
     private final List<String> packageNames = Lists.newArrayList();
     private final List<String> classNames = Lists.newArrayList();
     private final List<String> methodNames = Lists.newArrayList();
     private final List<String> fileNames = Lists.newArrayList();
-    private final List<String> timerNames = Lists.newArrayList();
 
     private final List<ProfileNode> rootNodes = Lists.newArrayList();
 
@@ -83,8 +74,7 @@ public class MutableProfile {
         merger.merge(profile.getNodeList(), rootNodes);
     }
 
-    public void merge(List<StackTraceElement> stackTraceElements, Thread.State threadState,
-            boolean mayHaveSyntheticTimerMethods) {
+    public void merge(List<StackTraceElement> stackTraceElements, Thread.State threadState) {
 
         for (StackTraceElement stackTraceElement : stackTraceElements) {
             if (stackTraceElement.getMethodName() == null) {
@@ -101,11 +91,6 @@ public class MutableProfile {
         boolean lookingForMatch = true;
         while (i.hasNext()) {
             StackTraceElement stackTraceElement = i.next();
-            List<Integer> timerNameIndexesForNode = null;
-            if (mayHaveSyntheticTimerMethods) {
-                timerNameIndexesForNode = getTimerNameIndexesForNode(i);
-            }
-
             String fullClassName = stackTraceElement.getClassName();
             int index = fullClassName.lastIndexOf('.');
             String packageName;
@@ -145,7 +130,6 @@ public class MutableProfile {
                 mergeIntoNodes.add(node);
             }
             node.sampleCount++;
-            node.maybeSetTimerNameIndexes(timerNameIndexesForNode);
             lastMatchedNode = node;
             mergeIntoNodes = lastMatchedNode.childNodes;
         }
@@ -223,7 +207,6 @@ public class MutableProfile {
                 .addAllClassName(classNames)
                 .addAllMethodName(methodNames)
                 .addAllFileName(fileNames)
-                .addAllTimerName(timerNames)
                 .addAllNode(nodes)
                 .build();
     }
@@ -302,44 +285,6 @@ public class MutableProfile {
         }
     }
 
-    private List<Integer> getTimerNameIndexesForNode(PeekingIterator<StackTraceElement> i) {
-        List<Integer> timerNameIndexesForNode = null;
-        while (i.hasNext()) {
-            StackTraceElement stackTraceElement = i.peek();
-            // methodName can be null after hotswapping under Eclipse debugger, but stack traces
-            // with null methodName are thrown out above so safe the assert methodName not null
-            String methodName = checkNotNull(stackTraceElement.getMethodName());
-            String timerName = getTimerName(methodName);
-            if (timerName == null) {
-                return timerNameIndexesForNode == null ? ImmutableList.<Integer>of()
-                        : timerNameIndexesForNode;
-            }
-            // the peek was successful
-            i.next();
-            if (timerNameIndexesForNode == null) {
-                timerNameIndexesForNode = Lists.newArrayListWithCapacity(2);
-            }
-            timerNameIndexesForNode.add(getNameIndex(timerName, timerNameIndexes, timerNames));
-        }
-        return timerNameIndexesForNode == null ? ImmutableList.<Integer>of()
-                : timerNameIndexesForNode;
-    }
-
-    private static @Nullable String getTimerName(String methodName) {
-        if (!methodName.contains("$glowroot$timer$")) {
-            // fast contains check for common case
-            return null;
-        }
-        Matcher matcher = timerMarkerMethodPattern.matcher(methodName);
-        if (matcher.matches()) {
-            String group = matcher.group(1);
-            checkNotNull(group);
-            return group.replace("$", " ");
-        } else {
-            return null;
-        }
-    }
-
     private static boolean isMatch(ProfileNode profileNode, int packageNameIndex,
             int classNameIndex, int methodNameIndex, int fileNameIndex, int lineNumber,
             Profile.LeafThreadState leafThreadState) {
@@ -381,8 +326,6 @@ public class MutableProfile {
 
         private long sampleCount;
 
-        private List<Integer> timerNameIndexes = ImmutableList.of();
-
         private List<ProfileNode> childNodes = Lists.newArrayListWithCapacity(2);
 
         // these fields are only used for filtering
@@ -399,20 +342,6 @@ public class MutableProfile {
             this.fileNameIndex = fileNameIndex;
             this.lineNumber = lineNumber;
             this.leafThreadState = leafThreadState;
-        }
-
-        public void maybeSetTimerNameIndexes(@Nullable List<Integer> timerNameIndexes) {
-            if (timerNameIndexes == null) {
-                return;
-            }
-            // the timer names for a given stack element should always match, unless
-            // the line numbers aren't available and overloaded methods are matched up, or
-            // the stack trace was captured while one of the synthetic $glowroot$timer$
-            // methods was executing in which case one of the timer names may be a
-            // subset of the other, in which case, the superset wins:
-            if (timerNameIndexes.size() > this.timerNameIndexes.size()) {
-                this.timerNameIndexes = timerNameIndexes;
-            }
         }
 
         private String getText() {
@@ -445,7 +374,6 @@ public class MutableProfile {
         private final int[] classNameIndexMapping;
         private final int[] methodNameIndexMapping;
         private final int[] fileNameIndexMapping;
-        private final int[] timerNameIndexMapping;
 
         private final Deque<List<ProfileNode>> destinationStack = Queues.newArrayDeque();
 
@@ -458,8 +386,6 @@ public class MutableProfile {
                     methodNameIndexes, methodNames);
             fileNameIndexMapping = makeIndexMapping(toBeMergedProfile.getFileNameList(),
                     fileNameIndexes, fileNames);
-            timerNameIndexMapping = makeIndexMapping(toBeMergedProfile.getTimerNameList(),
-                    timerNameIndexes, timerNames);
         }
 
         private void merge(List<Profile.ProfileNode> flatNodes,
@@ -512,16 +438,6 @@ public class MutableProfile {
 
         private void merge(Profile.ProfileNode toBeMergedNode, ProfileNode destinationNode) {
             destinationNode.sampleCount += toBeMergedNode.getSampleCount();
-            List<Integer> toBeMergedTimerNameIndexes = toBeMergedNode.getTimerNameIndexList();
-            int toBeMergedTimerNameCount = toBeMergedTimerNameIndexes.size();
-            if (toBeMergedTimerNameCount > destinationNode.timerNameIndexes.size()) {
-                destinationNode.timerNameIndexes =
-                        Lists.newArrayListWithCapacity(toBeMergedTimerNameCount);
-                for (int toBeMergedTimerNameIndex : toBeMergedTimerNameIndexes) {
-                    destinationNode.timerNameIndexes
-                            .add(timerNameIndexMapping[toBeMergedTimerNameIndex]);
-                }
-            }
         }
     }
 
@@ -546,7 +462,6 @@ public class MutableProfile {
                     .setLineNumber(node.lineNumber)
                     .setLeafThreadState(node.leafThreadState)
                     .setSampleCount(node.sampleCount)
-                    .addAllTimerNameIndex(node.timerNameIndexes)
                     .build());
             return node.childNodes;
         }
@@ -679,14 +594,6 @@ public class MutableProfile {
                 jg.writeStringField("leafThreadState", leafThreadState.name());
             }
             jg.writeNumberField("sampleCount", node.sampleCount);
-            List<Integer> timerNameIndexes = node.timerNameIndexes;
-            if (!timerNameIndexes.isEmpty()) {
-                jg.writeArrayFieldStart("timerNames");
-                for (int timerNameIndex : timerNameIndexes) {
-                    jg.writeString(timerNames.get(timerNameIndex));
-                }
-                jg.writeEndArray();
-            }
             long ellipsedSampleCount = node.ellipsedSampleCount;
             if (ellipsedSampleCount > 0) {
                 jg.writeNumberField("ellipsedSampleCount", ellipsedSampleCount);

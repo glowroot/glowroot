@@ -221,8 +221,8 @@ public class ThreadContextImpl {
         return entry;
     }
 
-    public void captureStackTrace(ThreadInfo threadInfo, int limit, boolean timerWrapperMethods) {
-        transaction.captureStackTrace(auxiliary, threadInfo, limit, timerWrapperMethods);
+    public void captureStackTrace(ThreadInfo threadInfo, int limit) {
+        transaction.captureStackTrace(auxiliary, threadInfo, limit);
     }
 
     public ThreadContext createAsyncContext(TransactionRegistry transactionRegistry,

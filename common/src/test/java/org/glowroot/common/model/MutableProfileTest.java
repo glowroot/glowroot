@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ public class MutableProfileTest {
         stackTraceElements.add(new StackTraceElement("aa.bb.cc.Def", "ghi", "Def.java", 456));
         stackTraceElements.add(new StackTraceElement("xx.yy.zz.Main", "main", "Main.java", 789));
         // when
-        profile.merge(stackTraceElements, Thread.State.RUNNABLE, false);
+        profile.merge(stackTraceElements, Thread.State.RUNNABLE);
         // then
         assertThat(profile.toJson()).isEqualTo(("{"
                 + "  \"unfilteredSampleCount\": 1,"
@@ -75,8 +75,8 @@ public class MutableProfileTest {
         stackTraceElements.add(new StackTraceElement("aa.bb.cc.Def", "ghi", "Def.java", 456));
         stackTraceElements.add(new StackTraceElement("xx.yy.zz.Main", "main", "Main.java", 789));
         // when
-        profile.merge(stackTraceElements, Thread.State.RUNNABLE, false);
-        profile.merge(stackTraceElements, Thread.State.BLOCKED, false);
+        profile.merge(stackTraceElements, Thread.State.RUNNABLE);
+        profile.merge(stackTraceElements, Thread.State.BLOCKED);
         // then
         assertThat(profile.toJson()).isEqualTo(("{"
                 + "  \"unfilteredSampleCount\": 2,"
@@ -120,8 +120,8 @@ public class MutableProfileTest {
         stackTraceElements2.add(new StackTraceElement("aa.bb.cc.Def", "ghi", "Def.java", 456));
         stackTraceElements2.add(new StackTraceElement("xx.yy.zz.Main", "main2", "Main.java", 789));
         // when
-        profile.merge(stackTraceElements1, Thread.State.RUNNABLE, false);
-        profile.merge(stackTraceElements2, Thread.State.RUNNABLE, false);
+        profile.merge(stackTraceElements1, Thread.State.RUNNABLE);
+        profile.merge(stackTraceElements2, Thread.State.RUNNABLE);
         // then
         assertThat(profile.toJson()).isEqualTo(("{"
                 + "  \"unfilteredSampleCount\": 2,"

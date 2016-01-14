@@ -67,7 +67,7 @@ HandlebarsRendering = (function () {
 
     // add the root node(s)
     if ($.isArray(rootTimer)) {
-      $.each(rootTimer, function(index, item) {
+      $.each(rootTimer, function (index, item) {
         traverse(item, 0);
       });
     } else {
@@ -107,7 +107,7 @@ HandlebarsRendering = (function () {
 
     // add the root node(s)
     if ($.isArray(rootTimer)) {
-      $.each(rootTimer, function(index, item) {
+      $.each(rootTimer, function (index, item) {
         traverse(item, []);
       });
     } else {
@@ -963,11 +963,9 @@ HandlebarsRendering = (function () {
     var html = generateHtml();
     $selector.find('.gt-profile').html(html);
 
-    var mergedCounts = calculateTimerCounts(rootNode, []);
     // set up text filter
     var $profileTextFilter = $selector.find('.gt-profile-text-filter');
     var $profileTextFilterRefresh = $selector.find('.gt-profile-text-filter-refresh');
-    var gtProfileTextFilterHelp = $selector.find('.gt-profile-text-filter-help');
     var timer;
     $profileTextFilter.off('input.gtProfileFilter');
     if (!$profileTextFilterRefresh.length) {
@@ -993,172 +991,6 @@ HandlebarsRendering = (function () {
       filter(parseResult.includes, true);
       $selector.data('gtTextFilterOverride', true);
     }
-    var $profileDropdownFilter = $selector.find('.gt-profile-filter');
-    var $switchFilterButton = $profileDropdownFilter.parent().find('.gt-profile-view-toggle');
-    if (!$.isEmptyObject(mergedCounts)) {
-      if (!$profileTextFilter.val()) {
-        // build tree
-        var tree = {name: '', childNodes: {}};
-        $.each(rootNode.timerCounts, function (timer) {
-          // only really need to look at leafs (' / other') to hit all nodes
-          if (timer.match(/ \/ other$/)) {
-            var parts = timer.split(' / ');
-            var node = tree;
-            var partialName = '';
-            $.each(parts, function (i, part) {
-              if (i > 0) {
-                partialName += ' / ';
-              }
-              partialName += part;
-              if (!node.childNodes[part]) {
-                node.childNodes[part] = {name: partialName, childNodes: {}};
-              }
-              node = node.childNodes[part];
-            });
-          }
-        });
-        var nodesDepthFirst = function (node) {
-          var all = [node];
-          // order by count desc
-          var childNodes = [];
-          $.each(node.childNodes, function (name, childNode) {
-            childNodes.push(childNode);
-          });
-          childNodes.sort(function (a, b) {
-            return rootNode.timerCounts[b.name] - rootNode.timerCounts[a.name];
-          });
-          if (childNodes.length === 1 && childNodes[0].name.match(/ \/ other$/)) {
-            // skip if single 'other' node (in which case it will be represented by current node)
-            return all;
-          }
-          $.each(childNodes, function (i, childNode) {
-            all = all.concat(nodesDepthFirst(childNode));
-          });
-          return all;
-        };
-
-        var orderedNodes = nodesDepthFirst(tree);
-        if (Object.keys(tree.childNodes).length === 1) {
-          // remove the root '' since all nodes are already under the single root timer
-          orderedNodes.splice(0, 1);
-        } else {
-          var sampleCount = 0;
-          $.each(tree.childNodes, function (name, childNode) {
-            sampleCount += rootNode.timerCounts[childNode.name];
-          });
-          rootNode.timerCounts[tree.name] = sampleCount;
-        }
-        // build filter dropdown
-        $profileDropdownFilter.html('');
-        $.each(orderedNodes, function (i, node) {
-          var name = node.name || MULTIPLE_ROOT_NODES;
-          $profileDropdownFilter.append($('<option />').val(node.name)
-              .text(name + ' (' + rootNode.timerCounts[node.name] + ')'));
-        });
-        $profileDropdownFilter.off('change').change(function () {
-          // update merged stack tree based on filter
-          var html = generateHtml($(this).val());
-          $selector.find('.gt-profile').html(html);
-        });
-      }
-      // remove previous click handler, e.g. when range filter is changed
-      $switchFilterButton.off('click').click(function () {
-        $profileTextFilter.toggleClass('hide');
-        $profileTextFilterRefresh.toggleClass('hide');
-        gtProfileTextFilterHelp.toggleClass('hide');
-        $profileDropdownFilter.toggleClass('hide');
-        if ($profileDropdownFilter.is(':visible')) {
-          $selector.data('gtTextFilterOverride', false);
-          if ($profileTextFilter.val()) {
-            $profileTextFilter.val('');
-            var response = {
-              handled: false
-            };
-            $profileTextFilter.trigger('gtClearProfileFilter', [response]);
-            if (!response.handled) {
-              filter([]);
-            }
-          }
-          $switchFilterButton.text('Switch to text filter');
-        } else {
-          $selector.data('gtTextFilterOverride', true);
-          var profileDropdownFilterVal = $profileDropdownFilter.val();
-          $profileDropdownFilter.find('option:first-child').attr('selected', 'selected');
-          if ($profileDropdownFilter.val() !== profileDropdownFilterVal) {
-            var html = generateHtml();
-            $selector.find('.gt-profile').html(html);
-          }
-          $switchFilterButton.text('Switch to dropdown filter');
-        }
-      });
-    }
-    if ($.isEmptyObject(mergedCounts) || $selector.data('gtTextFilterOverride')) {
-      $profileTextFilter.removeClass('hide');
-      $profileTextFilterRefresh.removeClass('hide');
-      gtProfileTextFilterHelp.removeClass('hide');
-      $profileDropdownFilter.addClass('hide');
-      $switchFilterButton.text('Switch to dropdown filter');
-    } else {
-      $profileDropdownFilter.removeClass('hide');
-      $switchFilterButton.text('Switch to text filter');
-    }
-    if (!$.isEmptyObject(mergedCounts)) {
-      $switchFilterButton.removeClass('hide');
-    }
-  }
-
-  function calculateTimerCounts(node, timerNameStack) {
-    var numTimerNamesAdded = 0;
-    if (node.timerNames && node.timerNames.length) {
-      $.each(node.timerNames, function (i, timerName) {
-        if (timerName !== timerNameStack[timerNameStack.length - 1]) {
-          timerNameStack.push(timerName);
-          numTimerNamesAdded++;
-        }
-      });
-    }
-    var mergedCounts = {};
-
-    function addToMergedCounts(sampleCount) {
-      var partial = '';
-      $.each(timerNameStack, function (i, timerName) {
-        if (i > 0) {
-          partial += ' / ';
-        }
-        partial += timerName;
-        mergedCounts[partial] = sampleCount;
-      });
-      if (partial) {
-        mergedCounts[partial + ' / other'] = sampleCount;
-      }
-    }
-
-    if (node.leafThreadState && timerNameStack.length) {
-      addToMergedCounts(node.sampleCount);
-    }
-    if (node.ellipsedSampleCount) {
-      addToMergedCounts(node.ellipsedSampleCount);
-    }
-    if (node.childNodes) {
-      var childNodes = node.childNodes;
-      var i;
-      var processTimer = function (timer, count) {
-        if (mergedCounts[timer]) {
-          mergedCounts[timer] += count;
-        } else {
-          mergedCounts[timer] = count;
-        }
-      };
-      for (i = 0; i < childNodes.length; i++) {
-        var timerCounts = calculateTimerCounts(childNodes[i], timerNameStack);
-        $.each(timerCounts, processTimer);
-      }
-    }
-    node.timerCounts = mergedCounts;
-    if (numTimerNamesAdded !== 0) {
-      timerNameStack.splice(-numTimerNamesAdded, numTimerNamesAdded);
-    }
-    return mergedCounts;
   }
 
   function formatBytes(bytes) {

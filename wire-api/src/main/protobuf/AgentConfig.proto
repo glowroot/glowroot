@@ -34,14 +34,13 @@ message AgentConfig {
 
   // all attributes are optional to ease config evolution
   message AdvancedConfig {
-    OptionalBool timer_wrapper_methods = 1;
-    OptionalBool weaving_timer = 2;
-    OptionalInt32 immediate_partial_store_threshold_seconds = 3;
-    OptionalInt32 max_aggregate_transactions_per_transaction_type = 4;
-    OptionalInt32 max_aggregate_queries_per_query_type = 5;
-    OptionalInt32 max_trace_entries_per_transaction = 6;
-    OptionalInt32 max_stack_trace_samples_per_transaction = 7;
-    OptionalInt32 mbean_gauge_not_found_delay_seconds = 8;
+    OptionalBool weaving_timer = 1;
+    OptionalInt32 immediate_partial_store_threshold_seconds = 2;
+    OptionalInt32 max_aggregate_transactions_per_transaction_type = 3;
+    OptionalInt32 max_aggregate_queries_per_query_type = 4;
+    OptionalInt32 max_trace_entries_per_transaction = 5;
+    OptionalInt32 max_stack_trace_samples_per_transaction = 6;
+    OptionalInt32 mbean_gauge_not_found_delay_seconds = 7;
   }
 
   // all attributes are optional to ease config evolution

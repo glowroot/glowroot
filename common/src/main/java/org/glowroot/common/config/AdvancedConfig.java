@@ -28,12 +28,6 @@ public abstract class AdvancedConfig {
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
-    public boolean timerWrapperMethods() {
-        return false;
-    }
-
-    @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
     public boolean weavingTimer() {
         return false;
     }

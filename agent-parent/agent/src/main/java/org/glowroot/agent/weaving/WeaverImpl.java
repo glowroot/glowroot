@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,37 +46,19 @@ public class WeaverImpl implements Weaver {
     private final ImmutableList<MixinType> mixinTypes;
     private final AnalyzedWorld analyzedWorld;
     private final WeavingTimerService weavingTimerService;
-    private final boolean timerWrapperMethods;
 
     public WeaverImpl(Supplier<List<Advice>> advisors, List<ShimType> shimTypes,
             List<MixinType> mixinTypes, AnalyzedWorld analyzedWorld,
-            WeavingTimerService weavingTimerService, boolean timerWrapperMethods) {
+            WeavingTimerService weavingTimerService) {
         this.advisors = advisors;
         this.shimTypes = ImmutableList.copyOf(shimTypes);
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.analyzedWorld = analyzedWorld;
         this.weavingTimerService = weavingTimerService;
-        this.timerWrapperMethods = timerWrapperMethods;
     }
 
     @Override
     public byte /*@Nullable*/[] weave(byte[] classBytes, String className,
-            @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
-        if (timerWrapperMethods) {
-            return weave$glowroot$timer$glowroot$weaving$0(classBytes, className, codeSource,
-                    loader);
-        } else {
-            return weaveInternal(classBytes, className, codeSource, loader);
-        }
-    }
-
-    // weird method name is following "timer marker" method naming
-    private byte /*@Nullable*/[] weave$glowroot$timer$glowroot$weaving$0(byte[] classBytes,
-            String className, @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
-        return weaveInternal(classBytes, className, codeSource, loader);
-    }
-
-    private byte /*@Nullable*/[] weaveInternal(byte[] classBytes, String className,
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
         WeavingTimer weavingTimer = weavingTimerService.start();
         try {
@@ -144,7 +126,7 @@ public class WeaverImpl implements Weaver {
                 new WeavingClassVisitor(cw, loader, classAnalyzer.getAnalyzedClass(),
                         classAnalyzer.getMethodsThatOnlyNowFulfillAdvice(),
                         classAnalyzer.getMatchedShimTypes(), classAnalyzer.getMatchedMixinTypes(),
-                        classAnalyzer.getMethodAdvisors(), analyzedWorld, timerWrapperMethods);
+                        classAnalyzer.getMethodAdvisors(), analyzedWorld);
         ClassReader cr = new ClassReader(maybeFelixBytes == null ? classBytes : maybeFelixBytes);
         cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
         return cw.toByteArray();

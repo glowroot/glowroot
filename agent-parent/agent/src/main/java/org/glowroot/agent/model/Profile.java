@@ -39,12 +39,8 @@ public class Profile {
     @GuardedBy("lock")
     private long sampleCount;
 
-    private final boolean mayHaveSyntheticTimerMethods;
-
     @VisibleForTesting
-    public Profile(boolean mayHaveSyntheticTimerMethods) {
-        this.mayHaveSyntheticTimerMethods = mayHaveSyntheticTimerMethods;
-    }
+    public Profile() {}
 
     public void mergeIntoProfile(MutableProfile profile) {
         synchronized (lock) {
@@ -95,7 +91,7 @@ public class Profile {
                     unmergedStackTraceThreadStates.clear();
                 }
             } else {
-                profile.merge(stackTrace, threadState, mayHaveSyntheticTimerMethods);
+                profile.merge(stackTrace, threadState);
             }
             sampleCount++;
         }
@@ -105,7 +101,7 @@ public class Profile {
         for (int i = 0; i < unmergedStackTraces.size(); i++) {
             List<StackTraceElement> stackTrace = unmergedStackTraces.get(i);
             Thread.State threadState = unmergedStackTraceThreadStates.get(i);
-            profile.merge(stackTrace, threadState, mayHaveSyntheticTimerMethods);
+            profile.merge(stackTrace, threadState);
         }
     }
 }

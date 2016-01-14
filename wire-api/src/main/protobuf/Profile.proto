@@ -10,11 +10,10 @@ message Profile {
   repeated string class_name = 2;
   repeated string method_name = 3;
   repeated string file_name = 4;
-  repeated string timer_name = 5;
 
   // node ordering is pre-order depth-first
   // IMPORTANT there can be multiple "root" nodes (with depth=0)
-  repeated ProfileNode node = 6;
+  repeated ProfileNode node = 5;
 
   message ProfileNode {
     int32 depth = 1;
@@ -25,7 +24,6 @@ message Profile {
     sint32 line_number = 6;
     LeafThreadState leaf_thread_state = 7;
     int64 sample_count = 8;
-    repeated int32 timer_name_index = 9;
   }
 
   enum LeafThreadState {

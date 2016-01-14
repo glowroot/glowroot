@@ -312,10 +312,7 @@ class ConfigJsonService {
     private String getAdvancedConfigInternal(String serverId) throws JsonProcessingException {
         checkNotNull(liveWeavingService);
         AdvancedConfig config = configRepository.getAdvancedConfig(serverId);
-        return mapper.writeValueAsString(ImmutableAdvancedConfigResponse.builder()
-                .config(AdvancedConfigDto.fromConfig(config))
-                .timerWrapperMethodsActive(liveWeavingService.isTimerWrapperMethodsActive(serverId))
-                .build());
+        return mapper.writeValueAsString(AdvancedConfigDto.fromConfig(config));
     }
 
     @RequiresNonNull("httpServer")
@@ -495,14 +492,6 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    interface AdvancedConfigResponse {
-        AdvancedConfigDto config();
-        // TODO handle case in UI where timerWrapperMethodsActive is null
-        @Nullable
-        Boolean timerWrapperMethodsActive();
-    }
-
-    @Value.Immutable
     interface PluginConfigRequest {
         String serverId();
         Optional<String> pluginId();
@@ -579,7 +568,6 @@ class ConfigJsonService {
     abstract static class AdvancedConfigDto {
 
         abstract @Nullable String serverId(); // only used in request
-        abstract boolean timerWrapperMethods();
         abstract boolean weavingTimer();
         abstract int immediatePartialStoreThresholdSeconds();
         abstract int maxAggregateTransactionsPerTransactionType();
@@ -591,7 +579,6 @@ class ConfigJsonService {
 
         private AdvancedConfig toConfig() {
             return ImmutableAdvancedConfig.builder()
-                    .timerWrapperMethods(timerWrapperMethods())
                     .weavingTimer(weavingTimer())
                     .immediatePartialStoreThresholdSeconds(immediatePartialStoreThresholdSeconds())
                     .maxAggregateTransactionsPerTransactionType(
@@ -605,7 +592,6 @@ class ConfigJsonService {
 
         private static AdvancedConfigDto fromConfig(AdvancedConfig config) {
             return ImmutableAdvancedConfigDto.builder()
-                    .timerWrapperMethods(config.timerWrapperMethods())
                     .weavingTimer(config.weavingTimer())
                     .immediatePartialStoreThresholdSeconds(
                             config.immediatePartialStoreThresholdSeconds())

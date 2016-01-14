@@ -31,14 +31,7 @@ glowroot.controller('ConfigCommonCtrl', [
 
     function onNewData(data) {
       $scope.loaded = true;
-      if (data.config) {
-        // originalData is used by advanced config for timerWrapperMethodsActive
-        $scope.originalData = angular.copy(data);
-        delete $scope.originalData.config;
-        $scope.config = data.config;
-      } else {
-        $scope.config = data;
-      }
+      $scope.config = data;
       $scope.originalConfig = angular.copy($scope.config);
     }
 

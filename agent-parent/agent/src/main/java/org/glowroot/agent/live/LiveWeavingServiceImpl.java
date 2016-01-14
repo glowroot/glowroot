@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,6 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
     private final ConfigService configService;
     private final AdviceCache adviceCache;
     private final boolean jvmRetransformClassesSupported;
-    private final boolean timerWrapperMethods;
 
     // hopefully can simplify someday https://github.com/google/guava/issues/872
     private final LoadingCache<String, ClasspathCache> classpathCache = CacheBuilder.newBuilder()
@@ -81,7 +80,6 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
         this.configService = configService;
         this.adviceCache = adviceCache;
         this.jvmRetransformClassesSupported = jvmRetransformClassesSupported;
-        timerWrapperMethods = configService.getAdvancedConfig().timerWrapperMethods();
     }
 
     @Override
@@ -163,11 +161,6 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
         checkState(instrumentation.isRetransformClassesSupported(),
                 "Retransform classes is not supported");
         return reweaveInternal();
-    }
-
-    @Override
-    public Boolean isTimerWrapperMethodsActive(String serverId) {
-        return timerWrapperMethods;
     }
 
     private List<UiAnalyzedMethod> getAnalyzedMethods(String className, String methodName) {

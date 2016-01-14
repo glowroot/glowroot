@@ -102,7 +102,6 @@ public class AgentModule {
     private final GaugeCollector gaugeCollector;
     private final StackTraceCollector stackTraceCollector;
 
-    private final boolean timerWrapperMethods;
     private final boolean jvmRetransformClassesSupported;
 
     private final LiveTraceRepository liveTraceRepository;
@@ -131,11 +130,10 @@ public class AgentModule {
         final TimerNameCache timerNameCache = new TimerNameCache();
         weavingTimerService =
                 new WeavingTimerServiceImpl(transactionRegistry, configService, timerNameCache);
-        timerWrapperMethods = configService.getAdvancedConfig().timerWrapperMethods();
 
         WeaverImpl weaver = new WeaverImpl(adviceCache.getAdvisorsSupplier(),
                 adviceCache.getShimTypes(), adviceCache.getMixinTypes(), analyzedWorld,
-                weavingTimerService, timerWrapperMethods);
+                weavingTimerService);
 
         if (instrumentation == null) {
             // instrumentation is null when debugging with LocalContainer

@@ -509,8 +509,7 @@ public class Transaction {
         return entryLimitCounter.get() > maxTraceEntriesPerTransaction;
     }
 
-    public void captureStackTrace(boolean auxiliary, ThreadInfo threadInfo, int limit,
-            boolean mayHaveSyntheticTimerMethods) {
+    public void captureStackTrace(boolean auxiliary, ThreadInfo threadInfo, int limit) {
         if (completed) {
             return;
         }
@@ -528,7 +527,7 @@ public class Transaction {
             // profile is constructed and first stack trace is added prior to setting the
             // transaction profile field, so that it is not possible to read a profile that doesn't
             // have at least one stack trace
-            profile = new Profile(mayHaveSyntheticTimerMethods);
+            profile = new Profile();
             profile.addStackTrace(threadInfo, limit);
             if (auxiliary) {
                 auxThreadProfile = profile;

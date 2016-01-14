@@ -187,12 +187,11 @@ class StackTraceCollector {
             ThreadInfo[] threadInfos =
                     ManagementFactory.getThreadMXBean().getThreadInfo(threadIds, Integer.MAX_VALUE);
             int limit = configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction();
-            boolean timerWrapperMethods = configService.getAdvancedConfig().timerWrapperMethods();
             for (int i = 0; i < threadContexts.size(); i++) {
                 ThreadContextImpl threadContext = threadContexts.get(i);
                 ThreadInfo threadInfo = threadInfos[i];
                 if (threadInfo != null) {
-                    threadContext.captureStackTrace(threadInfo, limit, timerWrapperMethods);
+                    threadContext.captureStackTrace(threadInfo, limit);
                 }
             }
         }

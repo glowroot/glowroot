@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -286,14 +286,6 @@ public class ConfigService {
         for (ConfigListener listener : pluginConfigListeners) {
             listener.onChange();
         }
-    }
-
-    // this is used to by-pass possibly shaded AdvancedConfig when called from
-    // LocalContainer.<init>(), e.g. sometimes this causes issue after build from command-line and
-    // then run a test from IDE without cleaning in IDE first
-    @OnlyUsedByTests
-    public boolean getAdvancedConfigTimerWrapperMethods() {
-        return getAdvancedConfig().timerWrapperMethods();
     }
 
     @OnlyUsedByTests

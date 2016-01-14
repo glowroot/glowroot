@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,6 @@ import org.glowroot.agent.weaving.SomeAspect.HasString;
 import org.glowroot.agent.weaving.SomeAspect.HasStringClassMixin;
 import org.glowroot.agent.weaving.SomeAspect.HasStringInterfaceMixin;
 import org.glowroot.agent.weaving.SomeAspect.HasStringMultipleMixin;
-import org.glowroot.agent.weaving.SomeAspect.InnerMethodAdvice;
 import org.glowroot.agent.weaving.SomeAspect.InterfaceAppearsTwiceInHierarchyAdvice;
 import org.glowroot.agent.weaving.SomeAspect.MatchingPublicNonStaticAdvice;
 import org.glowroot.agent.weaving.SomeAspect.MethodParametersBadDotDotAdvice1;
@@ -844,8 +843,7 @@ public class WeaverTest {
         AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisorsSupplier,
                 ImmutableList.<ShimType>of(), ImmutableList.<MixinType>of(), null);
         WeaverImpl weaver = new WeaverImpl(advisorsSupplier, ImmutableList.<ShimType>of(),
-                ImmutableList.<MixinType>of(), analyzedWorld, NopWeavingTimerService.INSTANCE,
-                true);
+                ImmutableList.<MixinType>of(), analyzedWorld, NopWeavingTimerService.INSTANCE);
         isolatedWeavingClassLoader.setWeaver(weaver);
         Misc test = isolatedWeavingClassLoader.newInstance(BasicMisc.class, Misc.class);
         // when
@@ -992,20 +990,6 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
         assertThat(test.executeWithReturn()).isEqualTo("yes");
-    }
-
-    // ===================== @Pointcut.innerMethod =====================
-
-    @Test
-    public void shouldWrapInMarkerMethod() throws Exception {
-        // given
-        Misc test = newWovenObject(InnerMethodMisc.class, Misc.class, InnerMethodAdvice.class);
-        // when
-        CharSequence methodName = test.executeWithReturn();
-        // then
-        assertThat(methodName).isNotNull();
-        assertThat(methodName.toString())
-                .matches("executeWithReturn\\$glowroot\\$timer\\$abc\\$xyz\\$\\d+");
     }
 
     // ===================== static pointcuts =====================
@@ -1507,7 +1491,7 @@ public class WeaverTest {
         AnalyzedWorld analyzedWorld =
                 new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes, null);
         WeaverImpl weaver = new WeaverImpl(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
-                NopWeavingTimerService.INSTANCE, true);
+                NopWeavingTimerService.INSTANCE);
         isolatedWeavingClassLoader.setWeaver(weaver);
         return isolatedWeavingClassLoader.newInstance(implClass, bridgeClass);
     }

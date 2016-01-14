@@ -119,9 +119,6 @@ class ConfigUpdateService {
     private void updateAdvancedConfig(AdvancedConfig config) throws IOException {
         ImmutableAdvancedConfig.Builder builder = ImmutableAdvancedConfig.builder()
                 .copyFrom(configService.getAdvancedConfig());
-        if (config.hasTimerWrapperMethods()) {
-            builder.timerWrapperMethods(config.getTimerWrapperMethods().getValue());
-        }
         if (config.hasWeavingTimer()) {
             builder.weavingTimer(config.getWeavingTimer().getValue());
         }

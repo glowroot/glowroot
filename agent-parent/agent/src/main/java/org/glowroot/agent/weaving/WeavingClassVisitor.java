@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -55,7 +54,6 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.AASTORE;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
-import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
@@ -86,11 +84,6 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassVisitor.class);
 
-    private static final CharMatcher timerNameCharMatcher =
-            CharMatcher.JAVA_LETTER_OR_DIGIT.or(CharMatcher.is(' '));
-
-    private static final Set<String> invalidTimerNameSet = Sets.newConcurrentHashSet();
-
     private static final AtomicLong metaHolderCounter = new AtomicLong();
 
     private final ClassWriter cw;
@@ -105,11 +98,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private final AnalyzedWorld analyzedWorld;
 
-    private final boolean timerWrapperMethods;
-
     private @MonotonicNonNull Type type;
-
-    private int innerMethodCounter;
 
     // these are for handling class and method metas
     private final Set<Type> classMetaTypes = Sets.newHashSet();
@@ -120,8 +109,7 @@ class WeavingClassVisitor extends ClassVisitor {
     public WeavingClassVisitor(ClassWriter cw, @Nullable ClassLoader loader,
             AnalyzedClass analyzedClass, List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice,
             List<ShimType> shimTypes, List<MixinType> mixinTypes,
-            Map<String, List<Advice>> methodAdvisors, AnalyzedWorld analyzedWorld,
-            boolean timerWrapperMethods) {
+            Map<String, List<Advice>> methodAdvisors, AnalyzedWorld analyzedWorld) {
         super(ASM5, cw);
         this.cw = cw;
         this.loader = loader;
@@ -131,7 +119,6 @@ class WeavingClassVisitor extends ClassVisitor {
         this.mixinTypes = mixinTypes;
         this.methodAdvisors = methodAdvisors;
         this.analyzedWorld = analyzedWorld;
-        this.timerWrapperMethods = timerWrapperMethods;
     }
 
     @Override
@@ -409,14 +396,9 @@ class WeavingClassVisitor extends ClassVisitor {
             @Nullable String signature, String /*@Nullable*/[] exceptions,
             Iterable<Advice> matchingAdvisors) {
         Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, name, desc);
-        if (timerWrapperMethods && !name.equals("<init>")) {
-            return wrapWithSyntheticTimerMarkerMethods(access, name, desc, signature, exceptions,
-                    matchingAdvisors, methodMetaUniqueNum);
-        } else {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-            return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
-                    metaHolderInternalName, methodMetaUniqueNum, loader == null, null);
-        }
+        MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+        return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
+                metaHolderInternalName, methodMetaUniqueNum, loader == null, null);
     }
 
     private @Nullable Integer collectMetasAtMethod(Iterable<Advice> matchingAdvisors,
@@ -443,53 +425,6 @@ class WeavingClassVisitor extends ClassVisitor {
                     "org/glowroot/agent/weaving/MetaHolder" + metaHolderCounter.incrementAndGet();
         }
         return methodMetaUniqueNum;
-    }
-
-    // returns null if no synthetic timer marker methods were needed
-    @RequiresNonNull("type")
-    private WeavingMethodVisitor wrapWithSyntheticTimerMarkerMethods(int outerAccess,
-            String outerName, String desc, @Nullable String signature,
-            String /*@Nullable*/[] exceptions, Iterable<Advice> matchingAdvisors,
-            @Nullable Integer methodMetaUniqueNum) {
-        int innerAccess = ACC_PRIVATE + ACC_FINAL + (outerAccess & ACC_STATIC);
-        MethodVisitor outerMethodVisitor = null;
-        String currMethodName = outerName;
-        int currMethodAccess = outerAccess;
-        for (Advice advice : matchingAdvisors) {
-            String timerName = advice.pointcut().timerName();
-            if (timerName.isEmpty()) {
-                continue;
-            }
-            if (!timerNameCharMatcher.matchesAllOf(timerName)) {
-                logInvalidTimerNameWarningOnce(timerName);
-                timerName = timerNameCharMatcher.negate().replaceFrom(timerName, '_');
-            }
-            String nextMethodName = outerName + "$glowroot$timer$" + timerName.replace(' ', '$')
-                    + '$' + innerMethodCounter++;
-            int access = outerMethodVisitor == null ? outerAccess : innerAccess;
-            MethodVisitor mv = cw.visitMethod(access, currMethodName, desc, signature, exceptions);
-            GeneratorAdapter mg = new GeneratorAdapter(mv, access, nextMethodName, desc);
-            if (!Modifier.isStatic(outerAccess)) {
-                mg.loadThis();
-                mg.loadArgs();
-                mg.invokeVirtual(type, new Method(nextMethodName, desc));
-            } else {
-                mg.loadArgs();
-                mg.invokeStatic(type, new Method(nextMethodName, desc));
-            }
-            mg.returnValue();
-            mg.endMethod();
-            currMethodName = nextMethodName;
-            currMethodAccess = innerAccess;
-            if (outerMethodVisitor == null) {
-                outerMethodVisitor = mg;
-            }
-        }
-        MethodVisitor mv =
-                cw.visitMethod(currMethodAccess, currMethodName, desc, signature, exceptions);
-        return new WeavingMethodVisitor(mv, currMethodAccess, currMethodName, desc, type,
-                matchingAdvisors, metaHolderInternalName, methodMetaUniqueNum, loader == null,
-                outerMethodVisitor);
     }
 
     @RequiresNonNull("type")
@@ -574,12 +509,6 @@ class WeavingClassVisitor extends ClassVisitor {
     private static boolean isAbstractOrNativeOrSynthetic(int access) {
         return Modifier.isAbstract(access) || Modifier.isNative(access)
                 || (access & ACC_SYNTHETIC) != 0;
-    }
-
-    private static void logInvalidTimerNameWarningOnce(String timerName) {
-        if (invalidTimerNameSet.add(timerName)) {
-            logger.warn("timer name must contain only letters, digits and spaces: {}", timerName);
-        }
     }
 
     private static class InitMixins extends AdviceAdapter {
