@@ -84,7 +84,7 @@ public class JavaagentContainer implements Container {
     private final ExecutorService consolePipeExecutor;
     private final Process process;
     private final ConsoleOutputPipe consoleOutputPipe;
-    private final @Nullable ConfigService configService;
+    private final @Nullable ConfigServiceImpl configService;
     private final Thread shutdownHook;
 
     public static JavaagentContainer create() throws Exception {
@@ -182,9 +182,9 @@ public class JavaagentContainer implements Container {
             configService = null;
         } else {
             configService = new ConfigServiceImpl(server, true);
+            // this is used to set slowThresholdMillis=0
+            configService.resetConfig();
         }
-        // this is used to set slowThresholdMillis=0
-        javaagentService.resetAllConfig(Void.getDefaultInstance());
         shutdownHook = new ShutdownHookThread(javaagentService);
         // unfortunately, ctrl-c during maven test will kill the maven process, but won't kill the
         // forked surefire jvm where the tests are being run
@@ -237,7 +237,11 @@ public class JavaagentContainer implements Container {
 
     @Override
     public void checkAndReset() throws Exception {
-        javaagentService.resetAllConfig(Void.getDefaultInstance());
+        if (configService == null) {
+            javaagentService.resetConfig(Void.getDefaultInstance());
+        } else {
+            configService.resetConfig();
+        }
         if (traceCollector != null) {
             traceCollector.checkAndResetLogMessages();
         }

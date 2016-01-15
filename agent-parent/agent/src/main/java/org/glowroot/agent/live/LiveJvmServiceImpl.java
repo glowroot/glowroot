@@ -50,13 +50,13 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
-import org.glowroot.common.live.ImmutableAvailability;
-import org.glowroot.common.live.ImmutableCapabilities;
-import org.glowroot.common.live.ImmutableMBeanMeta;
 import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Availability;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpKind;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 
 public class LiveJvmServiceImpl implements LiveJvmService {
@@ -135,20 +135,21 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public MBeanDump getMBeanDump(String serverId, MBeanDumpRequest request) throws Exception {
-        switch (request.getKind()) {
+    public MBeanDump getMBeanDump(String serverId, MBeanDumpKind mbeanDumpKind,
+            List<String> objectNames) throws Exception {
+        switch (mbeanDumpKind) {
             case ALL_MBEANS_INCLUDE_ATTRIBUTES:
                 throw new UnsupportedOperationException("Not implemented yet");
             case ALL_MBEANS_INCLUDE_ATTRIBUTES_FOR_SOME:
                 return MBeanDump.newBuilder()
-                        .addAllMbeanInfo(getAllMBeanInfos(request.getObjectNameList()))
+                        .addAllMbeanInfo(getAllMBeanInfos(objectNames))
                         .build();
             case SOME_MBEANS_INCLUDE_ATTRIBUTES:
                 return MBeanDump.newBuilder()
-                        .addAllMbeanInfo(getSomeMBeanInfos(request.getObjectNameList()))
+                        .addAllMbeanInfo(getSomeMBeanInfos(objectNames))
                         .build();
             default:
-                throw new IllegalStateException("Unexpected mbean dump kind: " + request.getKind());
+                throw new IllegalStateException("Unexpected mbean dump kind: " + mbeanDumpKind);
         }
     }
 
@@ -185,9 +186,9 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public List<String> getMatchingMBeanObjectNames(String serverId, String partialMBeanObjectName,
+    public List<String> getMatchingMBeanObjectNames(String serverId, String partialObjectName,
             int limit) throws InterruptedException {
-        ObjectNameQueryExp queryExp = new ObjectNameQueryExp(partialMBeanObjectName);
+        ObjectNameQueryExp queryExp = new ObjectNameQueryExp(partialObjectName);
         Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null, queryExp);
         // unfortunately Wildfly returns lots of mbean object names without checking them against
         // the query (see TODO comment in org.jboss.as.jmx.model.ModelControllerMBeanHelper)
@@ -213,19 +214,19 @@ public class LiveJvmServiceImpl implements LiveJvmService {
         ImmutableList<String> attributeNames = Ordering.from(String.CASE_INSENSITIVE_ORDER)
                 .immutableSortedCopy(getAttributeNames(objectNames));
         boolean pattern = mbeanObjectName.contains("*");
-        return ImmutableMBeanMeta.builder()
-                .unmatched(objectNames.isEmpty() && pattern)
-                .unavailable(objectNames.isEmpty() && !pattern)
-                .addAllAttributeNames(attributeNames)
+        return MBeanMeta.newBuilder()
+                .setUnmatched(objectNames.isEmpty() && pattern)
+                .setUnavailable(objectNames.isEmpty() && !pattern)
+                .addAllAttributeName(attributeNames)
                 .build();
     }
 
     @Override
     public Capabilities getCapabilities(String serverId) {
-        return ImmutableCapabilities.builder()
-                .threadCpuTime(getThreadCpuTimeAvailability())
-                .threadContentionTime(getThreadContentionAvailability())
-                .threadAllocatedBytes(threadAllocatedBytesAvailability)
+        return Capabilities.newBuilder()
+                .setThreadCpuTime(getThreadCpuTimeAvailability())
+                .setThreadContentionTime(getThreadContentionAvailability())
+                .setThreadAllocatedBytes(threadAllocatedBytesAvailability)
                 .build();
     }
 
@@ -460,27 +461,39 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     private static Availability getThreadCpuTimeAvailability() {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         if (!threadMXBean.isThreadCpuTimeSupported()) {
-            return ImmutableAvailability.of(false, "java.lang.management.ThreadMXBean"
-                    + ".isThreadCpuTimeSupported() returned false");
+            return Availability.newBuilder()
+                    .setAvailable(false)
+                    .setReason("java.lang.management.ThreadMXBean"
+                            + ".isThreadCpuTimeSupported() returned false")
+                    .build();
         }
         if (!threadMXBean.isThreadCpuTimeEnabled()) {
-            return ImmutableAvailability.of(false, "java.lang.management.ThreadMXBean"
-                    + ".isThreadCpuTimeEnabled() returned false");
+            return Availability.newBuilder()
+                    .setAvailable(false)
+                    .setReason("java.lang.management.ThreadMXBean"
+                            + ".isThreadCpuTimeEnabled() returned false")
+                    .build();
         }
-        return ImmutableAvailability.of(true, "");
+        return Availability.newBuilder().setAvailable(true).build();
     }
 
     private static Availability getThreadContentionAvailability() {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         if (!threadMXBean.isThreadContentionMonitoringSupported()) {
-            return ImmutableAvailability.of(false, "java.lang.management.ThreadMXBean"
-                    + ".isThreadContentionMonitoringSupported() returned false");
+            return Availability.newBuilder()
+                    .setAvailable(false)
+                    .setReason("java.lang.management.ThreadMXBean"
+                            + ".isThreadContentionMonitoringSupported() returned false")
+                    .build();
         }
         if (!threadMXBean.isThreadContentionMonitoringEnabled()) {
-            return ImmutableAvailability.of(false, "java.lang.management.ThreadMXBean"
-                    + ".isThreadContentionMonitoringEnabled() returned false");
+            return Availability.newBuilder()
+                    .setAvailable(false)
+                    .setReason("java.lang.management.ThreadMXBean"
+                            + ".isThreadContentionMonitoringEnabled() returned false")
+                    .build();
         }
-        return ImmutableAvailability.of(true, "");
+        return Availability.newBuilder().setAvailable(true).build();
     }
 
     @SuppressWarnings("serial")

@@ -22,9 +22,9 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.central.storage.ServerDao;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
-import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorService;
@@ -32,6 +32,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
@@ -42,18 +43,17 @@ public class GrpcServer {
 
     private static final Logger logger = LoggerFactory.getLogger(GrpcServer.class);
 
-    private final ServerRepository serverRepository;
+    private final ServerDao serverDao;
     private final AggregateRepository aggregateRepository;
     private final GaugeValueRepository gaugeValueRepository;
     private final TraceRepository traceRepository;
 
     private final DownstreamServiceImpl downstreamService;
 
-    public GrpcServer(int port, ServerRepository serverRepository,
-            AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
-            TraceRepository traceRepository) throws IOException {
-
-        this.serverRepository = serverRepository;
+    public GrpcServer(int port, ServerDao serverDao, AggregateRepository aggregateRepository,
+            GaugeValueRepository gaugeValueRepository, TraceRepository traceRepository)
+                    throws IOException {
+        this.serverDao = serverDao;
         this.aggregateRepository = aggregateRepository;
         this.gaugeValueRepository = gaugeValueRepository;
         this.traceRepository = traceRepository;
@@ -75,16 +75,17 @@ public class GrpcServer {
 
         @Override
         public void collectInit(InitMessage request,
-                StreamObserver<EmptyMessage> responseObserver) {
-            // FIXME store request.getConfig()
+                StreamObserver<InitResponse> responseObserver) {
             try {
-                serverRepository.storeProcessInfo(request.getServerId(), request.getProcessInfo());
+                serverDao.store(request.getServerId(), request.getProcessInfo(),
+                        request.getAgentConfig());
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
-            responseObserver.onNext(EmptyMessage.getDefaultInstance());
+            // FIXME return agent config
+            responseObserver.onNext(InitResponse.getDefaultInstance());
             responseObserver.onCompleted();
         }
 

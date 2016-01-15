@@ -26,9 +26,9 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.Threads;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.OptionalStringList;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,7 +80,7 @@ public class ProfilingIT {
     public void shouldReadUserRecordingProfile() throws Exception {
         // given
         UserRecordingConfig userRecordingConfig = UserRecordingConfig.newBuilder()
-                .setUsers(OptionalStringList.newBuilder().addValue("able").build())
+                .addUser("able")
                 .setProfilingIntervalMillis(ProtoOptional.of(20))
                 .build();
         container.getConfigService().updateUserRecordingConfig(userRecordingConfig);
@@ -96,7 +96,7 @@ public class ProfilingIT {
     public void shouldNotReadUserRecordingProfile() throws Exception {
         // given
         UserRecordingConfig userRecordingConfig = UserRecordingConfig.newBuilder()
-                .setUsers(OptionalStringList.newBuilder().addValue("baker").build())
+                .addUser("baker")
                 .setProfilingIntervalMillis(ProtoOptional.of(20))
                 .build();
         container.getConfigService().updateUserRecordingConfig(userRecordingConfig);
@@ -110,6 +110,7 @@ public class ProfilingIT {
     private static void setProfilingIntervalMillis(int millis) throws Exception {
         container.getConfigService().updateTransactionConfig(
                 TransactionConfig.newBuilder()
+                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
                         .setProfilingIntervalMillis(ProtoOptional.of(millis))
                         .build());
     }

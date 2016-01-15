@@ -33,30 +33,17 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.config.GaugeConfig.MBeanAttribute;
+import org.glowroot.agent.config.PropertyValue.PropertyType;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.util.JavaVersion;
-import org.glowroot.common.config.AdvancedConfig;
-import org.glowroot.common.config.GaugeConfig;
-import org.glowroot.common.config.GaugeConfig.MBeanAttribute;
-import org.glowroot.common.config.ImmutableAdvancedConfig;
-import org.glowroot.common.config.ImmutableGaugeConfig;
-import org.glowroot.common.config.ImmutableInstrumentationConfig;
-import org.glowroot.common.config.ImmutableMBeanAttribute;
-import org.glowroot.common.config.ImmutablePluginConfig;
-import org.glowroot.common.config.ImmutableTransactionConfig;
-import org.glowroot.common.config.ImmutableUserRecordingConfig;
-import org.glowroot.common.config.InstrumentationConfig;
-import org.glowroot.common.config.PluginConfig;
-import org.glowroot.common.config.PluginDescriptor;
-import org.glowroot.common.config.PropertyDescriptor;
-import org.glowroot.common.config.PropertyValue;
-import org.glowroot.common.config.TransactionConfig;
-import org.glowroot.common.config.UserRecordingConfig;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 public class ConfigService {
 
@@ -125,8 +112,8 @@ public class ConfigService {
         } else {
             this.advancedConfig = advancedConfig;
         }
-        List<ImmutablePluginConfig> pluginConfigs = configFile.getNode("plugins",
-                new TypeReference<List<ImmutablePluginConfig>>() {}, mapper);
+        List<ImmutablePluginConfigTemp> pluginConfigs = configFile.getNode("plugins",
+                new TypeReference<List<ImmutablePluginConfigTemp>>() {}, mapper);
         this.pluginConfigs = fixPluginConfigs(pluginConfigs, pluginDescriptors);
 
         List<ImmutableGaugeConfig> gaugeConfigs = configFile.getNode("gauges",
@@ -198,6 +185,23 @@ public class ConfigService {
 
     public long getGaugeCollectionIntervalMillis() {
         return GAUGE_COLLECTION_INTERVAL_MILLIS;
+    }
+
+    public AgentConfig getAgentConfig() {
+        AgentConfig.Builder builder = AgentConfig.newBuilder()
+                .setTransactionConfig(transactionConfig.toProto())
+                .setUserRecordingConfig(userRecordingConfig.toProto())
+                .setAdvancedConfig(advancedConfig.toProto());
+        for (PluginConfig pluginConfig : pluginConfigs) {
+            builder.addPluginConfig(pluginConfig.toProto());
+        }
+        for (InstrumentationConfig instrumentationConfig : instrumentationConfigs) {
+            builder.addInstrumentationConfig(instrumentationConfig.toProto());
+        }
+        for (GaugeConfig gaugeConfig : gaugeConfigs) {
+            builder.addGaugeConfig(gaugeConfig.toProto());
+        }
+        return builder.build();
     }
 
     public void addConfigListener(ConfigListener listener) {
@@ -295,7 +299,8 @@ public class ConfigService {
                 .build();
         userRecordingConfig = ImmutableUserRecordingConfig.builder().build();
         advancedConfig = ImmutableAdvancedConfig.builder().build();
-        pluginConfigs = fixPluginConfigs(ImmutableList.<PluginConfig>of(), pluginDescriptors);
+        pluginConfigs =
+                fixPluginConfigs(ImmutableList.<ImmutablePluginConfigTemp>of(), pluginDescriptors);
         gaugeConfigs = getDefaultGaugeConfigs();
         instrumentationConfigs = ImmutableList.of();
         writeAll();
@@ -345,45 +350,63 @@ public class ConfigService {
     }
 
     private static ImmutableList<PluginConfig> fixPluginConfigs(
-            @Nullable List<? extends PluginConfig> filePluginConfigs,
+            @Nullable List<ImmutablePluginConfigTemp> filePluginConfigs,
             List<PluginDescriptor> pluginDescriptors) {
 
         // sorted by id for writing to config file
         List<PluginDescriptor> sortedPluginDescriptors =
                 new PluginDescriptorOrdering().immutableSortedCopy(pluginDescriptors);
 
-        Map<String, PluginConfig> filePluginConfigMap = Maps.newHashMap();
+        Map<String, PluginConfigTemp> filePluginConfigMap = Maps.newHashMap();
         if (filePluginConfigs != null) {
-            for (PluginConfig pluginConfig : filePluginConfigs) {
+            for (ImmutablePluginConfigTemp pluginConfig : filePluginConfigs) {
                 filePluginConfigMap.put(pluginConfig.id(), pluginConfig);
             }
         }
 
-        List<PluginConfig> accruatePluginConfigs = Lists.newArrayList();
+        List<PluginConfig> accuratePluginConfigs = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : sortedPluginDescriptors) {
-            PluginConfig filePluginConfig = filePluginConfigMap.get(pluginDescriptor.id());
+            PluginConfigTemp filePluginConfig = filePluginConfigMap.get(pluginDescriptor.id());
             ImmutablePluginConfig.Builder builder = ImmutablePluginConfig.builder()
-                    .id(pluginDescriptor.id());
+                    .pluginDescriptor(pluginDescriptor);
             for (PropertyDescriptor propertyDescriptor : pluginDescriptor.properties()) {
                 builder.putProperties(propertyDescriptor.name(),
                         getPropertyValue(filePluginConfig, propertyDescriptor));
             }
-            accruatePluginConfigs.add(builder.build());
+            accuratePluginConfigs.add(builder.build());
         }
-        return ImmutableList.copyOf(accruatePluginConfigs);
+        return ImmutableList.copyOf(accuratePluginConfigs);
     }
 
-    private static PropertyValue getPropertyValue(@Nullable PluginConfig pluginConfig,
+    private static PropertyValue getPropertyValue(@Nullable PluginConfigTemp pluginConfig,
             PropertyDescriptor propertyDescriptor) {
         if (pluginConfig == null) {
             return propertyDescriptor.getValidatedNonNullDefaultValue();
         }
-        PropertyValue propertyValue = pluginConfig
-                .getValidatedPropertyValue(propertyDescriptor.name(), propertyDescriptor.type());
+        PropertyValue propertyValue = getValidatedPropertyValue(pluginConfig.properties(),
+                propertyDescriptor.name(), propertyDescriptor.type());
         if (propertyValue == null) {
             return propertyDescriptor.getValidatedNonNullDefaultValue();
         }
         return propertyValue;
+    }
+
+    private static @Nullable PropertyValue getValidatedPropertyValue(
+            Map<String, PropertyValue> properties, String propertyName, PropertyType propertyType) {
+        PropertyValue propertyValue = properties.get(propertyName);
+        if (propertyValue == null) {
+            return null;
+        }
+        Object value = propertyValue.value();
+        if (value == null) {
+            return PropertyValue.getDefaultValue(propertyType);
+        }
+        if (PropertyDescriptor.isValidType(value, propertyType)) {
+            return propertyValue;
+        } else {
+            logger.warn("invalid value for plugin property: {}", propertyName);
+            return PropertyValue.getDefaultValue(propertyType);
+        }
     }
 
     public static class ShadeProtectedTypeReference<T extends /*@NonNull*/ Object>
@@ -394,5 +417,11 @@ public class ConfigService {
         public int compare(PluginDescriptor left, PluginDescriptor right) {
             return left.id().compareToIgnoreCase(right.id());
         }
+    }
+
+    @Value.Immutable
+    interface PluginConfigTemp {
+        String id();
+        Map<String, PropertyValue> properties();
     }
 }

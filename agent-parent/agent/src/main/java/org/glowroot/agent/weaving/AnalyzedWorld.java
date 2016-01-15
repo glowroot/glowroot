@@ -44,9 +44,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.advicegen.AdviceGenerator;
+import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.util.Reflections;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
-import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.util.Styles;
 
 public class AnalyzedWorld {

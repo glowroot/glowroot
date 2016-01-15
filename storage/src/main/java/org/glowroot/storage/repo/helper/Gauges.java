@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,11 @@
  */
 package org.glowroot.storage.repo.helper;
 
-import org.glowroot.common.config.GaugeConfig;
+import java.util.List;
+
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Splitter;
+
 import org.glowroot.storage.repo.GaugeValueRepository.Gauge;
 import org.glowroot.storage.repo.ImmutableGauge;
 
@@ -32,7 +36,19 @@ public class Gauges {
             mbeanAttributeName = mbeanAttributeName.substring(0,
                     mbeanAttributeName.length() - "[counter]".length());
         }
-        String display = GaugeConfig.display(mbeanObjectName) + '/' + mbeanAttributeName;
+        String display = display(mbeanObjectName) + '/' + mbeanAttributeName;
         return ImmutableGauge.of(gaugeName, display, counter);
+    }
+
+    public static String display(String mbeanObjectName) {
+        // e.g. java.lang:name=PS Eden Space,type=MemoryPool
+        List<String> parts = Splitter.on(CharMatcher.anyOf(":,")).splitToList(mbeanObjectName);
+        StringBuilder name = new StringBuilder();
+        name.append(parts.get(0));
+        for (int i = 1; i < parts.size(); i++) {
+            name.append('/');
+            name.append(parts.get(i).split("=")[1]);
+        }
+        return name.toString();
     }
 }

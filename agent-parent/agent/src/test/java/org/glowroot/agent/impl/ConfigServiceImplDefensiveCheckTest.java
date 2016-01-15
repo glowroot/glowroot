@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@ import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.common.config.AdvancedConfig;
-import org.glowroot.common.config.ImmutableAdvancedConfig;
-import org.glowroot.common.config.ImmutableTransactionConfig;
-import org.glowroot.common.config.PluginDescriptor;
-import org.glowroot.common.config.TransactionConfig;
+import org.glowroot.agent.config.ImmutableAdvancedConfig;
+import org.glowroot.agent.config.ImmutableTransactionConfig;
+import org.glowroot.agent.config.PluginDescriptor;
+import org.glowroot.agent.config.TransactionConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

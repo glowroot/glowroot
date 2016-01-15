@@ -33,7 +33,7 @@ import org.glowroot.storage.repo.helper.Gauges;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.glowroot.storage.simplerepo.util.Checkers.castUntainted;
+import static org.glowroot.central.util.Checkers.castUntainted;
 
 public class GaugeValueDao implements GaugeValueRepository {
 

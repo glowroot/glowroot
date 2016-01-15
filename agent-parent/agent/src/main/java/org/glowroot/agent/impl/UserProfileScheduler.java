@@ -32,10 +32,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.config.UserRecordingConfig;
 import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.model.Transaction.OverrideSource;
-import org.glowroot.common.config.UserRecordingConfig;
 import org.glowroot.common.util.Cancellable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.model.LazyHistogram;
+import org.glowroot.storage.config.AlertConfig;
+import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.PercentileAggregate;
 import org.glowroot.storage.repo.ConfigRepository;
@@ -41,8 +43,6 @@ import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.storage.repo.ServerRepository.ServerRollup;
 import org.glowroot.storage.repo.TriggeredAlertRepository;
 import org.glowroot.storage.repo.Utils;
-import org.glowroot.storage.repo.config.AlertConfig;
-import org.glowroot.storage.repo.config.SmtpConfig;
 import org.glowroot.storage.util.Encryption;
 import org.glowroot.storage.util.MailService;
 

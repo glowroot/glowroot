@@ -53,7 +53,7 @@ public class ConfigIT extends WebDriverIT {
         globalNavbar.getConfigurationLink().click();
         assertThat(page.getSlowThresholdTextField().getAttribute("value")).isEqualTo("2345");
         assertThat(page.getProfilingIntervalTextField().getAttribute("value")).isEqualTo("3456");
-        assertThat(page.getCaptureThreadStatsCheckBox().isSelected()).isTrue();
+        assertThat(page.getCaptureThreadStatsCheckBox().isSelected()).isFalse();
     }
 
     @Test

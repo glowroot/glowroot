@@ -56,7 +56,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         Ticker ticker = Tickers.getTicker();
         Clock clock = Clock.systemClock();
 
-        PluginCache pluginCache = PluginCache.create(glowrootJarFile, false);
+        final PluginCache pluginCache = PluginCache.create(glowrootJarFile, false);
         final ConfigService configService =
                 ConfigService.create(baseDir, pluginCache.pluginDescriptors());
 
@@ -80,8 +80,9 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                     return null;
                 }
                 centralModule = new CentralModule(properties, collectorHost, configService,
-                        agentModule.getLiveWeavingService(), agentModule.getLiveJvmService(),
-                        agentModule.getScheduledExecutor(), glowrootVersion);
+                        pluginCache, agentModule.getLiveWeavingService(),
+                        agentModule.getLiveJvmService(), agentModule.getScheduledExecutor(),
+                        glowrootVersion);
                 collectorProxy.setInstance(centralModule.getGrpcCollector());
                 return null;
             }

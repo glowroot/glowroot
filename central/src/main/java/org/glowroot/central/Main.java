@@ -17,11 +17,11 @@ package org.glowroot.central;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.SocketOptions;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import org.glowroot.central.storage.AggregateDao;
 import org.glowroot.central.storage.CentralConfigDao;
-import org.glowroot.central.storage.ConfigDao;
 import org.glowroot.central.storage.ConfigRepositoryImpl;
 import org.glowroot.central.storage.GaugeValueDao;
 import org.glowroot.central.storage.ServerDao;
@@ -31,13 +31,11 @@ import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Version;
 import org.glowroot.storage.repo.AggregateRepository;
-import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.RepoAdmin;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.ui.CreateUiModuleBuilder;
-import org.glowroot.ui.UiModule;
 
 public class Main {
 
@@ -53,19 +51,23 @@ public class Main {
         String version = Version.getVersion(Main.class);
 
         // FIXME
-        Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
+        Cluster cluster = Cluster.builder()
+                .addContactPoint("127.0.0.1")
+                .build();
+        SocketOptions socketOptions = cluster.getConfiguration().getSocketOptions();
+        socketOptions.setReadTimeoutMillis(30000);
+        socketOptions.setConnectTimeoutMillis(30000);
         Session session = cluster.connect();
-        // session.execute("drop keyspace if exists glowroot");
         session.execute("create keyspace if not exists glowroot with replication ="
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
         session.execute("use glowroot");
 
-        ConfigDao configDao = new ConfigDao(session);
-        CentralConfigDao centralConfigDao = new CentralConfigDao(session);
-        ConfigRepository configRepository = new ConfigRepositoryImpl(configDao, centralConfigDao);
-
         ServerDao serverDao = new ServerDao(session);
         TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session);
+
+        CentralConfigDao centralConfigDao = new CentralConfigDao(session);
+        ConfigRepositoryImpl configRepository =
+                new ConfigRepositoryImpl(serverDao, centralConfigDao);
 
         AggregateRepository aggregateRepository =
                 new AggregateDao(session, serverDao, transactionTypeDao, configRepository);
@@ -75,10 +77,11 @@ public class Main {
 
         GrpcServer server = new GrpcServer(8181, serverDao, aggregateRepository,
                 gaugeValueRepository, traceRepository);
+        configRepository.setDownstreamService(server.getDownstreamService());
 
         RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
 
-        UiModule uiModule = new CreateUiModuleBuilder()
+        new CreateUiModuleBuilder()
                 .central(true)
                 .clock(clock)
                 .liveJvmService(new LiveJvmServiceImpl(server.getDownstreamService()))
@@ -91,7 +94,7 @@ public class Main {
                 .repoAdmin(new NopRepoAdmin())
                 .rollupLevelService(rollupLevelService)
                 .liveTraceRepository(new LiveTraceRepositoryNop())
-                .liveWeavingService(null)
+                .liveWeavingService(new LiveWeavingServiceImpl(server.getDownstreamService()))
                 .bindAddress("0.0.0.0")
                 .numWorkerThreads(50)
                 .version(version)

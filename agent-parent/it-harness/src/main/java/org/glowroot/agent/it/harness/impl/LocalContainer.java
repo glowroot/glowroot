@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public class LocalContainer implements Container {
     private final @Nullable GrpcServerWrapper server;
     private final @Nullable TraceCollector traceCollector;
     private final GlowrootAgentInit glowrootAgentInit;
-    private final @Nullable ConfigService configService;
+    private final @Nullable ConfigServiceImpl configService;
 
     private volatile @Nullable Thread executingAppThread;
 
@@ -95,9 +95,12 @@ public class LocalContainer implements Container {
             }
         }).get();
         glowrootAgentInit = checkNotNull(MainEntryPoint.getGlowrootAgentInit());
-        // this is used to set slowThresholdMillis=0
-        resetConfig();
-        configService = new ConfigServiceImpl(server, false);
+        if (server == null) {
+            configService = null;
+        } else {
+            configService = new ConfigServiceImpl(server, false);
+            configService.resetConfig();
+        }
     }
 
     @Override
@@ -147,7 +150,11 @@ public class LocalContainer implements Container {
 
     @Override
     public void checkAndReset() throws Exception {
-        resetConfig();
+        if (configService == null) {
+            glowrootAgentInit.getAgentModule().getConfigService().resetAllConfig();
+        } else {
+            configService.resetConfig();
+        }
         if (traceCollector != null) {
             traceCollector.checkAndResetLogMessages();
         }
@@ -184,10 +191,6 @@ public class LocalContainer implements Container {
             executingAppThread = null;
             Thread.currentThread().setContextClassLoader(previousContextClassLoader);
         }
-    }
-
-    private void resetConfig() throws IOException {
-        glowrootAgentInit.getAgentModule().getConfigService().resetAllConfig();
     }
 
     static int getAvailablePort() throws IOException {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,11 @@ package org.glowroot.common.live;
 
 import java.util.List;
 
-import org.immutables.value.Value;
-
-import org.glowroot.common.util.Styles;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpKind;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 
 public interface LiveJvmService {
@@ -35,35 +34,13 @@ public interface LiveJvmService {
 
     void gc(String serverId) throws Exception;
 
-    MBeanDump getMBeanDump(String serverId, MBeanDumpRequest request) throws Exception;
+    MBeanDump getMBeanDump(String serverId, MBeanDumpKind mbeanDumpKind, List<String> objectNames)
+            throws Exception;
 
-    List<String> getMatchingMBeanObjectNames(String serverId, String partialMBeanObjectName,
-            int limit) throws InterruptedException;
+    List<String> getMatchingMBeanObjectNames(String serverId, String partialObjectName, int limit)
+            throws Exception;
 
     MBeanMeta getMBeanMeta(String serverId, String mbeanObjectName) throws Exception;
 
-    Capabilities getCapabilities(String serverId);
-
-    @Value.Immutable
-    @Styles.AllParameters
-    interface MBeanMeta {
-        boolean unmatched();
-        boolean unavailable();
-        List<String> attributeNames();
-    }
-
-    @Value.Immutable
-    interface Capabilities {
-        Availability threadCpuTime();
-        Availability threadContentionTime();
-        Availability threadAllocatedBytes();
-    }
-
-    @Value.Immutable
-    @Styles.AllParameters
-    interface Availability {
-        boolean available();
-        // reason only needed when available is false
-        String getReason();
-    }
+    Capabilities getCapabilities(String serverId) throws Exception;
 }

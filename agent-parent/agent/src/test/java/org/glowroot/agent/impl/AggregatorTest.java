@@ -24,11 +24,11 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.config.ImmutableAdvancedConfig;
 import org.glowroot.agent.model.QueryData;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
-import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -113,7 +113,8 @@ public class AggregatorTest {
         }
 
         @Override
-        public void collectInit(ProcessInfo processInfo, AgentConfig agentConfig) {}
+        public void collectInit(ProcessInfo processInfo, AgentConfig agentConfig,
+                AgentConfigUpdater agentConfigUpdater) {}
 
         @Override
         public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType) {

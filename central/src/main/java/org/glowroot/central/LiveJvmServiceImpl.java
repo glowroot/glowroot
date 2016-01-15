@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,11 @@ package org.glowroot.central;
 import java.util.List;
 
 import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpKind;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 
 class LiveJvmServiceImpl implements LiveJvmService {
@@ -52,23 +54,24 @@ class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public MBeanDump getMBeanDump(String serverId, MBeanDumpRequest request) throws Exception {
-        return downstreamService.mbeanDump(serverId, request);
+    public MBeanDump getMBeanDump(String serverId, MBeanDumpKind mbeanDumpKind,
+            List<String> objectNames) throws Exception {
+        return downstreamService.mbeanDump(serverId, mbeanDumpKind, objectNames);
     }
 
     @Override
-    public List<String> getMatchingMBeanObjectNames(String serverId, String partialMBeanObjectName,
-            int limit) {
-        throw new UnsupportedOperationException();
+    public List<String> getMatchingMBeanObjectNames(String serverId, String partialObjectName,
+            int limit) throws Exception {
+        return downstreamService.matchingMBeanObjectNames(serverId, partialObjectName, limit);
     }
 
     @Override
-    public MBeanMeta getMBeanMeta(String serverId, String mbeanObjectName) {
-        throw new UnsupportedOperationException();
+    public MBeanMeta getMBeanMeta(String serverId, String objectName) throws Exception {
+        return downstreamService.mbeanMeta(serverId, objectName);
     }
 
     @Override
-    public Capabilities getCapabilities(String serverId) {
-        throw new UnsupportedOperationException();
+    public Capabilities getCapabilities(String serverId) throws Exception {
+        return downstreamService.capabilities(serverId);
     }
 }

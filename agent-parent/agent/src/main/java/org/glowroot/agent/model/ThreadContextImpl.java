@@ -58,7 +58,7 @@ import org.glowroot.common.util.UsedByGeneratedBytecode;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.glowroot.storage.simplerepo.util.Checkers.castInitialized;
+import static org.glowroot.agent.fat.storage.util.Checkers.castInitialized;
 
 public class ThreadContextImpl implements ThreadContextPlus {
 

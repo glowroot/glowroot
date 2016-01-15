@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.tests;
 
-import org.glowroot.wire.api.model.Proto.OptionalBool;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
@@ -27,9 +26,5 @@ public class ProtoOptional {
 
     public static OptionalInt64 of(long value) {
         return OptionalInt64.newBuilder().setValue(value).build();
-    }
-
-    public static OptionalBool of(boolean value) {
-        return OptionalBool.newBuilder().setValue(value).build();
     }
 }

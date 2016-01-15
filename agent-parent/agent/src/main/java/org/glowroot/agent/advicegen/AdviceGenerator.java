@@ -32,12 +32,12 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.weaving.Advice;
 import org.glowroot.agent.weaving.AdviceBuilder;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.agent.weaving.ImmutableLazyDefinedClass;
-import org.glowroot.common.config.InstrumentationConfig;
-import org.glowroot.common.config.InstrumentationConfig.CaptureKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CaptureKind;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
@@ -179,10 +179,7 @@ public class AdviceGenerator {
         } else if (!config.traceEntryCaptureSelfNested()) {
             annotationVisitor.visit("nestingGroup", "__GeneratedAdvice" + uniqueNum);
         }
-        Integer priority = config.priority();
-        if (priority != null) {
-            annotationVisitor.visit("priority", priority);
-        }
+        annotationVisitor.visit("priority", config.priority());
         annotationVisitor.visitEnd();
     }
 

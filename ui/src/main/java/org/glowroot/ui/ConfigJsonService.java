@@ -15,13 +15,13 @@
  */
 package org.glowroot.ui;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
@@ -39,33 +39,29 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.config.AdvancedConfig;
-import org.glowroot.common.config.ImmutableAdvancedConfig;
-import org.glowroot.common.config.ImmutablePluginConfig;
-import org.glowroot.common.config.ImmutableTransactionConfig;
-import org.glowroot.common.config.ImmutableUserRecordingConfig;
-import org.glowroot.common.config.PluginConfig;
-import org.glowroot.common.config.PluginDescriptor;
-import org.glowroot.common.config.PropertyDescriptor;
-import org.glowroot.common.config.PropertyValue;
-import org.glowroot.common.config.TransactionConfig;
-import org.glowroot.common.config.UserRecordingConfig;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common.util.Versions;
+import org.glowroot.storage.config.ImmutableSmtpConfig;
+import org.glowroot.storage.config.ImmutableStorageConfig;
+import org.glowroot.storage.config.ImmutableUserInterfaceConfig;
+import org.glowroot.storage.config.SmtpConfig;
+import org.glowroot.storage.config.StorageConfig;
+import org.glowroot.storage.config.UserInterfaceConfig;
+import org.glowroot.storage.config.UserInterfaceConfig.AnonymousAccess;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.storage.repo.RepoAdmin;
-import org.glowroot.storage.repo.config.ImmutableSmtpConfig;
-import org.glowroot.storage.repo.config.ImmutableStorageConfig;
-import org.glowroot.storage.repo.config.ImmutableUserInterfaceConfig;
-import org.glowroot.storage.repo.config.SmtpConfig;
-import org.glowroot.storage.repo.config.StorageConfig;
-import org.glowroot.storage.repo.config.UserInterfaceConfig;
-import org.glowroot.storage.repo.config.UserInterfaceConfig.AnonymousAccess;
 import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.storage.util.Encryption;
 import org.glowroot.storage.util.MailService;
 import org.glowroot.ui.HttpServer.PortChangeFailedException;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -81,7 +77,6 @@ class ConfigJsonService {
 
     private final ConfigRepository configRepository;
     private final RepoAdmin repoAdmin;
-    private final ImmutableList<PluginDescriptor> pluginDescriptors;
     private final HttpSessionManager httpSessionManager;
     private final MailService mailService;
     private final @Nullable LiveWeavingService liveWeavingService;
@@ -89,11 +84,10 @@ class ConfigJsonService {
     private volatile @MonotonicNonNull HttpServer httpServer;
 
     ConfigJsonService(ConfigRepository configRepository, RepoAdmin repoAdmin,
-            List<PluginDescriptor> pluginDescriptors, HttpSessionManager httpSessionManager,
-            MailService mailService, @Nullable LiveWeavingService liveWeavingService) {
+            HttpSessionManager httpSessionManager, MailService mailService,
+            @Nullable LiveWeavingService liveWeavingService) {
         this.configRepository = configRepository;
         this.repoAdmin = repoAdmin;
-        this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
         this.httpSessionManager = httpSessionManager;
         this.mailService = mailService;
         this.liveWeavingService = liveWeavingService;
@@ -130,35 +124,24 @@ class ConfigJsonService {
             return getPluginConfigInternal(serverId, request.pluginId().get());
         } else {
             List<PluginResponse> pluginResponses = Lists.newArrayList();
-            for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+            List<PluginConfig> pluginConfigs = configRepository.getPluginConfigs(serverId);
+            for (PluginConfig pluginConfig : pluginConfigs) {
                 pluginResponses.add(ImmutablePluginResponse.builder()
-                        .id(pluginDescriptor.id())
-                        .name(pluginDescriptor.name())
-                        .hasConfig(!pluginDescriptor.properties().isEmpty())
+                        .id(pluginConfig.getId())
+                        .name(pluginConfig.getName())
+                        .hasConfig(pluginConfig.getPropertyCount() > 0)
                         .build());
             }
             return mapper.writeValueAsString(pluginResponses);
         }
     }
 
-    private String getPluginConfigInternal(String serverId, String pluginId)
-            throws JsonProcessingException {
+    private String getPluginConfigInternal(String serverId, String pluginId) throws IOException {
         PluginConfig config = configRepository.getPluginConfig(serverId, pluginId);
-        PluginDescriptor pluginDescriptor = null;
-        for (PluginDescriptor descriptor : pluginDescriptors) {
-            if (descriptor.id().equals(pluginId)) {
-                pluginDescriptor = descriptor;
-                break;
-            }
-        }
-        if (config == null || pluginDescriptor == null) {
+        if (config == null) {
             throw new IllegalArgumentException("Plugin id not found: " + pluginId);
         }
-        return mapper.writeValueAsString(ImmutablePluginConfigResponse.builder()
-                .name(pluginDescriptor.name())
-                .addAllPropertyDescriptors(pluginDescriptor.properties())
-                .config(PluginConfigDto.fromConfig(config))
-                .build());
+        return mapper.writeValueAsString(PluginConfigDto.create(config));
     }
 
     @GET("/backend/config/ui")
@@ -171,7 +154,7 @@ class ConfigJsonService {
     @GET("/backend/config/storage")
     String getStorageConfig() throws Exception {
         StorageConfig config = configRepository.getStorageConfig();
-        return mapper.writeValueAsString(StorageConfigDto.fromConfig(config));
+        return mapper.writeValueAsString(StorageConfigDto.create(config));
     }
 
     @GET("/backend/config/smtp")
@@ -179,7 +162,7 @@ class ConfigJsonService {
         SmtpConfig config = configRepository.getSmtpConfig();
         String localServerName = InetAddress.getLocalHost().getHostName();
         return mapper.writeValueAsString(ImmutableSmtpConfigResponse.builder()
-                .config(SmtpConfigDto.fromConfig(config))
+                .config(SmtpConfigDto.create(config))
                 .localServerName(localServerName)
                 .build());
     }
@@ -190,7 +173,7 @@ class ConfigJsonService {
                 mapper.readValue(content, ImmutableTransactionConfigDto.class);
         String serverId = checkNotNull(configDto.serverId());
         try {
-            configRepository.updateTransactionConfig(serverId, configDto.toConfig(),
+            configRepository.updateTransactionConfig(serverId, configDto.convert(),
                     configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
@@ -204,7 +187,7 @@ class ConfigJsonService {
                 mapper.readValue(content, ImmutableUserRecordingConfigDto.class);
         String serverId = checkNotNull(configDto.serverId());
         try {
-            configRepository.updateUserRecordingConfig(serverId, configDto.toConfig(),
+            configRepository.updateUserRecordingConfig(serverId, configDto.convert(),
                     configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
@@ -217,7 +200,7 @@ class ConfigJsonService {
         AdvancedConfigDto configDto = mapper.readValue(content, ImmutableAdvancedConfigDto.class);
         String serverId = checkNotNull(configDto.serverId());
         try {
-            configRepository.updateAdvancedConfig(serverId, configDto.toConfig(),
+            configRepository.updateAdvancedConfig(serverId, configDto.convert(),
                     configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
@@ -227,12 +210,17 @@ class ConfigJsonService {
 
     @POST("/backend/config/plugins")
     String updatePluginConfig(String content) throws Exception {
-        PluginConfigDto configDto = mapper.readValue(content, ImmutablePluginConfigDto.class);
-        String serverId = checkNotNull(configDto.serverId());
-        String pluginId = checkNotNull(configDto.pluginId());
+        PluginUpdateRequest pluginUpdateRequest =
+                mapper.readValue(content, ImmutablePluginUpdateRequest.class);
+        String serverId = pluginUpdateRequest.serverId();
+        String pluginId = pluginUpdateRequest.pluginId();
+        List<PluginProperty> properties = Lists.newArrayList();
+        for (PluginPropertyDto prop : pluginUpdateRequest.properties()) {
+            properties.add(prop.convert());
+        }
         try {
-            configRepository.updatePluginConfig(serverId, configDto.toConfig(pluginId),
-                    configDto.version());
+            configRepository.updatePluginConfig(serverId, pluginId, properties,
+                    pluginUpdateRequest.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -249,7 +237,7 @@ class ConfigJsonService {
         UserInterfaceConfig priorConfig = configRepository.getUserInterfaceConfig();
         UserInterfaceConfig config;
         try {
-            config = toConfig(configDto, priorConfig);
+            config = configDto.convert(priorConfig);
         } catch (CurrentPasswordIncorrectException e) {
             return "{\"currentPasswordIncorrect\":true}";
         }
@@ -265,7 +253,7 @@ class ConfigJsonService {
     String updateStorageConfig(String content) throws Exception {
         StorageConfigDto configDto = mapper.readValue(content, ImmutableStorageConfigDto.class);
         try {
-            configRepository.updateStorageConfig(configDto.toConfig(), configDto.version());
+            configRepository.updateStorageConfig(configDto.convert(), configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -277,7 +265,8 @@ class ConfigJsonService {
     String updateSmtpConfig(String content) throws Exception {
         SmtpConfigDto configDto = mapper.readValue(content, ImmutableSmtpConfigDto.class);
         try {
-            configRepository.updateSmtpConfig(toConfig(configDto), configDto.version());
+            configRepository.updateSmtpConfig(configDto.convert(configRepository),
+                    configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -289,27 +278,27 @@ class ConfigJsonService {
         SmtpConfigDto configDto = mapper.readValue(content, ImmutableSmtpConfigDto.class);
         String testEmailRecipient = configDto.testEmailRecipient();
         checkNotNull(testEmailRecipient);
-        AlertingService.sendTestEmails(testEmailRecipient, toConfig(configDto), configRepository,
-                mailService);
+        AlertingService.sendTestEmails(testEmailRecipient, configDto.convert(configRepository),
+                configRepository, mailService);
     }
 
-    private String getTransactionConfigInternal(String serverId) throws JsonProcessingException {
+    private String getTransactionConfigInternal(String serverId) throws IOException {
         TransactionConfig config = configRepository.getTransactionConfig(serverId);
         if (config == null) {
             return "{\"empty\": true}";
         }
-        return mapper.writeValueAsString(TransactionConfigDto.fromConfig(config));
+        return mapper.writeValueAsString(TransactionConfigDto.create(config));
     }
 
-    private String getUserRecordingConfigInternal(String serverId) throws JsonProcessingException {
+    private String getUserRecordingConfigInternal(String serverId) throws IOException {
         UserRecordingConfig config = configRepository.getUserRecordingConfig(serverId);
-        return mapper.writeValueAsString(UserRecordingConfigDto.fromConfig(config));
+        return mapper.writeValueAsString(UserRecordingConfigDto.create(config));
     }
 
-    private String getAdvancedConfigInternal(String serverId) throws JsonProcessingException {
+    private String getAdvancedConfigInternal(String serverId) throws IOException {
         checkNotNull(liveWeavingService);
         AdvancedConfig config = configRepository.getAdvancedConfig(serverId);
-        return mapper.writeValueAsString(AdvancedConfigDto.fromConfig(config));
+        return mapper.writeValueAsString(AdvancedConfigDto.create(config));
     }
 
     @RequiresNonNull("httpServer")
@@ -363,71 +352,12 @@ class ConfigJsonService {
                 .build());
     }
 
-    private UserInterfaceConfig toConfig(UserInterfaceConfigDto configDto,
-            UserInterfaceConfig priorConfig) throws Exception {
-        ImmutableUserInterfaceConfig.Builder builder = ImmutableUserInterfaceConfig.builder()
-                .defaultDisplayedTransactionType(configDto.defaultDisplayedTransactionType())
-                .defaultDisplayedPercentiles(configDto.defaultDisplayedPercentiles())
-                .port(configDto.port())
-                .sessionTimeoutMinutes(configDto.sessionTimeoutMinutes());
-        if (configDto.currentAdminPassword().length() > 0
-                || configDto.newAdminPassword().length() > 0) {
-            AdminPasswordHelper adminPasswordHelper =
-                    new AdminPasswordHelper(configDto.currentAdminPassword(),
-                            configDto.newAdminPassword(), priorConfig.adminPasswordHash());
-            builder.adminPasswordHash(adminPasswordHelper.verifyAndGenerateNewPasswordHash());
-        } else {
-            builder.adminPasswordHash(priorConfig.adminPasswordHash());
-        }
-        if (!configDto.readOnlyPasswordEnabled()) {
-            // clear read only password
-            builder.readOnlyPasswordHash("");
-        } else if (configDto.readOnlyPasswordEnabled()
-                && !configDto.newReadOnlyPassword().isEmpty()) {
-            // change read only password
-            String readOnlyPasswordHash = PasswordHash.createHash(configDto.newReadOnlyPassword());
-            builder.readOnlyPasswordHash(readOnlyPasswordHash);
-        } else {
-            // keep existing read only password
-            builder.readOnlyPasswordHash(priorConfig.readOnlyPasswordHash());
-        }
-        if (priorConfig.anonymousAccess() != AnonymousAccess.ADMIN
-                && configDto.anonymousAccess() == AnonymousAccess.ADMIN
-                && configDto.currentAdminPassword().isEmpty()) {
-            // enabling admin access for anonymous users requires admin password
-            throw new IllegalStateException();
-        }
-        builder.anonymousAccess(configDto.anonymousAccess());
-        return builder.build();
-    }
-
-    private SmtpConfig toConfig(SmtpConfigDto configDto) throws Exception {
-        ImmutableSmtpConfig.Builder builder = ImmutableSmtpConfig.builder()
-                .fromEmailAddress(configDto.fromEmailAddress())
-                .fromDisplayName(configDto.fromDisplayName())
-                .host(configDto.host())
-                .port(configDto.port())
-                .ssl(configDto.ssl())
-                .username(configDto.username())
-                .putAllAdditionalProperties(configDto.additionalProperties());
-        if (!configDto.passwordExists()) {
-            // clear password
-            builder.encryptedPassword("");
-        } else if (configDto.passwordExists() && !configDto.newPassword().isEmpty()) {
-            // change password
-            String newEncryptedPassword =
-                    Encryption.encrypt(configDto.newPassword(), configRepository.getSecretKey());
-            builder.encryptedPassword(newEncryptedPassword);
-        } else {
-            // keep existing password
-            SmtpConfig priorConfig = configRepository.getSmtpConfig();
-            builder.encryptedPassword(priorConfig.encryptedPassword());
-        }
-        return builder.build();
-    }
-
     private static String getServerId(String queryString) {
         return QueryStringDecoder.decodeComponent(queryString.substring("server-id".length() + 1));
+    }
+
+    private static OptionalInt32 of(int value) {
+        return OptionalInt32.newBuilder().setValue(value).build();
     }
 
     private static class AdminPasswordHelper {
@@ -501,13 +431,6 @@ class ConfigJsonService {
         boolean hasConfig();
     }
 
-    @Value.Immutable
-    interface PluginConfigResponse {
-        String name();
-        PluginConfigDto config();
-        ImmutableList<PropertyDescriptor> propertyDescriptors();
-    }
-
     // these DTOs are only different from underlying config objects in that they contain the version
     // attribute, and that they have no default attribute values
 
@@ -520,19 +443,19 @@ class ConfigJsonService {
         abstract boolean captureThreadStats();
         abstract String version();
 
-        private TransactionConfig toConfig() {
-            return ImmutableTransactionConfig.builder()
-                    .slowThresholdMillis(slowThresholdMillis())
-                    .profilingIntervalMillis(profilingIntervalMillis())
-                    .captureThreadStats(captureThreadStats())
+        private TransactionConfig convert() {
+            return TransactionConfig.newBuilder()
+                    .setSlowThresholdMillis(of(slowThresholdMillis()))
+                    .setProfilingIntervalMillis(of(profilingIntervalMillis()))
+                    .setCaptureThreadStats(captureThreadStats())
                     .build();
         }
-        private static TransactionConfigDto fromConfig(TransactionConfig config) {
+        private static TransactionConfigDto create(TransactionConfig config) {
             return ImmutableTransactionConfigDto.builder()
-                    .slowThresholdMillis(config.slowThresholdMillis())
-                    .profilingIntervalMillis(config.profilingIntervalMillis())
-                    .captureThreadStats(config.captureThreadStats())
-                    .version(config.version())
+                    .slowThresholdMillis(config.getSlowThresholdMillis().getValue())
+                    .profilingIntervalMillis(config.getProfilingIntervalMillis().getValue())
+                    .captureThreadStats(config.getCaptureThreadStats())
+                    .version(Versions.getVersion(config))
                     .build();
         }
     }
@@ -545,18 +468,22 @@ class ConfigJsonService {
         abstract @Nullable Integer profilingIntervalMillis();
         abstract String version();
 
-        private UserRecordingConfig toConfig() {
-            return ImmutableUserRecordingConfig.builder()
-                    .users(users())
-                    .profilingIntervalMillis(profilingIntervalMillis())
-                    .build();
+        private UserRecordingConfig convert() {
+            UserRecordingConfig.Builder builder = UserRecordingConfig.newBuilder()
+                    .addAllUser(users());
+            Integer profilingIntervalMillis = profilingIntervalMillis();
+            if (profilingIntervalMillis != null) {
+                builder.setProfilingIntervalMillis(
+                        OptionalInt32.newBuilder().setValue(profilingIntervalMillis));
+            }
+            return builder.build();
         }
 
-        private static UserRecordingConfigDto fromConfig(UserRecordingConfig config) {
+        private static UserRecordingConfigDto create(UserRecordingConfig config) {
             return ImmutableUserRecordingConfigDto.builder()
-                    .users(config.users())
-                    .profilingIntervalMillis(config.profilingIntervalMillis())
-                    .version(config.version())
+                    .users(config.getUserList())
+                    .profilingIntervalMillis(config.getProfilingIntervalMillis().getValue())
+                    .version(Versions.getVersion(config))
                     .build();
         }
     }
@@ -574,57 +501,153 @@ class ConfigJsonService {
         abstract int mbeanGaugeNotFoundDelaySeconds();
         abstract String version();
 
-        private AdvancedConfig toConfig() {
-            return ImmutableAdvancedConfig.builder()
-                    .weavingTimer(weavingTimer())
-                    .immediatePartialStoreThresholdSeconds(immediatePartialStoreThresholdSeconds())
-                    .maxAggregateTransactionsPerTransactionType(
-                            maxAggregateTransactionsPerTransactionType())
-                    .maxAggregateQueriesPerQueryType(maxAggregateQueriesPerQueryType())
-                    .maxTraceEntriesPerTransaction(maxTraceEntriesPerTransaction())
-                    .maxStackTraceSamplesPerTransaction(maxStackTraceSamplesPerTransaction())
-                    .mbeanGaugeNotFoundDelaySeconds(mbeanGaugeNotFoundDelaySeconds())
+        private AdvancedConfig convert() {
+            return AdvancedConfig.newBuilder()
+                    .setWeavingTimer(weavingTimer())
+                    .setImmediatePartialStoreThresholdSeconds(
+                            of(immediatePartialStoreThresholdSeconds()))
+                    .setMaxAggregateTransactionsPerTransactionType(
+                            of(maxAggregateTransactionsPerTransactionType()))
+                    .setMaxAggregateQueriesPerQueryType(of(maxAggregateQueriesPerQueryType()))
+                    .setMaxTraceEntriesPerTransaction(of(maxTraceEntriesPerTransaction()))
+                    .setMaxStackTraceSamplesPerTransaction(of(maxStackTraceSamplesPerTransaction()))
+                    .setMbeanGaugeNotFoundDelaySeconds(of(mbeanGaugeNotFoundDelaySeconds()))
                     .build();
         }
 
-        private static AdvancedConfigDto fromConfig(AdvancedConfig config) {
+        private static AdvancedConfigDto create(AdvancedConfig config) {
             return ImmutableAdvancedConfigDto.builder()
-                    .weavingTimer(config.weavingTimer())
+                    .weavingTimer(config.getWeavingTimer())
                     .immediatePartialStoreThresholdSeconds(
-                            config.immediatePartialStoreThresholdSeconds())
+                            config.getImmediatePartialStoreThresholdSeconds().getValue())
                     .maxAggregateTransactionsPerTransactionType(
-                            config.maxAggregateTransactionsPerTransactionType())
-                    .maxAggregateQueriesPerQueryType(config.maxAggregateQueriesPerQueryType())
-                    .maxTraceEntriesPerTransaction(config.maxTraceEntriesPerTransaction())
+                            config.getMaxAggregateTransactionsPerTransactionType().getValue())
+                    .maxAggregateQueriesPerQueryType(
+                            config.getMaxAggregateQueriesPerQueryType().getValue())
+                    .maxTraceEntriesPerTransaction(
+                            config.getMaxTraceEntriesPerTransaction().getValue())
                     .maxStackTraceSamplesPerTransaction(
-                            config.maxStackTraceSamplesPerTransaction())
-                    .mbeanGaugeNotFoundDelaySeconds(config.mbeanGaugeNotFoundDelaySeconds())
-                    .version(config.version())
+                            config.getMaxStackTraceSamplesPerTransaction().getValue())
+                    .mbeanGaugeNotFoundDelaySeconds(
+                            config.getMbeanGaugeNotFoundDelaySeconds().getValue())
+                    .version(Versions.getVersion(config))
                     .build();
         }
     }
 
     @Value.Immutable
+    interface PluginUpdateRequest {
+        String serverId();
+        String pluginId();
+        List<ImmutablePluginPropertyDto> properties();
+        String version();
+    }
+
+    // only used in response
+    @Value.Immutable
     abstract static class PluginConfigDto {
 
-        abstract @Nullable String serverId(); // only used in request
-        abstract @Nullable String pluginId(); // only used in request
-        abstract Map<String, PropertyValue> properties();
+        abstract String name();
+        abstract List<ImmutablePluginPropertyDto> properties();
         abstract String version();
 
-        private PluginConfig toConfig(String id) {
-            return ImmutablePluginConfig.builder()
-                    .id(id)
-                    .putAllProperties(properties())
+        private static PluginConfigDto create(PluginConfig config) {
+            ImmutablePluginConfigDto.Builder builder = ImmutablePluginConfigDto.builder()
+                    .name(config.getName());
+            for (PluginProperty property : config.getPropertyList()) {
+                builder.addProperties(PluginPropertyDto.create(property));
+            }
+            return builder.version(Versions.getVersion(config))
+                    .build();
+        }
+    }
+
+    // only used in response
+    @Value.Immutable
+    abstract static class PluginPropertyDto {
+
+        abstract String name();
+        abstract PropertyType type();
+        abstract @Nullable Object value();
+        abstract @Nullable Object defaultValue(); // only used in response
+        abstract @Nullable String label(); // only used in response
+        abstract @Nullable String checkboxLabel(); // only used in response
+        abstract @Nullable String description(); // only used in response
+
+        private PluginProperty convert() {
+            return PluginProperty.newBuilder()
+                    .setName(name())
+                    .setValue(getValue())
                     .build();
         }
 
-        private static PluginConfigDto fromConfig(PluginConfig config) {
-            return ImmutablePluginConfigDto.builder()
-                    .putAllProperties(config.properties())
-                    .version(config.version())
+        private PluginProperty.Value getValue() {
+            Object value = value();
+            switch (type()) {
+                case BOOLEAN:
+                    checkNotNull(value);
+                    return PluginProperty.Value.newBuilder().setBval((Boolean) value).build();
+                case DOUBLE:
+                    if (value == null) {
+                        return PluginProperty.Value.newBuilder().setDvalNull(true).build();
+                    } else {
+                        return PluginProperty.Value.newBuilder()
+                                .setDval(((Number) value).doubleValue()).build();
+                    }
+                case STRING:
+                    checkNotNull(value);
+                    return PluginProperty.Value.newBuilder().setSval((String) value).build();
+                default:
+                    throw new IllegalStateException("Unexpected property type: " + type());
+            }
+        }
+
+        private static ImmutablePluginPropertyDto create(PluginProperty property) {
+            return ImmutablePluginPropertyDto.builder()
+                    .name(property.getName())
+                    .type(getPropertyType(property.getValue().getValCase()))
+                    .value(getPropertyValue(property.getValue()))
+                    .defaultValue(getPropertyValue(property.getValue()))
+                    .label(property.getLabel())
+                    .checkboxLabel(property.getCheckboxLabel())
+                    .description(property.getDescription())
                     .build();
         }
+
+        private static PropertyType getPropertyType(PluginProperty.Value.ValCase valCase) {
+            switch (valCase) {
+                case BVAL:
+                    return PropertyType.BOOLEAN;
+                case DVAL_NULL:
+                    return PropertyType.DOUBLE;
+                case DVAL:
+                    return PropertyType.DOUBLE;
+                case SVAL:
+                    return PropertyType.STRING;
+                default:
+                    throw new IllegalStateException("Unexpected property type: " + valCase);
+            }
+        }
+
+        private static @Nullable Object getPropertyValue(PluginProperty.Value value) {
+            PluginProperty.Value.ValCase valCase = value.getValCase();
+            switch (valCase) {
+                case BVAL:
+                    return value.getBval();
+                case DVAL_NULL:
+                    return null;
+                case DVAL:
+                    return value.getDval();
+                case SVAL:
+                    return value.getSval();
+                default:
+                    throw new IllegalStateException("Unexpected property type: " + valCase);
+            }
+        }
+    }
+
+    enum PropertyType {
+        BOOLEAN, DOUBLE, STRING;
     }
 
     @Value.Immutable
@@ -675,6 +698,41 @@ class ConfigJsonService {
                             "Unexpected anonymous access: " + anonymousAccess());
             }
         }
+
+        private UserInterfaceConfig convert(UserInterfaceConfig priorConfig) throws Exception {
+            ImmutableUserInterfaceConfig.Builder builder = ImmutableUserInterfaceConfig.builder()
+                    .defaultDisplayedTransactionType(defaultDisplayedTransactionType())
+                    .defaultDisplayedPercentiles(defaultDisplayedPercentiles())
+                    .port(port())
+                    .sessionTimeoutMinutes(sessionTimeoutMinutes());
+            if (currentAdminPassword().length() > 0 || newAdminPassword().length() > 0) {
+                AdminPasswordHelper adminPasswordHelper =
+                        new AdminPasswordHelper(currentAdminPassword(), newAdminPassword(),
+                                priorConfig.adminPasswordHash());
+                builder.adminPasswordHash(adminPasswordHelper.verifyAndGenerateNewPasswordHash());
+            } else {
+                builder.adminPasswordHash(priorConfig.adminPasswordHash());
+            }
+            if (!readOnlyPasswordEnabled()) {
+                // clear read only password
+                builder.readOnlyPasswordHash("");
+            } else if (readOnlyPasswordEnabled() && !newReadOnlyPassword().isEmpty()) {
+                // change read only password
+                String readOnlyPasswordHash = PasswordHash.createHash(newReadOnlyPassword());
+                builder.readOnlyPasswordHash(readOnlyPasswordHash);
+            } else {
+                // keep existing read only password
+                builder.readOnlyPasswordHash(priorConfig.readOnlyPasswordHash());
+            }
+            if (priorConfig.anonymousAccess() != AnonymousAccess.ADMIN
+                    && anonymousAccess() == AnonymousAccess.ADMIN
+                    && currentAdminPassword().isEmpty()) {
+                // enabling admin access for anonymous users requires admin password
+                throw new IllegalStateException();
+            }
+            builder.anonymousAccess(anonymousAccess());
+            return builder.build();
+        }
     }
 
     @Value.Immutable
@@ -686,7 +744,7 @@ class ConfigJsonService {
         abstract int traceCappedDatabaseSizeMb();
         abstract String version();
 
-        private StorageConfig toConfig() {
+        private StorageConfig convert() {
             return ImmutableStorageConfig.builder()
                     .rollupExpirationHours(rollupExpirationHours())
                     .traceExpirationHours(traceExpirationHours())
@@ -695,7 +753,7 @@ class ConfigJsonService {
                     .build();
         }
 
-        private static StorageConfigDto fromConfig(StorageConfig config) {
+        private static StorageConfigDto create(StorageConfig config) {
             return ImmutableStorageConfigDto.builder()
                     .addAllRollupExpirationHours(config.rollupExpirationHours())
                     .traceExpirationHours(config.traceExpirationHours())
@@ -726,7 +784,32 @@ class ConfigJsonService {
         abstract @Nullable String testEmailRecipient();
         abstract String version();
 
-        private static SmtpConfigDto fromConfig(SmtpConfig config) {
+        private SmtpConfig convert(ConfigRepository configRepository) throws Exception {
+            ImmutableSmtpConfig.Builder builder = ImmutableSmtpConfig.builder()
+                    .fromEmailAddress(fromEmailAddress())
+                    .fromDisplayName(fromDisplayName())
+                    .host(host())
+                    .port(port())
+                    .ssl(ssl())
+                    .username(username())
+                    .putAllAdditionalProperties(additionalProperties());
+            if (!passwordExists()) {
+                // clear password
+                builder.encryptedPassword("");
+            } else if (passwordExists() && !newPassword().isEmpty()) {
+                // change password
+                String newEncryptedPassword =
+                        Encryption.encrypt(newPassword(), configRepository.getSecretKey());
+                builder.encryptedPassword(newEncryptedPassword);
+            } else {
+                // keep existing password
+                SmtpConfig priorConfig = configRepository.getSmtpConfig();
+                builder.encryptedPassword(priorConfig.encryptedPassword());
+            }
+            return builder.build();
+        }
+
+        private static SmtpConfigDto create(SmtpConfig config) {
             return ImmutableSmtpConfigDto.builder()
                     .fromEmailAddress(config.fromEmailAddress())
                     .fromDisplayName(config.fromDisplayName())

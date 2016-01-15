@@ -28,8 +28,6 @@ public interface ServerRepository {
 
     List<ServerRollup> readServerRollups() throws Exception;
 
-    void storeProcessInfo(String serverId, ProcessInfo ProcessInfo) throws Exception;
-
     @Nullable
     ProcessInfo readProcessInfo(String serverId) throws Exception;
 

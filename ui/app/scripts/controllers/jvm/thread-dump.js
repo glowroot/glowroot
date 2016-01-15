@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ glowroot.controller('JvmThreadDumpCtrl', [
     });
 
     $scope.refresh = function (deferred) {
-      $http.get('backend/jvm/thread-dump?server-id=' + $scope.serverId)
+      $http.get('backend/jvm/thread-dump?server-id=' + encodeURIComponent($scope.serverId))
           .success(function (data) {
             $scope.loaded = true;
             // $.trim() is needed because this template is sensitive to surrounding spaces

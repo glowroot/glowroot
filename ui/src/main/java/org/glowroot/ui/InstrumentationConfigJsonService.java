@@ -23,7 +23,6 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
@@ -34,21 +33,27 @@ import com.google.common.primitives.Ints;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.config.ImmutableInstrumentationConfig;
-import org.glowroot.common.config.InstrumentationConfig;
-import org.glowroot.common.config.InstrumentationConfig.CaptureKind;
-import org.glowroot.common.config.InstrumentationConfig.MethodModifier;
 import org.glowroot.common.live.LiveWeavingService;
-import org.glowroot.common.live.LiveWeavingService.GlobalMeta;
-import org.glowroot.common.live.LiveWeavingService.MethodSignature;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common.util.Versions;
 import org.glowroot.storage.repo.ConfigRepository;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CaptureKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MethodModifier;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignature;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonService
 class InstrumentationConfigJsonService {
+
+    private static final Logger logger =
+            LoggerFactory.getLogger(InstrumentationConfigJsonService.class);
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
@@ -78,13 +83,13 @@ class InstrumentationConfigJsonService {
             configs = ordering.immutableSortedCopy(configs);
             List<InstrumentationConfigDto> dtos = Lists.newArrayList();
             for (InstrumentationConfig config : configs) {
-                dtos.add(InstrumentationConfigDto.fromConfig(config));
+                dtos.add(InstrumentationConfigDto.create(config));
             }
             GlobalMeta globalMeta = liveWeavingService.getGlobalMeta(serverId);
             return mapper.writeValueAsString(ImmutableInstrumentationListResponse.builder()
                     .addAllConfigs(dtos)
-                    .jvmOutOfSync(globalMeta.jvmOutOfSync())
-                    .jvmRetransformClassesSupported(globalMeta.jvmRetransformClassesSupported())
+                    .jvmOutOfSync(globalMeta.getJvmOutOfSync())
+                    .jvmRetransformClassesSupported(globalMeta.getJvmRetransformClassesSupported())
                     .build());
         }
     }
@@ -99,7 +104,11 @@ class InstrumentationConfigJsonService {
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
-                liveWeavingService.preloadClasspathCache(serverId);
+                try {
+                    liveWeavingService.preloadClasspathCache(serverId);
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
             }
         });
         thread.setDaemon(true);
@@ -127,8 +136,12 @@ class InstrumentationConfigJsonService {
     String getMethodSignatures(String queryString) throws Exception {
         MethodSignaturesRequest request =
                 QueryStrings.decode(queryString, MethodSignaturesRequest.class);
-        List<MethodSignature> methodSignatures = liveWeavingService
+        List<MethodSignature> signatures = liveWeavingService
                 .getMethodSignatures(request.serverId(), request.className(), request.methodName());
+        List<MethodSignatureDto> methodSignatures = Lists.newArrayList();
+        for (MethodSignature signature : signatures) {
+            methodSignatures.add(MethodSignatureDto.create(signature));
+        }
         return mapper.writeValueAsString(methodSignatures);
     }
 
@@ -137,14 +150,9 @@ class InstrumentationConfigJsonService {
         InstrumentationConfigDto configDto =
                 mapper.readValue(content, ImmutableInstrumentationConfigDto.class);
         String serverId = checkNotNull(configDto.serverId());
-        InstrumentationConfig config = configDto.toConfig();
-        ImmutableList<String> errors = config.validationErrors();
-        if (!errors.isEmpty()) {
-            return mapper.writeValueAsString(
-                    ImmutableInstrumentationErrorResponse.builder().addAllErrors(errors).build());
-        }
+        InstrumentationConfig config = configDto.convert();
         configRepository.insertInstrumentationConfig(serverId, config);
-        return getInstrumentationConfigInternal(serverId, config.version());
+        return getInstrumentationConfigInternal(serverId, Versions.getVersion(config));
     }
 
     @POST("/backend/config/instrumentation/update")
@@ -152,11 +160,11 @@ class InstrumentationConfigJsonService {
         InstrumentationConfigDto configDto =
                 mapper.readValue(content, ImmutableInstrumentationConfigDto.class);
         String serverId = checkNotNull(configDto.serverId());
-        InstrumentationConfig config = configDto.toConfig();
+        InstrumentationConfig config = configDto.convert();
         String version = configDto.version();
         checkNotNull(version, "Missing required request property: version");
         configRepository.updateInstrumentationConfig(serverId, config, version);
-        return getInstrumentationConfigInternal(serverId, config.version());
+        return getInstrumentationConfigInternal(serverId, Versions.getVersion(config));
     }
 
     @POST("/backend/config/instrumentation/remove")
@@ -167,18 +175,21 @@ class InstrumentationConfigJsonService {
     }
 
     private String getInstrumentationConfigInternal(String serverId, String version)
-            throws JsonProcessingException {
+            throws Exception {
         InstrumentationConfig config =
                 configRepository.getInstrumentationConfig(serverId, version);
         if (config == null) {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }
         List<MethodSignature> methodSignatures = liveWeavingService.getMethodSignatures(serverId,
-                config.className(), config.methodName());
-        return mapper.writeValueAsString(ImmutableInstrumentationConfigResponse.builder()
-                .config(InstrumentationConfigDto.fromConfig(config))
-                .addAllMethodSignatures(methodSignatures)
-                .build());
+                config.getClassName(), config.getMethodName());
+        ImmutableInstrumentationConfigResponse.Builder builder =
+                ImmutableInstrumentationConfigResponse.builder()
+                        .config(InstrumentationConfigDto.create(config));
+        for (MethodSignature methodSignature : methodSignatures) {
+            builder.addMethodSignatures(MethodSignatureDto.create(methodSignature));
+        }
+        return mapper.writeValueAsString(builder.build());
     }
 
     private static String getServerId(String queryString) {
@@ -223,7 +234,7 @@ class InstrumentationConfigJsonService {
     @Value.Immutable
     interface InstrumentationConfigResponse {
         InstrumentationConfigDto config();
-        ImmutableList<MethodSignature> methodSignatures();
+        ImmutableList<MethodSignatureDto> methodSignatures();
     }
 
     @Value.Immutable
@@ -246,6 +257,7 @@ class InstrumentationConfigJsonService {
         abstract String methodReturnType();
         abstract ImmutableList<MethodModifier> methodModifiers();
         abstract String nestingGroup();
+        abstract int priority();
         abstract CaptureKind captureKind();
         abstract String timerName();
         abstract String traceEntryMessageTemplate();
@@ -260,54 +272,90 @@ class InstrumentationConfigJsonService {
         abstract String traceEntryEnabledProperty();
         abstract @Nullable String version(); // absent for insert operations
 
-        private static InstrumentationConfigDto fromConfig(InstrumentationConfig config) {
-            return ImmutableInstrumentationConfigDto.builder()
-                    .className(config.className())
-                    .classAnnotation(config.classAnnotation())
-                    .methodDeclaringClassName(config.methodDeclaringClassName())
-                    .methodName(config.methodName())
-                    .methodAnnotation(config.methodAnnotation())
-                    .addAllMethodParameterTypes(config.methodParameterTypes())
-                    .methodReturnType(config.methodReturnType())
-                    .addAllMethodModifiers(config.methodModifiers())
-                    .nestingGroup(config.nestingGroup())
-                    .captureKind(config.captureKind())
-                    .timerName(config.timerName())
-                    .traceEntryMessageTemplate(config.traceEntryMessageTemplate())
-                    .traceEntryStackThresholdMillis(config.traceEntryStackThresholdMillis())
-                    .traceEntryCaptureSelfNested(config.traceEntryCaptureSelfNested())
-                    .transactionType(config.transactionType())
-                    .transactionNameTemplate(config.transactionNameTemplate())
-                    .transactionUserTemplate(config.transactionUserTemplate())
-                    .putAllTransactionAttributeTemplates(config.transactionAttributeTemplates())
-                    .transactionSlowThresholdMillis(config.transactionSlowThresholdMillis())
-                    .enabledProperty(config.enabledProperty())
-                    .traceEntryEnabledProperty(config.traceEntryEnabledProperty())
-                    .version(config.version())
+        private InstrumentationConfig convert() {
+            InstrumentationConfig.Builder builder = InstrumentationConfig.newBuilder()
+                    .setClassName(className())
+                    .setMethodDeclaringClassName(methodDeclaringClassName())
+                    .setMethodName(methodName())
+                    .addAllMethodParameterType(methodParameterTypes())
+                    .setMethodReturnType(methodReturnType())
+                    .addAllMethodModifier(methodModifiers())
+                    .setNestingGroup(nestingGroup())
+                    .setPriority(priority())
+                    .setCaptureKind(captureKind())
+                    .setTimerName(timerName())
+                    .setTraceEntryMessageTemplate(traceEntryMessageTemplate());
+            Integer traceEntryStackThresholdMillis = traceEntryStackThresholdMillis();
+            if (traceEntryStackThresholdMillis != null) {
+                builder.setTraceEntryStackThresholdMillis(
+                        OptionalInt32.newBuilder().setValue(traceEntryStackThresholdMillis));
+            }
+            builder.setTraceEntryCaptureSelfNested(traceEntryCaptureSelfNested())
+                    .setTransactionType(transactionType())
+                    .setTransactionNameTemplate(transactionNameTemplate())
+                    .setTransactionUserTemplate(transactionUserTemplate())
+                    .putAllTransactionAttributeTemplates(transactionAttributeTemplates());
+            Integer transactionSlowThresholdMillis = transactionSlowThresholdMillis();
+            if (transactionSlowThresholdMillis != null) {
+                builder.setTransactionSlowThresholdMillis(
+                        OptionalInt32.newBuilder().setValue(transactionSlowThresholdMillis));
+            }
+            return builder.setEnabledProperty(enabledProperty())
+                    .setTraceEntryEnabledProperty(traceEntryEnabledProperty())
                     .build();
         }
 
-        private InstrumentationConfig toConfig() {
-            return ImmutableInstrumentationConfig.builder()
-                    .className(className())
-                    .methodDeclaringClassName(methodDeclaringClassName())
-                    .methodName(methodName())
-                    .addAllMethodParameterTypes(methodParameterTypes())
-                    .methodReturnType(methodReturnType())
-                    .addAllMethodModifiers(methodModifiers())
-                    .nestingGroup(nestingGroup())
-                    .captureKind(captureKind())
-                    .timerName(timerName())
-                    .traceEntryMessageTemplate(traceEntryMessageTemplate())
-                    .traceEntryStackThresholdMillis(traceEntryStackThresholdMillis())
-                    .traceEntryCaptureSelfNested(traceEntryCaptureSelfNested())
-                    .transactionType(transactionType())
-                    .transactionNameTemplate(transactionNameTemplate())
-                    .transactionUserTemplate(transactionUserTemplate())
-                    .putAllTransactionAttributeTemplates(transactionAttributeTemplates())
-                    .transactionSlowThresholdMillis(transactionSlowThresholdMillis())
-                    .enabledProperty(enabledProperty())
-                    .traceEntryEnabledProperty(traceEntryEnabledProperty())
+        private static InstrumentationConfigDto create(InstrumentationConfig config) {
+            ImmutableInstrumentationConfigDto.Builder builder =
+                    ImmutableInstrumentationConfigDto.builder()
+                            .className(config.getClassName())
+                            .classAnnotation(config.getClassAnnotation())
+                            .methodDeclaringClassName(config.getMethodDeclaringClassName())
+                            .methodName(config.getMethodName())
+                            .methodAnnotation(config.getMethodAnnotation())
+                            .addAllMethodParameterTypes(config.getMethodParameterTypeList())
+                            .methodReturnType(config.getMethodReturnType())
+                            .addAllMethodModifiers(config.getMethodModifierList())
+                            .nestingGroup(config.getNestingGroup())
+                            .priority(config.getPriority())
+                            .captureKind(config.getCaptureKind())
+                            .timerName(config.getTimerName())
+                            .traceEntryMessageTemplate(config.getTraceEntryMessageTemplate());
+            if (config.hasTraceEntryStackThresholdMillis()) {
+                builder.traceEntryStackThresholdMillis(
+                        config.getTraceEntryStackThresholdMillis().getValue());
+            }
+            builder.traceEntryCaptureSelfNested(config.getTraceEntryCaptureSelfNested())
+                    .transactionType(config.getTransactionType())
+                    .transactionNameTemplate(config.getTransactionNameTemplate())
+                    .transactionUserTemplate(config.getTransactionUserTemplate())
+                    .putAllTransactionAttributeTemplates(config.getTransactionAttributeTemplates());
+            if (config.hasTransactionSlowThresholdMillis()) {
+                builder.transactionSlowThresholdMillis(
+                        config.getTransactionSlowThresholdMillis().getValue());
+            }
+            return builder.enabledProperty(config.getEnabledProperty())
+                    .traceEntryEnabledProperty(config.getTraceEntryEnabledProperty())
+                    .version(Versions.getVersion(config))
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    @JsonInclude(value = Include.ALWAYS)
+    abstract static class MethodSignatureDto {
+
+        abstract String name();
+        abstract ImmutableList<String> parameterTypes();
+        abstract String returnType();
+        abstract ImmutableList<String> modifiers();
+
+        private static MethodSignatureDto create(MethodSignature methodSignature) {
+            return ImmutableMethodSignatureDto.builder()
+                    .name(methodSignature.getName())
+                    .addAllParameterTypes(methodSignature.getParameterTypeList())
+                    .returnType(methodSignature.getReturnType())
+                    .modifiers(methodSignature.getModifierList())
                     .build();
         }
     }
@@ -316,21 +364,20 @@ class InstrumentationConfigJsonService {
     static class InstrumentationConfigOrdering extends Ordering<InstrumentationConfig> {
         @Override
         public int compare(InstrumentationConfig left, InstrumentationConfig right) {
-            int compare = left.className().compareToIgnoreCase(right.className());
+            int compare = left.getClassName().compareToIgnoreCase(right.getClassName());
             if (compare != 0) {
                 return compare;
             }
-            compare = left.methodName().compareToIgnoreCase(right.methodName());
+            compare = left.getMethodName().compareToIgnoreCase(right.getMethodName());
             if (compare != 0) {
                 return compare;
             }
-            compare = Ints.compare(left.methodParameterTypes().size(),
-                    right.methodParameterTypes().size());
+            List<String> leftParameterTypes = left.getMethodParameterTypeList();
+            List<String> rightParameterTypes = right.getMethodParameterTypeList();
+            compare = Ints.compare(leftParameterTypes.size(), rightParameterTypes.size());
             if (compare != 0) {
                 return compare;
             }
-            List<String> leftParameterTypes = left.methodParameterTypes();
-            List<String> rightParameterTypes = right.methodParameterTypes();
             for (int i = 0; i < leftParameterTypes.size(); i++) {
                 compare = leftParameterTypes.get(i).compareToIgnoreCase(rightParameterTypes.get(i));
                 if (compare != 0) {

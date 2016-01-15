@@ -20,10 +20,20 @@ glowroot.controller('ConfigPluginListCtrl', [
   '$scope',
   '$location',
   '$http',
+  'queryStrings',
   'httpErrors',
-  function ($scope, $location, $http, httpErrors) {
+  function ($scope, $location, $http, queryStrings, httpErrors) {
 
-    $http.get('backend/config/plugins?server-id=' + $scope.serverId)
+    $scope.pluginQueryString = function (plugin) {
+      var query = {};
+      if ($scope.serverId) {
+        query.serverId = $scope.serverId;
+      }
+      query.id = plugin.id;
+      return queryStrings.encodeObject(query);
+    };
+
+    $http.get('backend/config/plugins?server-id=' + encodeURIComponent($scope.serverId))
         .success(function (data) {
           $scope.loaded = true;
           $scope.plugins = [];

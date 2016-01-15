@@ -21,7 +21,7 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.central.CentralConnection.GrpcOneWayCall;
+import org.glowroot.agent.central.CentralConnection.GrpcCall;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
@@ -32,6 +32,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
@@ -53,16 +54,23 @@ class CentralCollectorImpl implements Collector {
     }
 
     @Override
-    public void collectInit(ProcessInfo jvmInfo, AgentConfig agentConfig) {
+    public void collectInit(ProcessInfo jvmInfo, AgentConfig agentConfig,
+            final AgentConfigUpdater agentConfigUpdater) {
         final InitMessage initMessage = InitMessage.newBuilder()
                 .setServerId(serverId)
                 .setProcessInfo(jvmInfo)
                 .setAgentConfig(agentConfig)
                 .build();
-        centralConnection.callUntilSuccessful(new GrpcOneWayCall<EmptyMessage>() {
+        centralConnection.callUntilSuccessful(new GrpcCall<InitResponse>() {
             @Override
-            public void call(StreamObserver<EmptyMessage> responseObserver) {
+            public void call(StreamObserver<InitResponse> responseObserver) {
                 collectorServiceStub.collectInit(initMessage, responseObserver);
+            }
+            @Override
+            void doWithResponse(InitResponse response) {
+                if (response.hasAgentConfig()) {
+                    agentConfigUpdater.update(response.getAgentConfig());
+                }
             }
         });
     }
@@ -74,7 +82,7 @@ class CentralCollectorImpl implements Collector {
                 .setCaptureTime(captureTime)
                 .addAllAggregatesByType(aggregatesByType)
                 .build();
-        centralConnection.callWithAFewRetries(new GrpcOneWayCall<EmptyMessage>() {
+        centralConnection.callWithAFewRetries(new GrpcCall<EmptyMessage>() {
             @Override
             public void call(StreamObserver<EmptyMessage> responseObserver) {
                 collectorServiceStub.collectAggregates(aggregateMessage, responseObserver);
@@ -88,7 +96,7 @@ class CentralCollectorImpl implements Collector {
                 .setServerId(serverId)
                 .addAllGaugeValues(gaugeValues)
                 .build();
-        centralConnection.callWithAFewRetries(new GrpcOneWayCall<EmptyMessage>() {
+        centralConnection.callWithAFewRetries(new GrpcCall<EmptyMessage>() {
             @Override
             public void call(StreamObserver<EmptyMessage> responseObserver) {
                 collectorServiceStub.collectGaugeValues(gaugeValueMessage, responseObserver);
@@ -102,7 +110,7 @@ class CentralCollectorImpl implements Collector {
                 .setServerId(serverId)
                 .setTrace(trace)
                 .build();
-        centralConnection.callWithAFewRetries(new GrpcOneWayCall<EmptyMessage>() {
+        centralConnection.callWithAFewRetries(new GrpcCall<EmptyMessage>() {
             @Override
             public void call(StreamObserver<EmptyMessage> responseObserver) {
                 collectorServiceStub.collectTrace(traceMessage, responseObserver);
@@ -119,7 +127,7 @@ class CentralCollectorImpl implements Collector {
                 .setServerId(serverId)
                 .setLogEvent(logEvent)
                 .build();
-        centralConnection.callWithAFewRetries(new GrpcOneWayCall<EmptyMessage>() {
+        centralConnection.callWithAFewRetries(new GrpcCall<EmptyMessage>() {
             @Override
             public void call(StreamObserver<EmptyMessage> responseObserver) {
                 collectorServiceStub.log(logMessage, responseObserver);

@@ -10,7 +10,7 @@ package org_glowroot_wire_api_model;
 option java_package = "org.glowroot.wire.api.model";
 
 service CollectorService {
-  rpc collectInit(InitMessage) returns (EmptyMessage);
+  rpc collectInit(InitMessage) returns (InitResponse);
   rpc collectAggregates(AggregateMessage) returns (EmptyMessage);
   rpc collectGaugeValues(GaugeValueMessage) returns (EmptyMessage);
   rpc collectTrace(TraceMessage) returns (EmptyMessage);
@@ -20,7 +20,16 @@ service CollectorService {
 message InitMessage {
   string server_id = 1;
   ProcessInfo process_info = 2;
+  // TODO if central doesn't have agent config then this is it
+  // TODO if central already has agent config then check for any new/removed plugin properties
+  // and update those in central
+  // TODO FINALLY if any differences, then return config back to agent
   AgentConfig agent_config = 3;
+}
+
+message InitResponse {
+  // TODO implement me, optional
+  AgentConfig agent_config = 1;
 }
 
 message AggregateMessage {
@@ -52,12 +61,7 @@ message ProcessInfo {
   string jvm = 5;
   repeated string jvm_arg = 6;
   string heap_dump_default_dir = 7;
-  string glowroot_agent_version = 100;
-}
-
-message ConfigMessage {
-  string server_id = 1;
-  string config_json = 2;
+  string glowroot_agent_version = 15;
 }
 
 message GaugeValue {

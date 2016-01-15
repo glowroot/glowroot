@@ -19,7 +19,6 @@ import java.util.List;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 
@@ -30,8 +29,6 @@ public interface ConfigService {
     void updateUserRecordingConfig(UserRecordingConfig config) throws Exception;
 
     void updateAdvancedConfig(AdvancedConfig config) throws Exception;
-
-    void updatePluginConfig(PluginConfig config) throws Exception;
 
     // returns the number of classes updated during re-weaving
     int updateInstrumentationConfigs(List<InstrumentationConfig> configs) throws Exception;

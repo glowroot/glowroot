@@ -26,19 +26,6 @@
          class="form-horizontal"
          name="formCtrl">
       <div gt-form-group
-           gt-label="Profiling interval"
-           gt-model="config.profilingIntervalMillis"
-           gt-number="true"
-           gt-pattern="pattern.integer"
-           gt-required="loaded"
-           gt-width="7em"
-           gt-addon="milliseconds">
-        <div class="help-block">
-          The interval at which the profiler samples stack traces. Each sampling time is randomized within its given
-          interval in order to avoid periodicity bias.
-        </div>
-      </div>
-      <div gt-form-group
            gt-label="Slow threshold"
            gt-model="config.slowThresholdMillis"
            gt-number="true"
@@ -49,6 +36,19 @@
         <div class="help-block">
           Any transaction that exceeds this amount of time will be viewable immediately as
           an active trace and the trace will be stored to disk at its completion.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Profiling interval"
+           gt-model="config.profilingIntervalMillis"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em"
+           gt-addon="milliseconds">
+        <div class="help-block">
+          The interval at which the profiler samples stack traces. Each sampling time is randomized within its given
+          interval in order to avoid periodicity bias.
         </div>
       </div>
       <div gt-form-group

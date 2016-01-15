@@ -33,6 +33,7 @@ import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.tests.app.Pause;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -72,6 +73,7 @@ public class PartialTraceIT {
         // given
         container.getConfigService().updateTransactionConfig(
                 TransactionConfig.newBuilder()
+                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
                         .setProfilingIntervalMillis(ProtoOptional.of(10))
                         .build());
         container.getConfigService().updateAdvancedConfig(

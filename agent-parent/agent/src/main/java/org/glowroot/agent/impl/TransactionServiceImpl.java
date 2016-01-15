@@ -25,6 +25,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.agent.model.QueryData;
@@ -47,12 +48,11 @@ import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTraceEntry;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
-import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.glowroot.storage.simplerepo.util.Checkers.castInitialized;
+import static org.glowroot.agent.fat.storage.util.Checkers.castInitialized;
 
 public class TransactionServiceImpl implements AdvancedService, ConfigListener {
 

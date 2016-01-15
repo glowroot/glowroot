@@ -41,9 +41,10 @@ public class CollectorProxy implements Collector {
     private final List<LogEvent> earlyLogEvents = Lists.newCopyOnWriteArrayList();
 
     @Override
-    public void collectInit(ProcessInfo processInfo, AgentConfig agentConfig) throws Exception {
+    public void collectInit(ProcessInfo processInfo, AgentConfig agentConfig,
+            AgentConfigUpdater agentConfigUpdater) throws Exception {
         if (instance != null) {
-            instance.collectInit(processInfo, agentConfig);
+            instance.collectInit(processInfo, agentConfig, agentConfigUpdater);
         }
     }
 

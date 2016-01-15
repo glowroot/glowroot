@@ -77,7 +77,7 @@ class CentralConnection {
     }
 
     // important that these calls are idempotent (at least in central implementation)
-    <T extends /*@NonNull*/ Object> void callWithAFewRetries(GrpcOneWayCall<T> call) {
+    <T extends /*@NonNull*/ Object> void callWithAFewRetries(GrpcCall<T> call) {
         if (closed) {
             return;
         }
@@ -89,15 +89,15 @@ class CentralConnection {
         //
         // this cannot retry over too long a period since it retains memory of rpc message for that
         // duration
-        call.call(new RetryingStreamObserver<T>(call, 30));
+        call.call(new RetryingStreamObserver<T>(call, 30, 60));
     }
 
     // important that these calls are idempotent (at least in central implementation)
-    <T extends /*@NonNull*/ Object> void callUntilSuccessful(GrpcOneWayCall<T> call) {
+    <T extends /*@NonNull*/ Object> void callUntilSuccessful(GrpcCall<T> call) {
         if (closed) {
             return;
         }
-        call.call(new RetryingStreamObserver<T>(call, -1));
+        call.call(new RetryingStreamObserver<T>(call, -1, 15));
     }
 
     void suppressLogCollector(Runnable runnable) {
@@ -130,25 +130,32 @@ class CentralConnection {
         }
     }
 
-    interface GrpcOneWayCall<T extends /*@NonNull*/ Object> {
-        void call(StreamObserver<T> responseObserver);
+    static abstract class GrpcCall<T extends /*@NonNull*/ Object> {
+        abstract void call(StreamObserver<T> responseObserver);
+        void doWithResponse(@SuppressWarnings("unused") T response) {}
     }
 
     private class RetryingStreamObserver<T extends /*@NonNull*/ Object>
             implements StreamObserver<T> {
 
-        private final GrpcOneWayCall<T> grpcOneWayCall;
+        private final GrpcCall<T> grpcCall;
         private final int maxRetries;
+        private final int maxDelayInSeconds;
 
         private volatile int retryCounter;
+        private volatile long nextDelayInSeconds = 1;
 
-        private RetryingStreamObserver(GrpcOneWayCall<T> grpcOneWayCall, int maxRetries) {
-            this.grpcOneWayCall = grpcOneWayCall;
+        private RetryingStreamObserver(GrpcCall<T> grpcCall, int maxRetries,
+                int maxDelayInSeconds) {
+            this.grpcCall = grpcCall;
             this.maxRetries = maxRetries;
+            this.maxDelayInSeconds = maxDelayInSeconds;
         }
 
         @Override
-        public void onNext(T value) {}
+        public void onNext(T value) {
+            grpcCall.doWithResponse(value);
+        }
 
         @Override
         public void onError(final Throwable t) {
@@ -167,7 +174,7 @@ class CentralConnection {
                 @Override
                 public void run() {
                     try {
-                        grpcOneWayCall.call(RetryingStreamObserver.this);
+                        grpcCall.call(RetryingStreamObserver.this);
                     } catch (final Throwable t) {
                         // intentionally capturing InterruptedException here as well to ensure
                         // reconnect is attempted no matter what
@@ -179,7 +186,8 @@ class CentralConnection {
                         });
                     }
                 }
-            }, 1, SECONDS);
+            }, nextDelayInSeconds, SECONDS);
+            nextDelayInSeconds = Math.min(nextDelayInSeconds * 2, maxDelayInSeconds);
         }
 
         @Override

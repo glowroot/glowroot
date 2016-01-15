@@ -23,9 +23,10 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
   '$timeout',
   '$q',
   'locationChanges',
+  'queryStrings',
   'httpErrors',
   'modals',
-  function ($scope, $location, $http, $timeout, $q, locationChanges, httpErrors, modals) {
+  function ($scope, $location, $http, $timeout, $q, locationChanges, queryStrings, httpErrors, modals) {
 
     $scope.display = function (config) {
       return config.className + '::' + config.methodName;
@@ -44,8 +45,25 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
       }
     };
 
+    $scope.instrumentationQueryString = function (config) {
+      var query = {};
+      if ($scope.serverId) {
+        query.serverId = $scope.serverId;
+      }
+      query.v = config.version;
+      return queryStrings.encodeObject(query);
+    };
+
+
+    $scope.newQueryString = function () {
+      if ($scope.serverId) {
+        return '?server-id=' + encodeURIComponent($scope.serverId) + '&new';
+      }
+      return '?new';
+    };
+
     function refresh(deferred) {
-      $http.get('backend/config/instrumentation?server-id=' + $scope.serverId)
+      $http.get('backend/config/instrumentation?server-id=' + encodeURIComponent($scope.serverId))
           .success(function (data) {
             $scope.loaded = true;
             $scope.configs = data.configs;
@@ -56,7 +74,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
               deferred.resolve();
             } else {
               // preload cache for class name and method name auto completion
-              $http.get('backend/config/preload-classpath-cache?server-id=' + $scope.serverId);
+              $http.get('backend/config/preload-classpath-cache?server-id=' + encodeURIComponent($scope.serverId));
             }
           })
           .error(httpErrors.handler($scope, deferred));
@@ -79,6 +97,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
         methodAnnotation: '',
         methodReturnType: '',
         nestingGroup: '',
+        priority: 0,
         transactionType: '',
         transactionNameTemplate: '',
         transactionUserTemplate: '',
@@ -153,7 +172,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
         $scope.importing = false;
         $('#importModal').data('location-query', 'import');
         modals.display('#importModal', true);
-        $timeout(function() {
+        $timeout(function () {
           $('#importModal textarea').focus();
         });
       } else {

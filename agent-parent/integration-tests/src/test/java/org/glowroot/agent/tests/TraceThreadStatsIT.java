@@ -31,6 +31,7 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -95,7 +96,8 @@ public class TraceThreadStatsIT {
     private static void enableCaptureThreadStats() throws Exception {
         container.getConfigService().updateTransactionConfig(
                 TransactionConfig.newBuilder()
-                        .setCaptureThreadStats(ProtoOptional.of(true))
+                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
+                        .setCaptureThreadStats(true)
                         .build());
     }
 

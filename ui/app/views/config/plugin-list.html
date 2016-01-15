@@ -24,7 +24,7 @@
       <div ng-repeat="plugin in plugins"
            class="gt-second-line-indent"
            style="padding-bottom: 8px;">
-        <a ng-href="config/plugin?id={{plugin.id}}">{{plugin.name}}</a>
+        <a ng-href="config/plugin{{pluginQueryString(plugin)}}">{{plugin.name}}</a>
       </div>
       <div style="padding-top: 25px; font-style: italic; color: #666;"
            ng-if="pluginsWithNoConfig">

@@ -44,10 +44,10 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.fat.init.GlowrootFatAgentInit;
+import org.glowroot.agent.fat.init.DataDirLocking.BaseDirLockedException;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.GlowrootThinAgentInit;
-import org.glowroot.agent.init.fat.DataDirLocking.BaseDirLockedException;
-import org.glowroot.agent.init.fat.GlowrootFatAgentInit;
 import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Version;

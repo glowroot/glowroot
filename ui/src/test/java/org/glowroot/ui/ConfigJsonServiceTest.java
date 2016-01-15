@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,9 @@ import java.net.InetAddress;
 import javax.mail.Message;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.common.config.PluginDescriptor;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.RepoAdmin;
@@ -43,8 +41,8 @@ public class ConfigJsonServiceTest {
     public void beforeEachTest() {
         mailService = new MockMailService();
         configJsonService = new ConfigJsonService(mock(ConfigRepository.class),
-                mock(RepoAdmin.class), ImmutableList.<PluginDescriptor>of(),
-                mock(HttpSessionManager.class), mailService, mock(LiveWeavingService.class));
+                mock(RepoAdmin.class), mock(HttpSessionManager.class), mailService,
+                mock(LiveWeavingService.class));
     }
 
     @Test

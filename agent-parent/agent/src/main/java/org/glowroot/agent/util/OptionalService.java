@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@ package org.glowroot.agent.util;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.common.live.ImmutableAvailability;
-import org.glowroot.common.live.LiveJvmService.Availability;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Availability;
 
 public abstract class OptionalService<T> {
 
@@ -40,7 +39,7 @@ public abstract class OptionalService<T> {
         private final T service;
 
         public PresentOptionalService(T service) {
-            this.availability = ImmutableAvailability.of(true, "");
+            this.availability = Availability.newBuilder().setAvailable(true).build();
             this.service = service;
         }
 
@@ -60,7 +59,10 @@ public abstract class OptionalService<T> {
         private final Availability availability;
 
         public AbsentOptionalService(String reason) {
-            this.availability = ImmutableAvailability.of(false, reason);
+            this.availability = Availability.newBuilder()
+                    .setAvailable(false)
+                    .setReason(reason)
+                    .build();
         }
 
         @Override

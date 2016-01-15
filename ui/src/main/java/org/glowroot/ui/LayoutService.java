@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,15 +30,15 @@ import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
-import org.glowroot.common.config.Versions;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common.util.Versions;
+import org.glowroot.storage.config.UserInterfaceConfig;
+import org.glowroot.storage.config.UserInterfaceConfig.AnonymousAccess;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
 import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.storage.repo.ServerRepository.ServerRollup;
 import org.glowroot.storage.repo.TransactionTypeRepository;
-import org.glowroot.storage.repo.config.UserInterfaceConfig;
-import org.glowroot.storage.repo.config.UserInterfaceConfig.AnonymousAccess;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
@@ -159,7 +159,7 @@ class LayoutService {
 
         @Value.Derived
         public String version() {
-            return Versions.getVersion(this);
+            return Versions.getJsonVersion(this);
         }
     }
 

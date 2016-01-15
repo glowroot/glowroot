@@ -27,16 +27,7 @@ glowroot.controller('ConfigPluginCtrl', [
 
     function onNewData(data) {
       $scope.loaded = true;
-      $scope.plugin = data;
-      $scope.config = {
-        enabled: data.config.enabled,
-        version: data.config.version
-      };
-      $scope.config.properties = angular.copy(data.propertyDescriptors);
-      for (var j = 0; j < $scope.config.properties.length; j++) {
-        var property = $scope.config.properties[j];
-        property.value = data.config.properties[property.name];
-      }
+      $scope.config = data;
       $scope.originalConfig = angular.copy($scope.config);
     }
 
@@ -46,27 +37,34 @@ glowroot.controller('ConfigPluginCtrl', [
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
     $scope.save = function (deferred) {
+      var properties = [];
+      angular.forEach($scope.config.properties, function (property) {
+        properties.push({
+          name: property.name,
+          type: property.type,
+          value: property.value
+        });
+      });
       var postData = {
         serverId: $scope.serverId,
         pluginId: $stateParams.id,
-        enabled: $scope.config.enabled,
-        properties: {},
+        properties: properties,
         version: $scope.config.version
       };
-      for (var i = 0; i < $scope.config.properties.length; i++) {
-        var property = $scope.config.properties[i];
-        postData.properties[property.name] = property.value;
-      }
       $http.post('backend/config/plugins', postData)
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Saved');
-            $location.url('config/plugin-list');
+            if ($scope.serverId) {
+              $location.url('config/plugin-list?server-id=' + encodeURIComponent($scope.serverId));
+            } else {
+              $location.url('config/plugin-list');
+            }
           })
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/plugins?server-id=' + $scope.serverId + '&plugin-id=' + $stateParams.id)
+    $http.get('backend/config/plugins?server-id=' + encodeURIComponent($scope.serverId) + '&plugin-id=' + $stateParams.id)
         .success(function (data) {
           onNewData(data);
         })

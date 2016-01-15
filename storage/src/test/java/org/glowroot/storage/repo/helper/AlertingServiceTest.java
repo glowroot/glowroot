@@ -24,6 +24,10 @@ import org.junit.Test;
 
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
+import org.glowroot.storage.config.AlertConfig;
+import org.glowroot.storage.config.ImmutableAlertConfig;
+import org.glowroot.storage.config.ImmutableSmtpConfig;
+import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.PercentileAggregate;
 import org.glowroot.storage.repo.ConfigRepository;
@@ -34,10 +38,6 @@ import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.storage.repo.ServerRepository.ServerRollup;
 import org.glowroot.storage.repo.TriggeredAlertRepository;
 import org.glowroot.storage.repo.Utils;
-import org.glowroot.storage.repo.config.AlertConfig;
-import org.glowroot.storage.repo.config.ImmutableAlertConfig;
-import org.glowroot.storage.repo.config.ImmutableSmtpConfig;
-import org.glowroot.storage.repo.config.SmtpConfig;
 import org.glowroot.storage.util.Encryption;
 import org.glowroot.storage.util.MailService;
 

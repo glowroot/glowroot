@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import org.immutables.builder.Builder;
 
-import org.glowroot.common.config.PluginDescriptor;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveWeavingService;
@@ -63,8 +62,7 @@ public class UiModule {
             @Nullable LiveWeavingService liveWeavingService,
             String bindAddress,
             int numWorkerThreads,
-            String version,
-            List<PluginDescriptor> pluginDescriptors) throws Exception {
+            String version) throws Exception {
 
         LayoutService layoutService = new LayoutService(central, version, configRepository,
                 serverRepository, transactionTypeRepository);
@@ -98,7 +96,7 @@ public class UiModule {
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
                 transactionCommonService, traceRepository, rollupLevelService, clock);
         ConfigJsonService configJsonService = new ConfigJsonService(configRepository, repoAdmin,
-                pluginDescriptors, httpSessionManager, new MailService(), liveWeavingService);
+                httpSessionManager, new MailService(), liveWeavingService);
         GaugeValueJsonService gaugeValueJsonService = new GaugeValueJsonService(
                 gaugeValueRepository, rollupLevelService, configRepository);
         AlertConfigJsonService alertJsonService = new AlertConfigJsonService(configRepository);

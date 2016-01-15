@@ -46,8 +46,10 @@ glowroot.controller('ConfigCommonCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get(backendUrl + '?server-id=' + $scope.serverId)
-        .success(onNewData)
-        .error(httpErrors.handler($scope));
+    $scope.$watch('serverId', function () {
+      $http.get(backendUrl + '?server-id=' + encodeURIComponent($scope.serverId))
+          .success(onNewData)
+          .error(httpErrors.handler($scope));
+    });
   }
 ]);

@@ -393,7 +393,7 @@ public class TraceDao implements TraceRepository {
         BoundStatement boundStatement = insertHeader.bind();
         boundStatement.setString(0, serverId);
         boundStatement.setString(1, trace.getId());
-        boundStatement.setBytes(2, trace.getHeader().toByteString().asReadOnlyByteBuffer());
+        boundStatement.setBytes(2, ByteBuffer.wrap(trace.getHeader().toByteArray()));
         session.execute(boundStatement);
 
         List<Trace.Entry> entries = trace.getEntryList();
@@ -409,8 +409,7 @@ public class TraceDao implements TraceRepository {
             boundStatement = insertMainThreadProfile.bind();
             boundStatement.setString(0, serverId);
             boundStatement.setString(1, trace.getId());
-            boundStatement.setBytes(2,
-                    trace.getMainThreadProfile().toByteString().asReadOnlyByteBuffer());
+            boundStatement.setBytes(2, ByteBuffer.wrap(trace.getMainThreadProfile().toByteArray()));
             session.execute(boundStatement);
         }
 
@@ -418,8 +417,7 @@ public class TraceDao implements TraceRepository {
             boundStatement = insertAuxThreadProfile.bind();
             boundStatement.setString(0, serverId);
             boundStatement.setString(1, trace.getId());
-            boundStatement.setBytes(2,
-                    trace.getAuxThreadProfile().toByteString().asReadOnlyByteBuffer());
+            boundStatement.setBytes(2, ByteBuffer.wrap(trace.getAuxThreadProfile().toByteArray()));
             session.execute(boundStatement);
         }
     }

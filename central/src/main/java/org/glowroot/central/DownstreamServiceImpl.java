@@ -15,6 +15,7 @@
  */
 package org.glowroot.central;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -23,6 +24,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Maps;
 import io.grpc.stub.StreamObserver;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,14 +32,27 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamService;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpaceRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CapabilitiesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse.MessageCase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMetaRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HelloAck;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpKind;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMetaRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MatchingClassNamesRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MatchingMBeanObjectNamesRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MatchingMethodNamesRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignature;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignaturesRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.PreloadClasspathCacheRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ServerRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
@@ -45,7 +60,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDumpRequest
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
-class DownstreamServiceImpl implements DownstreamService {
+public class DownstreamServiceImpl implements DownstreamService {
 
     private static final Logger logger = LoggerFactory.getLogger(DownstreamServiceImpl.class);
 
@@ -57,20 +72,13 @@ class DownstreamServiceImpl implements DownstreamService {
         return connectedAgent.responseObserver;
     }
 
-    void updateAgentConfig(String serverId, AgentConfig agentConfig) throws Exception {
+    public void updateAgentConfig(String serverId, AgentConfig agentConfig)
+            throws Exception {
         ConnectedAgent connectedAgent = connectedAgents.get(serverId);
         if (connectedAgent == null) {
             throw new AgentNotConnectedException();
         }
         connectedAgent.updateAgentConfig(agentConfig);
-    }
-
-    int reweave(String serverId) throws Exception {
-        ConnectedAgent connectedAgent = connectedAgents.get(serverId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
-        }
-        return connectedAgent.reweave();
     }
 
     ThreadDump threadDump(String serverId) throws Exception {
@@ -105,12 +113,89 @@ class DownstreamServiceImpl implements DownstreamService {
         connectedAgent.gc();
     }
 
-    MBeanDump mbeanDump(String serverId, MBeanDumpRequest request) throws Exception {
+    MBeanDump mbeanDump(String serverId, MBeanDumpKind mbeanDumpKind, List<String> objectNames)
+            throws Exception {
         ConnectedAgent connectedAgent = connectedAgents.get(serverId);
         if (connectedAgent == null) {
             throw new AgentNotConnectedException();
         }
-        return connectedAgent.mbeanDump(request);
+        return connectedAgent.mbeanDump(mbeanDumpKind, objectNames);
+    }
+
+    List<String> matchingMBeanObjectNames(String serverId, String partialObjectName, int limit)
+            throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(serverId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.matchingMBeanObjectNames(partialObjectName, limit);
+    }
+
+    MBeanMeta mbeanMeta(String serverId, String objectName) throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(serverId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.mbeanMeta(objectName);
+    }
+
+    Capabilities capabilities(String serverId) throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(serverId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.capabilities();
+    }
+
+    GlobalMeta globalMeta(String serverId) throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(serverId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.globalMeta();
+    }
+
+    void preloadClasspathCache(String serverId) throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(serverId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        connectedAgent.preloadClasspathCache();
+    }
+
+    List<String> matchingClassNames(String serverId, String partialClassName, int limit)
+            throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(serverId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.matchingClassNames(partialClassName, limit);
+    }
+
+    List<String> matchingMethodNames(String serverId, String className, String partialMethodName,
+            int limit) throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(serverId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.matchingMethodNames(className, partialMethodName, limit);
+    }
+
+    List<MethodSignature> methodSignatures(String serverId, String className, String methodName)
+            throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(serverId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.methodSignatures(className, methodName);
+    }
+
+    int reweave(String serverId) throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(serverId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.reweave();
     }
 
     private class ConnectedAgent {
@@ -124,11 +209,12 @@ class DownstreamServiceImpl implements DownstreamService {
 
         private final StreamObserver<ClientResponse> responseObserver =
                 new StreamObserver<ClientResponse>() {
+                    private volatile @MonotonicNonNull String serverId;
                     @Override
                     public void onNext(ClientResponse value) {
                         if (value.getMessageCase() == MessageCase.HELLO) {
-                            connectedAgents.put(value.getHello().getServerId(),
-                                    ConnectedAgent.this);
+                            serverId = value.getHello().getServerId();
+                            connectedAgents.put(serverId, ConnectedAgent.this);
                             requestObserver.onNext(ServerRequest.newBuilder()
                                     .setHelloAck(HelloAck.getDefaultInstance())
                                     .build());
@@ -149,10 +235,18 @@ class DownstreamServiceImpl implements DownstreamService {
                         }
                     }
                     @Override
-                    public void onError(Throwable t) {}
+                    public void onError(Throwable t) {
+                        logger.error(t.getMessage(), t);
+                        if (serverId != null) {
+                            connectedAgents.remove(serverId, ConnectedAgent.this);
+                        }
+                    }
                     @Override
                     public void onCompleted() {
                         requestObserver.onCompleted();
+                        if (serverId != null) {
+                            connectedAgents.remove(serverId, ConnectedAgent.this);
+                        }
                     }
                 };
 
@@ -168,14 +262,6 @@ class DownstreamServiceImpl implements DownstreamService {
                     .setAgentConfigUpdateRequest(AgentConfigUpdateRequest.newBuilder()
                             .setAgentConfig(agentConfig))
                     .build());
-        }
-
-        private int reweave() throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
-                    .setRequestId(nextRequestId.getAndIncrement())
-                    .setReweaveRequest(ReweaveRequest.getDefaultInstance())
-                    .build());
-            return response.getReweaveResponse().getClassUpdateCount();
         }
 
         private ThreadDump threadDump() throws Exception {
@@ -211,12 +297,101 @@ class DownstreamServiceImpl implements DownstreamService {
                     .build());
         }
 
-        private MBeanDump mbeanDump(MBeanDumpRequest request) throws Exception {
+        private MBeanDump mbeanDump(MBeanDumpKind mbeanDumpKind, List<String> objectNames)
+                throws Exception {
             ClientResponse response = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
-                    .setMbeanDumpRequest(request)
+                    .setMbeanDumpRequest(MBeanDumpRequest.newBuilder()
+                            .setKind(mbeanDumpKind)
+                            .addAllObjectName(objectNames))
                     .build());
             return response.getMbeanDumpResponse().getMbeanDump();
+        }
+
+        private List<String> matchingMBeanObjectNames(String partialObjectName, int limit)
+                throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setMatchingMbeanObjectNamesRequest(MatchingMBeanObjectNamesRequest.newBuilder()
+                            .setPartialObjectName(partialObjectName)
+                            .setLimit(limit))
+                    .build());
+            return response.getMatchingMbeanObjectNamesResponse().getObjectNameList();
+        }
+
+        private MBeanMeta mbeanMeta(String objectName) throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setMbeanMetaRequest(MBeanMetaRequest.newBuilder()
+                            .setObjectName(objectName))
+                    .build());
+            return response.getMbeanMetaResponse().getMbeanMeta();
+        }
+
+        private Capabilities capabilities() throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setCapabilitiesRequest(CapabilitiesRequest.getDefaultInstance())
+                    .build());
+            return response.getCapabilitiesResponse().getCapabilities();
+        }
+
+        private GlobalMeta globalMeta() throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setGlobalMetaRequest(GlobalMetaRequest.getDefaultInstance())
+                    .build());
+            return response.getGlobalMetaResponse().getGlobalMeta();
+        }
+
+        private void preloadClasspathCache() throws Exception {
+            sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setPreloadClasspathCacheRequest(
+                            PreloadClasspathCacheRequest.getDefaultInstance())
+                    .build());
+        }
+
+        private List<String> matchingClassNames(String partialClassName, int limit)
+                throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setMatchingClassNamesRequest(MatchingClassNamesRequest.newBuilder()
+                            .setPartialClassName(partialClassName)
+                            .setLimit(limit))
+                    .build());
+            return response.getMatchingClassNamesResponse().getClassNameList();
+        }
+
+        private List<String> matchingMethodNames(String className, String partialMethodName,
+                int limit) throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setMatchingMethodNamesRequest(MatchingMethodNamesRequest.newBuilder()
+                            .setClassName(className)
+                            .setPartialMethodName(partialMethodName)
+                            .setLimit(limit))
+                    .build());
+            return response.getMatchingMethodNamesResponse().getMethodNameList();
+        }
+
+        private List<MethodSignature> methodSignatures(String className, String methodName)
+                throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setMethodSignaturesRequest(MethodSignaturesRequest.newBuilder()
+                            .setClassName(className)
+                            .setMethodName(methodName))
+                    .build());
+            return response.getMethodSignaturesResponse().getMethodSignatureList();
+        }
+
+        private int reweave() throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setReweaveRequest(ReweaveRequest.getDefaultInstance())
+                    .build());
+            return response.getReweaveResponse().getClassUpdateCount();
         }
 
         private ClientResponse sendRequest(ServerRequest request) throws Exception {

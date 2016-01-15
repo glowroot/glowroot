@@ -26,7 +26,8 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface Collector {
 
-    void collectInit(ProcessInfo processInfo, AgentConfig agentConfig) throws Exception;
+    void collectInit(ProcessInfo processInfo, AgentConfig agentConfig,
+            AgentConfigUpdater agentConfigUpdater) throws Exception;
 
     void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType)
             throws Exception;
@@ -36,4 +37,8 @@ public interface Collector {
     void collectTrace(Trace trace) throws Exception;
 
     void log(LogEvent logEvent) throws Exception;
+
+    interface AgentConfigUpdater {
+        void update(AgentConfig agentConfig);
+    }
 }

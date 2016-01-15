@@ -37,13 +37,13 @@ import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.impl.AdviceCache;
 import org.glowroot.agent.live.ClasspathCache.UiAnalyzedMethod;
 import org.glowroot.agent.weaving.AnalyzedWorld;
-import org.glowroot.common.config.InstrumentationConfig;
-import org.glowroot.common.live.ImmutableGlobalMeta;
-import org.glowroot.common.live.ImmutableMethodSignature;
 import org.glowroot.common.live.LiveWeavingService;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignature;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -84,9 +84,9 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
 
     @Override
     public GlobalMeta getGlobalMeta(String serverId) {
-        return ImmutableGlobalMeta.builder()
-                .jvmOutOfSync(adviceCache.isOutOfSync(configService.getInstrumentationConfigs()))
-                .jvmRetransformClassesSupported(jvmRetransformClassesSupported)
+        return GlobalMeta.newBuilder()
+                .setJvmOutOfSync(adviceCache.isOutOfSync(configService.getInstrumentationConfigs()))
+                .setJvmRetransformClassesSupported(jvmRetransformClassesSupported)
                 .build();
     }
 
@@ -136,16 +136,16 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
         List<UiAnalyzedMethod> analyzedMethods = getAnalyzedMethods(className, methodName);
         List<MethodSignature> methodSignatures = Lists.newArrayList();
         for (UiAnalyzedMethod analyzedMethod : analyzedMethods) {
-            ImmutableMethodSignature.Builder builder = ImmutableMethodSignature.builder();
-            builder.name(analyzedMethod.name());
-            builder.addAllParameterTypes(analyzedMethod.parameterTypes());
-            builder.returnType(analyzedMethod.returnType());
+            MethodSignature.Builder builder = MethodSignature.newBuilder();
+            builder.setName(analyzedMethod.name());
+            builder.addAllParameterType(analyzedMethod.parameterTypes());
+            builder.setReturnType(analyzedMethod.returnType());
             // strip final and synchronized from displayed modifiers since they have no impact on
             // the weaver's method matching
             int reducedModifiers = analyzedMethod.modifiers() & ~ACC_FINAL & ~ACC_SYNCHRONIZED;
             String modifierNames = Modifier.toString(reducedModifiers);
             for (String modifier : splitter.split(modifierNames)) {
-                builder.addModifiers(modifier.toLowerCase(Locale.ENGLISH));
+                builder.addModifier(modifier.toLowerCase(Locale.ENGLISH));
             }
             methodSignatures.add(builder.build());
         }

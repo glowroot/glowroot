@@ -28,12 +28,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.config.PluginConfig;
+import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.config.DoubleProperty;
 import org.glowroot.agent.plugin.api.config.StringProperty;
-import org.glowroot.common.config.PluginConfig;
-import org.glowroot.common.config.PluginDescriptor;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
@@ -530,8 +531,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setTimestamp(2, new Date(captureTime));
         boundStatement.setDouble(3, aggregate.getTotalDurationNanos());
         boundStatement.setLong(4, aggregate.getTransactionCount());
-        boundStatement.setBytes(5,
-                aggregate.getTotalNanosHistogram().toByteString().asReadOnlyByteBuffer());
+        boundStatement.setBytes(5, toByteBuffer(aggregate.getTotalNanosHistogram()));
         session.execute(boundStatement);
 
         boundStatement = getInsertOverallPS(throughputTable, rollupLevel).bind();
@@ -547,7 +547,7 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setString(0, serverRollup);
             boundStatement.setString(1, transactionType);
             boundStatement.setTimestamp(2, new Date(captureTime));
-            boundStatement.setBytes(3, profile.toByteString().asReadOnlyByteBuffer());
+            boundStatement.setBytes(3, toByteBuffer(profile));
             session.execute(boundStatement);
         }
         if (aggregate.hasAuxThreadProfile()) {
@@ -556,7 +556,7 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setString(0, serverRollup);
             boundStatement.setString(1, transactionType);
             boundStatement.setTimestamp(2, new Date(captureTime));
-            boundStatement.setBytes(3, profile.toByteString().asReadOnlyByteBuffer());
+            boundStatement.setBytes(3, toByteBuffer(profile));
             session.execute(boundStatement);
         }
         List<QueriesByType> queriesByTypeList = aggregate.getQueriesByTypeList();
@@ -614,8 +614,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setTimestamp(3, new Date(captureTime));
         boundStatement.setDouble(4, aggregate.getTotalDurationNanos());
         boundStatement.setLong(5, aggregate.getTransactionCount());
-        boundStatement.setBytes(6,
-                aggregate.getTotalNanosHistogram().toByteString().asReadOnlyByteBuffer());
+        boundStatement.setBytes(6, toByteBuffer(aggregate.getTotalNanosHistogram()));
         session.execute(boundStatement);
 
         boundStatement = getInsertTransactionPS(throughputTable, rollupLevel).bind();
@@ -633,7 +632,7 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setString(1, transactionType);
             boundStatement.setString(2, transactionName);
             boundStatement.setTimestamp(3, new Date(captureTime));
-            boundStatement.setBytes(4, profile.toByteString().asReadOnlyByteBuffer());
+            boundStatement.setBytes(4, toByteBuffer(profile));
             session.execute(boundStatement);
         }
         if (aggregate.hasAuxThreadProfile()) {
@@ -643,7 +642,7 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setString(1, transactionType);
             boundStatement.setString(2, transactionName);
             boundStatement.setTimestamp(3, new Date(captureTime));
-            boundStatement.setBytes(4, profile.toByteString().asReadOnlyByteBuffer());
+            boundStatement.setBytes(4, toByteBuffer(profile));
             session.execute(boundStatement);
         }
         List<QueriesByType> queriesByTypeList = aggregate.getQueriesByTypeList();
@@ -915,6 +914,10 @@ public class AggregateDao implements AggregateRepository {
         sb.append("_rollup_");
         sb.append(i);
         return sb;
+    }
+
+    private static ByteBuffer toByteBuffer(AbstractMessage message) {
+        return ByteBuffer.wrap(message.toByteString().toByteArray());
     }
 
     @Value.Immutable

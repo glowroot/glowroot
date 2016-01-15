@@ -17,35 +17,23 @@ package org.glowroot.common.live;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
-import org.immutables.value.Value;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignature;
 
 public interface LiveWeavingService {
 
-    GlobalMeta getGlobalMeta(String serverId);
+    GlobalMeta getGlobalMeta(String serverId) throws Exception;
 
-    void preloadClasspathCache(String serverId);
+    void preloadClasspathCache(String serverId) throws Exception;
 
-    List<String> getMatchingClassNames(String serverId, String partialClassName, int limit);
+    List<String> getMatchingClassNames(String serverId, String partialClassName, int limit)
+            throws Exception;
 
     List<String> getMatchingMethodNames(String serverId, String className, String partialMethodName,
-            int limit);
+            int limit) throws Exception;
 
-    List<MethodSignature> getMethodSignatures(String serverId, String className, String methodName);
+    List<MethodSignature> getMethodSignatures(String serverId, String className, String methodName)
+            throws Exception;
 
     int reweave(String serverId) throws Exception;
-
-    @Value.Immutable
-    public interface GlobalMeta {
-        boolean jvmOutOfSync();
-        boolean jvmRetransformClassesSupported();
-    }
-
-    @Value.Immutable
-    public interface MethodSignature {
-        String name();
-        ImmutableList<String> parameterTypes();
-        String returnType();
-        ImmutableList<String> modifiers();
-    }
 }

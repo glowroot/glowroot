@@ -27,7 +27,7 @@ import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
-import static org.glowroot.storage.simplerepo.util.Checkers.castInitialized;
+import static org.glowroot.agent.fat.storage.util.Checkers.castInitialized;
 
 public class TransactionRegistry {
 

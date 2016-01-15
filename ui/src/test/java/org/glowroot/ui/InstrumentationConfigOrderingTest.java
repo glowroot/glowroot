@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,44 +18,43 @@ package org.glowroot.ui;
 import com.google.common.collect.Ordering;
 import org.junit.Test;
 
-import org.glowroot.common.config.ImmutableInstrumentationConfig;
-import org.glowroot.common.config.InstrumentationConfig;
-import org.glowroot.common.config.InstrumentationConfig.CaptureKind;
 import org.glowroot.ui.InstrumentationConfigJsonService.InstrumentationConfigOrdering;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CaptureKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class InstrumentationConfigOrderingTest {
 
-    private final InstrumentationConfig left = ImmutableInstrumentationConfig.builder()
-            .className("a")
-            .methodName("n")
-            .addMethodParameterTypes("java.lang.String")
-            .methodReturnType("")
-            .captureKind(CaptureKind.TIMER)
-            .timerName("t")
-            .traceEntryMessageTemplate("")
-            .traceEntryCaptureSelfNested(false)
-            .transactionType("")
-            .transactionNameTemplate("")
-            .transactionUserTemplate("")
-            .enabledProperty("")
-            .traceEntryEnabledProperty("")
+    private final InstrumentationConfig left = InstrumentationConfig.newBuilder()
+            .setClassName("a")
+            .setMethodName("n")
+            .addMethodParameterType("java.lang.String")
+            .setMethodReturnType("")
+            .setCaptureKind(CaptureKind.TIMER)
+            .setTimerName("t")
+            .setTraceEntryMessageTemplate("")
+            .setTraceEntryCaptureSelfNested(false)
+            .setTransactionType("")
+            .setTransactionNameTemplate("")
+            .setTransactionUserTemplate("")
+            .setEnabledProperty("")
+            .setTraceEntryEnabledProperty("")
             .build();
 
-    private final InstrumentationConfig right = ImmutableInstrumentationConfig.builder()
-            .className("b")
-            .methodName("m")
-            .methodReturnType("")
-            .captureKind(CaptureKind.TIMER)
-            .timerName("t")
-            .traceEntryMessageTemplate("")
-            .traceEntryCaptureSelfNested(false)
-            .transactionType("")
-            .transactionNameTemplate("")
-            .transactionUserTemplate("")
-            .enabledProperty("")
-            .traceEntryEnabledProperty("")
+    private final InstrumentationConfig right = InstrumentationConfig.newBuilder()
+            .setClassName("b")
+            .setMethodName("m")
+            .setMethodReturnType("")
+            .setCaptureKind(CaptureKind.TIMER)
+            .setTimerName("t")
+            .setTraceEntryMessageTemplate("")
+            .setTraceEntryCaptureSelfNested(false)
+            .setTransactionType("")
+            .setTransactionNameTemplate("")
+            .setTransactionUserTemplate("")
+            .setEnabledProperty("")
+            .setTraceEntryEnabledProperty("")
             .build();
 
     @Test
@@ -74,7 +73,7 @@ public class InstrumentationConfigOrderingTest {
         Ordering<InstrumentationConfig> ordering = new InstrumentationConfigOrdering();
         // when
         int compare = ordering.compare(left,
-                ImmutableInstrumentationConfig.builder().copyFrom(right).className("a").build());
+                InstrumentationConfig.newBuilder(right).setClassName("a").build());
         // then
         assertThat(compare).isPositive();
     }
@@ -85,8 +84,8 @@ public class InstrumentationConfigOrderingTest {
         Ordering<InstrumentationConfig> ordering = new InstrumentationConfigOrdering();
         // when
         int compare = ordering.compare(
-                ImmutableInstrumentationConfig.builder().copyFrom(left).methodName("m").build(),
-                ImmutableInstrumentationConfig.builder().copyFrom(right).className("a").build());
+                InstrumentationConfig.newBuilder(left).setMethodName("m").build(),
+                InstrumentationConfig.newBuilder(right).setClassName("a").build());
         // then
         assertThat(compare).isPositive();
     }
@@ -97,9 +96,9 @@ public class InstrumentationConfigOrderingTest {
         Ordering<InstrumentationConfig> ordering = new InstrumentationConfigOrdering();
         // when
         int compare = ordering.compare(
-                ImmutableInstrumentationConfig.builder().copyFrom(left).methodName("m").build(),
-                ImmutableInstrumentationConfig.builder().copyFrom(right).className("a")
-                        .addMethodParameterTypes("java.lang.Throwable").build());
+                InstrumentationConfig.newBuilder(left).setMethodName("m").build(),
+                InstrumentationConfig.newBuilder(right).setClassName("a")
+                        .addMethodParameterType("java.lang.Throwable").build());
         // then
         assertThat(compare).isNegative();
     }
@@ -110,9 +109,9 @@ public class InstrumentationConfigOrderingTest {
         Ordering<InstrumentationConfig> ordering = new InstrumentationConfigOrdering();
         // when
         int compare = ordering.compare(
-                ImmutableInstrumentationConfig.builder().copyFrom(left).methodName("m").build(),
-                ImmutableInstrumentationConfig.builder().copyFrom(right).className("a")
-                        .addMethodParameterTypes("java.lang.String").build());
+                InstrumentationConfig.newBuilder(left).setMethodName("m").build(),
+                InstrumentationConfig.newBuilder(right).setClassName("a")
+                        .addMethodParameterType("java.lang.String").build());
         // then
         assertThat(compare).isZero();
     }

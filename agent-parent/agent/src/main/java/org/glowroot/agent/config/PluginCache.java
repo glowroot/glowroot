@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,12 +39,6 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.config.ImmutableInstrumentationConfig;
-import org.glowroot.common.config.ImmutablePluginDescriptor;
-import org.glowroot.common.config.ImmutablePropertyDescriptor;
-import org.glowroot.common.config.InstrumentationConfig;
-import org.glowroot.common.config.PluginDescriptor;
-import org.glowroot.common.config.PropertyDescriptor;
 import org.glowroot.common.util.ObjectMappers;
 
 @Value.Immutable

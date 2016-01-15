@@ -15,8 +15,10 @@
  */
 package org.glowroot.central.storage;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
@@ -24,25 +26,38 @@ import javax.crypto.SecretKey;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.protobuf.InvalidProtocolBufferException;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.config.AdvancedConfig;
-import org.glowroot.common.config.GaugeConfig;
-import org.glowroot.common.config.InstrumentationConfig;
-import org.glowroot.common.config.PluginConfig;
-import org.glowroot.common.config.TransactionConfig;
-import org.glowroot.common.config.UserRecordingConfig;
+import org.glowroot.central.DownstreamServiceImpl;
+import org.glowroot.central.DownstreamServiceImpl.AgentNotConnectedException;
+import org.glowroot.common.util.Versions;
+import org.glowroot.storage.config.AlertConfig;
+import org.glowroot.storage.config.ImmutableAlertConfig;
+import org.glowroot.storage.config.ImmutableSmtpConfig;
+import org.glowroot.storage.config.ImmutableStorageConfig;
+import org.glowroot.storage.config.ImmutableUserInterfaceConfig;
+import org.glowroot.storage.config.SmtpConfig;
+import org.glowroot.storage.config.StorageConfig;
+import org.glowroot.storage.config.UserInterfaceConfig;
 import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.config.AlertConfig;
-import org.glowroot.storage.repo.config.ImmutableAlertConfig;
-import org.glowroot.storage.repo.config.ImmutableSmtpConfig;
-import org.glowroot.storage.repo.config.ImmutableStorageConfig;
-import org.glowroot.storage.repo.config.ImmutableUserInterfaceConfig;
-import org.glowroot.storage.repo.config.SmtpConfig;
-import org.glowroot.storage.repo.config.StorageConfig;
-import org.glowroot.storage.repo.config.UserInterfaceConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.Value.ValCase;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 public class ConfigRepositoryImpl implements ConfigRepository {
@@ -51,17 +66,25 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     private static final long GAUGE_COLLECTION_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.gaugeCollectionIntervalMillis", 5000);
 
+    private static final Logger logger = LoggerFactory.getLogger(ConfigRepositoryImpl.class);
+
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    private final ConfigDao configDao;
+    private final ServerDao serverDao;
     private final CentralConfigDao centralConfigDao;
 
     private final ImmutableList<RollupConfig> rollupConfigs;
 
-    public ConfigRepositoryImpl(ConfigDao configDao, CentralConfigDao centralConfigDao) {
-        this.configDao = configDao;
+    private volatile @MonotonicNonNull DownstreamServiceImpl downstreamService;
+
+    public ConfigRepositoryImpl(ServerDao serverDao, CentralConfigDao centralConfigDao) {
+        this.serverDao = serverDao;
         this.centralConfigDao = centralConfigDao;
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
+    }
+
+    public void setDownstreamService(DownstreamServiceImpl downstreamService) {
+        this.downstreamService = downstreamService;
     }
 
     @Override
@@ -177,42 +200,87 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public TransactionConfig getTransactionConfig(String serverId) {
-        throw new UnsupportedOperationException();
+    public TransactionConfig getTransactionConfig(String serverId)
+            throws InvalidProtocolBufferException {
+        AgentConfig agentConfig = serverDao.readAgentConfig(serverId);
+        if (agentConfig == null) {
+            throw new IllegalStateException("Agent config not found");
+        }
+        return agentConfig.getTransactionConfig();
     }
 
     @Override
-    public UserRecordingConfig getUserRecordingConfig(String serverId) {
-        throw new UnsupportedOperationException();
+    public UserRecordingConfig getUserRecordingConfig(String serverId) throws IOException {
+        AgentConfig agentConfig = serverDao.readAgentConfig(serverId);
+        if (agentConfig == null) {
+            throw new IllegalStateException("Agent config not found");
+        }
+        return agentConfig.getUserRecordingConfig();
     }
 
     @Override
-    public AdvancedConfig getAdvancedConfig(String serverId) {
-        throw new UnsupportedOperationException();
+    public AdvancedConfig getAdvancedConfig(String serverId) throws IOException {
+        AgentConfig agentConfig = serverDao.readAgentConfig(serverId);
+        if (agentConfig == null) {
+            throw new IllegalStateException("Agent config not found");
+        }
+        return agentConfig.getAdvancedConfig();
     }
 
     @Override
-    public PluginConfig getPluginConfig(String serverId, String pluginId) {
-        throw new UnsupportedOperationException();
+    public List<PluginConfig> getPluginConfigs(String serverId)
+            throws InvalidProtocolBufferException {
+        AgentConfig agentConfig = serverDao.readAgentConfig(serverId);
+        if (agentConfig == null) {
+            throw new IllegalStateException("Agent config not found");
+        }
+        return agentConfig.getPluginConfigList();
     }
 
     @Override
-    public List<InstrumentationConfig> getInstrumentationConfigs(String serverId) {
-        throw new UnsupportedOperationException();
+    public PluginConfig getPluginConfig(String serverId, String pluginId)
+            throws InvalidProtocolBufferException {
+        for (PluginConfig pluginConfig : getPluginConfigs(serverId)) {
+            if (pluginConfig.getId().equals(pluginId)) {
+                return pluginConfig;
+            }
+        }
+        throw new IllegalStateException("Plugin config not found: " + pluginId);
+    }
+
+    @Override
+    public List<GaugeConfig> getGaugeConfigs(String serverId)
+            throws InvalidProtocolBufferException {
+        AgentConfig agentConfig = serverDao.readAgentConfig(serverId);
+        if (agentConfig == null) {
+            throw new IllegalStateException("Agent config not found");
+        }
+        return agentConfig.getGaugeConfigList();
+    }
+
+    @Override
+    public GaugeConfig getGaugeConfig(String serverId, String version)
+            throws InvalidProtocolBufferException {
+        for (GaugeConfig gaugeConfig : getGaugeConfigs(serverId)) {
+            if (Versions.getVersion(gaugeConfig).equals(version)) {
+                return gaugeConfig;
+            }
+        }
+        throw new IllegalStateException("Gauge config not found: " + version);
+    }
+
+    @Override
+    public List<InstrumentationConfig> getInstrumentationConfigs(String serverId)
+            throws InvalidProtocolBufferException {
+        AgentConfig agentConfig = serverDao.readAgentConfig(serverId);
+        if (agentConfig == null) {
+            throw new IllegalStateException("Agent config not found");
+        }
+        return agentConfig.getInstrumentationConfigList();
     }
 
     @Override
     public InstrumentationConfig getInstrumentationConfig(String serverId, String version) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<GaugeConfig> getGaugeConfigs(String serverId) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public GaugeConfig getGaugeConfig(String serverId, String version) {
         throw new UnsupportedOperationException();
     }
 
@@ -222,37 +290,111 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         return ImmutableStorageConfig.builder().build();
     }
 
+    public void updateAgentConfig(String serverId, AgentConfig agentConfig) throws IOException {
+        serverDao.storeAgentConfig(serverId, agentConfig);
+    }
+
     @Override
     public void updateTransactionConfig(String serverId, TransactionConfig transactionConfig,
             String priorVersion) throws Exception {
-        if (!getTransactionConfig(serverId).version().equals(priorVersion)) {
-            throw new OptimisticLockException();
+        AgentConfig updatedAgentConfig;
+        // TODO smaller scope on synchronized block
+        synchronized (this) {
+            AgentConfig agentConfig = serverDao.readAgentConfig(serverId);
+            if (agentConfig == null) {
+                throw new IllegalStateException("Agent config not found");
+            }
+            String existingVersion = Versions.getVersion(agentConfig.getTransactionConfig());
+            if (!priorVersion.equals(existingVersion)) {
+                throw new OptimisticLockException();
+            }
+            updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+                    .setTransactionConfig(transactionConfig)
+                    .build();
+            serverDao.storeAgentConfig(serverId, updatedAgentConfig);
         }
-        configDao.write(serverId, "transactions", transactionConfig, mapper);
+        sendUpdatedAgentConfig(serverId, updatedAgentConfig);
     }
 
     @Override
     public void updateUserRecordingConfig(String serverId, UserRecordingConfig userRecordingConfig,
             String priorVersion) throws Exception {
-        if (!getUserRecordingConfig(serverId).version().equals(priorVersion)) {
-            throw new OptimisticLockException();
+        AgentConfig updatedAgentConfig;
+        // TODO smaller scope on synchronized block
+        synchronized (this) {
+            AgentConfig agentConfig = serverDao.readAgentConfig(serverId);
+            if (agentConfig == null) {
+                throw new IllegalStateException("Agent config not found");
+            }
+            String existingVersion = Versions.getVersion(agentConfig.getUserRecordingConfig());
+            if (!priorVersion.equals(existingVersion)) {
+                throw new OptimisticLockException();
+            }
+            updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+                    .setUserRecordingConfig(userRecordingConfig)
+                    .build();
+            serverDao.storeAgentConfig(serverId, agentConfig);
         }
-        configDao.write(serverId, "userRecording", userRecordingConfig, mapper);
+        sendUpdatedAgentConfig(serverId, updatedAgentConfig);
     }
 
     @Override
     public void updateAdvancedConfig(String serverId, AdvancedConfig advancedConfig,
             String priorVersion) throws Exception {
-        if (!getAdvancedConfig(serverId).version().equals(priorVersion)) {
-            throw new OptimisticLockException();
+        AgentConfig updatedAgentConfig;
+        // TODO smaller scope on synchronized block
+        synchronized (this) {
+            AgentConfig agentConfig = serverDao.readAgentConfig(serverId);
+            if (agentConfig == null) {
+                throw new IllegalStateException("Agent config not found");
+            }
+            String existingVersion = Versions.getVersion(agentConfig.getAdvancedConfig());
+            if (!priorVersion.equals(existingVersion)) {
+                throw new OptimisticLockException();
+            }
+            updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+                    .setAdvancedConfig(advancedConfig)
+                    .build();
+            serverDao.storeAgentConfig(serverId, updatedAgentConfig);
         }
-        configDao.write(serverId, "advanced", advancedConfig, mapper);
+        sendUpdatedAgentConfig(serverId, updatedAgentConfig);
     }
 
     @Override
-    public void updatePluginConfig(String serverId, PluginConfig pluginConfig,
-            String priorVersion) {
-        throw new UnsupportedOperationException();
+    public void updatePluginConfig(String serverId, String pluginId,
+            List<PluginProperty> properties, String priorVersion) throws Exception {
+        AgentConfig updatedAgentConfig;
+        // TODO smaller scope on synchronized block
+        synchronized (this) {
+            AgentConfig agentConfig = serverDao.readAgentConfig(serverId);
+            if (agentConfig == null) {
+                throw new IllegalStateException("Agent config not found");
+            }
+            List<PluginConfig> pluginConfigs =
+                    Lists.newArrayList(agentConfig.getPluginConfigList());
+            ListIterator<PluginConfig> i = pluginConfigs.listIterator();
+            boolean found = false;
+            while (i.hasNext()) {
+                PluginConfig pluginConfig = i.next();
+                if (pluginConfig.getId().equals(pluginId)) {
+                    String existingVersion = Versions.getVersion(pluginConfig);
+                    if (!priorVersion.equals(existingVersion)) {
+                        throw new OptimisticLockException();
+                    }
+                    i.set(buildPluginConfig(pluginConfig, properties));
+                    found = true;
+                }
+            }
+            if (!found) {
+                throw new IllegalStateException("Plugin config not found: " + pluginId);
+            }
+            updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+                    .clearPluginConfig()
+                    .addAllPluginConfig(pluginConfigs)
+                    .build();
+            serverDao.storeAgentConfig(serverId, updatedAgentConfig);
+        }
+        sendUpdatedAgentConfig(serverId, updatedAgentConfig);
     }
 
     @Override
@@ -290,5 +432,61 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateStorageConfig(StorageConfig storageConfig, String priorVersion) {
         throw new UnsupportedOperationException();
+    }
+
+    public AgentConfig getAgentConfig(String serverId) throws IOException {
+        return AgentConfig.newBuilder()
+                .setTransactionConfig(getTransactionConfig(serverId))
+                .setUserRecordingConfig(getUserRecordingConfig(serverId))
+                .setAdvancedConfig(getAdvancedConfig(serverId))
+                .addAllGaugeConfig(getGaugeConfigs(serverId))
+                .addAllInstrumentationConfig(getInstrumentationConfigs(serverId))
+                .build();
+    }
+
+    private void sendUpdatedAgentConfig(String serverId, AgentConfig agentConfig) throws Exception {
+        checkNotNull(downstreamService);
+        try {
+            downstreamService.updateAgentConfig(serverId, agentConfig);
+        } catch (AgentNotConnectedException e) {
+            logger.debug(e.getMessage(), e);
+        }
+    }
+
+    private PluginConfig buildPluginConfig(PluginConfig existingPluginConfig,
+            List<PluginProperty> properties) {
+        Map<String, PluginProperty> props =
+                Maps.newHashMap(Maps.uniqueIndex(properties, PluginProperty::getName));
+        PluginConfig.Builder builder = PluginConfig.newBuilder()
+                .setId(existingPluginConfig.getId())
+                .setName(existingPluginConfig.getName());
+        for (PluginProperty existingProperty : existingPluginConfig.getPropertyList()) {
+            PluginProperty prop = props.remove(existingProperty.getName());
+            if (prop == null) {
+                throw new IllegalStateException(
+                        "Missing plugin property name: " + existingProperty.getName());
+            }
+            if (!isSameType(prop.getValue(), existingProperty.getValue())) {
+                throw new IllegalStateException("Plugin property " + prop.getName()
+                        + " has incorrect type: " + prop.getValue().getValCase());
+            }
+            builder.addProperty(PluginProperty.newBuilder(existingProperty)
+                    .setValue(prop.getValue()));
+        }
+        if (!props.isEmpty()) {
+            throw new IllegalStateException(
+                    "Unexpected property name(s): " + Joiner.on(", ").join(props.keySet()));
+        }
+        return builder.build();
+    }
+
+    private boolean isSameType(PluginProperty.Value left, PluginProperty.Value right) {
+        if (left.getValCase() == ValCase.DVAL && right.getValCase() == ValCase.DVAL_NULL) {
+            return true;
+        }
+        if (left.getValCase() == ValCase.DVAL_NULL && right.getValCase() == ValCase.DVAL) {
+            return true;
+        }
+        return left.getValCase() == right.getValCase();
     }
 }

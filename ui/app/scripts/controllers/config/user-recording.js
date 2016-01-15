@@ -63,7 +63,7 @@ glowroot.controller('ConfigUserRecordingCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/user-recording?server-id=' + $scope.serverId)
+    $http.get('backend/config/user-recording?server-id=' + encodeURIComponent($scope.serverId))
         .success(onNewData)
         .error(httpErrors.handler($scope));
   }

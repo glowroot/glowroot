@@ -84,7 +84,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
     }
 
     if (version) {
-      $http.get('backend/config/instrumentation?server-id=' + $scope.serverId + '&version=' + version)
+      $http.get('backend/config/instrumentation?server-id=' + encodeURIComponent($scope.serverId) + '&version=' + version)
           .success(function (data) {
             $scope.loaded = true;
             onNewData(data);
@@ -99,6 +99,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
           methodDeclaringClassName: '',
           methodAnnotation: '',
           nestingGroup: '',
+          priority: 0,
           captureKind: 'transaction',
           transactionType: '',
           transactionNameTemplate: '',

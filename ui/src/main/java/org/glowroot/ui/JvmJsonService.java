@@ -26,6 +26,7 @@ import javax.management.ObjectName;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
@@ -40,10 +41,11 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.UsedByJsonSerialization;
 import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Availability;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpKind;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -184,10 +186,7 @@ class JvmJsonService {
         checkNotNull(liveJvmService);
         MBeanTreeRequest request = QueryStrings.decode(queryString, MBeanTreeRequest.class);
         MBeanDump mbeanDump = liveJvmService.getMBeanDump(request.serverId(),
-                MBeanDumpRequest.newBuilder()
-                        .setKind(MBeanDumpKind.ALL_MBEANS_INCLUDE_ATTRIBUTES_FOR_SOME)
-                        .addAllObjectName(request.expanded())
-                        .build());
+                MBeanDumpKind.ALL_MBEANS_INCLUDE_ATTRIBUTES_FOR_SOME, request.expanded());
         // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
         // see https://code.google.com/p/guava-libraries/issues/detail?id=635
         Map<String, MBeanTreeInnerNode> sortedRootNodes =
@@ -222,10 +221,8 @@ class JvmJsonService {
         MBeanAttributeMapRequest request =
                 QueryStrings.decode(queryString, MBeanAttributeMapRequest.class);
         MBeanDump mbeanDump = liveJvmService.getMBeanDump(request.serverId(),
-                MBeanDumpRequest.newBuilder()
-                        .setKind(MBeanDumpKind.SOME_MBEANS_INCLUDE_ATTRIBUTES)
-                        .addObjectName(request.objectName())
-                        .build());
+                MBeanDumpKind.SOME_MBEANS_INCLUDE_ATTRIBUTES,
+                ImmutableList.of(request.objectName()));
         List<MBeanDump.MBeanInfo> mbeanInfos = mbeanDump.getMbeanInfoList();
         if (mbeanInfos.isEmpty()) {
             throw new IllegalStateException(
@@ -242,7 +239,24 @@ class JvmJsonService {
     String getCapabilities(String queryString) throws Exception {
         checkNotNull(liveJvmService);
         String serverId = getServerId(queryString);
-        return mapper.writeValueAsString(liveJvmService.getCapabilities(serverId));
+        Capabilities capabilities = liveJvmService.getCapabilities(serverId);
+        StringWriter sw = new StringWriter();
+        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        jg.writeStartObject();
+        writeAvailability("threadCpuTime", capabilities.getThreadCpuTime(), jg);
+        writeAvailability("threadContentionTime", capabilities.getThreadContentionTime(), jg);
+        writeAvailability("threadAllocatedBytes", capabilities.getThreadAllocatedBytes(), jg);
+        jg.writeEndObject();
+        jg.close();
+        return sw.toString();
+    }
+
+    private void writeAvailability(String fieldName, Availability availability, JsonGenerator jg)
+            throws IOException {
+        jg.writeObjectFieldStart(fieldName);
+        jg.writeBooleanField("available", availability.getAvailable());
+        jg.writeStringField("reason", availability.getReason());
+        jg.writeEndObject();
     }
 
     private static String getServerId(String queryString) {

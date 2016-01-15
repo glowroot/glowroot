@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.central;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -22,26 +23,32 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.init.ProcessInfoCreator;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.wire.api.Collector.AgentConfigUpdater;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CentralModule {
 
+    private static final Logger logger = LoggerFactory.getLogger(CentralModule.class);
+
     private final CentralConnection centralConnection;
     private final CentralCollectorImpl grpcCollector;
     private final DownstreamServiceObserver downstreamServiceObserver;
 
     public CentralModule(Map<String, String> properties, @Nullable String collectorHost,
-            ConfigService configService, LiveWeavingService liveWeavingService,
-            LiveJvmService liveJvmService, ScheduledExecutorService scheduledExecutor,
-            String glowrootVersion) throws Exception {
+            ConfigService configService, PluginCache pluginCache,
+            LiveWeavingService liveWeavingService, LiveJvmService liveJvmService,
+            ScheduledExecutorService scheduledExecutor, String glowrootVersion) throws Exception {
 
         String serverId = properties.get("glowroot.server.id");
         if (Strings.isNullOrEmpty(serverId)) {
@@ -60,16 +67,23 @@ public class CentralModule {
         checkNotNull(collectorHost);
 
         centralConnection = new CentralConnection(collectorHost, collectorPort, scheduledExecutor);
-        ConfigUpdateService configUpdateService =
-                new ConfigUpdateService(configService, liveWeavingService);
+        final ConfigUpdateService configUpdateService =
+                new ConfigUpdateService(configService, pluginCache);
         grpcCollector = new CentralCollectorImpl(centralConnection, serverId);
         downstreamServiceObserver = new DownstreamServiceObserver(centralConnection,
-                configUpdateService, liveJvmService, serverId);
+                configUpdateService, liveJvmService, liveWeavingService, serverId);
         downstreamServiceObserver.connectAsync();
-
-        // FIXME build agent config
         grpcCollector.collectInit(ProcessInfoCreator.create(glowrootVersion),
-                AgentConfig.getDefaultInstance());
+                configService.getAgentConfig(), new AgentConfigUpdater() {
+                    @Override
+                    public void update(AgentConfig agentConfig) {
+                        try {
+                            configUpdateService.updateAgentConfig(agentConfig);
+                        } catch (IOException e) {
+                            logger.error(e.getMessage(), e);
+                        }
+                    }
+                });
     }
 
     public CentralCollectorImpl getGrpcCollector() {

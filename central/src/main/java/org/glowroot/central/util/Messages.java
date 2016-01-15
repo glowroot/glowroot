@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.AbstractMessageLite;
 import com.google.protobuf.Parser;
 
-import org.glowroot.storage.simplerepo.util.SizeLimitBypassingParser;
+import org.glowroot.common.util.SizeLimitBypassingParser;
 
 public class Messages {
 

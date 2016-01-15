@@ -68,8 +68,7 @@ public class ProcessInfoCreator {
         if (processId != null) {
             builder.setProcessId(OptionalInt64.newBuilder().setValue(processId).build());
         }
-        return builder
-                .setStartTime(runtimeMXBean.getStartTime())
+        return builder.setStartTime(runtimeMXBean.getStartTime())
                 .setJvm(jvm)
                 .setJava(java)
                 .addAllJvmArg(runtimeMXBean.getInputArguments())

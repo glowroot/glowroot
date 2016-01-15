@@ -40,6 +40,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc;
@@ -64,6 +65,8 @@ public class GrpcServerWrapper {
 
     private final DownstreamServiceImpl downstreamService;
 
+    private volatile @MonotonicNonNull AgentConfig agentConfig;
+
     public GrpcServerWrapper(Collector collector, int port) throws IOException {
         bossEventLoopGroup = EventLoopGroups.create("Glowroot-grpc-boss-ELG");
         workerEventLoopGroup = EventLoopGroups.create("Glowroot-grpc-worker-ELG");
@@ -83,8 +86,20 @@ public class GrpcServerWrapper {
                 .start();
     }
 
+    AgentConfig getAgentConfig() throws InterruptedException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (agentConfig == null && stopwatch.elapsed(SECONDS) < 10) {
+            Thread.sleep(10);
+        }
+        if (agentConfig == null) {
+            throw new IllegalStateException("Timed out waiting to receive agent config");
+        }
+        return agentConfig;
+    }
+
     void updateAgentConfig(AgentConfig agentConfig) throws InterruptedException {
         downstreamService.updateAgentConfig(agentConfig);
+        this.agentConfig = agentConfig;
     }
 
     int reweave() throws InterruptedException {
@@ -113,7 +128,7 @@ public class GrpcServerWrapper {
         }
     }
 
-    private static class CollectorServiceImpl implements CollectorService {
+    private class CollectorServiceImpl implements CollectorService {
 
         private final Collector collector;
 
@@ -123,8 +138,9 @@ public class GrpcServerWrapper {
 
         @Override
         public void collectInit(InitMessage request,
-                StreamObserver<EmptyMessage> responseObserver) {
-            responseObserver.onNext(EmptyMessage.getDefaultInstance());
+                StreamObserver<InitResponse> responseObserver) {
+            agentConfig = request.getAgentConfig();
+            responseObserver.onNext(InitResponse.getDefaultInstance());
             responseObserver.onCompleted();
         }
 

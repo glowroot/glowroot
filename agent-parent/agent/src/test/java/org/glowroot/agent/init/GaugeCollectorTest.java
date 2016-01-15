@@ -29,13 +29,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 
+import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.config.GaugeConfig;
+import org.glowroot.agent.config.ImmutableAdvancedConfig;
+import org.glowroot.agent.config.ImmutableGaugeConfig;
+import org.glowroot.agent.config.ImmutableMBeanAttribute;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
-import org.glowroot.common.config.AdvancedConfig;
-import org.glowroot.common.config.GaugeConfig;
-import org.glowroot.common.config.ImmutableAdvancedConfig;
-import org.glowroot.common.config.ImmutableGaugeConfig;
-import org.glowroot.common.config.ImmutableMBeanAttribute;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;

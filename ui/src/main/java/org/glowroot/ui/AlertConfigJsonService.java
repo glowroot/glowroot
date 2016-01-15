@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,10 +29,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.storage.config.AlertConfig;
+import org.glowroot.storage.config.ImmutableAlertConfig;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.DuplicateMBeanObjectNameException;
-import org.glowroot.storage.repo.config.AlertConfig;
-import org.glowroot.storage.repo.config.ImmutableAlertConfig;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 
@@ -67,13 +67,13 @@ class AlertConfigJsonService {
             if (alertConfig == null) {
                 throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
             }
-            return mapper.writeValueAsString(AlertConfigDto.fromConfig(alertConfig));
+            return mapper.writeValueAsString(AlertConfigDto.create(alertConfig));
         } else {
             List<AlertConfigDto> alertConfigDtos = Lists.newArrayList();
             List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(SERVER_ID);
             alertConfigs = orderingByName.immutableSortedCopy(alertConfigs);
             for (AlertConfig alertConfig : alertConfigs) {
-                alertConfigDtos.add(AlertConfigDto.fromConfig(alertConfig));
+                alertConfigDtos.add(AlertConfigDto.create(alertConfig));
             }
             return mapper.writeValueAsString(alertConfigDtos);
         }
@@ -82,7 +82,7 @@ class AlertConfigJsonService {
     @POST("/backend/config/alerts/add")
     String addAlert(String content) throws Exception {
         AlertConfigDto alertConfigDto = mapper.readValue(content, ImmutableAlertConfigDto.class);
-        AlertConfig alertConfig = alertConfigDto.toConfig();
+        AlertConfig alertConfig = alertConfigDto.convert();
         try {
             configRepository.insertAlertConfig(alertConfigDto.serverId().get(), alertConfig);
         } catch (DuplicateMBeanObjectNameException e) {
@@ -90,16 +90,16 @@ class AlertConfigJsonService {
             logger.debug(e.getMessage(), e);
             throw new JsonServiceException(CONFLICT, "mbeanObjectName");
         }
-        return mapper.writeValueAsString(AlertConfigDto.fromConfig(alertConfig));
+        return mapper.writeValueAsString(AlertConfigDto.create(alertConfig));
     }
 
     @POST("/backend/config/alerts/update")
     String updateAlert(String content) throws Exception {
         AlertConfigDto alertConfigDto = mapper.readValue(content, ImmutableAlertConfigDto.class);
-        AlertConfig alertConfig = alertConfigDto.toConfig();
+        AlertConfig alertConfig = alertConfigDto.convert();
         configRepository.updateAlertConfig(alertConfigDto.serverId().get(), alertConfig,
                 alertConfigDto.version().get());
-        return mapper.writeValueAsString(AlertConfigDto.fromConfig(alertConfig));
+        return mapper.writeValueAsString(AlertConfigDto.create(alertConfig));
     }
 
     @POST("/backend/config/alerts/remove")
@@ -125,7 +125,18 @@ class AlertConfigJsonService {
         abstract ImmutableList<String> emailAddresses();
         abstract Optional<String> version(); // absent for insert operations
 
-        private static AlertConfigDto fromConfig(AlertConfig alertConfig) {
+        private AlertConfig convert() {
+            return ImmutableAlertConfig.builder()
+                    .transactionType(transactionType())
+                    .percentile(percentile())
+                    .timePeriodMinutes(timePeriodMinutes())
+                    .thresholdMillis(thresholdMillis())
+                    .minTransactionCount(minTransactionCount())
+                    .addAllEmailAddresses(emailAddresses())
+                    .build();
+        }
+
+        private static AlertConfigDto create(AlertConfig alertConfig) {
             return ImmutableAlertConfigDto.builder()
                     .transactionType(alertConfig.transactionType())
                     .percentile(alertConfig.percentile())
@@ -134,17 +145,6 @@ class AlertConfigJsonService {
                     .minTransactionCount(alertConfig.minTransactionCount())
                     .addAllEmailAddresses(alertConfig.emailAddresses())
                     .version(alertConfig.version())
-                    .build();
-        }
-
-        private AlertConfig toConfig() {
-            return ImmutableAlertConfig.builder()
-                    .transactionType(transactionType())
-                    .percentile(percentile())
-                    .timePeriodMinutes(timePeriodMinutes())
-                    .thresholdMillis(thresholdMillis())
-                    .minTransactionCount(minTransactionCount())
-                    .addAllEmailAddresses(emailAddresses())
                     .build();
         }
     }

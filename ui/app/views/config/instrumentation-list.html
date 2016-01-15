@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2015 the original author or authors.
+  Copyright 2012-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@
         <span style="padding-right: 20px;">
           {{displayExtra(config)}}
         </span>
-        <a ng-href="config/instrumentation?v={{config.version}}">
+        <a ng-href="config/instrumentation{{instrumentationQueryString(config)}}">
           {{display(config)}}
         </a>
       </div>
@@ -45,7 +45,7 @@
              tied to the gt-button which will then get hidden due to ng-show="dirty" -->
         <div gt-button-group>
           <a class="btn btn-primary pull-left"
-             href="config/instrumentation?new">
+             href="config/instrumentation{{newQueryString()}}">
             Add new
           </a>
           <button ng-click="displayImportModal()"

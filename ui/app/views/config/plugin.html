@@ -18,7 +18,7 @@
     <h2>
       <a class="pull-right"
          style="font-size: 16px; padding-top: 14px;"
-         href="config/plugin-list">
+         href="config/plugin-list{{serverQueryString()}}">
         Return to list
       </a>
 
@@ -27,7 +27,7 @@
         <span class="gt-inline-block gt-separator">
           |
         </span>
-        <span style="font-size: 24px;">{{plugin.name}}</span>
+        <span style="font-size: 24px;">{{config.name}}</span>
       </span>
     </h2>
   </div>
@@ -41,7 +41,7 @@
          class="form-horizontal"
          name="formCtrl">
       <div ng-repeat="property in config.properties">
-        <div ng-switch on="property.type" ng-hide="property.hidden">
+        <div ng-switch on="property.type">
           <div ng-switch-when="string">
             <div gt-form-group
                  gt-label="{{property.label}}"

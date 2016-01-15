@@ -28,6 +28,7 @@ import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.tests.app.LevelOne;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,7 +55,6 @@ public class ThreadStatsIT {
     @Test
     public void shouldReadTraceThreadStatsConfigEnabled() throws Exception {
         // given
-        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(Normal.class);
         // then
@@ -68,6 +68,7 @@ public class ThreadStatsIT {
     @Test
     public void shouldReadTraceThreadStatsConfigDisabled() throws Exception {
         // given
+        disableCaptureThreadStats();
         // when
         Trace trace = container.execute(Normal.class);
         // then
@@ -78,7 +79,6 @@ public class ThreadStatsIT {
     @Test
     public void shouldReadTraceCpuTimeDisabled() throws Exception {
         // given
-        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(ThreadCpuTimeDisabled.class);
         // then
@@ -92,7 +92,6 @@ public class ThreadStatsIT {
     @Test
     public void shouldReadTraceCpuTimeDisabledMid() throws Exception {
         // given
-        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(ThreadCpuTimeDisabledMid.class);
         // then
@@ -106,7 +105,6 @@ public class ThreadStatsIT {
     @Test
     public void shouldReadTraceCpuTimeEnabledMid() throws Exception {
         // given
-        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(ThreadCpuTimeEnabledMid.class);
         // then
@@ -120,7 +118,6 @@ public class ThreadStatsIT {
     @Test
     public void shouldReadTraceContentionMonitoringDisabled() throws Exception {
         // given
-        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(ThreadContentionMonitoringDisabled.class);
         // then
@@ -134,7 +131,6 @@ public class ThreadStatsIT {
     @Test
     public void shouldReadTraceContentionMonitoringDisabledMid() throws Exception {
         // given
-        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(ThreadContentionMonitoringDisabledMid.class);
         // then
@@ -148,7 +144,6 @@ public class ThreadStatsIT {
     @Test
     public void shouldReadTraceContentionMonitoringEnabledMid() throws Exception {
         // given
-        enableCaptureThreadStats();
         // when
         Trace trace = container.execute(ThreadContentionMonitoringEnabledMid.class);
         // then
@@ -162,6 +157,7 @@ public class ThreadStatsIT {
     @Test
     public void shouldReadTraceBothDisabled() throws Exception {
         // given
+        disableCaptureThreadStats();
         // when
         Trace trace = container.execute(BothDisabled.class);
         // then
@@ -169,10 +165,12 @@ public class ThreadStatsIT {
         assertThat(trace.getHeader().hasAuxThreadStats()).isFalse();
     }
 
-    private static void enableCaptureThreadStats() throws Exception {
+    private static void disableCaptureThreadStats() throws Exception {
         container.getConfigService().updateTransactionConfig(
                 TransactionConfig.newBuilder()
-                        .setCaptureThreadStats(ProtoOptional.of(true))
+                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
+                        .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(1000))
+                        .setCaptureThreadStats(false)
                         .build());
     }
 

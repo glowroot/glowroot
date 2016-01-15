@@ -64,6 +64,7 @@ public class FutureTaskIT {
         // given
         container.getConfigService().updateTransactionConfig(
                 TransactionConfig.newBuilder()
+                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
                         .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
                         .build());
         // when
@@ -77,6 +78,7 @@ public class FutureTaskIT {
         // given
         container.getConfigService().updateTransactionConfig(
                 TransactionConfig.newBuilder()
+                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
                         .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
                         .build());
         // when
@@ -90,6 +92,7 @@ public class FutureTaskIT {
         // given
         container.getConfigService().updateTransactionConfig(
                 TransactionConfig.newBuilder()
+                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
                         .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
                         .build());
         // when
@@ -103,6 +106,7 @@ public class FutureTaskIT {
         // given
         container.getConfigService().updateTransactionConfig(
                 TransactionConfig.newBuilder()
+                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
                         .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
                         .build());
         // when

@@ -23,13 +23,13 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.Lists;
 
+import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.agent.model.Profile;
 import org.glowroot.agent.model.QueryData;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
-import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.common.model.MutableProfile;

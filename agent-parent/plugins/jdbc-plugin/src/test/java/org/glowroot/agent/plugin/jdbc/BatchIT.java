@@ -32,8 +32,6 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -107,12 +105,6 @@ public class BatchIT {
     public void testBatchPreparedStatementWithoutClearWithoutCaptureBindParams() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", false);
-        container.getConfigService().updatePluginConfig(PluginConfig.newBuilder()
-                .setId(PLUGIN_ID)
-                .addProperty(PluginProperty.newBuilder()
-                        .setName("captureBindParameters")
-                        .setBval(false))
-                .build());
         // when
         Trace trace = container.execute(ExecuteBatchPreparedStatementWithoutClear.class);
         // then

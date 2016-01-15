@@ -15,12 +15,24 @@ message ServerRequest {
   oneof message {
     HelloAck hello_ack = 100;
     AgentConfigUpdateRequest agent_config_update_request = 200;
-    ReweaveRequest reweave_request = 201;
+
+    // LiveJvmService
     ThreadDumpRequest thread_dump_request = 300;
     AvailableDiskSpaceRequest available_disk_space_request = 301;
     HeapDumpRequest heap_dump_request = 302;
     GcRequest gc_request = 303;
     MBeanDumpRequest mbean_dump_request = 304;
+    MatchingMBeanObjectNamesRequest matching_mbean_object_names_request = 305;
+    MBeanMetaRequest mbean_meta_request = 306;
+    CapabilitiesRequest capabilities_request = 307;
+
+    // LiveWeavingService
+    GlobalMetaRequest global_meta_request = 400;
+    PreloadClasspathCacheRequest preload_classpath_cache_request = 401;
+    MatchingClassNamesRequest matching_class_names_request = 402;
+    MatchingMethodNamesRequest matching_method_names_request = 403;
+    MethodSignaturesRequest method_signatures_request = 404;
+    ReweaveRequest reweave_request = 405;
   }
 }
 
@@ -29,12 +41,24 @@ message ClientResponse {
   oneof message {
     Hello hello = 100;
     AgentConfigUpdateResponse agent_config_update_response = 200;
-    ReweaveResponse reweave_response = 201;
+
+    // LiveJvmService
     ThreadDumpResponse thread_dump_response = 300;
     AvailableDiskSpaceResponse available_disk_space_response = 301;
     HeapDumpResponse heap_dump_response = 302;
     GcResponse gc_response = 303;
     MBeanDumpResponse mbean_dump_response = 304;
+    MatchingMBeanObjectNamesResponse matching_mbean_object_names_response = 305;
+    MBeanMetaResponse mbean_meta_response = 306;
+    CapabilitiesResponse capabilities_response = 307;
+
+    // LiveWeavingService
+    GlobalMetaResponse global_meta_response = 400;
+    PreloadClasspathCacheResponse preload_classpath_cache_response = 401;
+    MatchingClassNamesResponse matching_class_names_response = 402;
+    MatchingMethodNamesResponse matching_method_names_response = 403;
+    MethodSignaturesResponse method_signatures_response = 404;
+    ReweaveResponse reweave_response = 405;
 
     UnknownRequestResponse unknown_request_response = 10000;
     ExceptionResponse exception_response = 10001;
@@ -53,13 +77,6 @@ message AgentConfigUpdateRequest {
 }
 
 message AgentConfigUpdateResponse {
-}
-
-message ReweaveRequest {
-}
-
-message ReweaveResponse {
-  int32 class_update_count = 1;
 }
 
 message ThreadDumpRequest {
@@ -98,6 +115,78 @@ message MBeanDumpRequest {
 
 message MBeanDumpResponse {
   MBeanDump mbean_dump = 1;
+}
+
+message MatchingMBeanObjectNamesRequest {
+  string partial_object_name = 1;
+  int32 limit = 2;
+}
+
+message MatchingMBeanObjectNamesResponse {
+  repeated string object_name = 1;
+}
+
+message MBeanMetaRequest {
+  string object_name = 1;
+}
+
+message MBeanMetaResponse {
+  MBeanMeta mbean_meta = 1;
+}
+
+message CapabilitiesRequest {
+}
+
+message CapabilitiesResponse {
+  Capabilities capabilities = 1;
+}
+
+message GlobalMetaRequest {
+}
+
+message GlobalMetaResponse {
+  GlobalMeta global_meta = 1;
+}
+
+message PreloadClasspathCacheRequest {
+}
+
+message PreloadClasspathCacheResponse {
+}
+
+message MatchingClassNamesRequest {
+  string partial_class_name = 1;
+  int32 limit = 2;
+}
+
+message MatchingClassNamesResponse {
+  repeated string class_name = 1;
+}
+
+message MatchingMethodNamesRequest {
+  string class_name = 1;
+  string partial_method_name = 2;
+  int32 limit = 3;
+}
+
+message MatchingMethodNamesResponse {
+  repeated string method_name = 1;
+}
+
+message MethodSignaturesRequest {
+  string class_name = 1;
+  string method_name = 2;
+}
+
+message MethodSignaturesResponse {
+  repeated MethodSignature method_signature = 1;
+}
+
+message ReweaveRequest {
+}
+
+message ReweaveResponse {
+  int32 class_update_count = 1;
 }
 
 message UnknownRequestResponse {
@@ -187,4 +276,33 @@ message MBeanDump {
     string key = 1;
     MBeanValue value = 2;
   }
+}
+
+message MBeanMeta {
+  bool unmatched = 1;
+  bool unavailable = 2;
+  repeated string attribute_name = 3;
+}
+
+message Capabilities {
+  Availability thread_cpu_time = 1;
+  Availability thread_contention_time = 2;
+  Availability thread_allocated_bytes = 3;
+}
+
+message Availability {
+  bool available = 1;
+  string reason = 2; // only provided when availability is false
+}
+
+message GlobalMeta {
+  bool jvm_out_of_sync = 1;
+  bool jvm_retransform_classes_supported = 2;
+}
+
+message MethodSignature {
+  string name = 1;
+  repeated string parameter_type = 2;
+  string return_type = 3;
+  repeated string modifier = 4; // not using int32 modifier in spirit of protobuf cross-language
 }

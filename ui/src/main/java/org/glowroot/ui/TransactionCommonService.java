@@ -15,13 +15,14 @@
  */
 package org.glowroot.ui;
 
+import java.io.IOException;
 import java.util.List;
 
 import com.google.common.collect.Lists;
 
-import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.QueryCollector;
+import org.glowroot.storage.config.ConfigDefaults;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.OverallQuery;
 import org.glowroot.storage.repo.AggregateRepository.OverallSummary;
@@ -41,7 +42,10 @@ import org.glowroot.storage.repo.ProfileCollector;
 import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.TransactionSummaryCollector;
 import org.glowroot.storage.repo.Utils;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 class TransactionCommonService {
 
@@ -365,11 +369,13 @@ class TransactionCommonService {
         return rolledUpThroughputAggregates;
     }
 
-    private int getMaxAggregateQueriesPerQueryType(String serverRollup) {
-        if (!serverRollup.equals("")) {
-            // TODO this is hacky
-            return ImmutableAdvancedConfig.builder().build().maxAggregateQueriesPerQueryType();
+    private int getMaxAggregateQueriesPerQueryType(String serverRollup) throws IOException {
+        AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(serverRollup);
+        checkNotNull(advancedConfig);
+        if (advancedConfig.hasMaxAggregateQueriesPerQueryType()) {
+            return advancedConfig.getMaxAggregateQueriesPerQueryType().getValue();
+        } else {
+            return ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_QUERY_TYPE;
         }
-        return configRepository.getAdvancedConfig(serverRollup).maxAggregateQueriesPerQueryType();
     }
 }

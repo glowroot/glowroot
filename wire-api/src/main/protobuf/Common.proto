@@ -33,11 +33,3 @@ message OptionalInt64 {
 message OptionalInt32 {
   int32 value = 1;
 }
-
-message OptionalBool {
-  bool value = 1;
-}
-
-message OptionalString {
-  string value = 1;
-}

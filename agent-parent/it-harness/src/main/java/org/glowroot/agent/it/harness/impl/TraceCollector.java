@@ -103,7 +103,8 @@ class TraceCollector implements Collector {
     }
 
     @Override
-    public void collectInit(ProcessInfo processInfo, AgentConfig agentConfig) {}
+    public void collectInit(ProcessInfo processInfo, AgentConfig agentConfig,
+            AgentConfigUpdater agentConfigUpdater) {}
 
     @Override
     public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType) {}

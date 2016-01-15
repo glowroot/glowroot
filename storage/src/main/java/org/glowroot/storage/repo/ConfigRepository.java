@@ -24,17 +24,18 @@ import javax.crypto.SecretKey;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
-import org.glowroot.common.config.AdvancedConfig;
-import org.glowroot.common.config.GaugeConfig;
-import org.glowroot.common.config.InstrumentationConfig;
-import org.glowroot.common.config.PluginConfig;
-import org.glowroot.common.config.TransactionConfig;
-import org.glowroot.common.config.UserRecordingConfig;
 import org.glowroot.common.util.Styles;
-import org.glowroot.storage.repo.config.AlertConfig;
-import org.glowroot.storage.repo.config.SmtpConfig;
-import org.glowroot.storage.repo.config.StorageConfig;
-import org.glowroot.storage.repo.config.UserInterfaceConfig;
+import org.glowroot.storage.config.AlertConfig;
+import org.glowroot.storage.config.SmtpConfig;
+import org.glowroot.storage.config.StorageConfig;
+import org.glowroot.storage.config.UserInterfaceConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 
 public interface ConfigRepository {
 
@@ -50,24 +51,27 @@ public interface ConfigRepository {
     long ROLLUP_2_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.2.intervalMillis", 30 * 60 * 1000); // 30 minutes
 
-    TransactionConfig getTransactionConfig(String serverId);
+    TransactionConfig getTransactionConfig(String serverId) throws IOException;
 
-    UserRecordingConfig getUserRecordingConfig(String serverId);
+    UserRecordingConfig getUserRecordingConfig(String serverId) throws IOException;
 
-    AdvancedConfig getAdvancedConfig(String serverId);
+    AdvancedConfig getAdvancedConfig(String serverId) throws IOException;
 
-    @Nullable
-    PluginConfig getPluginConfig(String serverId, String pluginId);
-
-    List<InstrumentationConfig> getInstrumentationConfigs(String serverId);
+    List<PluginConfig> getPluginConfigs(String serverId) throws IOException;
 
     @Nullable
-    InstrumentationConfig getInstrumentationConfig(String serverId, String version);
+    PluginConfig getPluginConfig(String serverId, String pluginId) throws IOException;
 
-    List<GaugeConfig> getGaugeConfigs(String serverId);
+    List<GaugeConfig> getGaugeConfigs(String serverId) throws IOException;
 
     @Nullable
-    GaugeConfig getGaugeConfig(String serverId, String version);
+    GaugeConfig getGaugeConfig(String serverId, String version) throws IOException;
+
+    List<InstrumentationConfig> getInstrumentationConfigs(String serverId) throws IOException;
+
+    @Nullable
+    InstrumentationConfig getInstrumentationConfig(String serverId, String version)
+            throws IOException;
 
     UserInterfaceConfig getUserInterfaceConfig() throws Exception;
 
@@ -89,8 +93,9 @@ public interface ConfigRepository {
     void updateAdvancedConfig(String serverId, AdvancedConfig advancedConfig, String priorVersion)
             throws Exception;
 
-    void updatePluginConfig(String serverId, PluginConfig pluginConfig, String priorVersion)
-            throws Exception;
+    // only name, type and value of properties is used
+    void updatePluginConfig(String serverId, String pluginId, List<PluginProperty> properties,
+            String priorVersion) throws Exception;
 
     void insertInstrumentationConfig(String serverId, InstrumentationConfig instrumentationConfig)
             throws IOException;
@@ -127,7 +132,7 @@ public interface ConfigRepository {
 
     SecretKey getSecretKey() throws Exception;
 
-    public interface DeprecatedConfigListener {
+    interface DeprecatedConfigListener {
         // the new config is not passed to onChange so that the receiver has to get the latest,
         // this avoids race condition worries that two updates may get sent to the receiver in the
         // wrong order
@@ -136,7 +141,7 @@ public interface ConfigRepository {
 
     @Value.Immutable
     @Styles.AllParameters
-    public abstract class RollupConfig {
+    abstract class RollupConfig {
 
         public abstract long intervalMillis();
         public abstract long viewThresholdMillis();
@@ -159,8 +164,8 @@ public interface ConfigRepository {
     }
 
     @SuppressWarnings("serial")
-    public static class OptimisticLockException extends Exception {}
+    class OptimisticLockException extends Exception {}
 
     @SuppressWarnings("serial")
-    public static class DuplicateMBeanObjectNameException extends Exception {}
+    class DuplicateMBeanObjectNameException extends Exception {}
 }

@@ -20,14 +20,31 @@ glowroot.controller('ConfigGaugeListCtrl', [
   '$scope',
   '$location',
   '$http',
+  'queryStrings',
   'httpErrors',
-  function ($scope, $location, $http, httpErrors) {
+  function ($scope, $location, $http, queryStrings, httpErrors) {
 
     $scope.display = function (gauge) {
       return gauge.config.display.replace(/\//g, '\u200b/');
     };
 
-    $http.get('backend/config/gauges?server-id=' + $scope.serverId)
+    $scope.gaugeQueryString = function (gauge) {
+      var query = {};
+      if ($scope.serverId) {
+        query.serverId = $scope.serverId;
+      }
+      query.v = gauge.config.version;
+      return queryStrings.encodeObject(query);
+    };
+
+    $scope.newQueryString = function () {
+      if ($scope.serverId) {
+        return '?server-id=' + encodeURIComponent($scope.serverId) + '&new';
+      }
+      return '?new';
+    };
+
+    $http.get('backend/config/gauges?server-id=' + encodeURIComponent($scope.serverId))
         .success(function (data) {
           $scope.loaded = true;
           $scope.gauges = data;

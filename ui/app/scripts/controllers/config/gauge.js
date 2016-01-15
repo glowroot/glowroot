@@ -84,7 +84,7 @@ glowroot.controller('ConfigGaugeCtrl', [
     }
 
     if (version) {
-      $http.get('backend/config/gauges?server-id=' + $scope.serverId + '&version=' + version)
+      $http.get('backend/config/gauges?server-id=' + encodeURIComponent($scope.serverId) + '&version=' + version)
           .success(function (data) {
             $scope.loaded = true;
             onNewData(data);
@@ -132,7 +132,7 @@ glowroot.controller('ConfigGaugeCtrl', [
       }
       var queryData = {
         serverId: $scope.serverId,
-        partialMBeanObjectName: suggestion,
+        partialObjectName: suggestion,
         limit: 10
       };
       $scope.showMBeanObjectNameSpinner++;
@@ -170,7 +170,7 @@ glowroot.controller('ConfigGaugeCtrl', [
     function fetchMBeanAttributes(mbeanObjectName) {
       var queryData = {
         serverId: $scope.serverId,
-        mbeanObjectName: mbeanObjectName,
+        objectName: mbeanObjectName,
         gaugeVersion: $scope.config.version || ''
       };
       $scope.mbeanAttributesLoading = true;
