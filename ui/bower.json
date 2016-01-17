@@ -2,7 +2,7 @@
   "name": "glowroot",
   "dependencies": {
     "angular": "1.4.8",
-    "angular-ui-bootstrap": "1.0.0",
+    "angular-ui-bootstrap": "1.0.3",
     "angular-ui-router": "0.2.15",
     "bootstrap": "3.3.6",
     "bootstrap-select": "1.9.3",
@@ -13,7 +13,7 @@
     "fontawesome": "4.5.0",
     "handlebars": "4.0.5",
     "jquery": "2.2.0",
-    "moment": "2.11.0",
+    "moment": "2.11.1",
     "sequeljs": "trask/sequeljs#glowroot-0.8",
     "spinjs": "2.3.2",
     "zeroclipboard": "2.1.6"

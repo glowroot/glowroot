@@ -28,32 +28,15 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <!-- executor plugin is included to test UI display for auxiliary timers/profiles
+           (only when running in javaagent container) -->
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-executor-plugin</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <!-- this is only to prevent annoying eclipse IDE error underlining in UiSandboxMain
-        (even though it runs fine without this) -->
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
     </dependency>
   </dependencies>
 </project>

@@ -49,7 +49,7 @@ public class Main {
         // FIXME
         Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
         Session session = cluster.connect();
-        // session.execute("drop keyspace if exists glowroot");
+//        session.execute("drop keyspace if exists glowroot");
         session.execute("create keyspace if not exists glowroot with replication ="
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
         session.execute("use glowroot");

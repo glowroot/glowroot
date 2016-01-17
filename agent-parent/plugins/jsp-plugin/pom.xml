@@ -23,12 +23,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <!-- don't need this dependency at runtime since only annotations -->
-      <optional>true</optional>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -43,6 +37,11 @@
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-it-harness</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.ning</groupId>
+      <artifactId>async-http-client</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -70,7 +69,7 @@
       <!-- required for tomcat jsp compilation -->
       <groupId>org.apache.ant</groupId>
       <artifactId>ant</artifactId>
-      <version>1.9.4</version>
+      <version>1.9.6</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -75,9 +75,9 @@
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.4</jackson.version>
     <logback.version>1.1.3</logback.version>
-    <immutables.version>2.1.5</immutables.version>
+    <immutables.version>2.1.8</immutables.version>
     <javax.mail.version>1.5.5</javax.mail.version>
-    <jmh.version>1.11.2</jmh.version>
+    <jmh.version>1.11.3</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
@@ -430,9 +430,9 @@
           <version>2.18.1</version>
         </plugin>
         <plugin>
-          <groupId>org.codehaus.mojo</groupId>
+          <groupId>org.sonarsource.scanner.maven</groupId>
           <artifactId>sonar-maven-plugin</artifactId>
-          <version>2.7.1</version>
+          <version>3.0.1</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
