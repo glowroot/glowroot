@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,8 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     private final ImmutableList<Class<?>> bridgeClasses;
     private final Map<String, Class<?>> classes = Maps.newConcurrentMap();
 
+    private final Map<String, byte[]> manualClasses = Maps.newConcurrentMap();
+
     private volatile @MonotonicNonNull Weaver weaver;
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
@@ -63,6 +65,10 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     public void setWeaver(Weaver weaver) {
         this.weaver = weaver;
+    }
+
+    public void addManualClass(String name, byte[] bytes) {
+        manualClasses.put(name, bytes);
     }
 
     public <S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)
@@ -92,16 +98,18 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                 return bridgeClass;
             }
         }
-        String resourceName = ClassNames.toInternalName(name) + ".class";
-        URL url = getResource(resourceName);
-        if (url == null) {
-            throw new ClassNotFoundException(name);
-        }
-        byte[] bytes;
-        try {
-            bytes = Resources.toByteArray(url);
-        } catch (IOException e) {
-            throw new ClassNotFoundException("Error loading class", e);
+        byte[] bytes = manualClasses.get(name);
+        if (bytes == null) {
+            String resourceName = ClassNames.toInternalName(name) + ".class";
+            URL url = getResource(resourceName);
+            if (url == null) {
+                throw new ClassNotFoundException(name);
+            }
+            try {
+                bytes = Resources.toByteArray(url);
+            } catch (IOException e) {
+                throw new ClassNotFoundException("Error loading class", e);
+            }
         }
         return weaveAndDefineClass(name, bytes);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,32 +133,11 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     @Override
     protected void onMethodEnter() {
-        methodStartLabel = new Label();
-        visitLabel(methodStartLabel);
-        // enabled and traveler locals must be defined outside of the try block so they will be
-        // accessible in the catch block
-        for (Advice advice : advisors) {
-            defineAndEvaluateEnabledLocalVar(advice);
-            defineTravelerLocalVar(advice);
-        }
-        saveArgsForMethodExit();
-        for (int i = 0; i < advisors.size(); i++) {
-            Advice advice = advisors.get(i);
-            invokeOnBefore(advice, travelerLocals.get(advice));
-            if (advice.onAfterAdvice() != null || advice.onThrowAdvice() != null) {
-                Label catchStartLabel = new Label();
-                visitLabel(catchStartLabel);
-                catchHandlers
-                        .add(ImmutableCatchHandler.of(catchStartLabel, advisors.subList(0, i + 1)));
-            }
-        }
-        if (needsOnReturn) {
-            onReturnLabel = new Label();
-        }
-        if (needsOnThrow && catchHandlers.isEmpty()) {
-            // need catch for resetting thread locals
-            catchStartLabel = new Label();
-            visitLabel(catchStartLabel);
+        stackFrameTracking = false;
+        try {
+            onMethodEnterInternal();
+        } finally {
+            stackFrameTracking = true;
         }
     }
 
@@ -170,14 +148,16 @@ class WeavingMethodVisitor extends AdviceAdapter {
             // visitMaxs
             checkNotNull(onReturnLabel, "Call to onMethodEnter() is required");
             returnOpcode = opcode;
+            stackFrameTracking = false;
+            try {
+                cleanUpStackIfNeeded(opcode);
+            } finally {
+                stackFrameTracking = true;
+            }
             visitJumpInsn(GOTO, onReturnLabel);
         } else {
             super.visitInsn(opcode);
         }
-    }
-
-    private static boolean isReturnOpcode(int opcode) {
-        return opcode >= IRETURN && opcode <= RETURN;
     }
 
     @Override
@@ -240,6 +220,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     @Override
     public void visitMaxs(int maxStack, int maxLocals) {
+        stackFrameTracking = false;
         // catch end should not precede @OnReturn and @OnAfter
         Label catchEndLabel = new Label();
         if (needsOnThrow) {
@@ -264,6 +245,37 @@ class WeavingMethodVisitor extends AdviceAdapter {
             visitCatchHandlers(catchEndLabel);
         }
         super.visitMaxs(maxStack, maxLocals);
+    }
+
+    private void onMethodEnterInternal() {
+        methodStartLabel = new Label();
+        visitLabel(methodStartLabel);
+        // enabled and traveler locals must be defined outside of the try block so they will be
+        // accessible in the catch block
+        for (Advice advice : advisors) {
+            defineAndEvaluateEnabledLocalVar(advice);
+            defineTravelerLocalVar(advice);
+        }
+        saveArgsForMethodExit();
+        for (int i = 0; i < advisors.size(); i++) {
+            Advice advice = advisors.get(i);
+            invokeOnBefore(advice, travelerLocals.get(advice));
+            if (advice.onAfterAdvice() != null || advice.onThrowAdvice() != null) {
+                Label catchStartLabel = new Label();
+                visitLabel(catchStartLabel);
+                catchHandlers
+                        .add(ImmutableCatchHandler.of(catchStartLabel,
+                                advisors.subList(0, i + 1)));
+            }
+        }
+        if (needsOnReturn) {
+            onReturnLabel = new Label();
+        }
+        if (needsOnThrow && catchHandlers.isEmpty()) {
+            // need catch for resetting thread locals
+            catchStartLabel = new Label();
+            visitLabel(catchStartLabel);
+        }
     }
 
     private void visitCatchHandlers(Label catchEndLabel) {
@@ -772,6 +784,89 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 visitInsn(ACONST_NULL);
                 break;
         }
+    }
+
+    // need to drain stack if any
+    // normal javac bytecode leaves clean stack, but this is not a requirement of valid
+    // bytecode, e.g. see:
+    // https://github.com/jbossas/jboss-invocation/blob/09ac89f4c77f59be12a96a1946273e4fd40a9f78/src/main/java/org/jboss/invocation/proxy/ProxyFactory.java#L166
+    // ideally this would have else statement and pop() the prior method result if the
+    // bytecode generated method returns void
+    private void cleanUpStackIfNeeded(int opcode) {
+        int expectedStackFrameSize;
+        if (opcode == IRETURN || opcode == FRETURN || opcode == ARETURN) {
+            expectedStackFrameSize = 1;
+        } else if (opcode == LRETURN || opcode == DRETURN) {
+            expectedStackFrameSize = 2;
+        } else {
+            expectedStackFrameSize = 0;
+        }
+        if (stackFrame.size() == expectedStackFrameSize) {
+            return;
+        }
+        if (stackFrame.size() < expectedStackFrameSize) {
+            // this shouldn't happen
+            return;
+        }
+        if (expectedStackFrameSize == 0) {
+            cleanExcessFramesLeavingNothing();
+            return;
+        }
+        if (expectedStackFrameSize == 1) {
+            cleanExcessFramesLeavingOneWord();
+            return;
+        }
+        cleanExcessFramesLeavingDoubleWord();
+    }
+
+    private void cleanExcessFramesLeavingNothing() {
+        int excessFrames = stackFrame.size();
+        for (int i = excessFrames - 1; i >= 0; i--) {
+            if (stackFrame.get(i) == SECOND_WORD) {
+                pop2();
+                i--;
+            } else {
+                pop();
+            }
+        }
+    }
+
+    private void cleanExcessFramesLeavingOneWord() {
+        int excessFrames = stackFrame.size() - 1;
+        for (int i = excessFrames - 1; i >= 0; i--) {
+            if (stackFrame.get(i) == SECOND_WORD) {
+                // duplicate top word and insert beneath the third word
+                super.visitInsn(DUP_X2);
+                pop();
+                pop2();
+                i--;
+            } else {
+                swap();
+                pop();
+            }
+        }
+    }
+
+    private void cleanExcessFramesLeavingDoubleWord() {
+        int excessFrames = stackFrame.size() - 2;
+        for (int i = excessFrames - 1; i >= 0; i--) {
+            if (stackFrame.get(i) == SECOND_WORD) {
+                // duplicate two word and insert beneath the fourth word
+                super.visitInsn(DUP2_X2);
+                pop2();
+                pop2();
+                i--;
+            } else {
+                // duplicate two words and insert beneath third word
+                super.visitInsn(DUP2_X1);
+                pop2();
+                pop();
+            }
+        }
+    }
+
+    private static boolean isReturnOpcode(int opcode) {
+        return opcode >= IRETURN && opcode <= RETURN;
     }
 
     @Value.Immutable

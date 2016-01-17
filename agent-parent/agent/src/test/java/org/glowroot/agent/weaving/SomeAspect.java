@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1171,6 +1171,32 @@ public class SomeAspect {
     public static class TestTroublesomeBytecodeAdvice {
         @OnAfter
         public static void onAfter() {}
+    }
+
+    @Pointcut(className = "org.glowroot.agent.weaving.GenerateNotPerfectBytecode$Test",
+            methodName = "test*", methodParameterTypes = {}, timerName = "xyz")
+    public static class NotPerfectBytecodeAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            SomeAspectThreadLocals.enabledCount.increment();
+            return true;
+        }
+        @OnBefore
+        public static void onBefore() {
+            SomeAspectThreadLocals.onBeforeCount.increment();
+        }
+        @OnReturn
+        public static void onReturn() {
+            SomeAspectThreadLocals.onReturnCount.increment();
+        }
+        @OnThrow
+        public static void onThrow() {
+            SomeAspectThreadLocals.onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            SomeAspectThreadLocals.onAfterCount.increment();
+        }
     }
 
     public static class TestClassMeta {

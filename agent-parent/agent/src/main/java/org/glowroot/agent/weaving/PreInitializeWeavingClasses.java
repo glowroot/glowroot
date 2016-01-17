@@ -286,6 +286,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.Advice");
         types.add("org.glowroot.agent.weaving.Advice$AdviceOrdering");
         types.add("org.glowroot.agent.weaving.Advice$AdviceParameter");
+        types.add("org.glowroot.agent.weaving.AdviceAdapter");
         types.add("org.glowroot.agent.weaving.AdviceBuilder");
         types.add("org.glowroot.agent.weaving.AdviceBuilder$1");
         types.add("org.glowroot.agent.weaving.AdviceBuilder$AdviceConstructionException");

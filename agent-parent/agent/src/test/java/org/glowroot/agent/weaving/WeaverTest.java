@@ -34,6 +34,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
 import org.glowroot.agent.weaving.AbstractMisc.ExtendsAbstractMisc;
 import org.glowroot.agent.weaving.AbstractNotMisc.ExtendsAbstractNotMisc;
+import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.agent.weaving.SomeAspect.BasicAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BasicAnnotationBasedAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BasicLowPriorityAdvice;
@@ -83,6 +84,7 @@ import org.glowroot.agent.weaving.SomeAspect.NonMatchingMethodReturnAdvice2;
 import org.glowroot.agent.weaving.SomeAspect.NonMatchingStaticAdvice;
 import org.glowroot.agent.weaving.SomeAspect.NotNestingAdvice;
 import org.glowroot.agent.weaving.SomeAspect.NotNestingWithNoIsEnabledAdvice;
+import org.glowroot.agent.weaving.SomeAspect.NotPerfectBytecodeAdvice;
 import org.glowroot.agent.weaving.SomeAspect.PrimitiveAdvice;
 import org.glowroot.agent.weaving.SomeAspect.PrimitiveWithAutoboxAdvice;
 import org.glowroot.agent.weaving.SomeAspect.PrimitiveWithWildcardAdvice;
@@ -1461,6 +1463,25 @@ public class WeaverTest {
         test.execute1();
     }
 
+    // ===================== test not perfect bytecode =====================
+
+    @Test
+    public void shouldExecuteAdviceOnNotPerfectBytecode() throws Exception {
+        // given
+        LazyDefinedClass implClass = GenerateNotPerfectBytecode.generateNotPerfectBytecode();
+        GenerateNotPerfectBytecode.Test test = newWovenObject(implClass,
+                GenerateNotPerfectBytecode.Test.class, NotPerfectBytecodeAdvice.class);
+        // when
+        test.test1();
+        test.test2();
+        test.test3();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(3);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(3);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(3);
+    }
+
     public static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,
             Class<?> adviceOrShimOrMixinClass, Class<?>... extraBridgeClasses) throws Exception {
         // SomeAspectThreadLocals is passed as bridgeable so that the static thread locals will be
@@ -1493,6 +1514,47 @@ public class WeaverTest {
         WeaverImpl weaver = new WeaverImpl(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
                 NopWeavingTimerService.INSTANCE);
         isolatedWeavingClassLoader.setWeaver(weaver);
+        return isolatedWeavingClassLoader.newInstance(implClass, bridgeClass);
+    }
+
+    public static <S, T extends S> S newWovenObject(LazyDefinedClass toBeDefinedImplClass,
+            Class<S> bridgeClass, Class<?> adviceOrShimOrMixinClass, Class<?>... extraBridgeClasses)
+                    throws Exception {
+        // SomeAspectThreadLocals is passed as bridgeable so that the static thread locals will be
+        // accessible for test verification
+        List<Class<?>> bridgeClasses = Lists.newArrayList();
+        bridgeClasses.add(bridgeClass);
+        bridgeClasses.add(SomeAspectThreadLocals.class);
+        bridgeClasses.add(IntegerThreadLocal.class);
+        bridgeClasses.addAll(Arrays.asList(extraBridgeClasses));
+        IsolatedWeavingClassLoader isolatedWeavingClassLoader =
+                new IsolatedWeavingClassLoader(bridgeClasses.toArray(new Class<?>[0]));
+        List<Advice> advisors = Lists.newArrayList();
+        if (adviceOrShimOrMixinClass.isAnnotationPresent(Pointcut.class)) {
+            advisors.add(new AdviceBuilder(adviceOrShimOrMixinClass).build());
+        }
+        List<MixinType> mixinTypes = Lists.newArrayList();
+        Mixin mixin = adviceOrShimOrMixinClass.getAnnotation(Mixin.class);
+        if (mixin != null) {
+            mixinTypes.add(MixinType.from(mixin, adviceOrShimOrMixinClass));
+        }
+        List<ShimType> shimTypes = Lists.newArrayList();
+        Shim shim = adviceOrShimOrMixinClass.getAnnotation(Shim.class);
+        if (shim != null) {
+            shimTypes.add(ShimType.from(shim, adviceOrShimOrMixinClass));
+        }
+        Supplier<List<Advice>> advisorsSupplier =
+                Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
+        AnalyzedWorld analyzedWorld =
+                new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes, null);
+        WeaverImpl weaver = new WeaverImpl(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
+                NopWeavingTimerService.INSTANCE);
+        isolatedWeavingClassLoader.setWeaver(weaver);
+
+        String className = toBeDefinedImplClass.type().getClassName();
+        isolatedWeavingClassLoader.addManualClass(className, toBeDefinedImplClass.bytes());
+        @SuppressWarnings("unchecked")
+        Class<T> implClass = (Class<T>) Class.forName(className, false, isolatedWeavingClassLoader);
         return isolatedWeavingClassLoader.newInstance(implClass, bridgeClass);
     }
 
