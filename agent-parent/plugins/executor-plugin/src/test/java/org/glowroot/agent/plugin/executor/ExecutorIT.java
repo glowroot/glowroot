@@ -219,7 +219,7 @@ public class ExecutorIT {
                 @Override
                 public void run() {
                     try {
-                        Thread.sleep(100);
+                        Thread.sleep(200);
                     } catch (InterruptedException e) {
                     }
                 }
@@ -228,7 +228,7 @@ public class ExecutorIT {
                 @Override
                 public void run() {
                     try {
-                        Thread.sleep(100);
+                        Thread.sleep(200);
                     } catch (InterruptedException e) {
                     }
                 }
@@ -237,7 +237,7 @@ public class ExecutorIT {
                 @Override
                 public void run() {
                     try {
-                        Thread.sleep(100);
+                        Thread.sleep(200);
                     } catch (InterruptedException e) {
                     }
                 }
