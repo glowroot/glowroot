@@ -205,6 +205,7 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.SortedLists$KeyPresentBehavior$4");
         types.add("com.google.common.collect.SortedLists$KeyPresentBehavior$5");
         types.add("com.google.common.collect.TransformedIterator");
+        types.add("com.google.common.collect.TreeTraverser");
         types.add("com.google.common.collect.UnmodifiableIterator");
         types.add("com.google.common.collect.UnmodifiableListIterator");
         types.add("com.google.common.hash.AbstractByteHasher");
@@ -220,6 +221,7 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.hash.MessageDigestHashFunction$1");
         types.add("com.google.common.hash.MessageDigestHashFunction$MessageDigestHasher");
         types.add("com.google.common.hash.PrimitiveSink");
+        types.add("com.google.common.io.ByteSink");
         types.add("com.google.common.io.ByteSource");
         types.add("com.google.common.io.ByteStreams");
         types.add("com.google.common.io.ByteStreams$1");
@@ -228,6 +230,11 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.io.Closer$LoggingSuppressor");
         types.add("com.google.common.io.Closer$SuppressingSuppressor");
         types.add("com.google.common.io.Closer$Suppressor");
+        types.add("com.google.common.io.Files");
+        types.add("com.google.common.io.Files$1");
+        types.add("com.google.common.io.Files$2");
+        types.add("com.google.common.io.Files$FileByteSink");
+        types.add("com.google.common.io.FileWriteMode");
         types.add("com.google.common.io.LineProcessor");
         types.add("com.google.common.io.Resources");
         types.add("com.google.common.io.Resources$1");
@@ -387,6 +394,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.Opcodes");
         types.add("org.objectweb.asm.Type");
         types.add("org.objectweb.asm.TypePath");
+        types.add("org.objectweb.asm.TypeReference");
         types.add("org.objectweb.asm.commons.AdviceAdapter");
         types.add("org.objectweb.asm.commons.GeneratorAdapter");
         types.add("org.objectweb.asm.commons.JSRInlinerAdapter");
@@ -401,6 +409,16 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.signature.SignatureReader");
         types.add("org.objectweb.asm.signature.SignatureVisitor");
         types.add("org.objectweb.asm.signature.SignatureWriter");
+        types.add("org.objectweb.asm.tree.analysis.Analyzer");
+        types.add("org.objectweb.asm.tree.analysis.AnalyzerException");
+        types.add("org.objectweb.asm.tree.analysis.BasicInterpreter");
+        types.add("org.objectweb.asm.tree.analysis.BasicValue");
+        types.add("org.objectweb.asm.tree.analysis.BasicVerifier");
+        types.add("org.objectweb.asm.tree.analysis.Frame");
+        types.add("org.objectweb.asm.tree.analysis.Interpreter");
+        types.add("org.objectweb.asm.tree.analysis.SimpleVerifier");
+        types.add("org.objectweb.asm.tree.analysis.Subroutine");
+        types.add("org.objectweb.asm.tree.analysis.Value");
         types.add("org.objectweb.asm.tree.AbstractInsnNode");
         types.add("org.objectweb.asm.tree.AnnotationNode");
         types.add("org.objectweb.asm.tree.ClassNode");
@@ -430,6 +448,17 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.tree.TypeAnnotationNode");
         types.add("org.objectweb.asm.tree.TypeInsnNode");
         types.add("org.objectweb.asm.tree.VarInsnNode");
+        types.add("org.objectweb.asm.util.CheckAnnotationAdapter");
+        types.add("org.objectweb.asm.util.CheckClassAdapter");
+        types.add("org.objectweb.asm.util.CheckFieldAdapter");
+        types.add("org.objectweb.asm.util.CheckMethodAdapter");
+        types.add("org.objectweb.asm.util.CheckMethodAdapter$1");
+        types.add("org.objectweb.asm.util.Printer");
+        types.add("org.objectweb.asm.util.Textifiable");
+        types.add("org.objectweb.asm.util.Textifier");
+        types.add("org.objectweb.asm.util.TraceAnnotationVisitor");
+        types.add("org.objectweb.asm.util.TraceMethodVisitor");
+        types.add("org.objectweb.asm.util.TraceSignatureVisitor");
         return types;
     }
 

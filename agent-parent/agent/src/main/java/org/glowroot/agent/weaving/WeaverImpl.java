@@ -15,7 +15,10 @@
  */
 package org.glowroot.agent.weaving;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.security.CodeSource;
 import java.util.List;
 
@@ -24,11 +27,13 @@ import javax.annotation.Nullable;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.Files;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
+import org.objectweb.asm.util.CheckClassAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +45,9 @@ import static org.objectweb.asm.Opcodes.ASM5;
 public class WeaverImpl implements Weaver {
 
     private static final Logger logger = LoggerFactory.getLogger(WeaverImpl.class);
+
+    // useful for debugging java.lang.VerifyErrors
+    private static final boolean verifyWeaving = Boolean.getBoolean("glowroot.weaving.verify");
 
     private final Supplier<List<Advice>> advisors;
     private final ImmutableList<ShimType> shimTypes;
@@ -129,7 +137,36 @@ public class WeaverImpl implements Weaver {
                         classAnalyzer.getMethodAdvisors(), analyzedWorld);
         ClassReader cr = new ClassReader(maybeFelixBytes == null ? classBytes : maybeFelixBytes);
         cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
-        return cw.toByteArray();
+        byte[] wovenBytes = cw.toByteArray();
+        if (verifyWeaving) {
+            verify(wovenBytes, loader, classBytes, className);
+        }
+        return wovenBytes;
+    }
+
+    private static void verify(byte[] wovenBytes, @Nullable ClassLoader loader,
+            byte[] originalBytes, String className) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        CheckClassAdapter.verify(new ClassReader(wovenBytes), loader, false, pw);
+        pw.close();
+        String str = sw.toString();
+        if (!str.isEmpty()) {
+            logger.error("class verify error\n:" + str);
+            String simpleName;
+            int index = className.lastIndexOf('/');
+            if (index == -1) {
+                simpleName = className;
+            } else {
+                simpleName = className.substring(index + 1);
+            }
+            try {
+                Files.write(wovenBytes, new File(simpleName + "-woven.class"));
+                Files.write(originalBytes, new File(simpleName + "-original.class"));
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
     }
 
     private static class JSRInlinerClassVisitor extends ClassVisitor {

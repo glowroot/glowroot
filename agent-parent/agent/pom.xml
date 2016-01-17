@@ -71,6 +71,19 @@
       <artifactId>asm-tree</artifactId>
       <version>${asm.version}</version>
     </dependency>
+     <dependency>
+      <!-- org.objectweb.asm.util.CheckClassAdapter.verify() is used when woven byte code
+        verification is enabled via -Dglowroot.weaving.verify=true -->
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-util</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <!-- this is an optional dependency of asm-util -->
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-analysis</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
