@@ -47,6 +47,9 @@ public class BasicSmokeIT extends WebDriverIT {
 
     private static final Logger logger = LoggerFactory.getLogger(BasicSmokeIT.class);
 
+    // taking heap dump is sporadically crashing JVM (mostly on travis-ci build, but also locally)
+    private static final boolean PERFORM_HEAP_DUMP = false;
+
     @BeforeClass
     public static void setUp() throws Exception {
         AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
@@ -184,14 +187,16 @@ public class BasicSmokeIT extends WebDriverIT {
         jvmSidebar.getThreadDumpLink().click();
 
         jvmSidebar.getHeapDumpLink().click();
-        Utils.withWait(driver, By.xpath("//button[normalize-space()='Heap dump']")).click();
-        Utils.withWait(driver, By.xpath("//button[normalize-space()='Yes']")).click();
-        String heapDumpFileName = Utils
-                .withWait(driver,
-                        By.xpath("//div[@ng-show='heapDumpResponse']//table//tr[1]/td[2]"))
-                .getText();
-        if (!new File(heapDumpFileName).delete()) {
-            throw new IOException("Could not delete heap dump file: " + heapDumpFileName);
+        if (PERFORM_HEAP_DUMP) {
+            Utils.withWait(driver, By.xpath("//button[normalize-space()='Heap dump']")).click();
+            Utils.withWait(driver, By.xpath("//button[normalize-space()='Yes']")).click();
+            String heapDumpFileName = Utils
+                    .withWait(driver,
+                            By.xpath("//div[@ng-show='heapDumpResponse']//table//tr[1]/td[2]"))
+                    .getText();
+            if (!new File(heapDumpFileName).delete()) {
+                throw new IOException("Could not delete heap dump file: " + heapDumpFileName);
+            }
         }
         Utils.withWait(driver, By.xpath("//button[normalize-space()='Check disk space']")).click();
         Utils.withWait(driver, By.xpath("//div[@ng-show='availableDiskSpaceBytes !== undefined']"));
