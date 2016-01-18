@@ -111,12 +111,25 @@ public class ExecutorIT {
         assertThat(header.getEntryCount()).isZero();
     }
 
+    @Test
+    public void shouldNotCaptureAlreadyCompletedFutureGet() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(CallFutureGetOnAlreadyCompletedFuture.class);
+        // then
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getMainThreadRootTimer().getChildTimerCount()).isZero();
+    }
+
     private static void checkTrace(Trace trace) {
         Trace.Header header = trace.getHeader();
         assertThat(header.getMainThreadRootTimer().getChildTimerCount()).isEqualTo(1);
         assertThat(header.getMainThreadRootTimer().getChildTimer(0).getName())
-                .isEqualTo("future get");
-        assertThat(header.getMainThreadRootTimer().getChildTimer(0).getCount()).isEqualTo(3);
+                .isEqualTo("wait on future");
+        assertThat(header.getMainThreadRootTimer().getChildTimer(0).getCount())
+                .isGreaterThanOrEqualTo(1);
+        assertThat(header.getMainThreadRootTimer().getChildTimer(0).getCount())
+                .isLessThanOrEqualTo(3);
         assertThat(header.getAuxThreadRootTimerCount()).isEqualTo(1);
         assertThat(header.getAsyncRootTimerCount()).isZero();
         assertThat(header.getAuxThreadRootTimer(0).getName()).isEqualTo("auxiliary thread");
@@ -245,6 +258,30 @@ public class ExecutorIT {
             future1.get();
             future2.get();
             future3.get();
+        }
+    }
+
+    public static class CallFutureGetOnAlreadyCompletedFuture
+            implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            ExecutorService executor = Executors.newCachedThreadPool();
+            Future<Void> future = executor.submit(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    return null;
+                }
+            });
+            while (!future.isDone()) {
+                Thread.sleep(1);
+            }
+            future.get();
         }
     }
 

@@ -16,6 +16,7 @@
 package org.glowroot.agent.plugin.executor;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 import javax.annotation.Nullable;
 
@@ -123,13 +124,15 @@ public class ExecutorAspect {
     }
 
     @Pointcut(className = "java.util.concurrent.Future", methodName = "get",
-            methodParameterTypes = {".."}, timerName = "future get")
+            methodParameterTypes = {".."}, timerName = "wait on future")
     public static class FutureGetAdvice {
         private static final TimerName timerName =
                 transactionService.getTimerName(FutureGetAdvice.class);
         @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
+        public static boolean isEnabled(@BindReceiver Future<?> future) {
+            // don't capture if already done, primarily this is to avoid caching pattern where
+            // a future is used to store the value to ensure only-once initialization
+            return configService.isEnabled() && !future.isDone();
         }
         @OnBefore
         public static Timer onBefore() {
