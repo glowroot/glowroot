@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,7 +90,7 @@ public class MainEntryPoint {
         initLogging(baseDir);
         String version;
         try {
-            version = Version.getVersion();
+            version = Version.getVersion(MainEntryPoint.class);
             ImmutableMap<String, String> properties = getGlowrootProperties(baseDir);
             new GlowrootFatAgentInit().init(baseDir, null, properties, null, glowrootJarFile,
                     version, true);
@@ -130,7 +130,7 @@ public class MainEntryPoint {
                     throws Exception {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
-        String version = Version.getVersion();
+        String version = Version.getVersion(MainEntryPoint.class);
         String collectorHost = properties.get("glowroot.collector.host");
         if (Strings.isNullOrEmpty(collectorHost)) {
             collectorHost = System.getProperty("glowroot.collector.host");

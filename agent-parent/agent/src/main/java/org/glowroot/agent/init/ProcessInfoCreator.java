@@ -29,7 +29,6 @@ import com.google.common.base.StandardSystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.util.Version;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
 import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
@@ -69,7 +68,6 @@ public class ProcessInfoCreator {
         if (processId != null) {
             builder.setProcessId(OptionalInt64.newBuilder().setValue(processId).build());
         }
-        Version.getVersion();
         return builder
                 .setStartTime(runtimeMXBean.getStartTime())
                 .setJvm(jvm)

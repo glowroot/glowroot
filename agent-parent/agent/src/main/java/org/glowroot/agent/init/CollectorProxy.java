@@ -18,7 +18,10 @@ package org.glowroot.agent.init;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -31,7 +34,11 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 @VisibleForTesting
 public class CollectorProxy implements Collector {
 
+    private static final Logger logger = LoggerFactory.getLogger(CollectorProxy.class);
+
     private volatile @MonotonicNonNull Collector instance;
+
+    private final List<LogEvent> earlyLogEvents = Lists.newCopyOnWriteArrayList();
 
     @Override
     public void collectInit(ProcessInfo processInfo, AgentConfig agentConfig) throws Exception {
@@ -66,11 +73,21 @@ public class CollectorProxy implements Collector {
     public void log(LogEvent logEvent) throws Exception {
         if (instance != null) {
             instance.log(logEvent);
+        } else if (earlyLogEvents.size() < 100) {
+            earlyLogEvents.add(logEvent);
         }
     }
 
     @VisibleForTesting
     public void setInstance(Collector instance) {
         this.instance = instance;
+        try {
+            for (LogEvent logEvent : earlyLogEvents) {
+                instance.log(logEvent);
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+        earlyLogEvents.clear();
     }
 }

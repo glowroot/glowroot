@@ -50,7 +50,7 @@ public class Main {
         SLF4JBridgeHandler.install();
 
         Clock clock = Clock.systemClock();
-        String version = Version.getVersion();
+        String version = Version.getVersion(Main.class);
 
         // FIXME
         Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();

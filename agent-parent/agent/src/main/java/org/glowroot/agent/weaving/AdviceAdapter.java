@@ -48,6 +48,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 // * field "stackFrameTracking" to allow subclass to temporarily suppress stack frame tracking
 // * fix in visitFieldInsn switch case PUTFIELD
 // (reported fix at http://forge.ow2.org/tracker/?group_id=23&atid=100023&func=detail&aid=317604)
+// * clearing stackFrame on GOTO
 public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
 
     private static final Object THIS = new Object();
@@ -505,6 +506,9 @@ public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes 
                     break;
             }
             addBranch(label);
+            if (opcode == GOTO) {
+                stackFrame = new ArrayList<Object>();
+            }
         }
     }
 
