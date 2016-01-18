@@ -61,6 +61,8 @@ public class JsfRenderIT {
         container.checkAndReset();
     }
 
+    // TODO add tests for "jsf apply request" and "jsf invoke"
+
     @Test
     public void shouldCaptureJsfRenderingInTomcat() throws Exception {
         // given

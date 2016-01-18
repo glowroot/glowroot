@@ -3,6 +3,26 @@
   "id": "jsf",
   "instrumentation": [
     {
+      "className": "com.sun.faces.lifecycle.ApplyRequestValuesPhase",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        "javax.faces.context.FacesContext"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "jsf apply request",
+      "traceEntryMessageTemplate": "jsf apply request: {{0.viewRoot.viewId}}"
+    },
+    {
+      "className": "com.sun.faces.application.ActionListenerImpl",
+      "methodName": "processAction",
+      "methodParameterTypes": [
+        "javax.faces.event.ActionEvent"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "jsf invoke",
+      "traceEntryMessageTemplate": "jsf invoke: {{0.component.id}}"
+    },
+    {
       "className": "com.sun.faces.lifecycle.RenderResponsePhase",
       "methodName": "execute",
       "methodParameterTypes": [
