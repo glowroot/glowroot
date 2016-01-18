@@ -25,6 +25,8 @@ import org.mockito.stubbing.Answer;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.QueryData;
+import org.glowroot.agent.model.ThreadStats;
+import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.util.Clock;
@@ -65,10 +67,17 @@ public class AggregatorTest {
                 configService, 1000, Clock.systemClock());
 
         Transaction transaction = mock(Transaction.class);
+        TimerImpl mainThreadRootTimer = mock(TimerImpl.class);
+        when(mainThreadRootTimer.getName()).thenReturn("mock timer");
+        when(mainThreadRootTimer.getChildTimers())
+                .thenReturn(ImmutableList.<TimerImpl>of().iterator());
         when(transaction.getTransactionType()).thenReturn("a type");
         when(transaction.getTransactionName()).thenReturn("a name");
         when(transaction.getDurationNanos()).thenReturn(MILLISECONDS.toNanos(123));
+        when(transaction.getMainThreadRootTimer()).thenReturn(mainThreadRootTimer);
         when(transaction.getQueries()).thenReturn(ImmutableList.<QueryData>of().iterator());
+        when(transaction.getAuxThreadRootTimers()).thenReturn(ImmutableList.<TimerImpl>of());
+        when(transaction.getAuxThreadStats()).thenReturn(ImmutableList.<ThreadStats>of());
         // when
         int count = 0;
         long firstCaptureTime = aggregator.add(transaction);
