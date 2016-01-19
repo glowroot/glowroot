@@ -82,6 +82,10 @@
       <artifactId>glowroot-agent-struts-plugin</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <artifactId>glowroot-agent-spring-plugin</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 
   <build>
