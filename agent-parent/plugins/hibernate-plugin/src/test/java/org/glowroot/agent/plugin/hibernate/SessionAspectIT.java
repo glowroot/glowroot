@@ -64,6 +64,8 @@ public class SessionAspectIT {
         assertThat(trace.getEntryCount()).isZero();
     }
 
+    // TODO add unit test for jpa criteria query
+
     @Test
     public void shouldCaptureSave() throws Exception {
         // given

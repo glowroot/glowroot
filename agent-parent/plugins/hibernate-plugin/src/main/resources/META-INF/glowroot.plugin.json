@@ -11,6 +11,15 @@
       "timerName": "hibernate query"
     },
     {
+      "className": "javax.persistence.TypedQuery",
+      "methodDeclaringClassName": "org.hibernate.*",
+      "methodName": "getResultList",
+      "methodParameterTypes": [
+      ],
+      "captureKind": "timer",
+      "timerName": "hibernate query"
+    },
+    {
       "className": "org.hibernate.Session",
       "methodName": "flush",
       "methodParameterTypes": [
