@@ -150,6 +150,11 @@ public class UserProfileScheduler {
         }
 
         private void captureStackTraces(List<ThreadContextImpl> threadContexts) {
+            if (threadContexts.isEmpty()) {
+                // critical not to call ThreadMXBean.getThreadInfo() with empty id list
+                // see https://bugs.openjdk.java.net/browse/JDK-8074368
+                return;
+            }
             long[] threadIds = new long[threadContexts.size()];
             for (int i = 0; i < threadContexts.size(); i++) {
                 threadIds[i] = threadContexts.get(i).getThreadId();

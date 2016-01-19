@@ -118,13 +118,9 @@ public class LiveJvmServiceImpl implements LiveJvmService {
             file = new File(dir, "heap-dump-" + timestamp + "-" + i + ".hprof");
         }
         ObjectName objectName = ObjectName.getInstance(HOT_SPOT_DIAGNOSTIC_MBEAN_NAME);
-        // logging before and after heap dump in case it crashes the JVM
-        logger.warn("heap dump requested...");
         lazyPlatformMBeanServer.invoke(objectName, "dumpHeap",
                 new Object[] {file.getAbsolutePath(), false},
                 new String[] {"java.lang.String", "boolean"});
-        logger.warn(
-                "heap dump completed: " + file.getAbsolutePath() + "(" + file.length() + " bytes)");
         return HeapDumpFileInfo.newBuilder()
                 .setFilePath(file.getAbsolutePath())
                 .setFileSizeBytes(file.length())
