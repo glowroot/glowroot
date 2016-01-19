@@ -90,6 +90,7 @@ public class ConnectionAndTxLifecycleIT {
     @Test
     public void testConnectionLifecyclePartiallyDisabled() throws Exception {
         // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionClose", true);
         // when
         Trace trace = container.execute(ExecuteGetConnectionAndConnectionClose.class);
         // then
@@ -180,6 +181,7 @@ public class ConnectionAndTxLifecycleIT {
     @Test
     public void testConnectionLifecycleCloseConnectionThrowsPartiallyDisabled() throws Exception {
         // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionClose", true);
         // when
         Trace trace = container.execute(ExecuteCloseConnectionOnThrowingDataSource.class);
         // then

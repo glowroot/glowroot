@@ -36,7 +36,6 @@
     {
       "name": "captureConnectionClose",
       "type": "boolean",
-      "default": true,
       "label": "Connection close",
       "checkboxLabel": "Capture timings for Connection.close()",
       "description": "Capture timings for executions of Connection.close()."
