@@ -1,0 +1,116 @@
+{
+  "name": "Hibernate Plugin",
+  "id": "hibernate",
+  "instrumentation": [
+    {
+      "className": "org.hibernate.internal.SessionImpl",
+      "methodName": "list",
+      "methodParameterTypes": [
+        "org.hibernate.Criteria"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate list",
+      "traceEntryMessageTemplate": "hibernate list: {{0.entityOrClassName}}"
+    },
+    {
+      "className": "org.hibernate.internal.SessionImpl",
+      "methodName": "saveOrUpdate",
+      "methodParameterTypes": [
+        "java.lang.Object"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate saveOrUpdate",
+      "traceEntryMessageTemplate": "hibernate saveOrUpdate: {{0.class.name}}"
+    },
+    {
+      "className": "org.hibernate.internal.SessionImpl",
+      "methodName": "save",
+      "methodParameterTypes": [
+        "java.lang.Object"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate save",
+      "traceEntryMessageTemplate": "hibernate save: {{0.class.name}}"
+    },
+    {
+      "className": "org.hibernate.internal.SessionImpl",
+      "methodName": "merge",
+      "methodParameterTypes": [
+        "java.lang.Object"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate merge",
+      "traceEntryMessageTemplate": "hibernate merge: {{0.class.name}}"
+    },
+    {
+      "className": "org.hibernate.internal.SessionImpl",
+      "methodName": "update",
+      "methodParameterTypes": [
+        "java.lang.Object"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate update",
+      "traceEntryMessageTemplate": "hibernate update: {{0.class.name}}"
+    },
+    {
+      "className": "org.hibernate.internal.SessionImpl",
+      "methodName": "persist",
+      "methodParameterTypes": [
+        "java.lang.Object"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate persist",
+      "traceEntryMessageTemplate": "hibernate persist: {{0.class.name}}"
+    },
+    {
+      "className": "org.hibernate.internal.SessionImpl",
+      "methodName": "delete",
+      "methodParameterTypes": [
+        "java.lang.Object"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate delete",
+      "traceEntryMessageTemplate": "hibernate delete: {{0.class.name}}"
+    },
+    {
+      "className": "org.hibernate.internal.SessionImpl",
+      "methodName": "flush",
+      "methodParameterTypes": [],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate flush",
+      "traceEntryMessageTemplate": "hibernate flush"
+    },
+    {
+      "className": "org.hibernate.internal.SessionImpl",
+      "methodName": "refresh",
+      "methodParameterTypes": [
+        "java.lang.Object"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate refresh",
+      "traceEntryMessageTemplate": "hibernate refresh: {{0.class.name}}"
+    },
+    {
+      "className": "org.hibernate.internal.SessionImpl",
+      "methodName": "load",
+      "methodParameterTypes": [
+        "java.lang.Class",
+        "java.io.Serializable"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate load",
+      "traceEntryMessageTemplate": "hibernate load: {{0.name}}"
+    },
+    {
+      "className": "org.hibernate.internal.SessionImpl",
+      "methodName": "get",
+      "methodParameterTypes": [
+        "java.lang.Class",
+        "java.io.Serializable"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate get",
+      "traceEntryMessageTemplate": "hibernate get: {{0.name}}"
+    }
+  ]
+}
