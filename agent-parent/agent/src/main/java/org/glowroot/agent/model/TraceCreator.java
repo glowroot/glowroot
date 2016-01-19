@@ -33,8 +33,6 @@ import org.glowroot.wire.api.model.ProfileOuterClass.Profile.ProfileNode;
 import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 @Styles.Private
 public class TraceCreator {
 
@@ -146,12 +144,7 @@ public class TraceCreator {
         builder.addAllAsyncRootTimer(mergeRootTimers(transaction.getAsyncRootTimers()));
         ThreadStats mainThreadStats = transaction.getMainThreadStats();
         List<ThreadStats> auxThreadStats = Lists.newArrayList(transaction.getAuxThreadStats());
-        if (mainThreadStats == null) {
-            Trace.ThreadStats auxThreadStatsProto = mergeThreadStats(auxThreadStats);
-            if (auxThreadStatsProto != null) {
-                builder.setAuxThreadStats(auxThreadStatsProto);
-            }
-        } else if (transaction.isAsynchronous()) {
+        if (transaction.isAsynchronous()) {
             // the main thread is treated as just another auxiliary thread
             auxThreadStats.add(mainThreadStats);
             Trace.ThreadStats auxThreadStatsProto = mergeThreadStats(auxThreadStats);
@@ -231,25 +224,21 @@ public class TraceCreator {
     }
 
     private static @Nullable Trace.ThreadStats mergeThreadStats(List<ThreadStats> threadStatsList) {
-        long totalCpuNanos = NotAvailableAware.NA;
-        long totalBlockedNanos = NotAvailableAware.NA;
-        long totalWaitedNanos = NotAvailableAware.NA;
-        long totalAllocatedBytes = NotAvailableAware.NA;
+        if (threadStatsList.isEmpty()) {
+            return null;
+        }
+        long totalCpuNanos = 0;
+        long totalBlockedNanos = 0;
+        long totalWaitedNanos = 0;
+        long totalAllocatedBytes = 0;
         for (ThreadStats threadStats : threadStatsList) {
             totalCpuNanos = NotAvailableAware.add(totalCpuNanos, threadStats.getTotalCpuNanos());
-            long totalBlockedMillis = threadStats.getTotalBlockedMillis();
-            if (!NotAvailableAware.isNA(totalBlockedMillis)) {
-                totalBlockedNanos = NotAvailableAware.add(totalBlockedNanos,
-                        MILLISECONDS.toNanos(totalBlockedMillis));
-            }
-            long totalWaitedMillis = threadStats.getTotalWaitedMillis();
-            if (!NotAvailableAware.isNA(totalWaitedMillis)) {
-                totalWaitedNanos = NotAvailableAware.add(totalWaitedNanos,
-                        MILLISECONDS.toNanos(totalWaitedMillis));
-            }
-            totalAllocatedBytes =
-                    NotAvailableAware.add(totalAllocatedBytes,
-                            threadStats.getTotalAllocatedBytes());
+            totalBlockedNanos = NotAvailableAware.addMillisToNanos(totalBlockedNanos,
+                    threadStats.getTotalBlockedMillis());
+            totalWaitedNanos = NotAvailableAware.addMillisToNanos(totalWaitedNanos,
+                    threadStats.getTotalWaitedMillis());
+            totalAllocatedBytes = NotAvailableAware.add(totalAllocatedBytes,
+                    threadStats.getTotalAllocatedBytes());
         }
         boolean totalCpuNanosNA = NotAvailableAware.isNA(totalCpuNanos);
         boolean totalBlockedNanosNA = NotAvailableAware.isNA(totalBlockedNanos);

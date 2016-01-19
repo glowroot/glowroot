@@ -112,9 +112,9 @@ public class ThreadContextImpl {
         return traceEntryComponent.toProto(captureTick, asyncRootTraceEntries);
     }
 
-    public @Nullable ThreadStats getThreadStats() {
+    public ThreadStats getThreadStats() {
         if (threadStatsComponent == null) {
-            return null;
+            return ThreadStats.NA;
         }
         return threadStatsComponent.getThreadStats();
     }

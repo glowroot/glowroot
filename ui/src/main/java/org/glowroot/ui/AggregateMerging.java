@@ -27,7 +27,6 @@ import org.glowroot.storage.repo.AggregateRepository.OverviewAggregate;
 import org.glowroot.storage.repo.MutableThreadStats;
 import org.glowroot.storage.repo.MutableTimer;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.ThreadStats;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.Timer;
 
 class AggregateMerging {
@@ -47,24 +46,18 @@ class AggregateMerging {
             mergeRootTimers(aggregate.mainThreadRootTimers(), mainThreadRootTimers);
             mergeRootTimers(aggregate.auxThreadRootTimers(), auxThreadRootTimers);
             mergeRootTimers(aggregate.asyncRootTimers(), asyncRootTimers);
-            ThreadStats threadStats = aggregate.mainThreadStats();
-            if (threadStats != null) {
-                mainThreadStats.addThreadStats(threadStats);
-            }
-            threadStats = aggregate.auxThreadStats();
-            if (threadStats != null) {
-                auxThreadStats.addThreadStats(threadStats);
-            }
+            mainThreadStats.addThreadStats(aggregate.mainThreadStats());
+            auxThreadStats.addThreadStats(aggregate.auxThreadStats());
         }
         ImmutableMergedAggregate.Builder mergedAggregate = ImmutableMergedAggregate.builder();
         mergedAggregate.transactionCount(transactionCount);
         mergedAggregate.mainThreadRootTimers(mainThreadRootTimers);
         mergedAggregate.auxThreadRootTimers(auxThreadRootTimers);
         mergedAggregate.asyncRootTimers(asyncRootTimers);
-        if (!mainThreadStats.isEmpty()) {
+        if (!mainThreadStats.isNA()) {
             mergedAggregate.mainThreadStats(mainThreadStats);
         }
-        if (!auxThreadStats.isEmpty()) {
+        if (!auxThreadStats.isNA()) {
             mergedAggregate.auxThreadStats(auxThreadStats);
         }
         return mergedAggregate.build();

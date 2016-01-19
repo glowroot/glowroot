@@ -15,6 +15,10 @@
  */
 package org.glowroot.storage.repo;
 
+import javax.annotation.Nullable;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.UsedByJsonSerialization;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -22,10 +26,12 @@ import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble;
 
 public class MutableThreadStats {
 
-    private double totalCpuNanos = NotAvailableAware.NA;
-    private double totalBlockedNanos = NotAvailableAware.NA;
-    private double totalWaitedNanos = NotAvailableAware.NA;
-    private double totalAllocatedBytes = NotAvailableAware.NA;
+    private double totalCpuNanos;
+    private double totalBlockedNanos;
+    private double totalWaitedNanos;
+    private double totalAllocatedBytes;
+
+    private boolean empty = true;
 
     @UsedByJsonSerialization
     public double getTotalCpuNanos() {
@@ -47,26 +53,46 @@ public class MutableThreadStats {
         return totalAllocatedBytes;
     }
 
-    public void addThreadStats(Aggregate.ThreadStats threadStats) {
+    public void addThreadStats(@Nullable Aggregate.ThreadStats threadStats) {
+        if (threadStats == null) {
+            totalCpuNanos = NotAvailableAware.NA;
+            totalBlockedNanos = NotAvailableAware.NA;
+            totalWaitedNanos = NotAvailableAware.NA;
+            totalAllocatedBytes = NotAvailableAware.NA;
+            return;
+        }
         if (threadStats.hasTotalCpuNanos()) {
             totalCpuNanos = NotAvailableAware.add(totalCpuNanos,
                     threadStats.getTotalCpuNanos().getValue());
+        } else {
+            totalCpuNanos = NotAvailableAware.NA;
         }
         if (threadStats.hasTotalBlockedNanos()) {
             totalBlockedNanos = NotAvailableAware.add(totalBlockedNanos,
                     threadStats.getTotalBlockedNanos().getValue());
+        } else {
+            totalCpuNanos = NotAvailableAware.NA;
         }
         if (threadStats.hasTotalWaitedNanos()) {
             totalWaitedNanos = NotAvailableAware.add(totalWaitedNanos,
                     threadStats.getTotalWaitedNanos().getValue());
+        } else {
+            totalCpuNanos = NotAvailableAware.NA;
         }
         if (threadStats.hasTotalAllocatedBytes()) {
             totalAllocatedBytes = NotAvailableAware.add(totalAllocatedBytes,
                     threadStats.getTotalAllocatedBytes().getValue());
+        } else {
+            totalCpuNanos = NotAvailableAware.NA;
         }
+        empty = false;
     }
 
-    public boolean isEmpty() {
+    @JsonIgnore
+    public boolean isNA() {
+        if (empty) {
+            return true;
+        }
         return NotAvailableAware.isNA(totalCpuNanos)
                 && NotAvailableAware.isNA(totalBlockedNanos)
                 && NotAvailableAware.isNA(totalWaitedNanos)
@@ -74,19 +100,23 @@ public class MutableThreadStats {
     }
 
     Aggregate.ThreadStats toProto() {
-        return Aggregate.ThreadStats.newBuilder()
-                .setTotalCpuNanos(toOptionalDouble(totalCpuNanos))
-                .setTotalBlockedNanos(toOptionalDouble(totalBlockedNanos))
-                .setTotalWaitedNanos(toOptionalDouble(totalWaitedNanos))
-                .setTotalAllocatedBytes(toOptionalDouble(totalAllocatedBytes))
-                .build();
+        Aggregate.ThreadStats.Builder builder = Aggregate.ThreadStats.newBuilder();
+        if (!NotAvailableAware.isNA(totalCpuNanos)) {
+            builder.setTotalCpuNanos(toProto(totalCpuNanos));
+        }
+        if (!NotAvailableAware.isNA(totalBlockedNanos)) {
+            builder.setTotalBlockedNanos(toProto(totalBlockedNanos));
+        }
+        if (!NotAvailableAware.isNA(totalWaitedNanos)) {
+            builder.setTotalWaitedNanos(toProto(totalWaitedNanos));
+        }
+        if (!NotAvailableAware.isNA(totalAllocatedBytes)) {
+            builder.setTotalAllocatedBytes(toProto(totalAllocatedBytes));
+        }
+        return builder.build();
     }
 
-    private static OptionalDouble toOptionalDouble(double value) {
-        if (NotAvailableAware.isNA(value)) {
-            return OptionalDouble.getDefaultInstance();
-        } else {
-            return OptionalDouble.newBuilder().setValue(value).build();
-        }
+    private static OptionalDouble toProto(double value) {
+        return OptionalDouble.newBuilder().setValue(value).build();
     }
 }

@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.zip.DataFormatException;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
@@ -87,11 +89,11 @@ public class MutableAggregate {
         }
     }
 
-    public void mergeMainThreadStats(Aggregate.ThreadStats threadStats) {
+    public void mergeMainThreadStats(@Nullable Aggregate.ThreadStats threadStats) {
         mainThreadStats.addThreadStats(threadStats);
     }
 
-    public void mergeAuxThreadStats(Aggregate.ThreadStats threadStats) {
+    public void mergeAuxThreadStats(@Nullable Aggregate.ThreadStats threadStats) {
         auxThreadStats.addThreadStats(threadStats);
     }
 
@@ -108,10 +110,10 @@ public class MutableAggregate {
                 .addAllAuxThreadRootTimer(getRootTimersProtobuf(auxThreadRootTimers))
                 .addAllAsyncRootTimer(getRootTimersProtobuf(asyncRootTimers))
                 .setTotalNanosHistogram(lazyHistogram.toProto(scratchBuffer));
-        if (!mainThreadStats.isEmpty()) {
+        if (!mainThreadStats.isNA()) {
             builder.setMainThreadStats(mainThreadStats.toProto());
         }
-        if (!auxThreadStats.isEmpty()) {
+        if (!auxThreadStats.isNA()) {
             builder.setAuxThreadStats(auxThreadStats.toProto());
         }
         if (mainThreadProfile != null) {
@@ -125,16 +127,20 @@ public class MutableAggregate {
     }
 
     public OverviewAggregate toOverviewAggregate(long captureTime) throws IOException {
-        return ImmutableOverviewAggregate.builder()
+        ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
                 .captureTime(captureTime)
                 .totalDurationNanos(totalDurationNanos)
                 .transactionCount(transactionCount)
                 .mainThreadRootTimers(getRootTimersProtobuf(mainThreadRootTimers))
                 .auxThreadRootTimers(getRootTimersProtobuf(auxThreadRootTimers))
-                .asyncRootTimers(getRootTimersProtobuf(asyncRootTimers))
-                .mainThreadStats(mainThreadStats.toProto())
-                .auxThreadStats(auxThreadStats.toProto())
-                .build();
+                .asyncRootTimers(getRootTimersProtobuf(asyncRootTimers));
+        if (!mainThreadStats.isNA()) {
+            builder.mainThreadStats(mainThreadStats.toProto());
+        }
+        if (!auxThreadStats.isNA()) {
+            builder.auxThreadStats(auxThreadStats.toProto());
+        }
+        return builder.build();
     }
 
     public PercentileAggregate toPercentileAggregate(long captureTime) throws IOException {

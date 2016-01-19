@@ -392,10 +392,14 @@ public class AggregateDao implements AggregateRepository {
             mergedAggregate
                     .mergeAsyncRootTimers(readMessages(asyncRootTimers, Aggregate.Timer.parser()));
         }
-        if (mainThreadStats != null) {
+        if (mainThreadStats == null) {
+            mergedAggregate.mergeMainThreadStats(null);
+        } else {
             mergedAggregate.mergeMainThreadStats(Aggregate.ThreadStats.parseFrom(mainThreadStats));
         }
-        if (auxThreadStats != null) {
+        if (auxThreadStats == null) {
+            mergedAggregate.mergeAuxThreadStats(null);
+        } else {
             mergedAggregate.mergeAuxThreadStats(Aggregate.ThreadStats.parseFrom(auxThreadStats));
         }
         mergedAggregate.mergeHistogram(Aggregate.Histogram.parseFrom(histogram));

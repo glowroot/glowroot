@@ -42,7 +42,6 @@ import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.TransactionSummaryCollector;
 import org.glowroot.storage.repo.Utils;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.ThreadStats;
 
 class TransactionCommonService {
 
@@ -296,14 +295,9 @@ class TransactionCommonService {
                     .mergeAuxThreadRootTimers(nonRolledUpOverviewAggregate.auxThreadRootTimers());
             currMergedAggregate
                     .mergeAsyncRootTimers(nonRolledUpOverviewAggregate.asyncRootTimers());
-            ThreadStats mainThreadStats = nonRolledUpOverviewAggregate.mainThreadStats();
-            if (mainThreadStats != null) {
-                currMergedAggregate.mergeMainThreadStats(mainThreadStats);
-            }
-            ThreadStats auxThreadStats = nonRolledUpOverviewAggregate.auxThreadStats();
-            if (auxThreadStats != null) {
-                currMergedAggregate.mergeAuxThreadStats(auxThreadStats);
-            }
+            currMergedAggregate
+                    .mergeMainThreadStats(nonRolledUpOverviewAggregate.mainThreadStats());
+            currMergedAggregate.mergeAuxThreadStats(nonRolledUpOverviewAggregate.auxThreadStats());
         }
         if (!currMergedAggregate.isEmpty()) {
             // roll up final one

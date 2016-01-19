@@ -15,6 +15,8 @@
  */
 package org.glowroot.common.util;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 public class NotAvailableAware {
 
     public static final int NA = -1;
@@ -22,23 +24,31 @@ public class NotAvailableAware {
     private NotAvailableAware() {}
 
     public static double add(double x, double y) {
-        if (isNA(x)) {
-            return y;
-        }
-        if (isNA(y)) {
-            return x;
+        if (isNA(x) || isNA(y)) {
+            return NA;
         }
         return x + y;
     }
 
     public static long add(long x, long y) {
-        if (isNA(x)) {
-            return y;
-        }
-        if (isNA(y)) {
-            return x;
+        if (isNA(x) || isNA(y)) {
+            return NA;
         }
         return x + y;
+    }
+
+    public static double addMillisToNanos(double x, long y) {
+        if (isNA(x) || isNA(y)) {
+            return NA;
+        }
+        return x + MILLISECONDS.toNanos(y);
+    }
+
+    public static long addMillisToNanos(long x, long y) {
+        if (isNA(x) || isNA(y)) {
+            return NA;
+        }
+        return x + MILLISECONDS.toNanos(y);
     }
 
     public static boolean isNA(double value) {

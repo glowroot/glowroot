@@ -287,14 +287,17 @@ public class Transaction {
     }
 
     // can be called from a non-transaction thread
-    public @Nullable ThreadStats getMainThreadStats() {
+    public ThreadStats getMainThreadStats() {
         return mainThreadContext.getThreadStats();
     }
 
     // can be called from a non-transaction thread
     public Iterable<ThreadStats> getAuxThreadStats() {
-        if (!captureThreadStats || auxThreadContexts.isEmpty()) {
+        if (auxThreadContexts.isEmpty()) {
             return ImmutableList.of();
+        }
+        if (!captureThreadStats) {
+            return ImmutableList.of(ThreadStats.NA);
         }
         return Iterables.transform(auxThreadContexts, GetThreadStatsFunction.INSTANCE);
     }
@@ -649,7 +652,7 @@ public class Transaction {
         private static final GetThreadStatsFunction INSTANCE = new GetThreadStatsFunction();
 
         @Override
-        public @Nullable ThreadStats apply(@Nullable ThreadContextImpl input) {
+        public ThreadStats apply(@Nullable ThreadContextImpl input) {
             checkNotNull(input);
             return input.getThreadStats();
         }

@@ -15,8 +15,13 @@
  */
 package org.glowroot.agent.model;
 
+import org.glowroot.common.util.NotAvailableAware;
+
 // not using Immutables for micro-optimization purposes, since instantiated for each transaction
 public class ThreadStats {
+
+    public static final ThreadStats NA = new ThreadStats(NotAvailableAware.NA, NotAvailableAware.NA,
+            NotAvailableAware.NA, NotAvailableAware.NA);
 
     private final long totalCpuNanos;
     private final long totalBlockedMillis; // not converting to nanos here for micro-opt purposes
