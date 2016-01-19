@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2015 the original author or authors.
+  Copyright 2012-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -270,8 +270,8 @@
              gt-type="checkbox"
              ng-show="showTraceEntry">
           <div class="help-block">
-            If checked, and this custom instrumentation is encountered within one of its own trace entries,
-            a nested trace entry <em>will</em> be captured.
+            If checked, and this custom instrumentation is encountered beneath itself or beneath another pointcut that
+            shares the same timer name, a nested trace entry <em>will</em> be captured.
             This can sometimes lead to a lot of extra noise, e.g. in a fairly common case where the
             custom instrumentation matches several overloaded methods that cascade to each other.
           </div>

@@ -35,8 +35,7 @@
            gt-addon="milliseconds">
         <div class="help-block">
           The interval at which the profiler samples stack traces. Each sampling time is randomized within its given
-          interval in order to avoid
-          <a href="http://www.slideshare.net/RichardWarburton/jvm-profiling-under-the-hood/13">periodicity bias</a>.
+          interval in order to avoid periodicity bias.
         </div>
       </div>
       <div gt-form-group
@@ -60,7 +59,7 @@
         <div class="help-block">
           Capture CPU time, blocked time, waited time and allocated memory if available.
           See <a href="jvm/capabilities">JVM Capabilities</a>.
-          Capturing this data has some overhead (around 5 microseconds).
+          Capturing this data has some overhead (around 5 microseconds per transaction).
         </div>
       </div>
       <div class="form-group gt-form-buttons">

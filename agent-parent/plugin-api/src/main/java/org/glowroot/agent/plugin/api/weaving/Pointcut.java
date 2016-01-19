@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,11 @@ public @interface Pointcut {
     MethodModifier[] methodModifiers() default {};
     // the default is false since it costs a thread local lookup to ignore self nested calls, and
     // timers already handle self nested calls, so it is only needed for trace entries
+    //
+    // when ignoreSelfNested is true, the pointcut will be ignored if it is currently executing
+    // beneath itself or beneath another pointcut that shares the same timerName
+    // if timerName is empty, the pointcut will be ignored only if currently executing beneath
+    // itself
     boolean ignoreSelfNested() default false;
     String timerName() default "";
     // two pointcuts on the same method will be ordered by priority
