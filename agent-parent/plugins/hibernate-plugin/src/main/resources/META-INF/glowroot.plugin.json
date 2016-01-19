@@ -31,6 +31,17 @@
     },
     {
       "className": "org.hibernate.Session",
+      "methodName": "saveOrUpdate",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.Object"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate saveOrUpdate",
+      "traceEntryMessageTemplate": "hibernate saveOrUpdate: {{1.class.name}}"
+    },
+    {
+      "className": "org.hibernate.Session",
       "methodName": "save",
       "methodParameterTypes": [
         "java.lang.Object"
@@ -38,6 +49,17 @@
       "captureKind": "trace-entry",
       "timerName": "hibernate save",
       "traceEntryMessageTemplate": "hibernate save: {{0.class.name}}"
+    },
+    {
+      "className": "org.hibernate.Session",
+      "methodName": "save",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.Object"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate save",
+      "traceEntryMessageTemplate": "hibernate save: {{1.class.name}}"
     },
     {
       "className": "org.hibernate.Session",
@@ -51,6 +73,17 @@
     },
     {
       "className": "org.hibernate.Session",
+      "methodName": "merge",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.Object"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate merge",
+      "traceEntryMessageTemplate": "hibernate merge: {{1.class.name}}"
+    },
+    {
+      "className": "org.hibernate.Session",
       "methodName": "update",
       "methodParameterTypes": [
         "java.lang.Object"
@@ -58,6 +91,17 @@
       "captureKind": "trace-entry",
       "timerName": "hibernate update",
       "traceEntryMessageTemplate": "hibernate update: {{0.class.name}}"
+    },
+    {
+      "className": "org.hibernate.Session",
+      "methodName": "update",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.Object"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate update",
+      "traceEntryMessageTemplate": "hibernate update: {{1.class.name}}"
     },
     {
       "className": "org.hibernate.Session",
@@ -71,6 +115,17 @@
     },
     {
       "className": "org.hibernate.Session",
+      "methodName": "persist",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.Object"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate persist",
+      "traceEntryMessageTemplate": "hibernate persist: {{1.class.name}}"
+    },
+    {
+      "className": "org.hibernate.Session",
       "methodName": "delete",
       "methodParameterTypes": [
         "java.lang.Object"
@@ -78,6 +133,17 @@
       "captureKind": "trace-entry",
       "timerName": "hibernate delete",
       "traceEntryMessageTemplate": "hibernate delete: {{0.class.name}}"
+    },
+    {
+      "className": "org.hibernate.Session",
+      "methodName": "delete",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.Object"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "hibernate delete",
+      "traceEntryMessageTemplate": "hibernate delete: {{1.class.name}}"
     }
   ]
 }

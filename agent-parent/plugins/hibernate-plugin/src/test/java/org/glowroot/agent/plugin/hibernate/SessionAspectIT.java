@@ -79,10 +79,38 @@ public class SessionAspectIT {
     }
 
     @Test
+    public void shouldCaptureSaveTwoArg() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(SessionSaveTwoArg.class);
+        // then
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(1);
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.getMessage())
+                .isEqualTo("hibernate save: org.glowroot.agent.plugin.hibernate.Employee");
+        assertThat(entry.getChildEntryCount()).isZero();
+    }
+
+    @Test
     public void shouldCaptureSaveOrUpdate() throws Exception {
         // given
         // when
         Trace trace = container.execute(SessionSaveOrUpdate.class);
+        // then
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(1);
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.getMessage())
+                .isEqualTo("hibernate saveOrUpdate: org.glowroot.agent.plugin.hibernate.Employee");
+        assertThat(entry.getChildEntryCount()).isZero();
+    }
+
+    @Test
+    public void shouldCaptureSaveOrUpdateTwoArg() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(SessionSaveOrUpdateTwoArg.class);
         // then
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
@@ -107,10 +135,37 @@ public class SessionAspectIT {
     }
 
     @Test
+    public void shouldCaptureUpdateTwoArg() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(SessionUpdateTwoArg.class);
+        // then
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(2);
+        Trace.Entry entry = entries.get(1);
+        assertThat(entry.getMessage())
+                .isEqualTo("hibernate update: org.glowroot.agent.plugin.hibernate.Employee");
+        assertThat(entry.getChildEntryCount()).isZero();
+    }
+
+    @Test
     public void shouldCaptureMergeCommand() throws Exception {
         // given
         // when
         Trace trace = container.execute(SessionMerge.class);
+        // then
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(1);
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.getMessage())
+                .isEqualTo("hibernate merge: org.glowroot.agent.plugin.hibernate.Employee");
+    }
+
+    @Test
+    public void shouldCaptureMergeCommandTwoArg() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(SessionMergeTwoArg.class);
         // then
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
@@ -134,10 +189,38 @@ public class SessionAspectIT {
     }
 
     @Test
+    public void shouldCapturePersistCommandTwoArg() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(SessionPersistTwoArg.class);
+        // then
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(1);
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.getMessage())
+                .isEqualTo("hibernate persist: org.glowroot.agent.plugin.hibernate.Employee");
+        assertThat(entry.getChildEntryCount()).isZero();
+    }
+
+    @Test
     public void shouldCaptureDelete() throws Exception {
         // given
         // when
         Trace trace = container.execute(SessionDelete.class);
+        // then
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(2);
+        Trace.Entry entry = entries.get(1);
+        assertThat(entry.getMessage())
+                .isEqualTo("hibernate delete: org.glowroot.agent.plugin.hibernate.Employee");
+        assertThat(entry.getChildEntryCount()).isZero();
+    }
+
+    @Test
+    public void shouldCaptureDeleteTwoArg() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(SessionDeleteTwoArg.class);
         // then
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(2);
@@ -188,10 +271,24 @@ public class SessionAspectIT {
         }
     }
 
+    public static class SessionSaveTwoArg extends DoWithSession {
+        @Override
+        public void transactionMarker() {
+            session.save(null, new Employee("John"));
+        }
+    }
+
     public static class SessionSaveOrUpdate extends DoWithSession {
         @Override
         public void transactionMarker() {
             session.saveOrUpdate(new Employee("John"));
+        }
+    }
+
+    public static class SessionSaveOrUpdateTwoArg extends DoWithSession {
+        @Override
+        public void transactionMarker() {
+            session.saveOrUpdate(null, new Employee("John"));
         }
     }
 
@@ -204,10 +301,26 @@ public class SessionAspectIT {
         }
     }
 
+    public static class SessionUpdateTwoArg extends DoWithSession {
+        @Override
+        public void transactionMarker() {
+            Employee employee = (Employee) session.merge(new Employee("John"));
+            employee.setName("Hugh");
+            session.update(null, employee);
+        }
+    }
+
     public static class SessionMerge extends DoWithSession {
         @Override
         public void transactionMarker() {
             session.merge(new Employee("John"));
+        }
+    }
+
+    public static class SessionMergeTwoArg extends DoWithSession {
+        @Override
+        public void transactionMarker() {
+            session.merge(null, new Employee("John"));
         }
     }
 
@@ -218,11 +331,26 @@ public class SessionAspectIT {
         }
     }
 
+    public static class SessionPersistTwoArg extends DoWithSession {
+        @Override
+        public void transactionMarker() {
+            session.persist(null, new Employee("John"));
+        }
+    }
+
     public static class SessionDelete extends DoWithSession {
         @Override
         public void transactionMarker() {
             Employee employee = (Employee) session.merge(new Employee("John"));
             session.delete(employee);
+        }
+    }
+
+    public static class SessionDeleteTwoArg extends DoWithSession {
+        @Override
+        public void transactionMarker() {
+            Employee employee = (Employee) session.merge(new Employee("John"));
+            session.delete(null, employee);
         }
     }
 
