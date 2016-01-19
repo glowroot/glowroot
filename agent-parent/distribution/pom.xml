@@ -77,6 +77,11 @@
       <artifactId>glowroot-agent-servlet-plugin</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-struts-plugin</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 
   <build>

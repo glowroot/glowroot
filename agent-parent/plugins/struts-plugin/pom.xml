@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
+    <version>0.9-SNAPSHOT</version>
+    <relativePath>../../..</relativePath>
+  </parent>
+
+  <artifactId>glowroot-agent-struts-plugin</artifactId>
+
+  <name>Glowroot Agent Struts Plugin</name>
+  <description>Glowroot Agent Struts Plugin</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-plugin-api</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <!-- assertj 2.0.0 requires JDK 7+ -->
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-it-harness</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- testing against servlet 3.0 -->
+      <groupId>org.apache.geronimo.specs</groupId>
+      <artifactId>geronimo-servlet_3.0_spec</artifactId>
+      <version>1.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.struts</groupId>
+      <artifactId>struts2-core</artifactId>
+      <version>2.3.20</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.struts</groupId>
+      <artifactId>struts-core</artifactId>
+      <version>1.3.8</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
+      <version>1.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

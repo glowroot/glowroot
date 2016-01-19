@@ -1,0 +1,7 @@
+{
+  "name": "Struts Plugin",
+  "id": "struts",
+  "aspects": [
+    "org.glowroot.agent.plugin.struts.ActionProxyAspect"
+  ]
+}
