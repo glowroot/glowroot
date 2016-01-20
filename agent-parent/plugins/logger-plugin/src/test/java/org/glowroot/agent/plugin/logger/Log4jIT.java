@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -320,56 +320,6 @@ public class Log4jIT {
         Trace.Entry fatalEntry = entries.get(2);
         assertThat(fatalEntry.getMessage()).isEqualTo("log fatal: fgh____null");
         assertThat(fatalEntry.getError().getMessage()).isEqualTo("fgh____null");
-    }
-
-    @Test
-    public void testPluginDisabled() throws Exception {
-        // given
-        container.getConfigService().disablePlugin(PLUGIN_ID);
-        // when
-        Trace trace = container.execute(ShouldLog.class);
-        // then
-        assertNoLogTraceEntries(trace);
-        // when
-        trace = container.execute(ShouldLogWithThrowable.class);
-        // then
-        assertNoLogTraceEntries(trace);
-        // when
-        trace = container.execute(ShouldLogWithNullThrowable.class);
-        // then
-        assertNoLogTraceEntries(trace);
-        // when
-        trace = container.execute(ShouldLogWithPriority.class);
-        // then
-        assertNoLogTraceEntries(trace);
-        // when
-        trace = container.execute(ShouldLogWithPriorityAndThrowable.class);
-        // then
-        assertNoLogTraceEntries(trace);
-        // when
-        trace = container.execute(ShouldLogWithPriorityAndNullThrowable.class);
-        // then
-        assertNoLogTraceEntries(trace);
-        // when
-        trace = container.execute(ShouldLocalizedLogWithNullThrowable.class);
-        // then
-        assertNoLogTraceEntries(trace);
-        // when
-        trace = container.execute(ShouldLocalizedLogWithParameters.class);
-        // then
-        assertNoLogTraceEntries(trace);
-        // when
-        trace = container.execute(ShouldLocalizedLogWithEmptyParameters.class);
-        // then
-        assertNoLogTraceEntries(trace);
-        // when
-        trace = container.execute(ShouldLocalizedLogWithParametersAndNullThrowable.class);
-        // then
-        assertNoLogTraceEntries(trace);
-    }
-
-    private static void assertNoLogTraceEntries(Trace trace) throws Exception {
-        assertThat(trace.getHeader().getEntryCount()).isZero();
     }
 
     public static class ShouldLog implements AppUnderTest, TransactionMarker {

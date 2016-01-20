@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.glowroot.agent.plugin.servlet;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.transaction.TraceEntry;
@@ -26,7 +25,6 @@ import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
@@ -37,7 +35,6 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 public class CatalinaAppStartupAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
-    private static final ConfigService configService = Agent.getConfigService("servlet");
 
     @Shim("org.apache.catalina.core.StandardContext")
     public interface StandardContext {
@@ -54,10 +51,6 @@ public class CatalinaAppStartupAspect {
     public static class StartAdvice {
         private static final TimerName timerName =
                 transactionService.getTimerName(StartAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver StandardContext standardContext) {
             String path = standardContext.getPath();

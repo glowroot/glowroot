@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.transaction.AdvancedService;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
@@ -28,7 +27,6 @@ import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
@@ -37,8 +35,6 @@ public class TraceGeneratorAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
     private static final AdvancedService advancedService = Agent.getAdvancedService();
-    private static final ConfigService configService =
-            Agent.getConfigService("glowroot-integration-tests");
 
     @Pointcut(className = "org.glowroot.agent.tests.app.TraceGenerator", methodName = "call",
             methodParameterTypes = {"boolean"}, timerName = "trace generator")
@@ -46,11 +42,6 @@ public class TraceGeneratorAspect {
 
         private static final TimerName timerName =
                 transactionService.getTimerName(LevelOneAdvice.class);
-
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
 
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object traceGenerator,

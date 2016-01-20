@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,11 +31,6 @@ public class NopConfigService implements ConfigService {
     public void registerConfigListener(ConfigListener listener) {}
 
     @Override
-    public boolean isEnabled() {
-        return false;
-    }
-
-    @Override
     public StringProperty getStringProperty(String name) {
         return NopStringProperty.INSTANCE;
     }
@@ -48,11 +43,6 @@ public class NopConfigService implements ConfigService {
     @Override
     public DoubleProperty getDoubleProperty(String name) {
         return NopDoubleProperty.INSTANCE;
-    }
-
-    @Override
-    public BooleanProperty getEnabledProperty(String name) {
-        return NopBooleanProperty.INSTANCE;
     }
 
     private static class NopStringProperty implements StringProperty {

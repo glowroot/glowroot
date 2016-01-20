@@ -21,7 +21,6 @@ import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.transaction.AdvancedService;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
@@ -42,7 +41,6 @@ public class LogbackAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
     private static final AdvancedService advancedService = Agent.getAdvancedService();
-    private static final ConfigService configService = Agent.getConfigService("logger");
 
     // constants from from ch.qos.logback.classic.Level
     private static final int OFF_INT = Integer.MAX_VALUE;
@@ -74,7 +72,7 @@ public class LogbackAspect {
                 transactionService.getTimerName(LogNoArgAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice() && configService.isEnabled();
+            return !LoggerPlugin.inAdvice();
         }
         @OnBefore
         @SuppressWarnings("unused")

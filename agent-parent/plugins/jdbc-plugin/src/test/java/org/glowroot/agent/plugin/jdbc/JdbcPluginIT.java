@@ -215,16 +215,6 @@ public class JdbcPluginIT {
         assertThat(jdbcEntry.getLocationStackTraceElementList()).isEmpty();
     }
 
-    @Test
-    public void testPluginDisabled() throws Exception {
-        // given
-        container.getConfigService().disablePlugin(PLUGIN_ID);
-        // when
-        Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
-        // then
-        assertThat(trace.getHeader().getEntryCount()).isZero();
-    }
-
     private static boolean findExtendedTimerName(Trace trace, String timerName) {
         return findExtendedTimerName(trace.getHeader().getMainThreadRootTimer(), timerName);
     }

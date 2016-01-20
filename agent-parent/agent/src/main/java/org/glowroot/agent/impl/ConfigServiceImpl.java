@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,6 @@ public class ConfigServiceImpl
 
     // cache for fast read access
     // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
-    private boolean enabled;
     private @MonotonicNonNull PluginConfig pluginConfig;
 
     private final Map<ConfigListener, Boolean> weakConfigListeners =
@@ -87,11 +86,6 @@ public class ConfigServiceImpl
     }
 
     @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    @Override
     public StringProperty getStringProperty(String name) {
         if (name == null) {
             logger.error("getStringProperty(): argument 'name' must be non-null");
@@ -125,17 +119,6 @@ public class ConfigServiceImpl
     }
 
     @Override
-    public BooleanProperty getEnabledProperty(String name) {
-        if (name == null) {
-            logger.error("getEnabledProperty(): argument 'name' must be non-null");
-            return new BooleanPropertyImpl("");
-        }
-        EnabledPropertyImpl enabledProperty = new EnabledPropertyImpl(name);
-        weakConfigListeners.put(enabledProperty, true);
-        return enabledProperty;
-    }
-
-    @Override
     public void registerConfigListener(ConfigListener listener) {
         if (pluginId == null) {
             return;
@@ -150,14 +133,11 @@ public class ConfigServiceImpl
 
     @Override
     public void onChange() {
-        if (pluginId == null) {
-            enabled = true;
-        } else {
+        if (pluginId != null) {
             PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
             // pluginConfig should not be null since pluginId was already validated
             // at construction time and plugins cannot be removed (or their ids changed) at runtime
             checkNotNull(pluginConfig);
-            enabled = pluginConfig.enabled();
             this.pluginConfig = pluginConfig;
         }
         for (ConfigListener weakConfigListener : weakConfigListeners.keySet()) {
@@ -228,28 +208,6 @@ public class ConfigServiceImpl
         public void onChange() {
             if (pluginConfig != null) {
                 value = pluginConfig.getDoubleProperty(name);
-            }
-        }
-    }
-
-    private class EnabledPropertyImpl implements BooleanProperty, ConfigListener {
-        private final String name;
-        // visibility is provided by memoryBarrier in outer class
-        private boolean value;
-        private EnabledPropertyImpl(String name) {
-            this.name = name;
-            if (pluginConfig != null) {
-                value = enabled && pluginConfig.getBooleanProperty(name);
-            }
-        }
-        @Override
-        public boolean value() {
-            return value;
-        }
-        @Override
-        public void onChange() {
-            if (pluginConfig != null) {
-                value = enabled && pluginConfig.getBooleanProperty(name);
             }
         }
     }

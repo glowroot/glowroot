@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,6 @@ public interface ConfigService {
      * anytime {@link ConfigListener#onChange()} is called.
      */
     void registerConfigListener(ConfigListener listener);
-
-    /**
-     * Returns whether the plugin is enabled. When Glowroot itself is disabled, this returns
-     * {@code false}.
-     * 
-     * Plugins can be individually disabled on the configuration page.
-     */
-    boolean isEnabled();
 
     /**
      * Returns the {@code String} plugin property value with the specified {@code name}.
@@ -68,6 +60,4 @@ public interface ConfigService {
      * hidden) on the configuration page under the plugin's configuration section.
      */
     DoubleProperty getDoubleProperty(String name);
-
-    BooleanProperty getEnabledProperty(String name);
 }

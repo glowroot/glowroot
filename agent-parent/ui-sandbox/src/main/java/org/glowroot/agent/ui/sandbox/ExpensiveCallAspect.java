@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.transaction.AdvancedService;
 import org.glowroot.agent.plugin.api.transaction.Message;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
@@ -33,7 +32,6 @@ import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
@@ -44,8 +42,6 @@ public class ExpensiveCallAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
     private static final AdvancedService advancedService = Agent.getAdvancedService();
-    private static final ConfigService configService =
-            Agent.getConfigService("glowroot-ui-sandbox");
 
     private static final Random random = new Random();
     private static final Exception nestedCause =
@@ -58,10 +54,6 @@ public class ExpensiveCallAspect {
     public static class ExpensiveCallAdvice0 {
         private static final TimerName timerName =
                 transactionService.getTimerName(ExpensiveCallAdvice0.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static QueryEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
@@ -94,10 +86,6 @@ public class ExpensiveCallAspect {
     public static class ExpensiveCallAdvice1 {
         private static final TimerName timerName =
                 transactionService.getTimerName(ExpensiveCallAdvice1.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
@@ -121,10 +109,6 @@ public class ExpensiveCallAspect {
     public static class ExpensiveCallAdvice2 {
         private static final TimerName timerName =
                 transactionService.getTimerName(ExpensiveCallAdvice2.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
@@ -148,10 +132,6 @@ public class ExpensiveCallAspect {
     public static class ExpensiveCallAdvice3 {
         private static final TimerName timerName =
                 transactionService.getTimerName(ExpensiveCallAdvice3.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
@@ -175,10 +155,6 @@ public class ExpensiveCallAspect {
     public static class ExpensiveCallAdvice4 {
         private static final TimerName timerName =
                 transactionService.getTimerName(ExpensiveCallAdvice4.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
@@ -202,10 +178,6 @@ public class ExpensiveCallAspect {
     public static class ExpensiveCallAdvice5 {
         private static final TimerName timerName =
                 transactionService.getTimerName(ExpensiveCallAdvice5.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
@@ -229,10 +201,6 @@ public class ExpensiveCallAspect {
     public static class ExpensiveCallAdvice6 {
         private static final TimerName timerName =
                 transactionService.getTimerName(ExpensiveCallAdvice6.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
@@ -256,10 +224,6 @@ public class ExpensiveCallAspect {
     public static class ExpensiveCallAdvice7 {
         private static final TimerName timerName =
                 transactionService.getTimerName(ExpensiveCallAdvice7.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
@@ -283,10 +247,6 @@ public class ExpensiveCallAspect {
     public static class ExpensiveCallAdvice8 {
         private static final TimerName timerName =
                 transactionService.getTimerName(ExpensiveCallAdvice8.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
@@ -310,10 +270,6 @@ public class ExpensiveCallAspect {
     public static class ExpensiveCallAdvice9 {
         private static final TimerName timerName =
                 transactionService.getTimerName(ExpensiveCallAdvice9.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {

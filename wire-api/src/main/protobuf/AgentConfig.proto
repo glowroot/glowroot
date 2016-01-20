@@ -46,8 +46,7 @@ message AgentConfig {
   // all attributes are optional to ease config evolution
   message PluginConfig {
     string id = 1;
-    OptionalBool enabled = 2;
-    repeated PluginProperty property = 3;
+    repeated PluginProperty property = 2;
   }
 
   message GaugeConfigList {

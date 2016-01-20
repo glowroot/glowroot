@@ -25,7 +25,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.transaction.AdvancedService;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.transaction.TraceEntry;
@@ -50,7 +49,6 @@ public class ServletAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
     private static final AdvancedService advancedService = Agent.getAdvancedService();
-    private static final ConfigService configService = Agent.getConfigService("servlet");
 
     private static final FastThreadLocal</*@Nullable*/ ServletMessageSupplier> topLevel =
             new FastThreadLocal</*@Nullable*/ ServletMessageSupplier>();
@@ -110,7 +108,7 @@ public class ServletAspect {
         @IsEnabled
         public static boolean isEnabled() {
             // only enabled if it is not contained in another servlet or filter
-            return topLevel.get() == null && configService.isEnabled();
+            return topLevel.get() == null;
         }
         @OnBefore
         public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object req) {

@@ -364,11 +364,6 @@ public class ConfigService {
             PluginConfig filePluginConfig = filePluginConfigMap.get(pluginDescriptor.id());
             ImmutablePluginConfig.Builder builder = ImmutablePluginConfig.builder()
                     .id(pluginDescriptor.id());
-            if (filePluginConfig == null) {
-                builder.enabled(true);
-            } else {
-                builder.enabled(filePluginConfig.enabled());
-            }
             for (PropertyDescriptor propertyDescriptor : pluginDescriptor.properties()) {
                 builder.putProperties(propertyDescriptor.name(),
                         getPropertyValue(filePluginConfig, propertyDescriptor));

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot */
+/* global glowroot, angular */
 
 glowroot.controller('ConfigPluginListCtrl', [
   '$scope',
@@ -26,7 +26,16 @@ glowroot.controller('ConfigPluginListCtrl', [
     $http.get('backend/config/plugins?server-id=' + $scope.serverId)
         .success(function (data) {
           $scope.loaded = true;
-          $scope.plugins = data;
+          $scope.plugins = [];
+          var pluginsWithNoConfig = [];
+          angular.forEach(data, function (plugin) {
+            if (plugin.hasConfig) {
+              $scope.plugins.push(plugin);
+            } else {
+              pluginsWithNoConfig.push(plugin.name);
+            }
+          });
+          $scope.pluginsWithNoConfig = pluginsWithNoConfig.join(', ');
         })
         .error(httpErrors.handler($scope));
   }

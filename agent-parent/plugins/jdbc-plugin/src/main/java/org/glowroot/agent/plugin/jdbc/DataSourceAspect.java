@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,11 +50,11 @@ public class DataSourceAspect {
     private static final ConfigService configService = Agent.getConfigService("jdbc");
 
     private static final BooleanProperty captureGetConnection =
-            configService.getEnabledProperty("captureGetConnection");
+            configService.getBooleanProperty("captureGetConnection");
     private static final BooleanProperty captureConnectionLifecycleTraceEntries =
-            configService.getEnabledProperty("captureConnectionLifecycleTraceEntries");
+            configService.getBooleanProperty("captureConnectionLifecycleTraceEntries");
     private static final BooleanProperty captureTransactionLifecycleTraceEntries =
-            configService.getEnabledProperty("captureTransactionLifecycleTraceEntries");
+            configService.getBooleanProperty("captureTransactionLifecycleTraceEntries");
 
     @Pointcut(className = "javax.sql.DataSource", methodName = "getConnection",
             methodParameterTypes = {".."}, timerName = "jdbc get connection",
@@ -64,8 +64,7 @@ public class DataSourceAspect {
                 transactionService.getTimerName(GetConnectionAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return configService.isEnabled() && (captureGetConnection.value()
-                    || captureConnectionLifecycleTraceEntries.value());
+            return captureGetConnection.value() || captureConnectionLifecycleTraceEntries.value();
         }
         @OnBefore
         public static Object onBefore() {

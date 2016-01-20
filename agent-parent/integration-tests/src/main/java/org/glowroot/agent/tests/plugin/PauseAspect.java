@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.transaction.TraceEntry;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
@@ -46,11 +45,6 @@ public class PauseAspect {
 
         private static final TimerName timerName =
                 transactionService.getTimerName(LogErrorAdvice.class);
-
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
 
         @OnBefore
         public static TraceEntry onBefore() {

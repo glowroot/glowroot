@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,13 +45,13 @@ public class ConnectionAspect {
     private static final ConfigService configService = Agent.getConfigService("jdbc");
 
     private static final BooleanProperty capturePreparedStatementCreation =
-            configService.getEnabledProperty("capturePreparedStatementCreation");
+            configService.getBooleanProperty("capturePreparedStatementCreation");
     private static final BooleanProperty captureConnectionClose =
-            configService.getEnabledProperty("captureConnectionClose");
+            configService.getBooleanProperty("captureConnectionClose");
     private static final BooleanProperty captureConnectionLifecycleTraceEntries =
-            configService.getEnabledProperty("captureConnectionLifecycleTraceEntries");
+            configService.getBooleanProperty("captureConnectionLifecycleTraceEntries");
     private static final BooleanProperty captureTransactionLifecycleTraceEntries =
-            configService.getEnabledProperty("captureTransactionLifecycleTraceEntries");
+            configService.getBooleanProperty("captureTransactionLifecycleTraceEntries");
 
     // ===================== Statement Preparation =====================
 
@@ -102,10 +102,6 @@ public class ConnectionAspect {
     public static class CommitAdvice {
         private static final TimerName timerName =
                 transactionService.getTimerName(CommitAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static TraceEntry onBefore() {
             return transactionService.startTraceEntry(MessageSupplier.from("jdbc commit"),
@@ -128,10 +124,6 @@ public class ConnectionAspect {
     public static class RollbackAdvice {
         private static final TimerName timerName =
                 transactionService.getTimerName(RollbackAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static TraceEntry onBefore() {
             return transactionService.startTraceEntry(MessageSupplier.from("jdbc rollback"),
@@ -156,8 +148,7 @@ public class ConnectionAspect {
                 transactionService.getTimerName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return configService.isEnabled() && (captureConnectionClose.value()
-                    || captureConnectionLifecycleTraceEntries.value());
+            return captureConnectionClose.value() || captureConnectionLifecycleTraceEntries.value();
         }
         @OnBefore
         public static Object onBefore() {

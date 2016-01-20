@@ -16,7 +16,6 @@
 package org.glowroot.agent.tests.plugin;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.transaction.AdvancedService;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
@@ -24,7 +23,6 @@ import org.glowroot.agent.plugin.api.transaction.TraceEntry;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
@@ -33,8 +31,6 @@ public class LogErrorAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
     private static final AdvancedService advancedService = Agent.getAdvancedService();
-    private static final ConfigService configService =
-            Agent.getConfigService("glowroot-integration-tests");
 
     @Pointcut(className = "org.glowroot.agent.tests.app.LogError", methodName = "log",
             methodParameterTypes = {"java.lang.String"}, timerName = "log error")
@@ -42,11 +38,6 @@ public class LogErrorAspect {
 
         private static final TimerName timerName =
                 transactionService.getTimerName(LogErrorAdvice.class);
-
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
 
         @OnBefore
         public static TraceEntry onBefore(@BindParameter String message) {
@@ -67,11 +58,6 @@ public class LogErrorAspect {
 
         private static final TimerName timerName =
                 transactionService.getTimerName(AddErrorEntryAdvice.class);
-
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
 
         @OnBefore
         public static TraceEntry onBefore() {

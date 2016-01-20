@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2015 the original author or authors.
+  Copyright 2012-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -25,7 +25,10 @@
            class="gt-second-line-indent"
            style="padding-bottom: 8px;">
         <a ng-href="config/plugin?id={{plugin.id}}">{{plugin.name}}</a>
-        <span style="margin-left: 20px;">{{plugin.enabled ? 'Enabled' : 'Disabled'}}</span>
+      </div>
+      <div style="padding-top: 25px; font-style: italic; color: #666;"
+           ng-if="pluginsWithNoConfig">
+        Plugins with no config: {{pluginsWithNoConfig}}
       </div>
     </div>
   </div>

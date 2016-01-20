@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,7 +127,7 @@ public class AdviceGenerator {
         addClassAnnotation(cw);
         addStaticFields(cw);
         addStaticInitializer(cw);
-        if (pluginId != null) {
+        if (pluginId != null && !config.enabledProperty().isEmpty()) {
             addIsEnabledMethod(cw);
         }
         if (config.isTraceEntryOrGreater()) {
@@ -267,7 +267,7 @@ public class AdviceGenerator {
             mv.visitLdcInsn(config.enabledProperty());
             mv.visitMethodInsn(INVOKEINTERFACE,
                     "org/glowroot/agent/plugin/api/config/ConfigService",
-                    "getEnabledProperty",
+                    "getBooleanProperty",
                     "(Ljava/lang/String;)Lorg/glowroot/agent/plugin/api/config/BooleanProperty;",
                     true);
             mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "enabled",
@@ -279,7 +279,7 @@ public class AdviceGenerator {
             mv.visitLdcInsn(config.traceEntryEnabledProperty());
             mv.visitMethodInsn(INVOKEINTERFACE,
                     "org/glowroot/agent/plugin/api/config/ConfigService",
-                    "getEnabledProperty",
+                    "getBooleanProperty",
                     "(Ljava/lang/String;)Lorg/glowroot/agent/plugin/api/config/BooleanProperty;",
                     true);
             mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "entryEnabled",
@@ -294,25 +294,14 @@ public class AdviceGenerator {
         MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "isEnabled", "()Z", null, null);
         visitAnnotation(mv, "Lorg/glowroot/agent/plugin/api/weaving/IsEnabled;");
         mv.visitCode();
-        if (config.enabledProperty().isEmpty()) {
-            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "configService",
-                    "Lorg/glowroot/agent/plugin/api/config/ConfigService;");
-            mv.visitMethodInsn(INVOKEINTERFACE,
-                    "org/glowroot/agent/plugin/api/config/ConfigService",
-                    "isEnabled",
-                    "()Z",
-                    true);
-            mv.visitInsn(IRETURN);
-        } else {
-            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "enabled",
-                    "Lorg/glowroot/agent/plugin/api/config/BooleanProperty;");
-            mv.visitMethodInsn(INVOKEINTERFACE,
-                    "org/glowroot/agent/plugin/api/config/BooleanProperty",
-                    "value",
-                    "()Z",
-                    true);
-            mv.visitInsn(IRETURN);
-        }
+        mv.visitFieldInsn(GETSTATIC, adviceInternalName, "enabled",
+                "Lorg/glowroot/agent/plugin/api/config/BooleanProperty;");
+        mv.visitMethodInsn(INVOKEINTERFACE,
+                "org/glowroot/agent/plugin/api/config/BooleanProperty",
+                "value",
+                "()Z",
+                true);
+        mv.visitInsn(IRETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
     }

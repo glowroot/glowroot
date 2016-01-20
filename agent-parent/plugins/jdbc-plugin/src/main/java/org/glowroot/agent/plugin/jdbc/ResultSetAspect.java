@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,11 +50,11 @@ public class ResultSetAspect {
         private static final TimerName timerName =
                 transactionService.getTimerName(NextAdvice.class);
         private static final BooleanProperty timerEnabled =
-                configService.getEnabledProperty("captureResultSetNavigate");
+                configService.getBooleanProperty("captureResultSetNavigate");
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return resultSet.glowroot$hasStatementMirror() && configService.isEnabled();
+            return resultSet.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
@@ -101,11 +101,11 @@ public class ResultSetAspect {
         private static final TimerName timerName =
                 transactionService.getTimerName(NavigateAdvice.class);
         private static final BooleanProperty timerEnabled =
-                configService.getEnabledProperty("captureResultSetNavigate");
+                configService.getBooleanProperty("captureResultSetNavigate");
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return resultSet.glowroot$hasStatementMirror() && configService.isEnabled();
+            return resultSet.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
@@ -148,7 +148,7 @@ public class ResultSetAspect {
         private static final TimerName timerName =
                 transactionService.getTimerName(ValueAdvice.class);
         private static final BooleanProperty timerEnabled =
-                configService.getEnabledProperty("captureResultSetGet");
+                configService.getBooleanProperty("captureResultSetGet");
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -170,7 +170,7 @@ public class ResultSetAspect {
         private static final TimerName timerName =
                 transactionService.getTimerName(ValueAdvice2.class);
         private static final BooleanProperty timerEnabled =
-                configService.getEnabledProperty("captureResultSetGet");
+                configService.getBooleanProperty("captureResultSetGet");
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method

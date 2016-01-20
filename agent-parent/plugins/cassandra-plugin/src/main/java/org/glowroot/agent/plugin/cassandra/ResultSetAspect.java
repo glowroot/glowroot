@@ -82,7 +82,7 @@ public class ResultSetAspect {
             methodParameterTypes = {})
     public static class OneAdvice {
         private static final BooleanProperty timerEnabled =
-                configService.getEnabledProperty("captureResultSetNavigate");
+                configService.getBooleanProperty("captureResultSetNavigate");
         @IsEnabled
         public static boolean isEnabled(@BindReceiver ResultSet resultSet) {
             return resultSet.glowroot$hasLastQueryEntry();

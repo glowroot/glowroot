@@ -37,9 +37,6 @@ public interface ConfigService {
     int updateInstrumentationConfigs(List<InstrumentationConfig> configs) throws Exception;
 
     // convenience methods wrapping updatePluginConfig()
-    void disablePlugin(String pluginId) throws Exception;
-
-    // convenience methods wrapping updatePluginConfig()
     void setPluginProperty(String pluginId, String propertyName, boolean propertyValue)
             throws Exception;
 

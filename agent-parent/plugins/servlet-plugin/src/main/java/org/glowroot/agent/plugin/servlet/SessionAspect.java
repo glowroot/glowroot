@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,9 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.servlet.ServletAspect.HttpSession;
@@ -33,7 +31,6 @@ import org.glowroot.agent.plugin.servlet.ServletAspect.HttpSession;
 public class SessionAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
-    private static final ConfigService configService = Agent.getConfigService("servlet");
 
     /*
      * ================== Http Session Attributes ==================
@@ -42,10 +39,6 @@ public class SessionAspect {
     @Pointcut(className = "javax.servlet.http.HttpSession", methodName = "setAttribute|putValue",
             methodParameterTypes = {"java.lang.String", "java.lang.Object"})
     public static class SetAttributeAdvice {
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnAfter
         public static void onAfter(@BindReceiver HttpSession session,
                 @BindParameter @Nullable String name, @BindParameter @Nullable Object value) {
@@ -66,10 +59,6 @@ public class SessionAspect {
     @Pointcut(className = "javax.servlet.http.HttpSession", methodName = "removeAttribute",
             methodParameterTypes = {"java.lang.String"})
     public static class RemoveAttributeAdvice {
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnAfter
         public static void onAfter(@BindReceiver HttpSession session,
                 @BindParameter @Nullable String name) {

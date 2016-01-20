@@ -28,7 +28,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfi
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
-import org.glowroot.wire.api.model.Proto.OptionalBool;
 
 class ConfigServiceImpl implements ConfigService {
 
@@ -79,14 +78,6 @@ class ConfigServiceImpl implements ConfigService {
         } else {
             return 0;
         }
-    }
-
-    @Override
-    public void disablePlugin(String pluginId) throws Exception {
-        updatePluginConfig(PluginConfig.newBuilder()
-                .setId(pluginId)
-                .setEnabled(OptionalBool.newBuilder().setValue(false))
-                .build());
     }
 
     @Override

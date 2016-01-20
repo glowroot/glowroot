@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.transaction.Message;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.transaction.TraceEntry;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
@@ -43,8 +41,6 @@ public class NestableCallAspect {
     private static final AtomicInteger counter = new AtomicInteger();
 
     private static final TransactionService transactionService = Agent.getTransactionService();
-    private static final ConfigService configService =
-            Agent.getConfigService("glowroot-ui-sandbox");
 
     @Pointcut(className = "org.glowroot.agent.ui.sandbox.NestableCall", methodName = "execute",
             methodParameterTypes = {}, timerName = "nestable", ignoreSelfNested = true)
@@ -52,10 +48,6 @@ public class NestableCallAspect {
         private static final TimerName timerName =
                 transactionService.getTimerName(NestableCallAdvice.class);
         private static final Random random = new Random();
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static TraceEntry onBefore() {
             int count = counter.getAndIncrement();

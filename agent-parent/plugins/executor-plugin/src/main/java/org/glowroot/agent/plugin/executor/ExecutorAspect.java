@@ -21,7 +21,6 @@ import java.util.concurrent.Future;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.transaction.ThreadContext;
 import org.glowroot.agent.plugin.api.transaction.Timer;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
@@ -43,7 +42,6 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 public class ExecutorAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
-    private static final ConfigService configService = Agent.getConfigService("executor");
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private static final FastThreadLocal<Boolean> inSubmitOrExecute =
@@ -90,7 +88,7 @@ public class ExecutorAspect {
     public static class SubmitAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return !inSubmitOrExecute.get() && configService.isEnabled();
+            return !inSubmitOrExecute.get();
         }
         @OnBefore
         public static void onBefore(@BindParameter Object runnableCallable) {
@@ -132,7 +130,7 @@ public class ExecutorAspect {
         public static boolean isEnabled(@BindReceiver Future<?> future) {
             // don't capture if already done, primarily this is to avoid caching pattern where
             // a future is used to store the value to ensure only-once initialization
-            return configService.isEnabled() && !future.isDone();
+            return !future.isDone();
         }
         @OnBefore
         public static Timer onBefore() {
@@ -146,10 +144,6 @@ public class ExecutorAspect {
 
     @Pointcut(className = "java.lang.Runnable", methodName = "run", methodParameterTypes = {})
     public static class RunnableAdvice {
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static @Nullable TraceEntry onBefore(@BindReceiver Runnable runnable) {
             if (!(runnable instanceof RunnableCallableMixin)) {
@@ -181,10 +175,6 @@ public class ExecutorAspect {
     @Pointcut(className = "java.util.concurrent.Callable", methodName = "call",
             methodParameterTypes = {})
     public static class CallableAdvice {
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static @Nullable TraceEntry onBefore(@BindReceiver Callable<?> callable) {
             if (!(callable instanceof RunnableCallableMixin)) {

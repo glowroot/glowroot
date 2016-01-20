@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,6 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ServletPluginIT {
-
-    private static final String PLUGIN_ID = "servlet";
 
     private static Container container;
 
@@ -191,15 +189,6 @@ public class ServletPluginIT {
         assertThat(entry.getError().hasException()).isFalse();
         assertThat(entry.getLocationStackTraceElementList().get(0).getMethodName())
                 .isEqualTo("setStatus");
-    }
-
-    @Test
-    public void testPluginDisabled() throws Exception {
-        // given
-        container.getConfigService().disablePlugin(PLUGIN_ID);
-        // when
-        container.executeNoExpectedTrace(ExecuteServlet.class);
-        // then
     }
 
     @Test

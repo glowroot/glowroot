@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,13 +27,13 @@ class LoggerPlugin {
     private static final ConfigService configService = Agent.getConfigService("logger");
 
     private static final BooleanProperty traceErrorOnWarningWithThrowable =
-            configService.getEnabledProperty("traceErrorOnWarningWithThrowable");
+            configService.getBooleanProperty("traceErrorOnWarningWithThrowable");
     private static final BooleanProperty traceErrorOnWarningWithoutThrowable =
-            configService.getEnabledProperty("traceErrorOnWarningWithoutThrowable");
+            configService.getBooleanProperty("traceErrorOnWarningWithoutThrowable");
     private static final BooleanProperty traceErrorOnErrorWithThrowable =
-            configService.getEnabledProperty("traceErrorOnErrorWithThrowable");
+            configService.getBooleanProperty("traceErrorOnErrorWithThrowable");
     private static final BooleanProperty traceErrorOnErrorWithoutThrowable =
-            configService.getEnabledProperty("traceErrorOnErrorWithoutThrowable");
+            configService.getBooleanProperty("traceErrorOnErrorWithoutThrowable");
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private static final FastThreadLocal<Boolean> inAdvice = new FastThreadLocal<Boolean>() {

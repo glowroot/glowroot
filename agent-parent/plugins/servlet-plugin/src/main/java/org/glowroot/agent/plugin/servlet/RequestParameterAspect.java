@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,25 +17,16 @@ package org.glowroot.agent.plugin.servlet;
 
 import java.util.Map;
 
-import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.servlet.ServletAspect.HttpServletRequest;
 
 public class RequestParameterAspect {
 
-    private static final ConfigService configService = Agent.getConfigService("servlet");
-
     @Pointcut(className = "javax.servlet.ServletRequest", methodName = "getParameter*",
             methodParameterTypes = {".."}, ignoreSelfNested = true)
     public static class GetParameterAdvice {
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnAfter
         public static void onAfter(@BindReceiver Object req) {
             if (!(req instanceof HttpServletRequest)) {

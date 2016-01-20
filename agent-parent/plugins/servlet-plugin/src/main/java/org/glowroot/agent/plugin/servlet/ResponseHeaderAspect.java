@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
-import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
@@ -34,8 +32,6 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class ResponseHeaderAspect {
-
-    private static final ConfigService configService = Agent.getConfigService("servlet");
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private static final FastThreadLocal<Boolean> inAdvice = new FastThreadLocal<Boolean>() {
@@ -366,8 +362,7 @@ public class ResponseHeaderAspect {
 
     private static boolean isEnabledCommon() {
         // good to short-cut advice if no response headers need to be captured
-        return !ServletPluginProperties.captureResponseHeaders().isEmpty()
-                && configService.isEnabled() && !inAdvice.get();
+        return !ServletPluginProperties.captureResponseHeaders().isEmpty() && !inAdvice.get();
     }
 
     private static boolean captureResponseHeader(String name) {

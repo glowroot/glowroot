@@ -21,7 +21,6 @@ import java.util.concurrent.Future;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.transaction.AsyncService;
 import org.glowroot.agent.plugin.api.transaction.AsyncTraceEntry;
 import org.glowroot.agent.plugin.api.transaction.Message;
@@ -36,7 +35,6 @@ import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.Mixin;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
@@ -49,7 +47,6 @@ public class AsyncHttpClientAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
     private static final AsyncService asyncService = Agent.getAsyncService();
-    private static final ConfigService configService = Agent.getConfigService("http-client");
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private static final FastThreadLocal<Boolean> ignoreFutureGet = new FastThreadLocal<Boolean>() {
@@ -102,10 +99,6 @@ public class AsyncHttpClientAspect {
     public static class ExecuteRequestAdvice {
         private static final TimerName timerName =
                 transactionService.getTimerName(ExecuteRequestAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
         @OnBefore
         public static AsyncTraceEntry onBefore(@BindParameter Object request,
                 @BindClassMeta RequestInvoker requestInvoker) {

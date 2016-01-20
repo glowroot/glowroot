@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,10 +36,7 @@ public abstract class PluginConfig {
     private static final Logger logger = LoggerFactory.getLogger(PluginConfig.class);
 
     public abstract String id();
-    @Value.Default
-    public boolean enabled() {
-        return true;
-    }
+
     // when written to config.json, this will have all plugin properties
     // so not using @Json.ForceEmpty since new plugin properties can't be added in config.json
     // anyways

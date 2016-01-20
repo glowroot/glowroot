@@ -61,9 +61,9 @@ public class StatementAspect {
     private static final ConfigService configService = Agent.getConfigService("jdbc");
 
     private static final BooleanProperty captureBindParameters =
-            configService.getEnabledProperty("captureBindParameters");
+            configService.getBooleanProperty("captureBindParameters");
     private static final BooleanProperty captureStatementClose =
-            configService.getEnabledProperty("captureStatementClose");
+            configService.getBooleanProperty("captureStatementClose");
 
     // ===================== Mixin =====================
 
@@ -302,18 +302,11 @@ public class StatementAspect {
                 // this shouldn't happen since just checked hasGlowrootStatementMirror() above
                 return null;
             }
-            if (configService.isEnabled()) {
-                MessageSupplier messageSupplier = new StatementMessageSupplier(sql);
-                QueryEntry query = transactionService.startQueryEntry(QUERY_TYPE, sql,
-                        messageSupplier, timerName);
-                mirror.setLastQuery(query);
-                return query;
-            } else {
-                // clear lastJdbcQuery so that its numRows won't be updated if the plugin
-                // is re-enabled in the middle of iterating over a different result set
-                mirror.clearLastQuery();
-                return null;
-            }
+            MessageSupplier messageSupplier = new StatementMessageSupplier(sql);
+            QueryEntry query = transactionService.startQueryEntry(QUERY_TYPE, sql,
+                    messageSupplier, timerName);
+            mirror.setLastQuery(query);
+            return query;
         }
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable QueryEntry queryEntry) {
@@ -419,25 +412,18 @@ public class StatementAspect {
                 // this shouldn't happen since just checked hasGlowrootStatementMirror() above
                 return null;
             }
-            if (configService.isEnabled()) {
-                MessageSupplier messageSupplier;
-                String queryText = mirror.getSql();
-                if (captureBindParameters.value()) {
-                    messageSupplier = new PreparedStatementMessageSupplier(queryText,
-                            mirror.getParametersCopy());
-                } else {
-                    messageSupplier = new StatementMessageSupplier(queryText);
-                }
-                QueryEntry queryEntry = transactionService.startQueryEntry(QUERY_TYPE, queryText,
-                        messageSupplier, timerName);
-                mirror.setLastQuery(queryEntry);
-                return queryEntry;
+            MessageSupplier messageSupplier;
+            String queryText = mirror.getSql();
+            if (captureBindParameters.value()) {
+                messageSupplier = new PreparedStatementMessageSupplier(queryText,
+                        mirror.getParametersCopy());
             } else {
-                // clear lastJdbcQuery so that its numRows won't be updated if the plugin
-                // is re-enabled in the middle of iterating over a different result set
-                mirror.clearLastQuery();
-                return null;
+                messageSupplier = new StatementMessageSupplier(queryText);
             }
+            QueryEntry queryEntry = transactionService.startQueryEntry(QUERY_TYPE, queryText,
+                    messageSupplier, timerName);
+            mirror.setLastQuery(queryEntry);
+            return queryEntry;
         }
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable QueryEntry queryEntry) {
@@ -575,44 +561,30 @@ public class StatementAspect {
         }
         private static @Nullable QueryEntry onBeforePreparedStatement(
                 PreparedStatementMirror mirror) {
-            if (configService.isEnabled()) {
-                MessageSupplier messageSupplier;
-                String queryText = mirror.getSql();
-                int batchSize = mirror.getBatchSize();
-                if (captureBindParameters.value()) {
-                    messageSupplier = new BatchPreparedStatementMessageSupplier(queryText,
-                            mirror.getBatchedParameters());
-                } else {
-                    messageSupplier =
-                            new BatchPreparedStatementMessageSupplier2(queryText, batchSize);
-                }
-                QueryEntry queryEntry = advancedService.startQueryEntry(QUERY_TYPE, queryText,
-                        batchSize, messageSupplier, timerName);
-                mirror.setLastQuery(queryEntry);
-                mirror.clearBatch();
-                return queryEntry;
+            MessageSupplier messageSupplier;
+            String queryText = mirror.getSql();
+            int batchSize = mirror.getBatchSize();
+            if (captureBindParameters.value()) {
+                messageSupplier = new BatchPreparedStatementMessageSupplier(queryText,
+                        mirror.getBatchedParameters());
             } else {
-                // clear lastJdbcQuery so that its numRows won't be updated if the
-                // plugin is re-enabled in the middle of iterating over a different result set
-                mirror.clearLastQuery();
-                return null;
+                messageSupplier =
+                        new BatchPreparedStatementMessageSupplier2(queryText, batchSize);
             }
+            QueryEntry queryEntry = advancedService.startQueryEntry(QUERY_TYPE, queryText,
+                    batchSize, messageSupplier, timerName);
+            mirror.setLastQuery(queryEntry);
+            mirror.clearBatch();
+            return queryEntry;
         }
         private static @Nullable QueryEntry onBeforeStatement(StatementMirror mirror) {
-            if (configService.isEnabled()) {
-                MessageSupplier messageSupplier =
-                        new BatchStatementMessageSupplier(mirror.getBatchedSql());
-                QueryEntry queryEntry = transactionService.startQueryEntry(QUERY_TYPE,
-                        "<batch sql>", messageSupplier, timerName);
-                mirror.setLastQuery(queryEntry);
-                mirror.clearBatch();
-                return queryEntry;
-            } else {
-                // clear lastJdbcQuery so that its numRows won't be updated if the
-                // plugin is re-enabled in the middle of iterating over a different result set
-                mirror.clearLastQuery();
-                return null;
-            }
+            MessageSupplier messageSupplier =
+                    new BatchStatementMessageSupplier(mirror.getBatchedSql());
+            QueryEntry queryEntry = transactionService.startQueryEntry(QUERY_TYPE,
+                    "<batch sql>", messageSupplier, timerName);
+            mirror.setLastQuery(queryEntry);
+            mirror.clearBatch();
+            return queryEntry;
         }
     }
 
@@ -642,7 +614,7 @@ public class StatementAspect {
                 transactionService.getTimerName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
-            return statement.glowroot$hasStatementMirror() && configService.isEnabled();
+            return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror statement) {

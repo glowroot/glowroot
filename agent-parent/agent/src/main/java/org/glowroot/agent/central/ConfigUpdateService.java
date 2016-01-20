@@ -45,8 +45,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginPrope
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 
-import static com.google.common.base.Preconditions.checkState;
-
 class ConfigUpdateService {
 
     private final ConfigService configService;
@@ -156,10 +154,6 @@ class ConfigUpdateService {
             // OK for central to send over plugin configs for plugins that are not present locally
             return;
         }
-        ImmutablePluginConfig.Builder builder = ImmutablePluginConfig.builder().copyFrom(existing);
-        if (request.hasEnabled()) {
-            builder.enabled(request.getEnabled().getValue());
-        }
         Map<String, PropertyValue> properties = Maps.newHashMap(existing.properties());
         for (PluginProperty prop : request.getPropertyList()) {
             switch (prop.getValCase()) {
@@ -180,21 +174,21 @@ class ConfigUpdateService {
                             "Unexpected plugin property type: " + prop.getValCase());
             }
         }
-        builder.properties(properties);
         List<org.glowroot.common.config.PluginConfig> configs =
                 Lists.newArrayList(configService.getPluginConfigs());
-        boolean found = false;
         for (ListIterator<org.glowroot.common.config.PluginConfig> i = configs.listIterator(); i
                 .hasNext();) {
             org.glowroot.common.config.PluginConfig loopPluginConfig = i.next();
             if (loopPluginConfig.id().equals(pluginId)) {
-                i.set(builder.build());
-                found = true;
-                break;
+                i.set(ImmutablePluginConfig.builder()
+                        .copyFrom(existing)
+                        .properties(properties)
+                        .build());
+                configService.updatePluginConfigs(configs);
+                return;
             }
         }
-        checkState(found, "Plugin config not found: %s", pluginId);
-        configService.updatePluginConfigs(configs);
+        throw new IllegalStateException("Plugin config not found: " + pluginId);
     }
 
     private void updateGaugeConfigs(List<GaugeConfig> protos) throws IOException {

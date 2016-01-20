@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,10 @@
 package org.glowroot.microbenchmarks.support;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.transaction.Timer;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
@@ -29,8 +27,6 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 public class TimerWorthyAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
-    private static final ConfigService configService =
-            Agent.getConfigService("glowroot-microbenchmarks");
 
     @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TimerWorthy",
             methodName = "doSomethingTimerWorthy", methodParameterTypes = {},
@@ -39,11 +35,6 @@ public class TimerWorthyAspect {
 
         private static final TimerName timerName =
                 transactionService.getTimerName(TimerWorthyAdvice.class);
-
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
 
         @OnBefore
         public static Timer onBefore() {
@@ -63,11 +54,6 @@ public class TimerWorthyAspect {
 
         private static final TimerName timerName =
                 transactionService.getTimerName(TimerWorthyAdviceB.class);
-
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
 
         @OnBefore
         public static Timer onBefore() {

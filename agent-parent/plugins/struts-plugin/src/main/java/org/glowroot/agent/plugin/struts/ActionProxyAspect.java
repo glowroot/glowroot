@@ -16,7 +16,6 @@
 package org.glowroot.agent.plugin.struts;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.transaction.TraceEntry;
@@ -24,7 +23,6 @@ import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
@@ -34,7 +32,6 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 public class ActionProxyAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
-    private static final ConfigService configService = Agent.getConfigService("struts");
 
     @Shim("com.opensymphony.xwork2.ActionProxy")
     public interface ActionProxy {
@@ -50,11 +47,6 @@ public class ActionProxyAspect {
 
         private static final TimerName timerName =
                 transactionService.getTimerName(ActionProxyAdvice.class);
-
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
 
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver ActionProxy actionProxy) {
@@ -89,11 +81,6 @@ public class ActionProxyAspect {
 
         private static final TimerName timerName =
                 transactionService.getTimerName(ActionProxyAdvice.class);
-
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
 
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object action) {

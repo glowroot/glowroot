@@ -131,13 +131,10 @@ class ConfigJsonService {
         } else {
             List<PluginResponse> pluginResponses = Lists.newArrayList();
             for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-                PluginConfig pluginConfig =
-                        configRepository.getPluginConfig(serverId, pluginDescriptor.id());
-                checkNotNull(pluginConfig);
                 pluginResponses.add(ImmutablePluginResponse.builder()
                         .id(pluginDescriptor.id())
                         .name(pluginDescriptor.name())
-                        .enabled(pluginConfig.enabled())
+                        .hasConfig(!pluginDescriptor.properties().isEmpty())
                         .build());
             }
             return mapper.writeValueAsString(pluginResponses);
@@ -501,7 +498,7 @@ class ConfigJsonService {
     interface PluginResponse {
         String id();
         String name();
-        boolean enabled();
+        boolean hasConfig();
     }
 
     @Value.Immutable
@@ -612,21 +609,18 @@ class ConfigJsonService {
 
         abstract @Nullable String serverId(); // only used in request
         abstract @Nullable String pluginId(); // only used in request
-        abstract boolean enabled();
         abstract Map<String, PropertyValue> properties();
         abstract String version();
 
         private PluginConfig toConfig(String id) {
             return ImmutablePluginConfig.builder()
                     .id(id)
-                    .enabled(enabled())
                     .putAllProperties(properties())
                     .build();
         }
 
         private static PluginConfigDto fromConfig(PluginConfig config) {
             return ImmutablePluginConfigDto.builder()
-                    .enabled(config.enabled())
                     .putAllProperties(config.properties())
                     .version(config.version())
                     .build();

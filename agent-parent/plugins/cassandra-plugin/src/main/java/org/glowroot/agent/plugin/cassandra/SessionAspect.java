@@ -115,7 +115,7 @@ public class SessionAspect {
                 transactionService.getTimerName(ExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !inAdvice.get() && configService.isEnabled();
+            return !inAdvice.get();
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(@BindParameter @Nullable Object arg) {
@@ -158,7 +158,7 @@ public class SessionAspect {
                 transactionService.getTimerName(ExecuteAsyncAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !inAdvice.get() && configService.isEnabled();
+            return !inAdvice.get();
         }
         @OnBefore
         public static @Nullable AsyncQueryEntry onBefore(@BindParameter @Nullable Object arg) {

@@ -20,7 +20,6 @@ import java.util.Enumeration;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.transaction.AdvancedService;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
@@ -41,7 +40,6 @@ public class Log4jAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
     private static final AdvancedService advancedService = Agent.getAdvancedService();
-    private static final ConfigService configService = Agent.getConfigService("logger");
 
     // constants from org.apache.log4j.Priority
     private final static int OFF_INT = Integer.MAX_VALUE;
@@ -78,7 +76,7 @@ public class Log4jAspect {
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindReceiver Logger logger) {
-            if (LoggerPlugin.inAdvice() || !configService.isEnabled()) {
+            if (LoggerPlugin.inAdvice()) {
                 return false;
             }
             // check to see if no appenders, then don't capture (this is just to avoid confusion)
