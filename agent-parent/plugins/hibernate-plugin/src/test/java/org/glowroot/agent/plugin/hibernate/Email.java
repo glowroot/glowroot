@@ -17,17 +17,15 @@ package org.glowroot.agent.plugin.hibernate;
 
 import java.io.Serializable;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.ManyToOne;
 
 @Entity
 @SuppressWarnings("serial")
-public class Employee implements Serializable {
+public class Email implements Serializable {
 
     @Id
     @Column
@@ -35,34 +33,23 @@ public class Employee implements Serializable {
     private Integer id;
 
     @Column
-    private String name;
+    private String email;
 
-    @ManyToOne(cascade = CascadeType.ALL)
-    private Email email;
-
-    public Employee(String name) {
-        this.name = name;
+    public Email(String email) {
+        this.email = email;
     }
 
-    public Employee() {}
+    public Email() {}
 
     public Integer getId() {
         return id;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Email getEmail() {
+    public String getEmail() {
         return email;
     }
 
-    public void setEmail(Email email) {
+    public void setEmail(String email) {
         this.email = email;
     }
 }

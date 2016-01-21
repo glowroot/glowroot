@@ -22,14 +22,14 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
+import org.glowroot.agent.plugin.api.Message;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.Timer;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.config.ConfigService;
-import org.glowroot.agent.plugin.api.transaction.Message;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.Timer;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
@@ -46,7 +46,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class DataSourceAspect {
 
     private static final Logger logger = Agent.getLogger(DataSourceAspect.class);
-    private static final TransactionService transactionService = Agent.getTransactionService();
     private static final ConfigService configService = Agent.getConfigService("jdbc");
 
     private static final BooleanProperty captureGetConnection =
@@ -57,22 +56,19 @@ public class DataSourceAspect {
             configService.getBooleanProperty("captureTransactionLifecycleTraceEntries");
 
     @Pointcut(className = "javax.sql.DataSource", methodName = "getConnection",
-            methodParameterTypes = {".."}, timerName = "jdbc get connection",
-            ignoreSelfNested = true)
+            methodParameterTypes = {".."}, nestingGroup = "jdbc", timerName = "jdbc get connection")
     public static class GetConnectionAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(GetConnectionAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(GetConnectionAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return captureGetConnection.value() || captureConnectionLifecycleTraceEntries.value();
         }
         @OnBefore
-        public static Object onBefore() {
+        public static Object onBefore(ThreadContext context) {
             if (captureConnectionLifecycleTraceEntries.value()) {
-                return transactionService.startTraceEntry(new GetConnectionMessageSupplier(),
-                        timerName);
+                return context.startTraceEntry(new GetConnectionMessageSupplier(), timerName);
             } else {
-                return transactionService.startTimer(timerName);
+                return context.startTimer(timerName);
             }
         }
         @OnReturn

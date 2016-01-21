@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,22 +27,13 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
-import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
-import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.microbenchmarks.support.TraceEntryWorthy;
+import org.glowroot.microbenchmarks.support.TransactionWorthy;
 
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Thread)
-public class TraceEntryBenchmark {
-
-    private static final TransactionService transactionService = Agent.getTransactionService();
-    private static final TimerName timerName =
-            transactionService.getTimerName(OnlyForTheTimerName.class);
+public class TraceEntryBenchmark extends TransactionWorthy {
 
     @Param
     private PointcutType pointcutType;
@@ -56,9 +47,12 @@ public class TraceEntryBenchmark {
 
     @Benchmark
     @OperationsPerInvocation(2000)
-    public void execute() {
-        TraceEntry traceEntry = transactionService.startTransaction("Microbenchmark",
-                "micro transaction", MessageSupplier.from("micro transaction"), timerName);
+    public void execute() throws Exception {
+        doSomethingTransactionWorthy();
+    }
+
+    @Override
+    public void doSomethingTransactionWorthy() throws Exception {
         switch (pointcutType) {
             case API:
                 for (int i = 0; i < 2000; i++) {
@@ -71,10 +65,5 @@ public class TraceEntryBenchmark {
                 }
                 break;
         }
-        traceEntry.end();
     }
-
-    @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {},
-            timerName = "micro transaction")
-    private static class OnlyForTheTimerName {}
 }

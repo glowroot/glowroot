@@ -19,11 +19,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.AdvancedService;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.OptionalThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
@@ -33,18 +32,15 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class TraceGeneratorAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-    private static final AdvancedService advancedService = Agent.getAdvancedService();
-
     @Pointcut(className = "org.glowroot.agent.tests.app.TraceGenerator", methodName = "call",
             methodParameterTypes = {"boolean"}, timerName = "trace generator")
     public static class LevelOneAdvice {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(LevelOneAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(LevelOneAdvice.class);
 
         @OnBefore
-        public static TraceEntry onBefore(@BindReceiver Object traceGenerator,
+        public static TraceEntry onBefore(OptionalThreadContext context,
+                @BindReceiver Object traceGenerator,
                 @BindClassMeta TraceGeneratorInvoker traceGeneratorInvoker) {
             String transactionType = traceGeneratorInvoker.transactionType(traceGenerator);
             String transactionName = traceGeneratorInvoker.transactionName(traceGenerator);
@@ -52,16 +48,15 @@ public class TraceGeneratorAspect {
             Map<String, String> attributes = traceGeneratorInvoker.attributes(traceGenerator);
             String error = traceGeneratorInvoker.error(traceGenerator);
 
-            TraceEntry traceEntry =
-                    transactionService.startTransaction(transactionType, transactionName,
-                            MessageSupplier.from(headline), timerName);
+            TraceEntry traceEntry = context.startTransaction(transactionType, transactionName,
+                    MessageSupplier.from(headline), timerName);
             if (attributes != null) {
                 for (Entry<String, String> entry : attributes.entrySet()) {
-                    transactionService.addTransactionAttribute(entry.getKey(), entry.getValue());
+                    context.addTransactionAttribute(entry.getKey(), entry.getValue());
                 }
             }
             if (error != null) {
-                advancedService.setTransactionError(error);
+                context.setTransactionError(error);
             }
             return traceEntry;
         }

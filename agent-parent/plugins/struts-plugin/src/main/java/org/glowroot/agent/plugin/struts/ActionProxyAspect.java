@@ -16,10 +16,10 @@
 package org.glowroot.agent.plugin.struts;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
@@ -31,8 +31,6 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class ActionProxyAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-
     @Shim("com.opensymphony.xwork2.ActionProxy")
     public interface ActionProxy {
 
@@ -42,19 +40,20 @@ public class ActionProxyAspect {
     }
 
     @Pointcut(className = "com.opensymphony.xwork2.ActionProxy",
-            methodName = "execute", methodParameterTypes = {}, timerName = "struts controller")
+            methodName = "execute", methodParameterTypes = {}, nestingGroup = "struts",
+            timerName = "struts controller")
     public static class ActionProxyAdvice {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(ActionProxyAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(ActionProxyAdvice.class);
 
         @OnBefore
-        public static TraceEntry onBefore(@BindReceiver ActionProxy actionProxy) {
+        public static TraceEntry onBefore(ThreadContext context,
+                @BindReceiver ActionProxy actionProxy) {
             String actionClass = actionProxy.getAction().getClass().getSimpleName();
             String actionMethod = actionProxy.getMethod();
             String methodName = actionMethod != null ? actionMethod : "execute";
-            transactionService.setTransactionName(actionClass + "#" + methodName);
-            return transactionService.startTraceEntry(
+            context.setTransactionName(actionClass + "#" + methodName);
+            return context.startTraceEntry(
                     MessageSupplier.from("struts action: {}#{}", actionClass, methodName),
                     timerName);
         }
@@ -76,19 +75,17 @@ public class ActionProxyAspect {
                     "org.apache.struts.action.ActionMapping",
                     "org.apache.struts.action.ActionForm",
                     ".."
-            }, timerName = "struts controller")
+            }, nestingGroup = "struts", timerName = "struts controller")
     public static class ActionAdvice {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(ActionProxyAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(ActionProxyAdvice.class);
 
         @OnBefore
-        public static TraceEntry onBefore(@BindReceiver Object action) {
+        public static TraceEntry onBefore(ThreadContext context, @BindReceiver Object action) {
             String actionClass = action.getClass().getSimpleName();
-            transactionService.setTransactionName(actionClass + "#execute");
-            return transactionService.startTraceEntry(
-                    MessageSupplier.from("struts action: {}#execute", actionClass),
-                    timerName);
+            context.setTransactionName(actionClass + "#execute");
+            return context.startTraceEntry(
+                    MessageSupplier.from("struts action: {}#execute", actionClass), timerName);
         }
 
         @OnReturn

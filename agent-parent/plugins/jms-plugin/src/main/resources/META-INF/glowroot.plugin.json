@@ -8,6 +8,7 @@
       "methodParameterTypes": [
         "javax.jms.Message"
       ],
+      "nestingGroup": "jms",
       "captureKind": "transaction",
       "timerName": "jms message",
       "transactionType": "Background",
@@ -20,6 +21,7 @@
         "javax.jms.Message",
         ".."
       ],
+      "nestingGroup": "jms",
       "captureKind": "timer",
       "timerName": "jms send message"
     },
@@ -31,6 +33,7 @@
         "javax.jms.Message",
         ".."
       ],
+      "nestingGroup": "jms",
       "captureKind": "timer",
       "timerName": "jms send message"
     }

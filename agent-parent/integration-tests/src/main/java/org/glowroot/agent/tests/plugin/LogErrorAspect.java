@@ -16,11 +16,10 @@
 package org.glowroot.agent.tests.plugin;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.AdvancedService;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
@@ -29,19 +28,15 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class LogErrorAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-    private static final AdvancedService advancedService = Agent.getAdvancedService();
-
     @Pointcut(className = "org.glowroot.agent.tests.app.LogError", methodName = "log",
             methodParameterTypes = {"java.lang.String"}, timerName = "log error")
     public static class LogErrorAdvice {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(LogErrorAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(LogErrorAdvice.class);
 
         @OnBefore
-        public static TraceEntry onBefore(@BindParameter String message) {
-            return transactionService.startTraceEntry(MessageSupplier.from("ERROR -- {}", message),
+        public static TraceEntry onBefore(ThreadContext context, @BindParameter String message) {
+            return context.startTraceEntry(MessageSupplier.from("ERROR -- {}", message),
                     timerName);
         }
 
@@ -56,14 +51,13 @@ public class LogErrorAspect {
             timerName = "add nested error entry")
     public static class AddErrorEntryAdvice {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(AddErrorEntryAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(AddErrorEntryAdvice.class);
 
         @OnBefore
-        public static TraceEntry onBefore() {
-            TraceEntry traceEntry = transactionService.startTraceEntry(
+        public static TraceEntry onBefore(ThreadContext context) {
+            TraceEntry traceEntry = context.startTraceEntry(
                     MessageSupplier.from("outer entry to test nesting level"), timerName);
-            advancedService.addErrorEntry("test add nested error entry message");
+            context.addErrorEntry("test add nested error entry message");
             return traceEntry;
         }
 

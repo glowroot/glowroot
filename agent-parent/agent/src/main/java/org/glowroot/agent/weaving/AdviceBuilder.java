@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@ import com.google.common.collect.Lists;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
+import org.glowroot.agent.plugin.api.OptionalThreadContext;
+import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindMethodMeta;
 import org.glowroot.agent.plugin.api.weaving.BindMethodName;
@@ -145,6 +147,10 @@ public class AdviceBuilder {
                     buildPattern(pointcut.methodDeclaringClassName()));
         }
         builder.pointcutMethodNamePattern(buildPattern(pointcut.methodName()));
+        // hasBindThreadContext will be overridden below if needed
+        builder.hasBindThreadContext(false);
+        // hasBindOptionalThreadContext will be overridden below if needed
+        builder.hasBindOptionalThreadContext(false);
         for (java.lang.reflect.Method method : adviceClass.getMethods()) {
             if (method.isAnnotationPresent(IsEnabled.class)) {
                 initIsEnabledAdvice(adviceClass, method);
@@ -187,6 +193,13 @@ public class AdviceBuilder {
         if (onBeforeAdvice.getReturnType().getSort() != Type.VOID) {
             builder.travelerType(onBeforeAdvice.getReturnType());
         }
+        checkForBindThreadContext(parameters);
+        for (AdviceParameter parameter : parameters) {
+            if (parameter.kind() == ParameterKind.OPTIONAL_THREAD_CONTEXT) {
+                builder.hasBindOptionalThreadContext(true);
+                break;
+            }
+        }
         hasOnBeforeAdvice = true;
     }
 
@@ -204,6 +217,7 @@ public class AdviceBuilder {
         }
         builder.onReturnAdvice(Method.getMethod(method));
         builder.addAllOnReturnParameters(parameters);
+        checkForBindThreadContext(parameters);
         hasOnReturnAdvice = true;
     }
 
@@ -222,6 +236,7 @@ public class AdviceBuilder {
                 "@OnThrow method must return void (for now)");
         builder.onThrowAdvice(asmMethod);
         builder.addAllOnThrowParameters(parameters);
+        checkForBindThreadContext(parameters);
         hasOnThrowAdvice = true;
     }
 
@@ -236,7 +251,17 @@ public class AdviceBuilder {
         List<AdviceParameter> parameters = getAdviceParameters(method.getParameterAnnotations(),
                 method.getParameterTypes(), onAfterBindAnnotationTypes, OnAfter.class);
         builder.addAllOnAfterParameters(parameters);
+        checkForBindThreadContext(parameters);
         hasOnAfterAdvice = true;
+    }
+
+    private void checkForBindThreadContext(List<AdviceParameter> parameters) {
+        for (AdviceParameter parameter : parameters) {
+            if (parameter.kind() == ParameterKind.THREAD_CONTEXT) {
+                builder.hasBindThreadContext(true);
+                return;
+            }
+        }
     }
 
     private static void checkState(boolean condition, String message)
@@ -272,6 +297,20 @@ public class AdviceBuilder {
 
         List<AdviceParameter> parameters = Lists.newArrayList();
         for (int i = 0; i < parameterAnnotations.length; i++) {
+            if (parameterTypes[i] == ThreadContext.class) {
+                parameters.add(ImmutableAdviceParameter.builder()
+                        .kind(ParameterKind.THREAD_CONTEXT)
+                        .type(Type.getType(ThreadContext.class))
+                        .build());
+                continue;
+            }
+            if (parameterTypes[i] == OptionalThreadContext.class) {
+                parameters.add(ImmutableAdviceParameter.builder()
+                        .kind(ParameterKind.OPTIONAL_THREAD_CONTEXT)
+                        .type(Type.getType(OptionalThreadContext.class))
+                        .build());
+                continue;
+            }
             Class<? extends Annotation> validBindAnnotationType =
                     getValidBindAnnotationType(parameterAnnotations[i], validBindAnnotationTypes);
             if (validBindAnnotationType == null) {

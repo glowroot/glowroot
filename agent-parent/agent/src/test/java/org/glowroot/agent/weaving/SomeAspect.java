@@ -910,37 +910,12 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.agent.weaving.Misc", methodName = "execute1",
-            methodParameterTypes = {}, ignoreSelfNested = true)
-    public static class NotNestingAdvice extends BasicAdvice {}
-
-    @Pointcut(className = "org.glowroot.agent.weaving.Misc", methodName = "execute1",
-            methodParameterTypes = {}, ignoreSelfNested = true)
-    public static class NotNestingWithNoIsEnabledAdvice {
-        @OnBefore
-        public static void onBefore() {
-            SomeAspectThreadLocals.onBeforeCount.increment();
-        }
-        @OnReturn
-        public static void onReturn() {
-            SomeAspectThreadLocals.onReturnCount.increment();
-        }
-        @OnThrow
-        public static void onThrow() {
-            SomeAspectThreadLocals.onThrowCount.increment();
-        }
-        @OnAfter
-        public static void onAfter() {
-            SomeAspectThreadLocals.onAfterCount.increment();
-        }
-    }
-
     @Pointcut(className = "org.glowroot.agent.weaving.Misc", methodName = "execute*",
             methodParameterTypes = {".."}, timerName = "abc xyz")
     public static class InnerMethodAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.agent.weaving.Misc", methodName = "execute*",
-            methodParameterTypes = {".."}, ignoreSelfNested = true)
+            methodParameterTypes = {".."})
     public static class MultipleMethodsAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.agent.weaving.StaticMisc", methodName = "executeStatic",

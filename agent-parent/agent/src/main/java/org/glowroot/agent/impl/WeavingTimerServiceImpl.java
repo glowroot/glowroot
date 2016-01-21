@@ -18,8 +18,8 @@ package org.glowroot.agent.impl;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.TimerImpl;
+import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.weaving.WeavingTimerService;
 
@@ -47,7 +47,7 @@ public class WeavingTimerServiceImpl implements WeavingTimerService {
         if (!enabled) {
             return NopWeavingTimer.INSTANCE;
         }
-        ThreadContextImpl threadContext = transactionRegistry.getCurrentThreadContext();
+        ThreadContextImpl threadContext = transactionRegistry.getCurrentThreadContextHolder().get();
         if (threadContext == null) {
             return NopWeavingTimer.INSTANCE;
         }

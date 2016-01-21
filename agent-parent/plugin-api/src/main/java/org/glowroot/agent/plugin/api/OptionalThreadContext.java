@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.api.internal;
+package org.glowroot.agent.plugin.api;
 
-import org.glowroot.agent.plugin.api.AdvancedService;
+public interface OptionalThreadContext extends ThreadContext {
 
-public class NopAdvancedService implements AdvancedService {
-
-    public static final AdvancedService INSTANCE = new NopAdvancedService();
-
-    private NopAdvancedService() {}
-
-    @Override
-    public boolean isInTransaction() {
-        return false;
-    }
+    /**
+     * If there is no active transaction, a new transaction is started.
+     * 
+     * If there is already an active transaction, this method acts the same as
+     * {@link #startTraceEntry(MessageSupplier, TimerName)} (the transaction name and type are not
+     * modified on the existing transaction).
+     */
+    TraceEntry startTransaction(String transactionType, String transactionName,
+            MessageSupplier messageSupplier, TimerName timerName);
 }

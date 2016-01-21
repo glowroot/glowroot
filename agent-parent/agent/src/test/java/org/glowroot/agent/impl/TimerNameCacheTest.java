@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.glowroot.agent.impl;
 import org.junit.Test;
 
 import org.glowroot.agent.model.TimerNameImpl;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
+import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 import static org.assertj.core.api.Assertions.assertThat;

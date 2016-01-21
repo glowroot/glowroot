@@ -30,8 +30,8 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.plugin.api.transaction.Timer;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
+import org.glowroot.agent.plugin.api.Timer;
+import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;

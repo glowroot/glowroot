@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.api.transaction;
+package org.glowroot.agent.plugin.api;
+
+import org.omg.IOP.TransactionService;
 
 /**
- * See {@link AsyncService#startAsyncTraceEntry(MessageSupplier, TimerName, TimerName)} for how to
- * create and use {@code TraceEntry} instances.
+ * See {@link TransactionService#getTimerName(Class)} for how to retrieve and use {@code TimerName}
+ * instances.
  */
-public interface AsyncTraceEntry extends TraceEntry {
-
-    void stopSyncTimer();
-
-    // extend main thread timer without extending trace entry
-    Timer extendSyncTimer();
-}
+public interface TimerName {}

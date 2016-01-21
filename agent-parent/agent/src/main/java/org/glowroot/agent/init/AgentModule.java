@@ -167,8 +167,7 @@ public class AgentModule {
         Random random = new Random();
         UserProfileScheduler userProfileScheduler =
                 new UserProfileScheduler(scheduledExecutor, configService, random);
-        GlowrootService glowrootService =
-                new GlowrootServiceImpl(transactionRegistry, userProfileScheduler);
+        GlowrootService glowrootService = new GlowrootServiceImpl(transactionRegistry);
         TransactionServiceImpl transactionService = TransactionServiceImpl.create(
                 transactionRegistry, transactionCollector, configService, timerNameCache,
                 threadAllocatedBytes.getService(), userProfileScheduler, ticker, clock);
@@ -181,8 +180,8 @@ public class AgentModule {
                         pluginId);
             }
         };
-        ServiceRegistryImpl.init(glowrootService, transactionService, transactionService,
-                transactionService, configServiceFactory);
+        ServiceRegistryImpl.init(glowrootService, timerNameCache, transactionService,
+                configServiceFactory);
 
         lazyPlatformMBeanServer = new LazyPlatformMBeanServer();
         gaugeCollector = new GaugeCollector(configService, collector, lazyPlatformMBeanServer,

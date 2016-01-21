@@ -18,7 +18,11 @@ package org.glowroot.agent.weaving;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 
@@ -36,6 +40,13 @@ import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.impl.TransactionRegistry;
+import org.glowroot.agent.impl.TransactionRegistry.TransactionRegistryHolder;
+import org.glowroot.agent.impl.TransactionServiceImpl;
+import org.glowroot.agent.impl.TransactionServiceImpl.TransactionServiceHolder;
+import org.glowroot.agent.model.OptionalThreadContextImpl;
+import org.glowroot.agent.model.ThreadContextPlus;
+import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.IsEnabled;
@@ -44,7 +55,6 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.weaving.Advice.AdviceParameter;
-import org.glowroot.agent.weaving.AdviceFlowOuterHolder.AdviceFlowHolder;
 import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -53,10 +63,28 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingMethodVisitor.class);
 
-    private static final Type adviceFlowOuterHolderType = Type.getType(AdviceFlowOuterHolder.class);
-    private static final Type adviceFlowHolderType = Type.getType(AdviceFlowHolder.class);
+    private static final Type objectType = Type.getType(Object.class);
 
-    private static final Type objectType = Type.getObjectType("java/lang/Object");
+    private static final Type transactionRegistryHolderType =
+            Type.getType(TransactionRegistryHolder.class);
+    private static final Type transactionRegistryType = Type.getType(TransactionRegistry.class);
+    private static final Type fastThreadLocalHolderType =
+            Type.getType(FastThreadLocal.Holder.class);
+    private static final Type transactionServiceHolderType =
+            Type.getType(TransactionServiceHolder.class);
+    private static final Type transactionServiceImplType =
+            Type.getType(TransactionServiceImpl.class);
+    private static final Type optionalThreadContextImplType =
+            Type.getType(OptionalThreadContextImpl.class);
+
+    private static final Type threadContextPlusType = Type.getType(ThreadContextPlus.class);
+
+    // starts at 1 since 0 is used for "no nesting group"
+    private static final AtomicInteger nestingGroupIdCounter = new AtomicInteger(1);
+
+    // TODO move this to an instance cache
+    private static final ConcurrentMap<String, Integer> nestingGroupIds =
+            new ConcurrentHashMap<String, Integer>();
 
     private final int access;
     private final String name;
@@ -71,12 +99,14 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private final boolean needsOnThrow;
     private final @Nullable MethodVisitor outerMethodVisitor;
 
-    private final Map<Advice, Integer> adviceFlowHolderLocals = Maps.newHashMap();
-    // the adviceFlow stores the value in the holder at the beginning of the advice so the holder
-    // can be reset at the end of the advice
-    private final Map<Advice, Integer> originalAdviceFlowLocals = Maps.newHashMap();
     private final Map<Advice, Integer> enabledLocals = Maps.newHashMap();
     private final Map<Advice, Integer> travelerLocals = Maps.newHashMap();
+    private final Map<Advice, Integer> prevNestingGroupIdLocals = Maps.newHashMap();
+
+    // don't need map of thread context locals since all advice can share the same
+    // threadContextLocal
+    private @MonotonicNonNull Integer threadContextLocal;
+    private @MonotonicNonNull Integer threadContextHolderLocal;
 
     private final List<CatchHandler> catchHandlers = Lists.newArrayList();
 
@@ -106,7 +136,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         boolean needsOnReturn = false;
         boolean needsOnThrow = false;
         for (Advice advice : advisors) {
-            if (advice.pointcut().ignoreSelfNested() || advice.onAfterAdvice() != null) {
+            if (!advice.pointcut().nestingGroup().isEmpty() || advice.onAfterAdvice() != null) {
                 needsOnReturn = true;
                 needsOnThrow = true;
                 break;
@@ -187,18 +217,6 @@ class WeavingMethodVisitor extends AdviceAdapter {
         // applicable
         for (int i = 0; i < advisors.size(); i++) {
             Advice advice = advisors.get(i);
-            Integer adviceFlowHolderLocalIndex = adviceFlowHolderLocals.get(advice);
-            if (adviceFlowHolderLocalIndex != null) {
-                super.visitLocalVariable("glowroot$advice$flow$holder$" + i,
-                        adviceFlowHolderType.getDescriptor(), null, methodStartLabel, outerEndLabel,
-                        adviceFlowHolderLocalIndex);
-            }
-            Integer adviceFlowLocalIndex = originalAdviceFlowLocals.get(advice);
-            if (adviceFlowLocalIndex != null) {
-                super.visitLocalVariable("glowroot$advice$flow$" + i,
-                        Type.BOOLEAN_TYPE.getDescriptor(), null, methodStartLabel, outerEndLabel,
-                        adviceFlowLocalIndex);
-            }
             Integer enabledLocalIndex = enabledLocals.get(advice);
             if (enabledLocalIndex != null) {
                 super.visitLocalVariable("glowroot$enabled$" + i, Type.BOOLEAN_TYPE.getDescriptor(),
@@ -235,7 +253,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 visitOnReturnAdvice(advice, returnOpcode);
                 visitOnAfterAdvice(advice);
             }
-            resetAdviceFlowIfNecessary();
+            resetCurrentNestingGroupIfNecessary();
             // need to call super.visitInsn() in order to avoid infinite loop
             // could call mv.visitInsn(), but that would bypass special constructor handling in
             // AdviceAdapter.visitInsn()
@@ -285,7 +303,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             visitTryCatchBlock(catchStartLabel, catchEndLabel, catchHandlerLabel,
                     "java/lang/Throwable");
             visitLabel(catchHandlerLabel);
-            resetAdviceFlowIfNecessary();
+            resetCurrentNestingGroupIfNecessary();
             visitInsn(ATHROW);
         } else {
             for (CatchHandler catchHandler : Lists.reverse(catchHandlers)) {
@@ -299,7 +317,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 for (Advice advice : Lists.reverse(catchHandler.advisors())) {
                     visitOnAfterAdvice(advice);
                 }
-                resetAdviceFlowIfNecessary();
+                resetCurrentNestingGroupIfNecessary();
                 visitInsn(ATHROW);
             }
         }
@@ -317,23 +335,36 @@ class WeavingMethodVisitor extends AdviceAdapter {
             enabledLocals.put(advice, enabledLocal);
             storeLocal(enabledLocal);
         }
-        if (advice.pointcut().ignoreSelfNested()) {
-            // originalAdviceFlowLocal must be defined/initialized outside of any code branches
-            // since it is referenced later on in resetAdviceFlowIfNecessary()
-            int adviceFlowHolderLocal = newLocal(adviceFlowHolderType);
-            adviceFlowHolderLocals.put(advice, adviceFlowHolderLocal);
-            visitInsn(ACONST_NULL);
-            storeLocal(adviceFlowHolderLocal);
-
-            int originalAdviceFlowLocal = newLocal(Type.BOOLEAN_TYPE);
-            originalAdviceFlowLocals.put(advice, originalAdviceFlowLocal);
-            visitInsn(ICONST_0);
-            storeLocal(originalAdviceFlowLocal);
-
-            Label setAdviceFlowBlockEnd = new Label();
+        String nestingGroup = advice.pointcut().nestingGroup();
+        if (!nestingGroup.isEmpty() || advice.hasBindThreadContext()
+                || advice.hasBindOptionalThreadContext()) {
+            if (threadContextHolderLocal == null) {
+                // need to define thread context local var outside of any branches,
+                // but also don't want to load ThreadContext if enabledLocal exists and is false
+                threadContextHolderLocal = newLocal(fastThreadLocalHolderType);
+                visitInsn(ACONST_NULL);
+                storeLocal(threadContextHolderLocal);
+                threadContextLocal = newLocal(threadContextPlusType);
+                visitInsn(ACONST_NULL);
+                storeLocal(threadContextLocal);
+            }
+        }
+        Integer prevNestingGroupIdLocal = null;
+        if (!nestingGroup.isEmpty()) {
+            // need to define thread context local var outside of any branches
+            // but also don't want to load ThreadContext if enabledLocal exists and is false
+            prevNestingGroupIdLocal = newLocal(Type.INT_TYPE);
+            prevNestingGroupIdLocals.put(advice, prevNestingGroupIdLocal);
+            visitIntInsn(BIPUSH, -1);
+            storeLocal(prevNestingGroupIdLocal);
+        }
+        // futher calculations whether this @Pointcut is enabled..
+        if (!nestingGroup.isEmpty()
+                || (advice.hasBindThreadContext() && !advice.hasBindOptionalThreadContext())) {
+            Label disabledLabel = new Label();
             if (enabledLocal != null) {
                 loadLocal(enabledLocal);
-                visitJumpInsn(IFEQ, setAdviceFlowBlockEnd);
+                visitJumpInsn(IFEQ, disabledLabel);
             } else {
                 enabledLocal = newLocal(Type.BOOLEAN_TYPE);
                 enabledLocals.put(advice, enabledLocal);
@@ -341,34 +372,64 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 visitInsn(ICONST_0);
                 storeLocal(enabledLocal);
             }
-            visitFieldInsn(GETSTATIC, advice.adviceType().getInternalName(),
-                    "glowroot$advice$flow$outer$holder", adviceFlowOuterHolderType.getDescriptor());
-            visitMethodInsn(INVOKEVIRTUAL, adviceFlowOuterHolderType.getInternalName(),
-                    "getInnerHolder", "()" + adviceFlowHolderType.getDescriptor(), false);
-            visitInsn(DUP);
-            storeLocal(adviceFlowHolderLocal);
-            visitMethodInsn(INVOKEVIRTUAL, adviceFlowHolderType.getInternalName(), "isTop", "()Z",
-                    false);
-            Label isTopBlockStart = new Label();
-            visitInsn(DUP);
-            storeLocal(originalAdviceFlowLocal);
-            visitJumpInsn(IFNE, isTopBlockStart);
-            // !isTop()
-            visitInsn(ICONST_0);
-            storeLocal(enabledLocal);
-            visitJumpInsn(GOTO, setAdviceFlowBlockEnd);
-            // enabled
-            visitLabel(isTopBlockStart);
-            loadLocal(adviceFlowHolderLocal);
-            visitInsn(ICONST_0);
-            // note that setTop() is only called if enabled is true, so it only needs to be reset
-            // at the end of the advice if enabled is true
-            visitMethodInsn(INVOKEVIRTUAL, adviceFlowHolderType.getInternalName(), "setTop", "(Z)V",
-                    false);
+            loadThreadContextHolder();
+            dup();
+            checkNotNull(threadContextHolderLocal);
+            storeLocal(threadContextHolderLocal);
+            visitMethodInsn(INVOKEVIRTUAL, fastThreadLocalHolderType.getInternalName(), "get",
+                    "()" + objectType.getDescriptor(), false);
+            dup();
+            checkNotNull(threadContextLocal);
+            storeLocal(threadContextLocal);
+            if (advice.hasBindThreadContext() && !advice.hasBindOptionalThreadContext()) {
+                visitJumpInsn(IFNULL, disabledLabel);
+                if (!nestingGroup.isEmpty()) {
+                    checkNotNull(prevNestingGroupIdLocal);
+                    checkNestingGroupId(prevNestingGroupIdLocal, nestingGroup, disabledLabel);
+                }
+            } else {
+                // this conditional covers !nestingGroup.isEmpty()
+                Label enabledLabel = new Label();
+                // if thread context == null, then not in nesting group
+                visitJumpInsn(IFNULL, enabledLabel);
+                checkNotNull(prevNestingGroupIdLocal);
+                checkNestingGroupId(prevNestingGroupIdLocal, nestingGroup, disabledLabel);
+                visitLabel(enabledLabel);
+            }
             visitInsn(ICONST_1);
+            Label endLabel = new Label();
+            goTo(endLabel);
+            visitLabel(disabledLabel);
+            visitInsn(ICONST_0);
+            visitLabel(endLabel);
             storeLocal(enabledLocal);
-            visitLabel(setAdviceFlowBlockEnd);
         }
+    }
+
+    private void loadThreadContextHolder() {
+        // TODO optimize, don't need to look up ThreadContext thread local each time
+        visitMethodInsn(INVOKESTATIC, transactionRegistryHolderType.getInternalName(),
+                "getTransactionRegistry", "()" + transactionRegistryType.getDescriptor(), false);
+        visitMethodInsn(INVOKEVIRTUAL, transactionRegistryType.getInternalName(),
+                "getCurrentThreadContextHolder", "()" + fastThreadLocalHolderType.getDescriptor(),
+                false);
+    }
+
+    @RequiresNonNull("threadContextLocal")
+    private void checkNestingGroupId(int prevNestingGroupIdLocal, String nestingGroup,
+            Label disabledLabel) {
+        loadLocal(threadContextLocal);
+        visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
+                "getCurrentNestingGroupId", "()I", true);
+        dup();
+        storeLocal(prevNestingGroupIdLocal);
+        int nestingGroupId = getNestingGroupId(nestingGroup);
+        visitIntInsn(BIPUSH, nestingGroupId);
+        visitJumpInsn(IF_ICMPEQ, disabledLabel);
+        loadLocal(threadContextLocal);
+        visitIntInsn(BIPUSH, nestingGroupId);
+        visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
+                "setCurrentNestingGroupId", "(I)V", true);
     }
 
     private void defineTravelerLocalVar(Advice advice) {
@@ -405,6 +466,31 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 onBeforeAdvice.getName(), onBeforeAdvice.getDescriptor(), false);
         if (travelerLocal != null) {
             storeLocal(travelerLocal);
+        }
+        String nestingGroup = advice.pointcut().nestingGroup();
+        if (advice.hasBindOptionalThreadContext() && !nestingGroup.isEmpty()) {
+            // need to check if transaction was just started in @OnBefore and update its
+            // currentNestingGroupId
+
+            Integer prevNestingGroupIdLocal = prevNestingGroupIdLocals.get(advice);
+            checkNotNull(prevNestingGroupIdLocal);
+            loadLocal(prevNestingGroupIdLocal);
+            visitIntInsn(BIPUSH, -1);
+            Label label = new Label();
+            visitJumpInsn(IF_ICMPNE, label);
+            // the only reason prevNestingGroupId is -1 here is because no thread context at the
+            // start of the method
+            checkNotNull(threadContextLocal);
+            loadLocal(threadContextLocal);
+            visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
+                    "getCurrentNestingGroupId", "()I", true);
+            storeLocal(prevNestingGroupIdLocal);
+            loadLocal(threadContextLocal);
+            int nestingGroupId = getNestingGroupId(nestingGroup);
+            visitIntInsn(BIPUSH, nestingGroupId);
+            visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
+                    "setCurrentNestingGroupId", "(I)V", true);
+            visitLabel(label);
         }
         if (onBeforeBlockEnd != null) {
             visitLabel(onBeforeBlockEnd);
@@ -579,32 +665,22 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
     }
 
-    private void resetAdviceFlowIfNecessary() {
-        for (Advice advice : advisors) {
-            if (advice.pointcut().ignoreSelfNested()) {
-                Integer enabledLocal = enabledLocals.get(advice);
-                Integer originalAdviceFlowLocal = originalAdviceFlowLocals.get(advice);
-                Integer adviceFlowHolderLocal = adviceFlowHolderLocals.get(advice);
-                // enabledLocal is non-null for all advice
-                checkNotNull(enabledLocal, "enabledLocal is null");
-                // adviceFlowLocal is non-null for all advice with ignoreSelfNested = true
-                // (same condition as tested above)
-                checkNotNull(originalAdviceFlowLocal, "originalAdviceFlowLocal is null");
-                // adviceFlowHolderLocal is non-null for all advice with ignoreSelfNested = true
-                // (same condition as tested above)
-                checkNotNull(adviceFlowHolderLocal, "adviceFlowHolderLocal is null");
-
-                Label setAdviceFlowBlockEnd = new Label();
-                loadLocal(enabledLocal);
-                visitJumpInsn(IFEQ, setAdviceFlowBlockEnd);
-                loadLocal(originalAdviceFlowLocal);
-                visitJumpInsn(IFEQ, setAdviceFlowBlockEnd);
-                // isTop was true at the beginning of the advice, need to reset it now
-                loadLocal(adviceFlowHolderLocal);
-                visitInsn(ICONST_1);
-                visitMethodInsn(INVOKEVIRTUAL, adviceFlowHolderType.getInternalName(), "setTop",
-                        "(Z)V", false);
-                visitLabel(setAdviceFlowBlockEnd);
+    private void resetCurrentNestingGroupIfNecessary() {
+        ListIterator<Advice> i = advisors.listIterator(advisors.size());
+        while (i.hasPrevious()) {
+            Advice advice = i.previous();
+            Integer prevNestingGroupIdLocal = prevNestingGroupIdLocals.get(advice);
+            if (prevNestingGroupIdLocal != null) {
+                loadLocal(prevNestingGroupIdLocal);
+                visitIntInsn(BIPUSH, -1);
+                Label label = new Label();
+                visitJumpInsn(IF_ICMPEQ, label);
+                checkNotNull(threadContextLocal);
+                loadLocal(threadContextLocal);
+                loadLocal(prevNestingGroupIdLocal);
+                visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
+                        "setCurrentNestingGroupId", "(I)V", true);
+                visitLabel(label);
             }
         }
     }
@@ -641,6 +717,15 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     checkNotNull(metaHolderInternalName);
                     checkNotNull(methodMetaGroupUniqueNum);
                     loadMethodMeta(parameter);
+                    break;
+                case THREAD_CONTEXT:
+                    checkNotNull(threadContextLocal);
+                    loadLocal(threadContextLocal);
+                    break;
+                case OPTIONAL_THREAD_CONTEXT:
+                    checkNotNull(threadContextHolderLocal);
+                    checkNotNull(threadContextLocal);
+                    loadOptionalThreadContext();
                     break;
                 default:
                     // this should have been caught during Advice construction, but just in case:
@@ -760,6 +845,35 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
     }
 
+    @RequiresNonNull({"threadContextHolderLocal", "threadContextLocal"})
+    private void loadOptionalThreadContext() {
+        loadLocal(threadContextHolderLocal);
+        Label label = new Label();
+        visitJumpInsn(IFNONNULL, label);
+        loadThreadContextHolder();
+        storeLocal(threadContextHolderLocal);
+        visitLabel(label);
+        loadLocal(threadContextHolderLocal);
+        visitMethodInsn(INVOKEVIRTUAL, fastThreadLocalHolderType.getInternalName(), "get",
+                "()" + objectType.getDescriptor(), false);
+        dup();
+        storeLocal(threadContextLocal);
+        Label label2 = new Label();
+        visitJumpInsn(IFNONNULL, label2);
+        visitMethodInsn(INVOKESTATIC, transactionServiceHolderType.getInternalName(),
+                "getTransactionService", "()" + transactionServiceImplType.getDescriptor(),
+                false);
+        loadLocal(threadContextHolderLocal);
+        visitMethodInsn(INVOKESTATIC, optionalThreadContextImplType.getInternalName(), "create",
+                "(" + transactionServiceImplType.getDescriptor()
+                        + fastThreadLocalHolderType.getDescriptor() + ")"
+                        + optionalThreadContextImplType.getDescriptor(),
+                false);
+        storeLocal(threadContextLocal);
+        visitLabel(label2);
+        loadLocal(threadContextLocal);
+    }
+
     private void pushDefault(Type type) {
         switch (type.getSort()) {
             case Type.BOOLEAN:
@@ -862,6 +976,21 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 pop2();
                 pop();
             }
+        }
+    }
+
+    private static int getNestingGroupId(String nestingGroup) {
+        Integer nullableNestingGroupId = nestingGroupIds.get(nestingGroup);
+        if (nullableNestingGroupId != null) {
+            return nullableNestingGroupId;
+        }
+        int nestingGroupId = nestingGroupIdCounter.getAndIncrement();
+        Integer previousValue = nestingGroupIds.putIfAbsent(nestingGroup, nestingGroupId);
+        if (previousValue == null) {
+            return nestingGroupId;
+        } else {
+            // handling race condition
+            return previousValue;
         }
     }
 

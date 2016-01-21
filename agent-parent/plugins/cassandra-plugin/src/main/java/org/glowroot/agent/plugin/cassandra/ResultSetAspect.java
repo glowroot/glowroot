@@ -18,10 +18,10 @@ package org.glowroot.agent.plugin.cassandra;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.QueryEntry;
+import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.config.ConfigService;
-import org.glowroot.agent.plugin.api.transaction.QueryEntry;
-import org.glowroot.agent.plugin.api.transaction.Timer;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;

@@ -16,11 +16,12 @@
 package org.glowroot.agent.ui.sandbox;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.Timer;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.OptionalThreadContext;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.Timer;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
@@ -30,18 +31,15 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 // test this unusual situation
 public class ExternalJvmMainAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-
     @Pointcut(className = "org.glowroot.agent.it.harness.impl.JavaagentMain", methodName = "main",
             methodParameterTypes = {"java.lang.String[]"}, timerName = "external jvm main")
     public static class MainAdvice {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(MainAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(MainAdvice.class);
 
         @OnBefore
-        public static TraceEntry onBefore() {
-            return transactionService.startTransaction("Sandbox", "javaagent container main",
+        public static TraceEntry onBefore(OptionalThreadContext context) {
+            return context.startTransaction("Sandbox", "javaagent container main",
                     MessageSupplier.from("org.glowroot.agent.it.harness.impl.JavaagentMain.main()"),
                     timerName);
         }
@@ -56,12 +54,11 @@ public class ExternalJvmMainAspect {
             methodName = "timerMarkerOne", methodParameterTypes = {}, timerName = "timer one")
     public static class TimerMarkerOneAdvice {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(TimerMarkerOneAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(TimerMarkerOneAdvice.class);
 
         @OnBefore
-        public static Timer onBefore() {
-            return transactionService.startTimer(timerName);
+        public static Timer onBefore(ThreadContext context) {
+            return context.startTimer(timerName);
         }
 
         @OnAfter
@@ -74,12 +71,11 @@ public class ExternalJvmMainAspect {
             methodName = "timerMarkerTwo", methodParameterTypes = {}, timerName = "timer two")
     public static class TimerMarkerTwoAdvice {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(TimerMarkerTwoAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(TimerMarkerTwoAdvice.class);
 
         @OnBefore
-        public static Timer onBefore() {
-            return transactionService.startTimer(timerName);
+        public static Timer onBefore(ThreadContext context) {
+            return context.startTimer(timerName);
         }
 
         @OnAfter

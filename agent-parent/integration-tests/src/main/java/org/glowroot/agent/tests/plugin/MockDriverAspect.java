@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 package org.glowroot.agent.tests.plugin;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
@@ -27,19 +27,15 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class MockDriverAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-
     @Pointcut(className = "org.glowroot.agent.tests.app.MockDriver", methodName = "getMajorVersion",
             methodParameterTypes = {}, timerName = "get major version")
     public static class GetMajorVersionAdvice {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(GetMajorVersionAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(GetMajorVersionAdvice.class);
 
         @OnBefore
-        public static TraceEntry onBefore() {
-            return transactionService.startTraceEntry(MessageSupplier.from("major version"),
-                    timerName);
+        public static TraceEntry onBefore(ThreadContext context) {
+            return context.startTraceEntry(MessageSupplier.from("major version"), timerName);
         }
 
         @OnAfter

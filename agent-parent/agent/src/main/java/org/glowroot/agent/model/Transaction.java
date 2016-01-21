@@ -47,17 +47,22 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.TransactionRegistry;
-import org.glowroot.agent.plugin.api.transaction.Message;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.internal.ReadableMessage;
+import org.glowroot.agent.impl.TransactionServiceImpl;
+import org.glowroot.agent.impl.UserProfileScheduler;
+import org.glowroot.agent.plugin.api.Message;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.internal.ReadableMessage;
+import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.util.Cancellable;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.glowroot.storage.simplerepo.util.Checkers.castInitialized;
 
 // contains all data that has been captured for a given transaction (e.g. a servlet request)
 //
@@ -157,6 +162,9 @@ public class Transaction {
     private final Ticker ticker;
 
     private final TransactionRegistry transactionRegistry;
+    private final TransactionServiceImpl transactionService;
+    private final ConfigService configService;
+    private final UserProfileScheduler userProfileScheduler;
 
     public Transaction(long startTime, long startTick, String transactionType,
             String transactionName, MessageSupplier messageSupplier, TimerName timerName,
@@ -164,7 +172,9 @@ public class Transaction {
             int maxAggregateQueriesPerQueryType,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             CompletionCallback completionCallback, Ticker ticker,
-            TransactionRegistry transactionRegistry) {
+            TransactionRegistry transactionRegistry, TransactionServiceImpl transactionService,
+            ConfigService configService, UserProfileScheduler userProfileScheduler,
+            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
         this.startTime = startTime;
         this.startTick = startTick;
         this.transactionType = transactionType;
@@ -176,18 +186,25 @@ public class Transaction {
         this.completionCallback = completionCallback;
         this.ticker = ticker;
         this.transactionRegistry = transactionRegistry;
+        this.transactionService = transactionService;
+        this.configService = configService;
+        this.userProfileScheduler = userProfileScheduler;
         mainThreadContext = new ThreadContextImpl(castInitialized(this), null, messageSupplier,
-                timerName, startTick, captureThreadStats, threadAllocatedBytes, false, ticker);
+                timerName, startTick, captureThreadStats, threadAllocatedBytes, false,
+                transactionRegistry, transactionService, configService, ticker,
+                threadContextHolder);
     }
 
     public TraceEntryImpl startAuxThreadContext(TraceEntryImpl parentTraceEntry,
             TimerName auxTimerName, long startTick,
+            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes) {
         ThreadContextImpl auxThreadContext = new ThreadContextImpl(this, parentTraceEntry,
                 AuxThreadRootMessageSupplier.INSTANCE, auxTimerName, startTick,
-                captureThreadStats, threadAllocatedBytes, true, ticker);
+                captureThreadStats, threadAllocatedBytes, true, transactionRegistry,
+                transactionService, configService, ticker, threadContextHolder);
         auxThreadContexts.add(auxThreadContext);
-        transactionRegistry.setAuxThreadContext(auxThreadContext);
+        threadContextHolder.set(auxThreadContext);
         return auxThreadContext.getRootEntry();
     }
 
@@ -447,6 +464,9 @@ public class Transaction {
         if (userOverrideSource == null || userOverrideSource.priority < overrideSource.priority) {
             this.user = user;
             userOverrideSource = overrideSource;
+            if (userProfileRunnable == null) {
+                userProfileScheduler.maybeScheduleUserProfiling(this, user);
+            }
         }
     }
 
@@ -578,10 +598,6 @@ public class Transaction {
         completionCallback.completed(this);
     }
 
-    void endAuxThreadContext() {
-        transactionRegistry.removeAuxThreadContext();
-    }
-
     // called by the transaction thread
     public void onCompleteWillStoreTrace(long captureTime) {
         this.captureTime = captureTime;
@@ -615,11 +631,6 @@ public class Transaction {
         private OverrideSource(int priority) {
             this.priority = priority;
         }
-    }
-
-    @SuppressWarnings("return.type.incompatible")
-    private static <T> /*@Initialized*/ T castInitialized(/*@UnderInitialization*/ T obj) {
-        return obj;
     }
 
     private static class AuxThreadRootMessageSupplier extends MessageSupplier {

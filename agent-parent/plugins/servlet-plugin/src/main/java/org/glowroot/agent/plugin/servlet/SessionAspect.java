@@ -20,8 +20,7 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
@@ -30,17 +29,12 @@ import org.glowroot.agent.plugin.servlet.ServletAspect.HttpSession;
 
 public class SessionAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-
-    /*
-     * ================== Http Session Attributes ==================
-     */
-
     @Pointcut(className = "javax.servlet.http.HttpSession", methodName = "setAttribute|putValue",
-            methodParameterTypes = {"java.lang.String", "java.lang.Object"})
+            methodParameterTypes = {"java.lang.String", "java.lang.Object"},
+            nestingGroup = "servlet-inner-call")
     public static class SetAttributeAdvice {
         @OnAfter
-        public static void onAfter(@BindReceiver HttpSession session,
+        public static void onAfter(ThreadContext context, @BindReceiver HttpSession session,
                 @BindParameter @Nullable String name, @BindParameter @Nullable Object value) {
             if (name == null) {
                 // theoretically possible, so just ignore
@@ -50,26 +44,26 @@ public class SessionAspect {
             // (which per the javadoc is the same as calling removeAttribute())
             ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
             if (messageSupplier != null) {
-                updateUserIfApplicable(name, value, session);
+                updateUserIfApplicable(context, name, value, session);
                 updateSessionAttributesIfApplicable(messageSupplier, name, value, session);
             }
         }
     }
 
     @Pointcut(className = "javax.servlet.http.HttpSession", methodName = "removeAttribute",
-            methodParameterTypes = {"java.lang.String"})
+            methodParameterTypes = {"java.lang.String"}, nestingGroup = "servlet-inner-call")
     public static class RemoveAttributeAdvice {
         @OnAfter
-        public static void onAfter(@BindReceiver HttpSession session,
+        public static void onAfter(ThreadContext context, @BindReceiver HttpSession session,
                 @BindParameter @Nullable String name) {
             // calling HttpSession.setAttribute() with null value is the same as calling
             // removeAttribute(), per the setAttribute() javadoc
-            SetAttributeAdvice.onAfter(session, name, null);
+            SetAttributeAdvice.onAfter(context, session, name, null);
         }
     }
 
-    private static void updateUserIfApplicable(String name, @Nullable Object value,
-            HttpSession session) {
+    private static void updateUserIfApplicable(ThreadContext context, String name,
+            @Nullable Object value, HttpSession session) {
         if (value == null) {
             // if user value is set to null, don't clear it
             return;
@@ -78,13 +72,13 @@ public class SessionAspect {
         if (!sessionUserAttributePath.isEmpty()) {
             // capture user now, don't use a lazy supplier
             if (sessionUserAttributePath.equals(name)) {
-                transactionService.setTransactionUser(value.toString());
+                context.setTransactionUser(value.toString());
             } else if (sessionUserAttributePath.startsWith(name + ".")) {
                 String user = HttpSessions.getSessionAttributeTextValue(session,
                         sessionUserAttributePath);
                 if (user != null) {
                     // if user is null, don't clear it by setting Suppliers.ofInstance(null)
-                    transactionService.setTransactionUser(user);
+                    context.setTransactionUser(user);
                 }
             }
         }

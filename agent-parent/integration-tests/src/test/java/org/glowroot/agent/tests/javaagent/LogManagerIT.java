@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,11 @@ import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,7 +82,6 @@ public class LogManagerIT {
     }
 
     public static class ShouldUseCustomLogManager implements AppUnderTest, TransactionMarker {
-        private static final TransactionService transactionService = Agent.getTransactionService();
         @Override
         public void executeApp() throws InterruptedException {
             transactionMarker();
@@ -91,7 +89,7 @@ public class LogManagerIT {
         @Override
         public void transactionMarker() throws InterruptedException {
             // this is just to pass the log manager back to the calling test
-            transactionService.setTransactionUser(LogManager.getLogManager().getClass().getName());
+            Glowroot.setTransactionUser(LogManager.getLogManager().getClass().getName());
         }
     }
 

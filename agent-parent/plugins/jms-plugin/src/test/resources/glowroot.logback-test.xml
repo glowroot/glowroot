@@ -21,6 +21,6 @@
     <appender-ref ref="FILE" />
   </root>
   <!-- these are needed to deal with a couple of sporadic error messages -->
-  <logger name="org.apache.activemq.broker.BrokerService" level="OFF"></logger>
-  <logger name="org.apache.activemq.broker.jmx.ManagementContext" level="OFF"></logger>
+  <logger name="org.apache.activemq.broker.BrokerService" level="off"></logger>
+  <logger name="org.apache.activemq.broker.jmx.ManagementContext" level="off"></logger>
 </configuration>

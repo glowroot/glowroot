@@ -4,17 +4,16 @@
     "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
 <hibernate-configuration>
   <session-factory>
-    <property name="hibernate.archive.autodetection">class,hbm</property>
     <property name="hibernate.dialect">org.hibernate.dialect.HSQLDialect</property>
     <property name="hibernate.connection.driver_class">org.hsqldb.jdbcDriver</property>
     <property name="hibernate.connection.username">sa</property>
     <property name="hibernate.connection.password">1</property>
     <property name="hibernate.connection.url">jdbc:hsqldb:mem:glowroot</property>
     <property name="hibernate.hbm2ddl.auto">create</property>
-    <property name="hibernate.hbm2ddl.auto">create</property>
     <!-- using c3p0 pool to avoid warning message
       HHH000402: Using Hibernate built-in connection pool (not for production use!) -->
     <property name="hibernate.c3p0.min_size">1</property>
     <mapping class="org.glowroot.agent.plugin.hibernate.Employee"></mapping>
+    <mapping class="org.glowroot.agent.plugin.hibernate.Email"></mapping>
   </session-factory>
 </hibernate-configuration>

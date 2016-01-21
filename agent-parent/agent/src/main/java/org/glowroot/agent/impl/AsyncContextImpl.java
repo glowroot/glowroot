@@ -18,11 +18,12 @@ package org.glowroot.agent.impl;
 import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.TraceEntryImpl;
 import org.glowroot.agent.model.Transaction;
+import org.glowroot.agent.plugin.api.AuxThreadContext;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTraceEntry;
-import org.glowroot.agent.plugin.api.transaction.ThreadContext;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
+import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 
-public class AsyncContextImpl implements ThreadContext {
+public class AsyncContextImpl implements AuxThreadContext {
 
     private final Transaction transaction;
     private final TraceEntryImpl parentTraceEntry;
@@ -39,10 +40,12 @@ public class AsyncContextImpl implements ThreadContext {
 
     @Override
     public TraceEntry start() {
-        ThreadContextImpl threadContext = transactionRegistry.getCurrentThreadContext();
-        if (threadContext != null) {
+        Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder =
+                transactionRegistry.getCurrentThreadContextHolder();
+        if (threadContextHolder.get() != null) {
             return NopTraceEntry.INSTANCE;
         }
-        return transactionService.startAuxThreadContextInternal(transaction, parentTraceEntry);
+        return transactionService.startAuxThreadContextInternal(transaction, parentTraceEntry,
+                threadContextHolder);
     }
 }

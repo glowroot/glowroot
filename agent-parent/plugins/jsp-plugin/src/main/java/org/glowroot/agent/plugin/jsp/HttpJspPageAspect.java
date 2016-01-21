@@ -16,10 +16,10 @@
 package org.glowroot.agent.plugin.jsp;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
@@ -30,23 +30,20 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class HttpJspPageAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-
     @Pointcut(className = "javax.servlet.jsp.HttpJspPage", methodName = "_jspService",
             methodParameterTypes = {"javax.servlet.http.HttpServletRequest",
                     "javax.servlet.http.HttpServletResponse"},
-            timerName = "jsp render")
+            nestingGroup = "jsp", timerName = "jsp render")
     public static class HttpJspPageAdvice {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(HttpJspPageAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(HttpJspPageAdvice.class);
 
         @OnBefore
-        public static TraceEntry onBefore(@BindReceiver Object httpJspPage) {
+        public static TraceEntry onBefore(ThreadContext context, @BindReceiver Object httpJspPage) {
             // get filename from classname
             String filename = HttpJspPages.getFilename(httpJspPage.getClass());
-            return transactionService
-                    .startTraceEntry(MessageSupplier.from("jsp render: {}", filename), timerName);
+            return context.startTraceEntry(MessageSupplier.from("jsp render: {}", filename),
+                    timerName);
         }
 
         @OnReturn

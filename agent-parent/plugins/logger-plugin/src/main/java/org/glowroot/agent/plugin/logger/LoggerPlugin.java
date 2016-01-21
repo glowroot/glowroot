@@ -20,7 +20,6 @@ import javax.annotation.Nullable;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.config.ConfigService;
-import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 
 class LoggerPlugin {
 
@@ -35,23 +34,7 @@ class LoggerPlugin {
     private static final BooleanProperty traceErrorOnErrorWithoutThrowable =
             configService.getBooleanProperty("traceErrorOnErrorWithoutThrowable");
 
-    @SuppressWarnings("nullness:type.argument.type.incompatible")
-    private static final FastThreadLocal<Boolean> inAdvice = new FastThreadLocal<Boolean>() {
-        @Override
-        protected Boolean initialValue() {
-            return false;
-        }
-    };
-
     private LoggerPlugin() {}
-
-    static boolean inAdvice() {
-        return inAdvice.get();
-    }
-
-    static void inAdvice(boolean inAdvice) {
-        LoggerPlugin.inAdvice.set(inAdvice);
-    }
 
     static boolean markTraceAsError(boolean isErrorOrHigher, boolean isWarnOrHigher,
             boolean throwable) {

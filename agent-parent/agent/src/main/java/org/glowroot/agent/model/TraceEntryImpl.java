@@ -29,10 +29,10 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.plugin.api.transaction.AsyncQueryEntry;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.Timer;
-import org.glowroot.agent.plugin.api.transaction.internal.ReadableMessage;
+import org.glowroot.agent.plugin.api.AsyncQueryEntry;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.Timer;
+import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;

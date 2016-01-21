@@ -33,12 +33,9 @@ public class GlowrootServiceImpl implements GlowrootService {
     private static final Logger logger = LoggerFactory.getLogger(GlowrootServiceImpl.class);
 
     private final TransactionRegistry transactionRegistry;
-    private final UserProfileScheduler userProfileScheduler;
 
-    public GlowrootServiceImpl(TransactionRegistry transactionRegistry,
-            UserProfileScheduler userProfileScheduler) {
+    public GlowrootServiceImpl(TransactionRegistry transactionRegistry) {
         this.transactionRegistry = transactionRegistry;
-        this.userProfileScheduler = userProfileScheduler;
     }
 
     @Override
@@ -71,9 +68,6 @@ public class GlowrootServiceImpl implements GlowrootService {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
             transaction.setUser(user, OverrideSource.USER_API);
-            if (transaction.getUserProfileRunnable() == null) {
-                userProfileScheduler.maybeScheduleUserProfiling(transaction, user);
-            }
         }
     }
 

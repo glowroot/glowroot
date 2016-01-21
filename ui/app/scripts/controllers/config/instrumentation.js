@@ -98,6 +98,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
           classAnnotation: '',
           methodDeclaringClassName: '',
           methodAnnotation: '',
+          nestingGroup: '',
           captureKind: 'transaction',
           transactionType: '',
           transactionNameTemplate: '',
@@ -301,6 +302,9 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       }
       if (!data.methodModifiers.length) {
         delete data.methodModifiers;
+      }
+      if (!data.nestingGroup) {
+        delete data.nestingGroup;
       }
       if (!data.timerName) {
         delete data.timerName;

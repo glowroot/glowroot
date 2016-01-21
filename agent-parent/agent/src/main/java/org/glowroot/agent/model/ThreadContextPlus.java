@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,24 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.cassandra;
+package org.glowroot.agent.model;
 
-import org.glowroot.agent.plugin.api.Message;
-import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.OptionalThreadContext;
 
-class QueryMessageSupplier extends MessageSupplier {
+public interface ThreadContextPlus extends OptionalThreadContext {
 
-    private final String query;
+    int getCurrentNestingGroupId();
 
-    QueryMessageSupplier(String query) {
-        this.query = query;
-    }
-
-    @Override
-    public Message get() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("cql execution: ");
-        sb.append(query);
-        return Message.from(sb.toString());
-    }
+    void setCurrentNestingGroupId(int nestingGroupId);
 }

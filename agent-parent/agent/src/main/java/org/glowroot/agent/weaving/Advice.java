@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,8 @@ public abstract class Advice {
     abstract ImmutableList<AdviceParameter> onReturnParameters();
     abstract ImmutableList<AdviceParameter> onThrowParameters();
     abstract ImmutableList<AdviceParameter> onAfterParameters();
+    abstract boolean hasBindThreadContext();
+    abstract boolean hasBindOptionalThreadContext();
     abstract boolean reweavable();
 
     @Value.Derived

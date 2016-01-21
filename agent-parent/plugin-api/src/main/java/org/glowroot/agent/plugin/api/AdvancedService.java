@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.api.transaction.internal;
+package org.glowroot.agent.plugin.api;
 
-import java.util.Map;
+public interface AdvancedService {
 
-// this interface exists to provide access to MessageImpl from glowroot without making MessageImpl
-// accessible to plugins (at least not through the org.glowroot.agent.plugin.api package)
-public interface ReadableMessage {
-
-    String getText();
-
-    Map<String, ? extends /*@Nullable*/ Object> getDetail();
+    /**
+     * Returns whether a transaction is already being captured.
+     * 
+     * This method has very limited use. It should only be used by top-level pointcuts that define a
+     * transaction, and that do not want to create a entry if they are already inside of an existing
+     * transaction.
+     */
+    boolean isInTransaction();
 }

@@ -55,7 +55,7 @@ public class UserProfileScheduler {
         this.random = random;
     }
 
-    void maybeScheduleUserProfiling(Transaction transaction, String user) {
+    public void maybeScheduleUserProfiling(Transaction transaction, String user) {
         UserRecordingConfig userRecordingConfig = configService.getUserRecordingConfig();
         ImmutableList<String> users = userRecordingConfig.users();
         if (users.isEmpty()) {

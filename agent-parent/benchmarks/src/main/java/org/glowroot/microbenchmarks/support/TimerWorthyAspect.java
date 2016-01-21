@@ -16,9 +16,9 @@
 package org.glowroot.microbenchmarks.support;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.Timer;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.Timer;
+import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
@@ -26,19 +26,16 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class TimerWorthyAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-
     @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TimerWorthy",
             methodName = "doSomethingTimerWorthy", methodParameterTypes = {},
             timerName = "timer worthy")
     public static class TimerWorthyAdvice {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(TimerWorthyAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(TimerWorthyAdvice.class);
 
         @OnBefore
-        public static Timer onBefore() {
-            return transactionService.startTimer(timerName);
+        public static Timer onBefore(ThreadContext context) {
+            return context.startTimer(timerName);
         }
 
         @OnAfter
@@ -52,12 +49,11 @@ public class TimerWorthyAspect {
             timerName = "timer worthy B")
     public static class TimerWorthyAdviceB {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(TimerWorthyAdviceB.class);
+        private static final TimerName timerName = Agent.getTimerName(TimerWorthyAdviceB.class);
 
         @OnBefore
-        public static Timer onBefore() {
-            return transactionService.startTimer(timerName);
+        public static Timer onBefore(ThreadContext context) {
+            return context.startTimer(timerName);
         }
 
         @OnAfter

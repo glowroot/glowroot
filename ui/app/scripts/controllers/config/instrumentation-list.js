@@ -78,6 +78,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
         methodDeclaringClassName: '',
         methodAnnotation: '',
         methodReturnType: '',
+        nestingGroup: '',
         transactionType: '',
         transactionNameTemplate: '',
         transactionUserTemplate: '',

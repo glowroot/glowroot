@@ -13,13 +13,136 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.api.transaction;
+package org.glowroot.agent.plugin.api;
 
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
-public interface AdvancedService {
+public interface ThreadContext {
+
+    /**
+     * Creates and starts a trace entry with the given {@code messageSupplier}. A timer for the
+     * specified timer name is also started.
+     * 
+     * Since entries can be expensive in great quantities, there is a
+     * {@code maxTraceEntriesPerTransaction} property on the configuration page to limit the number
+     * of entries captured for any given trace.
+     * 
+     * Once a trace has accumulated {@code maxTraceEntriesPerTransaction} entries, this method
+     * doesn't add new entries to the trace, but instead returns a dummy entry. A timer for the
+     * specified timer name is still started, since timers are very cheap, even in great quantities.
+     * The dummy entry adheres to the {@link TraceEntry} contract and returns the specified
+     * {@link MessageSupplier} in response to {@link TraceEntry#getMessageSupplier()}. Calling
+     * {@link TraceEntry#end()} on the dummy entry ends the timer. If {@code endWithError} is called
+     * on the dummy entry, then the dummy entry will be escalated to a real entry. If
+     * {@link TraceEntry#endWithStackTrace(long, TimeUnit)} is called on the dummy entry and the
+     * dummy entry total time exceeds the specified threshold, then the dummy entry will be
+     * escalated to a real entry. If {@code endWithError} is called on the dummy entry, then the
+     * dummy entry will be escalated to a real entry. A hard cap (
+     * {@code maxTraceEntriesPerTransaction * 2}) on the total number of (real) entries is applied
+     * when escalating dummy entries to real entries.
+     * 
+     * If there is no current transaction, this method does nothing, and returns a no-op instance of
+     * {@link TraceEntry}.
+     */
+    TraceEntry startTraceEntry(MessageSupplier messageSupplier, TimerName timerName);
+
+    /**
+     * {@link QueryEntry} is a specialized type of {@link TraceEntry} that is aggregated by its
+     * query text.
+     */
+    QueryEntry startQueryEntry(String queryType, String queryText, MessageSupplier messageSupplier,
+            TimerName timerName);
+
+    QueryEntry startQueryEntry(String queryType, String queryText, long queryExecutionCount,
+            MessageSupplier messageSupplier, TimerName timerName);
+
+    AsyncQueryEntry startAsyncQueryEntry(String queryType, String queryText,
+            MessageSupplier messageSupplier, TimerName syncTimerName, TimerName asyncTimerName);
+
+    AsyncTraceEntry startAsyncTraceEntry(MessageSupplier messageSupplier, TimerName syncTimerName,
+            TimerName asyncTimerName);
+
+    /**
+     * Starts a timer for the specified timer name. If a timer is already running for the specified
+     * timer name, it will keep an internal counter of the number of starts, and it will only end
+     * the timer after the corresponding number of ends.
+     * 
+     * If there is no current transaction, this method does nothing, and returns a no-op instance of
+     * {@link Timer}.
+     */
+    Timer startTimer(TimerName timerName);
+
+    /**
+     * TODO
+     */
+    AuxThreadContext createAuxThreadContext();
+
+    /**
+     * Set the transaction type that is used for aggregation.
+     * 
+     * If there is no current transaction, this method does nothing.
+     */
+    void setTransactionType(@Nullable String transactionType);
+
+    /**
+     * Set the transaction name that is used for aggregation.
+     * 
+     * If there is no current transaction, this method does nothing.
+     */
+    void setTransactionName(@Nullable String transactionName);
+
+    /**
+     * Sets the user attribute on the transaction. This attribute is shared across all plugins, and
+     * is generally set by the plugin that initiated the trace, but can be set by other plugins if
+     * needed.
+     * 
+     * The user is used in a few ways:
+     * <ul>
+     * <li>The user is displayed when viewing a trace on the trace explorer page
+     * <li>Traces can be filtered by their user on the trace explorer page
+     * <li>Glowroot can be configured (using the configuration page) to capture traces for a
+     * specific user using a lower threshold than normal (e.g. threshold=0 to capture all requests
+     * for a specific user)
+     * <li>Glowroot can be configured (using the configuration page) to perform profiling on all
+     * transactions for a specific user
+     * </ul>
+     * 
+     * If profiling is enabled for a specific user, this is activated (if the {@code user} matches)
+     * at the time that this method is called, so it is best to call this method early in the
+     * transaction.
+     * 
+     * If there is no current transaction, this method does nothing.
+     */
+    void setTransactionUser(@Nullable String user);
+
+    /**
+     * Adds an attribute on the current transaction with the specified {@code name} and
+     * {@code value}. A transaction's attributes are displayed when viewing a trace on the trace
+     * explorer page.
+     * 
+     * Subsequent calls to this method with the same {@code name} on the same transaction will add
+     * an additional attribute if there is not already an attribute with the same {@code name} and
+     * {@code value}.
+     * 
+     * If there is no current transaction, this method does nothing.
+     * 
+     * {@code null} values are normalized to the empty string.
+     */
+    void addTransactionAttribute(String name, @Nullable String value);
+
+    /**
+     * Overrides the default slow trace threshold (Configuration &gt; General &gt; Slow trace
+     * threshold) for the current transaction. This can be used to store particular traces at a
+     * lower or higher threshold than the general threshold.
+     * 
+     * If this is called multiple times for a given transaction, the minimum {@code threshold} will
+     * be used.
+     * 
+     * If there is no current transaction, this method does nothing.
+     */
+    void setTransactionSlowThreshold(long threshold, TimeUnit unit);
 
     /**
      * Marks the transaction as an error with the given message. Normally transactions are only
@@ -40,7 +163,7 @@ public interface AdvancedService {
      * 
      * If there is no current transaction, this method does nothing.
      */
-    void setTransactionError(@Nullable Throwable t);
+    void setTransactionError(Throwable t);
 
     /**
      * Marks the transaction as an error with the given message. Normally transactions are only
@@ -81,7 +204,7 @@ public interface AdvancedService {
      * 
      * If there is no current transaction, this method does nothing.
      */
-    void setTransactionError(@Nullable String message, @Nullable Throwable t);
+    void setTransactionError(@Nullable String message, Throwable t);
 
     /**
      * Adds a trace entry with the specified error message and total time of zero. It does not set
@@ -133,16 +256,4 @@ public interface AdvancedService {
      * If there is no current transaction, this method does nothing.
      */
     void addErrorEntry(@Nullable String message, Throwable t);
-
-    /**
-     * Returns whether a transaction is already being captured.
-     * 
-     * This method has very limited use. It should only be used by top-level pointcuts that define a
-     * transaction, and that do not want to create a entry if they are already inside of an existing
-     * transaction.
-     */
-    boolean isInTransaction();
-
-    QueryEntry startQueryEntry(String queryType, String queryText, long queryExecutionCount,
-            MessageSupplier messageSupplier, TimerName timerName);
 }

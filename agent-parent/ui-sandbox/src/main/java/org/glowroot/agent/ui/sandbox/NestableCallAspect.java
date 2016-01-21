@@ -24,11 +24,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.Message;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.Message;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.OptionalThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
@@ -40,16 +40,13 @@ public class NestableCallAspect {
 
     private static final AtomicInteger counter = new AtomicInteger();
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-
     @Pointcut(className = "org.glowroot.agent.ui.sandbox.NestableCall", methodName = "execute",
-            methodParameterTypes = {}, timerName = "nestable", ignoreSelfNested = true)
+            methodParameterTypes = {}, nestingGroup = "ui-sandbox-nestable", timerName = "nestable")
     public static class NestableCallAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(NestableCallAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(NestableCallAdvice.class);
         private static final Random random = new Random();
         @OnBefore
-        public static TraceEntry onBefore() {
+        public static TraceEntry onBefore(OptionalThreadContext context) {
             int count = counter.getAndIncrement();
             String transactionName;
             String headline;
@@ -68,33 +65,33 @@ public class NestableCallAspect {
             }
             TraceEntry traceEntry;
             if (count % 10 == 0) {
-                traceEntry = transactionService.startTransaction("Background", transactionName,
+                traceEntry = context.startTransaction("Background", transactionName,
                         getRootMessageSupplier(headline), timerName);
             } else {
-                traceEntry = transactionService.startTransaction("Sandbox", transactionName,
+                traceEntry = context.startTransaction("Sandbox", transactionName,
                         getRootMessageSupplier(headline), timerName);
             }
             int index = count % (USERS.size() + 1);
             if (index < USERS.size()) {
-                transactionService.setTransactionUser(USERS.get(index));
+                context.setTransactionUser(USERS.get(index));
             } else {
-                transactionService.setTransactionUser(null);
+                context.setTransactionUser(null);
             }
             if (random.nextBoolean()) {
-                transactionService.addTransactionAttribute("My First Attribute", "hello world");
-                transactionService.addTransactionAttribute("My First Attribute", "hello world");
-                transactionService.addTransactionAttribute("My First Attribute",
+                context.addTransactionAttribute("My First Attribute", "hello world");
+                context.addTransactionAttribute("My First Attribute", "hello world");
+                context.addTransactionAttribute("My First Attribute",
                         "hello world " + random.nextInt(10));
             }
             if (random.nextBoolean()) {
-                transactionService.addTransactionAttribute("Second", "val " + random.nextInt(10));
+                context.addTransactionAttribute("Second", "val " + random.nextInt(10));
             }
             if (random.nextBoolean()) {
-                transactionService.addTransactionAttribute("A Very Long Attribute Value",
+                context.addTransactionAttribute("A Very Long Attribute Value",
                         Strings.repeat("abcdefghijklmnopqrstuvwxyz", 3));
             }
             if (random.nextBoolean()) {
-                transactionService.addTransactionAttribute("Another",
+                context.addTransactionAttribute("Another",
                         "a b c d e f g h i j k l m n o p q r s t u v w x y z"
                                 + " a b c d e f g h i j k l m n o p q r s t u v w x y z");
             }

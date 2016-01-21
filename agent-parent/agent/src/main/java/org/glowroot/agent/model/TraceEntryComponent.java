@@ -30,7 +30,7 @@ import com.google.common.collect.Multimap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
+import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 

@@ -83,8 +83,6 @@ import org.glowroot.agent.weaving.SomeAspect.MultipleMethodsAdvice;
 import org.glowroot.agent.weaving.SomeAspect.NonMatchingMethodReturnAdvice;
 import org.glowroot.agent.weaving.SomeAspect.NonMatchingMethodReturnAdvice2;
 import org.glowroot.agent.weaving.SomeAspect.NonMatchingStaticAdvice;
-import org.glowroot.agent.weaving.SomeAspect.NotNestingAdvice;
-import org.glowroot.agent.weaving.SomeAspect.NotNestingWithNoIsEnabledAdvice;
 import org.glowroot.agent.weaving.SomeAspect.NotPerfectBytecodeAdvice;
 import org.glowroot.agent.weaving.SomeAspect.PrimitiveAdvice;
 import org.glowroot.agent.weaving.SomeAspect.PrimitiveWithAutoboxAdvice;
@@ -920,79 +918,6 @@ public class WeaverTest {
         // when
         // then
         assertThat(((HasString) test).getString()).isEqualTo("a string");
-    }
-
-    // ===================== @Pointcut.nestable =====================
-
-    @Test
-    public void shouldNotNestPointcuts() throws Exception {
-        // given
-        Misc test = newWovenObject(NestingMisc.class, Misc.class, NotNestingAdvice.class);
-        // when
-        test.execute1();
-        // then
-        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
-        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
-        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
-        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
-        assertThat(test.executeWithReturn()).isEqualTo("yes");
-    }
-
-    @Test
-    public void shouldNotNestPointcuts2() throws Exception {
-        // given
-        Misc test = newWovenObject(NestingMisc.class, Misc.class, NotNestingAdvice.class);
-        // when
-        test.execute1();
-        test.execute1();
-        // then
-        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(2);
-        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(2);
-        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
-        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(2);
-        assertThat(test.executeWithReturn()).isEqualTo("yes");
-    }
-
-    @Test
-    public void shouldNotNestPointcuts3() throws Exception {
-        // given
-        Misc test = newWovenObject(NestingAnotherMisc.class, Misc.class, NotNestingAdvice.class);
-        // when
-        test.execute1();
-        // then
-        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
-        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
-        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
-        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
-        assertThat(test.executeWithReturn()).isEqualTo("yes");
-    }
-
-    @Test
-    public void shouldNestPointcuts() throws Exception {
-        // given
-        Misc test = newWovenObject(NestingMisc.class, Misc.class, BasicAdvice.class);
-        // when
-        test.execute1();
-        // then
-        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(2);
-        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(2);
-        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
-        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(2);
-    }
-
-    @Test
-    public void shouldNotNestPointcutsEvenWithNoIsEnabled() throws Exception {
-        // given
-        Misc test = newWovenObject(NestingMisc.class, Misc.class,
-                NotNestingWithNoIsEnabledAdvice.class);
-        // when
-        test.execute1();
-        // then
-        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
-        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
-        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
-        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
-        assertThat(test.executeWithReturn()).isEqualTo("yes");
     }
 
     // ===================== static pointcuts =====================

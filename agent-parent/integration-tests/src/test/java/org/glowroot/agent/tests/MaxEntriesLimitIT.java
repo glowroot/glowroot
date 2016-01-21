@@ -80,7 +80,7 @@ public class MaxEntriesLimitIT {
         Stopwatch stopwatch = Stopwatch.createStarted();
         Trace trace = null;
         Trace.Header header = null;
-        while (stopwatch.elapsed(SECONDS) < 10) {
+        while (stopwatch.elapsed(SECONDS) < 10000) {
             trace = container.getCollectedPartialTrace();
             header = trace.getHeader();
             if (header.getEntryCount() == 100 && header.getEntryLimitExceeded()) {

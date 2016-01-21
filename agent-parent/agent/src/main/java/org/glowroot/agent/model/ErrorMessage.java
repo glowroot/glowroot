@@ -36,20 +36,17 @@ public abstract class ErrorMessage {
     public abstract @Nullable Proto.Throwable throwable();
 
     public static ErrorMessage from(Throwable t) {
-        return from(null, t);
+        return from("", t);
     }
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
     public static ErrorMessage from(@Nullable String message) {
-        return from(message, null);
+        return ImmutableErrorMessage.of(Strings.nullToEmpty(message), null);
     }
 
     // accepts null values so callers don't have to check if passing it in from elsewhere
-    public static ErrorMessage from(@Nullable String message, @Nullable Throwable t) {
+    public static ErrorMessage from(@Nullable String message, Throwable t) {
         String msg = Strings.nullToEmpty(message);
-        if (t == null) {
-            return ImmutableErrorMessage.of(msg, null);
-        }
         if (msg.isEmpty()) {
             msg = Strings.nullToEmpty(t.getMessage());
         }

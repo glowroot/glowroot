@@ -245,6 +245,7 @@ class InstrumentationConfigJsonService {
         abstract ImmutableList<String> methodParameterTypes();
         abstract String methodReturnType();
         abstract ImmutableList<MethodModifier> methodModifiers();
+        abstract String nestingGroup();
         abstract CaptureKind captureKind();
         abstract String timerName();
         abstract String traceEntryMessageTemplate();
@@ -269,6 +270,7 @@ class InstrumentationConfigJsonService {
                     .addAllMethodParameterTypes(config.methodParameterTypes())
                     .methodReturnType(config.methodReturnType())
                     .addAllMethodModifiers(config.methodModifiers())
+                    .nestingGroup(config.nestingGroup())
                     .captureKind(config.captureKind())
                     .timerName(config.timerName())
                     .traceEntryMessageTemplate(config.traceEntryMessageTemplate())
@@ -293,6 +295,7 @@ class InstrumentationConfigJsonService {
                     .addAllMethodParameterTypes(methodParameterTypes())
                     .methodReturnType(methodReturnType())
                     .addAllMethodModifiers(methodModifiers())
+                    .nestingGroup(nestingGroup())
                     .captureKind(captureKind())
                     .timerName(timerName())
                     .traceEntryMessageTemplate(traceEntryMessageTemplate())

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.api.transaction;
+package org.glowroot.agent.plugin.api;
 
 import java.util.concurrent.TimeUnit;
 

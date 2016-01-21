@@ -18,10 +18,10 @@ package org.glowroot.agent.plugin.servlet;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.OptionalThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
@@ -34,8 +34,6 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 // this covers Tomcat, TomEE, Glassfish, JBoss EAP
 public class CatalinaAppStartupAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-
     @Shim("org.apache.catalina.core.StandardContext")
     public interface StandardContext {
         @Nullable
@@ -47,12 +45,12 @@ public class CatalinaAppStartupAspect {
     // abstract method startInternal() which does all of the real work
     @Pointcut(className = "org.apache.catalina.core.StandardContext",
             methodName = "start|startInternal", methodParameterTypes = {},
-            timerName = "http request")
+            nestingGroup = "servlet-startup", timerName = "http request")
     public static class StartAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(StartAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(StartAdvice.class);
         @OnBefore
-        public static TraceEntry onBefore(@BindReceiver StandardContext standardContext) {
+        public static TraceEntry onBefore(OptionalThreadContext context,
+                @BindReceiver StandardContext standardContext) {
             String path = standardContext.getPath();
             String transactionName;
             if (path == null || path.isEmpty()) {
@@ -61,7 +59,7 @@ public class CatalinaAppStartupAspect {
             } else {
                 transactionName = "Servlet context: " + path;
             }
-            return transactionService.startTransaction("Startup", transactionName,
+            return context.startTransaction("Startup", transactionName,
                     MessageSupplier.from(transactionName), timerName);
         }
         @OnReturn

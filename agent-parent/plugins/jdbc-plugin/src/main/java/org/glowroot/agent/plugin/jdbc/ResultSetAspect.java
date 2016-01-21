@@ -22,12 +22,12 @@ import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
+import org.glowroot.agent.plugin.api.QueryEntry;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.Timer;
+import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.config.ConfigService;
-import org.glowroot.agent.plugin.api.transaction.QueryEntry;
-import org.glowroot.agent.plugin.api.transaction.Timer;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
@@ -41,25 +41,19 @@ import org.glowroot.agent.plugin.jdbc.StatementAspect.HasStatementMirror;
 public class ResultSetAspect {
 
     private static final Logger logger = Agent.getLogger(ResultSetAspect.class);
-    private static final TransactionService transactionService = Agent.getTransactionService();
     private static final ConfigService configService = Agent.getConfigService("jdbc");
 
     @Pointcut(className = "java.sql.ResultSet", methodName = "next", methodParameterTypes = {},
-            timerName = "jdbc resultset navigate")
+            nestingGroup = "jdbc", timerName = "jdbc resultset navigate")
     public static class NextAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(NextAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(NextAdvice.class);
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetNavigate");
-        @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
-            // don't capture if implementation detail of a DatabaseMetaData method
-            return resultSet.glowroot$hasStatementMirror();
-        }
         @OnBefore
-        public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
+        public static @Nullable Timer onBefore(ThreadContext context,
+                @BindReceiver HasStatementMirror resultSet) {
             if (timerEnabled.value()) {
-                return onBeforeCommon(resultSet, timerName);
+                return onBeforeCommon(context, resultSet, timerName);
             } else {
                 return null;
             }
@@ -96,21 +90,16 @@ public class ResultSetAspect {
 
     @Pointcut(className = "java.sql.ResultSet",
             methodName = "previous|relative|absolute|first|last", methodParameterTypes = "..",
-            timerName = "jdbc resultset navigate")
+            nestingGroup = "jdbc", timerName = "jdbc resultset navigate")
     public static class NavigateAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(NavigateAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(NavigateAdvice.class);
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetNavigate");
-        @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
-            // don't capture if implementation detail of a DatabaseMetaData method
-            return resultSet.glowroot$hasStatementMirror();
-        }
         @OnBefore
-        public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
+        public static @Nullable Timer onBefore(ThreadContext context,
+                @BindReceiver HasStatementMirror resultSet) {
             if (timerEnabled.value()) {
-                return onBeforeCommon(resultSet, timerName);
+                return onBeforeCommon(context, resultSet, timerName);
             } else {
                 return null;
             }
@@ -143,20 +132,20 @@ public class ResultSetAspect {
     }
 
     @Pointcut(className = "java.sql.ResultSet", methodName = "get*",
-            methodParameterTypes = {"int", ".."}, timerName = "jdbc resultset value")
+            methodParameterTypes = {"int", ".."}, nestingGroup = "jdbc",
+            timerName = "jdbc resultset value")
     public static class ValueAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(ValueAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(ValueAdvice.class);
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetGet");
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
-            // don't capture if implementation detail of a DatabaseMetaData method
-            return timerEnabled.value() && resultSet.glowroot$hasStatementMirror();
+        public static boolean isEnabled() {
+            return timerEnabled.value();
         }
         @OnBefore
-        public static Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
-            return onBeforeCommon(resultSet, timerName);
+        public static Timer onBefore(ThreadContext context,
+                @BindReceiver HasStatementMirror resultSet) {
+            return onBeforeCommon(context, resultSet, timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Timer timer) {
@@ -165,10 +154,10 @@ public class ResultSetAspect {
     }
 
     @Pointcut(className = "java.sql.ResultSet", methodName = "get*",
-            methodParameterTypes = {"java.lang.String", ".."}, timerName = "jdbc resultset value")
+            methodParameterTypes = {"java.lang.String", ".."}, nestingGroup = "jdbc",
+            timerName = "jdbc resultset value")
     public static class ValueAdvice2 {
-        private static final TimerName timerName =
-                transactionService.getTimerName(ValueAdvice2.class);
+        private static final TimerName timerName = Agent.getTimerName(ValueAdvice2.class);
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetGet");
         @IsEnabled
@@ -177,8 +166,9 @@ public class ResultSetAspect {
             return timerEnabled.value() && resultSet.glowroot$hasStatementMirror();
         }
         @OnBefore
-        public static Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
-            return onBeforeCommon(resultSet, timerName);
+        public static Timer onBefore(ThreadContext context,
+                @BindReceiver HasStatementMirror resultSet) {
+            return onBeforeCommon(context, resultSet, timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Timer timer) {
@@ -186,17 +176,18 @@ public class ResultSetAspect {
         }
     }
 
-    private static Timer onBeforeCommon(HasStatementMirror resultSet, TimerName timerName) {
+    private static Timer onBeforeCommon(ThreadContext context, HasStatementMirror resultSet,
+            TimerName timerName) {
         StatementMirror mirror = resultSet.glowroot$getStatementMirror();
         if (mirror == null) {
             // this shouldn't happen since just checked above in isEnabled(), unless some
             // bizarre concurrent mis-usage of ResultSet
-            return transactionService.startTimer(timerName);
+            return context.startTimer(timerName);
         }
         QueryEntry lastQueryEntry = mirror.getLastQueryEntry();
         if (lastQueryEntry == null) {
             // tracing must be disabled (e.g. exceeded trace entry limit)
-            return transactionService.startTimer(timerName);
+            return context.startTimer(timerName);
         }
         return lastQueryEntry.extend();
     }

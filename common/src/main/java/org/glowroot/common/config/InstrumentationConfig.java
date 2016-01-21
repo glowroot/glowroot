@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,12 @@ public abstract class InstrumentationConfig {
     // currently unused, but will have a purpose someday, e.g. to capture all public methods
     @JsonInclude(value = Include.NON_EMPTY)
     public abstract ImmutableList<MethodModifier> methodModifiers();
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String nestingGroup() {
+        return "";
+    }
 
     // need to write zero since it is treated different from null
     // (although @Pointcut default priority is zero so ends up being the same thing)
@@ -165,6 +171,10 @@ public abstract class InstrumentationConfig {
         hasher.putInt(methodModifiers().size());
         for (MethodModifier methodModifier : methodModifiers()) {
             hasher.putString(methodModifier.name(), Charsets.UTF_8);
+        }
+        Integer priority = priority();
+        if (priority != null) {
+            hasher.putInt(priority);
         }
         hasher.putString(captureKind().name(), Charsets.UTF_8);
         hasher.putString(transactionType(), Charsets.UTF_8);

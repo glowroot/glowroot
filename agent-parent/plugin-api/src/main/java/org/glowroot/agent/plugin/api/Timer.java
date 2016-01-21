@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.api.internal;
+package org.glowroot.agent.plugin.api;
 
-import org.glowroot.agent.plugin.api.AdvancedService;
-import org.glowroot.agent.plugin.api.TimerName;
-import org.glowroot.agent.plugin.api.config.ConfigService;
+/**
+ * See {@link TransactionService#startTimer(TimerName)} for how to retrieve and use {@code Timer}
+ * instances.
+ */
+public interface Timer {
 
-public interface ServiceRegistry {
+    /**
+     * Stop the {@code Timer}.
+     */
+    void stop();
 
-    TimerName getTimerName(Class<?> adviceClass);
-
-    ConfigService getConfigService(String pluginId);
-
-    AdvancedService getAdvancedService();
+    /**
+     * Restarts the timer without incrementing the count. This should be rarely used.
+     */
+    Timer extend();
 }

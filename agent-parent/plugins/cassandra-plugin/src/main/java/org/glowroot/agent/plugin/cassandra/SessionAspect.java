@@ -21,21 +21,17 @@ import java.util.Collection;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.AsyncQueryEntry;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.QueryEntry;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.config.ConfigService;
-import org.glowroot.agent.plugin.api.transaction.AsyncQueryEntry;
-import org.glowroot.agent.plugin.api.transaction.AsyncService;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.QueryEntry;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
-import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
-import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
@@ -50,17 +46,7 @@ public class SessionAspect {
 
     private static final String QUERY_TYPE = "CQL";
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-    private static final AsyncService asyncService = Agent.getAsyncService();
     private static final ConfigService configService = Agent.getConfigService("cassandra");
-
-    @SuppressWarnings("nullness:type.argument.type.incompatible")
-    private static final FastThreadLocal<Boolean> inAdvice = new FastThreadLocal<Boolean>() {
-        @Override
-        protected Boolean initialValue() {
-            return false;
-        }
-    };
 
     // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
     private static int stackTraceThresholdMillis;
@@ -109,22 +95,17 @@ public class SessionAspect {
 
     @Pointcut(className = "com.datastax.driver.core.Session", methodName = "execute",
             methodParameterTypes = {"com.datastax.driver.core.Statement"},
-            timerName = "cql execute")
+            nestingGroup = "cassandra", timerName = "cql execute")
     public static class ExecuteAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(ExecuteAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return !inAdvice.get();
-        }
+        private static final TimerName timerName = Agent.getTimerName(ExecuteAdvice.class);
         @OnBefore
-        public static @Nullable QueryEntry onBefore(@BindParameter @Nullable Object arg) {
-            inAdvice.set(true);
+        public static @Nullable QueryEntry onBefore(ThreadContext context,
+                @BindParameter @Nullable Object arg) {
             QueryEntryInfo queryEntryInfo = getQueryEntryInfo(arg);
             if (queryEntryInfo == null) {
                 return null;
             }
-            return transactionService.startQueryEntry(QUERY_TYPE, queryEntryInfo.queryText,
+            return context.startQueryEntry(QUERY_TYPE, queryEntryInfo.queryText,
                     queryEntryInfo.messageSupplier, timerName);
         }
         @OnReturn
@@ -144,30 +125,21 @@ public class SessionAspect {
                 queryEntry.endWithError(t);
             }
         }
-        @OnAfter
-        public static void onAfter() {
-            inAdvice.set(false);
-        }
     }
 
     @Pointcut(className = "com.datastax.driver.core.Session", methodName = "executeAsync",
             methodParameterTypes = {"com.datastax.driver.core.Statement"},
-            timerName = "cql execute")
+            nestingGroup = "cassandra", timerName = "cql execute")
     public static class ExecuteAsyncAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(ExecuteAsyncAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return !inAdvice.get();
-        }
+        private static final TimerName timerName = Agent.getTimerName(ExecuteAsyncAdvice.class);
         @OnBefore
-        public static @Nullable AsyncQueryEntry onBefore(@BindParameter @Nullable Object arg) {
-            inAdvice.set(true);
+        public static @Nullable AsyncQueryEntry onBefore(ThreadContext context,
+                @BindParameter @Nullable Object arg) {
             QueryEntryInfo queryEntryInfo = getQueryEntryInfo(arg);
             if (queryEntryInfo == null) {
                 return null;
             }
-            return asyncService.startAsyncQueryEntry(QUERY_TYPE, queryEntryInfo.queryText,
+            return context.startAsyncQueryEntry(QUERY_TYPE, queryEntryInfo.queryText,
                     queryEntryInfo.messageSupplier, timerName, timerName);
         }
         @OnReturn
@@ -190,10 +162,6 @@ public class SessionAspect {
                 asyncQueryEntry.stopSyncTimer();
                 asyncQueryEntry.endWithError(t);
             }
-        }
-        @OnAfter
-        public static void onAfter() {
-            inAdvice.set(false);
         }
     }
 

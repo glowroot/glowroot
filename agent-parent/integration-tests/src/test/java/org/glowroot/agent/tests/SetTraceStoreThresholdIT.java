@@ -20,12 +20,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.tests.app.LevelOne;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 
@@ -83,44 +82,41 @@ public class SetTraceStoreThresholdIT {
     }
 
     public static class SetLargeTraceStoreThreshold implements AppUnderTest, TransactionMarker {
-        private static final TransactionService transactionService = Agent.getTransactionService();
         @Override
         public void executeApp() {
             transactionMarker();
         }
         @Override
         public void transactionMarker() {
-            transactionService.setTransactionSlowThreshold(Long.MAX_VALUE, MILLISECONDS);
+            Glowroot.setTransactionSlowThreshold(Long.MAX_VALUE, MILLISECONDS);
             new LevelOne().call("a", "b");
         }
     }
 
     public static class SetLargeAndThenSmallTraceStoreThreshold
             implements AppUnderTest, TransactionMarker {
-        private static final TransactionService transactionService = Agent.getTransactionService();
         @Override
         public void executeApp() {
             transactionMarker();
         }
         @Override
         public void transactionMarker() {
-            transactionService.setTransactionSlowThreshold(Long.MAX_VALUE, MILLISECONDS);
-            transactionService.setTransactionSlowThreshold(0, MILLISECONDS);
+            Glowroot.setTransactionSlowThreshold(Long.MAX_VALUE, MILLISECONDS);
+            Glowroot.setTransactionSlowThreshold(0, MILLISECONDS);
             new LevelOne().call("a", "b");
         }
     }
 
     public static class SetSmallAndThenLargeTraceStoreThreshold
             implements AppUnderTest, TransactionMarker {
-        private static final TransactionService transactionService = Agent.getTransactionService();
         @Override
         public void executeApp() {
             transactionMarker();
         }
         @Override
         public void transactionMarker() {
-            transactionService.setTransactionSlowThreshold(0, MILLISECONDS);
-            transactionService.setTransactionSlowThreshold(Long.MAX_VALUE, MILLISECONDS);
+            Glowroot.setTransactionSlowThreshold(0, MILLISECONDS);
+            Glowroot.setTransactionSlowThreshold(Long.MAX_VALUE, MILLISECONDS);
             new LevelOne().call("a", "b");
         }
     }

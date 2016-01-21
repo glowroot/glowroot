@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,16 +25,15 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.AdvancedService;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.OptionalThreadContext;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
@@ -47,10 +46,7 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 // this plugin is careful not to rely on request or session objects being thread-safe
 public class ServletAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-    private static final AdvancedService advancedService = Agent.getAdvancedService();
-
-    private static final FastThreadLocal</*@Nullable*/ ServletMessageSupplier> topLevel =
+    private static final FastThreadLocal</*@Nullable*/ ServletMessageSupplier> currServletMessageSupplier =
             new FastThreadLocal</*@Nullable*/ ServletMessageSupplier>();
 
     // the life of this thread local is tied to the life of the topLevel thread local
@@ -101,17 +97,12 @@ public class ServletAspect {
     @Pointcut(className = "javax.servlet.Servlet", methodName = "service",
             methodParameterTypes = {"javax.servlet.ServletRequest",
                     "javax.servlet.ServletResponse"},
-            timerName = "http request")
+            nestingGroup = "outer-servlet-or-filter", timerName = "http request")
     public static class ServiceAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(ServiceAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            // only enabled if it is not contained in another servlet or filter
-            return topLevel.get() == null;
-        }
+        private static final TimerName timerName = Agent.getTimerName(ServiceAdvice.class);
         @OnBefore
-        public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object req) {
+        public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
+                @BindParameter @Nullable Object req) {
             if (req == null || !(req instanceof HttpServletRequest)) {
                 // seems nothing sensible to do here other than ignore
                 return null;
@@ -137,7 +128,7 @@ public class ServletAspect {
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
                         requestQueryString, requestHeaders, sessionAttributes);
             }
-            topLevel.set(messageSupplier);
+            currServletMessageSupplier.set(messageSupplier);
             String user = null;
             if (session != null) {
                 String sessionUserAttributePath =
@@ -148,18 +139,18 @@ public class ServletAspect {
                             sessionUserAttributePath);
                 }
             }
-            TraceEntry traceEntry = transactionService.startTransaction("Servlet", requestUri,
-                    messageSupplier, timerName);
+            TraceEntry traceEntry =
+                    context.startTransaction("Servlet", requestUri, messageSupplier, timerName);
             // Glowroot-Transaction-Name header is useful for automated tests which want to send a
             // more specific name for the transaction
             String transactionNameOverride = request.getHeader("Glowroot-Transaction-Name");
             if (transactionNameOverride != null) {
                 // using setTransactionName() instead of passing this into startTransaction() so
                 // that it will be the first override and other overrides won't replace it
-                transactionService.setTransactionName(transactionNameOverride);
+                context.setTransactionName(transactionNameOverride);
             }
             if (user != null) {
-                transactionService.setTransactionUser(user);
+                context.setTransactionUser(user);
             }
             return traceEntry;
         }
@@ -168,14 +159,15 @@ public class ServletAspect {
             if (traceEntry == null) {
                 return;
             }
-            String errorMessage = sendError.get();
+            FastThreadLocal.Holder</*@Nullable*/ String> errorMessageHolder = sendError.getHolder();
+            String errorMessage = errorMessageHolder.get();
             if (errorMessage != null) {
                 traceEntry.endWithError(errorMessage);
-                sendError.set(null);
+                errorMessageHolder.set(null);
             } else {
                 traceEntry.end();
             }
-            topLevel.set(null);
+            currServletMessageSupplier.set(null);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
@@ -186,22 +178,19 @@ public class ServletAspect {
             // ignoring potential sendError since this seems worse
             sendError.set(null);
             traceEntry.endWithError(t);
-            topLevel.set(null);
+            currServletMessageSupplier.set(null);
         }
     }
 
     @Pointcut(className = "javax.servlet.Filter",
             methodName = "doFilter", methodParameterTypes = {"javax.servlet.ServletRequest",
                     "javax.servlet.ServletResponse", "javax.servlet.FilterChain"},
-            timerName = "http request")
+            nestingGroup = "outer-servlet-or-filter", timerName = "http request")
     public static class DoFilterAdvice {
-        @IsEnabled
-        public static boolean isEnabled() {
-            return ServiceAdvice.isEnabled();
-        }
         @OnBefore
-        public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object request) {
-            return ServiceAdvice.onBefore(request);
+        public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
+                @BindParameter @Nullable Object request) {
+            return ServiceAdvice.onBefore(context, request);
         }
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
@@ -218,18 +207,14 @@ public class ServletAspect {
             methodParameterTypes = {"java.lang.String", "org.eclipse.jetty.server.Request",
                     "javax.servlet.http.HttpServletRequest",
                     "javax.servlet.http.HttpServletResponse"},
-            timerName = "http request")
+            nestingGroup = "outer-servlet-or-filter", timerName = "http request")
     public static class JettyHandlerAdvice {
-        @IsEnabled
-        public static boolean isEnabled() {
-            return ServiceAdvice.isEnabled();
-        }
         @OnBefore
-        public static @Nullable TraceEntry onBefore(
+        public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
                 @SuppressWarnings("unused") @BindParameter @Nullable String target,
                 @SuppressWarnings("unused") @BindParameter @Nullable Object baseRequest,
                 @BindParameter @Nullable Object request) {
-            return ServiceAdvice.onBefore(request);
+            return ServiceAdvice.onBefore(context, request);
         }
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
@@ -243,45 +228,47 @@ public class ServletAspect {
     }
 
     @Pointcut(className = "javax.servlet.http.HttpServletResponse", methodName = "sendError",
-            methodParameterTypes = {"int", ".."})
+            methodParameterTypes = {"int", ".."}, nestingGroup = "servlet-inner-call")
     public static class SendErrorAdvice {
         @OnAfter
-        public static void onAfter(@BindParameter Integer statusCode) {
+        public static void onAfter(ThreadContext context, @BindParameter Integer statusCode) {
+            FastThreadLocal.Holder</*@Nullable*/ String> errorMessageHolder = sendError.getHolder();
             // only capture 5xx server errors
-            if (statusCode >= 500 && topLevel.get() != null && sendError.get() == null) {
-                advancedService.addErrorEntry("sendError, HTTP status code " + statusCode);
-                sendError.set("sendError, HTTP status code " + statusCode);
+            if (statusCode >= 500 && errorMessageHolder.get() == null) {
+                context.addErrorEntry("sendError, HTTP status code " + statusCode);
+                errorMessageHolder.set("sendError, HTTP status code " + statusCode);
             }
         }
     }
 
-    // not using ignoreSelfNested since only needed in uncommon case of 5xx status codes
-    // (at which time it is checked below)
     @Pointcut(className = "javax.servlet.http.HttpServletResponse", methodName = "setStatus",
-            methodParameterTypes = {"int", ".."})
+            methodParameterTypes = {"int", ".."}, nestingGroup = "servlet-inner-call")
     public static class SetStatusAdvice {
         @OnAfter
-        public static void onAfter(@BindParameter Integer statusCode) {
+        public static void onAfter(ThreadContext context, @BindParameter Integer statusCode) {
+            FastThreadLocal.Holder</*@Nullable*/ String> errorMessageHolder = sendError.getHolder();
             // only capture 5xx server errors
-            if (statusCode >= 500 && topLevel.get() != null && sendError.get() == null) {
-                advancedService.addErrorEntry("setStatus, HTTP status code " + statusCode);
-                sendError.set("setStatus, HTTP status code " + statusCode);
+            if (statusCode >= 500 && errorMessageHolder.get() == null) {
+                context.addErrorEntry("setStatus, HTTP status code " + statusCode);
+                errorMessageHolder.set("setStatus, HTTP status code " + statusCode);
             }
         }
     }
 
     @Pointcut(className = "javax.servlet.http.HttpServletRequest", methodName = "getUserPrincipal",
-            methodParameterTypes = {}, methodReturnType = "java.security.Principal")
+            methodParameterTypes = {}, methodReturnType = "java.security.Principal",
+            nestingGroup = "servlet-inner-call")
     public static class GetUserPrincipalAdvice {
         @OnReturn
-        public static void onReturn(@BindReturn Principal principal) {
+        public static void onReturn(@BindReturn @Nullable Principal principal,
+                ThreadContext context) {
             if (principal != null) {
-                transactionService.setTransactionUser(principal.getName());
+                context.setTransactionUser(principal.getName());
             }
         }
     }
 
     static @Nullable ServletMessageSupplier getServletMessageSupplier() {
-        return topLevel.get();
+        return currServletMessageSupplier.get();
     }
 }

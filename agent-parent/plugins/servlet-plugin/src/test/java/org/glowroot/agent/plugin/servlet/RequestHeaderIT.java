@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ import org.springframework.mock.web.MockHttpServletResponse;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -135,15 +134,6 @@ public class RequestHeaderIT {
         assertThat(requestHeaders.get("h1")).isEqualTo("");
     }
 
-    @Test
-    public void testTransactionNameOverrideRequestHeaders() throws Exception {
-        // given
-        // when
-        Trace trace = container.execute(SetTransactionNameOverrideRequestHeaders.class);
-        // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("AbcXyz");
-    }
-
     @SuppressWarnings("serial")
     public static class SetStandardRequestHeaders extends TestServlet {
         @Override
@@ -194,18 +184,6 @@ public class RequestHeaderIT {
             MockHttpServletRequest request = new BadMockHttpServletRequest2("GET", "/testservlet");
             MockHttpServletResponse response = new PatchedMockHttpServletResponse();
             service((ServletRequest) request, (ServletResponse) response);
-        }
-    }
-
-    @SuppressWarnings("serial")
-    public static class SetTransactionNameOverrideRequestHeaders extends TestServlet {
-        @Override
-        protected void before(HttpServletRequest request, HttpServletResponse response) {
-            ((MockHttpServletRequest) request).addHeader("Glowroot-Transaction-Name", "AbcXyz");
-        }
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-            Agent.getTransactionService().setTransactionName("do not accept");
         }
     }
 

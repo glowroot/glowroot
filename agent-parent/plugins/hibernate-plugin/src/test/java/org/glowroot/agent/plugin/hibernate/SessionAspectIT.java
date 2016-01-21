@@ -239,8 +239,10 @@ public class SessionAspectIT {
         Trace trace = container.execute(SessionFlush.class);
         // then
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        assertThat(entries).hasSize(2);
+        assertThat(entries.get(0).getMessage())
+                .isEqualTo("hibernate merge: org.glowroot.agent.plugin.hibernate.Employee");
+        Trace.Entry entry = entries.get(1);
         assertThat(entry.getMessage()).isEqualTo("hibernate flush");
         assertThat(entry.getChildEntryCount()).isZero();
     }
@@ -359,6 +361,8 @@ public class SessionAspectIT {
     public static class SessionFlush extends DoWithSession {
         @Override
         public void transactionMarker() {
+            Employee employee = (Employee) session.merge(new Employee("John"));
+            employee.setEmail(new Email("john@example.org"));
             session.flush();
         }
     }

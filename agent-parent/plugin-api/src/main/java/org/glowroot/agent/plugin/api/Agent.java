@@ -24,13 +24,10 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.internal.NopAdvancedService;
-import org.glowroot.agent.plugin.api.internal.NopAsyncService;
 import org.glowroot.agent.plugin.api.internal.NopConfigService;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService;
+import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimerName;
 import org.glowroot.agent.plugin.api.internal.ServiceRegistry;
-import org.glowroot.agent.plugin.api.transaction.AdvancedService;
-import org.glowroot.agent.plugin.api.transaction.AsyncService;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class Agent {
 
@@ -53,32 +50,22 @@ public class Agent {
     private Agent() {}
 
     /**
-     * Returns the {@code TransactionService} instance.
+     * Returns the {@code TimerName} instance for the specified {@code adviceClass}.
+     * 
+     * {@code adviceClass} must be a {@code Class} with a {@link Pointcut} annotation that has a
+     * non-empty {@link Pointcut#timerName()}. This is how the {@code TimerName} is named.
+     * 
+     * The same {@code TimerName} is always returned for a given {@code adviceClass}.
      * 
      * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
      * looking it up every time it is needed (which is often).
      */
-    public static TransactionService getTransactionService() {
+    public static TimerName getTimerName(Class<?> adviceClass) {
         ServiceRegistry serviceRegistry = getServiceRegistry();
         if (serviceRegistry == null) {
-            return NopTransactionService.INSTANCE;
+            return NopTimerName.INSTANCE;
         } else {
-            return serviceRegistry.getTransactionService();
-        }
-    }
-
-    /**
-     * Returns the {@code AsyncService} instance.
-     * 
-     * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
-     * looking it up every time it is needed (which is often).
-     */
-    public static AsyncService getAsyncService() {
-        ServiceRegistry serviceRegistry = getServiceRegistry();
-        if (serviceRegistry == null) {
-            return NopAsyncService.INSTANCE;
-        } else {
-            return serviceRegistry.getAsyncService();
+            return serviceRegistry.getTimerName(adviceClass);
         }
     }
 

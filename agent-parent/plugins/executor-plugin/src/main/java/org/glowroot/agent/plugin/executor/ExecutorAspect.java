@@ -21,12 +21,11 @@ import java.util.concurrent.Future;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.ThreadContext;
-import org.glowroot.agent.plugin.api.transaction.Timer;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
-import org.glowroot.agent.plugin.api.util.FastThreadLocal;
+import org.glowroot.agent.plugin.api.AuxThreadContext;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.Timer;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
@@ -41,32 +40,21 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class ExecutorAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-
-    @SuppressWarnings("nullness:type.argument.type.incompatible")
-    private static final FastThreadLocal<Boolean> inSubmitOrExecute =
-            new FastThreadLocal<Boolean>() {
-                @Override
-                protected Boolean initialValue() {
-                    return false;
-                }
-            };
-
     // the field and method names are verbose to avoid conflict since they will become fields
     // and methods in all classes that extend java.lang.Runnable and/or
     // java.util.concurrent.Callable
     @Mixin({"java.lang.Runnable", "java.util.concurrent.Callable"})
     public abstract static class RunnableImpl implements RunnableCallableMixin {
 
-        private volatile @Nullable ThreadContext glowroot$auxThreadContext;
+        private volatile @Nullable AuxThreadContext glowroot$auxThreadContext;
 
         @Override
-        public @Nullable ThreadContext glowroot$getAuxThreadContext() {
+        public @Nullable AuxThreadContext glowroot$getAuxThreadContext() {
             return glowroot$auxThreadContext;
         }
 
         @Override
-        public void glowroot$setAuxAsyncContext(@Nullable ThreadContext auxThreadContext) {
+        public void glowroot$setAuxAsyncContext(@Nullable AuxThreadContext auxThreadContext) {
             this.glowroot$auxThreadContext = auxThreadContext;
         }
     }
@@ -95,9 +83,9 @@ public class ExecutorAspect {
     public interface RunnableCallableMixin {
 
         @Nullable
-        ThreadContext glowroot$getAuxThreadContext();
+        AuxThreadContext glowroot$getAuxThreadContext();
 
-        void glowroot$setAuxAsyncContext(@Nullable ThreadContext auxThreadContext);
+        void glowroot$setAuxAsyncContext(@Nullable AuxThreadContext auxThreadContext);
     }
 
     // the method names are verbose to avoid conflict since they will become methods in all classes
@@ -114,26 +102,18 @@ public class ExecutorAspect {
     // ignore self nested is important for cases with wrapping ExecutorServices so that the outer
     // Runnable/Callable is the one used
     @Pointcut(className = "java.util.concurrent.ExecutorService", methodName = "submit",
-            methodParameterTypes = {".."})
+            methodParameterTypes = {".."}, nestingGroup = "executor")
     public static class SubmitAdvice {
         @IsEnabled
-        public static boolean isEnabled() {
-            return !inSubmitOrExecute.get();
+        public static boolean isEnabled(@BindParameter Object runnableCallable) {
+            // this class may have been loaded before class file transformer was added to jvm
+            return runnableCallable instanceof RunnableCallableMixin;
         }
         @OnBefore
-        public static void onBefore(@BindParameter Object runnableCallable) {
-            inSubmitOrExecute.set(true);
-            if (!(runnableCallable instanceof RunnableCallableMixin)) {
-                // this class was loaded before class file transformer was added to jvm
-                return;
-            }
+        public static void onBefore(ThreadContext context, @BindParameter Object runnableCallable) {
             RunnableCallableMixin runnableCallableMixin = (RunnableCallableMixin) runnableCallable;
-            ThreadContext asyncContext = transactionService.createThreadContext();
+            AuxThreadContext asyncContext = context.createAuxThreadContext();
             runnableCallableMixin.glowroot$setAuxAsyncContext(asyncContext);
-        }
-        @OnAfter
-        public static void onAfter() {
-            inSubmitOrExecute.set(false);
         }
     }
 
@@ -167,56 +147,34 @@ public class ExecutorAspect {
     }
 
     @Pointcut(className = "java.util.concurrent.Executor", methodName = "execute",
-            methodParameterTypes = {"java.lang.Runnable"})
+            methodParameterTypes = {"java.lang.Runnable"}, nestingGroup = "executor")
     public static class ExecuteAdvice {
         @IsEnabled
-        public static boolean isEnabled() {
-            return !inSubmitOrExecute.get();
+        public static boolean isEnabled(@BindParameter Object runnableCallable) {
+            // only capture execute if called on FutureTask
+            return runnableCallable instanceof FutureTaskMixin;
         }
         @OnBefore
-        public static void onBefore(@BindParameter Object runnableCallable) {
-            inSubmitOrExecute.set(true);
-            if (!(runnableCallable instanceof RunnableCallableMixin)) {
-                // this class was loaded before class file transformer was added to jvm
-                return;
-            }
-            if (!(runnableCallable instanceof FutureTaskMixin)) {
-                // only capture execute if called on FutureTask
-                return;
-            }
+        public static void onBefore(ThreadContext context, @BindParameter Object runnableCallable) {
             FutureTaskMixin futureTaskMixin = (FutureTaskMixin) runnableCallable;
-            ThreadContext asyncContext = transactionService.createThreadContext();
+            AuxThreadContext asyncContext = context.createAuxThreadContext();
             RunnableCallableMixin innerRunnableCallable =
                     futureTaskMixin.glowroot$getInnerRunnableCallable();
             if (innerRunnableCallable != null) {
                 innerRunnableCallable.glowroot$setAuxAsyncContext(asyncContext);
             }
         }
-        @OnAfter
-        public static void onAfter() {
-            inSubmitOrExecute.set(false);
-        }
     }
 
     // this method uses submit() and returns Future, but none of the callers use/wait on the Future
     @Pointcut(className = "net.sf.ehcache.store.disk.DiskStorageFactory", methodName = "schedule",
-            methodParameterTypes = {"java.util.concurrent.Callable"})
-    public static class EhcacheDiskStorageScheduleAdvice {
-        @OnBefore
-        public static void onBefore() {
-            inSubmitOrExecute.set(true);
-        }
-        @OnAfter
-        public static void onAfter() {
-            inSubmitOrExecute.set(false);
-        }
-    }
+            methodParameterTypes = {"java.util.concurrent.Callable"}, nestingGroup = "executor")
+    public static class EhcacheDiskStorageScheduleAdvice {}
 
     @Pointcut(className = "java.util.concurrent.Future", methodName = "get",
             methodParameterTypes = {".."}, timerName = "wait on future")
     public static class FutureGetAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(FutureGetAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(FutureGetAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver Future<?> future) {
             // don't capture if already done, primarily this is to avoid caching pattern where
@@ -224,8 +182,8 @@ public class ExecutorAspect {
             return !future.isDone();
         }
         @OnBefore
-        public static Timer onBefore() {
-            return transactionService.startTimer(timerName);
+        public static Timer onBefore(ThreadContext context) {
+            return context.startTimer(timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Timer timer) {
@@ -242,7 +200,7 @@ public class ExecutorAspect {
                 return null;
             }
             RunnableCallableMixin runnableMixin = (RunnableCallableMixin) runnable;
-            ThreadContext asyncContext = runnableMixin.glowroot$getAuxThreadContext();
+            AuxThreadContext asyncContext = runnableMixin.glowroot$getAuxThreadContext();
             if (asyncContext == null) {
                 return null;
             }
@@ -282,7 +240,7 @@ public class ExecutorAspect {
                 return null;
             }
             RunnableCallableMixin callableMixin = (RunnableCallableMixin) callable;
-            ThreadContext asyncContext = callableMixin.glowroot$getAuxThreadContext();
+            AuxThreadContext asyncContext = callableMixin.glowroot$getAuxThreadContext();
             if (asyncContext == null) {
                 return null;
             }

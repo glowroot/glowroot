@@ -16,12 +16,12 @@
 package org.glowroot.agent.tests.plugin;
 
 import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.config.ConfigService;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
@@ -32,7 +32,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class PauseAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
     private static final ConfigService configService =
             Agent.getConfigService("glowroot-integration-tests");
 
@@ -43,13 +42,12 @@ public class PauseAspect {
             methodParameterTypes = {}, timerName = "pause")
     public static class PauseAdvice {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(LogErrorAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(LogErrorAdvice.class);
 
         @OnBefore
-        public static TraceEntry onBefore() {
-            return transactionService.startTraceEntry(
-                    MessageSupplier.from("Pause.pauseOneMillisecond()"), timerName);
+        public static TraceEntry onBefore(ThreadContext context) {
+            return context.startTraceEntry(MessageSupplier.from("Pause.pauseOneMillisecond()"),
+                    timerName);
         }
 
         @OnAfter

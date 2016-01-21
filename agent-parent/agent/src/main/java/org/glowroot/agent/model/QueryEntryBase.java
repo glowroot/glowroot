@@ -17,7 +17,7 @@ package org.glowroot.agent.model;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.agent.plugin.api.transaction.QueryEntry;
+import org.glowroot.agent.plugin.api.QueryEntry;
 
 // ideally this would a component of it's subclasses instead of a parent class, but for
 // micro-optimization purposes it is not (in order to prevent extra object instances/memory

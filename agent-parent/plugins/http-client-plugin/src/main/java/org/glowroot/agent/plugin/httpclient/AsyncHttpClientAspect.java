@@ -21,13 +21,12 @@ import java.util.concurrent.Future;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.AsyncService;
-import org.glowroot.agent.plugin.api.transaction.AsyncTraceEntry;
-import org.glowroot.agent.plugin.api.transaction.Message;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.Timer;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.AsyncTraceEntry;
+import org.glowroot.agent.plugin.api.Message;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.Timer;
+import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
@@ -44,9 +43,6 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class AsyncHttpClientAspect {
-
-    private static final TransactionService transactionService = Agent.getTransactionService();
-    private static final AsyncService asyncService = Agent.getAsyncService();
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private static final FastThreadLocal<Boolean> ignoreFutureGet = new FastThreadLocal<Boolean>() {
@@ -95,18 +91,17 @@ public class AsyncHttpClientAspect {
 
     @Pointcut(className = "com.ning.http.client.AsyncHttpClient", methodName = "executeRequest",
             methodParameterTypes = {"com.ning.http.client.Request", ".."},
-            timerName = "http client request")
+            nestingGroup = "http-client", timerName = "http client request")
     public static class ExecuteRequestAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(ExecuteRequestAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(ExecuteRequestAdvice.class);
         @OnBefore
-        public static AsyncTraceEntry onBefore(@BindParameter Object request,
+        public static AsyncTraceEntry onBefore(ThreadContext context, @BindParameter Object request,
                 @BindClassMeta RequestInvoker requestInvoker) {
             // need to start trace entry @OnBefore in case it is executed in a "same thread
             // executor" in which case will be over in @OnReturn
             String method = requestInvoker.getMethod(request);
             String url = requestInvoker.getUrl(request);
-            return asyncService.startAsyncTraceEntry(new RequestMessageSupplier(method, url),
+            return context.startAsyncTraceEntry(new RequestMessageSupplier(method, url),
                     timerName, timerName);
         }
         @OnReturn

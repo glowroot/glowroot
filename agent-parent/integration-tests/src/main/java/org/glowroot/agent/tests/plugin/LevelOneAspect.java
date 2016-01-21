@@ -22,14 +22,14 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
 import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.Message;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.OptionalThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.config.StringProperty;
-import org.glowroot.agent.plugin.api.transaction.Message;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
@@ -40,7 +40,6 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class LevelOneAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
     private static final ConfigService configService =
             Agent.getConfigService("glowroot-integration-tests");
 
@@ -54,12 +53,11 @@ public class LevelOneAspect {
             timerName = "level one")
     public static class LevelOneAdvice {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(LevelOneAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(LevelOneAdvice.class);
 
         @OnBefore
-        public static TraceEntry onBefore(@BindParameter final Object arg1,
-                @BindParameter final Object arg2) {
+        public static TraceEntry onBefore(OptionalThreadContext context,
+                @BindParameter final Object arg1, @BindParameter final Object arg2) {
             String headline = alternateHeadline.value();
             if (headline.isEmpty()) {
                 headline = "Level One";
@@ -96,15 +94,15 @@ public class LevelOneAspect {
                     return Message.from(headlineFinal, detail);
                 }
             };
-            TraceEntry traceEntry = transactionService.startTransaction("Integration test",
-                    "basic test", messageSupplier, timerName);
+            TraceEntry traceEntry = context.startTransaction("Integration test", "basic test",
+                    messageSupplier, timerName);
             // several trace attributes to test ordering
-            transactionService.addTransactionAttribute("Zee One", String.valueOf(arg2));
-            transactionService.addTransactionAttribute("Yee Two", "yy3");
-            transactionService.addTransactionAttribute("Yee Two", "yy");
-            transactionService.addTransactionAttribute("Yee Two", "Yy2");
-            transactionService.addTransactionAttribute("Xee Three", "xx");
-            transactionService.addTransactionAttribute("Wee Four", "ww");
+            context.addTransactionAttribute("Zee One", String.valueOf(arg2));
+            context.addTransactionAttribute("Yee Two", "yy3");
+            context.addTransactionAttribute("Yee Two", "yy");
+            context.addTransactionAttribute("Yee Two", "Yy2");
+            context.addTransactionAttribute("Xee Three", "xx");
+            context.addTransactionAttribute("Wee Four", "ww");
             return traceEntry;
         }
         @OnReturn

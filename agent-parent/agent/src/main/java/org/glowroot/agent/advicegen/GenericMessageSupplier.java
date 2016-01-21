@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ import org.glowroot.agent.advicegen.MessageTemplate.ConstantPart;
 import org.glowroot.agent.advicegen.MessageTemplate.Part;
 import org.glowroot.agent.advicegen.MessageTemplate.PartType;
 import org.glowroot.agent.advicegen.MessageTemplate.ValuePathPart;
-import org.glowroot.agent.plugin.api.transaction.Message;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
+import org.glowroot.agent.plugin.api.Message;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 @UsedByGeneratedBytecode

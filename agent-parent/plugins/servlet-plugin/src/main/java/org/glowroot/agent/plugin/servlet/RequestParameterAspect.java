@@ -25,7 +25,7 @@ import org.glowroot.agent.plugin.servlet.ServletAspect.HttpServletRequest;
 public class RequestParameterAspect {
 
     @Pointcut(className = "javax.servlet.ServletRequest", methodName = "getParameter*",
-            methodParameterTypes = {".."}, ignoreSelfNested = true)
+            methodParameterTypes = {".."}, nestingGroup = "servlet-inner-call")
     public static class GetParameterAdvice {
         @OnAfter
         public static void onAfter(@BindReceiver Object req) {

@@ -24,6 +24,10 @@ import com.google.common.collect.Sets;
 import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
+import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
+import org.glowroot.common.util.UsedByGeneratedBytecode;
+
+import static org.glowroot.storage.simplerepo.util.Checkers.castInitialized;
 
 public class TransactionRegistry {
 
@@ -34,6 +38,10 @@ public class TransactionRegistry {
     private final FastThreadLocal</*@Nullable*/ ThreadContextImpl> currentThreadContext =
             new FastThreadLocal</*@Nullable*/ ThreadContextImpl>();
 
+    public TransactionRegistry() {
+        TransactionRegistryHolder.transactionRegistry = castInitialized(this);
+    }
+
     @Nullable
     Transaction getCurrentTransaction() {
         ThreadContextImpl threadContext = currentThreadContext.get();
@@ -43,13 +51,11 @@ public class TransactionRegistry {
         return threadContext.getTransaction();
     }
 
-    @Nullable
-    ThreadContextImpl getCurrentThreadContext() {
-        return currentThreadContext.get();
+    public Holder</*@Nullable*/ ThreadContextImpl> getCurrentThreadContextHolder() {
+        return currentThreadContext.getHolder();
     }
 
     void addTransaction(Transaction transaction) {
-        currentThreadContext.set(transaction.getMainThreadContext());
         transactions.add(transaction);
     }
 
@@ -58,15 +64,17 @@ public class TransactionRegistry {
         transactions.remove(transaction);
     }
 
-    public void setAuxThreadContext(ThreadContextImpl auxThreadContext) {
-        currentThreadContext.set(auxThreadContext);
-    }
-
-    public void removeAuxThreadContext() {
-        currentThreadContext.set(null);
-    }
-
     public Collection<Transaction> getTransactions() {
         return transactions;
+    }
+
+    @UsedByGeneratedBytecode
+    public static class TransactionRegistryHolder {
+
+        private static @Nullable TransactionRegistry transactionRegistry;
+
+        public static @Nullable TransactionRegistry getTransactionRegistry() {
+            return transactionRegistry;
+        }
     }
 }

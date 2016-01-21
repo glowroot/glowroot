@@ -51,15 +51,7 @@ public @interface Pointcut {
     String[] methodParameterTypes();
     String methodReturnType() default "";
     MethodModifier[] methodModifiers() default {};
-    // the default is false since it costs a thread local lookup to ignore self nested calls, and
-    // timers already handle self nested calls, so it is only needed for trace entries
-    //
-    // when ignoreSelfNested is true, the pointcut will be ignored if it is currently executing
-    // beneath itself or beneath another pointcut that shares the same timerName
-    // if timerName is empty, the pointcut will be ignored only if currently executing beneath
-    // itself
-    boolean ignoreSelfNested() default false;
-    String timerName() default "";
+    String nestingGroup() default "";
     // two pointcuts on the same method will be ordered by priority
     // priority 0 is "higher priority" than priority 10
     // often priority is used to nest pointcut inside another, e.g. creating a pointcut on
@@ -74,4 +66,5 @@ public @interface Pointcut {
     // * A's @OnThrow will be called after B's @OnThrow
     // * A's @OnAfter will be called after B's @OnAfter
     int priority() default 0;
+    String timerName() default "";
 }

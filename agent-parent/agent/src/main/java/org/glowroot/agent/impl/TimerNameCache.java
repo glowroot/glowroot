@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.model.ImmutableTimerNameImpl;
 import org.glowroot.agent.model.TimerNameImpl;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
+import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 // used to ensure one instance per name so that pointer equality can be used instead of String

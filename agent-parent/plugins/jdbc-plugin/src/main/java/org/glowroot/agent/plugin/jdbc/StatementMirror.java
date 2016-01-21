@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import org.glowroot.agent.plugin.api.transaction.QueryEntry;
+import org.glowroot.agent.plugin.api.QueryEntry;
 
 // used to capture and mirror the state of statements since the underlying {@link Statement} values
 // cannot be inspected after they have been set

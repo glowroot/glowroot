@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,13 +43,27 @@ public class FastThreadLocal</*@Nullable*/ T> {
         threadLocal.get().value = value;
     }
 
+    public Holder<T> getHolder() {
+        return threadLocal.get();
+    }
+
     protected T initialValue() {
         return null;
     }
 
-    private static class Holder<T> {
+    public static class Holder<T> {
+
         T value;
-        Holder(T value) {
+
+        private Holder(T value) {
+            this.value = value;
+        }
+
+        public T get() {
+            return value;
+        }
+
+        public void set(T value) {
             this.value = value;
         }
     }

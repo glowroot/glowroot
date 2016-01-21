@@ -18,11 +18,11 @@ package org.glowroot.agent.tests.plugin;
 import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.Message;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.Message;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
@@ -31,20 +31,17 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class LevelTwoAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-
     @Pointcut(className = "org.glowroot.agent.tests.app.LevelTwo", methodName = "call",
             methodParameterTypes = {"java.lang.String", "java.lang.String"},
             timerName = "level two")
     public static class LevelTwoAdvice {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(LevelTwoAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(LevelTwoAdvice.class);
 
         @OnBefore
-        public static TraceEntry onBefore(@BindParameter final String arg1,
+        public static TraceEntry onBefore(ThreadContext context, @BindParameter final String arg1,
                 @BindParameter final String arg2) {
-            return transactionService.startTraceEntry(new MessageSupplier() {
+            return context.startTraceEntry(new MessageSupplier() {
                 @Override
                 public Message get() {
                     return Message.from("Level Two", ImmutableMap.of("arg1", arg1, "arg2", arg2));

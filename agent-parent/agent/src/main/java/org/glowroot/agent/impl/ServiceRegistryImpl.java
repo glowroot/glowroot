@@ -23,29 +23,25 @@ import com.google.common.cache.LoadingCache;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.agent.api.internal.GlowrootService;
+import org.glowroot.agent.plugin.api.AdvancedService;
+import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.internal.ServiceRegistry;
-import org.glowroot.agent.plugin.api.transaction.AdvancedService;
-import org.glowroot.agent.plugin.api.transaction.AsyncService;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
 
 public class ServiceRegistryImpl implements ServiceRegistry {
 
     private static volatile @MonotonicNonNull ServiceRegistryImpl INSTANCE;
 
     private final GlowrootService glowrootService;
-    private final TransactionService transactionService;
-    private final AsyncService asyncService;
+    private final TimerNameCache timerNameCache;
     private final AdvancedService advancedService;
 
     private final LoadingCache<String, ConfigService> configServices;
 
-    private ServiceRegistryImpl(GlowrootService glowrootService,
-            TransactionService transactionService, AsyncService asyncService,
+    private ServiceRegistryImpl(GlowrootService glowrootService, TimerNameCache timerNameCache,
             AdvancedService advancedService, final ConfigServiceFactory configServiceFactory) {
         this.glowrootService = glowrootService;
-        this.transactionService = transactionService;
-        this.asyncService = asyncService;
+        this.timerNameCache = timerNameCache;
         this.advancedService = advancedService;
         configServices = CacheBuilder.newBuilder().build(new CacheLoader<String, ConfigService>() {
             @Override
@@ -56,13 +52,8 @@ public class ServiceRegistryImpl implements ServiceRegistry {
     }
 
     @Override
-    public TransactionService getTransactionService() {
-        return transactionService;
-    }
-
-    @Override
-    public AsyncService getAsyncService() {
-        return asyncService;
+    public TimerName getTimerName(Class<?> adviceClass) {
+        return timerNameCache.getTimerName(adviceClass);
     }
 
     @Override
@@ -87,11 +78,11 @@ public class ServiceRegistryImpl implements ServiceRegistry {
         return INSTANCE == null ? null : INSTANCE.glowrootService;
     }
 
-    public static void init(GlowrootService glowrootService, TransactionService transactionService,
-            AsyncService asyncService, AdvancedService advancedService,
-            ConfigServiceFactory configServiceFactory) throws Exception {
-        INSTANCE = new ServiceRegistryImpl(glowrootService, transactionService, asyncService,
-                advancedService, configServiceFactory);
+    public static void init(GlowrootService glowrootService, TimerNameCache timerNameCache,
+            AdvancedService advancedService, ConfigServiceFactory configServiceFactory)
+                    throws Exception {
+        INSTANCE = new ServiceRegistryImpl(glowrootService, timerNameCache, advancedService,
+                configServiceFactory);
     }
 
     public interface ConfigServiceFactory {

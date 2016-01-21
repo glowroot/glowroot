@@ -88,15 +88,6 @@ public class WeaverImpl implements Weaver {
                 classBytes, loader, className);
         ThinClassVisitor accv = new ThinClassVisitor();
         new ClassReader(classBytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
-        if (accv.getThinClass().annotations()
-                .contains("Lorg/glowroot/agent/plugin/api/weaving/Pointcut;")) {
-            ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES,
-                    analyzedWorld, loader, codeSource, className);
-            PointcutClassVisitor cv = new PointcutClassVisitor(cw);
-            ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
-            return cw.toByteArray();
-        }
         byte[] maybeFelixBytes = null;
         if (className.equals("org/apache/felix/framework/BundleWiringImpl")) {
             ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES, analyzedWorld,

@@ -8,6 +8,7 @@
       "methodParameterTypes": [
         "javax.faces.context.FacesContext"
       ],
+      "nestingGroup": "jsf",
       "captureKind": "trace-entry",
       "timerName": "jsf apply request",
       "traceEntryMessageTemplate": "jsf apply request: {{0.viewRoot.viewId}}"
@@ -18,6 +19,7 @@
       "methodParameterTypes": [
         "javax.faces.event.ActionEvent"
       ],
+      "nestingGroup": "jsf",
       "captureKind": "trace-entry",
       "timerName": "jsf invoke",
       "traceEntryMessageTemplate": "jsf invoke: {{0.component.id}}"
@@ -28,6 +30,7 @@
       "methodParameterTypes": [
         "javax.faces.context.FacesContext"
       ],
+      "nestingGroup": "jsf",
       "captureKind": "trace-entry",
       "timerName": "jsf render",
       "traceEntryMessageTemplate": "jsf render: {{0.viewRoot.viewId}}"

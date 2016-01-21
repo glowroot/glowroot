@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.api.transaction;
+package org.glowroot.agent.plugin.api;
 
 import java.util.Map;
 
@@ -24,7 +24,7 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.plugin.api.transaction.internal.ReadableMessage;
+import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 
 /**
  * The detail map can contain only {@link String}, {@link Number}, {@link Boolean} and null values.

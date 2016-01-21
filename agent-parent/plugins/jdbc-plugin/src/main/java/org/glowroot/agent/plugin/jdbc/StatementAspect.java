@@ -20,14 +20,13 @@ import java.sql.PreparedStatement;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.QueryEntry;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.Timer;
+import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.config.ConfigService;
-import org.glowroot.agent.plugin.api.transaction.AdvancedService;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.QueryEntry;
-import org.glowroot.agent.plugin.api.transaction.Timer;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
@@ -56,8 +55,6 @@ public class StatementAspect {
 
     private static final String QUERY_TYPE = "SQL";
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-    private static final AdvancedService advancedService = Agent.getAdvancedService();
     private static final ConfigService configService = Agent.getConfigService("jdbc");
 
     private static final BooleanProperty captureBindParameters =
@@ -281,18 +278,17 @@ public class StatementAspect {
     // =================== Statement Execution ===================
 
     @Pointcut(className = "java.sql.Statement", methodName = "execute",
-            methodParameterTypes = {"java.lang.String", ".."}, ignoreSelfNested = true,
+            methodParameterTypes = {"java.lang.String", ".."}, nestingGroup = "jdbc",
             timerName = "jdbc execute")
     public static class StatementExecuteAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(StatementExecuteAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(StatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
             return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
-        public static @Nullable QueryEntry onBefore(@BindReceiver HasStatementMirror statement,
-                @BindParameter @Nullable String sql) {
+        public static @Nullable QueryEntry onBefore(ThreadContext context,
+                @BindReceiver HasStatementMirror statement, @BindParameter @Nullable String sql) {
             if (sql == null) {
                 // seems nothing sensible to do here other than ignore
                 return null;
@@ -303,8 +299,8 @@ public class StatementAspect {
                 return null;
             }
             MessageSupplier messageSupplier = new StatementMessageSupplier(sql);
-            QueryEntry query = transactionService.startQueryEntry(QUERY_TYPE, sql,
-                    messageSupplier, timerName);
+            QueryEntry query =
+                    context.startQueryEntry(QUERY_TYPE, sql, messageSupplier, timerName);
             mirror.setLastQuery(query);
             return query;
         }
@@ -326,16 +322,16 @@ public class StatementAspect {
 
     @Pointcut(className = "java.sql.Statement", methodName = "executeQuery",
             methodParameterTypes = {"java.lang.String"}, methodReturnType = "java.sql.ResultSet",
-            ignoreSelfNested = true, timerName = "jdbc execute")
+            nestingGroup = "jdbc", timerName = "jdbc execute")
     public static class StatementExecuteQueryAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
             return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
-        public static @Nullable QueryEntry onBefore(@BindReceiver HasStatementMirror statement,
-                @BindParameter @Nullable String sql) {
-            return StatementExecuteAdvice.onBefore(statement, sql);
+        public static @Nullable QueryEntry onBefore(ThreadContext context,
+                @BindReceiver HasStatementMirror statement, @BindParameter @Nullable String sql) {
+            return StatementExecuteAdvice.onBefore(context, statement, sql);
         }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable HasStatementMirror resultSet,
@@ -365,16 +361,16 @@ public class StatementAspect {
 
     @Pointcut(className = "java.sql.Statement", methodName = "executeUpdate",
             methodParameterTypes = {"java.lang.String", ".."}, methodReturnType = "int",
-            ignoreSelfNested = true, timerName = "jdbc execute")
+            nestingGroup = "jdbc", timerName = "jdbc execute")
     public static class StatementExecuteUpdateAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
             return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
-        public static @Nullable QueryEntry onBefore(@BindReceiver HasStatementMirror statement,
-                @BindParameter @Nullable String sql) {
-            return StatementExecuteAdvice.onBefore(statement, sql);
+        public static @Nullable QueryEntry onBefore(ThreadContext context,
+                @BindReceiver HasStatementMirror statement, @BindParameter @Nullable String sql) {
+            return StatementExecuteAdvice.onBefore(context, statement, sql);
         }
         @OnReturn
         public static void onReturn(@BindReturn int rowCount,
@@ -395,16 +391,16 @@ public class StatementAspect {
     }
 
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "execute",
-            methodParameterTypes = {}, ignoreSelfNested = true, timerName = "jdbc execute")
+            methodParameterTypes = {}, nestingGroup = "jdbc", timerName = "jdbc execute")
     public static class PreparedStatementExecuteAdvice {
         private static final TimerName timerName =
-                transactionService.getTimerName(PreparedStatementExecuteAdvice.class);
+                Agent.getTimerName(PreparedStatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
             return preparedStatement.glowroot$hasStatementMirror();
         }
         @OnBefore
-        public static @Nullable QueryEntry onBefore(
+        public static @Nullable QueryEntry onBefore(ThreadContext context,
                 @BindReceiver HasStatementMirror preparedStatement) {
             PreparedStatementMirror mirror =
                     (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
@@ -420,7 +416,7 @@ public class StatementAspect {
             } else {
                 messageSupplier = new StatementMessageSupplier(queryText);
             }
-            QueryEntry queryEntry = transactionService.startQueryEntry(QUERY_TYPE, queryText,
+            QueryEntry queryEntry = context.startQueryEntry(QUERY_TYPE, queryText,
                     messageSupplier, timerName);
             mirror.setLastQuery(queryEntry);
             return queryEntry;
@@ -443,16 +439,16 @@ public class StatementAspect {
 
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "executeQuery",
             methodParameterTypes = {}, methodReturnType = "java.sql.ResultSet",
-            ignoreSelfNested = true, timerName = "jdbc execute")
+            nestingGroup = "jdbc", timerName = "jdbc execute")
     public static class PreparedStatementExecuteQueryAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
             return preparedStatement.glowroot$hasStatementMirror();
         }
         @OnBefore
-        public static @Nullable QueryEntry onBefore(
+        public static @Nullable QueryEntry onBefore(ThreadContext context,
                 @BindReceiver HasStatementMirror preparedStatement) {
-            return PreparedStatementExecuteAdvice.onBefore(preparedStatement);
+            return PreparedStatementExecuteAdvice.onBefore(context, preparedStatement);
         }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable HasStatementMirror resultSet,
@@ -481,7 +477,7 @@ public class StatementAspect {
     }
 
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "executeUpdate",
-            methodParameterTypes = {}, methodReturnType = "int", ignoreSelfNested = true,
+            methodParameterTypes = {}, methodReturnType = "int", nestingGroup = "jdbc",
             timerName = "jdbc execute")
     public static class PreparedStatementExecuteUpdateAdvice {
         @IsEnabled
@@ -489,9 +485,9 @@ public class StatementAspect {
             return preparedStatement.glowroot$hasStatementMirror();
         }
         @OnBefore
-        public static @Nullable QueryEntry onBefore(
+        public static @Nullable QueryEntry onBefore(ThreadContext context,
                 @BindReceiver HasStatementMirror preparedStatement) {
-            return PreparedStatementExecuteAdvice.onBefore(preparedStatement);
+            return PreparedStatementExecuteAdvice.onBefore(context, preparedStatement);
         }
         @OnReturn
         public static void onReturn(@BindReturn int rowCount,
@@ -512,16 +508,17 @@ public class StatementAspect {
     }
 
     @Pointcut(className = "java.sql.Statement", methodName = "executeBatch",
-            methodParameterTypes = {}, ignoreSelfNested = true, timerName = "jdbc execute")
+            methodParameterTypes = {}, nestingGroup = "jdbc", timerName = "jdbc execute")
     public static class StatementExecuteBatchAdvice {
         private static final TimerName timerName =
-                transactionService.getTimerName(StatementExecuteBatchAdvice.class);
+                Agent.getTimerName(StatementExecuteBatchAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
             return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
-        public static @Nullable QueryEntry onBefore(@BindReceiver HasStatementMirror statement) {
+        public static @Nullable QueryEntry onBefore(ThreadContext context,
+                @BindReceiver HasStatementMirror statement) {
             if (statement instanceof PreparedStatement) {
                 PreparedStatementMirror mirror =
                         (PreparedStatementMirror) statement.glowroot$getStatementMirror();
@@ -529,14 +526,14 @@ public class StatementAspect {
                     // this shouldn't happen since just checked hasGlowrootStatementMirror() above
                     return null;
                 }
-                return onBeforePreparedStatement(mirror);
+                return onBeforePreparedStatement(context, mirror);
             } else {
                 StatementMirror mirror = statement.glowroot$getStatementMirror();
                 if (mirror == null) {
                     // this shouldn't happen since just checked hasGlowrootStatementMirror() above
                     return null;
                 }
-                return onBeforeStatement(mirror);
+                return onBeforeStatement(mirror, context);
             }
         }
         @OnReturn
@@ -559,7 +556,7 @@ public class StatementAspect {
                 queryEntry.endWithError(t);
             }
         }
-        private static @Nullable QueryEntry onBeforePreparedStatement(
+        private static @Nullable QueryEntry onBeforePreparedStatement(ThreadContext context,
                 PreparedStatementMirror mirror) {
             MessageSupplier messageSupplier;
             String queryText = mirror.getSql();
@@ -571,16 +568,17 @@ public class StatementAspect {
                 messageSupplier =
                         new BatchPreparedStatementMessageSupplier2(queryText, batchSize);
             }
-            QueryEntry queryEntry = advancedService.startQueryEntry(QUERY_TYPE, queryText,
-                    batchSize, messageSupplier, timerName);
+            QueryEntry queryEntry = context.startQueryEntry(QUERY_TYPE, queryText, batchSize,
+                    messageSupplier, timerName);
             mirror.setLastQuery(queryEntry);
             mirror.clearBatch();
             return queryEntry;
         }
-        private static @Nullable QueryEntry onBeforeStatement(StatementMirror mirror) {
+        private static @Nullable QueryEntry onBeforeStatement(StatementMirror mirror,
+                ThreadContext context) {
             MessageSupplier messageSupplier =
                     new BatchStatementMessageSupplier(mirror.getBatchedSql());
-            QueryEntry queryEntry = transactionService.startQueryEntry(QUERY_TYPE,
+            QueryEntry queryEntry = context.startQueryEntry(QUERY_TYPE,
                     "<batch sql>", messageSupplier, timerName);
             mirror.setLastQuery(queryEntry);
             mirror.clearBatch();
@@ -598,8 +596,11 @@ public class StatementAspect {
             return statement.glowroot$hasStatementMirror();
         }
         @OnReturn
-        public static void onReturn(@BindReturn HasStatementMirror resultSet,
+        public static void onReturn(@BindReturn @Nullable HasStatementMirror resultSet,
                 @BindReceiver HasStatementMirror statement) {
+            if (resultSet == null) {
+                return;
+            }
             StatementMirror mirror = statement.glowroot$getStatementMirror();
             resultSet.glowroot$setStatementMirror(mirror);
         }
@@ -608,23 +609,23 @@ public class StatementAspect {
     // ================== Statement Closing ==================
 
     @Pointcut(className = "java.sql.Statement", methodName = "close", methodParameterTypes = {},
-            timerName = "jdbc statement close")
+            nestingGroup = "jdbc", timerName = "jdbc statement close")
     public static class CloseAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(CloseAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
             return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
-        public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror statement) {
+        public static @Nullable Timer onBefore(ThreadContext context,
+                @BindReceiver HasStatementMirror statement) {
             StatementMirror mirror = statement.glowroot$getStatementMirror();
             if (mirror != null) {
                 // this should always be true since just checked hasGlowrootStatementMirror() above
                 mirror.clearLastQuery();
             }
             if (captureStatementClose.value()) {
-                return transactionService.startTimer(timerName);
+                return context.startTimer(timerName);
             } else {
                 return null;
             }

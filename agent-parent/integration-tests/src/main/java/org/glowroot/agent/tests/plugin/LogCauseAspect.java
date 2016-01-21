@@ -16,10 +16,10 @@
 package org.glowroot.agent.tests.plugin;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
@@ -28,18 +28,15 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class LogCauseAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-
     @Pointcut(className = "org.glowroot.agent.tests.app.LogCause", methodName = "log",
             methodParameterTypes = {"java.lang.String"}, timerName = "log error")
     public static class LogCauseAdvice {
 
-        private static final TimerName timerName =
-                transactionService.getTimerName(LogCauseAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(LogCauseAdvice.class);
 
         @OnBefore
-        public static TraceEntry onBefore(@BindParameter String message) {
-            return transactionService.startTraceEntry(MessageSupplier.from("ERROR -- {}", message),
+        public static TraceEntry onBefore(ThreadContext context, @BindParameter String message) {
+            return context.startTraceEntry(MessageSupplier.from("ERROR -- {}", message),
                     timerName);
         }
 

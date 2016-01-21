@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,23 +34,13 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
-import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
-import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.jdbc.support.MockConnection;
+import org.glowroot.microbenchmarks.support.TransactionWorthy;
 
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Thread)
-public class ResultSetBenchmark {
-
-    private static final TransactionService transactionService = Agent.getTransactionService();
-
-    private static final TimerName timerName =
-            transactionService.getTimerName(OnlyForTheTimerName.class);
+public class ResultSetBenchmark extends TransactionWorthy {
 
     @Param
     private Database database;
@@ -89,21 +79,19 @@ public class ResultSetBenchmark {
     @Benchmark
     @OperationsPerInvocation(10000)
     public void next() throws Exception {
-        TraceEntry traceEntry = transactionService.startTransaction("Microbenchmark",
-                "micro transaction", MessageSupplier.from("micro transaction"), timerName);
+        doSomethingTransactionWorthy();
+    }
+
+    @Override
+    public void doSomethingTransactionWorthy() throws SQLException {
         ResultSet resultSet = preparedStatement.executeQuery();
         for (int i = 0; i < 10000; i++) {
             resultSet.next();
         }
         resultSet.close();
-        traceEntry.end();
     }
 
     public enum Database {
         HSQLDB, MOCK
     }
-
-    @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {},
-            timerName = "micro transaction")
-    private static class OnlyForTheTimerName {}
 }

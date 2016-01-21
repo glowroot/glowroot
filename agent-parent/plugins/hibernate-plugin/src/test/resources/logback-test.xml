@@ -20,4 +20,6 @@
       confusing to new users building glowroot from source -->
     <appender-ref ref="FILE" />
   </root>
+  <!-- this is needed to suppress a harmless error messages -->
+  <logger name="org.hibernate.tool.hbm2ddl.SchemaExport" level="off"></logger>
 </configuration>

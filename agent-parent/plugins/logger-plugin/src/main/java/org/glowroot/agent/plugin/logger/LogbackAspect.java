@@ -21,15 +21,13 @@ import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.AdvancedService;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
@@ -38,9 +36,6 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 public class LogbackAspect {
 
     private static final String TIMER_NAME = "logging";
-
-    private static final TransactionService transactionService = Agent.getTransactionService();
-    private static final AdvancedService advancedService = Agent.getAdvancedService();
 
     // constants from from ch.qos.logback.classic.Level
     private static final int OFF_INT = Integer.MAX_VALUE;
@@ -66,41 +61,31 @@ public class LogbackAspect {
             methodParameterTypes = {"java.lang.String", "org.slf4j.Marker",
                     "ch.qos.logback.classic.Level", "java.lang.String", "java.lang.Object[]",
                     "java.lang.Throwable"},
-            timerName = TIMER_NAME)
+            nestingGroup = "logging", timerName = TIMER_NAME)
     public static class LogNoArgAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(LogNoArgAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice();
-        }
+        private static final TimerName timerName = Agent.getTimerName(LogNoArgAdvice.class);
         @OnBefore
         @SuppressWarnings("unused")
-        public static LogAdviceTraveler onBefore(@BindReceiver Logger logger,
-                @BindParameter @Nullable String fqcn,
-                @BindParameter @Nullable Object marker,
-                @BindParameter @Nullable Level level,
-                @BindParameter @Nullable String message,
+        public static LogAdviceTraveler onBefore(ThreadContext context, @BindReceiver Logger logger,
+                @BindParameter @Nullable String fqcn, @BindParameter @Nullable Object marker,
+                @BindParameter @Nullable Level level, @BindParameter @Nullable String message,
                 @BindParameter @Nullable Object/*@Nullable*/[] params,
                 @BindParameter @Nullable Throwable throwable) {
-            LoggerPlugin.inAdvice(true);
             FormattingTuple formattingTuple = MessageFormatter.arrayFormat(message, params);
             Throwable t = throwable == null ? formattingTuple.getThrowable() : throwable;
             String formattedMessage = nullToEmpty(formattingTuple.getMessage());
             int lvl = level == null ? 0 : level.toInt();
             if (LoggerPlugin.markTraceAsError(lvl >= ERROR_INT, lvl >= WARN_INT, t != null)) {
-                advancedService.setTransactionError(formattedMessage);
+                context.setTransactionError(formattedMessage);
             }
             TraceEntry traceEntry;
             if (lvl <= DEBUG_INT) {
                 // include short logger name for debug or lower
                 String loggerName = LoggerPlugin.getShortName(logger.getName());
-                traceEntry = transactionService.startTraceEntry(
-                        MessageSupplier.from("log {}: {} - {}", getLevelStr(lvl), loggerName,
-                                formattedMessage),
-                        timerName);
+                traceEntry = context.startTraceEntry(MessageSupplier.from("log {}: {} - {}",
+                        getLevelStr(lvl), loggerName, formattedMessage), timerName);
             } else {
-                traceEntry = transactionService.startTraceEntry(
+                traceEntry = context.startTraceEntry(
                         MessageSupplier.from("log {}: {}", getLevelStr(lvl), formattedMessage),
                         timerName);
             }
@@ -108,7 +93,6 @@ public class LogbackAspect {
         }
         @OnAfter
         public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
-            LoggerPlugin.inAdvice(false);
             Throwable t = traveler.throwable;
             if (t != null) {
                 // intentionally not passing message since it is already the trace entry message

@@ -16,10 +16,10 @@
 package org.glowroot.microbenchmarks.support;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.OptionalThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
@@ -29,19 +29,17 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class TransactionWorthyAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
-
     @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TransactionWorthy",
             methodName = "doSomethingTransactionWorthy", methodParameterTypes = {},
             timerName = "transaction worthy")
     public static class TransactionWorthyAdvice {
 
         private static final TimerName timerName =
-                transactionService.getTimerName(TransactionWorthyAdvice.class);
+                Agent.getTimerName(TransactionWorthyAdvice.class);
 
         @OnBefore
-        public static TraceEntry onBefore() {
-            return transactionService.startTransaction("Microbenchmark", "transaction worthy",
+        public static TraceEntry onBefore(OptionalThreadContext context) {
+            return context.startTransaction("Microbenchmark", "transaction worthy",
                     MessageSupplier.from("transaction worthy"), timerName);
         }
 

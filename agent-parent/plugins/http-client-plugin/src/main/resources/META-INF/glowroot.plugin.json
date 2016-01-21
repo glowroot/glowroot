@@ -9,6 +9,7 @@
         "org.apache.http.client.methods.HttpUriRequest",
         ".."
       ],
+      "nestingGroup": "http-client",
       "captureKind": "trace-entry",
       "timerName": "http client request",
       "traceEntryMessageTemplate": "http client request: {{0.method}} {{0.URI}}"
@@ -21,6 +22,7 @@
         "org.apache.http.HttpRequest",
         ".."
       ],
+      "nestingGroup": "http-client",
       "captureKind": "trace-entry",
       "timerName": "http client request",
       "traceEntryMessageTemplate": "http client request: {{1.requestLine.method}} {{0.toURI}}{{1.requestLine.uri}}"
@@ -33,6 +35,7 @@
         "org.apache.commons.httpclient.HttpMethod",
         "org.apache.commons.httpclient.HttpState"
       ],
+      "nestingGroup": "http-client",
       "captureKind": "trace-entry",
       "timerName": "http client request",
       "traceEntryMessageTemplate": "http client request: {{1.name}} {{1.URI}}"
@@ -42,6 +45,7 @@
       "methodName": "execute",
       "methodParameterTypes": [
       ],
+      "nestingGroup": "http-client",
       "captureKind": "trace-entry",
       "timerName": "http client request",
       "traceEntryMessageTemplate": "http client request: {{this.originalRequest.method}} {{this.originalRequest.url}}"

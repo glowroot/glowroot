@@ -19,67 +19,18 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.agent.plugin.api.internal.NopAsyncService.NopAsyncContext;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.QueryEntry;
-import org.glowroot.agent.plugin.api.transaction.ThreadContext;
-import org.glowroot.agent.plugin.api.transaction.Timer;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.plugin.api.AsyncQueryEntry;
+import org.glowroot.agent.plugin.api.AsyncTraceEntry;
+import org.glowroot.agent.plugin.api.AuxThreadContext;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.QueryEntry;
+import org.glowroot.agent.plugin.api.Timer;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 
-public class NopTransactionService implements TransactionService {
-
-    public static final TransactionService INSTANCE = new NopTransactionService();
+public class NopTransactionService {
 
     private NopTransactionService() {}
-
-    @Override
-    public TimerName getTimerName(Class<?> adviceClass) {
-        return NopTimerName.INSTANCE;
-    }
-
-    @Override
-    public TraceEntry startTransaction(String transactionType, String transactionName,
-            MessageSupplier messageSupplier, TimerName timerName) {
-        return NopTraceEntry.INSTANCE;
-    }
-
-    @Override
-    public TraceEntry startTraceEntry(MessageSupplier messageSupplier, TimerName timerName) {
-        return NopTraceEntry.INSTANCE;
-    }
-
-    @Override
-    public QueryEntry startQueryEntry(String queryType, String queryText,
-            MessageSupplier messageSupplier, TimerName timerName) {
-        return NopQueryEntry.INSTANCE;
-    }
-
-    @Override
-    public Timer startTimer(TimerName timerName) {
-        return NopTimer.INSTANCE;
-    }
-
-    @Override
-    public ThreadContext createThreadContext() {
-        return NopAsyncContext.INSTANCE;
-    }
-
-    @Override
-    public void setTransactionType(@Nullable String transactionType) {}
-
-    @Override
-    public void setTransactionName(@Nullable String transactionName) {}
-
-    @Override
-    public void setTransactionUser(@Nullable String user) {}
-
-    @Override
-    public void addTransactionAttribute(String name, @Nullable String value) {}
-
-    @Override
-    public void setTransactionSlowThreshold(long threshold, TimeUnit unit) {}
 
     public static class NopTraceEntry implements TraceEntry {
 
@@ -129,6 +80,74 @@ public class NopTransactionService implements TransactionService {
         public void setCurrRow(long row) {}
     }
 
+    public static class NopAsyncTraceEntry implements AsyncTraceEntry {
+
+        public static final NopAsyncTraceEntry INSTANCE = new NopAsyncTraceEntry();
+
+        private NopAsyncTraceEntry() {}
+
+        @Override
+        public void end() {}
+
+        @Override
+        public void endWithStackTrace(long threshold, TimeUnit unit) {}
+
+        @Override
+        public void endWithError(Throwable t) {}
+
+        @Override
+        public void endWithError(@Nullable String message) {}
+
+        @Override
+        public void endWithError(@Nullable String message, Throwable t) {}
+
+        @Override
+        public @Nullable MessageSupplier getMessageSupplier() {
+            return null;
+        }
+
+        @Override
+        public void stopSyncTimer() {}
+
+        @Override
+        public Timer extendSyncTimer() {
+            return NopTimer.INSTANCE;
+        }
+    }
+
+    public static class NopAsyncQueryEntry extends NopAsyncTraceEntry implements AsyncQueryEntry {
+
+        public static final NopAsyncQueryEntry INSTANCE = new NopAsyncQueryEntry();
+
+        private NopAsyncQueryEntry() {}
+
+        @Override
+        public Timer extend() {
+            return NopTimer.INSTANCE;
+        }
+
+        @Override
+        public void rowNavigationAttempted() {}
+
+        @Override
+        public void incrementCurrRow() {}
+
+        @Override
+        public void setCurrRow(long row) {}
+    }
+
+    public static class NopAuxThreadContext implements AuxThreadContext {
+
+        public static final NopAuxThreadContext INSTANCE = new NopAuxThreadContext();
+
+        private NopAuxThreadContext() {}
+
+        @Override
+        public TraceEntry start() {
+            return NopTraceEntry.INSTANCE;
+        }
+    }
+
     public static class NopTimer implements Timer {
 
         public static final NopTimer INSTANCE = new NopTimer();
@@ -144,9 +163,9 @@ public class NopTransactionService implements TransactionService {
         }
     }
 
-    private static class NopTimerName implements TimerName {
+    public static class NopTimerName implements TimerName {
 
-        private static final NopTimerName INSTANCE = new NopTimerName();
+        public static final NopTimerName INSTANCE = new NopTimerName();
 
         private NopTimerName() {}
     }
