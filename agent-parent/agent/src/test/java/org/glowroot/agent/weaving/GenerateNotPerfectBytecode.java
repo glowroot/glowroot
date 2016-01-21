@@ -18,7 +18,6 @@ package org.glowroot.agent.weaving;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.util.ASMifier;
 
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 
@@ -40,57 +39,12 @@ public class GenerateNotPerfectBytecode {
 
     private static final boolean GENERATE_PERFECT = false;
 
-    public interface Test {
-        void test1();
-        int test2();
-        long test3();
-    }
-
-    public static class Impl implements Test {
-
-        @Override
-        public void test1() {
-            x();
-            x();
-            x();
-        }
-
-        @Override
-        public int test2() {
-            x();
-            x();
-            x();
-            return 0;
-        }
-
-        @Override
-        public long test3() {
-            x();
-            x();
-            x();
-            return 0;
-        }
-
-        private long x() {
-            return 0;
-        }
-    }
-
-    public static void main(String[] args) throws Exception {
-        ASMifier.main(new String[] {Impl.class.getName()});
-        // generateNotPerfectBytecode();
-    }
-
-    private static int counter;
-
-    public static LazyDefinedClass generateNotPerfectBytecode() throws Exception {
-
-        String className = "Generated" + counter++;
+    static LazyDefinedClass generateNotPerfectBytecode() throws Exception {
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         MethodVisitor mv;
 
-        cw.visit(V1_6, ACC_PUBLIC + ACC_SUPER, className, null, "java/lang/Object",
+        cw.visit(V1_6, ACC_PUBLIC + ACC_SUPER, "NotPerfectBytecode", null, "java/lang/Object",
                 new String[] {Test.class.getName().replace('.', '/')});
 
         {
@@ -105,7 +59,7 @@ public class GenerateNotPerfectBytecode {
         {
             mv = cw.visitMethod(ACC_PUBLIC, "test1", "()V", null, null);
             mv.visitCode();
-            common(className, mv);
+            common(mv);
             mv.visitInsn(RETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();
@@ -113,7 +67,7 @@ public class GenerateNotPerfectBytecode {
         {
             mv = cw.visitMethod(ACC_PUBLIC, "test2", "()I", null, null);
             mv.visitCode();
-            common(className, mv);
+            common(mv);
             mv.visitInsn(ICONST_0);
             mv.visitInsn(IRETURN);
             mv.visitMaxs(0, 0);
@@ -122,7 +76,7 @@ public class GenerateNotPerfectBytecode {
         {
             mv = cw.visitMethod(ACC_PUBLIC, "test3", "()J", null, null);
             mv.visitCode();
-            common(className, mv);
+            common(mv);
             mv.visitInsn(LCONST_0);
             mv.visitInsn(LRETURN);
             mv.visitMaxs(0, 0);
@@ -147,51 +101,41 @@ public class GenerateNotPerfectBytecode {
         cw.visitEnd();
 
         return ImmutableLazyDefinedClass.builder()
-                .type(Type.getObjectType(className))
+                .type(Type.getObjectType("NotPerfectBytecode"))
                 .bytes(cw.toByteArray())
                 .build();
     }
 
-    private static void common(String className, MethodVisitor mv) {
+    private static void common(MethodVisitor mv) {
+        invokeX(mv);
+        invokeY(mv);
+        invokeY(mv);
+        invokeY(mv);
+        invokeX(mv);
+        invokeX(mv);
+        invokeY(mv);
+        invokeX(mv);
+    }
+
+    private static void invokeX(MethodVisitor mv) {
         mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKESPECIAL, className, "x", "()I", false);
+        mv.visitMethodInsn(INVOKESPECIAL, "NotPerfectBytecode", "x", "()I", false);
         if (GENERATE_PERFECT) {
             mv.visitInsn(POP);
         }
+    }
+
+    private static void invokeY(MethodVisitor mv) {
         mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKESPECIAL, className, "y", "()J", false);
+        mv.visitMethodInsn(INVOKESPECIAL, "NotPerfectBytecode", "y", "()J", false);
         if (GENERATE_PERFECT) {
             mv.visitInsn(POP2);
         }
-        mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKESPECIAL, className, "y", "()J", false);
-        if (GENERATE_PERFECT) {
-            mv.visitInsn(POP2);
-        }
-        mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKESPECIAL, className, "y", "()J", false);
-        if (GENERATE_PERFECT) {
-            mv.visitInsn(POP2);
-        }
-        mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKESPECIAL, className, "x", "()I", false);
-        if (GENERATE_PERFECT) {
-            mv.visitInsn(POP);
-        }
-        mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKESPECIAL, className, "x", "()I", false);
-        if (GENERATE_PERFECT) {
-            mv.visitInsn(POP);
-        }
-        mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKESPECIAL, className, "y", "()J", false);
-        if (GENERATE_PERFECT) {
-            mv.visitInsn(POP2);
-        }
-        mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKESPECIAL, className, "x", "()I", false);
-        if (GENERATE_PERFECT) {
-            mv.visitInsn(POP);
-        }
+    }
+
+    public interface Test {
+        void test1();
+        int test2();
+        long test3();
     }
 }

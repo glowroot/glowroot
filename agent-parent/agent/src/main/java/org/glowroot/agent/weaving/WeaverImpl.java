@@ -25,6 +25,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
@@ -136,37 +137,73 @@ public class WeaverImpl implements Weaver {
                         classAnalyzer.getMatchedShimTypes(), classAnalyzer.getMatchedMixinTypes(),
                         classAnalyzer.getMethodAdvisors(), analyzedWorld);
         ClassReader cr = new ClassReader(maybeFelixBytes == null ? classBytes : maybeFelixBytes);
-        cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
-        byte[] wovenBytes = cw.toByteArray();
-        if (verifyWeaving) {
-            verify(wovenBytes, loader, classBytes, className);
+        try {
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
+        } catch (RuntimeException e) {
+            logger.error("unable to weave {}: {}", className, e.getMessage(), e);
+            try {
+                File tempFile = getTempFile(className, "glowroot-weaving-error-", ".class");
+                Files.write(classBytes, tempFile);
+                logger.error("wrote bytecode to: {}", tempFile.getAbsolutePath());
+            } catch (IOException f) {
+                logger.error(f.getMessage(), f);
+            }
+            return null;
         }
-        return wovenBytes;
+        byte[] transformedBytes = cw.toByteArray();
+        if (verifyWeaving) {
+            verify(transformedBytes, loader, classBytes, className);
+        }
+        return transformedBytes;
     }
 
-    private static void verify(byte[] wovenBytes, @Nullable ClassLoader loader,
+    private static void verify(byte[] transformedBytes, @Nullable ClassLoader loader,
             byte[] originalBytes, String className) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        CheckClassAdapter.verify(new ClassReader(wovenBytes), loader, false, pw);
-        pw.close();
-        String str = sw.toString();
-        if (!str.isEmpty()) {
-            logger.error("class verify error\n:" + str);
-            String simpleName;
-            int index = className.lastIndexOf('/');
-            if (index == -1) {
-                simpleName = className;
-            } else {
-                simpleName = className.substring(index + 1);
-            }
+        String originalBytesVerifyError = verify(originalBytes, loader);
+        if (!originalBytesVerifyError.isEmpty()) {
+            // not much to do if original byte code fails to verify
+            logger.debug("class verify error for original bytecode\n:" + originalBytesVerifyError);
+            return;
+        }
+        String transformedBytesVerifyError = verify(transformedBytes, loader);
+        if (!transformedBytesVerifyError.isEmpty()) {
+            logger.error(
+                    "class verify error for transformed bytecode\n:" + transformedBytesVerifyError);
             try {
-                Files.write(wovenBytes, new File(simpleName + "-woven.class"));
-                Files.write(originalBytes, new File(simpleName + "-original.class"));
+                File originalBytesFile =
+                        getTempFile(className, "glowroot-verify-error-", "-original.class");
+                Files.write(originalBytes, originalBytesFile);
+                logger.error("wrote original bytecode to: {}", originalBytesFile.getAbsolutePath());
+                File transformedBytesFile =
+                        getTempFile(className, "glowroot-verify-error-", "-transformed.class");
+                Files.write(transformedBytes, transformedBytesFile);
+                logger.error("wrote transformed bytecode to: {}",
+                        transformedBytesFile.getAbsolutePath());
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
             }
         }
+    }
+
+    private static String verify(byte[] bytes, @Nullable ClassLoader loader) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        CheckClassAdapter.verify(new ClassReader(bytes), loader, false, pw);
+        pw.close();
+        return sw.toString();
+    }
+
+    private static File getTempFile(String className, String prefix, String suffix) {
+        String tmpDirProperty = StandardSystemProperty.JAVA_IO_TMPDIR.value();
+        File tmpDir = tmpDirProperty == null ? new File(".") : new File(tmpDirProperty);
+        String simpleName;
+        int index = className.lastIndexOf('/');
+        if (index == -1) {
+            simpleName = className;
+        } else {
+            simpleName = className.substring(index + 1);
+        }
+        return new File(tmpDir, prefix + simpleName + suffix);
     }
 
     private static class JSRInlinerClassVisitor extends ClassVisitor {

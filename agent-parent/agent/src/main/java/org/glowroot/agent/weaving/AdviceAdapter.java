@@ -558,10 +558,20 @@ public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes 
     }
 
     private Object popValue() {
+        if (stackFrame.isEmpty()) {
+            // this is to handle less-than-perfect bytecode, see
+            // WeaverTest.shouldExecuteAdviceOnMoreNotPerfectBytecode()
+            return OTHER;
+        }
         return stackFrame.remove(stackFrame.size() - 1);
     }
 
     private Object peekValue() {
+        if (stackFrame.isEmpty()) {
+            // this is to handle less-than-perfect bytecode, see
+            // WeaverTest.shouldExecuteAdviceOnMoreNotPerfectBytecode()
+            return OTHER;
+        }
         return stackFrame.get(stackFrame.size() - 1);
     }
 

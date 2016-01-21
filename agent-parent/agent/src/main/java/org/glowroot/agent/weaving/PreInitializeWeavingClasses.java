@@ -99,6 +99,7 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.base.Predicates$ObjectPredicate$2");
         types.add("com.google.common.base.Predicates$ObjectPredicate$3");
         types.add("com.google.common.base.Predicates$ObjectPredicate$4");
+        types.add("com.google.common.base.StandardSystemProperty");
         types.add("com.google.common.base.Supplier");
         types.add("com.google.common.base.Throwables");
         types.add("com.google.common.base.Ticker");

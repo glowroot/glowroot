@@ -78,6 +78,7 @@ import org.glowroot.agent.weaving.SomeAspect.MethodParametersDotDotAdvice3;
 import org.glowroot.agent.weaving.SomeAspect.MethodReturnCharSequenceAdvice;
 import org.glowroot.agent.weaving.SomeAspect.MethodReturnStringAdvice;
 import org.glowroot.agent.weaving.SomeAspect.MethodReturnVoidAdvice;
+import org.glowroot.agent.weaving.SomeAspect.MoreNotPerfectBytecodeAdvice;
 import org.glowroot.agent.weaving.SomeAspect.MultipleMethodsAdvice;
 import org.glowroot.agent.weaving.SomeAspect.NonMatchingMethodReturnAdvice;
 import org.glowroot.agent.weaving.SomeAspect.NonMatchingMethodReturnAdvice2;
@@ -1480,6 +1481,38 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(3);
         assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(3);
+    }
+
+    @Test
+    public void shouldExecuteAdviceOnMoreNotPerfectBytecode() throws Exception {
+        // given
+        LazyDefinedClass implClass =
+                GenerateMoreNotPerfectBytecode.generateMoreNotPerfectBytecode(false);
+        GenerateMoreNotPerfectBytecode.Test test = newWovenObject(implClass,
+                GenerateMoreNotPerfectBytecode.Test.class, MoreNotPerfectBytecodeAdvice.class);
+        // when
+        test.execute();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldExecuteAdviceOnMoreNotPerfectBytecodeVariant() throws Exception {
+        // given
+        LazyDefinedClass implClass =
+                GenerateMoreNotPerfectBytecode.generateMoreNotPerfectBytecode(true);
+        GenerateMoreNotPerfectBytecode.Test test = newWovenObject(implClass,
+                GenerateMoreNotPerfectBytecode.Test.class, MoreNotPerfectBytecodeAdvice.class);
+        // when
+        test.execute();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
     }
 
     public static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,
