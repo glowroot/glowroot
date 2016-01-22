@@ -76,6 +76,7 @@ public class AggregatorTest {
         when(transaction.getDurationNanos()).thenReturn(MILLISECONDS.toNanos(123));
         when(transaction.getMainThreadRootTimer()).thenReturn(mainThreadRootTimer);
         when(transaction.getQueries()).thenReturn(ImmutableList.<QueryData>of().iterator());
+        when(transaction.getMainThreadStats()).thenReturn(ThreadStats.NA);
         when(transaction.getAuxThreadRootTimers()).thenReturn(ImmutableList.<TimerImpl>of());
         when(transaction.getAuxThreadStats()).thenReturn(ImmutableList.<ThreadStats>of());
         // when
