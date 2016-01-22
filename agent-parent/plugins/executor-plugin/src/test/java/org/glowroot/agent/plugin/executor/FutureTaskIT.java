@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
@@ -38,7 +38,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ExecutorIT {
+public class FutureTaskIT {
 
     private static Container container;
 
@@ -73,14 +73,27 @@ public class ExecutorIT {
     }
 
     @Test
-    public void shouldCaptureRunnableAndCallable() throws Exception {
+    public void shouldCaptureRunnableAndCallable1() throws Exception {
         // given
         container.getConfigService().updateTransactionConfig(
                 TransactionConfig.newBuilder()
                         .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
                         .build());
         // when
-        Trace trace = container.execute(DoSomeRunnableAndCallableWork.class);
+        Trace trace = container.execute(DoSomeRunnableAndCallableWork1.class);
+        // then
+        checkTrace(trace);
+    }
+
+    @Test
+    public void shouldCaptureRunnableAndCallable2() throws Exception {
+        // given
+        container.getConfigService().updateTransactionConfig(
+                TransactionConfig.newBuilder()
+                        .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
+                        .build());
+        // when
+        Trace trace = container.execute(DoSomeRunnableAndCallableWork1.class);
         // then
         checkTrace(trace);
     }
@@ -168,34 +181,37 @@ public class ExecutorIT {
         @Override
         public void transactionMarker() throws Exception {
             ExecutorService executor = Executors.newCachedThreadPool();
-            Future<Void> future1 = executor.submit(new Callable<Void>() {
+            FutureTask<Void> futureTask1 = new FutureTask<Void>(new Callable<Void>() {
                 @Override
                 public Void call() {
                     new CreateTraceEntry().transactionMarker();
                     return null;
                 }
             });
-            Future<Void> future2 = executor.submit(new Callable<Void>() {
+            FutureTask<Void> futureTask2 = new FutureTask<Void>(new Callable<Void>() {
                 @Override
                 public Void call() {
                     new CreateTraceEntry().transactionMarker();
                     return null;
                 }
             });
-            Future<Void> future3 = executor.submit(new Callable<Void>() {
+            FutureTask<Void> futureTask3 = new FutureTask<Void>(new Callable<Void>() {
                 @Override
                 public Void call() {
                     new CreateTraceEntry().transactionMarker();
                     return null;
                 }
             });
-            future1.get();
-            future2.get();
-            future3.get();
+            executor.execute(futureTask1);
+            executor.execute(futureTask2);
+            executor.execute(futureTask3);
+            futureTask1.get();
+            futureTask2.get();
+            futureTask3.get();
         }
     }
 
-    public static class DoSomeRunnableAndCallableWork implements AppUnderTest, TransactionMarker {
+    public static class DoSomeRunnableAndCallableWork1 implements AppUnderTest, TransactionMarker {
 
         @Override
         public void executeApp() throws Exception {
@@ -205,15 +221,40 @@ public class ExecutorIT {
         @Override
         public void transactionMarker() throws Exception {
             ExecutorService executor = Executors.newCachedThreadPool();
-            Future<Void> future1 =
-                    executor.submit((Callable<Void>) new RunnableAndCallableWork());
-            Future<Void> future2 =
-                    executor.submit((Callable<Void>) new RunnableAndCallableWork());
-            Future<Void> future3 =
-                    executor.submit((Callable<Void>) new RunnableAndCallableWork());
-            future1.get();
-            future2.get();
-            future3.get();
+            FutureTask<Void> futureTask1 = new FutureTask<Void>(new RunnableAndCallableWork());
+            FutureTask<Void> futureTask2 = new FutureTask<Void>(new RunnableAndCallableWork());
+            FutureTask<Void> futureTask3 = new FutureTask<Void>(new RunnableAndCallableWork());
+            executor.execute(futureTask1);
+            executor.execute(futureTask2);
+            executor.execute(futureTask3);
+            futureTask1.get();
+            futureTask2.get();
+            futureTask3.get();
+        }
+    }
+
+    public static class DoSomeRunnableAndCallableWork2 implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            ExecutorService executor = Executors.newCachedThreadPool();
+            FutureTask<Void> futureTask1 =
+                    new FutureTask<Void>(new RunnableAndCallableWork(), null);
+            FutureTask<Void> futureTask2 =
+                    new FutureTask<Void>(new RunnableAndCallableWork(), null);
+            FutureTask<Void> futureTask3 =
+                    new FutureTask<Void>(new RunnableAndCallableWork(), null);
+            executor.execute(futureTask1);
+            executor.execute(futureTask2);
+            executor.execute(futureTask3);
+            futureTask1.get();
+            futureTask2.get();
+            futureTask3.get();
         }
     }
 
@@ -227,7 +268,7 @@ public class ExecutorIT {
         @Override
         public void transactionMarker() throws Exception {
             ExecutorService executor = Executors.newCachedThreadPool();
-            Future<?> future1 = executor.submit(new Runnable() {
+            FutureTask<Void> futureTask1 = new FutureTask<Void>(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -235,8 +276,8 @@ public class ExecutorIT {
                     } catch (InterruptedException e) {
                     }
                 }
-            });
-            Future<?> future2 = executor.submit(new Runnable() {
+            }, null);
+            FutureTask<Void> futureTask2 = new FutureTask<Void>(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -244,8 +285,8 @@ public class ExecutorIT {
                     } catch (InterruptedException e) {
                     }
                 }
-            });
-            Future<?> future3 = executor.submit(new Runnable() {
+            }, null);
+            FutureTask<Void> futureTask3 = new FutureTask<Void>(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -253,10 +294,13 @@ public class ExecutorIT {
                     } catch (InterruptedException e) {
                     }
                 }
-            });
-            future1.get();
-            future2.get();
-            future3.get();
+            }, null);
+            executor.execute(futureTask1);
+            executor.execute(futureTask2);
+            executor.execute(futureTask3);
+            futureTask1.get();
+            futureTask2.get();
+            futureTask3.get();
         }
     }
 
@@ -271,16 +315,17 @@ public class ExecutorIT {
         @Override
         public void transactionMarker() throws Exception {
             ExecutorService executor = Executors.newCachedThreadPool();
-            Future<Void> future = executor.submit(new Callable<Void>() {
+            FutureTask<Void> futureTask = new FutureTask<Void>(new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
                     return null;
                 }
             });
-            while (!future.isDone()) {
+            executor.execute(futureTask);
+            while (!futureTask.isDone()) {
                 Thread.sleep(1);
             }
-            future.get();
+            futureTask.get();
         }
     }
 

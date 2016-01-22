@@ -58,16 +58,35 @@ public class ExecutorAspect {
     @Mixin({"java.lang.Runnable", "java.util.concurrent.Callable"})
     public abstract static class RunnableImpl implements RunnableCallableMixin {
 
-        private volatile @Nullable ThreadContext glowroot$asyncContext;
+        private volatile @Nullable ThreadContext glowroot$auxThreadContext;
 
         @Override
-        public @Nullable ThreadContext glowroot$getAsyncContext() {
-            return glowroot$asyncContext;
+        public @Nullable ThreadContext glowroot$getAuxThreadContext() {
+            return glowroot$auxThreadContext;
         }
 
         @Override
-        public void glowroot$setAsyncContext(@Nullable ThreadContext asyncContext) {
-            this.glowroot$asyncContext = asyncContext;
+        public void glowroot$setAuxAsyncContext(@Nullable ThreadContext auxThreadContext) {
+            this.glowroot$auxThreadContext = auxThreadContext;
+        }
+    }
+
+    // the field and method names are verbose to avoid conflict since they will become fields
+    // and methods in all classes that extend java.util.concurrent.FutureTask
+    @Mixin({"java.util.concurrent.FutureTask"})
+    public abstract static class FutureTaskImpl implements FutureTaskMixin {
+
+        private volatile @Nullable RunnableCallableMixin glowroot$innerRunnableCallable;
+
+        @Override
+        public @Nullable RunnableCallableMixin glowroot$getInnerRunnableCallable() {
+            return glowroot$innerRunnableCallable;
+        }
+
+        @Override
+        public void glowroot$setInnerRunnableCallable(
+                @Nullable RunnableCallableMixin innerRunnableCallable) {
+            this.glowroot$innerRunnableCallable = innerRunnableCallable;
         }
     }
 
@@ -76,9 +95,20 @@ public class ExecutorAspect {
     public interface RunnableCallableMixin {
 
         @Nullable
-        ThreadContext glowroot$getAsyncContext();
+        ThreadContext glowroot$getAuxThreadContext();
 
-        void glowroot$setAsyncContext(@Nullable ThreadContext asyncContext);
+        void glowroot$setAuxAsyncContext(@Nullable ThreadContext auxThreadContext);
+    }
+
+    // the method names are verbose to avoid conflict since they will become methods in all classes
+    // that extend java.lang.Runnable and/or java.util.concurrent.Callable
+    public interface FutureTaskMixin {
+
+        @Nullable
+        RunnableCallableMixin glowroot$getInnerRunnableCallable();
+
+        void glowroot$setInnerRunnableCallable(
+                @Nullable RunnableCallableMixin runnableCallableMixin);
     }
 
     // ignore self nested is important for cases with wrapping ExecutorServices so that the outer
@@ -92,14 +122,75 @@ public class ExecutorAspect {
         }
         @OnBefore
         public static void onBefore(@BindParameter Object runnableCallable) {
+            inSubmitOrExecute.set(true);
             if (!(runnableCallable instanceof RunnableCallableMixin)) {
                 // this class was loaded before class file transformer was added to jvm
                 return;
             }
-            inSubmitOrExecute.set(true);
             RunnableCallableMixin runnableCallableMixin = (RunnableCallableMixin) runnableCallable;
             ThreadContext asyncContext = transactionService.createThreadContext();
-            runnableCallableMixin.glowroot$setAsyncContext(asyncContext);
+            runnableCallableMixin.glowroot$setAuxAsyncContext(asyncContext);
+        }
+        @OnAfter
+        public static void onAfter() {
+            inSubmitOrExecute.set(false);
+        }
+    }
+
+    @Pointcut(className = "java.util.concurrent.FutureTask", methodName = "<init>",
+            methodParameterTypes = {"java.util.concurrent.Callable"})
+    public static class FutureTaskInitWithCallableAdvice {
+        @OnBefore
+        public static void onBefore(@BindReceiver Object futureTask,
+                @BindParameter Object runnableCallable) {
+            if (!(runnableCallable instanceof RunnableCallableMixin)) {
+                // this class was loaded before class file transformer was added to jvm
+                return;
+            }
+            if (!(futureTask instanceof FutureTaskMixin)) {
+                // this class was loaded before class file transformer was added to jvm
+                return;
+            }
+            ((FutureTaskMixin) futureTask)
+                    .glowroot$setInnerRunnableCallable((RunnableCallableMixin) runnableCallable);
+        }
+    }
+
+    @Pointcut(className = "java.util.concurrent.FutureTask", methodName = "<init>",
+            methodParameterTypes = {"java.lang.Runnable", ".."})
+    public static class FutureTaskInitWithRunnableAdvice {
+        @OnBefore
+        public static void onBefore(@BindReceiver Object futureTask,
+                @BindParameter Object runnableCallable) {
+            FutureTaskInitWithCallableAdvice.onBefore(futureTask, runnableCallable);
+        }
+    }
+
+    @Pointcut(className = "java.util.concurrent.Executor", methodName = "execute",
+            methodParameterTypes = {"java.lang.Runnable"})
+    public static class ExecuteAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return !inSubmitOrExecute.get();
+        }
+        @OnBefore
+        public static void onBefore(@BindParameter Object runnableCallable) {
+            inSubmitOrExecute.set(true);
+            if (!(runnableCallable instanceof RunnableCallableMixin)) {
+                // this class was loaded before class file transformer was added to jvm
+                return;
+            }
+            if (!(runnableCallable instanceof FutureTaskMixin)) {
+                // only capture execute if called on FutureTask
+                return;
+            }
+            FutureTaskMixin futureTaskMixin = (FutureTaskMixin) runnableCallable;
+            ThreadContext asyncContext = transactionService.createThreadContext();
+            RunnableCallableMixin innerRunnableCallable =
+                    futureTaskMixin.glowroot$getInnerRunnableCallable();
+            if (innerRunnableCallable != null) {
+                innerRunnableCallable.glowroot$setAuxAsyncContext(asyncContext);
+            }
         }
         @OnAfter
         public static void onAfter() {
@@ -151,7 +242,7 @@ public class ExecutorAspect {
                 return null;
             }
             RunnableCallableMixin runnableMixin = (RunnableCallableMixin) runnable;
-            ThreadContext asyncContext = runnableMixin.glowroot$getAsyncContext();
+            ThreadContext asyncContext = runnableMixin.glowroot$getAuxThreadContext();
             if (asyncContext == null) {
                 return null;
             }
@@ -170,6 +261,15 @@ public class ExecutorAspect {
                 traceEntry.endWithError(t);
             }
         }
+        @OnAfter
+        public static void onAfter(@BindReceiver Runnable runnable) {
+            if (!(runnable instanceof RunnableCallableMixin)) {
+                // this class was loaded before class file transformer was added to jvm
+                return;
+            }
+            RunnableCallableMixin runnableMixin = (RunnableCallableMixin) runnable;
+            runnableMixin.glowroot$setAuxAsyncContext(null);
+        }
     }
 
     @Pointcut(className = "java.util.concurrent.Callable", methodName = "call",
@@ -182,7 +282,7 @@ public class ExecutorAspect {
                 return null;
             }
             RunnableCallableMixin callableMixin = (RunnableCallableMixin) callable;
-            ThreadContext asyncContext = callableMixin.glowroot$getAsyncContext();
+            ThreadContext asyncContext = callableMixin.glowroot$getAuxThreadContext();
             if (asyncContext == null) {
                 return null;
             }
@@ -200,6 +300,15 @@ public class ExecutorAspect {
             if (traceEntry != null) {
                 traceEntry.endWithError(t);
             }
+        }
+        @OnAfter
+        public static void onAfter(@BindReceiver Runnable runnable) {
+            if (!(runnable instanceof RunnableCallableMixin)) {
+                // this class was loaded before class file transformer was added to jvm
+                return;
+            }
+            RunnableCallableMixin runnableMixin = (RunnableCallableMixin) runnable;
+            runnableMixin.glowroot$setAuxAsyncContext(null);
         }
     }
 }
