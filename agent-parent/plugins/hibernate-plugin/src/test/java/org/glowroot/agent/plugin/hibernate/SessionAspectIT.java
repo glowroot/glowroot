@@ -247,6 +247,36 @@ public class SessionAspectIT {
         assertThat(entry.getChildEntryCount()).isZero();
     }
 
+    @Test
+    public void shouldCaptureTransactionCommit() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(TransactionCommit.class);
+        // then
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(2);
+        assertThat(entries.get(0).getMessage())
+                .isEqualTo("hibernate save: org.glowroot.agent.plugin.hibernate.Employee");
+        Trace.Entry entry = entries.get(1);
+        assertThat(entry.getMessage()).isEqualTo("hibernate commit");
+        assertThat(entry.getChildEntryCount()).isZero();
+    }
+
+    @Test
+    public void shouldCaptureTransactionRollback() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(TransactionRollback.class);
+        // then
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(2);
+        assertThat(entries.get(0).getMessage())
+                .isEqualTo("hibernate save: org.glowroot.agent.plugin.hibernate.Employee");
+        Trace.Entry entry = entries.get(1);
+        assertThat(entry.getMessage()).isEqualTo("hibernate rollback");
+        assertThat(entry.getChildEntryCount()).isZero();
+    }
+
     public abstract static class DoWithSession implements AppUnderTest, TransactionMarker {
 
         Session session;
@@ -364,6 +394,44 @@ public class SessionAspectIT {
             Employee employee = (Employee) session.merge(new Employee("John"));
             employee.setEmail(new Email("john@example.org"));
             session.flush();
+        }
+    }
+
+    public static class TransactionCommit implements AppUnderTest, TransactionMarker {
+
+        private Session session;
+
+        @Override
+        public void executeApp() throws Exception {
+            session = HibernateUtil.getSessionFactory().openSession();
+            transactionMarker();
+            session.close();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            Transaction transaction = session.beginTransaction();
+            session.save(new Employee("John"));
+            transaction.commit();
+        }
+    }
+
+    public static class TransactionRollback implements AppUnderTest, TransactionMarker {
+
+        private Session session;
+
+        @Override
+        public void executeApp() throws Exception {
+            session = HibernateUtil.getSessionFactory().openSession();
+            transactionMarker();
+            session.close();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            Transaction transaction = session.beginTransaction();
+            session.save(new Employee("John"));
+            transaction.rollback();
         }
     }
 }
