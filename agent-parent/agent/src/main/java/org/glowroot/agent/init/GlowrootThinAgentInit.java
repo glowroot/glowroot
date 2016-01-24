@@ -89,7 +89,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                 }
                 centralModule = new CentralModule(properties, collectorHost, configService,
                         agentModule.getLiveWeavingService(), agentModule.getLiveJvmService(),
-                        glowrootVersion);
+                        agentModule.getScheduledExecutor(), glowrootVersion);
                 collectorProxy.setInstance(centralModule.getGrpcCollector());
                 return null;
             }

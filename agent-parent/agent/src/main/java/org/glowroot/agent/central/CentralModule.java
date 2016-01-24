@@ -17,6 +17,7 @@ package org.glowroot.agent.central;
 
 import java.net.InetAddress;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Nullable;
 
@@ -39,7 +40,8 @@ public class CentralModule {
 
     public CentralModule(Map<String, String> properties, @Nullable String collectorHost,
             ConfigService configService, LiveWeavingService liveWeavingService,
-            LiveJvmService liveJvmService, String glowrootVersion) throws Exception {
+            LiveJvmService liveJvmService, ScheduledExecutorService scheduledExecutor,
+            String glowrootVersion) throws Exception {
 
         String serverId = properties.get("glowroot.server.id");
         if (Strings.isNullOrEmpty(serverId)) {
@@ -57,7 +59,7 @@ public class CentralModule {
         }
         checkNotNull(collectorHost);
 
-        centralConnection = new CentralConnection(collectorHost, collectorPort);
+        centralConnection = new CentralConnection(collectorHost, collectorPort, scheduledExecutor);
         ConfigUpdateService configUpdateService =
                 new ConfigUpdateService(configService, liveWeavingService);
         grpcCollector = new CentralCollectorImpl(centralConnection, serverId);

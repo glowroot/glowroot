@@ -251,6 +251,10 @@ public class AgentModule {
         return pluginCache.pluginDescriptors();
     }
 
+    public ScheduledExecutorService getScheduledExecutor() {
+        return scheduledExecutor;
+    }
+
     private static @Nullable ExtraBootResourceFinder createExtraBootResourceFinder(
             @Nullable Instrumentation instrumentation, List<File> pluginJars) throws IOException {
         if (instrumentation == null) {

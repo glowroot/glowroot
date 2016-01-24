@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.glowroot.agent.central;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.ManagedChannel;
@@ -47,9 +48,12 @@ class CentralConnection {
     private final ExecutorService executor;
     private final ManagedChannel channel;
 
+    private final ScheduledExecutorService scheduledExecutor;
+
     private volatile boolean closed;
 
-    CentralConnection(String collectorHost, int collectorPort) {
+    CentralConnection(String collectorHost, int collectorPort,
+            ScheduledExecutorService scheduledExecutor) {
         eventLoopGroup = EventLoopGroups.create("Glowroot-grpc-worker-ELG");
         executor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                 .setDaemon(true)
@@ -61,6 +65,7 @@ class CentralConnection {
                 .executor(executor)
                 .negotiationType(NegotiationType.PLAINTEXT)
                 .build();
+        this.scheduledExecutor = scheduledExecutor;
     }
 
     boolean suppressLogCollector() {
@@ -157,12 +162,11 @@ class CentralConnection {
                 // no logging since DownstreamServiceObserver handles logging central connectivity
                 return;
             }
-            Executors.newSingleThreadExecutor().execute(new Runnable() {
+            // TODO revisit retry/backoff after next grpc version
+            scheduledExecutor.schedule(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        // TODO revisit retry/backoff after next grpc version
-                        Thread.sleep(1000);
                         grpcOneWayCall.call(RetryingStreamObserver.this);
                     } catch (final Throwable t) {
                         // intentionally capturing InterruptedException here as well to ensure
@@ -175,7 +179,7 @@ class CentralConnection {
                         });
                     }
                 }
-            });
+            }, 1, SECONDS);
         }
 
         @Override

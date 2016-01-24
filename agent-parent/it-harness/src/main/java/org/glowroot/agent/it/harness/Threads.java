@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ public class Threads {
             }
             // check total number of threads to make sure Glowroot is not creating too many
             //
-            // currently, the seven threads are:
+            // currently, the eight threads are:
             //
             // Glowroot-Background-0
             // Glowroot-Background-1
@@ -86,6 +86,7 @@ public class Threads {
             // Glowroot-grpc-executor-0
             // Generate Seed
             // threadDeathWatcher-2-1
+            // grpc-shared-destroyer-0
             if (rogueThreads.isEmpty() && nonPreExistingThreads.size() <= 8) {
                 // success
                 return;
@@ -144,6 +145,9 @@ public class Threads {
         for (Iterator<Thread> i = currentThreads.iterator(); i.hasNext();) {
             String threadName = i.next().getName();
             if (threadName.startsWith("Glowroot-grpc-")) {
+                i.remove();
+            }
+            if (threadName.equals("grpc-shared-destroyer-0")) {
                 i.remove();
             }
             if (threadName.equals("threadDeathWatcher-2-1")) {

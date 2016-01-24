@@ -288,12 +288,6 @@ module.exports = function (grunt) {
       }
     },
 
-    concat: {
-      options: {
-        separator: ';\n'
-      }
-    },
-
     uglify: {
       options: {
         screwIE8: true,
