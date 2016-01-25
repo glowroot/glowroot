@@ -22,8 +22,8 @@ import javax.annotation.Nullable;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 
 /**
- * See {@link TransactionService#startTraceEntry(MessageSupplier, TimerName)} for how to create and
- * use {@code TraceEntry} instances.
+ * See {@link ThreadContext#startTraceEntry(MessageSupplier, TimerName)} for how to create and use
+ * {@code TraceEntry} instances.
  */
 public interface TraceEntry {
 
@@ -42,8 +42,8 @@ public interface TraceEntry {
      * total number of (real) entries is applied when escalating dummy entries to real entries.
      * 
      * This is a no-op for async trace entries (those created by
-     * {@link AsyncService#startAsyncTraceEntry(MessageSupplier, TimerName, TimerName)} and
-     * {@link AsyncService#startAsyncQueryEntry(String, String, MessageSupplier, TimerName, TimerName)}
+     * {@link ThreadContext#startAsyncTraceEntry(MessageSupplier, TimerName, TimerName)} and
+     * {@link ThreadContext#startAsyncQueryEntry(String, String, MessageSupplier, TimerName, TimerName)}
      * ). This is because async trace entries are used when their end is performed by a different
      * thread, and so a stack trace at that time does not point to the code which executed triggered
      * the trace entry creation.

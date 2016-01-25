@@ -15,10 +15,7 @@
  */
 package org.glowroot.agent.plugin.api;
 
-import org.omg.IOP.TransactionService;
-
 /**
- * See {@link TransactionService#getTimerName(Class)} for how to retrieve and use {@code TimerName}
- * instances.
+ * See {@link Agent#getTimerName(Class)} for how to retrieve and use {@code TimerName} instances.
  */
 public interface TimerName {}

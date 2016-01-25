@@ -16,7 +16,7 @@
 package org.glowroot.agent.plugin.api;
 
 /**
- * See {@link TransactionService#startTimer(TimerName)} for how to retrieve and use {@code Timer}
+ * See {@link ThreadContext#startTimer(TimerName)} for how to retrieve and use {@code Timer}
  * instances.
  */
 public interface Timer {

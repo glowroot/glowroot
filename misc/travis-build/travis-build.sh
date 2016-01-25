@@ -36,7 +36,8 @@ case "$1" in
                ;;
 
      "deploy") # build shaded distribution zip which will be uploaded to s3 in travis-ci deploy step
-               mvn clean install -Dglowroot.build.commit=$TRAVIS_COMMIT \
+               mvn clean install -Pjavadoc \
+                                 -Dglowroot.build.commit=$TRAVIS_COMMIT \
                                  -DargLine="$surefire_jvm_args" \
                                  -B
                # only deploy snapshot versions (release versions need pgp signature)
