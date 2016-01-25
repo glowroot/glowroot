@@ -35,9 +35,9 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.impl.TransactionCollection.TransactionEntry;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionServiceImpl;
 import org.glowroot.agent.impl.UserProfileScheduler;
@@ -57,6 +58,7 @@ import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
+import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.util.Cancellable;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -146,11 +148,12 @@ public class Transaction {
 
     private final ThreadContextImpl mainThreadContext;
     // FIXME impose simple max on number of auxiliary thread contexts (AdvancedConfig)
-    private final List<ThreadContextImpl> auxThreadContexts = Lists.newCopyOnWriteArrayList();
+    private volatile @MonotonicNonNull List<ThreadContextImpl> auxThreadContexts = null;
     // async root timers are the root timers which do not have corresponding thread context
     // (those corresponding to async trace entries)
     // FIXME impose simple max on number of async root timers (AdvancedConfig)
-    private final List<AsyncTimerImpl> asyncRootTimers = Lists.newCopyOnWriteArrayList();
+    private volatile @MonotonicNonNull List<AsyncTimerImpl> asyncRootTimers = null;
+    private final Object concurrentListCreationLock = new Object();
 
     private volatile boolean completed;
     private volatile long endTick;
@@ -161,6 +164,8 @@ public class Transaction {
     private final TransactionServiceImpl transactionService;
     private final ConfigService configService;
     private final UserProfileScheduler userProfileScheduler;
+
+    private @Nullable TransactionEntry transactionEntry;
 
     public Transaction(long startTime, long startTick, String transactionType,
             String transactionName, MessageSupplier messageSupplier, TimerName timerName,
@@ -199,6 +204,14 @@ public class Transaction {
                 AuxThreadRootMessageSupplier.INSTANCE, auxTimerName, startTick, captureThreadStats,
                 threadAllocatedBytes, true, transactionRegistry, transactionService, configService,
                 ticker, threadContextHolder);
+        if (auxThreadContexts == null) {
+            // double-checked locking works here because auxThreadContexts is volatile
+            synchronized (concurrentListCreationLock) {
+                if (auxThreadContexts == null) {
+                    auxThreadContexts = Lists.newCopyOnWriteArrayList();
+                }
+            }
+        }
         auxThreadContexts.add(auxThreadContext);
         // see counterpart to this synchronization (and explanation) in ThreadContextImpl.detach()
         synchronized (threadContextHolder) {
@@ -290,7 +303,7 @@ public class Transaction {
 
     public Iterable<TimerImpl> getAuxThreadRootTimers() {
         memoryBarrierRead();
-        if (auxThreadContexts.isEmpty()) {
+        if (auxThreadContexts == null) {
             // optimization for common case
             return ImmutableList.of();
         }
@@ -299,6 +312,9 @@ public class Transaction {
 
     public List<AsyncTimerImpl> getAsyncRootTimers() {
         memoryBarrierRead();
+        if (asyncRootTimers == null) {
+            return ImmutableList.of();
+        }
         return asyncRootTimers;
     }
 
@@ -309,7 +325,7 @@ public class Transaction {
 
     // can be called from a non-transaction thread
     public Iterable<ThreadStats> getAuxThreadStats() {
-        if (auxThreadContexts.isEmpty()) {
+        if (auxThreadContexts == null) {
             return ImmutableList.of();
         }
         if (!captureThreadStats) {
@@ -323,19 +339,14 @@ public class Transaction {
         return gcActivityComponent.getGcActivity();
     }
 
-    public Iterator<QueryData> getQueries() {
+    public void mergeQueriesInto(QueryCollector queries) {
         memoryBarrierRead();
-        if (auxThreadContexts.size() == 1) {
-            // optimization for common case
-            return mainThreadContext.getQueries();
+        mainThreadContext.mergeQueriesInto(queries);
+        if (auxThreadContexts != null) {
+            for (ThreadContextImpl threadContext : auxThreadContexts) {
+                threadContext.mergeQueriesInto(queries);
+            }
         }
-        List<Iterator<QueryData>> queries =
-                Lists.newArrayListWithCapacity(auxThreadContexts.size() + 1);
-        queries.add(mainThreadContext.getQueries());
-        for (ThreadContextImpl threadContext : auxThreadContexts) {
-            queries.add(threadContext.getQueries());
-        }
-        return Iterators.concat(queries.iterator());
     }
 
     public boolean allowAnotherEntry() {
@@ -356,6 +367,10 @@ public class Transaction {
 
     public List<Trace.Entry> getEntriesProtobuf(long captureTick) {
         memoryBarrierRead();
+        if (auxThreadContexts == null) {
+            return mainThreadContext.getEntriesProtobuf(captureTick,
+                    ImmutableMultimap.<TraceEntryImpl, TraceEntryImpl>of());
+        }
         Multimap<TraceEntryImpl, TraceEntryImpl> auxRootTraceEntries = ArrayListMultimap.create();
         for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
             // checkNotNull is safe b/c auxiliary thread contexts have non-null parent trace entry
@@ -439,6 +454,9 @@ public class Transaction {
     }
 
     public List<ThreadContextImpl> getAuxThreadContexts() {
+        if (auxThreadContexts == null) {
+            return ImmutableList.of();
+        }
         return auxThreadContexts;
     }
 
@@ -515,8 +533,24 @@ public class Transaction {
         partiallyStored = true;
     }
 
+    public void setTransactionEntry(TransactionEntry transactionEntry) {
+        this.transactionEntry = transactionEntry;
+    }
+
+    public void removeFromActiveTransactions() {
+        checkNotNull(transactionEntry).remove();
+    }
+
     public AsyncTimerImpl startAsyncTimer(TimerName asyncTimerName, long startTick) {
         AsyncTimerImpl asyncTimer = new AsyncTimerImpl((TimerNameImpl) asyncTimerName, startTick);
+        if (asyncRootTimers == null) {
+            // double-checked locking works here because auxThreadContexts is volatile
+            synchronized (concurrentListCreationLock) {
+                if (asyncRootTimers == null) {
+                    asyncRootTimers = Lists.newCopyOnWriteArrayList();
+                }
+            }
+        }
         asyncRootTimers.add(asyncTimer);
         return asyncTimer;
     }
@@ -558,30 +592,7 @@ public class Transaction {
     void end(long endTick) {
         completed = true;
         this.endTick = endTick;
-        Iterator<ThreadContextImpl> i = auxThreadContexts.iterator();
-        while (i.hasNext()) {
-            ThreadContextImpl auxThreadContext = i.next();
-            if (auxThreadContext.isCompleted()) {
-                continue;
-            }
-            if (logger.isDebugEnabled()) {
-                ThreadInfo threadInfo = ManagementFactory.getThreadMXBean()
-                        .getThreadInfo(auxThreadContext.getThreadId(), Integer.MAX_VALUE);
-                if (!auxThreadContext.isCompleted() && threadInfo != null) {
-                    // still not complete and got a valid stack trace from auxiliary thread
-                    StringBuilder sb = new StringBuilder();
-                    for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
-                        sb.append("    ");
-                        sb.append(stackTraceElement.toString());
-                        sb.append('\n');
-                    }
-                    logger.debug("auxiliary thread extended beyond the transaction which started it"
-                            + "\n{}", sb);
-                }
-            }
-            auxThreadContext.detach();
-            i.remove();
-        }
+        endCheckAuxThreadContexts();
         if (immedateTraceStoreRunnable != null) {
             immedateTraceStoreRunnable.cancel();
         }
@@ -612,6 +623,36 @@ public class Transaction {
     void memoryBarrierReadWrite() {
         memoryBarrierRead();
         memoryBarrierWrite();
+    }
+
+    private void endCheckAuxThreadContexts() {
+        if (auxThreadContexts == null) {
+            return;
+        }
+        Iterator<ThreadContextImpl> i = auxThreadContexts.iterator();
+        while (i.hasNext()) {
+            ThreadContextImpl auxThreadContext = i.next();
+            if (auxThreadContext.isCompleted()) {
+                continue;
+            }
+            auxThreadContext.detach();
+            i.remove();
+            if (logger.isDebugEnabled()) {
+                ThreadInfo threadInfo = ManagementFactory.getThreadMXBean()
+                        .getThreadInfo(auxThreadContext.getThreadId(), Integer.MAX_VALUE);
+                if (!auxThreadContext.isCompleted() && threadInfo != null) {
+                    // still not complete and got a valid stack trace from auxiliary thread
+                    StringBuilder sb = new StringBuilder();
+                    for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
+                        sb.append("    ");
+                        sb.append(stackTraceElement.toString());
+                        sb.append('\n');
+                    }
+                    logger.debug("auxiliary thread extended beyond the transaction which started it"
+                            + "\n{}", sb);
+                }
+            }
+        }
     }
 
     public static interface CompletionCallback {

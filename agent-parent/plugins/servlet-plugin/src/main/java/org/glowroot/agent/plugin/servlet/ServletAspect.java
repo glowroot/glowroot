@@ -35,6 +35,7 @@ import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
+import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
@@ -243,11 +244,15 @@ public class ServletAspect {
     @Pointcut(className = "javax.servlet.http.HttpServletResponse", methodName = "setStatus",
             methodParameterTypes = {"int", ".."}, nestingGroup = "servlet-inner-call")
     public static class SetStatusAdvice {
+        // using @IsEnabled like this avoids ThreadContext lookup for common case
+        @IsEnabled
+        public static boolean isEnabled(@BindParameter Integer statusCode) {
+            return statusCode >= 500;
+        }
         @OnAfter
         public static void onAfter(ThreadContext context, @BindParameter Integer statusCode) {
             FastThreadLocal.Holder</*@Nullable*/ String> errorMessageHolder = sendError.getHolder();
-            // only capture 5xx server errors
-            if (statusCode >= 500 && errorMessageHolder.get() == null) {
+            if (errorMessageHolder.get() == null) {
                 context.addErrorEntry("setStatus, HTTP status code " + statusCode);
                 errorMessageHolder.set("setStatus, HTTP status code " + statusCode);
             }

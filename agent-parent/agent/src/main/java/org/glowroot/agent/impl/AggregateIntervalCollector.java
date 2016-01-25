@@ -190,7 +190,7 @@ public class AggregateIntervalCollector {
                 if (auxThreadProfile != null) {
                     aggregateCollector.mergeAuxThreadProfile(auxThreadProfile);
                 }
-                aggregateCollector.mergeQueries(transaction.getQueries());
+                transaction.mergeQueriesInto(aggregateCollector.getQueryCollector());
             }
         }
     }

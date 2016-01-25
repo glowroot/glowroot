@@ -15,15 +15,13 @@
  */
 package org.glowroot.agent.model;
 
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Ticker;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.immutables.value.Value;
@@ -185,31 +183,25 @@ public class TimerImpl implements Timer, CommonTimerImpl {
 
     // only called after transaction completion
     @Override
-    @JsonIgnore
-    public Iterator<TimerImpl> getChildTimers() {
-        if (headChild == null) {
-            return ImmutableList.<TimerImpl>of().iterator();
-        } else {
-            return new Iterator<TimerImpl>() {
-                private @Nullable TimerImpl next = headChild;
-                @Override
-                public boolean hasNext() {
-                    return next != null;
+    public void mergeChildTimersInto(List<MutableTimer> mutableTimers) {
+        TimerImpl curr = headChild;
+        while (curr != null) {
+            String currName = curr.getName();
+            boolean extended = curr.isExtended();
+            MutableTimer matchingChildTimer = null;
+            for (MutableTimer childTimer : mutableTimers) {
+                if (currName.equals(childTimer.getName()) && extended == childTimer.isExtended()) {
+                    matchingChildTimer = childTimer;
+                    break;
                 }
-                @Override
-                public TimerImpl next() {
-                    TimerImpl curr = next;
-                    if (curr == null) {
-                        throw new NoSuchElementException();
-                    }
-                    next = curr.nextSibling;
-                    return curr;
-                }
-                @Override
-                public void remove() {
-                    throw new UnsupportedOperationException();
-                }
-            };
+            }
+            if (matchingChildTimer == null) {
+                matchingChildTimer = new MutableTimer(curr.getName(),
+                        curr.isExtended(), 0, 0, new ArrayList<MutableTimer>());
+                mutableTimers.add(matchingChildTimer);
+            }
+            matchingChildTimer.merge(curr);
+            curr = curr.nextSibling;
         }
     }
 

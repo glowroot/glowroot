@@ -252,7 +252,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.impl.WeavingTimerServiceImpl$NopWeavingTimer");
         types.add("org.glowroot.agent.model.CommonTimerImpl");
         types.add("org.glowroot.agent.model.NestedTimerMap");
-        types.add("org.glowroot.agent.model.NestedTimerMap$Entry");
         types.add("org.glowroot.agent.model.OptionalThreadContextImpl");
         types.add("org.glowroot.agent.model.ThreadContextImpl");
         types.add("org.glowroot.agent.model.ThreadContextPlus");

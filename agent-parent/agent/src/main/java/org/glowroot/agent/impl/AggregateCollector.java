@@ -16,7 +16,6 @@
 package org.glowroot.agent.impl;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -26,7 +25,6 @@ import com.google.common.collect.Lists;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.agent.model.Profile;
-import org.glowroot.agent.model.QueryData;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
@@ -108,13 +106,8 @@ class AggregateCollector {
         toBeMergedProfile.mergeIntoProfile(auxThreadProfile);
     }
 
-    void mergeQueries(Iterator<QueryData> toBeMergedQueries) {
-        while (toBeMergedQueries.hasNext()) {
-            QueryData toBeMergedQuery = toBeMergedQueries.next();
-            queries.mergeQuery(toBeMergedQuery.getQueryType(), toBeMergedQuery.getQueryText(),
-                    toBeMergedQuery.getTotalDurationNanos(), toBeMergedQuery.getExecutionCount(),
-                    toBeMergedQuery.getTotalRows());
-        }
+    QueryCollector getQueryCollector() {
+        return queries;
     }
 
     Aggregate build(ScratchBuffer scratchBuffer) throws IOException {

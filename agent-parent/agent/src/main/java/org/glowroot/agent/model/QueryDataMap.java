@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import javax.annotation.Nullable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-// micro-optimized map for nested timers
-class NestedTimerMap {
+// micro-optimized map for query data
+public class QueryDataMap {
 
     private static final Object CHAINED_KEY = new Object();
 
@@ -32,13 +32,13 @@ class NestedTimerMap {
     private int threshold = 6; // 0.75 * capacity
 
     @Nullable
-    TimerImpl get(TimerNameImpl key) {
+    QueryData get(String key) {
         // this mask requires capacity to be a power of 2
-        int bucket = (key.specialHashCode() & (capacity - 1)) << 1;
+        int bucket = (key.hashCode() & (capacity - 1)) << 1;
         Object keyAtBucket = table[bucket];
         Object value = table[bucket + 1];
         if (keyAtBucket == key) {
-            return (TimerImpl) value;
+            return (QueryData) value;
         }
         if (keyAtBucket == CHAINED_KEY) {
             return getChained(key, checkNotNull(value));
@@ -47,27 +47,27 @@ class NestedTimerMap {
     }
 
     // IMPORTANT put assumes get was already called and key is not present in this map
-    void put(TimerNameImpl key, TimerImpl value) {
+    void put(String key, QueryData value) {
         if (size++ > threshold) {
             rehash();
         }
         putWithoutRehashCheck(key, value);
     }
 
-    private @Nullable TimerImpl getChained(TimerNameImpl key, Object value) {
+    private @Nullable QueryData getChained(String key, Object value) {
         @Nullable
         Object[] chainedTable = (/*@Nullable*/ Object[]) value;
         for (int i = 0; i < chainedTable.length; i += 2) {
             if (chainedTable[i] == key) {
-                return (TimerImpl) chainedTable[i + 1];
+                return (QueryData) chainedTable[i + 1];
             }
         }
         return null;
     }
 
-    private void putWithoutRehashCheck(TimerNameImpl key, @Nullable Object value) {
+    private void putWithoutRehashCheck(Object key, @Nullable Object value) {
         // this mask requires capacity to be a power of 2
-        int bucket = (key.specialHashCode() & (capacity - 1)) << 1;
+        int bucket = (key.hashCode() & (capacity - 1)) << 1;
         Object keyAtBucket = table[bucket];
         if (keyAtBucket == null) {
             table[bucket] = key;
@@ -77,8 +77,7 @@ class NestedTimerMap {
         putChained(key, value, bucket, keyAtBucket);
     }
 
-    private void putChained(TimerNameImpl key, @Nullable Object value, int bucket,
-            Object keyAtBucket) {
+    private void putChained(Object key, @Nullable Object value, int bucket, Object keyAtBucket) {
         if (keyAtBucket == CHAINED_KEY) {
             @Nullable
             Object[] chain = (/*@Nullable*/ Object[]) checkNotNull(table[bucket + 1]);
@@ -128,10 +127,10 @@ class NestedTimerMap {
                     if (chainedKey == null) {
                         break;
                     }
-                    putWithoutRehashCheck((TimerNameImpl) chainedKey, values[j + 1]);
+                    putWithoutRehashCheck(chainedKey, values[j + 1]);
                 }
             } else {
-                putWithoutRehashCheck((TimerNameImpl) key, existingTable[i + 1]);
+                putWithoutRehashCheck(key, existingTable[i + 1]);
             }
         }
     }

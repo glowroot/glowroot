@@ -15,10 +15,9 @@
  */
 package org.glowroot.agent.model;
 
-import java.util.Iterator;
+import java.util.List;
 
 import com.google.common.base.Ticker;
-import com.google.common.collect.ImmutableList;
 
 import org.glowroot.agent.model.TimerImpl.TimerImplSnapshot;
 import org.glowroot.agent.util.Tickers;
@@ -73,8 +72,8 @@ public class AsyncTimerImpl implements CommonTimerImpl {
     }
 
     @Override
-    public Iterator<? extends CommonTimerImpl> getChildTimers() {
-        return ImmutableList.<CommonTimerImpl>of().iterator();
+    public void mergeChildTimersInto(List<MutableTimer> mutableTimers) {
+        // async timers have no child timers
     }
 
     @Override

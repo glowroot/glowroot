@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.impl.TransactionCollection.TransactionEntry;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.agent.model.QueryData;
 import org.glowroot.agent.model.QueryEntryBase;
@@ -145,7 +146,8 @@ public class TransactionServiceImpl implements AdvancedService, ConfigListener {
         if (transactionType.equals("Startup")) {
             transaction.setSlowThresholdMillis(0, Priority.CORE_MAX);
         }
-        transactionRegistry.addTransaction(transaction);
+        TransactionEntry transactionEntry = transactionRegistry.addTransaction(transaction);
+        transaction.setTransactionEntry(transactionEntry);
         threadContextHolder.set(transaction.getMainThreadContext());
         return transaction.getMainThreadContext().getRootEntry();
     }
@@ -215,7 +217,6 @@ public class TransactionServiceImpl implements AdvancedService, ConfigListener {
             // (via TransactionCollectorImpl.getPendingCompleteTraces())
             // between removing the trace from the registry and storing it
             transactionCollector.onCompletedTransaction(transaction);
-            transactionRegistry.removeTransaction(transaction);
         }
     }
 

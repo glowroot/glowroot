@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,14 +42,16 @@ class ServletPluginProperties {
 
     private static final Splitter splitter = Splitter.on(',').trimResults().omitEmptyStrings();
 
-    private static volatile ImmutableList<Pattern> captureRequestParameters = ImmutableList.of();
-    private static volatile ImmutableList<Pattern> maskRequestParameters = ImmutableList.of();
-    private static volatile ImmutableList<Pattern> captureRequestHeaders = ImmutableList.of();
-    private static volatile ImmutableList<Pattern> captureResponseHeaders = ImmutableList.of();
+    private static ImmutableList<Pattern> captureRequestParameters = ImmutableList.of();
+    private static ImmutableList<Pattern> maskRequestParameters = ImmutableList.of();
+    private static ImmutableList<Pattern> captureRequestHeaders = ImmutableList.of();
+    private static ImmutableList<Pattern> captureResponseHeaders = ImmutableList.of();
 
-    private static volatile String sessionUserAttributePath = "";
-    private static volatile ImmutableSet<String> captureSessionAttributePaths = ImmutableSet.of();
-    private static volatile ImmutableSet<String> captureSessionAttributeNames = ImmutableSet.of();
+    private static boolean captureResponseHeadersNonEmpty;
+
+    private static String sessionUserAttributePath = "";
+    private static ImmutableSet<String> captureSessionAttributePaths = ImmutableSet.of();
+    private static ImmutableSet<String> captureSessionAttributeNames = ImmutableSet.of();
 
     static {
         configService.registerConfigListener(new ConfigListener() {
@@ -78,6 +80,10 @@ class ServletPluginProperties {
         return captureResponseHeaders;
     }
 
+    static boolean captureResponseHeadersNonEmpty() {
+        return captureResponseHeadersNonEmpty;
+    }
+
     static String sessionUserAttributePath() {
         return sessionUserAttributePath;
     }
@@ -97,6 +103,7 @@ class ServletPluginProperties {
         maskRequestParameters = buildPatternList(MASK_REQUEST_PARAMS_PROPERTY_NAME);
         captureRequestHeaders = buildPatternList(CAPTURE_REQUEST_HEADER_PROPERTY_NAME);
         captureResponseHeaders = buildPatternList(CAPTURE_RESPONSE_HEADER_PROPERTY_NAME);
+        captureResponseHeadersNonEmpty = !captureResponseHeaders.isEmpty();
         sessionUserAttributePath =
                 configService.getStringProperty(SESSION_USER_ATTRIBUTE_PROPERTY_NAME).value();
         String captureSessionAttributesText =

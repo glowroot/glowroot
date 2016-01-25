@@ -17,10 +17,8 @@ package org.glowroot.agent.model;
 
 import java.lang.management.ThreadInfo;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -53,6 +51,7 @@ import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTraceEntry;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
+import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -81,8 +80,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
     // linked list of QueryData instances for safe concurrent access
     private @MonotonicNonNull QueryData headQueryData;
     // these maps are only accessed by the transaction thread
-    private @MonotonicNonNull Map<String, QueryData> firstQueryTypeQueries;
-    private @MonotonicNonNull Map<String, Map<String, QueryData>> allQueryTypesMap;
+    private @MonotonicNonNull QueryDataMap firstQueryTypeQueries;
+    private @MonotonicNonNull Map<String, QueryDataMap> allQueryTypesMap;
 
     private final long threadId;
 
@@ -191,30 +190,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 queryExecutionCount, timer);
     }
 
-    public Iterator<QueryData> getQueries() {
-        if (headQueryData == null) {
-            return ImmutableList.<QueryData>of().iterator();
+    public void mergeQueriesInto(QueryCollector queries) {
+        QueryData curr = headQueryData;
+        while (curr != null) {
+            queries.mergeQuery(curr.getQueryType(), curr.getQueryText(),
+                    curr.getTotalDurationNanos(), curr.getExecutionCount(), curr.getTotalRows());
+            curr = curr.getNextQueryData();
         }
-        return new Iterator<QueryData>() {
-            private @Nullable QueryData next = headQueryData;
-            @Override
-            public boolean hasNext() {
-                return next != null;
-            }
-            @Override
-            public QueryData next() {
-                QueryData curr = next;
-                if (curr == null) {
-                    throw new NoSuchElementException();
-                }
-                next = curr.getNextQueryData();
-                return curr;
-            }
-            @Override
-            public void remove() {
-                throw new UnsupportedOperationException();
-            }
-        };
     }
 
     // only called by transaction thread
@@ -224,13 +206,12 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 return null;
             }
             QueryData queryData = new QueryData(queryType, queryText, null);
-            // TODO build a micro-optimized query data map, e.g. NestedTimerMap
-            firstQueryTypeQueries = new HashMap<String, QueryData>(4);
+            firstQueryTypeQueries = new QueryDataMap();
             firstQueryTypeQueries.put(queryText, queryData);
             headQueryData = queryData;
             return headQueryData;
         }
-        Map<String, QueryData> currentQueryTypeQueries;
+        QueryDataMap currentQueryTypeQueries;
         if (queryType.equals(headQueryData.getQueryType())) {
             currentQueryTypeQueries = checkNotNull(firstQueryTypeQueries);
         } else {
@@ -322,16 +303,16 @@ public class ThreadContextImpl implements ThreadContextPlus {
         transaction.memoryBarrierWrite();
     }
 
-    private Map<String, QueryData> getOrCreateQueriesForQueryType(String queryType) {
+    private QueryDataMap getOrCreateQueriesForQueryType(String queryType) {
         if (allQueryTypesMap == null) {
-            allQueryTypesMap = new HashMap<String, Map<String, QueryData>>(2);
-            Map<String, QueryData> currentQueryTypeQueries = new HashMap<String, QueryData>(4);
+            allQueryTypesMap = new HashMap<String, QueryDataMap>(2);
+            QueryDataMap currentQueryTypeQueries = new QueryDataMap();
             allQueryTypesMap.put(queryType, currentQueryTypeQueries);
             return currentQueryTypeQueries;
         }
-        Map<String, QueryData> currentQueryTypeQueries = allQueryTypesMap.get(queryType);
+        QueryDataMap currentQueryTypeQueries = allQueryTypesMap.get(queryType);
         if (currentQueryTypeQueries == null) {
-            currentQueryTypeQueries = new HashMap<String, QueryData>(4);
+            currentQueryTypeQueries = new QueryDataMap();
             allQueryTypesMap.put(queryType, currentQueryTypeQueries);
         }
         return currentQueryTypeQueries;

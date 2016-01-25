@@ -282,6 +282,7 @@ public class ConfigService {
         for (ConfigListener listener : pluginConfigListeners) {
             listener.onChange();
         }
+        writeMemoryBarrier();
     }
 
     @OnlyUsedByTests

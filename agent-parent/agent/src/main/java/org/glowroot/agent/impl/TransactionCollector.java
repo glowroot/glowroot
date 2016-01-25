@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.TraceCreator;
 import org.glowroot.agent.model.Transaction;
+import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -44,7 +45,6 @@ public class TransactionCollector {
     private static final int PENDING_LIMIT = 100;
 
     private final ExecutorService executor;
-    private final ConfigService configService;
     private final Collector collector;
     private final Aggregator aggregator;
     private final Clock clock;
@@ -55,14 +55,22 @@ public class TransactionCollector {
     @GuardedBy("warningRateLimiter")
     private int countSinceLastWarning;
 
-    public TransactionCollector(ExecutorService executor, ConfigService configService,
+    private volatile long defaultSlowThresholdNanos;
+
+    public TransactionCollector(ExecutorService executor, final ConfigService configService,
             Collector collector, Aggregator aggregator, Clock clock, Ticker ticker) {
         this.executor = executor;
-        this.configService = configService;
         this.collector = collector;
         this.aggregator = aggregator;
         this.clock = clock;
         this.ticker = ticker;
+        configService.addConfigListener(new ConfigListener() {
+            @Override
+            public void onChange() {
+                defaultSlowThresholdNanos = MILLISECONDS
+                        .toNanos(configService.getTransactionConfig().slowThresholdMillis());
+            }
+        });
     }
 
     public boolean shouldStoreSlow(Transaction transaction) {
@@ -75,8 +83,7 @@ public class TransactionCollector {
             return transaction.getDurationNanos() >= MILLISECONDS.toNanos(slowThresholdMillis);
         }
         // fall back to default slow trace threshold
-        slowThresholdMillis = configService.getTransactionConfig().slowThresholdMillis();
-        if (transaction.getDurationNanos() >= MILLISECONDS.toNanos(slowThresholdMillis)) {
+        if (transaction.getDurationNanos() >= defaultSlowThresholdNanos) {
             return true;
         }
         return false;

@@ -16,7 +16,6 @@
 package org.glowroot.agent.impl;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -53,26 +52,7 @@ class MutableTimer {
     void merge(CommonTimerImpl timer) {
         count += timer.getCount();
         totalDurationNanos += timer.getTotalNanos();
-        Iterator<? extends CommonTimerImpl> i = timer.getChildTimers();
-        while (i.hasNext()) {
-            CommonTimerImpl toBeMergedChildTimer = i.next();
-            String toBeMergedChildTimerName = toBeMergedChildTimer.getName();
-            boolean extended = toBeMergedChildTimer.isExtended();
-            MutableTimer matchingChildTimer = null;
-            for (MutableTimer childTimer : childTimers) {
-                if (toBeMergedChildTimerName.equals(childTimer.getName())
-                        && extended == childTimer.extended) {
-                    matchingChildTimer = childTimer;
-                    break;
-                }
-            }
-            if (matchingChildTimer == null) {
-                matchingChildTimer = new MutableTimer(toBeMergedChildTimer.getName(),
-                        toBeMergedChildTimer.isExtended(), 0, 0, new ArrayList<MutableTimer>());
-                childTimers.add(matchingChildTimer);
-            }
-            matchingChildTimer.merge(toBeMergedChildTimer);
-        }
+
     }
 
     Aggregate.Timer toProto() {

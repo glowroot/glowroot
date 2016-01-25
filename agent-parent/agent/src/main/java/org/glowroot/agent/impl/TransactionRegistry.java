@@ -15,12 +15,9 @@
  */
 package org.glowroot.agent.impl;
 
-import java.util.Collection;
-
 import javax.annotation.Nullable;
 
-import com.google.common.collect.Sets;
-
+import org.glowroot.agent.impl.TransactionCollection.TransactionEntry;
 import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
@@ -32,7 +29,7 @@ import static org.glowroot.agent.fat.storage.util.Checkers.castInitialized;
 public class TransactionRegistry {
 
     // collection of active running transactions
-    private final Collection<Transaction> transactions = Sets.newConcurrentHashSet();
+    private final TransactionCollection transactions = new TransactionCollection();
 
     // active thread context being executed by the current thread
     private final FastThreadLocal</*@Nullable*/ ThreadContextImpl> currentThreadContext =
@@ -55,15 +52,11 @@ public class TransactionRegistry {
         return currentThreadContext.getHolder();
     }
 
-    void addTransaction(Transaction transaction) {
-        transactions.add(transaction);
+    TransactionEntry addTransaction(Transaction transaction) {
+        return transactions.add(transaction);
     }
 
-    void removeTransaction(Transaction transaction) {
-        transactions.remove(transaction);
-    }
-
-    public Collection<Transaction> getTransactions() {
+    public Iterable<Transaction> getTransactions() {
         return transactions;
     }
 

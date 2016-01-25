@@ -26,7 +26,6 @@ import org.mockito.stubbing.Answer;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.ImmutableAdvancedConfig;
-import org.glowroot.agent.model.QueryData;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
@@ -67,25 +66,12 @@ public class AggregatorTest {
         Aggregator aggregator = new Aggregator(scheduledExecutorService, aggregateCollector,
                 configService, 1000, Clock.systemClock());
 
-        Transaction transaction = mock(Transaction.class);
-        TimerImpl mainThreadRootTimer = mock(TimerImpl.class);
-        when(mainThreadRootTimer.getName()).thenReturn("mock timer");
-        when(mainThreadRootTimer.getChildTimers())
-                .thenReturn(ImmutableList.<TimerImpl>of().iterator());
-        when(transaction.getTransactionType()).thenReturn("a type");
-        when(transaction.getTransactionName()).thenReturn("a name");
-        when(transaction.getDurationNanos()).thenReturn(MILLISECONDS.toNanos(123));
-        when(transaction.getMainThreadRootTimer()).thenReturn(mainThreadRootTimer);
-        when(transaction.getQueries()).thenReturn(ImmutableList.<QueryData>of().iterator());
-        when(transaction.getMainThreadStats()).thenReturn(ThreadStats.NA);
-        when(transaction.getAuxThreadRootTimers()).thenReturn(ImmutableList.<TimerImpl>of());
-        when(transaction.getAuxThreadStats()).thenReturn(ImmutableList.<ThreadStats>of());
         // when
         int count = 0;
-        long firstCaptureTime = aggregator.add(transaction);
+        long firstCaptureTime = aggregator.add(buildTransaction());
         long aggregateCaptureTime = (long) Math.ceil(firstCaptureTime / 1000.0) * 1000;
         while (true) {
-            long captureTime = aggregator.add(transaction);
+            long captureTime = aggregator.add(buildTransaction());
             count++;
             if (captureTime > aggregateCaptureTime) {
                 break;
@@ -102,6 +88,20 @@ public class AggregatorTest {
         }
         assertThat(aggregateCollector.getTotalDurationNanos()).isEqualTo(count * 123 * 1000000.0);
         aggregator.close();
+    }
+
+    private static Transaction buildTransaction() {
+        Transaction transaction = mock(Transaction.class);
+        TimerImpl mainThreadRootTimer = mock(TimerImpl.class);
+        when(mainThreadRootTimer.getName()).thenReturn("mock timer");
+        when(transaction.getTransactionType()).thenReturn("a type");
+        when(transaction.getTransactionName()).thenReturn("a name");
+        when(transaction.getDurationNanos()).thenReturn(MILLISECONDS.toNanos(123));
+        when(transaction.getMainThreadRootTimer()).thenReturn(mainThreadRootTimer);
+        when(transaction.getMainThreadStats()).thenReturn(ThreadStats.NA);
+        when(transaction.getAuxThreadRootTimers()).thenReturn(ImmutableList.<TimerImpl>of());
+        when(transaction.getAuxThreadStats()).thenReturn(ImmutableList.<ThreadStats>of());
+        return transaction;
     }
 
     private static class MockCollector implements Collector {

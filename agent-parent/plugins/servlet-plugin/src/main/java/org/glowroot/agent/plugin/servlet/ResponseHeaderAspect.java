@@ -36,7 +36,8 @@ public class ResponseHeaderAspect {
     public static class SetContentLengthAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return isEnabledCommon();
+            // good to short-cut advice if no response headers need to be captured
+            return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
         public static void onAfter(@BindParameter int value) {
@@ -55,7 +56,8 @@ public class ResponseHeaderAspect {
     public static class SetContentLengthLongAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return isEnabledCommon();
+            // good to short-cut advice if no response headers need to be captured
+            return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
         public static void onAfter(@BindParameter long value) {
@@ -74,7 +76,8 @@ public class ResponseHeaderAspect {
     public static class SetContentTypeAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return isEnabledCommon();
+            // good to short-cut advice if no response headers need to be captured
+            return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
         public static void onAfter(@BindReceiver Object response,
@@ -104,7 +107,8 @@ public class ResponseHeaderAspect {
     public static class SetCharacterEncodingAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return isEnabledCommon();
+            // good to short-cut advice if no response headers need to be captured
+            return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
         public static void onAfter(@BindReceiver Object response,
@@ -125,7 +129,8 @@ public class ResponseHeaderAspect {
     public static class SetLocaleAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return isEnabledCommon();
+            // good to short-cut advice if no response headers need to be captured
+            return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
         public static void onAfter(@BindReceiver Object response,
@@ -159,7 +164,8 @@ public class ResponseHeaderAspect {
     public static class SetHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return isEnabledCommon();
+            // good to short-cut advice if no response headers need to be captured
+            return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
         public static void onAfter(@BindParameter @Nullable String name,
@@ -184,7 +190,8 @@ public class ResponseHeaderAspect {
     public static class SetDateHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return isEnabledCommon();
+            // good to short-cut advice if no response headers need to be captured
+            return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
         public static void onAfter(@BindParameter @Nullable String name,
@@ -208,7 +215,8 @@ public class ResponseHeaderAspect {
     public static class SetIntHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return isEnabledCommon();
+            // good to short-cut advice if no response headers need to be captured
+            return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
         public static void onAfter(@BindParameter @Nullable String name, @BindParameter int value) {
@@ -232,7 +240,8 @@ public class ResponseHeaderAspect {
     public static class AddHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return isEnabledCommon();
+            // good to short-cut advice if no response headers need to be captured
+            return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
         public static void onAfter(@BindParameter @Nullable String name,
@@ -257,7 +266,8 @@ public class ResponseHeaderAspect {
     public static class AddDateHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return isEnabledCommon();
+            // good to short-cut advice if no response headers need to be captured
+            return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
         public static void onAfter(@BindParameter @Nullable String name,
@@ -281,7 +291,8 @@ public class ResponseHeaderAspect {
     public static class AddIntHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return isEnabledCommon();
+            // good to short-cut advice if no response headers need to be captured
+            return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
         public static void onAfter(@BindParameter @Nullable String name, @BindParameter int value) {
@@ -297,11 +308,6 @@ public class ResponseHeaderAspect {
                 messageSupplier.addResponseIntHeader(name, value);
             }
         }
-    }
-
-    private static boolean isEnabledCommon() {
-        // good to short-cut advice if no response headers need to be captured
-        return !ServletPluginProperties.captureResponseHeaders().isEmpty();
     }
 
     private static boolean captureResponseHeader(String name) {

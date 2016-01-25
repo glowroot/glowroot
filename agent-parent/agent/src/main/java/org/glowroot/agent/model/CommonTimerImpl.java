@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.model;
 
-import java.util.Iterator;
+import java.util.List;
 
 import org.glowroot.agent.model.TimerImpl.TimerImplSnapshot;
 
@@ -29,7 +29,7 @@ public interface CommonTimerImpl {
 
     long getCount();
 
-    Iterator<? extends CommonTimerImpl> getChildTimers();
+    void mergeChildTimersInto(List<MutableTimer> mutableTimers);
 
     TimerImplSnapshot getSnapshot();
 }

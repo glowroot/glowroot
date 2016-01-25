@@ -16,7 +16,6 @@
 package org.glowroot.agent.model;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -37,7 +36,7 @@ class MutableTimer {
         return new MutableTimer(name, extended, 0, 0, new ArrayList<MutableTimer>());
     }
 
-    private MutableTimer(String name, boolean extended, long totalNanos, long count,
+    public MutableTimer(String name, boolean extended, long totalNanos, long count,
             List<MutableTimer> nestedTimers) {
         this.name = name;
         this.extended = extended;
@@ -50,31 +49,16 @@ class MutableTimer {
         return name;
     }
 
+    public boolean isExtended() {
+        return extended;
+    }
+
     void merge(CommonTimerImpl timer) {
         TimerImplSnapshot snapshot = timer.getSnapshot();
         count += snapshot.count();
         totalNanos += snapshot.totalNanos();
         active = active || snapshot.active();
-        Iterator<? extends CommonTimerImpl> i = timer.getChildTimers();
-        while (i.hasNext()) {
-            CommonTimerImpl toBeMergedChildTimer = i.next();
-            String toBeMergedChildTimerName = toBeMergedChildTimer.getName();
-            boolean extended = toBeMergedChildTimer.isExtended();
-            MutableTimer matchingChildTimer = null;
-            for (MutableTimer childTimer : childTimers) {
-                if (toBeMergedChildTimerName.equals(childTimer.getName())
-                        && extended == childTimer.extended) {
-                    matchingChildTimer = childTimer;
-                    break;
-                }
-            }
-            if (matchingChildTimer == null) {
-                matchingChildTimer = new MutableTimer(toBeMergedChildTimer.getName(),
-                        toBeMergedChildTimer.isExtended(), 0, 0, new ArrayList<MutableTimer>());
-                childTimers.add(matchingChildTimer);
-            }
-            matchingChildTimer.merge(toBeMergedChildTimer);
-        }
+        timer.mergeChildTimersInto(childTimers);
     }
 
     Trace.Timer toProto() {

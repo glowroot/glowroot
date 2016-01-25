@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,12 @@
 package org.glowroot.agent.impl;
 
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+
+import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Queues;
-import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,10 +29,9 @@ import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.Collector;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Aggregator {
 
@@ -50,12 +48,14 @@ public class Aggregator {
 
     private final long aggregateIntervalMillis;
 
-    private final BlockingQueue<PendingTransaction> pendingTransactionQueue =
-            Queues.newLinkedBlockingQueue();
+    // all structural changes to the transaction queue are made under queueLock for simplicity
+    // TODO implement lock free structure
+    private final PendingTransaction head = new PendingTransaction(null);
+    // tail is non-volatile since only accessed under lock
+    private PendingTransaction tail = head;
+    private final Object queueLock = new Object();
 
     private final Thread processingThread;
-
-    private final Object lock = new Object();
 
     public Aggregator(ScheduledExecutorService scheduledExecutor, Collector collector,
             ConfigService configService, long aggregateIntervalMillis, Clock clock) {
@@ -89,15 +89,21 @@ public class Aggregator {
         return intervalCollectors;
     }
 
+    int y;
+
     long add(Transaction transaction) {
         // this synchronized block is to ensure traces are placed into processing queue in the
         // order of captureTime (so that queue reader can assume if captureTime indicates time to
         // flush, then no new traces will come in with prior captureTime)
-        synchronized (lock) {
-            long captureTime = clock.currentTimeMillis();
-            pendingTransactionQueue.add(ImmutablePendingTransaction.of(captureTime, transaction));
-            return captureTime;
+        PendingTransaction newTail = new PendingTransaction(transaction);
+        long captureTime;
+        synchronized (queueLock) {
+            captureTime = clock.currentTimeMillis();
+            newTail.captureTime = captureTime;
+            tail.next = newTail;
+            tail = newTail;
         }
+        return captureTime;
     }
 
     private List<AggregateIntervalCollector> getOrderedAllIntervalCollectors() {
@@ -139,19 +145,35 @@ public class Aggregator {
         }
 
         private void processOne() throws InterruptedException {
-            long timeToActiveIntervalEndTime = Math.max(0,
-                    activeIntervalCollector.getCaptureTime() - clock.currentTimeMillis());
-            PendingTransaction pendingTransaction =
-                    pendingTransactionQueue.poll(timeToActiveIntervalEndTime + 1000, MILLISECONDS);
+            PendingTransaction pendingTransaction = head.next;
             if (pendingTransaction == null) {
-                maybeEndOfInterval();
+                if (clock.currentTimeMillis() > activeIntervalCollector.getCaptureTime()) {
+                    maybeEndOfInterval();
+                } else {
+                    // TODO benchmark other alternatives to sleep (e.g. wait/notify)
+                    Thread.sleep(1);
+                }
                 return;
             }
-            if (pendingTransaction.captureTime() > activeIntervalCollector.getCaptureTime()) {
+            // remove transaction from list of active transactions
+            // used to do this at the very end of Transaction.end(), but moved to here to remove the
+            // (minor) cost from the transaction main path
+            Transaction transaction = checkNotNull(pendingTransaction.transaction);
+            transaction.removeFromActiveTransactions();
+
+            // remove head
+            synchronized (queueLock) {
+                PendingTransaction next = pendingTransaction.next;
+                head.next = next;
+                if (next == null) {
+                    tail = head;
+                }
+            }
+            if (pendingTransaction.captureTime > activeIntervalCollector.getCaptureTime()) {
                 // flush in separate thread to avoid pending transactions from piling up quickly
                 scheduledExecutor.execute(new IntervalFlusher(activeIntervalCollector));
                 activeIntervalCollector = new AggregateIntervalCollector(
-                        pendingTransaction.captureTime(), aggregateIntervalMillis,
+                        pendingTransaction.captureTime, aggregateIntervalMillis,
                         configService.getAdvancedConfig()
                                 .maxAggregateTransactionsPerTransactionType(),
                         configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
@@ -159,32 +181,35 @@ public class Aggregator {
             // the synchronized block is to ensure visibility of updates to this particular
             // activeIntervalCollector
             synchronized (activeIntervalCollector) {
-                activeIntervalCollector.add(pendingTransaction.transaction());
+                activeIntervalCollector.add(transaction);
             }
         }
 
         private void maybeEndOfInterval() {
-            synchronized (lock) {
-                if (pendingTransactionQueue.peek() != null) {
-                    // something just crept into the queue, possibly still something from
-                    // active interval, it will get picked up right away and if it is in
-                    // next interval it will force active aggregate to be flushed anyways
+            long currentTime;
+            boolean safeToFlush;
+            synchronized (queueLock) {
+                if (head.next != null) {
+                    // something just crept into the queue, possibly still something from active
+                    // interval, it will get picked up right away and if it is in next interval it
+                    // will
+                    // force active aggregate to be flushed anyways
                     return;
                 }
-                // this should be true since poll timed out above, but checking again to be sure
-                long currentTime = clock.currentTimeMillis();
-                if (currentTime > activeIntervalCollector.getCaptureTime()) {
-                    // safe to flush, no other pending transactions can enter queue with later
-                    // time (since under same lock that they use)
-                    //
-                    // flush in separate thread to avoid pending transactions from piling up quickly
-                    scheduledExecutor.execute(new IntervalFlusher(activeIntervalCollector));
-                    activeIntervalCollector = new AggregateIntervalCollector(currentTime,
-                            aggregateIntervalMillis,
-                            configService.getAdvancedConfig()
-                                    .maxAggregateTransactionsPerTransactionType(),
-                            configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
-                }
+                currentTime = clock.currentTimeMillis();
+                safeToFlush = currentTime > activeIntervalCollector.getCaptureTime();
+            }
+            if (safeToFlush) {
+                // safe to flush, no other pending transactions can enter queue with later time
+                // (since the check above was done under same lock used to add to queue)
+                //
+                // flush in separate thread to avoid pending transactions from piling up quickly
+                scheduledExecutor.execute(new IntervalFlusher(activeIntervalCollector));
+                activeIntervalCollector = new AggregateIntervalCollector(currentTime,
+                        aggregateIntervalMillis,
+                        configService.getAdvancedConfig()
+                                .maxAggregateTransactionsPerTransactionType(),
+                        configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
             }
         }
     }
@@ -215,10 +240,14 @@ public class Aggregator {
         }
     }
 
-    @Value.Immutable
-    @Styles.AllParameters
-    interface PendingTransaction {
-        long captureTime();
-        Transaction transaction();
+    private static class PendingTransaction {
+
+        private final @Nullable Transaction transaction; // only null for head
+        private volatile long captureTime;
+        private volatile @Nullable PendingTransaction next;
+
+        private PendingTransaction(@Nullable Transaction transaction) {
+            this.transaction = transaction;
+        }
     }
 }
