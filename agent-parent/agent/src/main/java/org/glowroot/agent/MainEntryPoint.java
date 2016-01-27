@@ -21,15 +21,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.ServiceLoader;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -44,6 +51,7 @@ import org.glowroot.agent.init.fat.GlowrootFatAgentInit;
 import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Version;
+import org.glowroot.wire.api.Collector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -92,7 +100,7 @@ public class MainEntryPoint {
         try {
             version = Version.getVersion(MainEntryPoint.class);
             ImmutableMap<String, String> properties = getGlowrootProperties(baseDir);
-            new GlowrootFatAgentInit().init(baseDir, null, properties, null, glowrootJarFile,
+            new GlowrootFatAgentInit().init(baseDir, null, null, properties, null, glowrootJarFile,
                     version, true);
         } catch (BaseDirLockedException e) {
             logBaseDirLockedException(baseDir);
@@ -135,13 +143,14 @@ public class MainEntryPoint {
         if (Strings.isNullOrEmpty(collectorHost)) {
             collectorHost = System.getProperty("glowroot.collector.host");
         }
-        if (Strings.isNullOrEmpty(collectorHost)) {
+        Collector customCollector = loadCustomCollector(baseDir);
+        if (Strings.isNullOrEmpty(collectorHost) && customCollector == null) {
             glowrootAgentInit = new GlowrootFatAgentInit();
         } else {
             glowrootAgentInit = new GlowrootThinAgentInit();
         }
-        glowrootAgentInit.init(baseDir, collectorHost, properties, instrumentation, glowrootJarFile,
-                version, false);
+        glowrootAgentInit.init(baseDir, collectorHost, customCollector, properties, instrumentation,
+                glowrootJarFile, version, false);
         startupLogger.info("Glowroot started (version {})", version);
     }
 
@@ -192,6 +201,38 @@ public class MainEntryPoint {
     private static boolean isTomcatStop() {
         return Objects.equal(System.getProperty("sun.java.command"),
                 "org.apache.catalina.startup.Bootstrap stop");
+    }
+
+    private static @Nullable Collector loadCustomCollector(File baseDir)
+            throws MalformedURLException {
+        File servicesDir = new File(baseDir, "services");
+        if (!servicesDir.exists()) {
+            return null;
+        }
+        if (!servicesDir.isDirectory()) {
+            return null;
+        }
+        File[] files = servicesDir.listFiles();
+        if (files == null) {
+            return null;
+        }
+        List<URL> urls = Lists.newArrayList();
+        for (File file : files) {
+            if (file.isFile() && file.getName().endsWith(".jar")) {
+                urls.add(file.toURI().toURL());
+            }
+        }
+        if (urls.isEmpty()) {
+            return null;
+        }
+        URLClassLoader servicesClassLoader = new URLClassLoader(urls.toArray(new URL[0]));
+        ServiceLoader<Collector> serviceLoader =
+                ServiceLoader.load(Collector.class, servicesClassLoader);
+        Iterator<Collector> i = serviceLoader.iterator();
+        if (!i.hasNext()) {
+            return null;
+        }
+        return i.next();
     }
 
     @OnlyUsedByTests

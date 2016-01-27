@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.NettyWorkaround;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.wire.api.Collector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -36,7 +37,8 @@ public class GlowrootFatAgentInit implements GlowrootAgentInit {
     private @MonotonicNonNull FatAgentModule fatAgentModule;
 
     @Override
-    public void init(File baseDir, @Nullable String collectorHost, Map<String, String> properties,
+    public void init(File baseDir, @Nullable String collectorHost,
+            @Nullable Collector customCollector, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
             String glowrootVersion, boolean viewerMode) throws Exception {
 

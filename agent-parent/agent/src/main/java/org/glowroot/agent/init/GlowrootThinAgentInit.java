@@ -17,20 +17,13 @@ package org.glowroot.agent.init;
 
 import java.io.File;
 import java.lang.instrument.Instrumentation;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.concurrent.Callable;
 
 import javax.annotation.Nullable;
 
 import ch.qos.logback.core.Context;
 import com.google.common.base.Ticker;
-import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,9 +46,9 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
 
     @Override
     public void init(final File baseDir, final @Nullable String collectorHost,
-            final Map<String, String> properties, final @Nullable Instrumentation instrumentation,
-            @Nullable File glowrootJarFile, final String glowrootVersion, boolean viewerMode)
-                    throws Exception {
+            final @Nullable Collector customCollector, final Map<String, String> properties,
+            final @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
+            final String glowrootVersion, boolean viewerMode) throws Exception {
 
         if (instrumentation != null) {
             PreInitializeWeavingClasses.preInitializeClasses();
@@ -82,7 +75,6 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         NettyWorkaround.run(instrumentation, new Callable</*@Nullable*/ Void>() {
             @Override
             public @Nullable Void call() throws Exception {
-                Collector customCollector = loadCustomCollector(baseDir);
                 if (customCollector != null) {
                     collectorProxy.setInstance(customCollector);
                     return null;
@@ -118,38 +110,6 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         if (centralModule != null) {
             centralModule.awaitClose();
         }
-    }
-
-    private static @Nullable Collector loadCustomCollector(File baseDir)
-            throws MalformedURLException {
-        File servicesDir = new File(baseDir, "services");
-        if (!servicesDir.exists()) {
-            return null;
-        }
-        if (!servicesDir.isDirectory()) {
-            return null;
-        }
-        File[] files = servicesDir.listFiles();
-        if (files == null) {
-            return null;
-        }
-        List<URL> urls = Lists.newArrayList();
-        for (File file : files) {
-            if (file.isFile() && file.getName().endsWith(".jar")) {
-                urls.add(file.toURI().toURL());
-            }
-        }
-        if (urls.isEmpty()) {
-            return null;
-        }
-        URLClassLoader servicesClassLoader = new URLClassLoader(urls.toArray(new URL[0]));
-        ServiceLoader<Collector> serviceLoader =
-                ServiceLoader.load(Collector.class, servicesClassLoader);
-        Iterator<Collector> i = serviceLoader.iterator();
-        if (!i.hasNext()) {
-            return null;
-        }
-        return i.next();
     }
 
     private static void attachAppender(CollectorLogbackAppender appender) {
