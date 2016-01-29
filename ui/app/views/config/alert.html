@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2015 the original author or authors.
+  Copyright 2012-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
     <h2>
       <a class="pull-right"
          style="font-size: 16px; padding-top: 14px;"
-         href="config/alert-list">
+         href="config/alert-list{{serverQueryString()}}">
         Return to list
       </a>
       <span ng-class="{'gt-lighten-font': !loaded && !httpError}">
@@ -51,7 +51,7 @@
                   name="transactionType"
                   id="transactionType"
                   style="width: auto;">
-            <option ng-repeat="transactionType in layout.transactionTypes"
+            <option ng-repeat="transactionType in transactionTypes()"
                     value="{{transactionType}}"
                     ng-selected="transactionType === config.transactionType">
               {{transactionType}}

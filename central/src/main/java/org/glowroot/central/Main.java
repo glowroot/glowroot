@@ -15,12 +15,22 @@
  */
 package org.glowroot.central;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Properties;
+
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SocketOptions;
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import org.glowroot.central.storage.AggregateDao;
+import org.glowroot.central.storage.AlertConfigDao;
 import org.glowroot.central.storage.CentralConfigDao;
 import org.glowroot.central.storage.ConfigRepositoryImpl;
 import org.glowroot.central.storage.GaugeValueDao;
@@ -50,9 +60,9 @@ public class Main {
         Clock clock = Clock.systemClock();
         String version = Version.getVersion(Main.class);
 
-        // FIXME
+        List<String> contactPoints = getCassandraContactPoints();
         Cluster cluster = Cluster.builder()
-                .addContactPoint("127.0.0.1")
+                .addContactPoints(contactPoints.toArray(new String[0]))
                 .build();
         SocketOptions socketOptions = cluster.getConfiguration().getSocketOptions();
         socketOptions.setReadTimeoutMillis(30000);
@@ -66,8 +76,9 @@ public class Main {
         TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session);
 
         CentralConfigDao centralConfigDao = new CentralConfigDao(session);
+        AlertConfigDao alertConfigDao = new AlertConfigDao(session);
         ConfigRepositoryImpl configRepository =
-                new ConfigRepositoryImpl(serverDao, centralConfigDao);
+                new ConfigRepositoryImpl(serverDao, centralConfigDao, alertConfigDao);
 
         AggregateRepository aggregateRepository =
                 new AggregateDao(session, serverDao, transactionTypeDao, configRepository);
@@ -84,6 +95,7 @@ public class Main {
         new CreateUiModuleBuilder()
                 .central(true)
                 .clock(clock)
+                .logDir(new File("."))
                 .liveJvmService(new LiveJvmServiceImpl(server.getDownstreamService()))
                 .configRepository(configRepository)
                 .serverRepository(serverDao)
@@ -101,6 +113,25 @@ public class Main {
                 .build();
 
         Thread.sleep(Long.MAX_VALUE);
+    }
+
+    private static List<String> getCassandraContactPoints() throws IOException {
+        File propFile = new File("central.properties");
+        if (!propFile.exists()) {
+            throw new IllegalStateException("Configuration file missing: central.properties");
+        }
+        Properties props = new Properties();
+        InputStream in = new FileInputStream(propFile);
+        try {
+            props.load(in);
+        } finally {
+            in.close();
+        }
+        String contactPoints = props.getProperty("cassandra.contact.points");
+        if (Strings.isNullOrEmpty(contactPoints)) {
+            throw new IllegalStateException("Configuration missing: cassandra.contact.points");
+        }
+        return Splitter.on(',').trimResults().omitEmptyStrings().splitToList(contactPoints);
     }
 
     private static class NopRepoAdmin implements RepoAdmin {

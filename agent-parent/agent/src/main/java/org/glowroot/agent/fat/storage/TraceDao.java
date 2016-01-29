@@ -137,8 +137,8 @@ public class TraceDao implements TraceRepository {
             }
             dataSource.batchUpdate(new TraceAttributeInsert(trace));
             for (Trace.Attribute attribute : header.getAttributeList()) {
-                traceAttributeNameDao.updateLastCaptureTime(attribute.getName(),
-                        header.getCaptureTime());
+                traceAttributeNameDao.updateLastCaptureTime(header.getTransactionType(),
+                        attribute.getName(), header.getCaptureTime());
             }
         }
         transactionTypeDao.updateLastCaptureTime(trace.getHeader().getTransactionType(),
@@ -146,8 +146,9 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public List<String> readTraceAttributeNames(String serverRollup) throws Exception {
-        return traceAttributeNameDao.readTraceAttributeNames();
+    public List<String> readTraceAttributeNames(String serverRollup, String transactionType)
+            throws Exception {
+        return traceAttributeNameDao.readTraceAttributeNames(transactionType);
     }
 
     @Override

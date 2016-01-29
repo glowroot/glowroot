@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,9 +78,20 @@ glowroot.controller('TransactionSidebarCtrl', [
           activeElement.blur();
         }
       }
+      if ($scope.last) {
+        $timeout(function () {
+          // slight delay to de-prioritize summaries data request
+          updateSummaries();
+        }, 100);
+      }
     });
 
     function updateSummaries(initialLoading, moreLoading) {
+      if (($scope.layout.central && !$scope.serverRollup) || !$scope.transactionType) {
+        $scope.summariesNoSearch = true;
+        return;
+      }
+      $scope.summariesNoSearch = false;
       var query = {
         serverRollup: $scope.serverRollup,
         transactionType: $scope.transactionType,

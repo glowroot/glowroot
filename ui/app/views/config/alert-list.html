@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2015 the original author or authors.
+  Copyright 2012-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -18,32 +18,35 @@
     <h2>Alerts</h2>
   </div>
   <div class="panel-body">
-    <div ng-include src="'template/gt-loading-overlay.html'"></div>
-    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-    <div style="margin: 15px;">
-      <div ng-repeat="alert in alerts"
-           class="gt-second-line-indent"
-           style="padding-bottom: 8px;">
-        <a ng-href="config/alert?v={{alert.version}}">
-          {{alert.transactionType}} -
-          {{alert.percentile}}{{percentileSuffix(alert.percentile)}} percentile
-          over a {{alert.timePeriodMinutes}} minute period
-          exceeds {{alert.thresholdMillis}} milliseconds
-        </a>
-      </div>
-      <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
-           before it gets pushed down by existing alert sections -->
-      <div ng-show="loaded"
-           style="margin-top: 30px;">
-        <a href="config/alert?new"
-           class="btn btn-primary pull-left">
-          Add new
-        </a>
-        <a href="config/smtp"
-           class="btn btn-default pull-left"
-           style="margin-left: 8px;">
-          Configure SMTP
-        </a>
+    <div ng-hide="hideMainContent()">
+      <div ng-include src="'template/gt-loading-overlay.html'"></div>
+      <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+      <div style="margin: 15px;">
+        <div ng-repeat="alert in alerts"
+             class="gt-second-line-indent"
+             style="padding-bottom: 8px;">
+          <a ng-href="config/alert{{alertQueryString(alert)}}">
+            {{alert.transactionType}} -
+            {{alert.percentile}}{{percentileSuffix(alert.percentile)}} percentile
+            over a {{alert.timePeriodMinutes}} minute period
+            exceeds {{alert.thresholdMillis}} milliseconds
+          </a>
+        </div>
+        <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
+             before it gets pushed down by existing alert sections -->
+        <div ng-show="loaded"
+             style="margin-top: 30px;">
+          <a href="config/alert{{newQueryString()}}"
+             class="btn btn-primary pull-left">
+            Add new
+          </a>
+          <a href="config/smtp"
+             class="btn btn-default pull-left"
+             style="margin-left: 8px;"
+             ng-if="!layout.central">
+            Configure SMTP
+          </a>
+        </div>
       </div>
     </div>
   </div>

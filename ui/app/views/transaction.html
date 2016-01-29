@@ -54,7 +54,7 @@
             ng-hide="hideTransactionTypeDropdown()">
         <span class="dropdown">
           <a href="#" role="button" data-toggle="dropdown" class="dropdown-toggle">
-            {{transactionType}}
+            {{transactionType || '&lt;transaction type&gt;'}}
             <span class="gt-large-caret"></span>
           </a>
           <ul class="dropdown-menu" role="menu">
@@ -83,7 +83,7 @@
     </div>
     <div class="panel-body">
       <div ui-view="tabs"></div>
-      <div ui-view="main"></div>
+      <div ui-view="main" ng-hide="hideMainContent()"></div>
     </div>
   </div>
 </div>

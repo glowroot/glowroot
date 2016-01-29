@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.GaugeConfig;
 import org.glowroot.agent.config.GaugeConfig.MBeanAttribute;
+import org.glowroot.agent.config.ImmutableMBeanAttribute;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.LazyPlatformMBeanServer.InitListener;
 import org.glowroot.agent.util.Reflections;
@@ -173,7 +174,7 @@ class GaugeCollector extends ScheduledRunnable {
 
     @RequiresNonNull("priorRawCounterValues")
     private List<GaugeValue> collectGaugeValues(ObjectName objectName,
-            List<MBeanAttribute> mbeanAttributes, String mbeanObjectName) {
+            List<ImmutableMBeanAttribute> mbeanAttributes, String mbeanObjectName) {
         long captureTime = clock.currentTimeMillis();
         List<GaugeValue> gaugeValues = Lists.newArrayList();
         for (MBeanAttribute mbeanAttribute : mbeanAttributes) {

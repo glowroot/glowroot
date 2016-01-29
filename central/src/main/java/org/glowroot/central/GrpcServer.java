@@ -26,6 +26,7 @@ import org.glowroot.central.storage.ServerDao;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.TraceRepository;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorService;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
@@ -76,16 +77,22 @@ public class GrpcServer {
         @Override
         public void collectInit(InitMessage request,
                 StreamObserver<InitResponse> responseObserver) {
+            AgentConfig updatedAgentConfig;
             try {
-                serverDao.store(request.getServerId(), request.getProcessInfo(),
-                        request.getAgentConfig());
+                updatedAgentConfig = serverDao.store(request.getServerId(),
+                        request.getProcessInfo(), request.getAgentConfig());
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
-            // FIXME return agent config
-            responseObserver.onNext(InitResponse.getDefaultInstance());
+            if (updatedAgentConfig.equals(request.getAgentConfig())) {
+                responseObserver.onNext(InitResponse.getDefaultInstance());
+            } else {
+                responseObserver.onNext(InitResponse.newBuilder()
+                        .setAgentConfig(updatedAgentConfig)
+                        .build());
+            }
             responseObserver.onCompleted();
         }
 
@@ -135,7 +142,6 @@ public class GrpcServer {
         @Override
         public void log(LogMessage request, StreamObserver<EmptyMessage> responseObserver) {
             try {
-                // FIXME put these in Cassandra and render in central UI
                 LogEvent logEvent = request.getLogEvent();
                 Proto.Throwable t = logEvent.getThrowable();
                 if (t == null) {

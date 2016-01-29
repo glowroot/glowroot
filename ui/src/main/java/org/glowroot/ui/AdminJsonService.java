@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonService
 class AdminJsonService {
-
-    private static final String SERVER_ID = "";
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
@@ -69,9 +67,10 @@ class AdminJsonService {
     }
 
     @POST("/backend/admin/reweave")
-    String reweave() throws Exception {
+    String reweave(String content) throws Exception {
         checkNotNull(liveWeavingService);
-        int count = liveWeavingService.reweave(SERVER_ID);
+        String serverId = mapper.readValue(content, ImmutableRequestWithServerId.class).serverId();
+        int count = liveWeavingService.reweave(serverId);
         return "{\"classes\":" + count + "}";
     }
 

@@ -87,28 +87,43 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       $http.get('backend/config/instrumentation?server-id=' + encodeURIComponent($scope.serverId) + '&version=' + version)
           .success(function (data) {
             $scope.loaded = true;
+            $scope.agentNotConnected = data.agentNotConnected;
             onNewData(data);
           })
           .error(httpErrors.handler($scope));
     } else {
-      $scope.loaded = true;
-      onNewData({
-        config: {
-          // when these are updated, make sure to update similar list in importFromJson (see instrumentation-list.js)
-          classAnnotation: '',
-          methodDeclaringClassName: '',
-          methodAnnotation: '',
-          nestingGroup: '',
-          priority: 0,
-          captureKind: 'transaction',
-          transactionType: '',
-          transactionNameTemplate: '',
-          transactionUserTemplate: '',
-          traceEntryCaptureSelfNested: false,
-          enabledProperty: '',
-          traceEntryEnabledProperty: ''
-        }
-      });
+      $http.get('backend/jvm/agent-connected?server-id=' + encodeURIComponent($scope.serverId))
+          .success(function (data) {
+            $scope.loaded = true;
+            $scope.agentNotConnected = !data;
+            if ($scope.agentNotConnected) {
+              $scope.methodSignatures = [{
+                name: '',
+                parameterTypes: ['..'],
+                returnType: '',
+                modifiers: []
+              }];
+              $scope.selectedMethodSignature = $scope.methodSignatures[0];
+            }
+            onNewData({
+              config: {
+                // when these are updated, make sure to update similar list in importFromJson (see instrumentation-list.js)
+                classAnnotation: '',
+                methodDeclaringClassName: '',
+                methodAnnotation: '',
+                nestingGroup: '',
+                priority: 0,
+                captureKind: 'transaction',
+                transactionType: '',
+                transactionNameTemplate: '',
+                transactionUserTemplate: '',
+                traceEntryCaptureSelfNested: false,
+                enabledProperty: '',
+                traceEntryEnabledProperty: ''
+              }
+            });
+          })
+          .error(httpErrors.handler($scope));
     }
 
     $scope.hasChanges = function () {
@@ -118,14 +133,18 @@ glowroot.controller('ConfigInstrumentationCtrl', [
     var removeConfirmIfHasChangesListener = $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
     $scope.hasMethodSignatureError = function () {
+      // checking $scope.formCtrl below is to protect against javascript error when moving away from page
       return !$scope.methodSignatures || !$scope.methodSignatures.length
-          || $scope.formCtrl.selectedMethodSignature.$invalid;
+          || ($scope.formCtrl && $scope.formCtrl.selectedMethodSignature.$invalid);
     };
 
     $scope.showClassNameSpinner = 0;
     $scope.showMethodNameSpinner = 0;
 
     $scope.classNames = function (suggestion) {
+      if ($scope.agentNotConnected) {
+        return [];
+      }
       var postData = {
         serverId: $scope.serverId,
         partialClassName: suggestion,
@@ -137,9 +156,9 @@ glowroot.controller('ConfigInstrumentationCtrl', [
           .then(function (response) {
             $scope.showClassNameSpinner--;
             return response.data;
-          }, function (data, status) {
+          }, function (response) {
             $scope.showClassNameSpinner--;
-            httpErrors.handler($scope)(data, status);
+            httpErrors.handler($scope)(response.data, response.status);
           });
     };
 
@@ -150,12 +169,15 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       if (className !== $scope.selectedClassName) {
         $scope.selectedClassName = className;
         $scope.selectedMethodName = '';
-        $scope.methodSignatures = [];
+        resetMethodSignatures('');
         $scope.config.methodName = '';
       }
     };
 
     $scope.methodNames = function (suggestion) {
+      if ($scope.agentNotConnected) {
+        return [];
+      }
       if (!$scope.config.className) {
         return [];
       }
@@ -174,9 +196,9 @@ glowroot.controller('ConfigInstrumentationCtrl', [
           .then(function (response) {
             $scope.showMethodNameSpinner--;
             return response.data;
-          }, function (data, status) {
+          }, function (response) {
             $scope.showMethodNameSpinner--;
-            httpErrors.handler($scope)(data, status);
+            httpErrors.handler($scope)(response.data, response.status);
           });
     };
 
@@ -209,6 +231,19 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       }
     };
 
+    function resetMethodSignatures(methodName) {
+      if ($scope.agentNotConnected) {
+        $scope.methodSignatures = [{
+          name: methodName,
+              parameterTypes: ['..'],
+            returnType: '',
+            modifiers: []
+        }];
+      } else {
+        $scope.methodSignatures = [];
+      }
+    }
+
     $scope.onBlurMethodName = function () {
       if ($scope.config.methodName) {
         onBlurDebouncer = $timeout(function () {
@@ -216,7 +251,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
         }, 100);
       } else {
         // the user cleared the text input and tabbed away
-        $scope.methodSignatures = [];
+        resetMethodSignatures();
         $scope.selectedMethodSignature = undefined;
       }
     };
@@ -261,14 +296,13 @@ glowroot.controller('ConfigInstrumentationCtrl', [
           .success(function (data) {
             onNewData(data);
             deferred.resolve(version ? 'Saved' : 'Added');
-            version = data.version;
+            version = data.config.version;
             // fix current url (with updated version) before returning to list page in case back button is used later
-            $timeout(function () {
+            if (postData.serverId) {
+              $location.search({'server-id': postData.serverId, v: version}).replace();
+            } else {
               $location.search({v: version}).replace();
-              $timeout(function () {
-                $location.url('config/instrumentation-list');
-              });
-            });
+            }
           })
           .error(httpErrors.handler($scope, deferred));
     };
@@ -281,7 +315,11 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       $http.post('backend/config/instrumentation/remove', postData)
           .success(function () {
             removeConfirmIfHasChangesListener();
-            $location.url('config/instrumentation-list').replace();
+            if (postData.serverId) {
+              $location.url('config/instrumentation-list?server-id=' + encodeURIComponent(postData.serverId)).replace();
+            } else {
+              $location.url('config/instrumentation-list').replace();
+            }
           })
           .error(httpErrors.handler($scope, deferred));
     };
@@ -356,6 +394,10 @@ glowroot.controller('ConfigInstrumentationCtrl', [
     };
 
     function matchingMethods(methodName) {
+      if ($scope.agentNotConnected) {
+        resetMethodSignatures(methodName);
+        return;
+      }
       var queryData = {
         serverId: $scope.serverId,
         className: $scope.config.className,
@@ -363,6 +405,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       };
       $http.get('backend/config/method-signatures' + queryStrings.encodeObject(queryData))
           .success(function (data) {
+            resetMethodSignatures(methodName);
             $scope.methodSignatures = data;
             $scope.methodSignatures.unshift({
               name: methodName,

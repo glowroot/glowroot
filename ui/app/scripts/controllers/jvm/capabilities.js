@@ -21,9 +21,20 @@ glowroot.controller('JvmCapabilitiesCtrl', [
   '$http',
   'httpErrors',
   function ($scope, $http, httpErrors) {
+
+    $scope.$parent.heading = 'Capabilities';
+
+    if ($scope.hideMainContent()) {
+      return;
+    }
+
     $http.get('backend/jvm/capabilities?server-id=' + encodeURIComponent($scope.serverId))
         .success(function (data) {
           $scope.loaded = true;
+          $scope.agentNotConnected = data.agentNotConnected;
+          if ($scope.agentNotConnected) {
+            return;
+          }
           $scope.capabilities = data;
         })
         .error(httpErrors.handler($scope));

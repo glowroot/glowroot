@@ -28,6 +28,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamService;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
@@ -79,6 +80,10 @@ public class DownstreamServiceImpl implements DownstreamService {
             throw new AgentNotConnectedException();
         }
         connectedAgent.updateAgentConfig(agentConfig);
+    }
+
+    boolean isAvailable(String serverId) {
+        return connectedAgents.containsKey(serverId);
     }
 
     ThreadDump threadDump(String serverId) throws Exception {
@@ -413,9 +418,6 @@ public class DownstreamServiceImpl implements DownstreamService {
     private static class ResponseHolder {
         private final Exchanger<ClientResponse> response = new Exchanger<>();
     }
-
-    @SuppressWarnings("serial")
-    public static class AgentNotConnectedException extends Exception {}
 
     @SuppressWarnings("serial")
     public static class AgentException extends Exception {}

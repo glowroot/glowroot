@@ -28,6 +28,10 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
   'modals',
   function ($scope, $location, $http, $timeout, $q, locationChanges, queryStrings, httpErrors, modals) {
 
+    if ($scope.hideMainContent()) {
+      return;
+    }
+
     $scope.display = function (config) {
       return config.className + '::' + config.methodName;
     };
@@ -150,7 +154,10 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
     };
 
     $scope.retransformClasses = function (deferred) {
-      $http.post('backend/admin/reweave')
+      var postData = {
+        serverId: $scope.serverId
+      };
+      $http.post('backend/admin/reweave', postData)
           .success(function (data) {
             $scope.dirty = false;
             if (data.classes) {

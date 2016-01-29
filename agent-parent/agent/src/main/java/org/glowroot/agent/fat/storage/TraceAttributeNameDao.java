@@ -15,18 +15,26 @@
  */
 package org.glowroot.agent.fat.storage;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.agent.fat.storage.util.DataSource;
+import org.glowroot.agent.fat.storage.util.DataSource.JdbcRowQuery;
 import org.glowroot.agent.fat.storage.util.ImmutableColumn;
 import org.glowroot.agent.fat.storage.util.Schemas.Column;
 import org.glowroot.agent.fat.storage.util.Schemas.ColumnType;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 class TraceAttributeNameDao {
 
     private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
+            ImmutableColumn.of("transaction_type", ColumnType.VARCHAR),
             ImmutableColumn.of("trace_attribute_name", ColumnType.VARCHAR),
             ImmutableColumn.of("last_capture_time", ColumnType.BIGINT));
 
@@ -39,19 +47,21 @@ class TraceAttributeNameDao {
         dataSource.syncTable("trace_attribute_name", columns);
     }
 
-    public List<String> readTraceAttributeNames() throws Exception {
-        return dataSource
-                .queryForStringList("select trace_attribute_name from trace_attribute_name");
+    public List<String> readTraceAttributeNames(String transactionType) throws Exception {
+        return dataSource.query(new TraceAttributeQuery(transactionType));
     }
 
-    void updateLastCaptureTime(String traceAttributeName, long captureTime) throws Exception {
+    void updateLastCaptureTime(String transactionType, String traceAttributeName, long captureTime)
+            throws Exception {
         synchronized (lock) {
             int updateCount = dataSource.update("update trace_attribute_name"
-                    + " set last_capture_time = ? where trace_attribute_name = ?", captureTime,
+                    + " set last_capture_time = ? where transaction_type = ?"
+                    + " and trace_attribute_name = ?", captureTime, transactionType,
                     traceAttributeName);
             if (updateCount == 0) {
-                dataSource.update("insert into trace_attribute_name (trace_attribute_name,"
-                        + " last_capture_time) values (?, ?)", traceAttributeName, captureTime);
+                dataSource.update("insert into trace_attribute_name (transaction_type,"
+                        + " trace_attribute_name, last_capture_time) values (?, ?, ?)",
+                        transactionType, traceAttributeName, captureTime);
             }
         }
     }
@@ -63,5 +73,30 @@ class TraceAttributeNameDao {
     void deleteBefore(long captureTime) throws Exception {
         dataSource.update("delete from trace_attribute_name where last_capture_time < ?",
                 captureTime);
+    }
+
+    private static class TraceAttributeQuery implements JdbcRowQuery<String> {
+
+        private final String transactionType;
+
+        private TraceAttributeQuery(String transactionType) {
+            this.transactionType = transactionType;
+        }
+
+        @Override
+        public @Untainted String getSql() {
+            return "select trace_attribute_name from trace_attribute_name where"
+                    + " transaction_type = ?";
+        }
+
+        @Override
+        public void bind(PreparedStatement preparedStatement) throws SQLException {
+            preparedStatement.setString(1, transactionType);
+        }
+
+        @Override
+        public String mapRow(ResultSet resultSet) throws SQLException {
+            return checkNotNull(resultSet.getString(1));
+        }
     }
 }

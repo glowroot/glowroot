@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,31 @@ glowroot.controller('ConfigAlertListCtrl', [
   '$scope',
   '$location',
   '$http',
+  'queryStrings',
   'httpErrors',
-  function ($scope, $location, $http, httpErrors) {
+  function ($scope, $location, $http, queryStrings, httpErrors) {
 
-    $http.get('backend/config/alerts')
+    if ($scope.hideMainContent()) {
+      return;
+    }
+
+    $scope.alertQueryString = function (alert) {
+      var query = {};
+      if ($scope.serverId) {
+        query.serverId = $scope.serverId;
+      }
+      query.v = alert.version;
+      return queryStrings.encodeObject(query);
+    };
+
+    $scope.newQueryString = function () {
+      if ($scope.serverId) {
+        return '?server-id=' + encodeURIComponent($scope.serverId) + '&new';
+      }
+      return '?new';
+    };
+
+    $http.get('backend/config/alerts?server-id=' + encodeURIComponent($scope.serverId))
         .success(function (data) {
           $scope.loaded = true;
           $scope.alerts = data;

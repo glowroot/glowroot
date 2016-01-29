@@ -33,6 +33,10 @@ glowroot.controller('JvmCtrl', [
       return !$scope.layout.central || $scope.layout.serverRollups.length === 1;
     };
 
+    $scope.hideMainContent = function () {
+      return $scope.layout.central && !$scope.serverRollup && !$scope.serverId;
+    };
+
     $scope.currentUrl = function () {
       return $location.path().substring(1);
     };

@@ -16,6 +16,7 @@
 package org.glowroot.central.storage;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.annotation.Nullable;
 
@@ -25,15 +26,18 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.storage.config.AlertConfig;
+import org.glowroot.storage.config.ImmutableAlertConfig;
 
-public class CentralConfigDao {
+public class AlertConfigDao {
 
-    private static final Logger logger = LoggerFactory.getLogger(CentralConfigDao.class);
+    private static final Logger logger = LoggerFactory.getLogger(AlertConfigDao.class);
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
@@ -42,27 +46,28 @@ public class CentralConfigDao {
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
-    public CentralConfigDao(Session session) {
+    public AlertConfigDao(Session session) {
         this.session = session;
 
-        session.execute("create table if not exists config_central (key varchar, value varchar,"
-                + " primary key (key))");
+        session.execute("create table if not exists config_alerts (server_id varchar,"
+                + " value varchar, primary key (server_id))");
 
-        insertPS = session.prepare("insert into config_central (key, value) values (?, ?)");
-        readPS = session.prepare("select value from config_central where key = ?");
+        insertPS = session.prepare("insert into config_alerts (server_id, value) values (?, ?)");
+
+        readPS = session.prepare("select value from config_alerts where server_id = ?");
     }
 
-    void write(String key, Object config) throws JsonProcessingException {
+    void write(String key, List<AlertConfig> alerts) throws JsonProcessingException {
         BoundStatement boundStatement = insertPS.bind();
         boundStatement.setString(0, key);
-        boundStatement.setString(1, mapper.writeValueAsString(config));
+        boundStatement.setString(1, mapper.writeValueAsString(alerts));
         session.execute(boundStatement);
     }
 
     @Nullable
-    <T> T read(String key, Class<T> clazz) {
+    List<AlertConfig> readAlerts(String serverId) {
         BoundStatement boundStatement = readPS.bind();
-        boundStatement.bind(key);
+        boundStatement.bind(serverId);
         ResultSet results = session.execute(boundStatement);
         Row row = results.one();
         if (row == null) {
@@ -73,9 +78,9 @@ public class CentralConfigDao {
             return null;
         }
         try {
-            return mapper.readValue(value, clazz);
+            return mapper.readValue(value, new TypeReference<List<ImmutableAlertConfig>>() {});
         } catch (IOException e) {
-            logger.error("error parsing config node '{}': ", key, e);
+            logger.error("error parsing config node '{}': ", serverId, e);
             return null;
         }
     }

@@ -21,6 +21,32 @@ glowroot.controller('JvmProcessInfoCtrl', [
   '$http',
   'httpErrors',
   function ($scope, $http, httpErrors) {
+
+    $scope.$parent.heading = 'Process info';
+
+    if ($scope.hideMainContent()) {
+      return;
+    }
+
+    // splitting the arg is used to wrap initial two characters is non-wrapping css
+    // to prevent long lines from splitting right after the initial dash
+
+    $scope.argFirstPart = function (arg) {
+      if (arg.length > 1 && arg[0] === '-') {
+        return arg.substring(0, 2);
+      } else {
+        return '';
+      }
+    };
+
+    $scope.argSecondPart = function (arg) {
+      if (arg.length > 1 && arg[0] === '-') {
+        return arg.substring(2);
+      } else {
+        return arg;
+      }
+    };
+
     $http.get('backend/jvm/process-info?server-id=' + encodeURIComponent($scope.serverId))
         .success(function (data) {
           $scope.loaded = true;

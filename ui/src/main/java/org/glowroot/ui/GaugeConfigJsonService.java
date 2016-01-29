@@ -15,7 +15,6 @@
  */
 package org.glowroot.ui;
 
-import java.io.IOException;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -32,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Versions;
@@ -43,7 +43,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MBeanAttribute;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 
 @JsonService
@@ -103,8 +102,12 @@ class GaugeConfigJsonService {
     String getMatchingMBeanObjects(String queryString) throws Exception {
         MBeanObjectNameRequest request =
                 QueryStrings.decode(queryString, MBeanObjectNameRequest.class);
-        return mapper.writeValueAsString(liveJvmService.getMatchingMBeanObjectNames(
-                request.serverId(), request.partialObjectName(), request.limit()));
+        try {
+            return mapper.writeValueAsString(liveJvmService.getMatchingMBeanObjectNames(
+                    request.serverId(), request.partialObjectName(), request.limit()));
+        } catch (AgentNotConnectedException e) {
+            return "[]";
+        }
     }
 
     @GET("/backend/config/mbean-attributes")
@@ -132,7 +135,7 @@ class GaugeConfigJsonService {
     @POST("/backend/config/gauges/add")
     String addGauge(String content) throws Exception {
         GaugeConfigDto gaugeConfigDto = mapper.readValue(content, ImmutableGaugeConfigDto.class);
-        String serverId = checkNotNull(gaugeConfigDto.serverId());
+        String serverId = gaugeConfigDto.serverId().get();
         GaugeConfig gaugeConfig = gaugeConfigDto.convert();
         try {
             configRepository.insertGaugeConfig(serverId, gaugeConfig);
@@ -147,7 +150,7 @@ class GaugeConfigJsonService {
     @POST("/backend/config/gauges/update")
     String updateGauge(String content) throws Exception {
         GaugeConfigDto gaugeConfigDto = mapper.readValue(content, ImmutableGaugeConfigDto.class);
-        String serverId = checkNotNull(gaugeConfigDto.serverId());
+        String serverId = gaugeConfigDto.serverId().get();
         GaugeConfig gaugeConfig = gaugeConfigDto.convert();
         String version = gaugeConfigDto.version().get();
         try {
@@ -161,20 +164,33 @@ class GaugeConfigJsonService {
     }
 
     @POST("/backend/config/gauges/remove")
-    void removeGauge(String content) throws IOException {
+    void removeGauge(String content) throws Exception {
         GaugeConfigRequest request = mapper.readValue(content, ImmutableGaugeConfigRequest.class);
         configRepository.deleteGaugeConfig(request.serverId(), request.version().get());
     }
 
     private GaugeResponse buildResponse(String serverId, GaugeConfig gaugeConfig) throws Exception {
-        MBeanMeta mbeanMeta =
-                liveJvmService.getMBeanMeta(serverId, gaugeConfig.getMbeanObjectName());
-        return ImmutableGaugeResponse.builder()
-                .config(GaugeConfigDto.create(gaugeConfig))
-                .mbeanUnmatched(mbeanMeta.getUnmatched())
-                .mbeanUnavailable(mbeanMeta.getUnavailable())
-                .addAllMbeanAvailableAttributeNames(mbeanMeta.getAttributeNameList())
-                .build();
+        ImmutableGaugeResponse.Builder builder = ImmutableGaugeResponse.builder()
+                .config(GaugeConfigDto.create(gaugeConfig));
+        MBeanMeta mbeanMeta;
+        try {
+            mbeanMeta = liveJvmService.getMBeanMeta(serverId, gaugeConfig.getMbeanObjectName());
+        } catch (AgentNotConnectedException e) {
+            logger.debug(e.getMessage(), e);
+            mbeanMeta = null;
+        }
+        builder.agentNotConnected(mbeanMeta == null)
+                .mbeanUnmatched(mbeanMeta != null && mbeanMeta.getUnmatched())
+                .mbeanUnavailable(mbeanMeta != null && mbeanMeta.getUnavailable());
+        if (mbeanMeta == null) {
+            // agent not connected
+            for (MBeanAttribute mbeanAttribute : gaugeConfig.getMbeanAttributeList()) {
+                builder.addMbeanAvailableAttributeNames(mbeanAttribute.getName());
+            }
+        } else {
+            builder.addAllMbeanAvailableAttributeNames(mbeanMeta.getAttributeNameList());
+        }
+        return builder.build();
     }
 
     @Value.Immutable
@@ -213,23 +229,18 @@ class GaugeConfigJsonService {
     }
 
     @Value.Immutable
-    abstract static class GaugeResponse {
-        abstract GaugeConfigDto config();
-        @Value.Default
-        boolean mbeanUnavailable() {
-            return false;
-        }
-        @Value.Default
-        boolean mbeanUnmatched() {
-            return false;
-        }
-        abstract ImmutableList<String> mbeanAvailableAttributeNames();
+    interface GaugeResponse {
+        GaugeConfigDto config();
+        boolean agentNotConnected();
+        boolean mbeanUnavailable();
+        boolean mbeanUnmatched();
+        ImmutableList<String> mbeanAvailableAttributeNames();
     }
 
     @Value.Immutable
     abstract static class GaugeConfigDto {
 
-        abstract @Nullable String serverId(); // only used in request
+        abstract Optional<String> serverId(); // only used in request
         abstract @Nullable String display(); // only used in response
         abstract String mbeanObjectName();
         abstract ImmutableList<MBeanAttributeDto> mbeanAttributes();

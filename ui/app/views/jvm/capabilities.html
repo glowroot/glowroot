@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2015 the original author or authors.
+  Copyright 2013-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -13,47 +13,43 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="panel panel-default">
-  <div class="panel-heading">
-    <h2>Capabilities</h2>
+<div ng-if="agentNotConnected" class="alert alert-danger">
+  This feature is only available when the agent is running and connected to the central server
+</div>
+<div ng-if="loaded && !agentNotConnected">
+  <div class="row gt-capability">
+    <div class="col-sm-4">
+      <label>Thread CPU time</label>
+    </div>
+    <div class="col-sm-8">
+      {{capabilities.threadCpuTime.available | gtOnOff}}
+      <div class="gt-secondary-text"
+           ng-show="!capabilities.threadCpuTime.available">
+        {{capabilities.threadCpuTime.reason}}
+      </div>
+    </div>
   </div>
-  <div class="panel-body">
-    <div ng-include src="'template/gt-loading-overlay.html'"></div>
-    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-    <div class="row gt-capability">
-      <div class="col-sm-4">
-        <label>Thread CPU time</label>
-      </div>
-      <div class="col-sm-8">
-        {{capabilities.threadCpuTime.available | gtOnOff}}
-        <div class="gt-secondary-text"
-             ng-show="!capabilities.threadCpuTime.available">
-          {{capabilities.threadCpuTime.reason}}
-        </div>
+  <div class="row gt-capability">
+    <div class="col-sm-4">
+      <label>Thread contention time</label>
+    </div>
+    <div class="col-sm-8">
+      {{capabilities.threadContentionTime.available | gtOnOff}}
+      <div class="gt-secondary-text"
+           ng-show="!capabilities.threadContentionTime.available">
+        {{capabilities.threadContentionTime.reason}}
       </div>
     </div>
-    <div class="row gt-capability">
-      <div class="col-sm-4">
-        <label>Thread contention time</label>
-      </div>
-      <div class="col-sm-8">
-        {{capabilities.threadContentionTime.available | gtOnOff}}
-        <div class="gt-secondary-text"
-             ng-show="!capabilities.threadContentionTime.available">
-          {{capabilities.threadContentionTime.reason}}
-        </div>
-      </div>
+  </div>
+  <div class="row gt-capability">
+    <div class="col-sm-4">
+      <label>Thread allocated bytes</label>
     </div>
-    <div class="row gt-capability">
-      <div class="col-sm-4">
-        <label>Thread allocated bytes</label>
-      </div>
-      <div class="col-sm-8">
-        {{capabilities.threadAllocatedBytes.available | gtOnOff}}
-        <div class="gt-secondary-text"
-             ng-show="!capabilities.threadAllocatedBytes.available">
-          {{capabilities.threadAllocatedBytes.reason}}
-        </div>
+    <div class="col-sm-8">
+      {{capabilities.threadAllocatedBytes.available | gtOnOff}}
+      <div class="gt-secondary-text"
+           ng-show="!capabilities.threadAllocatedBytes.available">
+        {{capabilities.threadAllocatedBytes.reason}}
       </div>
     </div>
   </div>

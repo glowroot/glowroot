@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,8 @@ glowroot.controller('TracesCtrl', [
 
     $scope.$parent.activeTabItem = 'traces';
 
-    if ($scope.last) {
-      // force the sidebar to update
-      $scope.$parent.chartRefresh++;
+    if ($scope.hideMainContent()) {
+      return;
     }
 
     var plot;
@@ -70,6 +69,9 @@ glowroot.controller('TracesCtrl', [
     });
 
     function refreshChart(deferred) {
+      if (($scope.layout.central && !$scope.serverRollup) || !$scope.transactionType) {
+        return;
+      }
       var from = appliedFilter.from;
       var to = appliedFilter.to;
       var limit = appliedFilter.limit;

@@ -24,6 +24,10 @@ glowroot.controller('ConfigGaugeListCtrl', [
   'httpErrors',
   function ($scope, $location, $http, queryStrings, httpErrors) {
 
+    if ($scope.hideMainContent()) {
+      return;
+    }
+
     $scope.display = function (gauge) {
       return gauge.config.display.replace(/\//g, '\u200b/');
     };

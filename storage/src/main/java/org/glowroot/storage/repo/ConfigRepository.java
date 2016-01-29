@@ -42,7 +42,6 @@ public interface ConfigRepository {
     String UI_KEY = "ui";
     String STORAGE_KEY = "storage";
     String SMTP_KEY = "smtp";
-    String ALERTS_KEY = "alerts";
 
     long ROLLUP_0_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.0.intervalMillis", 60 * 1000); // 1 minute
@@ -98,19 +97,19 @@ public interface ConfigRepository {
             String priorVersion) throws Exception;
 
     void insertInstrumentationConfig(String serverId, InstrumentationConfig instrumentationConfig)
-            throws IOException;
+            throws Exception;
 
     void updateInstrumentationConfig(String serverId, InstrumentationConfig instrumentationConfig,
-            String priorVersion) throws IOException;
+            String priorVersion) throws Exception;
 
-    void deleteInstrumentationConfig(String serverId, String version) throws IOException;
+    void deleteInstrumentationConfig(String serverId, String version) throws Exception;
 
     void insertGaugeConfig(String serverId, GaugeConfig gaugeConfig) throws Exception;
 
     void updateGaugeConfig(String serverId, GaugeConfig gaugeConfig, String priorVersion)
             throws Exception;
 
-    void deleteGaugeConfig(String serverId, String version) throws IOException;
+    void deleteGaugeConfig(String serverId, String version) throws Exception;
 
     void updateUserInterfaceConfig(UserInterfaceConfig userInterfaceConfig, String priorVersion)
             throws Exception;

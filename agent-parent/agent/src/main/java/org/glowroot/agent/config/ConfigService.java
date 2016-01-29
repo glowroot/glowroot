@@ -26,7 +26,6 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -37,7 +36,6 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.agent.config.PropertyValue.PropertyType;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.util.JavaVersion;
@@ -52,12 +50,6 @@ public class ConfigService {
 
     private static final long GAUGE_COLLECTION_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.gaugeCollectionIntervalMillis", 5000);
-
-    static {
-        SimpleModule module = new SimpleModule();
-        module.addAbstractTypeMapping(MBeanAttribute.class, ImmutableMBeanAttribute.class);
-        mapper.registerModule(module);
-    }
 
     private final ConfigFile configFile;
 

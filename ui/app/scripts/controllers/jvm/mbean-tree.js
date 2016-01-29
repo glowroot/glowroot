@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,12 @@ glowroot.controller('JvmMBeanTreeCtrl', [
   'httpErrors',
   'queryStrings',
   function ($scope, $location, $http, httpErrors, queryStrings) {
+
+    $scope.$parent.heading = 'MBean tree';
+
+    if ($scope.hideMainContent()) {
+      return;
+    }
 
     var expandedObjectNames = $location.search().expanded || [];
     if (!angular.isArray(expandedObjectNames)) {
@@ -82,6 +88,10 @@ glowroot.controller('JvmMBeanTreeCtrl', [
       $http.get('backend/jvm/mbean-tree' + queryStrings.encodeObject(queryData))
           .success(function (data) {
             $scope.loaded = true;
+            $scope.agentNotConnected = data.agentNotConnected;
+            if ($scope.agentNotConnected) {
+              return;
+            }
             $scope.mbeanTree = data;
             if (deferred) {
               deferred.resolve('Refreshed');

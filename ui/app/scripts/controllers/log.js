@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 /* global glowroot, $ */
 
-glowroot.controller('JvmGlowrootLogCtrl', [
+glowroot.controller('LogCtrl', [
   '$scope',
   '$http',
   'httpErrors',
@@ -24,14 +24,14 @@ glowroot.controller('JvmGlowrootLogCtrl', [
 
     $scope.exportAsText = function () {
       var textWindow = window.open();
-      $(textWindow.document.body).html($scope.glowrootLog.replace(/\n/g, '<br>').replace(/ /g, '&nbsp;'));
+      $(textWindow.document.body).html($scope.log.replace(/\n/g, '<br>').replace(/ /g, '&nbsp;'));
     };
 
     $scope.refresh = function (deferred) {
-      $http.get('backend/jvm/glowroot-log')
+      $http.get('backend/log')
           .success(function (data) {
             $scope.loaded = true;
-            $scope.glowrootLog = data;
+            $scope.log = data;
             if (deferred) {
               deferred.resolve('Refreshed');
             }

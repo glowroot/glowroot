@@ -27,7 +27,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 public abstract class GaugeConfig {
 
     public abstract String mbeanObjectName();
-    public abstract ImmutableList<MBeanAttribute> mbeanAttributes();
+    public abstract ImmutableList<ImmutableMBeanAttribute> mbeanAttributes();
 
     public AgentConfig.GaugeConfig toProto() {
         AgentConfig.GaugeConfig.Builder builder = AgentConfig.GaugeConfig.newBuilder()

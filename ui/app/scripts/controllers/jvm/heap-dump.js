@@ -21,6 +21,13 @@ glowroot.controller('JvmHeapDumpCtrl', [
   '$http',
   'httpErrors',
   function ($scope, $http, httpErrors) {
+
+    $scope.$parent.heading = 'Heap dump';
+
+    if ($scope.hideMainContent()) {
+      return;
+    }
+
     $scope.checkDiskSpace = function (deferred) {
       var postData = {
         serverId: $scope.serverId,
@@ -60,9 +67,13 @@ glowroot.controller('JvmHeapDumpCtrl', [
     };
 
     $http.get('backend/jvm/heap-dump-default-dir?server-id=' + encodeURIComponent($scope.serverId))
-        .success(function (directory) {
+        .success(function (data) {
           $scope.loaded = true;
-          $scope.directory = directory;
+          $scope.agentNotConnected = data.agentNotConnected;
+          if ($scope.agentNotConnected) {
+            return;
+          }
+          $scope.directory = data.directory;
         })
         .error(httpErrors.handler($scope));
   }

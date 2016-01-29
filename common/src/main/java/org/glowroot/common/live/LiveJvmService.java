@@ -26,6 +26,8 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 
 public interface LiveJvmService {
 
+    boolean isAvailable(String serverId);
+
     ThreadDump getThreadDump(String serverId) throws Exception;
 
     long getAvailableDiskSpace(String serverId, String directory) throws Exception;
@@ -43,4 +45,7 @@ public interface LiveJvmService {
     MBeanMeta getMBeanMeta(String serverId, String mbeanObjectName) throws Exception;
 
     Capabilities getCapabilities(String serverId) throws Exception;
+
+    @SuppressWarnings("serial")
+    public class AgentNotConnectedException extends Exception {}
 }

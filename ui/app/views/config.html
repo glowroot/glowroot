@@ -84,6 +84,12 @@
            gt-url="config/advanced{{serverQueryString()}}"
            gt-active="currentUrl() === 'config/advanced'">
       </div>
+      <div gt-sidebar-item
+           gt-display="Alerts"
+           gt-url="config/alert-list{{serverQueryString()}}"
+           gt-active="currentUrl() === 'config/alert-list'"
+           gt-sub-active="currentUrl() === 'config/alert' || currentUrl() === 'config/smtp'">
+      </div>
     </ul>
   </div>
   <div class="panel panel-default"
@@ -99,10 +105,9 @@
            ng-if="!layout.central">
       </div>
       <div gt-sidebar-item
-           gt-display="Alerts"
-           gt-url="config/alert-list"
-           gt-active="currentUrl() === 'config/alert-list'"
-           gt-sub-active="currentUrl() === 'config/alert' || currentUrl() === 'config/smtp'">
+           gt-display="SMTP"
+           gt-url="config/smtp"
+           ng-if="layout.central">
       </div>
     </ul>
   </div>

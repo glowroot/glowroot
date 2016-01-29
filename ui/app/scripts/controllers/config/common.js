@@ -24,6 +24,10 @@ glowroot.controller('ConfigCommonCtrl', [
   'httpErrors',
   function ($scope, $http, backendUrl, confirmIfHasChanges, httpErrors) {
 
+    if ($scope.hideMainContent()) {
+      return;
+    }
+
     $scope.hasChanges = function () {
       return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
     };
@@ -46,10 +50,8 @@ glowroot.controller('ConfigCommonCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $scope.$watch('serverId', function () {
-      $http.get(backendUrl + '?server-id=' + encodeURIComponent($scope.serverId))
-          .success(onNewData)
-          .error(httpErrors.handler($scope));
-    });
+    $http.get(backendUrl + '?server-id=' + encodeURIComponent($scope.serverId))
+        .success(onNewData)
+        .error(httpErrors.handler($scope));
   }
 ]);

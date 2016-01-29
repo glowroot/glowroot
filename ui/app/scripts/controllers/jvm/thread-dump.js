@@ -26,6 +26,12 @@ glowroot.controller('JvmThreadDumpCtrl', [
   'httpErrors',
   function ($scope, $http, $location, $q, locationChanges, traceModal, httpErrors) {
 
+    $scope.$parent.heading = 'Thread dump';
+
+    if ($scope.hideMainContent()) {
+      return;
+    }
+
     var threadDumpHtml;
 
     Handlebars.registerHelper('ifBlocked', function (state, options) {
@@ -64,6 +70,10 @@ glowroot.controller('JvmThreadDumpCtrl', [
       $http.get('backend/jvm/thread-dump?server-id=' + encodeURIComponent($scope.serverId))
           .success(function (data) {
             $scope.loaded = true;
+            $scope.agentNotConnected = data.agentNotConnected;
+            if ($scope.agentNotConnected) {
+              return;
+            }
             // $.trim() is needed because this template is sensitive to surrounding spaces
             threadDumpHtml = $.trim(JST['thread-dump'](data));
             $('#threadDump').html('<br>' + threadDumpHtml);

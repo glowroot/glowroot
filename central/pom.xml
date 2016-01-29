@@ -51,6 +51,10 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-guava</artifactId>
+    </dependency>
+    <dependency>
       <groupId>${checker.qual.group.id}</groupId>
       <artifactId>${checker.qual.artifact.id}</artifactId>
       <version>${checker.qual.version}</version>

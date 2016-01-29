@@ -33,7 +33,8 @@ public interface TraceRepository {
 
     void collect(String serverId, Trace trace) throws Exception;
 
-    List<String> readTraceAttributeNames(String serverRollup) throws Exception;
+    List<String> readTraceAttributeNames(String serverRollup, String transactionType)
+            throws Exception;
 
     Result<TracePoint> readSlowPoints(TraceQuery query, TracePointFilter filter, int limit)
             throws Exception;

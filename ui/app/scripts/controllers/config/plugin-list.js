@@ -24,12 +24,16 @@ glowroot.controller('ConfigPluginListCtrl', [
   'httpErrors',
   function ($scope, $location, $http, queryStrings, httpErrors) {
 
+    if ($scope.hideMainContent()) {
+      return;
+    }
+
     $scope.pluginQueryString = function (plugin) {
       var query = {};
       if ($scope.serverId) {
         query.serverId = $scope.serverId;
       }
-      query.id = plugin.id;
+      query.pluginId = plugin.id;
       return queryStrings.encodeObject(query);
     };
 

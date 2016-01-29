@@ -27,15 +27,14 @@ glowroot.controller('TransactionProfileCtrl', [
   function ($scope, $http, $location, locationChanges, queryStrings, httpErrors, auxiliary) {
 
     $scope.$parent.activeTabItem = 'profile';
-    $scope.auxiliary = auxiliary;
 
-    if ($scope.last) {
-      // force the sidebar to update
-      $scope.$parent.chartRefresh++;
+    if ($scope.hideMainContent()) {
+      return;
     }
 
     var appliedFilter;
 
+    $scope.auxiliary = auxiliary;
     $scope.showProfile = false;
     $scope.showSpinner = 0;
 

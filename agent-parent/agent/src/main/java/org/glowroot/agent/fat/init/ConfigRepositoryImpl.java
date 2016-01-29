@@ -62,6 +62,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigRepositoryImpl.class);
 
+    private static final String ALERTS_KEY = "alerts";
+
     private final ConfigService configService;
     private final PluginCache pluginCache;
     private final File secretFile;
@@ -314,7 +316,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateInstrumentationConfig(String serverId,
             AgentConfig.InstrumentationConfig instrumentationConfig, String priorVersion)
-                    throws IOException {
+                    throws Exception {
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
                     Lists.newArrayList(configService.getInstrumentationConfigs());
@@ -327,13 +329,15 @@ class ConfigRepositoryImpl implements ConfigRepository {
                     break;
                 }
             }
-            checkState(found, "Instrumentation config not found: %s", priorVersion);
+            if (!found) {
+                throw new OptimisticLockException();
+            }
             configService.updateInstrumentationConfigs(configs);
         }
     }
 
     @Override
-    public void deleteInstrumentationConfig(String serverId, String version) throws IOException {
+    public void deleteInstrumentationConfig(String serverId, String version) throws Exception {
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
                     Lists.newArrayList(configService.getInstrumentationConfigs());
@@ -346,7 +350,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
                     break;
                 }
             }
-            checkState(found, "Instrumentation config not found: %s", version);
+            if (!found) {
+                throw new OptimisticLockException();
+            }
             configService.updateInstrumentationConfigs(configs);
         }
     }
@@ -384,13 +390,15 @@ class ConfigRepositoryImpl implements ConfigRepository {
                     throw new DuplicateMBeanObjectNameException();
                 }
             }
-            checkState(found, "Gauge config not found: %s", priorVersion);
+            if (!found) {
+                throw new OptimisticLockException();
+            }
             configService.updateGaugeConfigs(configs);
         }
     }
 
     @Override
-    public void deleteGaugeConfig(String serverId, String version) throws IOException {
+    public void deleteGaugeConfig(String serverId, String version) throws Exception {
         synchronized (writeLock) {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
             boolean found = false;
@@ -402,7 +410,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
                     break;
                 }
             }
-            checkState(found, "Gauge config not found: %s", version);
+            if (!found) {
+                throw new OptimisticLockException();
+            }
             configService.updateGaugeConfigs(configs);
         }
     }

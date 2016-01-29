@@ -33,6 +33,9 @@
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+    <div ng-if="agentNotConnected" class="alert alert-warning">
+      Limited functionality since agent is not currently connected to the central server
+    </div>
     <div ng-form
          gt-form-with-primary-button
          gt-form-autofocus-on-first-input
@@ -115,8 +118,9 @@
               </td>
             </tr>
           </table>
-          <div ng-show="!allMBeanAttributes.length && !mbeanUnavailable && !mbeanUnmatched && config.selectedMBeanObjectName"
-               class="gt-red">
+          <div
+              ng-show="!allMBeanAttributes.length && !mbeanUnavailable && !mbeanUnmatched && config.selectedMBeanObjectName"
+              class="gt-red">
             There are no number-valued attributes for this MBean
           </div>
         </div>

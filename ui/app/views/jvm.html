@@ -49,41 +49,41 @@
     </div>
   </div>
 </div>
-<div ng-if="!layout.central || layout.serverRollups[serverRollup].leaf">
-  <div class="panel panel-default gt-sidebar hidden-print">
-    <ul class="list-group">
-      <div gt-sidebar-item
-           gt-display="Gauges"
-           gt-url="jvm/gauges{{serverQueryString()}}"
-           gt-active="currentUrl() === 'jvm/gauges'">
-      </div>
-      <div gt-sidebar-item
-           gt-display="Process info"
-           gt-url="jvm/process-info{{serverQueryString()}}"
-           ng-if="layout.serverRollups[serverRollup].leaf"
-           gt-active="currentUrl() === 'jvm/process-info'">
-      </div>
-      <div gt-sidebar-item
-           gt-display="Thread dump"
-           gt-url="jvm/thread-dump{{serverQueryString()}}"
-           gt-active="currentUrl() === 'jvm/thread-dump'">
-      </div>
-      <div gt-sidebar-item
-           gt-display="Heap dump"
-           gt-url="jvm/heap-dump{{serverQueryString()}}"
-           gt-active="currentUrl() === 'jvm/heap-dump'">
-      </div>
-      <div gt-sidebar-item
-           gt-display="MBean tree"
-           gt-url="jvm/mbean-tree{{serverQueryString()}}"
-           gt-active="currentUrl() === 'jvm/mbean-tree'">
-      </div>
-    </ul>
-  </div>
-  <div ui-view autoscroll="false" class="gt-main-column">
-  </div>
+<div class="panel panel-default gt-sidebar hidden-print">
+  <ul class="list-group">
+    <div gt-sidebar-item
+         gt-display="Gauges"
+         gt-url="jvm/gauges{{serverQueryString()}}"
+         gt-active="currentUrl() === 'jvm/gauges'">
+    </div>
+    <div gt-sidebar-item
+         gt-display="Process info"
+         gt-url="jvm/process-info{{serverQueryString()}}"
+         gt-active="currentUrl() === 'jvm/process-info'">
+    </div>
+    <div gt-sidebar-item
+         gt-display="Thread dump"
+         gt-url="jvm/thread-dump{{serverQueryString()}}"
+         gt-active="currentUrl() === 'jvm/thread-dump'">
+    </div>
+    <div gt-sidebar-item
+         gt-display="Heap dump"
+         gt-url="jvm/heap-dump{{serverQueryString()}}"
+         gt-active="currentUrl() === 'jvm/heap-dump'">
+    </div>
+    <div gt-sidebar-item
+         gt-display="MBean tree"
+         gt-url="jvm/mbean-tree{{serverQueryString()}}"
+         gt-active="currentUrl() === 'jvm/mbean-tree'">
+    </div>
+  </ul>
 </div>
-<div ng-if="layout.central && !layout.serverRollups[serverRollup].leaf">
-  <div ui-view autoscroll="false">
+<div class="panel panel-default gt-main-column">
+  <div class="panel-heading">
+    <h2>{{heading}}</h2>
+  </div>
+  <div class="panel-body">
+    <div ui-view autoscroll="false" ng-hide="hideMainContent()">
+    </div>
   </div>
 </div>

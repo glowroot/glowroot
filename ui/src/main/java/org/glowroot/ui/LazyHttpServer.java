@@ -40,7 +40,7 @@ class LazyHttpServer {
     private final LayoutService layoutService;
     private final TraceDetailHttpService traceDetailHttpService;
     private final TraceExportHttpService traceExportHttpService;
-    private final @Nullable GlowrootLogHttpService glowrootLogHttpService;
+    private final GlowrootLogHttpService glowrootLogHttpService;
     private final List<Object> jsonServices;
     private final int numWorkerThreads;
 
@@ -50,7 +50,7 @@ class LazyHttpServer {
             IndexHtmlHttpService indexHtmlHttpService, LayoutHttpService layoutHttpService,
             LayoutService layoutService, TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService,
-            @Nullable GlowrootLogHttpService glowrootLogHttpService, List<Object> jsonServices,
+            GlowrootLogHttpService glowrootLogHttpService, List<Object> jsonServices,
             int numWorkerThreads) {
         this.bindAddress = bindAddress;
         this.port = port;
@@ -90,6 +90,7 @@ class LazyHttpServer {
         httpServices.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/login$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/log$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/backend/layout$"), layoutHttpService);
         // export service is not bound under /backend since the export url is visible to users
         // as the download url for the export file
@@ -99,10 +100,7 @@ class LazyHttpServer {
                 traceDetailHttpService);
         httpServices.put(Pattern.compile("^/backend/trace/aux-thread-profile$"),
                 traceDetailHttpService);
-        if (glowrootLogHttpService != null) {
-            httpServices.put(Pattern.compile("^/backend/jvm/glowroot-log$"),
-                    glowrootLogHttpService);
-        }
+        httpServices.put(Pattern.compile("^/backend/log$"), glowrootLogHttpService);
         // services
         try {
             return new HttpServer(bindAddress, port, numWorkerThreads, layoutService, httpServices,

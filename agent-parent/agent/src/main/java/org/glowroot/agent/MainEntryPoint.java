@@ -164,7 +164,11 @@ public class MainEntryPoint {
         if (propFile.exists()) {
             Properties props = new Properties();
             InputStream in = new FileInputStream(propFile);
-            props.load(in);
+            try {
+                props.load(in);
+            } finally {
+                in.close();
+            }
             for (String key : props.stringPropertyNames()) {
                 String value = props.getProperty(key);
                 if (value != null) {

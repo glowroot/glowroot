@@ -1,5 +1,5 @@
 <!--
-  Copyright 2014-2016 the original author or authors.
+  Copyright 2015-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -13,14 +13,20 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div ng-if="agentNotConnected" class="alert alert-danger">
-  This feature is only available when the agent is running and connected to the central server
-</div>
-<div ng-if="loaded && !agentNotConnected">
+<div style="padding-top: 50px;">
+  <div class="clearfix"
+       style="float: right;">
+    <button class="btn btn-default"
+            ng-click="exportAsText()">
+      Export as text
+    </button>
+  </div>
   <div gt-button
        gt-label="Refresh"
        gt-click="refresh(deferred)"
        style="margin-bottom: 20px;">
   </div>
-  <div ng-repeat="(domain, node) in mbeanTree" ng-include="'template/gt-mbean-node.html'"></div>
+  <div class="gt-thread-dump-flat-pre"
+       ng-class="{hide: !loaded}"><br>{{log}}<!-- lack of space here is significant
+--></div>
 </div>

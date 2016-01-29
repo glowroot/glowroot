@@ -87,18 +87,24 @@ glowroot.controller('ConfigGaugeCtrl', [
       $http.get('backend/config/gauges?server-id=' + encodeURIComponent($scope.serverId) + '&version=' + version)
           .success(function (data) {
             $scope.loaded = true;
+            $scope.agentNotConnected = data.agentNotConnected;
             onNewData(data);
           })
           .error(httpErrors.handler($scope));
     } else {
-      $scope.loaded = true;
-      onNewData({
-        config: {
-          mbeanAttributes: []
-        },
-        mbeanAvailable: false,
-        mbeanAvailableAttributeNames: []
-      });
+      $http.get('backend/jvm/agent-connected?server-id=' + encodeURIComponent($scope.serverId))
+          .success(function (data) {
+            $scope.loaded = true;
+            $scope.agentNotConnected = !data;
+            onNewData({
+              config: {
+                mbeanAttributes: []
+              },
+              mbeanAvailable: false,
+              mbeanAvailableAttributeNames: []
+            });
+          })
+          .error(httpErrors.handler($scope));
     }
 
     $scope.$watch('allMBeanAttributes', function (newValue, oldValue) {
@@ -136,14 +142,14 @@ glowroot.controller('ConfigGaugeCtrl', [
         limit: 10
       };
       $scope.showMBeanObjectNameSpinner++;
-      // use 'then' method to return promise
+      // using 'then' method to return promise
       return $http.get('backend/config/matching-mbean-objects' + queryStrings.encodeObject(queryData))
           .then(function (response) {
             $scope.showMBeanObjectNameSpinner--;
             return response.data;
-          }, function (data, status) {
+          }, function (response) {
             $scope.showMBeanObjectNameSpinner--;
-            httpErrors.handler($scope)(data, status);
+            httpErrors.handler($scope)(response.data, response.status);
           });
     };
 
@@ -222,12 +228,11 @@ glowroot.controller('ConfigGaugeCtrl', [
             deferred.resolve(version ? 'Saved' : 'Added');
             version = data.config.version;
             // fix current url (with updated version) before returning to list page in case back button is used later
-            $timeout(function () {
+            if (postData.serverId) {
+              $location.search({'server-id': postData.serverId, v: version}).replace();
+            } else {
               $location.search({v: version}).replace();
-              $timeout(function () {
-                $location.url('config/gauge-list');
-              });
-            });
+            }
           })
           .error(function (data, status) {
             if (status === 409 && data.message === 'mbeanObjectName') {
@@ -247,7 +252,11 @@ glowroot.controller('ConfigGaugeCtrl', [
       $http.post('backend/config/gauges/remove', postData)
           .success(function () {
             removeConfirmIfHasChangesListener();
-            $location.url('config/gauge-list').replace();
+            if (postData.serverId) {
+              $location.url('config/gauge-list?server-id=' + encodeURIComponent(postData.serverId)).replace();
+            } else {
+              $location.url('config/gauge-list').replace();
+            }
           })
           .error(httpErrors.handler($scope, deferred));
     };

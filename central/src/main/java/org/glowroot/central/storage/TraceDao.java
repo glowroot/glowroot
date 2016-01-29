@@ -74,6 +74,9 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement insertOverallErrorPoint;
     private final PreparedStatement insertTransactionErrorPoint;
 
+    private final PreparedStatement insertOverallErrorCount;
+    private final PreparedStatement insertTransactionErrorCount;
+
     private final PreparedStatement insertOverallErrorMessage;
     private final PreparedStatement insertTransactionErrorMessage;
 
@@ -82,6 +85,8 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement insertMainThreadProfile;
     private final PreparedStatement insertAuxThreadProfile;
 
+    private final PreparedStatement insertAttributeName;
+
     private final PreparedStatement readOverallSlowPoint;
     private final PreparedStatement readTransactionSlowPoint;
     private final PreparedStatement readOverallErrorPoint;
@@ -89,6 +94,8 @@ public class TraceDao implements TraceRepository {
 
     private final PreparedStatement readOverallErrorMessage;
     private final PreparedStatement readTransactionErrorMessage;
+
+    private final PreparedStatement readAttributeName;
 
     private final PreparedStatement readHeader;
 
@@ -139,9 +146,9 @@ public class TraceDao implements TraceRepository {
         session.execute("create table if not exists trace_header (server_id varchar,"
                 + " trace_id varchar, header blob, primary key (server_id, trace_id))");
 
-        // entries is cassandra reserved word
+        // "entries" is cassandra reserved word
         session.execute("create table if not exists trace_entries (server_id varchar,"
-                + " trace_id varchar, entriesx blob, primary key (server_id, trace_id))");
+                + " trace_id varchar, entries_ blob, primary key (server_id, trace_id))");
 
         session.execute("create table if not exists trace_main_thread_profile (server_id varchar,"
                 + " trace_id varchar, profile blob, primary key (server_id, trace_id))");
@@ -163,15 +170,19 @@ public class TraceDao implements TraceRepository {
                 + " server_id varchar, trace_id varchar, primary key ((server_rollup,"
                 + " transaction_type, transaction_name), capture_time, server_id, trace_id))");
 
-        session.execute("create table if not exists trace_tt_error (server_rollup varchar,"
+        session.execute("create table if not exists trace_tt_error_count (server_rollup varchar,"
                 + " transaction_type varchar, capture_time timestamp, server_id varchar,"
                 + " trace_id varchar, primary key ((server_rollup, transaction_type), capture_time,"
                 + " server_id, trace_id))");
 
-        session.execute("create table if not exists trace_tn_error (server_rollup varchar,"
+        session.execute("create table if not exists trace_tn_error_count (server_rollup varchar,"
                 + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
                 + " server_id varchar, trace_id varchar, primary key ((server_rollup,"
                 + " transaction_type, transaction_name), capture_time, server_id, trace_id))");
+
+        session.execute("create table if not exists trace_attribute_name (server_rollup varchar,"
+                + " transaction_type varchar, attribute_name varchar, primary key ((server_rollup,"
+                + " transaction_type), attribute_name))");
 
         insertOverallSlowPoint = session.prepare("insert into trace_tt_slow_point (server_rollup,"
                 + " transaction_type, capture_time, server_id, trace_id, duration_nanos, error,"
@@ -198,6 +209,13 @@ public class TraceDao implements TraceRepository {
                 + " trace_id, duration_nanos, error_message, user, attributes) values"
                 + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
+        insertOverallErrorCount = session.prepare("insert into trace_tt_error_count (server_rollup,"
+                + " transaction_type, capture_time, server_id, trace_id) values (?, ?, ?, ?, ?)");
+
+        insertTransactionErrorCount = session.prepare("insert into trace_tn_error_count"
+                + " (server_rollup, transaction_type, transaction_name, capture_time, server_id,"
+                + " trace_id) values (?, ?, ?, ?, ?, ?)");
+
         insertOverallErrorMessage = session.prepare("insert into trace_tt_error_message"
                 + " (server_rollup, transaction_type, capture_time, server_id, trace_id,"
                 + " error_message) values (?, ?, ?, ?, ?, ?)");
@@ -210,13 +228,16 @@ public class TraceDao implements TraceRepository {
                 .prepare("insert into trace_header (server_id, trace_id, header) values (?, ?, ?)");
 
         insertEntries = session.prepare(
-                "insert into trace_entries (server_id, trace_id, entriesx) values (?, ?, ?)");
+                "insert into trace_entries (server_id, trace_id, entries_) values (?, ?, ?)");
 
         insertMainThreadProfile = session.prepare("insert into trace_main_thread_profile"
                 + " (server_id, trace_id, profile) values (?, ?, ?)");
 
         insertAuxThreadProfile = session.prepare("insert into trace_aux_thread_profile"
                 + " (server_id, trace_id, profile) values (?, ?, ?)");
+
+        insertAttributeName = session.prepare("insert into trace_attribute_name (server_rollup,"
+                + " transaction_type, attribute_name) values (?, ?, ?)");
 
         readOverallSlowPoint = session.prepare("select server_id, trace_id, capture_time,"
                 + " duration_nanos, error, user, attributes from trace_tt_slow_point"
@@ -245,6 +266,9 @@ public class TraceDao implements TraceRepository {
         readTransactionErrorMessage = session.prepare("select capture_time, error_message"
                 + " from trace_tn_error_message where server_rollup = ? and transaction_type = ?"
                 + " and transaction_name = ? and capture_time > ? and capture_time <= ?");
+
+        readAttributeName = session.prepare("select attribute_name from trace_attribute_name"
+                + " where server_rollup = ? and transaction_type = ?");
 
         readHeader = session
                 .prepare("select header from trace_header where server_id = ? and trace_id = ?");
@@ -385,9 +409,35 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
                 boundStatement.setBytes(i++, Messages.toByteBuffer(header.getAttributeList()));
                 session.execute(boundStatement);
+
+                boundStatement = insertOverallErrorCount.bind();
+                i = 0;
+                boundStatement.setString(i++, serverRollup);
+                boundStatement.setString(i++, header.getTransactionType());
+                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
+                boundStatement.setString(i++, serverId);
+                boundStatement.setString(i++, trace.getId());
+                session.execute(boundStatement);
+
+                boundStatement = insertTransactionErrorCount.bind();
+                i = 0;
+                boundStatement.setString(i++, serverRollup);
+                boundStatement.setString(i++, header.getTransactionType());
+                boundStatement.setString(i++, header.getTransactionName());
+                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
+                boundStatement.setString(i++, serverId);
+                boundStatement.setString(i++, trace.getId());
+                session.execute(boundStatement);
             }
             serverDao.updateLastCaptureTime(serverRollup, serverRollup.equals(serverId));
             transactionTypeDao.updateLastCaptureTime(serverRollup, header.getTransactionType());
+            for (Trace.Attribute attributeName : header.getAttributeList()) {
+                BoundStatement boundStatement = insertAttributeName.bind();
+                boundStatement.setString(0, serverRollup);
+                boundStatement.setString(1, header.getTransactionType());
+                boundStatement.setString(2, attributeName.getName());
+                session.execute(boundStatement);
+            }
         }
 
         BoundStatement boundStatement = insertHeader.bind();
@@ -423,9 +473,16 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public List<String> readTraceAttributeNames(String serverRollup) {
-        // FIXME
-        return ImmutableList.of();
+    public List<String> readTraceAttributeNames(String serverRollup, String transactionType) {
+        BoundStatement boundStatement = readAttributeName.bind();
+        boundStatement.setString(0, serverRollup);
+        boundStatement.setString(1, transactionType);
+        ResultSet results = session.execute(boundStatement);
+        List<String> attributeNames = Lists.newArrayList();
+        for (Row row : results) {
+            attributeNames.add(row.getString(0));
+        }
+        return attributeNames;
     }
 
     @Override
@@ -502,14 +559,14 @@ public class TraceDao implements TraceRepository {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             ResultSet results = session.execute(
-                    "select count(*) from trace_tt_error where server_rollup = ?"
+                    "select count(*) from trace_tt_error_count where server_rollup = ?"
                             + " and transaction_type = ? and capture_time > ?"
                             + " and capture_time <= ?",
                     query.serverRollup(), query.transactionType(), query.from(), query.to());
             return results.one().getLong(0);
         } else {
             ResultSet results = session.execute(
-                    "select count(*) from trace_tn_error where server_rollup = ?"
+                    "select count(*) from trace_tn_error_count where server_rollup = ?"
                             + " and transaction_type = ? and transaction_name = ?"
                             + " and capture_time > ? and capture_time <= ?",
                     query.serverRollup(), query.transactionType(), transactionName, query.from(),
@@ -599,7 +656,7 @@ public class TraceDao implements TraceRepository {
 
     @Override
     public List<Trace.Entry> readEntries(String serverId, String traceId) throws IOException {
-        ResultSet results = session.execute("select entriesx from trace_entries where server_id = ?"
+        ResultSet results = session.execute("select entries_ from trace_entries where server_id = ?"
                 + " and trace_id = ?", serverId, traceId);
         Row row = results.one();
         if (row == null) {

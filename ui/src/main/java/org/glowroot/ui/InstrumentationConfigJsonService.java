@@ -15,7 +15,6 @@
  */
 package org.glowroot.ui;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +35,7 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
@@ -85,11 +85,18 @@ class InstrumentationConfigJsonService {
             for (InstrumentationConfig config : configs) {
                 dtos.add(InstrumentationConfigDto.create(config));
             }
-            GlobalMeta globalMeta = liveWeavingService.getGlobalMeta(serverId);
+            GlobalMeta globalMeta;
+            try {
+                globalMeta = liveWeavingService.getGlobalMeta(serverId);
+            } catch (AgentNotConnectedException e) {
+                logger.debug(e.getMessage(), e);
+                globalMeta = null;
+            }
             return mapper.writeValueAsString(ImmutableInstrumentationListResponse.builder()
                     .addAllConfigs(dtos)
-                    .jvmOutOfSync(globalMeta.getJvmOutOfSync())
-                    .jvmRetransformClassesSupported(globalMeta.getJvmRetransformClassesSupported())
+                    .jvmOutOfSync(globalMeta != null && globalMeta.getJvmOutOfSync())
+                    .jvmRetransformClassesSupported(
+                            globalMeta != null && globalMeta.getJvmRetransformClassesSupported())
                     .build());
         }
     }
@@ -106,6 +113,8 @@ class InstrumentationConfigJsonService {
             public void run() {
                 try {
                     liveWeavingService.preloadClasspathCache(serverId);
+                } catch (AgentNotConnectedException e) {
+                    logger.debug(e.getMessage(), e);
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                 }
@@ -149,7 +158,7 @@ class InstrumentationConfigJsonService {
     String addInstrumentationConfig(String content) throws Exception {
         InstrumentationConfigDto configDto =
                 mapper.readValue(content, ImmutableInstrumentationConfigDto.class);
-        String serverId = checkNotNull(configDto.serverId());
+        String serverId = configDto.serverId().get();
         InstrumentationConfig config = configDto.convert();
         configRepository.insertInstrumentationConfig(serverId, config);
         return getInstrumentationConfigInternal(serverId, Versions.getVersion(config));
@@ -159,7 +168,7 @@ class InstrumentationConfigJsonService {
     String updateInstrumentationConfig(String content) throws Exception {
         InstrumentationConfigDto configDto =
                 mapper.readValue(content, ImmutableInstrumentationConfigDto.class);
-        String serverId = checkNotNull(configDto.serverId());
+        String serverId = configDto.serverId().get();
         InstrumentationConfig config = configDto.convert();
         String version = configDto.version();
         checkNotNull(version, "Missing required request property: version");
@@ -168,7 +177,7 @@ class InstrumentationConfigJsonService {
     }
 
     @POST("/backend/config/instrumentation/remove")
-    void removeInstrumentationConfig(String content) throws IOException {
+    void removeInstrumentationConfig(String content) throws Exception {
         InstrumentationConfigRequest request =
                 mapper.readValue(content, ImmutableInstrumentationConfigRequest.class);
         configRepository.deleteInstrumentationConfig(request.serverId(), request.version().get());
@@ -181,15 +190,45 @@ class InstrumentationConfigJsonService {
         if (config == null) {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }
-        List<MethodSignature> methodSignatures = liveWeavingService.getMethodSignatures(serverId,
-                config.getClassName(), config.getMethodName());
+        List<MethodSignature> methodSignatures;
+        try {
+            methodSignatures = liveWeavingService.getMethodSignatures(serverId,
+                    config.getClassName(), config.getMethodName());
+        } catch (AgentNotConnectedException e) {
+            logger.debug(e.getMessage(), e);
+            methodSignatures = null;
+        }
+
         ImmutableInstrumentationConfigResponse.Builder builder =
                 ImmutableInstrumentationConfigResponse.builder()
+                        .agentNotConnected(methodSignatures == null)
                         .config(InstrumentationConfigDto.create(config));
-        for (MethodSignature methodSignature : methodSignatures) {
-            builder.addMethodSignatures(MethodSignatureDto.create(methodSignature));
+        if (methodSignatures == null) {
+            // agent not connected
+            List<String> modifiers = Lists.newArrayList();
+            if (!isSignatureAll(config)) {
+                for (MethodModifier modifier : config.getMethodModifierList()) {
+                    modifiers.add(modifier.name());
+                }
+                builder.addMethodSignatures(ImmutableMethodSignatureDto.builder()
+                        .name(config.getMethodName())
+                        .parameterTypes(config.getMethodParameterTypeList())
+                        .returnType(config.getMethodReturnType())
+                        .modifiers(modifiers)
+                        .build());
+            }
+        } else {
+            for (MethodSignature methodSignature : methodSignatures) {
+                builder.addMethodSignatures(MethodSignatureDto.create(methodSignature));
+            }
         }
         return mapper.writeValueAsString(builder.build());
+    }
+
+    private static boolean isSignatureAll(InstrumentationConfig config) {
+        return config.getMethodModifierCount() == 0 && config.getMethodReturnType().isEmpty()
+                && config.getMethodParameterTypeCount() == 1
+                && config.getMethodParameterType(0).equals("..");
     }
 
     private static String getServerId(String queryString) {
@@ -233,6 +272,7 @@ class InstrumentationConfigJsonService {
 
     @Value.Immutable
     interface InstrumentationConfigResponse {
+        boolean agentNotConnected();
         InstrumentationConfigDto config();
         ImmutableList<MethodSignatureDto> methodSignatures();
     }
@@ -247,7 +287,7 @@ class InstrumentationConfigJsonService {
     abstract static class InstrumentationConfigDto {
 
         @JsonInclude(value = Include.NON_EMPTY)
-        abstract @Nullable String serverId(); // only used in request
+        abstract Optional<String> serverId(); // only used in request
         abstract String className();
         abstract String classAnnotation();
         abstract String methodDeclaringClassName();

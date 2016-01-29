@@ -136,7 +136,11 @@ glowroot.run([
       if (!$rootScope.layout) {
         return [];
       }
-      var serverRollupObj = $rootScope.layout.serverRollups[$rootScope.serverRollup];
+      // can't use $rootScope.serverRollup here because this function is called from waitForLayout() function in
+      // routes.js before $rootScope.serverRollup is set (note for testing, this is only a problem when not under grunt
+      // serve)
+      var serverRollup = $location.search()['server-rollup'] || $location.search()['server-id'];
+      var serverRollupObj = $rootScope.layout.serverRollups[serverRollup];
       if (!serverRollupObj) {
         return [];
       }

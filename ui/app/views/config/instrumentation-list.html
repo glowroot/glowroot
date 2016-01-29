@@ -18,50 +18,52 @@
     <h2>Instrumentation</h2>
   </div>
   <div class="panel-body">
-    <div ng-include src="'template/gt-loading-overlay.html'"></div>
-    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-    <div style="margin: 15px;">
-      <div ng-repeat="config in configs"
-           class="gt-second-line-indent"
-           style="padding-bottom: 8px;">
+    <div ng-hide="hideMainContent()">
+      <div ng-include src="'template/gt-loading-overlay.html'"></div>
+      <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+      <div style="margin: 15px;">
+        <div ng-repeat="config in configs"
+             class="gt-second-line-indent"
+             style="padding-bottom: 8px;">
         <span style="padding-right: 20px;">
           {{displayExtra(config)}}
         </span>
-        <a ng-href="config/instrumentation{{instrumentationQueryString(config)}}">
-          {{display(config)}}
-        </a>
-      </div>
-      <div style="margin: 20px 60px 0 0;" ng-if="dirty">
-        <strong>Restart the JVM to apply changes.</strong>
+          <a ng-href="config/instrumentation{{instrumentationQueryString(config)}}">
+            {{display(config)}}
+          </a>
+        </div>
+        <div style="margin: 20px 60px 0 0;" ng-if="dirty">
+          <strong>Restart the JVM to apply changes.</strong>
         <span style="font-style: italic;" ng-if="jvmRetransformClassesSupported">
           Feeling lucky? Try the red button.
         </span>
-      </div>
-      <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
-           before it gets pushed down by existing instrumentation -->
-      <div ng-show="loaded"
-           style="font-size: 16px; margin-top: 30px;">
-        <!-- using gt-button-group even though only a single gt-button because otherwise the success message will be
-             tied to the gt-button which will then get hidden due to ng-show="dirty" -->
-        <div gt-button-group>
-          <a class="btn btn-primary pull-left"
-             href="config/instrumentation{{newQueryString()}}">
-            Add new
-          </a>
-          <button ng-click="displayImportModal()"
-                  class="btn btn-default pull-left"
-                  style="margin-left: 8px;">
-            Import
-          </button>
-          <div gt-button
-               gt-btn-class="btn-danger"
-               gt-label="Apply changes to running JVM"
-               gt-click="retransformClasses(deferred)"
-               gt-confirm-header="Apply changes to running JVM?"
-               gt-confirm-body="Important: Do not use this in production as it has chance of crashing the JVM."
-               ng-if="dirty && jvmRetransformClassesSupported"
-               class="pull-left"
-               style="margin-left: 8px;">
+        </div>
+        <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
+             before it gets pushed down by existing instrumentation -->
+        <div ng-show="loaded"
+             style="font-size: 16px; margin-top: 30px;">
+          <!-- using gt-button-group even though only a single gt-button because otherwise the success message will be
+               tied to the gt-button which will then get hidden due to ng-show="dirty" -->
+          <div gt-button-group>
+            <a class="btn btn-primary pull-left"
+               href="config/instrumentation{{newQueryString()}}">
+              Add new
+            </a>
+            <button ng-click="displayImportModal()"
+                    class="btn btn-default pull-left"
+                    style="margin-left: 8px;">
+              Import
+            </button>
+            <div gt-button
+                 gt-btn-class="btn-danger"
+                 gt-label="Apply changes to running JVM"
+                 gt-click="retransformClasses(deferred)"
+                 gt-confirm-header="Apply changes to running JVM?"
+                 gt-confirm-body="Important: Do not use this in production as it has chance of crashing the JVM."
+                 ng-if="dirty && jvmRetransformClassesSupported"
+                 class="pull-left"
+                 style="margin-left: 8px;">
+            </div>
           </div>
         </div>
       </div>

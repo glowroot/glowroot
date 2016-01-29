@@ -92,8 +92,9 @@ public class ServerDao implements ServerRepository {
         return rollups;
     }
 
-    public void store(String serverId, ProcessInfo processInfo, AgentConfig agentConfig)
-            throws InvalidProtocolBufferException {
+    // returns stored agent config
+    public AgentConfig store(String serverId, ProcessInfo processInfo,
+            AgentConfig agentConfig) throws InvalidProtocolBufferException {
         AgentConfig existingAgentConfig = null;
         BoundStatement boundStatement = existsPS.bind();
         boundStatement.setString(0, serverId);
@@ -105,11 +106,9 @@ public class ServerDao implements ServerRepository {
         boundStatement.setString(0, serverId);
         boundStatement.setBytes(1, ByteBuffer.wrap(processInfo.toByteArray()));
         session.execute(boundStatement);
+        AgentConfig updatedAgentConfig;
         if (existingAgentConfig == null) {
-            boundStatement = insertAgentConfigPS.bind();
-            boundStatement.setString(0, serverId);
-            boundStatement.setBytes(1, ByteBuffer.wrap(agentConfig.toByteArray()));
-            session.execute(boundStatement);
+            updatedAgentConfig = agentConfig;
         } else {
             // sync list of plugin properties, central property values win
             Map<String, PluginConfig> existingPluginConfigs = Maps.newHashMap();
@@ -147,21 +146,22 @@ public class ServerDao implements ServerRepository {
                         .addAllProperty(properties)
                         .build());
             }
-            AgentConfig config = AgentConfig.newBuilder(existingAgentConfig)
+            updatedAgentConfig = AgentConfig.newBuilder(existingAgentConfig)
                     .clearPluginConfig()
                     .addAllPluginConfig(pluginConfigs)
                     .build();
-            boundStatement = insertAgentConfigPS.bind();
-            boundStatement.setString(0, serverId);
-            boundStatement.setBytes(1, ByteBuffer.wrap(config.toByteArray()));
-            session.execute(boundStatement);
         }
+        boundStatement = insertAgentConfigPS.bind();
+        boundStatement.setString(0, serverId);
+        boundStatement.setBytes(1, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
+        session.execute(boundStatement);
         // insert into server last so readProcessInfo() and readAgentConfig() below are more likely
         // to return non-null
         boundStatement = insertPS.bind();
         boundStatement.setString(0, serverId);
         boundStatement.setBool(1, true);
         session.execute(boundStatement);
+        return updatedAgentConfig;
     }
 
     @Override

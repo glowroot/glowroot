@@ -45,16 +45,22 @@ glowroot.controller('TransactionCtrl', [
     $scope.hideTransactionTypeDropdown = function () {
       var serverRollup = $scope.layout.serverRollups[$scope.serverRollup];
       if (!serverRollup) {
-        return true;
+        // show empty dropdown
+        return false;
       }
       var transactionTypes = serverRollup.transactionTypes;
       if (!transactionTypes) {
-        return true;
+        // show empty dropdown
+        return false;
       }
       if (transactionTypes.length === 1 && transactionTypes[0] === $scope.transactionType) {
         return true;
       }
       return false;
+    };
+
+    $scope.hideMainContent = function () {
+      return ($scope.layout.central && !$scope.serverRollup) || !$scope.transactionType;
     };
 
     $scope.headerQueryString = function (serverRollup, transactionType) {
@@ -153,7 +159,14 @@ glowroot.controller('TransactionCtrl', [
     $scope.buildQueryObject = function (baseQuery) {
       var query = baseQuery || angular.copy($location.search());
       if ($scope.layout.central) {
-        query['server-rollup'] = $scope.serverRollup;
+        var serverRollupObj = $scope.layout.serverRollups[$scope.serverRollup];
+        if (serverRollupObj) {
+          if (serverRollupObj.leaf) {
+            query['server-id'] = $scope.serverRollup;
+          } else {
+            query['server-rollup'] = $scope.serverRollup;
+          }
+        }
       }
       query['transaction-type'] = $scope.transactionType;
       query['transaction-name'] = $scope.transactionName;

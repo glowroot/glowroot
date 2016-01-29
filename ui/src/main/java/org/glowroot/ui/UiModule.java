@@ -48,7 +48,7 @@ public class UiModule {
             boolean central,
             @Nullable Ticker ticker, // @Nullable to deal with shading from central
             Clock clock,
-            @Nullable File logDir,
+            File logDir,
             @Nullable LiveJvmService liveJvmService,
             ConfigRepository configRepository,
             ServerRepository serverRepository,
@@ -86,12 +86,7 @@ public class UiModule {
                 new TraceDetailHttpService(traceCommonService);
         TraceExportHttpService traceExportHttpService =
                 new TraceExportHttpService(traceCommonService, version);
-        GlowrootLogHttpService glowrootLogHttpService;
-        if (logDir == null) {
-            glowrootLogHttpService = null;
-        } else {
-            glowrootLogHttpService = new GlowrootLogHttpService(logDir);
-        }
+        GlowrootLogHttpService glowrootLogHttpService = new GlowrootLogHttpService(logDir);
         ErrorCommonService errorCommonService = new ErrorCommonService(aggregateRepository);
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
                 transactionCommonService, traceRepository, rollupLevelService, clock);

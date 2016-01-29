@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ glowroot.controller('ConfigAlertCtrl', [
     }
 
     if (version) {
-      $http.get('backend/config/alerts?version=' + version)
+      $http.get('backend/config/alerts?server-id=' + encodeURIComponent($scope.serverId) + '&version=' + version)
           .success(function (data) {
             $scope.loaded = true;
             onNewData(data);
@@ -83,6 +83,7 @@ glowroot.controller('ConfigAlertCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
+      postData.serverId = $scope.serverId;
       var url;
       if (version) {
         url = 'backend/config/alerts/update';
@@ -95,12 +96,11 @@ glowroot.controller('ConfigAlertCtrl', [
             deferred.resolve(version ? 'Saved' : 'Added');
             version = data.version;
             // fix current url (with updated version) before returning to list page in case back button is used later
-            $timeout(function () {
+            if (postData.serverId) {
+              $location.search({'server-id': postData.serverId, v: version}).replace();
+            } else {
               $location.search({v: version}).replace();
-              $timeout(function () {
-                $location.url('config/alert-list');
-              });
-            });
+            }
           })
           .error(function (data, status) {
             httpErrors.handler($scope, deferred)(data, status);
@@ -109,12 +109,17 @@ glowroot.controller('ConfigAlertCtrl', [
 
     $scope.delete = function (deferred) {
       var postData = {
+        serverId: $scope.serverId,
         version: $scope.config.version
       };
       $http.post('backend/config/alerts/remove', postData)
           .success(function () {
             removeConfirmIfHasChangesListener();
-            $location.url('config/alert-list').replace();
+            if (postData.serverId) {
+              $location.url('config/alert-list?server-id=' + encodeURIComponent(postData.serverId)).replace();
+            } else {
+              $location.url('config/alert-list').replace();
+            }
           })
           .error(httpErrors.handler($scope, deferred));
     };

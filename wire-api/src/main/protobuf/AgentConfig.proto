@@ -100,8 +100,8 @@ message AgentConfig {
 
   enum MethodModifier {
     PUBLIC = 0;
-    STATIC = 4;
-    NOT_STATIC = 5;
+    STATIC = 1;
+    NOT_STATIC = 2;
   }
 
   enum CaptureKind {

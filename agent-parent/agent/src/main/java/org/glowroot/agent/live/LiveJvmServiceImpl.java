@@ -84,6 +84,11 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
+    public boolean isAvailable(String serverId) {
+        return true;
+    }
+
+    @Override
     public ThreadDump getThreadDump(String serverId) {
         return threadDumpService.getThreadDump();
     }

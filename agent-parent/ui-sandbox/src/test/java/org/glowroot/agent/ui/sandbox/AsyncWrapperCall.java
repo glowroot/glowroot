@@ -23,6 +23,9 @@ import java.util.concurrent.Future;
 
 class AsyncWrapperCall {
 
+    // re-using single executor to prevent spawning tons of threads
+    private static final ExecutorService executor = Executors.newCachedThreadPool();
+
     private final int maxTimeMillis;
     private final int maxTraceEntryMessageLength;
 
@@ -32,7 +35,6 @@ class AsyncWrapperCall {
     }
 
     void execute() throws InterruptedException, ExecutionException {
-        ExecutorService executor = Executors.newCachedThreadPool();
         Future<Void> future1 = executor.submit(new Callable<Void>() {
             @Override
             public Void call() throws Exception {

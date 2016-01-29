@@ -18,27 +18,29 @@
     <h2>Gauges</h2>
   </div>
   <div class="panel-body">
-    <div ng-include src="'template/gt-loading-overlay.html'"></div>
-    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-    <div style="margin: 15px;">
-      <div ng-repeat="gauge in gauges"
-           style="padding-bottom: 8px;">
-        <div>
-          <a ng-href="config/gauge{{gaugeQueryString(gauge)}}">{{display(gauge)}}</a>
+    <div ng-hide="hideMainContent()">
+      <div ng-include src="'template/gt-loading-overlay.html'"></div>
+      <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+      <div style="margin: 15px;">
+        <div ng-repeat="gauge in gauges"
+             style="padding-bottom: 8px;">
+          <div>
+            <a ng-href="config/gauge{{gaugeQueryString(gauge)}}">{{display(gauge)}}</a>
+          </div>
+          <div ng-repeat="mbeanAttribute in gauge.config.mbeanAttributes | orderBy:'name'"
+               style="margin-left: 40px;">
+            {{mbeanAttribute.name}}
+          </div>
         </div>
-        <div ng-repeat="mbeanAttribute in gauge.config.mbeanAttributes | orderBy:'name'"
-             style="margin-left: 40px;">
-          {{mbeanAttribute.name}}
+        <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
+             before it gets pushed down by existing gauge sections -->
+        <div ng-show="loaded"
+             style="margin-top: 30px;">
+          <a class="btn btn-primary"
+             href="config/gauge{{newQueryString()}}">
+            Add new
+          </a>
         </div>
-      </div>
-      <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
-           before it gets pushed down by existing gauge sections -->
-      <div ng-show="loaded"
-           style="margin-top: 30px;">
-        <a class="btn btn-primary"
-           href="config/gauge{{newQueryString()}}">
-          Add new
-        </a>
       </div>
     </div>
   </div>

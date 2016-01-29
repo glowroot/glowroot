@@ -171,7 +171,7 @@ class ConfigJsonService {
     String updateTransactionConfig(String content) throws Exception {
         TransactionConfigDto configDto =
                 mapper.readValue(content, ImmutableTransactionConfigDto.class);
-        String serverId = checkNotNull(configDto.serverId());
+        String serverId = configDto.serverId().get();
         try {
             configRepository.updateTransactionConfig(serverId, configDto.convert(),
                     configDto.version());
@@ -185,7 +185,7 @@ class ConfigJsonService {
     String updateUserRecordingConfig(String content) throws Exception {
         UserRecordingConfigDto configDto =
                 mapper.readValue(content, ImmutableUserRecordingConfigDto.class);
-        String serverId = checkNotNull(configDto.serverId());
+        String serverId = configDto.serverId().get();
         try {
             configRepository.updateUserRecordingConfig(serverId, configDto.convert(),
                     configDto.version());
@@ -198,7 +198,7 @@ class ConfigJsonService {
     @POST("/backend/config/advanced")
     String updateAdvancedConfig(String content) throws Exception {
         AdvancedConfigDto configDto = mapper.readValue(content, ImmutableAdvancedConfigDto.class);
-        String serverId = checkNotNull(configDto.serverId());
+        String serverId = configDto.serverId().get();
         try {
             configRepository.updateAdvancedConfig(serverId, configDto.convert(),
                     configDto.version());
@@ -437,7 +437,7 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class TransactionConfigDto {
 
-        abstract @Nullable String serverId(); // only used in request
+        abstract Optional<String> serverId(); // only used in request
         abstract int slowThresholdMillis();
         abstract int profilingIntervalMillis();
         abstract boolean captureThreadStats();
@@ -463,7 +463,7 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class UserRecordingConfigDto {
 
-        abstract @Nullable String serverId(); // only used in request
+        abstract Optional<String> serverId(); // only used in request
         abstract ImmutableList<String> users();
         abstract @Nullable Integer profilingIntervalMillis();
         abstract String version();
@@ -491,7 +491,7 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class AdvancedConfigDto {
 
-        abstract @Nullable String serverId(); // only used in request
+        abstract Optional<String> serverId(); // only used in request
         abstract boolean weavingTimer();
         abstract int immediatePartialStoreThresholdSeconds();
         abstract int maxAggregateTransactionsPerTransactionType();

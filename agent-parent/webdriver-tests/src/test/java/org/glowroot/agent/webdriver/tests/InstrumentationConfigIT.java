@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.glowroot.agent.webdriver.tests.config.ConfigSidebar;
 import org.glowroot.agent.webdriver.tests.config.InstrumentationConfigPage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.openqa.selenium.By.linkText;
 import static org.openqa.selenium.By.partialLinkText;
 import static org.openqa.selenium.By.xpath;
 
@@ -169,6 +170,7 @@ public class InstrumentationConfigIT extends WebDriverIT {
         configPage.getTransactionSlowThresholdMillisTextField().clear();
         configPage.getTransactionSlowThresholdMillisTextField().sendKeys("123");
         configPage.clickAddButton();
+        driver.findElement(linkText("Return to list")).click();
     }
 
     private void createTraceEntryInstrumentation() {
@@ -192,6 +194,7 @@ public class InstrumentationConfigIT extends WebDriverIT {
         configPage.getTimerNameTextField().clear();
         configPage.getTimerNameTextField().sendKeys("a timer");
         configPage.clickAddButton();
+        driver.findElement(linkText("Return to list")).click();
     }
 
     private void createTimerInstrumentation() {
@@ -206,5 +209,6 @@ public class InstrumentationConfigIT extends WebDriverIT {
         configPage.getTimerNameTextField().clear();
         configPage.getTimerNameTextField().sendKeys("a timer");
         configPage.clickAddButton();
+        driver.findElement(linkText("Return to list")).click();
     }
 }

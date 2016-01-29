@@ -13,73 +13,64 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="panel panel-default">
-  <div class="panel-heading">
-    <h2>Process info</h2>
+<div class="row gt-jvm-general-row">
+  <div>
+    <label class="col-md-3" style="text-align: right;">Host name</label>
   </div>
-  <div class="panel-body">
-    <div ng-include src="'template/gt-loading-overlay.html'"></div>
-    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-    <div class="row gt-jvm-general-row">
-      <div class="col-md-2" style="text-align: right;">
-        <label>Host name</label>
-      </div>
-      <div class="col-md-10">
-        <div>{{data.hostName}}</div>
-      </div>
-    </div>
-    <div class="row gt-jvm-general-row">
-      <div class="col-md-2" style="text-align: right;">
-        <label>Process ID</label>
-      </div>
-      <div class="col-md-10">
-        {{data.processId === undefined ? 'N/A' : data.processId}}
-      </div>
-    </div>
-    <div class="row gt-jvm-general-row">
-      <div class="col-md-2" style="text-align: right;">
-        <label>Start time</label>
-      </div>
-      <div class="col-md-10">
-        {{data.startTime | date:'medium'}}
-      </div>
-    </div>
-    <div class="row gt-jvm-general-row">
-      <div class="col-md-2" style="text-align: right;">
-        <label>Java</label>
-      </div>
-      <div class="col-md-10">
-        <div>{{data.java}}</div>
-      </div>
-    </div>
-    <div class="row gt-jvm-general-row">
-      <div class="col-md-2" style="text-align: right;">
-        <label>JVM</label>
-      </div>
-      <div class="col-md-10">
-        <div>{{data.jvm}}</div>
-      </div>
-    </div>
-    <div class="row gt-jvm-general-row">
-      <div class="col-md-2" style="text-align: right;">
-        <label>JVM args</label>
-      </div>
-      <div class="col-md-10">
-        <!-- track by $index is needed since duplicates are possible in this list -->
-        <div ng-repeat="arg in data.jvmArgs track by $index">
-          <div class="gt-jvm-argument gt-break-word">
-            {{arg}}
-          </div>
-        </div>
+  <div class="col-md-9">
+    {{data.hostName}}
+  </div>
+</div>
+<div class="row gt-jvm-general-row">
+  <div>
+    <label class="col-md-3" style="text-align: right;">Process ID</label>
+  </div>
+  <div class="col-md-9">
+    {{data.processId === undefined ? 'N/A' : data.processId}}
+  </div>
+</div>
+<div class="row gt-jvm-general-row">
+  <div>
+    <label class="col-md-3" style="text-align: right;">Start time</label>
+  </div>
+  <div class="col-md-9">
+    {{data.startTime | date:'medium'}}
+  </div>
+</div>
+<div class="row gt-jvm-general-row">
+  <div>
+    <label class="col-md-3" style="text-align: right;">Java</label>
+  </div>
+  <div class="col-md-9">
+    <div>{{data.java}}</div>
+  </div>
+</div>
+<div class="row gt-jvm-general-row">
+  <div>
+    <label class="col-md-3" style="text-align: right;">JVM</label>
+  </div>
+  <div class="col-md-9">
+    <div>{{data.jvm}}</div>
+  </div>
+</div>
+<div class="row gt-jvm-general-row">
+  <div>
+    <label class="col-md-3" style="text-align: right;">JVM args</label>
+  </div>
+  <div class="col-md-9">
+    <!-- track by $index is needed since duplicates are possible in this list -->
+    <div ng-repeat="arg in data.jvmArgs track by $index">
+      <div class="gt-jvm-argument gt-break-word">
+        <span style="white-space: nowrap;">{{argFirstPart(arg)}}</span>{{argSecondPart(arg)}}
       </div>
     </div>
-    <div class="row gt-jvm-general-row">
-      <div class="col-md-2" style="text-align: right;">
-        <label>Glowroot agent</label>
-      </div>
-      <div class="col-md-10">
-        <div>{{data.glowrootAgentVersion}}</div>
-      </div>
-    </div>
+  </div>
+</div>
+<div class="row gt-jvm-general-row">
+  <div>
+    <label class="col-md-3" style="text-align: right;">Glowroot agent</label>
+  </div>
+  <div class="col-md-9">
+    <div>{{data.glowrootAgentVersion}}</div>
   </div>
 </div>

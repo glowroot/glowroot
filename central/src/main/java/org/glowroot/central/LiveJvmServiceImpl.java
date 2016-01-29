@@ -34,6 +34,11 @@ class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
+    public boolean isAvailable(String serverId) {
+        return downstreamService.isAvailable(serverId);
+    }
+
+    @Override
     public ThreadDump getThreadDump(String serverId) throws Exception {
         return downstreamService.threadDump(serverId);
     }

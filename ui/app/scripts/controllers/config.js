@@ -31,6 +31,10 @@ glowroot.controller('ConfigCtrl', [
       return !$scope.layout.central || $scope.layout.serverRollups.length === 1;
     };
 
+    $scope.hideMainContent = function () {
+      return $scope.layout.central && !$scope.serverRollup && !$scope.serverId;
+    };
+
     $scope.percentileSuffix = function (percentile) {
       var text = String(percentile);
       if (text === '11' || /\.11$/.test(text)) {
@@ -79,7 +83,7 @@ glowroot.controller('ConfigCtrl', [
     };
 
     function onLocationChangeSuccess() {
-      if ($scope.layout.central && ($location.path() === '/config/ui' || $scope.isAlerts())) {
+      if ($scope.layout.central && ($location.path() === '/config/ui' || $location.path() === '/config/smtp')) {
         $scope.$parent.activeNavbarItem = 'configCentral';
       } else {
         $scope.$parent.activeNavbarItem = 'config';

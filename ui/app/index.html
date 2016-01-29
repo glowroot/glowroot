@@ -106,7 +106,7 @@
                ng-if="layout.central"
                gt-display="Config"
                gt-item-name="config"
-               gt-url="config/transaction{{queryString(true)}}">
+               gt-url="config/transaction{{centralConfigQueryString()}}">
           </div>
         </ul>
         <ul class="nav navbar-nav navbar-right"
@@ -243,7 +243,6 @@
 <script src="scripts/controllers/jvm/heap-dump.js"></script>
 <script src="scripts/controllers/jvm/mbean-tree.js"></script>
 <script src="scripts/controllers/jvm/capabilities.js"></script>
-<script src="scripts/controllers/jvm/glowroot-log.js"></script>
 <script src="scripts/controllers/config.js"></script>
 <script src="scripts/controllers/config/common.js"></script>
 <script src="scripts/controllers/config/user-recording.js"></script>
@@ -259,6 +258,7 @@
 <script src="scripts/controllers/config/plugin-list.js"></script>
 <script src="scripts/controllers/config/plugin.js"></script>
 <script src="scripts/controllers/login.js"></script>
+<script src="scripts/controllers/log.js"></script>
 <!-- handlebars-templates.js is generated at build time by grunt-contrib-handlebars -->
 <script src="scripts/generated/handlebars-templates.js"></script>
 <!-- angular-templates.js is generated at build time by grunt-angular-templates -->

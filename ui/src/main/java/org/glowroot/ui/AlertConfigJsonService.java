@@ -39,8 +39,6 @@ import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 @JsonService
 class AlertConfigJsonService {
 
-    private static final String SERVER_ID = "";
-
     private static final Logger logger = LoggerFactory.getLogger(AlertConfigJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
@@ -63,14 +61,15 @@ class AlertConfigJsonService {
         AlertConfigRequest request = QueryStrings.decode(queryString, AlertConfigRequest.class);
         Optional<String> version = request.version();
         if (version.isPresent()) {
-            AlertConfig alertConfig = configRepository.getAlertConfig(SERVER_ID, version.get());
+            AlertConfig alertConfig =
+                    configRepository.getAlertConfig(request.serverId(), version.get());
             if (alertConfig == null) {
                 throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
             }
             return mapper.writeValueAsString(AlertConfigDto.create(alertConfig));
         } else {
             List<AlertConfigDto> alertConfigDtos = Lists.newArrayList();
-            List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(SERVER_ID);
+            List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(request.serverId());
             alertConfigs = orderingByName.immutableSortedCopy(alertConfigs);
             for (AlertConfig alertConfig : alertConfigs) {
                 alertConfigDtos.add(AlertConfigDto.create(alertConfig));
@@ -105,11 +104,12 @@ class AlertConfigJsonService {
     @POST("/backend/config/alerts/remove")
     void removeAlert(String content) throws Exception {
         AlertConfigRequest request = mapper.readValue(content, ImmutableAlertConfigRequest.class);
-        configRepository.deleteAlertConfig(SERVER_ID, request.version().get());
+        configRepository.deleteAlertConfig(request.serverId(), request.version().get());
     }
 
     @Value.Immutable
     interface AlertConfigRequest {
+        String serverId();
         Optional<String> version();
     }
 

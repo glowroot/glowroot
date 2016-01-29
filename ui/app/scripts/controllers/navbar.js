@@ -28,7 +28,13 @@ glowroot.controller('NavbarCtrl', [
         query['server-id'] = $location.search()['server-id'];
       }
       if (preserveTransactionType) {
-        query['transaction-type'] = $location.search()['transaction-type'];
+        var transactionType = $location.search()['transaction-type'];
+        if (!transactionType) {
+          transactionType = $scope.defaultTransactionType();
+        }
+        if (transactionType) {
+          query['transaction-type'] = transactionType;
+        }
       }
       var last = $location.search().last;
       if (last) {
@@ -40,6 +46,12 @@ glowroot.controller('NavbarCtrl', [
         query.from = from;
         query.to = to;
       }
+      return queryStrings.encodeObject(query);
+    };
+    $scope.centralConfigQueryString = function () {
+      var query = {};
+      query['server-rollup'] = $location.search()['server-rollup'];
+      query['server-id'] = $location.search()['server-id'];
       return queryStrings.encodeObject(query);
     };
   }

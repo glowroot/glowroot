@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.UsedByJsonSerialization;
 import org.glowroot.storage.repo.ServerRepository;
@@ -62,6 +63,13 @@ class JvmJsonService {
     JvmJsonService(ServerRepository serverRepository, @Nullable LiveJvmService liveJvmService) {
         this.serverRepository = serverRepository;
         this.liveJvmService = liveJvmService;
+    }
+
+    @GET("/backend/jvm/agent-connected")
+    String getAgentConnected(String queryString) throws Exception {
+        checkNotNull(liveJvmService);
+        String serverId = getServerId(queryString);
+        return Boolean.toString(liveJvmService.isAvailable(serverId));
     }
 
     @GET("/backend/jvm/process-info")
@@ -96,7 +104,13 @@ class JvmJsonService {
     String getThreadDump(String queryString) throws Exception {
         checkNotNull(liveJvmService);
         String serverId = getServerId(queryString);
-        ThreadDump threadDump = liveJvmService.getThreadDump(serverId);
+        ThreadDump threadDump;
+        try {
+            threadDump = liveJvmService.getThreadDump(serverId);
+        } catch (AgentNotConnectedException e) {
+            logger.debug(e.getMessage(), e);
+            return "{\"agentNotConnected\":true}";
+        }
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
         jg.writeStartObject();
@@ -121,9 +135,18 @@ class JvmJsonService {
     String getHeapDumpDefaultDir(String queryString) throws Exception {
         checkNotNull(liveJvmService);
         String serverId = getServerId(queryString);
+        if (!liveJvmService.isAvailable(serverId)) {
+            return "{\"agentNotConnected\":true}";
+        }
         ProcessInfo processInfo = serverRepository.readProcessInfo(serverId);
         checkNotNull(processInfo);
-        return mapper.writeValueAsString(processInfo.getHeapDumpDefaultDir());
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeStringField("directory", processInfo.getHeapDumpDefaultDir());
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
     }
 
     @POST("/backend/jvm/available-disk-space")
@@ -185,8 +208,14 @@ class JvmJsonService {
     String getMBeanTree(String queryString) throws Exception {
         checkNotNull(liveJvmService);
         MBeanTreeRequest request = QueryStrings.decode(queryString, MBeanTreeRequest.class);
-        MBeanDump mbeanDump = liveJvmService.getMBeanDump(request.serverId(),
-                MBeanDumpKind.ALL_MBEANS_INCLUDE_ATTRIBUTES_FOR_SOME, request.expanded());
+        MBeanDump mbeanDump;
+        try {
+            mbeanDump = liveJvmService.getMBeanDump(request.serverId(),
+                    MBeanDumpKind.ALL_MBEANS_INCLUDE_ATTRIBUTES_FOR_SOME, request.expanded());
+        } catch (AgentNotConnectedException e) {
+            logger.debug(e.getMessage(), e);
+            return "{\"agentNotConnected\":true}";
+        }
         // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
         // see https://code.google.com/p/guava-libraries/issues/detail?id=635
         Map<String, MBeanTreeInnerNode> sortedRootNodes =
@@ -239,7 +268,13 @@ class JvmJsonService {
     String getCapabilities(String queryString) throws Exception {
         checkNotNull(liveJvmService);
         String serverId = getServerId(queryString);
-        Capabilities capabilities = liveJvmService.getCapabilities(serverId);
+        Capabilities capabilities;
+        try {
+            capabilities = liveJvmService.getCapabilities(serverId);
+        } catch (AgentNotConnectedException e) {
+            logger.debug(e.getMessage(), e);
+            return "{\"agentNotConnected\":true}";
+        }
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
         jg.writeStartObject();
