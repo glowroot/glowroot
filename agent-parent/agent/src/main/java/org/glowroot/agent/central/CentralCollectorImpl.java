@@ -15,13 +15,24 @@
  */
 package org.glowroot.agent.central;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.InetAddress;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
+import javax.annotation.Nullable;
+
+import com.google.common.base.Strings;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.central.CentralConnection.GrpcCall;
+import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.common.live.LiveWeavingService;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
@@ -39,22 +50,48 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
-class CentralCollectorImpl implements Collector {
+import static com.google.common.base.Preconditions.checkNotNull;
+
+public class CentralCollectorImpl implements Collector {
 
     static final Logger logger = LoggerFactory.getLogger(CentralCollectorImpl.class);
 
+    private final String serverId;
     private final CentralConnection centralConnection;
     private final CollectorServiceStub collectorServiceStub;
-    private final String serverId;
+    private final DownstreamServiceObserver downstreamServiceObserver;
 
-    CentralCollectorImpl(CentralConnection centralConnection, String serverId) {
-        this.centralConnection = centralConnection;
-        collectorServiceStub = CollectorServiceGrpc.newStub(centralConnection.getChannel());
+    public CentralCollectorImpl(Map<String, String> properties, @Nullable String collectorHost,
+            LiveWeavingService liveWeavingService, LiveJvmService liveJvmService,
+            ScheduledExecutorService scheduledExecutor, AgentConfigUpdater agentConfigUpdater)
+                    throws Exception {
+
+        String serverId = properties.get("glowroot.server.id");
+        if (Strings.isNullOrEmpty(serverId)) {
+            serverId = InetAddress.getLocalHost().getHostName();
+        }
+        String collectorPortStr = properties.get("glowroot.collector.port");
+        if (Strings.isNullOrEmpty(collectorPortStr)) {
+            collectorPortStr = System.getProperty("glowroot.collector.port");
+        }
+        int collectorPort;
+        if (Strings.isNullOrEmpty(collectorPortStr)) {
+            collectorPort = 80;
+        } else {
+            collectorPort = Integer.parseInt(collectorPortStr);
+        }
+        checkNotNull(collectorHost);
         this.serverId = serverId;
+
+        centralConnection = new CentralConnection(collectorHost, collectorPort, scheduledExecutor);
+        collectorServiceStub = CollectorServiceGrpc.newStub(centralConnection.getChannel());
+        downstreamServiceObserver = new DownstreamServiceObserver(centralConnection,
+                agentConfigUpdater, liveJvmService, liveWeavingService, serverId);
+        downstreamServiceObserver.connectAsync();
     }
 
     @Override
-    public void collectInit(ProcessInfo jvmInfo, AgentConfig agentConfig,
+    public void init(File glowrootBaseDir, ProcessInfo jvmInfo, AgentConfig agentConfig,
             final AgentConfigUpdater agentConfigUpdater) {
         final InitMessage initMessage = InitMessage.newBuilder()
                 .setServerId(serverId)
@@ -69,7 +106,11 @@ class CentralCollectorImpl implements Collector {
             @Override
             void doWithResponse(InitResponse response) {
                 if (response.hasAgentConfig()) {
-                    agentConfigUpdater.update(response.getAgentConfig());
+                    try {
+                        agentConfigUpdater.update(response.getAgentConfig());
+                    } catch (IOException e) {
+                        logger.error(e.getMessage(), e);
+                    }
                 }
             }
         });
@@ -133,5 +174,16 @@ class CentralCollectorImpl implements Collector {
                 collectorServiceStub.log(logMessage, responseObserver);
             }
         });
+    }
+
+    @OnlyUsedByTests
+    public void close() throws InterruptedException {
+        downstreamServiceObserver.close();
+        centralConnection.close();
+    }
+
+    @OnlyUsedByTests
+    public void awaitClose() throws InterruptedException {
+        centralConnection.awaitClose();
     }
 }

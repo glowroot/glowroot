@@ -135,7 +135,7 @@ class FatAgentModule {
                             simpleRepoModule.getAlertingService());
             collectorProxy.setInstance(collectorImpl);
             // fat agent's CollectorImpl does nothing with agent config parameter
-            collectorImpl.collectInit(ProcessInfoCreator.create(glowrootVersion),
+            collectorImpl.init(baseDir, ProcessInfoCreator.create(glowrootVersion),
                     AgentConfig.getDefaultInstance(), new AgentConfigUpdater() {
                         @Override
                         public void update(AgentConfig agentConfig) {}

@@ -15,6 +15,8 @@
  */
 package org.glowroot.wire.api;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -26,7 +28,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface Collector {
 
-    void collectInit(ProcessInfo processInfo, AgentConfig agentConfig,
+    void init(File glowrootBaseDir, ProcessInfo processInfo, AgentConfig agentConfig,
             AgentConfigUpdater agentConfigUpdater) throws Exception;
 
     void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType)
@@ -39,6 +41,6 @@ public interface Collector {
     void log(LogEvent logEvent) throws Exception;
 
     interface AgentConfigUpdater {
-        void update(AgentConfig agentConfig);
+        void update(AgentConfig agentConfig) throws IOException;
     }
 }

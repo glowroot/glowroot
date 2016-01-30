@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.fat.init;
 
+import java.io.File;
 import java.util.List;
 
 import org.glowroot.agent.fat.storage.ServerDao;
@@ -51,7 +52,7 @@ class CollectorImpl implements Collector {
     }
 
     @Override
-    public void collectInit(ProcessInfo processInfo, AgentConfig agentConfig,
+    public void init(File glowrootBaseDir, ProcessInfo processInfo, AgentConfig agentConfig,
             AgentConfigUpdater agentConfigUpdater) throws Exception {
         serverDao.store(processInfo);
     }

@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.wire.api.Collector.AgentConfigUpdater;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceStub;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateResponse;
@@ -75,7 +76,7 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
 
     private final CentralConnection centralConnection;
     private final DownstreamServiceStub downstreamServiceStub;
-    private final ConfigUpdateService configUpdateService;
+    private final AgentConfigUpdater agentConfigUpdater;
     private final LiveJvmService liveJvmService;
     private final LiveWeavingService liveWeavingService;
     private final String serverId;
@@ -88,11 +89,11 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
     private final AtomicBoolean inConnectionFailure = new AtomicBoolean();
 
     DownstreamServiceObserver(CentralConnection centralConnection,
-            ConfigUpdateService configUpdateService, LiveJvmService liveJvmService,
+            AgentConfigUpdater agentConfigUpdater, LiveJvmService liveJvmService,
             LiveWeavingService liveWeavingService, String serverId) throws Exception {
         this.centralConnection = centralConnection;
         downstreamServiceStub = DownstreamServiceGrpc.newStub(centralConnection.getChannel());
-        this.configUpdateService = configUpdateService;
+        this.agentConfigUpdater = agentConfigUpdater;
         this.liveJvmService = liveJvmService;
         this.liveWeavingService = liveWeavingService;
         this.serverId = serverId;
@@ -243,8 +244,7 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
     private void updateConfigAndRespond(ServerRequest request,
             StreamObserver<ClientResponse> responseObserver) {
         try {
-            configUpdateService
-                    .updateAgentConfig(request.getAgentConfigUpdateRequest().getAgentConfig());
+            agentConfigUpdater.update(request.getAgentConfigUpdateRequest().getAgentConfig());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);

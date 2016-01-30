@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.central;
+package org.glowroot.agent.init;
 
 import java.io.IOException;
 import java.util.List;
@@ -31,9 +31,10 @@ import org.glowroot.agent.config.PluginConfig;
 import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.config.TransactionConfig;
 import org.glowroot.agent.config.UserRecordingConfig;
+import org.glowroot.wire.api.Collector.AgentConfigUpdater;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
-class ConfigUpdateService {
+public class ConfigUpdateService implements AgentConfigUpdater {
 
     private final ConfigService configService;
     private final PluginCache pluginCache;
@@ -45,7 +46,8 @@ class ConfigUpdateService {
         this.pluginCache = pluginCache;
     }
 
-    void updateAgentConfig(AgentConfig agentConfig) throws IOException {
+    @Override
+    public void update(AgentConfig agentConfig) throws IOException {
         synchronized (lock) {
             configService.updateTransactionConfig(
                     TransactionConfig.create(agentConfig.getTransactionConfig()));

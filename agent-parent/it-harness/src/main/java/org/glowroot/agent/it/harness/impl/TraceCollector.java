@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.it.harness.impl;
 
+import java.io.File;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -103,7 +104,7 @@ class TraceCollector implements Collector {
     }
 
     @Override
-    public void collectInit(ProcessInfo processInfo, AgentConfig agentConfig,
+    public void init(File glowrootBaseDir, ProcessInfo processInfo, AgentConfig agentConfig,
             AgentConfigUpdater agentConfigUpdater) {}
 
     @Override

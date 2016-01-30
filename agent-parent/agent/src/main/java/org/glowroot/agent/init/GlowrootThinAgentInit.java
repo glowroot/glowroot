@@ -28,7 +28,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.central.CentralModule;
+import org.glowroot.agent.central.CentralCollectorImpl;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.util.Tickers;
@@ -36,13 +36,14 @@ import org.glowroot.agent.weaving.PreInitializeWeavingClasses;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.Collector;
+import org.glowroot.wire.api.Collector.AgentConfigUpdater;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class GlowrootThinAgentInit implements GlowrootAgentInit {
 
     private @MonotonicNonNull AgentModule agentModule;
-    private @MonotonicNonNull CentralModule centralModule;
+    private @MonotonicNonNull CentralCollectorImpl centralCollector;
 
     @Override
     public void init(final File baseDir, final @Nullable String collectorHost,
@@ -72,18 +73,24 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         final AgentModule agentModule = new AgentModule(clock, ticker, pluginCache, configService,
                 collectorProxy, instrumentation, baseDir);
 
+        final AgentConfigUpdater agentConfigUpdater =
+                new ConfigUpdateService(configService, pluginCache);
+
         NettyWorkaround.run(instrumentation, new Callable</*@Nullable*/ Void>() {
             @Override
             public @Nullable Void call() throws Exception {
-                if (customCollector != null) {
-                    collectorProxy.setInstance(customCollector);
-                    return null;
+                Collector collector;
+                if (customCollector == null) {
+                    centralCollector = new CentralCollectorImpl(properties, collectorHost,
+                            agentModule.getLiveWeavingService(), agentModule.getLiveJvmService(),
+                            agentModule.getScheduledExecutor(), agentConfigUpdater);
+                    collector = centralCollector;
+                } else {
+                    collector = customCollector;
                 }
-                centralModule = new CentralModule(properties, collectorHost, configService,
-                        pluginCache, agentModule.getLiveWeavingService(),
-                        agentModule.getLiveJvmService(), agentModule.getScheduledExecutor(),
-                        glowrootVersion);
-                collectorProxy.setInstance(centralModule.getGrpcCollector());
+                collectorProxy.setInstance(collector);
+                collector.init(baseDir, ProcessInfoCreator.create(glowrootVersion),
+                        configService.getAgentConfig(), agentConfigUpdater);
                 return null;
             }
         });
@@ -100,16 +107,16 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
     @OnlyUsedByTests
     public void close() throws Exception {
         checkNotNull(agentModule).close();
-        if (centralModule != null) {
-            centralModule.close();
+        if (centralCollector != null) {
+            centralCollector.close();
         }
     }
 
     @Override
     @OnlyUsedByTests
     public void awaitClose() throws Exception {
-        if (centralModule != null) {
-            centralModule.awaitClose();
+        if (centralCollector != null) {
+            centralCollector.awaitClose();
         }
     }
 
