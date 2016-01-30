@@ -1,9 +1,9 @@
 {
   "name": "glowroot",
   "dependencies": {
-    "angular": "1.4.9",
-    "angular-ui-bootstrap": "1.1.0",
-    "angular-ui-router": "0.2.15",
+    "angular": "1.5.0-rc.2",
+    "angular-ui-bootstrap": "1.1.2",
+    "angular-ui-router": "0.2.17",
     "bootstrap": "3.3.6",
     "bootstrap-select": "1.9.4",
     "d3-flame-graph": "0eecc604dea7eb7318053d176dbaefea9e47a605",

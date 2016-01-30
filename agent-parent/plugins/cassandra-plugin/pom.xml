@@ -52,7 +52,7 @@
     <dependency>
       <groupId>com.datastax.cassandra</groupId>
       <artifactId>cassandra-driver-core</artifactId>
-      <version>3.0.0-rc1</version>
+      <version>3.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>

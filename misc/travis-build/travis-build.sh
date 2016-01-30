@@ -103,7 +103,7 @@ case "$1" in
                if [[ ! -d "$HOME/checker-framework" ]]
                then
                  # install checker framework
-                 curl -L http://types.cs.washington.edu/checker-framework/releases/1.9.10/checker-framework-1.9.10.zip > $HOME/checker-framework.zip
+                 curl -L http://types.cs.washington.edu/checker-framework/releases/1.9.11/checker-framework-1.9.11.zip > $HOME/checker-framework.zip
                  unzip $HOME/checker-framework.zip -d $HOME
                  # strip version from directory name
                  mv $HOME/checker-framework-* $HOME/checker-framework
