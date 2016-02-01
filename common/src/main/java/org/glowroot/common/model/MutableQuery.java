@@ -20,7 +20,7 @@ import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 class MutableQuery {
 
     private final String queryText;
-    private double totalNanos;
+    private double totalDurationNanos;
     private long executionCount;
     private long totalRows;
 
@@ -28,8 +28,8 @@ class MutableQuery {
         this.queryText = queryText;
     }
 
-    void addToTotalNanos(double totalNanos) {
-        this.totalNanos += totalNanos;
+    void addToTotalDurationNanos(double totalDurationNanos) {
+        this.totalDurationNanos += totalDurationNanos;
     }
 
     void addToExecutionCount(long executionCount) {
@@ -43,7 +43,7 @@ class MutableQuery {
     Aggregate.Query toProto() {
         return Aggregate.Query.newBuilder()
                 .setText(queryText)
-                .setTotalNanos(totalNanos)
+                .setTotalDurationNanos(totalDurationNanos)
                 .setExecutionCount(executionCount)
                 .setTotalRows(totalRows)
                 .build();

@@ -262,10 +262,10 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public AdvancedConfig getAdvancedConfig(String serverId) throws IOException {
+    public @Nullable AdvancedConfig getAdvancedConfig(String serverId) throws IOException {
         AgentConfig agentConfig = serverDao.readAgentConfig(serverId);
         if (agentConfig == null) {
-            throw new IllegalStateException("Agent config not found");
+            return null;
         }
         return agentConfig.getAdvancedConfig();
     }
@@ -625,7 +625,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         return AgentConfig.newBuilder()
                 .setTransactionConfig(getTransactionConfig(serverId))
                 .setUserRecordingConfig(getUserRecordingConfig(serverId))
-                .setAdvancedConfig(getAdvancedConfig(serverId))
+                .setAdvancedConfig(checkNotNull(getAdvancedConfig(serverId)))
                 .addAllGaugeConfig(getGaugeConfigs(serverId))
                 .addAllInstrumentationConfig(getInstrumentationConfigs(serverId))
                 .build();

@@ -19,6 +19,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NegotiationType;
@@ -83,13 +84,12 @@ class CentralConnection {
         }
         // TODO revisit retry/backoff after next grpc version
 
-        // 30 retries currently at 1 second apart covers 30 seconds which should be enough time to
-        // restart single central instance without losing data (though better to use central
-        // cluster)
+        // 60 seconds should be enough time to restart single central instance without losing data
+        // (though better to use central cluster)
         //
         // this cannot retry over too long a period since it retains memory of rpc message for that
         // duration
-        call.call(new RetryingStreamObserver<T>(call, 30, 60));
+        call.call(new RetryingStreamObserver<T>(call, 60, 60));
     }
 
     // important that these calls are idempotent (at least in central implementation)
@@ -97,7 +97,7 @@ class CentralConnection {
         if (closed) {
             return;
         }
-        call.call(new RetryingStreamObserver<T>(call, -1, 15));
+        call.call(new RetryingStreamObserver<T>(call, 15, -1));
     }
 
     void suppressLogCollector(Runnable runnable) {
@@ -139,17 +139,17 @@ class CentralConnection {
             implements StreamObserver<T> {
 
         private final GrpcCall<T> grpcCall;
-        private final int maxRetries;
-        private final int maxDelayInSeconds;
+        private final int maxSingleDelayInSeconds;
+        private final int maxTotalInSeconds;
+        private final Stopwatch stopwatch = Stopwatch.createStarted();
 
-        private volatile int retryCounter;
         private volatile long nextDelayInSeconds = 1;
 
-        private RetryingStreamObserver(GrpcCall<T> grpcCall, int maxRetries,
-                int maxDelayInSeconds) {
+        private RetryingStreamObserver(GrpcCall<T> grpcCall, int maxSingleDelayInSeconds,
+                int maxTotalInSeconds) {
             this.grpcCall = grpcCall;
-            this.maxRetries = maxRetries;
-            this.maxDelayInSeconds = maxDelayInSeconds;
+            this.maxTotalInSeconds = maxTotalInSeconds;
+            this.maxSingleDelayInSeconds = maxSingleDelayInSeconds;
         }
 
         @Override
@@ -165,7 +165,7 @@ class CentralConnection {
                     logger.debug(t.getMessage(), t);
                 }
             });
-            if (maxRetries != -1 && retryCounter++ > maxRetries) {
+            if (maxTotalInSeconds != -1 && stopwatch.elapsed(SECONDS) > maxTotalInSeconds) {
                 // no logging since DownstreamServiceObserver handles logging central connectivity
                 return;
             }
@@ -187,7 +187,7 @@ class CentralConnection {
                     }
                 }
             }, nextDelayInSeconds, SECONDS);
-            nextDelayInSeconds = Math.min(nextDelayInSeconds * 2, maxDelayInSeconds);
+            nextDelayInSeconds = Math.min(nextDelayInSeconds * 2, maxSingleDelayInSeconds);
         }
 
         @Override

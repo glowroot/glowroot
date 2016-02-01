@@ -116,7 +116,7 @@ class ThreadDumpService {
             ThreadDump.Transaction.Builder builder = ThreadDump.Transaction.newBuilder()
                     .setTransactionType(value.transactionType)
                     .setTransactionName(value.transactionName)
-                    .setTransactionTotalNanos(value.transactionTotalNanos);
+                    .setTotalDurationNanos(value.totalDurationNanos);
             if (value.shouldStoreSlow) {
                 builder.setTraceId(entry.getKey());
             }
@@ -163,7 +163,7 @@ class ThreadDumpService {
 
         @Override
         public int compare(ThreadDump.Transaction left, ThreadDump.Transaction right) {
-            return Longs.compare(right.getTransactionTotalNanos(), left.getTransactionTotalNanos());
+            return Longs.compare(right.getTotalDurationNanos(), left.getTotalDurationNanos());
         }
     }
 
@@ -183,16 +183,16 @@ class ThreadDumpService {
 
         private final String transactionType;
         private final String transactionName;
-        private final long transactionTotalNanos;
+        private final long totalDurationNanos;
         private final boolean shouldStoreSlow;
 
         private final List<ThreadInfo> threadInfos = Lists.newArrayList();
 
         private TransactionThreadInfo(String transactionType, String transactionName,
-                long transactionTotalNanos, boolean shouldStoreSlow) {
+                long totalDurationNanos, boolean shouldStoreSlow) {
             this.transactionType = transactionType;
             this.transactionName = transactionName;
-            this.transactionTotalNanos = transactionTotalNanos;
+            this.totalDurationNanos = totalDurationNanos;
             this.shouldStoreSlow = shouldStoreSlow;
         }
     }

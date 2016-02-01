@@ -324,7 +324,7 @@ class JvmJsonService {
         jg.writeStringField("traceId", transaction.getTraceId());
         jg.writeStringField("transactionType", transaction.getTransactionType());
         jg.writeStringField("transactionName", transaction.getTransactionName());
-        jg.writeNumberField("transactionTotalNanos", transaction.getTransactionTotalNanos());
+        jg.writeNumberField("totalDurationNanos", transaction.getTotalDurationNanos());
         jg.writeArrayFieldStart("threads");
         for (ThreadDump.Thread thread : transaction.getThreadList()) {
             writeThread(thread, jg);

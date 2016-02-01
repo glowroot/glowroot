@@ -130,8 +130,6 @@ public class GaugeValueDao implements GaugeValueRepository {
             // clock can never go backwards and future gauge captures will wait until this method
             // completes since ScheduledExecutorService.scheduleAtFixedRate() guarantees that future
             // invocations of GaugeCollector will wait until prior invocations complete
-            //
-            // TODO this clock logic will fail if remote collectors are introduced
             long safeCurrentTime = clock.currentTimeMillis() - 1;
             for (int i = 0; i < rollupConfigs.size(); i++) {
                 long intervalMillis = rollupConfigs.get(i).intervalMillis();
@@ -151,6 +149,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
     }
 
+    // query.from() is INCLUSIVE
     @Override
     public List<GaugeValue> readGaugeValues(String serverRollup, String gaugeName, long from,
             long to, int rollupLevel) throws Exception {

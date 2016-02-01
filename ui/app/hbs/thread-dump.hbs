@@ -1,7 +1,7 @@
 {{#if transactions}}<strong>Matched threads</strong> (matched to currently executing transactions):<br>
 {{#each transactions}}{{#if transactionType}}<strong>Transaction type: </strong>{{transactionType}}
 <strong>Transaction name:</strong> {{transactionName}}
-<strong>Transaction duration:</strong> {{nanosToMillis transactionTotalNanos}} milliseconds {{#if traceId}}<a href="jvm/thread-dump?modal-trace-id={{traceId}}">view trace</a>{{/if}}
+<strong>Transaction duration:</strong> {{nanosToMillis totalDurationNanos}} milliseconds {{#if traceId}}<a href="jvm/thread-dump?modal-trace-id={{traceId}}">view trace</a>{{/if}}
 {{/if}}{{#each threads}}"{{name}}"
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{state}}
 {{#ifBlocked state}}        - blocked on {{lockName}}

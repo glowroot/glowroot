@@ -54,6 +54,7 @@ public interface ConfigRepository {
 
     UserRecordingConfig getUserRecordingConfig(String serverId) throws IOException;
 
+    @Nullable
     AdvancedConfig getAdvancedConfig(String serverId) throws IOException;
 
     List<PluginConfig> getPluginConfigs(String serverId) throws IOException;

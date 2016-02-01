@@ -72,9 +72,6 @@ public interface AggregateRepository {
     // query.from() is non-inclusive
     void mergeInQueries(QueryCollector mergedQueries, TransactionQuery query) throws Exception;
 
-    // query.from() is INCLUSIVE
-    List<ErrorPoint> readErrorPoints(TransactionQuery query) throws Exception;
-
     // query.from() is non-inclusive
     boolean hasAuxThreadProfile(TransactionQuery query) throws Exception;
 
@@ -112,7 +109,7 @@ public interface AggregateRepository {
     @Value.Immutable
     public interface OverallSummary {
         // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
-        double totalNanos();
+        double totalDurationNanos();
         long transactionCount();
         long lastCaptureTime();
     }
@@ -121,7 +118,7 @@ public interface AggregateRepository {
     public interface TransactionSummary {
         String transactionName();
         // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
-        double totalNanos();
+        double totalDurationNanos();
         long transactionCount();
     }
 
@@ -158,7 +155,7 @@ public interface AggregateRepository {
     public interface PercentileAggregate {
         long captureTime();
         // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
-        double totalNanos();
+        double totalDurationNanos();
         long transactionCount();
         Aggregate.Histogram histogram();
     }
@@ -167,14 +164,6 @@ public interface AggregateRepository {
     @Styles.AllParameters
     public interface ThroughputAggregate {
         long captureTime();
-        long transactionCount();
-    }
-
-    @Value.Immutable
-    @Styles.AllParameters
-    public interface ErrorPoint {
-        long captureTime();
-        long errorCount();
         long transactionCount();
     }
 

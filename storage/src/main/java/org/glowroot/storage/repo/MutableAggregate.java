@@ -72,21 +72,15 @@ public class MutableAggregate {
     }
 
     public void mergeMainThreadRootTimers(List<Aggregate.Timer> toBeMergedRootTimers) {
-        for (Aggregate.Timer toBeMergedRootTimer : toBeMergedRootTimers) {
-            mergeRootTimer(toBeMergedRootTimer, mainThreadRootTimers);
-        }
+        mergeRootTimers(toBeMergedRootTimers, mainThreadRootTimers);
     }
 
     public void mergeAuxThreadRootTimers(List<Aggregate.Timer> toBeMergedRootTimers) {
-        for (Aggregate.Timer toBeMergedRootTimer : toBeMergedRootTimers) {
-            mergeRootTimer(toBeMergedRootTimer, auxThreadRootTimers);
-        }
+        mergeRootTimers(toBeMergedRootTimers, auxThreadRootTimers);
     }
 
     public void mergeAsyncRootTimers(List<Aggregate.Timer> toBeMergedRootTimers) {
-        for (Aggregate.Timer toBeMergedRootTimer : toBeMergedRootTimers) {
-            mergeRootTimer(toBeMergedRootTimer, asyncRootTimers);
-        }
+        mergeRootTimers(toBeMergedRootTimers, asyncRootTimers);
     }
 
     public void mergeMainThreadStats(@Nullable Aggregate.ThreadStats threadStats) {
@@ -106,10 +100,10 @@ public class MutableAggregate {
                 .setTotalDurationNanos(totalDurationNanos)
                 .setTransactionCount(transactionCount)
                 .setErrorCount(errorCount)
-                .addAllMainThreadRootTimer(getRootTimersProtobuf(mainThreadRootTimers))
-                .addAllAuxThreadRootTimer(getRootTimersProtobuf(auxThreadRootTimers))
-                .addAllAsyncRootTimer(getRootTimersProtobuf(asyncRootTimers))
-                .setTotalNanosHistogram(lazyHistogram.toProto(scratchBuffer));
+                .addAllMainThreadRootTimer(toProto(mainThreadRootTimers))
+                .addAllAuxThreadRootTimer(toProto(auxThreadRootTimers))
+                .addAllAsyncRootTimer(toProto(asyncRootTimers))
+                .setTotalDurationNanosHistogram(lazyHistogram.toProto(scratchBuffer));
         if (!mainThreadStats.isNA()) {
             builder.setMainThreadStats(mainThreadStats.toProto());
         }
@@ -122,7 +116,7 @@ public class MutableAggregate {
         if (auxThreadProfile != null) {
             builder.setAuxThreadProfile(auxThreadProfile.toProto());
         }
-        return builder.addAllQueriesByType(queries.toProto(true))
+        return builder.addAllQueriesByType(queries.toProto())
                 .build();
     }
 
@@ -131,9 +125,9 @@ public class MutableAggregate {
                 .captureTime(captureTime)
                 .totalDurationNanos(totalDurationNanos)
                 .transactionCount(transactionCount)
-                .mainThreadRootTimers(getRootTimersProtobuf(mainThreadRootTimers))
-                .auxThreadRootTimers(getRootTimersProtobuf(auxThreadRootTimers))
-                .asyncRootTimers(getRootTimersProtobuf(asyncRootTimers));
+                .mainThreadRootTimers(toProto(mainThreadRootTimers))
+                .auxThreadRootTimers(toProto(auxThreadRootTimers))
+                .asyncRootTimers(toProto(asyncRootTimers));
         if (!mainThreadStats.isNA()) {
             builder.mainThreadStats(mainThreadStats.toProto());
         }
@@ -146,7 +140,7 @@ public class MutableAggregate {
     public PercentileAggregate toPercentileAggregate(long captureTime) throws IOException {
         return ImmutablePercentileAggregate.builder()
                 .captureTime(captureTime)
-                .totalNanos(totalDurationNanos)
+                .totalDurationNanos(totalDurationNanos)
                 .transactionCount(transactionCount)
                 .histogram(lazyHistogram.toProto(new ScratchBuffer()))
                 .build();
@@ -170,6 +164,22 @@ public class MutableAggregate {
         queries.mergeQueries(toBeMergedQueries);
     }
 
+    public static void mergeRootTimers(List<Aggregate.Timer> toBeMergedRootTimers,
+            List<MutableTimer> rootTimers) {
+        for (Aggregate.Timer toBeMergedRootTimer : toBeMergedRootTimers) {
+            mergeRootTimer(toBeMergedRootTimer, rootTimers);
+        }
+    }
+
+    public static List<Aggregate.Timer> toProto(List<MutableTimer> rootTimers) {
+        List<Aggregate.Timer> protobufRootTimers =
+                Lists.newArrayListWithCapacity(rootTimers.size());
+        for (MutableTimer rootTimer : rootTimers) {
+            protobufRootTimers.add(rootTimer.toProto());
+        }
+        return protobufRootTimers;
+    }
+
     private static void mergeRootTimer(Aggregate.Timer toBeMergedRootTimer,
             List<MutableTimer> rootTimers) {
         for (MutableTimer rootTimer : rootTimers) {
@@ -182,14 +192,5 @@ public class MutableAggregate {
                 toBeMergedRootTimer.getExtended());
         rootTimer.merge(toBeMergedRootTimer);
         rootTimers.add(rootTimer);
-    }
-
-    private static List<Aggregate.Timer> getRootTimersProtobuf(List<MutableTimer> rootTimers) {
-        List<Aggregate.Timer> protobufRootTimers =
-                Lists.newArrayListWithCapacity(rootTimers.size());
-        for (MutableTimer rootTimer : rootTimers) {
-            protobufRootTimers.add(rootTimer.toProto());
-        }
-        return protobufRootTimers;
     }
 }

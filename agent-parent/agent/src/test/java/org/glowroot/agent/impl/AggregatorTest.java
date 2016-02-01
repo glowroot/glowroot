@@ -96,21 +96,21 @@ public class AggregatorTest {
         // aggregation is done in a separate thread, so give it a little time to complete
         long start = System.currentTimeMillis();
         while (System.currentTimeMillis() - start < 5000) {
-            if (aggregateCollector.getTotalNanos() > 0) {
+            if (aggregateCollector.getTotalDurationNanos() > 0) {
                 break;
             }
         }
-        assertThat(aggregateCollector.getTotalNanos()).isEqualTo(count * 123 * 1000000.0);
+        assertThat(aggregateCollector.getTotalDurationNanos()).isEqualTo(count * 123 * 1000000.0);
         aggregator.close();
     }
 
     private static class MockCollector implements Collector {
 
         // volatile needed for visibility from other thread
-        private volatile double totalNanos;
+        private volatile double totalDurationNanos;
 
-        private double getTotalNanos() {
-            return totalNanos;
+        private double getTotalDurationNanos() {
+            return totalDurationNanos;
         }
 
         @Override
@@ -120,8 +120,9 @@ public class AggregatorTest {
         @Override
         public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType) {
             // only capture first non-zero value
-            if (totalNanos == 0 && !aggregatesByType.isEmpty()) {
-                totalNanos = aggregatesByType.get(0).getOverallAggregate().getTotalDurationNanos();
+            if (totalDurationNanos == 0 && !aggregatesByType.isEmpty()) {
+                totalDurationNanos =
+                        aggregatesByType.get(0).getOverallAggregate().getTotalDurationNanos();
             }
         }
 

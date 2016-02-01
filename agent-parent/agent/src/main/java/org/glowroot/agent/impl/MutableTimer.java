@@ -29,7 +29,7 @@ class MutableTimer {
     private final String name;
     private final boolean extended;
     // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
-    private double totalNanos;
+    private double totalDurationNanos;
     private long count;
     private final List<MutableTimer> childTimers;
 
@@ -37,11 +37,11 @@ class MutableTimer {
         return new MutableTimer(name, extended, 0, 0, new ArrayList<MutableTimer>());
     }
 
-    private MutableTimer(String name, boolean extended, double totalNanos, long count,
+    private MutableTimer(String name, boolean extended, double totalDurationNanos, long count,
             List<MutableTimer> nestedTimers) {
         this.name = name;
         this.extended = extended;
-        this.totalNanos = totalNanos;
+        this.totalDurationNanos = totalDurationNanos;
         this.count = count;
         this.childTimers = Lists.newArrayList(nestedTimers);
     }
@@ -52,7 +52,7 @@ class MutableTimer {
 
     void merge(CommonTimerImpl timer) {
         count += timer.getCount();
-        totalNanos += timer.getTotalNanos();
+        totalDurationNanos += timer.getTotalNanos();
         Iterator<? extends CommonTimerImpl> i = timer.getChildTimers();
         while (i.hasNext()) {
             CommonTimerImpl toBeMergedChildTimer = i.next();
@@ -79,7 +79,7 @@ class MutableTimer {
         Aggregate.Timer.Builder builder = Aggregate.Timer.newBuilder()
                 .setName(name)
                 .setExtended(extended)
-                .setTotalNanos(totalNanos)
+                .setTotalNanos(totalDurationNanos)
                 .setCount(count);
         for (MutableTimer childTimer : childTimers) {
             builder.addChildTimer(childTimer.toProto());

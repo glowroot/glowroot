@@ -154,7 +154,7 @@ public class AlertingServiceTest {
         }
         PercentileAggregate aggregate = ImmutablePercentileAggregate.builder()
                 .captureTime(120000)
-                .totalNanos(1000000)
+                .totalDurationNanos(1000000)
                 .transactionCount(1)
                 .histogram(lazyHistogram.toProto(new ScratchBuffer()))
                 .build();

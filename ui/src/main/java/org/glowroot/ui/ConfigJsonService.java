@@ -298,6 +298,7 @@ class ConfigJsonService {
     private String getAdvancedConfigInternal(String serverId) throws IOException {
         checkNotNull(liveWeavingService);
         AdvancedConfig config = configRepository.getAdvancedConfig(serverId);
+        checkNotNull(config);
         return mapper.writeValueAsString(AdvancedConfigDto.create(config));
     }
 

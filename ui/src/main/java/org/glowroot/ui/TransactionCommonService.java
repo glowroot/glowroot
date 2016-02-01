@@ -45,8 +45,6 @@ import org.glowroot.storage.repo.Utils;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 class TransactionCommonService {
 
     private final AggregateRepository aggregateRepository;
@@ -178,7 +176,7 @@ class TransactionCommonService {
 
     private OverallSummary getMergedOverallSummary(OverallQuery query) throws Exception {
         long revisedFrom = query.from();
-        double totalNanos = 0;
+        double totalDurationNanos = 0;
         long transactionCount = 0;
         long lastCaptureTime = 0;
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
@@ -189,7 +187,7 @@ class TransactionCommonService {
                     .rollupLevel(rollupLevel)
                     .build();
             OverallSummary overallSummary = aggregateRepository.readOverallSummary(revisedQuery);
-            totalNanos += overallSummary.totalNanos();
+            totalDurationNanos += overallSummary.totalDurationNanos();
             transactionCount += overallSummary.transactionCount();
             lastCaptureTime = overallSummary.lastCaptureTime();
             long lastRolledUpTime = overallSummary.lastCaptureTime();
@@ -199,7 +197,7 @@ class TransactionCommonService {
             }
         }
         return ImmutableOverallSummary.builder()
-                .totalNanos(totalNanos)
+                .totalDurationNanos(totalDurationNanos)
                 .transactionCount(transactionCount)
                 .lastCaptureTime(lastCaptureTime)
                 .build();
@@ -268,7 +266,7 @@ class TransactionCommonService {
                 break;
             }
         }
-        return mergedQueries.toProto(true);
+        return mergedQueries.toProto();
     }
 
     private List<OverviewAggregate> rollUpOverviewAggregates(
@@ -328,7 +326,8 @@ class TransactionCommonService {
                 currMergedAggregate = new MutableAggregate(0);
             }
             currRollupTime = rollupTime;
-            currMergedAggregate.addTotalDurationNanos(nonRolledUpPercentileAggregate.totalNanos());
+            currMergedAggregate
+                    .addTotalDurationNanos(nonRolledUpPercentileAggregate.totalDurationNanos());
             currMergedAggregate
                     .addTransactionCount(nonRolledUpPercentileAggregate.transactionCount());
             currMergedAggregate.mergeHistogram(nonRolledUpPercentileAggregate.histogram());
@@ -371,8 +370,7 @@ class TransactionCommonService {
 
     private int getMaxAggregateQueriesPerQueryType(String serverRollup) throws IOException {
         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(serverRollup);
-        checkNotNull(advancedConfig);
-        if (advancedConfig.hasMaxAggregateQueriesPerQueryType()) {
+        if (advancedConfig != null && advancedConfig.hasMaxAggregateQueriesPerQueryType()) {
             return advancedConfig.getMaxAggregateQueriesPerQueryType().getValue();
         } else {
             return ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_QUERY_TYPE;

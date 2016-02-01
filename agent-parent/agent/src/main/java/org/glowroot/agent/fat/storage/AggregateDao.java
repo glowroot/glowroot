@@ -53,7 +53,6 @@ import org.glowroot.storage.config.ConfigDefaults;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
-import org.glowroot.storage.repo.ImmutableErrorPoint;
 import org.glowroot.storage.repo.ImmutableOverallErrorSummary;
 import org.glowroot.storage.repo.ImmutableOverallSummary;
 import org.glowroot.storage.repo.ImmutableOverviewAggregate;
@@ -287,12 +286,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    // query.from() is INCLUSIVE
-    @Override
-    public List<ErrorPoint> readErrorPoints(TransactionQuery query) throws Exception {
-        return dataSource.query(new ErrorPointQuery(query));
-    }
-
+    // query.from() is non-inclusive
     @Override
     public boolean hasAuxThreadProfile(TransactionQuery query) throws Exception {
         return !dataSource.query(new CappedIdQuery("async_thread_profile_capped_id", query))
@@ -365,7 +359,7 @@ public class AggregateDao implements AggregateRepository {
     private void merge(MutableAggregate mergedAggregate, ResultSet resultSet, int startColumnIndex,
             int fromRollupLevel) throws Exception {
         int i = startColumnIndex;
-        double totalNanos = resultSet.getDouble(i++);
+        double totalDurationNanos = resultSet.getDouble(i++);
         long transactionCount = resultSet.getLong(i++);
         long errorCount = resultSet.getLong(i++);
         Long mainThreadProfileCappedId = RowMappers.getLong(resultSet, i++);
@@ -378,7 +372,7 @@ public class AggregateDao implements AggregateRepository {
         byte[] auxThreadStats = resultSet.getBytes(i++);
         byte[] histogram = checkNotNull(resultSet.getBytes(i++));
 
-        mergedAggregate.addTotalDurationNanos(totalNanos);
+        mergedAggregate.addTotalDurationNanos(totalDurationNanos);
         mergedAggregate.addTransactionCount(transactionCount);
         mergedAggregate.addErrorCount(errorCount);
         if (mainThreadRootTimers != null) {
@@ -429,15 +423,11 @@ public class AggregateDao implements AggregateRepository {
 
     private int getMaxAggregateQueriesPerQueryType() throws IOException {
         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(SERVER_ID);
-        checkNotNull(advancedConfig);
-        int maxAggregateQueriesPerQueryType;
-        if (advancedConfig.hasMaxAggregateQueriesPerQueryType()) {
-            maxAggregateQueriesPerQueryType =
-                    advancedConfig.getMaxAggregateQueriesPerQueryType().getValue();
+        if (advancedConfig != null && advancedConfig.hasMaxAggregateQueriesPerQueryType()) {
+            return advancedConfig.getMaxAggregateQueriesPerQueryType().getValue();
         } else {
-            maxAggregateQueriesPerQueryType = ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_QUERY_TYPE;
+            return ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_QUERY_TYPE;
         }
-        return maxAggregateQueriesPerQueryType;
     }
 
     private static @Untainted String getTableName(TransactionQuery query) {
@@ -567,7 +557,7 @@ public class AggregateDao implements AggregateRepository {
             } else {
                 this.auxThreadStats = null;
             }
-            histogramBytes = aggregate.getTotalNanosHistogram().toByteArray();
+            histogramBytes = aggregate.getTotalDurationNanosHistogram().toByteArray();
         }
 
         @Override
@@ -672,7 +662,7 @@ public class AggregateDao implements AggregateRepository {
                 throw new SQLException("Aggregate query did not return any results");
             }
             return ImmutableOverallSummary.builder()
-                    .totalNanos(resultSet.getDouble(1))
+                    .totalDurationNanos(resultSet.getDouble(1))
                     .transactionCount(resultSet.getLong(2))
                     .lastCaptureTime(resultSet.getLong(3))
                     .build();
@@ -728,11 +718,11 @@ public class AggregateDao implements AggregateRepository {
         public @Nullable Void processResultSet(ResultSet resultSet) throws Exception {
             while (resultSet.next()) {
                 String transactionName = checkNotNull(resultSet.getString(1));
-                double totalNanos = resultSet.getDouble(2);
+                double totalDurationNanos = resultSet.getDouble(2);
                 long transactionCount = resultSet.getLong(3);
                 long maxCaptureTime = resultSet.getLong(4);
-                mergedTransactionSummaries.collect(transactionName, totalNanos, transactionCount,
-                        maxCaptureTime);
+                mergedTransactionSummaries.collect(transactionName, totalDurationNanos,
+                        transactionCount, maxCaptureTime);
             }
             return null;
         }
@@ -952,7 +942,7 @@ public class AggregateDao implements AggregateRepository {
             int i = 1;
             ImmutablePercentileAggregate.Builder builder = ImmutablePercentileAggregate.builder()
                     .captureTime(resultSet.getLong(i++))
-                    .totalNanos(resultSet.getLong(i++))
+                    .totalDurationNanos(resultSet.getLong(i++))
                     .transactionCount(resultSet.getLong(i++));
             byte[] histogram = checkNotNull(resultSet.getBytes(i++));
             builder.histogram(Aggregate.Histogram.parser().parseFrom(histogram));
@@ -989,38 +979,6 @@ public class AggregateDao implements AggregateRepository {
                     .captureTime(resultSet.getLong(i++))
                     .transactionCount(resultSet.getLong(i++))
                     .build();
-        }
-    }
-
-    private static class ErrorPointQuery implements JdbcRowQuery<ErrorPoint> {
-
-        private final TransactionQuery query;
-
-        private ErrorPointQuery(TransactionQuery query) {
-            this.query = query;
-        }
-
-        @Override
-        public @Untainted String getSql() {
-            String tableName = getTableName(query);
-            String transactionNameCriteria = getTransactionNameCriteria(query);
-            return "select capture_time, error_count, transaction_count from " + tableName
-                    + " where transaction_type = ?" + transactionNameCriteria
-                    + " and capture_time >= ? and capture_time <= ? and error_count > 0"
-                    + " order by capture_time";
-        }
-
-        @Override
-        public void bind(PreparedStatement preparedStatement) throws SQLException {
-            bindQuery(preparedStatement, query);
-        }
-
-        @Override
-        public ErrorPoint mapRow(ResultSet resultSet) throws SQLException {
-            long captureTime = resultSet.getLong(1);
-            long errorCount = resultSet.getLong(2);
-            long transactionCount = resultSet.getLong(3);
-            return ImmutableErrorPoint.of(captureTime, errorCount, transactionCount);
         }
     }
 

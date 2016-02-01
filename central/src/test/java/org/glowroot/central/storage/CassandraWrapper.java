@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.cassandra;
+package org.glowroot.central.storage;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,7 +37,7 @@ import org.rauschig.jarchivelib.CompressionType;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-// see copy of this class in glowroot-central
+// see copy of this class in glowroot-agent-cassandra-plugin
 class CassandraWrapper {
 
     private static final String CASSANDRA_VERSION = "2.0.14";

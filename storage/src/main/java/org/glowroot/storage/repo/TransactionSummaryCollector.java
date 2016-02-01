@@ -33,7 +33,7 @@ public class TransactionSummaryCollector {
             new Ordering<TransactionSummary>() {
                 @Override
                 public int compare(TransactionSummary left, TransactionSummary right) {
-                    return Doubles.compare(right.totalNanos(), left.totalNanos());
+                    return Doubles.compare(right.totalDurationNanos(), left.totalDurationNanos());
                 }
             };
 
@@ -41,8 +41,8 @@ public class TransactionSummaryCollector {
             new Ordering<TransactionSummary>() {
                 @Override
                 public int compare(TransactionSummary left, TransactionSummary right) {
-                    return Doubles.compare(right.totalNanos() / right.transactionCount(),
-                            left.totalNanos() / left.transactionCount());
+                    return Doubles.compare(right.totalDurationNanos() / right.transactionCount(),
+                            left.totalDurationNanos() / left.transactionCount());
                 }
             };
 
@@ -58,14 +58,14 @@ public class TransactionSummaryCollector {
 
     private long lastCaptureTime;
 
-    public void collect(String transactionName, double totalNanos, long transactionCount,
+    public void collect(String transactionName, double totalDurationNanos, long transactionCount,
             long captureTime) {
         MutableTransactionSummary mts = transactionSummaries.get(transactionName);
         if (mts == null) {
             mts = new MutableTransactionSummary();
             transactionSummaries.put(transactionName, mts);
         }
-        mts.totalNanos += totalNanos;
+        mts.totalDurationNanos += totalDurationNanos;
         mts.transactionCount += transactionCount;
         lastCaptureTime = Math.max(lastCaptureTime, captureTime);
     }
@@ -77,7 +77,7 @@ public class TransactionSummaryCollector {
     public void mergeTransactionSummaries(List<TransactionSummary> transactionSummaries,
             long lastCaptureTime) {
         for (TransactionSummary transactionSummary : transactionSummaries) {
-            collect(transactionSummary.transactionName(), transactionSummary.totalNanos(),
+            collect(transactionSummary.transactionName(), transactionSummary.totalDurationNanos(),
                     transactionSummary.transactionCount(), lastCaptureTime);
         }
     }
@@ -87,7 +87,7 @@ public class TransactionSummaryCollector {
         for (Map.Entry<String, MutableTransactionSummary> entry : transactionSummaries.entrySet()) {
             summaries.add(ImmutableTransactionSummary.builder()
                     .transactionName(entry.getKey())
-                    .totalNanos(entry.getValue().totalNanos)
+                    .totalDurationNanos(entry.getValue().totalDurationNanos)
                     .transactionCount(entry.getValue().transactionCount)
                     .build());
         }
@@ -114,7 +114,7 @@ public class TransactionSummaryCollector {
     }
 
     private static class MutableTransactionSummary {
-        private double totalNanos;
+        private double totalDurationNanos;
         private long transactionCount;
     }
 }

@@ -29,7 +29,7 @@ message Aggregate {
                                        // be greater than time in parent
   ThreadStats main_thread_stats = 7;
   ThreadStats aux_thread_stats = 8;
-  Histogram total_nanos_histogram = 9;
+  Histogram total_duration_nanos_histogram = 9;
   Profile main_thread_profile = 10;
   Profile aux_thread_profile = 11;
   repeated QueriesByType queries_by_type = 12;
@@ -70,7 +70,7 @@ message Aggregate {
 
   message Query {
     string text = 1;
-    double total_nanos = 2;
+    double total_duration_nanos = 2;
     int64 total_rows = 3;
     int64 execution_count = 4;
   }

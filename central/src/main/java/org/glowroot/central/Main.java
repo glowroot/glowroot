@@ -24,7 +24,6 @@ import java.util.Properties;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SocketOptions;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -64,9 +63,6 @@ public class Main {
         Cluster cluster = Cluster.builder()
                 .addContactPoints(contactPoints.toArray(new String[0]))
                 .build();
-        SocketOptions socketOptions = cluster.getConfiguration().getSocketOptions();
-        socketOptions.setReadTimeoutMillis(30000);
-        socketOptions.setConnectTimeoutMillis(30000);
         Session session = cluster.connect();
         session.execute("create keyspace if not exists glowroot with replication ="
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");

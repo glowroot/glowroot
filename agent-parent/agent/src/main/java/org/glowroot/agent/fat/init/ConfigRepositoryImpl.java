@@ -143,7 +143,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public AgentConfig.AdvancedConfig getAdvancedConfig(String serverId) {
+    public @Nullable AgentConfig.AdvancedConfig getAdvancedConfig(String serverId) {
         return configService.getAdvancedConfig().toProto();
     }
 

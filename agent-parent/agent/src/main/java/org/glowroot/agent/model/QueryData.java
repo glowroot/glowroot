@@ -49,7 +49,7 @@ public class QueryData {
     private final @Nullable QueryData nextQueryData;
 
     // nanosecond rollover (292 years) isn't a concern for total time on a single transaction
-    private long totalNanos;
+    private long totalDurationNanos;
     private long executionCount;
     private long totalRows;
 
@@ -98,8 +98,8 @@ public class QueryData {
         totalRows += inc;
     }
 
-    public long getTotalNanos() {
-        return totalNanos;
+    public long getTotalDurationNanos() {
+        return totalDurationNanos;
     }
 
     // only called after transaction completion
@@ -120,6 +120,6 @@ public class QueryData {
     }
 
     private void endInternal(long endTick) {
-        totalNanos += endTick - startTick;
+        totalDurationNanos += endTick - startTick;
     }
 }

@@ -28,6 +28,7 @@ public interface GaugeValueRepository {
 
     List<Gauge> getGauges(String serverRollup) throws Exception;
 
+    // query.from() is INCLUSIVE
     List<GaugeValue> readGaugeValues(String serverRollup, String gaugeName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception;
 

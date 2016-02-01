@@ -91,7 +91,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTraceWithTotalNanosQualifier() throws Exception {
+    public void shouldReadTraceWithDurationNanosQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_ID, trace);
@@ -112,7 +112,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldNotReadTraceWithHighTotalNanosQualifier() throws Exception {
+    public void shouldNotReadTraceWithHighDurationNanosQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_ID, trace);
@@ -133,7 +133,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldNotReadTraceWithLowTotalNanosQualifier() throws Exception {
+    public void shouldNotReadTraceWithLowDurationNanosQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(SERVER_ID, trace);

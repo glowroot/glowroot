@@ -99,7 +99,7 @@ public class MutableThreadStats {
                 && NotAvailableAware.isNA(totalAllocatedBytes);
     }
 
-    Aggregate.ThreadStats toProto() {
+    public Aggregate.ThreadStats toProto() {
         Aggregate.ThreadStats.Builder builder = Aggregate.ThreadStats.newBuilder();
         if (!NotAvailableAware.isNA(totalCpuNanos)) {
             builder.setTotalCpuNanos(toProto(totalCpuNanos));

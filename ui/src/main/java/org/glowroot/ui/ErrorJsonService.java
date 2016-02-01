@@ -31,15 +31,14 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common.util.Styles;
 import org.glowroot.storage.repo.AggregateRepository;
-import org.glowroot.storage.repo.AggregateRepository.ErrorPoint;
 import org.glowroot.storage.repo.AggregateRepository.OverallErrorSummary;
 import org.glowroot.storage.repo.AggregateRepository.OverallQuery;
 import org.glowroot.storage.repo.AggregateRepository.ThroughputAggregate;
 import org.glowroot.storage.repo.AggregateRepository.TransactionErrorSummary;
 import org.glowroot.storage.repo.AggregateRepository.TransactionQuery;
 import org.glowroot.storage.repo.ImmutableErrorMessageFilter;
-import org.glowroot.storage.repo.ImmutableErrorPoint;
 import org.glowroot.storage.repo.ImmutableOverallQuery;
 import org.glowroot.storage.repo.ImmutableTraceQuery;
 import org.glowroot.storage.repo.ImmutableTransactionQuery;
@@ -202,6 +201,14 @@ class ErrorJsonService {
         if (lastErrorPoint != null) {
             dataSeriesHelper.addFinalDownslopeIfNeeded(dataSeries, lastErrorPoint.captureTime());
         }
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface ErrorPoint {
+        long captureTime();
+        long errorCount();
+        long transactionCount();
     }
 
     @Value.Immutable

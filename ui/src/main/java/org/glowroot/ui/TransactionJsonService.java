@@ -223,7 +223,7 @@ class TransactionJsonService {
                 queryList.add(ImmutableQuery.builder()
                         .queryType(queriesByType.getType())
                         .queryText(aggQuery.getText())
-                        .totalNanos(aggQuery.getTotalNanos())
+                        .totalDurationNanos(aggQuery.getTotalDurationNanos())
                         .executionCount(aggQuery.getExecutionCount())
                         .totalRows(aggQuery.getTotalRows())
                         .build());
@@ -233,7 +233,7 @@ class TransactionJsonService {
             @Override
             public int compare(Query left, Query right) {
                 // sort descending
-                return Doubles.compare(right.totalNanos(), left.totalNanos());
+                return Doubles.compare(right.totalDurationNanos(), left.totalDurationNanos());
             }
         });
         if (queryList.isEmpty() && aggregateRepository.shouldHaveQueries(query)) {
@@ -356,7 +356,7 @@ class TransactionJsonService {
             return ImmutablePercentileData.builder()
                     .mergedAggregate(ImmutablePercentileMergedAggregate.builder()
                             .transactionCount(0)
-                            .totalNanos(0)
+                            .totalDurationNanos(0)
                             .build())
                     .build();
         }
@@ -369,7 +369,7 @@ class TransactionJsonService {
         }
 
         long transactionCount = 0;
-        double totalNanos = 0;
+        double totalDurationNanos = 0;
         LazyHistogram mergedHistogram = new LazyHistogram();
 
         PercentileAggregate lastPercentileAggregate = null;
@@ -396,7 +396,7 @@ class TransactionJsonService {
                 // filtering out the left most aggregate since it is not really in the requested
                 // interval since it is for prior capture times
                 transactionCount += percentileAggregate.transactionCount();
-                totalNanos += percentileAggregate.totalNanos();
+                totalDurationNanos += percentileAggregate.totalDurationNanos();
                 mergedHistogram.merge(histogram);
             }
         }
@@ -416,7 +416,7 @@ class TransactionJsonService {
                 .dataSeriesList(dataSeriesList)
                 .mergedAggregate(ImmutablePercentileMergedAggregate.builder()
                         .transactionCount(transactionCount)
-                        .totalNanos(totalNanos)
+                        .totalDurationNanos(totalDurationNanos)
                         .addAllPercentileValues(percentileValues)
                         .build())
                 .build();
@@ -663,7 +663,7 @@ class TransactionJsonService {
     interface Query {
         String queryType();
         String queryText();
-        double totalNanos();
+        double totalDurationNanos();
         long executionCount();
         long totalRows();
     }
@@ -678,7 +678,7 @@ class TransactionJsonService {
     interface PercentileMergedAggregate {
         long transactionCount();
         // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
-        double totalNanos();
+        double totalDurationNanos();
         ImmutableList<PercentileValue> percentileValues();
     }
 }

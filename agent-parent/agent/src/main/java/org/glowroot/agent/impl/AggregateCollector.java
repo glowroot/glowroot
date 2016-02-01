@@ -44,7 +44,7 @@ import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble;
 class AggregateCollector {
 
     private final @Nullable String transactionName;
-    private long totalNanos;
+    private long totalDurationNanos;
     private long transactionCount;
     private long errorCount;
     private final List<MutableTimer> mainThreadRootTimers = Lists.newArrayList();
@@ -70,8 +70,8 @@ class AggregateCollector {
     }
 
     void add(Transaction transaction) {
-        long totalNanos = transaction.getDurationNanos();
-        this.totalNanos += totalNanos;
+        long totalDurationNanos = transaction.getDurationNanos();
+        this.totalDurationNanos += totalDurationNanos;
         transactionCount++;
         if (transaction.getErrorMessage() != null) {
             errorCount++;
@@ -85,7 +85,7 @@ class AggregateCollector {
         for (ThreadStats auxThreadStats : transaction.getAuxThreadStats()) {
             this.auxThreadStats.addThreadStats(auxThreadStats);
         }
-        lazyHistogram.add(totalNanos);
+        lazyHistogram.add(totalDurationNanos);
     }
 
     void mergeMainThreadRootTimer(TimerImpl toBeMergedRootTimer) {
@@ -112,20 +112,20 @@ class AggregateCollector {
         while (toBeMergedQueries.hasNext()) {
             QueryData toBeMergedQuery = toBeMergedQueries.next();
             queries.mergeQuery(toBeMergedQuery.getQueryType(), toBeMergedQuery.getQueryText(),
-                    toBeMergedQuery.getTotalNanos(), toBeMergedQuery.getExecutionCount(),
+                    toBeMergedQuery.getTotalDurationNanos(), toBeMergedQuery.getExecutionCount(),
                     toBeMergedQuery.getTotalRows());
         }
     }
 
     Aggregate build(ScratchBuffer scratchBuffer) throws IOException {
         Aggregate.Builder builder = Aggregate.newBuilder()
-                .setTotalDurationNanos(totalNanos)
+                .setTotalDurationNanos(totalDurationNanos)
                 .setTransactionCount(transactionCount)
                 .setErrorCount(errorCount)
                 .addAllMainThreadRootTimer(getRootTimersProtobuf(mainThreadRootTimers))
                 .addAllAuxThreadRootTimer(getRootTimersProtobuf(auxThreadRootTimers))
                 .addAllAsyncRootTimer(getRootTimersProtobuf(asyncRootTimers))
-                .setTotalNanosHistogram(lazyHistogram.toProto(scratchBuffer));
+                .setTotalDurationNanosHistogram(lazyHistogram.toProto(scratchBuffer));
         if (!mainThreadStats.isNA()) {
             builder.setMainThreadStats(mainThreadStats.toProto());
         }
@@ -138,7 +138,7 @@ class AggregateCollector {
         if (auxThreadProfile.getSampleCount() > 0) {
             builder.setAuxThreadProfile(auxThreadProfile.toProto());
         }
-        return builder.addAllQueriesByType(queries.toProto(true))
+        return builder.addAllQueriesByType(queries.toProto())
                 .build();
     }
 

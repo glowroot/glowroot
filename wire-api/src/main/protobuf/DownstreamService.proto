@@ -204,7 +204,7 @@ message ThreadDump {
   message Transaction {
     string transaction_type = 1;
     string transaction_name = 2;
-    int64 transaction_total_nanos = 3;
+    int64 total_duration_nanos = 3;
     // trace id is only included if a trace will be stored for this transaction
     // (e.g. the transaction exceeds the slow threshold)
     string trace_id = 4;

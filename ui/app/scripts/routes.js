@@ -91,9 +91,9 @@ glowroot.config([
               function ($filter) {
                 return function (summary, sortOrder, overallSummary, durationMillis) {
                   if (sortOrder === 'total-time') {
-                    return (100 * summary.totalNanos / overallSummary.totalNanos).toFixed(1) + ' %';
+                    return (100 * summary.totalDurationNanos / overallSummary.totalDurationNanos).toFixed(1) + ' %';
                   } else if (sortOrder === 'average-time') {
-                    return $filter('gtMillis')(summary.totalNanos / (1000000 * summary.transactionCount)) + ' ms';
+                    return $filter('gtMillis')(summary.totalDurationNanos / (1000000 * summary.transactionCount)) + ' ms';
                   } else if (sortOrder === 'throughput') {
                     return (60 * 1000 * summary.transactionCount / durationMillis).toFixed(1) + '/min';
                   }
