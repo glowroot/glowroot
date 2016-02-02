@@ -26,6 +26,7 @@ import java.util.Locale;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.annotations.VisibleForTesting;
@@ -79,6 +80,13 @@ public abstract class PluginCache {
             builder.addAllPluginDescriptors(createInViewerMode(descriptorURLs));
         } else {
             builder.addAllPluginDescriptors(readPluginDescriptors(descriptorURLs));
+        }
+        // when using uber jar, get the (aggregated) plugin list
+        URL plugins = PluginCache.class.getResource("/META-INF/glowroot.plugins.json");
+        if (plugins != null) {
+            List<PluginDescriptor> pluginDescriptors = mapper.readValue(plugins,
+                    new TypeReference<List<ImmutablePluginDescriptor>>() {});
+            builder.addAllPluginDescriptors(pluginDescriptors);
         }
         return builder.build();
     }

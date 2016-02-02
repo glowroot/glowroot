@@ -286,6 +286,8 @@ public class AdviceCache {
             return name.startsWith("java.") || name.startsWith("sun.")
                     || name.startsWith("javax.management.")
                     || name.startsWith("org.glowroot.agent.plugin.api.")
+                    // when using uber jar, also get the plugins from the bootstrap classloader
+                    || name.startsWith("org.glowroot.agent.plugin.")
                     // this is just special case to support running glowroot and jrebel at same time
                     || name.startsWith("org.zeroturnaround.javarebel.");
         }
