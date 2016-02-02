@@ -15,12 +15,8 @@
  */
 package org.glowroot.agent.plugin.spring;
 
-import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.*;
 import org.glowroot.agent.plugin.api.config.ConfigService;
-import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
-import org.glowroot.agent.plugin.api.transaction.TimerName;
-import org.glowroot.agent.plugin.api.transaction.TraceEntry;
-import org.glowroot.agent.plugin.api.transaction.TransactionService;
 import org.glowroot.agent.plugin.api.weaving.BindMethodMeta;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
@@ -32,37 +28,32 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class ControllerAspect {
 
-    private static final TransactionService transactionService = Agent.getTransactionService();
     private static final ConfigService configService = Agent.getConfigService("spring");
 
     @Pointcut(classAnnotation = "org.springframework.stereotype.Controller",
             methodAnnotation = "org.springframework.web.bind.annotation.RequestMapping",
             methodParameterTypes = {".."}, timerName = "spring controller")
     public static class ControllerAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(ControllerAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return configService.isEnabled();
-        }
+        private static final TimerName timerName = Agent.getTimerName(ControllerAdvice.class);
+
         @OnBefore
-        public static TraceEntry onBefore(
-                @BindMethodMeta ControllerMethodMeta controllerMethodMeta) {
-            transactionService.setTransactionName(controllerMethodMeta.getDeclaredClassSimpleName() +'/'+
+        public static TraceEntry onBefore(ThreadContext context, @BindMethodMeta ControllerMethodMeta controllerMethodMeta) {
+            context.setTransactionName(controllerMethodMeta.getDeclaredClassSimpleName() + '/' +
                     controllerMethodMeta.getMethodName());
-            return transactionService.startTraceEntry(
+            return context.startTraceEntry(
                     MessageSupplier.from("spring controller: {}.{}()",
                             controllerMethodMeta.getDeclaredClassSimpleName(),
                             controllerMethodMeta.getMethodName()),
                     timerName);
         }
+
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
             traceEntry.end();
         }
+
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable throwable,
-                @BindTraveler TraceEntry traceEntry) {
+        public static void onThrow(@BindThrowable Throwable throwable, @BindTraveler TraceEntry traceEntry) {
             traceEntry.endWithError(throwable);
         }
     }
