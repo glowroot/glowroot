@@ -61,7 +61,7 @@ public class PropertyValue {
         return value;
     }
 
-    enum PropertyType {
+    public enum PropertyType {
         STRING, BOOLEAN, DOUBLE
     }
 

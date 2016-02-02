@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
@@ -80,6 +81,15 @@ public abstract class PluginCache {
         } else {
             builder.addAllPluginDescriptors(readPluginDescriptors(descriptorURLs));
         }
+
+        // when running in one jar file, get the (aggregated) plugin list
+        URL plugins = PluginCache.class.getResource("/META-INF/glowroot.plugins.json");
+        if (plugins != null) {
+            CollectionType collectionType = mapper.getTypeFactory().constructCollectionType(List.class, ImmutablePluginDescriptor.class);
+            List<PluginDescriptor> pluginDescriptors = (List<PluginDescriptor>) mapper.readValue(plugins, collectionType);
+            builder.addAllPluginDescriptors(pluginDescriptors);
+        }
+
         return builder.build();
     }
 

@@ -17,6 +17,7 @@ package org.glowroot.agent.config;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -34,7 +35,7 @@ public abstract class PropertyDescriptor {
     public abstract PropertyType type();
 
     @JsonProperty("default")
-    abstract @Nullable PropertyValue defaultValue();
+    public abstract @Nullable PropertyValue defaultValue();
 
     public abstract String label();
 
@@ -48,6 +49,7 @@ public abstract class PropertyDescriptor {
         return "";
     }
 
+    @JsonIgnore
     public PropertyValue getValidatedNonNullDefaultValue() {
         PropertyValue defaultValue = defaultValue();
         if (defaultValue == null) {
