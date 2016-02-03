@@ -218,7 +218,12 @@ public class JavaagentContainer implements Container {
     public void executeNoExpectedTrace(Class<? extends AppUnderTest> appClass) throws Exception {
         executeInternal(appClass);
         // give a short time to see if trace gets collected
-        Thread.sleep(10);
+
+        // originally was waiting 10 milliseconds, but bumped to 100 milliseconds because it seems
+        // to avoid a sporadic gRPC error when running AnalyzedClassPlanBeeIT
+        // TODO after next gRPC release, test back at 10 milliseconds and see if sporadic error is
+        // still reproducible
+        Thread.sleep(100);
         if (traceCollector != null && traceCollector.hasTrace()) {
             throw new IllegalStateException("Trace was collected when none was expected");
         }
