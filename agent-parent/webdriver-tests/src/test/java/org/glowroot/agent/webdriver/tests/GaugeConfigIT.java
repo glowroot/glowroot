@@ -85,6 +85,9 @@ public class GaugeConfigIT extends WebDriverIT {
         gaugePage.getMBeanAttributeCheckBox("LoadedClassCount").click();
         gaugePage.getMBeanAttributeCheckBox("TotalLoadedClassCount").click();
         gaugePage.getAddButton().click();
+        // getDeleteButton() waits for the save/redirect
+        // (the delete button does not appear until after the save/redirect)
+        gaugePage.getDeleteButton();
         driver.findElement(linkText("Return to list")).click();
     }
 }

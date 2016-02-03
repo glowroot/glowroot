@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.google.common.base.Function;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -40,7 +41,13 @@ public class Utils {
                     return null;
                 }
                 WebElement element = elements.get(0);
-                if (!element.isDisplayed()) {
+                try {
+                    if (!element.isDisplayed()) {
+                        return null;
+                    }
+                } catch (StaleElementReferenceException e) {
+                    // this can happen if dom is updated in between findElements() and checking
+                    // isDisplayed()
                     return null;
                 }
                 List<WebElement> overlayElements =
