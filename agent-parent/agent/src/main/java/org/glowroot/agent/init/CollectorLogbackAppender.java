@@ -20,8 +20,6 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
 import ch.qos.logback.classic.spi.StackTraceElementProxy;
 import ch.qos.logback.core.AppenderBase;
-import com.google.common.reflect.Reflection;
-import io.netty.buffer.AbstractByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,19 +30,6 @@ import org.glowroot.wire.api.model.Proto;
 class CollectorLogbackAppender extends AppenderBase<ILoggingEvent> {
 
     private static final Logger logger = LoggerFactory.getLogger(CollectorLogbackAppender.class);
-
-    static {
-        // explicit initializations are to work around NullPointerExceptions caused by class init
-        // ordering, e.g. when running UiSandboxMain against central collector (and debug logging
-        // enabled at root logger)
-        Reflection.initialize(AbstractByteBuf.class);
-        try {
-            Class.forName("io.netty.channel.DefaultChannelHandlerInvoker$WriteTask", true,
-                    CollectorLogbackAppender.class.getClassLoader());
-        } catch (ClassNotFoundException e) {
-            throw new AssertionError(e);
-        }
-    }
 
     private final CollectorProxy collector;
 

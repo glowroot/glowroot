@@ -56,7 +56,7 @@ public class UiSandboxMain {
         if (useJavaagent) {
             container = new JavaagentContainer(baseDir, true, false, ImmutableList.<String>of());
         } else if (useCentral) {
-            container = new LocalContainer(baseDir, false,
+            container = new LocalContainer(baseDir, true,
                     ImmutableMap.of("glowroot.server.id", "UI Sandbox",
                             "glowroot.collector.host", "localhost",
                             "glowroot.collector.port", "8181"));
