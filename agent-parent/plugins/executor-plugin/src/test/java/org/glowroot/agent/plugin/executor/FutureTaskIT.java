@@ -118,13 +118,12 @@ public class FutureTaskIT {
         assertThat(header.getAuxThreadRootTimer(0).getName()).isEqualTo("auxiliary thread");
         assertThat(header.getAuxThreadRootTimer(0).getCount()).isEqualTo(3);
         assertThat(header.getAuxThreadRootTimer(0).getTotalNanos())
-                .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(250));
+                .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(500));
         assertThat(header.getAuxThreadRootTimer(0).getChildTimerCount()).isZero();
         assertThat(trace.hasMainThreadProfile()).isTrue();
         assertThat(header.getMainThreadProfileSampleCount()).isGreaterThanOrEqualTo(1);
         assertThat(trace.hasAuxThreadProfile()).isTrue();
-        assertThat(trace.hasMainThreadProfile()).isTrue();
-        assertThat(trace.hasAuxThreadProfile()).isTrue();
+        assertThat(header.getAuxThreadProfileSampleCount()).isGreaterThanOrEqualTo(1);
         assertThat(header.getEntryCount()).isZero();
     }
 
@@ -159,8 +158,7 @@ public class FutureTaskIT {
         assertThat(trace.hasMainThreadProfile()).isTrue();
         assertThat(header.getMainThreadProfileSampleCount()).isGreaterThanOrEqualTo(1);
         assertThat(trace.hasAuxThreadProfile()).isTrue();
-        assertThat(trace.hasMainThreadProfile()).isTrue();
-        assertThat(trace.hasAuxThreadProfile()).isTrue();
+        assertThat(header.getAuxThreadProfileSampleCount()).isGreaterThanOrEqualTo(1);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(3);
         checkEntry(entries.get(0));
