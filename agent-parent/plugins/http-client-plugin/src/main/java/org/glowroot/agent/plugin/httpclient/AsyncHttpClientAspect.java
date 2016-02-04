@@ -34,6 +34,7 @@ import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
+import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.Mixin;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
@@ -138,6 +139,10 @@ public class AsyncHttpClientAspect {
             methodDeclaringClassName = "java.util.concurrent.Future", methodName = "get",
             methodParameterTypes = {".."})
     public static class FutureGetAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return !ignoreFutureGet.get();
+        }
         @OnBefore
         public static @Nullable Timer onBefore(@BindReceiver ListenableFutureMixin future) {
             AsyncTraceEntry asyncTraceEntry = future.glowroot$getAsyncTraceEntry();
