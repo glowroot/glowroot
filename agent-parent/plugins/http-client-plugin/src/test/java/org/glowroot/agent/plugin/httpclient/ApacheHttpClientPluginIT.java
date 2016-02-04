@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,7 +58,7 @@ public class ApacheHttpClientPluginIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage())
-                .isEqualTo("http client request: GET http://www.example.com/hello1");
+                .matches("http client request: GET http://localhost:\\d+/hello1");
     }
 
     @Test
@@ -69,7 +67,7 @@ public class ApacheHttpClientPluginIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage())
-                .isEqualTo("http client request: GET http://www.example.com/hello2");
+                .matches("http client request: GET http://localhost:\\d+/hello2");
     }
 
     @Test
@@ -78,7 +76,7 @@ public class ApacheHttpClientPluginIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage())
-                .isEqualTo("http client request: POST http://www.example.com/hello3");
+                .matches("http client request: POST http://localhost:\\d+/hello3");
     }
 
     @Test
@@ -87,61 +85,45 @@ public class ApacheHttpClientPluginIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage())
-                .isEqualTo("http client request: POST http://www.example.com/hello4");
+                .matches("http client request: POST http://localhost:\\d+/hello4");
     }
 
-    public static class ExecuteHttpGet implements AppUnderTest, TransactionMarker {
-        @Override
-        public void executeApp() throws Exception {
-            transactionMarker();
-        }
+    public static class ExecuteHttpGet extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
-            HttpGet httpGet = new HttpGet("http://www.example.com/hello1");
+            HttpGet httpGet = new HttpGet("http://localhost:" + getPort() + "/hello1");
             httpClient.execute(httpGet);
             httpClient.close();
         }
     }
 
-    public static class ExecuteHttpGetUsingHttpHostArg implements AppUnderTest, TransactionMarker {
-        @Override
-        public void executeApp() throws Exception {
-            transactionMarker();
-        }
+    public static class ExecuteHttpGetUsingHttpHostArg extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
-            HttpHost httpHost = new HttpHost("www.example.com");
+            HttpHost httpHost = new HttpHost("localhost", getPort());
             HttpGet httpGet = new HttpGet("/hello2");
             httpClient.execute(httpHost, httpGet);
             httpClient.close();
         }
     }
 
-    public static class ExecuteHttpPost implements AppUnderTest, TransactionMarker {
-        @Override
-        public void executeApp() throws Exception {
-            transactionMarker();
-        }
+    public static class ExecuteHttpPost extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
-            HttpPost httpPost = new HttpPost("http://www.example.com/hello3");
+            HttpPost httpPost = new HttpPost("http://localhost:" + getPort() + "/hello3");
             httpClient.execute(httpPost);
             httpClient.close();
         }
     }
 
-    public static class ExecuteHttpPostUsingHttpHostArg implements AppUnderTest, TransactionMarker {
-        @Override
-        public void executeApp() throws Exception {
-            transactionMarker();
-        }
+    public static class ExecuteHttpPostUsingHttpHostArg extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
-            HttpHost httpHost = new HttpHost("www.example.com");
+            HttpHost httpHost = new HttpHost("localhost", getPort());
             HttpPost httpPost = new HttpPost("/hello4");
             httpClient.execute(httpHost, httpPost);
             httpClient.close();

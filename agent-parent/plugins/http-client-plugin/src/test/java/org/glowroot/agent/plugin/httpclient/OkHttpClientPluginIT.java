@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,8 +56,8 @@ public class OkHttpClientPluginIT {
         Trace trace = container.execute(ExecuteHttpGet.class);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
-                .isEqualTo("http client request: GET http://www.example.com/hello1/");
+        assertThat(entries.get(0).getMessage()).matches(
+                "http client request: GET http://localhost:\\d+/hello1/");
     }
 
     @Test
@@ -67,37 +65,29 @@ public class OkHttpClientPluginIT {
         Trace trace = container.execute(ExecuteHttpPost.class);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
-                .isEqualTo("http client request: POST http://www.example.com/hello2");
+        assertThat(entries.get(0).getMessage()).matches(
+                "http client request: POST http://localhost:\\d+/hello2");
     }
 
-    public static class ExecuteHttpGet implements AppUnderTest, TransactionMarker {
-        @Override
-        public void executeApp() throws Exception {
-            transactionMarker();
-        }
+    public static class ExecuteHttpGet extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
             OkHttpClient client = new OkHttpClient();
             Request request = new Request.Builder()
-                    .url("http://www.example.com/hello1/")
+                    .url("http://localhost:" + getPort() + "/hello1/")
                     .build();
             client.newCall(request).execute();
         }
     }
 
-    public static class ExecuteHttpPost implements AppUnderTest, TransactionMarker {
-        @Override
-        public void executeApp() throws Exception {
-            transactionMarker();
-        }
+    public static class ExecuteHttpPost extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
             MediaType mediaType = MediaType.parse("text/plain; charset=utf-8");
             OkHttpClient client = new OkHttpClient();
             RequestBody body = RequestBody.create(mediaType, "hello");
             Request request = new Request.Builder()
-                    .url("http://www.example.com/hello2")
+                    .url("http://localhost:" + getPort() + "/hello2")
                     .post(body)
                     .build();
             client.newCall(request).execute();

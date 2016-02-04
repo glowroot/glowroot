@@ -23,10 +23,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,7 +64,7 @@ public class AsyncHttpClientPluginIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage())
-                .isEqualTo("http client request: GET http://www.example.com/hello1/");
+                .matches("http client request: GET http://localhost:\\d+/hello1/");
     }
 
     @Test
@@ -85,31 +83,25 @@ public class AsyncHttpClientPluginIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage())
-                .isEqualTo("http client request: POST http://www.example.com/hello2");
+                .matches("http client request: POST http://localhost:\\d+/hello2");
     }
 
-    public static class ExecuteHttpGet implements AppUnderTest, TransactionMarker {
-        @Override
-        public void executeApp() throws Exception {
-            transactionMarker();
-        }
+    public static class ExecuteHttpGet extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://www.example.com/hello1/").execute().get();
+            asyncHttpClient.prepareGet("http://localhost:" + getPort() + "/hello1/").execute()
+                    .get();
             asyncHttpClient.close();
         }
     }
 
-    public static class ExecuteHttpPost implements AppUnderTest, TransactionMarker {
-        @Override
-        public void executeApp() throws Exception {
-            transactionMarker();
-        }
+    public static class ExecuteHttpPost extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.preparePost("http://www.example.com/hello2").execute().get();
+            asyncHttpClient.preparePost("http://localhost:" + getPort() + "/hello2").execute()
+                    .get();
             asyncHttpClient.close();
         }
     }

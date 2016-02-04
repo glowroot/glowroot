@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,6 +158,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         this.jsonServiceMappings = ImmutableList.copyOf(jsonServiceMappings);
         allChannels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     }
+
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         allChannels.add(ctx.channel());
