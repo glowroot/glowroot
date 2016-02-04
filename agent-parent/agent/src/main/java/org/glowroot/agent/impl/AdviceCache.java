@@ -17,10 +17,8 @@ package org.glowroot.agent.impl;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.instrument.Instrumentation;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -38,7 +36,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.io.ByteStreams;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,12 +88,11 @@ public class AdviceCache {
         for (int i = 0; i < pluginJars.size(); i++) {
             pluginJarURLs[i] = pluginJars.get(i).toURI().toURL();
         }
-        ClassLoader tempIsolatedClassLoader =
-                new IsolatedClassLoader(pluginJarURLs, AdviceCache.class.getClassLoader());
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             for (String aspect : pluginDescriptor.aspects()) {
                 try {
-                    Class<?> aspectClass = Class.forName(aspect, false, tempIsolatedClassLoader);
+                    Class<?> aspectClass =
+                            Class.forName(aspect, false, AdviceCache.class.getClassLoader());
                     pluginAdvisors.addAll(getAdvisors(aspectClass));
                     shimTypes.addAll(getShimTypes(aspectClass));
                     mixinTypes.addAll(getMixinTypes(aspectClass));
@@ -241,61 +237,5 @@ public class AdviceCache {
     @OnlyUsedByTests
     public List<Advice> getAdvisors() {
         return getAdvisorsSupplier().get();
-    }
-
-    private static class IsolatedClassLoader extends URLClassLoader {
-
-        private IsolatedClassLoader(URL[] urls, @Nullable ClassLoader parent) {
-            super(urls, parent);
-        }
-
-        @Override
-        protected Class<?> findClass(String name) throws ClassNotFoundException {
-            if (useBootstrapClassLoader(name)) {
-                return super.findClass(name);
-            }
-            String resourceName = name.replace('.', '/') + ".class";
-            InputStream input = getResourceAsStream(resourceName);
-            if (input == null) {
-                throw new ClassNotFoundException(name);
-            }
-            byte[] b;
-            try {
-                b = ByteStreams.toByteArray(input);
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-            int lastIndexOf = name.lastIndexOf('.');
-            if (lastIndexOf != -1) {
-                String packageName = name.substring(0, lastIndexOf);
-                createPackageIfNecessary(packageName);
-            }
-            return defineClass(name, b, 0, b.length);
-        }
-
-        @Override
-        protected synchronized Class<?> loadClass(String name, boolean resolve)
-                throws ClassNotFoundException {
-            if (useBootstrapClassLoader(name)) {
-                return super.loadClass(name, resolve);
-            }
-            return findClass(name);
-        }
-
-        private boolean useBootstrapClassLoader(String name) {
-            return name.startsWith("java.") || name.startsWith("sun.")
-                    || name.startsWith("javax.management.")
-                    || name.startsWith("org.glowroot.agent.plugin.api.")
-                    // when using uber jar, also get the plugins from the bootstrap classloader
-                    || name.startsWith("org.glowroot.agent.plugin.")
-                    // this is just special case to support running glowroot and jrebel at same time
-                    || name.startsWith("org.zeroturnaround.javarebel.");
-        }
-
-        private void createPackageIfNecessary(String packageName) {
-            if (getPackage(packageName) == null) {
-                definePackage(packageName, null, null, null, null, null, null, null);
-            }
-        }
     }
 }
