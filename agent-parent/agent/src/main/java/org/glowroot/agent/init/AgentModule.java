@@ -192,8 +192,7 @@ public class AgentModule {
                 - (clock.currentTimeMillis() % gaugeCollectionIntervalMillis);
         gaugeCollector.scheduleWithFixedDelay(initialDelay, gaugeCollectionIntervalMillis,
                 MILLISECONDS);
-        stackTraceCollector = StackTraceCollector.create(transactionRegistry, configService,
-                scheduledExecutor, random);
+        stackTraceCollector = new StackTraceCollector(transactionRegistry, configService, random);
 
         immedateTraceStoreWatcher = new ImmediateTraceStoreWatcher(scheduledExecutor,
                 transactionRegistry, transactionCollector, configService, ticker);
