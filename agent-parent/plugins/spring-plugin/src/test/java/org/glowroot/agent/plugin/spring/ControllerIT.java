@@ -15,19 +15,26 @@
  */
 package org.glowroot.agent.plugin.spring;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.List;
 
+import com.ning.http.client.AsyncHttpClient;
+import org.apache.catalina.Context;
+import org.apache.catalina.loader.WebappLoader;
+import org.apache.catalina.startup.Tomcat;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,30 +62,51 @@ public class ControllerIT {
     public void shouldCaptureTransactionName() throws Exception {
         // given
         // when
-        Trace trace = container.execute(ExecuteController.class);
+        Trace trace = container.execute(InvokeSpringControllerInTomcat.class);
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("TestController/testMethod");
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("spring controller: TestController.testMethod()");
+        assertThat(entry.getMessage()).isEqualTo("spring controller: TestController.testMethod()");
     }
 
-    public static class ExecuteController implements AppUnderTest, TransactionMarker {
+    public static class InvokeSpringControllerInTomcat implements AppUnderTest {
+
         @Override
         public void executeApp() throws Exception {
-            transactionMarker();
+            int port = getAvailablePort();
+            Tomcat tomcat = new Tomcat();
+            tomcat.setBaseDir("target/tomcat");
+            tomcat.setPort(port);
+            Context context =
+                    tomcat.addWebapp("", new File("src/test/resources").getAbsolutePath());
+
+            WebappLoader webappLoader =
+                    new WebappLoader(InvokeSpringControllerInTomcat.class.getClassLoader());
+            context.setLoader(webappLoader);
+
+            tomcat.start();
+            AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+            asyncHttpClient.prepareGet("http://localhost:" + port + "/hello/1").execute().get();
+            asyncHttpClient.close();
+            tomcat.stop();
+            tomcat.destroy();
         }
-        @Override
-        public void transactionMarker() throws Exception {
-            new TestController().testMethod();
+
+        private static int getAvailablePort() throws IOException {
+            ServerSocket serverSocket = new ServerSocket(0);
+            int port = serverSocket.getLocalPort();
+            serverSocket.close();
+            return port;
         }
     }
 
     @Controller
     public static class TestController {
-        @RequestMapping("/abc")
-        public void testMethod() {}
+        @RequestMapping("/hello/*")
+        public @ResponseBody String testMethod() {
+            return "hello world!";
+        }
     }
 }
