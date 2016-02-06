@@ -22,7 +22,7 @@
       "nestingGroup": "jsf",
       "captureKind": "trace-entry",
       "timerName": "jsf invoke",
-      "traceEntryMessageTemplate": "jsf invoke: {{0.component.id}}"
+      "traceEntryMessageTemplate": "jsf invoke: {{0.component.action.expressionString}}"
     },
     {
       "className": "com.sun.faces.lifecycle.RenderResponsePhase",

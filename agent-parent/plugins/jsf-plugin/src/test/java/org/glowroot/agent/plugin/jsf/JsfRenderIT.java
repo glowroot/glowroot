@@ -79,7 +79,7 @@ public class JsfRenderIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(3);
         assertThat(entries.get(0).getMessage()).isEqualTo("jsf apply request: /hello.xhtml");
-        assertThat(entries.get(1).getMessage()).isEqualTo("jsf invoke: helloAction");
+        assertThat(entries.get(1).getMessage()).isEqualTo("jsf invoke: #{helloBean.hello}");
         assertThat(entries.get(2).getMessage()).isEqualTo("jsf render: /hello.xhtml");
     }
 
