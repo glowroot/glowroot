@@ -15,12 +15,22 @@
  */
 package org.glowroot.agent.plugin.struts;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.List;
 
-import com.opensymphony.xwork2.mock.MockActionProxy;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.ning.http.client.AsyncHttpClient;
+import org.apache.catalina.Context;
+import org.apache.catalina.loader.WebappLoader;
+import org.apache.catalina.startup.Tomcat;
 import org.apache.struts.action.Action;
-import org.apache.struts.mock.MockHttpServletRequest;
-import org.apache.struts.mock.MockHttpServletResponse;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -29,12 +39,11 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ActionProxyIT {
+public class StrutsOneIT {
 
     private static Container container;
 
@@ -54,23 +63,10 @@ public class ActionProxyIT {
     }
 
     @Test
-    public void shouldCaptureTransactionNameStruts2() throws Exception {
+    public void shouldCaptureAction() throws Exception {
         // given
         // when
-        Trace trace = container.execute(ExecuteActionProxy.class);
-        // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("CustomAction#doLogin");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("struts action: CustomAction#doLogin");
-    }
-
-    @Test
-    public void shouldCaptureTransactionNameStruts() throws Exception {
-        // given
-        // when
-        Trace trace = container.execute(ExecuteAction.class);
+        Trace trace = container.execute(ExecuteActionInTomcat.class);
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("HelloWorldAction#execute");
         List<Trace.Entry> entries = trace.getEntryList();
@@ -79,39 +75,44 @@ public class ActionProxyIT {
         assertThat(entry.getMessage()).isEqualTo("struts action: HelloWorldAction#execute");
     }
 
-    public static class ExecuteAction implements AppUnderTest, TransactionMarker {
-
+    public static class HelloWorldAction extends Action {
         @Override
-        public void executeApp() throws Exception {
-            transactionMarker();
-        }
-
-        @Override
-        public void transactionMarker() throws Exception {
-            HelloWorldAction helloWorldAction = new HelloWorldAction();
-            helloWorldAction.execute(null, null, new MockHttpServletRequest(),
-                    new MockHttpServletResponse());
+        public ActionForward execute(ActionMapping mapping, ActionForm form,
+                HttpServletRequest request, HttpServletResponse response) {
+            return null;
         }
     }
 
-    public static class HelloWorldAction extends Action {}
+    public static class ExecuteActionInTomcat implements AppUnderTest {
 
-    public static class ExecuteActionProxy implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            transactionMarker();
+            int port = getAvailablePort();
+            Tomcat tomcat = new Tomcat();
+            tomcat.setBaseDir("target/tomcat");
+            tomcat.setPort(port);
+            Context context =
+                    tomcat.addWebapp("", new File("src/test/resources/struts1").getAbsolutePath());
+
+            WebappLoader webappLoader =
+                    new WebappLoader(ExecuteActionInTomcat.class.getClassLoader());
+            context.setLoader(webappLoader);
+
+            tomcat.start();
+
+            AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+            asyncHttpClient.prepareGet("http://localhost:" + port + "/hello.do").execute().get();
+            asyncHttpClient.close();
+
+            tomcat.stop();
+            tomcat.destroy();
         }
 
-        @Override
-        public void transactionMarker() throws Exception {
-            MockActionProxy proxy = new MockActionProxy();
-            proxy.setMethod("doLogin");
-            proxy.setAction(new CustomAction());
-            proxy.execute();
+        private static int getAvailablePort() throws IOException {
+            ServerSocket serverSocket = new ServerSocket(0);
+            int port = serverSocket.getLocalPort();
+            serverSocket.close();
+            return port;
         }
-    }
-
-    public static class CustomAction {
-        public void doLogin() {}
     }
 }

@@ -40,10 +40,29 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <!-- testing against servlet 3.0 -->
-      <groupId>org.apache.geronimo.specs</groupId>
-      <artifactId>geronimo-servlet_3.0_spec</artifactId>
-      <version>1.0</version>
+      <groupId>com.ning</groupId>
+      <artifactId>async-http-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-core</artifactId>
+      <!-- tomcat 8 requires JDK 7+ -->
+      <version>7.0.67</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-jasper</artifactId>
+      <!-- tomcat 8 requires JDK 7+ -->
+      <version>7.0.67</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-logging-juli</artifactId>
+      <!-- tomcat 8 requires JDK 7+ -->
+      <version>7.0.67</version>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -356,10 +356,13 @@ public class JavaagentContainer implements Container {
             } else if (file.isDirectory() && name.equals("test-classes")) {
                 paths.add(path);
             } else if (name.matches("tomcat-.*\\.jar") || name.matches("jsf-.*\\.jar")
+                    || name.matches("struts2?-core-.*\\.jar")
+                    || name.matches("commons-chain-.*\\.jar")
+                    || name.matches("xwork-core-.*\\.jar")
+                    || name.matches("freemarker-.*\\.jar")
                     || name.matches("hibernate-.*\\.jar")) {
-                // ideally all test dependencies would be in system classpath, but not sure how to
-                // differentiate here
-                // so just hard-coding test dependencies as necessary
+                // TODO ideally all test dependencies would be in system classpath, but not sure how
+                // to differentiate here, so just hard-coding test dependencies as necessary for now
                 paths.add(path);
             } else {
                 bootPaths.add(path);
