@@ -16,7 +16,7 @@
   <description>Glowroot Agent WebDriver Tests</description>
 
   <properties>
-    <selenium.version>2.50.1</selenium.version>
+    <selenium.version>2.51.0</selenium.version>
   </properties>
 
   <dependencies>

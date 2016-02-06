@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -53,7 +54,12 @@ class ChunkedInputs {
         private boolean hasSentTerminatingChunk;
 
         @Override
-        public @Nullable HttpContent readChunk(ChannelHandlerContext ctx) throws IOException {
+        public @Nullable HttpContent readChunk(ChannelHandlerContext ctx) throws Exception {
+            return readChunk(ctx.alloc());
+        }
+
+        @Override
+        public @Nullable HttpContent readChunk(ByteBufAllocator allocator) throws Exception {
             if (hasSentTerminatingChunk) {
                 return null;
             }

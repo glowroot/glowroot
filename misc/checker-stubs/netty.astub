@@ -20,4 +20,5 @@ package io.netty.handler.stream;
 
 public interface ChunkedInput<B> {
     @Nullable B readChunk(ChannelHandlerContext ctx);
+    @Nullable B readChunk(ByteBufAllocator allocator);
 }
