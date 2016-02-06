@@ -115,7 +115,11 @@ class TraceCollector implements Collector {
 
     @Override
     public void collectTrace(Trace trace) {
-        this.trace = trace;
+        Trace currTrace = this.trace;
+        if (currTrace == null
+                || currTrace.getHeader().getCaptureTime() <= trace.getHeader().getCaptureTime()) {
+            this.trace = trace;
+        }
     }
 
     @Override

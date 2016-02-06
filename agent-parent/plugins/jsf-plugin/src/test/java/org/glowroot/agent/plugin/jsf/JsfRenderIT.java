@@ -19,13 +19,11 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.List;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.Response;
 import org.apache.catalina.Context;
 import org.apache.catalina.loader.WebappLoader;
 import org.apache.catalina.startup.Tomcat;
@@ -37,7 +35,6 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,21 +58,78 @@ public class JsfRenderIT {
         container.checkAndReset();
     }
 
-    // TODO add tests for "jsf apply request" and "jsf invoke"
-
     @Test
-    public void shouldCaptureJsfRenderingInTomcat() throws Exception {
+    public void shouldCaptureJsfRendering() throws Exception {
         // given
         // when
-        Trace trace = container.execute(RenderJsfInTomcat.class);
+        Trace trace = container.execute(GetHello.class);
         // then
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("jsf render: /WEB-INF/jsf/index.xhtml");
+        assertThat(entry.getMessage()).isEqualTo("jsf render: /hello.xhtml");
     }
 
-    public static class RenderJsfInTomcat implements AppUnderTest {
+    @Test
+    public void shouldCaptureJsfAction() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(PostHello.class);
+        // then
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(3);
+        assertThat(entries.get(0).getMessage()).isEqualTo("jsf apply request: /hello.xhtml");
+        assertThat(entries.get(1).getMessage()).isEqualTo("jsf invoke: helloAction");
+        assertThat(entries.get(2).getMessage()).isEqualTo("jsf render: /hello.xhtml");
+    }
+
+    public static class HelloBean {
+
+        public String getMessage() {
+            return "Hello World!";
+        }
+
+        public void hello() {}
+    }
+
+    public static class GetHello extends RenderJsfInTomcat {
+
+        @Override
+        protected void doTest(int port) throws Exception {
+            AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+            asyncHttpClient.prepareGet("http://localhost:" + port + "/hello.xhtml").execute().get();
+            asyncHttpClient.close();
+        }
+    }
+
+    public static class PostHello extends RenderJsfInTomcat {
+
+        @Override
+        protected void doTest(int port) throws Exception {
+            AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+            Response response = asyncHttpClient
+                    .prepareGet("http://localhost:" + port + "/hello.xhtml").execute().get();
+            String body = response.getResponseBody();
+            Matcher matcher =
+                    Pattern.compile("action=\"/hello.xhtml;jsessionid=([0-9A-F]+)\"").matcher(body);
+            matcher.find();
+            String jsessionId = matcher.group(1);
+            matcher = Pattern.compile("id=\"j_id1:javax.faces.ViewState:0\" value=\"([^\"]+)\"")
+                    .matcher(body);
+            matcher.find();
+            String viewState = matcher.group(1).replace(":", "%3A");
+            String postBody =
+                    "j_idt4=j_idt4&j_idt4%3Aj_idt5=Hello&javax.faces.ViewState=" + viewState;
+            asyncHttpClient
+                    .preparePost(
+                            "http://localhost:" + port + "/hello.xhtml;jsessionid=" + jsessionId)
+                    .setHeader("Content-Type", "application/x-www-form-urlencoded")
+                    .setBody(postBody).execute().get();
+            asyncHttpClient.close();
+        }
+    }
+
+    public abstract static class RenderJsfInTomcat implements AppUnderTest {
 
         @Override
         public void executeApp() throws Exception {
@@ -89,41 +143,21 @@ public class JsfRenderIT {
             WebappLoader webappLoader = new WebappLoader(RenderJsfInTomcat.class.getClassLoader());
             context.setLoader(webappLoader);
 
-            Tomcat.addServlet(context, "hello", new ForwardingServlet());
-            context.addServletMapping("/hello", "hello");
-
             tomcat.start();
-            AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://localhost:" + port + "/hello").execute().get();
-            asyncHttpClient.close();
+
+            doTest(port);
+
             tomcat.stop();
             tomcat.destroy();
         }
+
+        protected abstract void doTest(int port) throws Exception;
 
         private static int getAvailablePort() throws IOException {
             ServerSocket serverSocket = new ServerSocket(0);
             int port = serverSocket.getLocalPort();
             serverSocket.close();
             return port;
-        }
-    }
-
-    @SuppressWarnings("serial")
-    private static class ForwardingServlet extends HttpServlet {
-        @Override
-        protected void service(final HttpServletRequest req, final HttpServletResponse resp)
-                throws ServletException, IOException {
-            TransactionMarker transactionMarker = new TransactionMarker() {
-                @Override
-                public void transactionMarker() throws Exception {
-                    req.getRequestDispatcher("/WEB-INF/jsf/index.xhtml").forward(req, resp);
-                }
-            };
-            try {
-                transactionMarker.transactionMarker();
-            } catch (Exception e) {
-                throw new ServletException(e);
-            }
         }
     }
 }
