@@ -1,0 +1,7 @@
+{
+  "name": "Spring Plugin",
+  "id": "spring",
+  "aspects": [
+    "org.glowroot.agent.plugin.spring.ControllerAspect"
+  ]
+}
