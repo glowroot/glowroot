@@ -64,11 +64,11 @@ public class ControllerIT {
         // when
         Trace trace = container.execute(InvokeSpringControllerInTomcat.class);
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("TestController/testMethod");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/spring/hello/echo/*");
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller: TestController.testMethod()");
+        assertThat(entry.getMessage()).isEqualTo("spring controller: TestController.echo()");
     }
 
     public static class InvokeSpringControllerInTomcat implements AppUnderTest {
@@ -88,7 +88,8 @@ public class ControllerIT {
 
             tomcat.start();
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://localhost:" + port + "/hello/1").execute().get();
+            asyncHttpClient.prepareGet("http://localhost:" + port + "/spring/hello/echo/5")
+                    .execute().get();
             asyncHttpClient.close();
             tomcat.stop();
             tomcat.destroy();
@@ -103,10 +104,11 @@ public class ControllerIT {
     }
 
     @Controller
+    @RequestMapping("hello")
     public static class TestController {
-        @RequestMapping("/hello/*")
-        public @ResponseBody String testMethod() {
-            return "hello world!";
+        @RequestMapping("echo/{id}")
+        public @ResponseBody String echo() {
+            return "";
         }
     }
 }

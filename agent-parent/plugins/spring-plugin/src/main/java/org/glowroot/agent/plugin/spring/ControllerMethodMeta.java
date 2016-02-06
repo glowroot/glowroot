@@ -15,16 +15,30 @@
  */
 package org.glowroot.agent.plugin.spring;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 
+import javax.annotation.Nullable;
+
+import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.Logger;
+
 public class ControllerMethodMeta {
+
+    private static final Logger logger = Agent.getLogger(ControllerMethodMeta.class);
 
     private final String declaredClassSimpleName;
     private final String methodName;
 
+    private final String path;
+
     public ControllerMethodMeta(Method method) {
         declaredClassSimpleName = method.getDeclaringClass().getSimpleName();
         methodName = method.getName();
+        String classPath = getPath(method.getDeclaringClass());
+        String methodPath = getPath(method);
+        path = combine(classPath, methodPath);
     }
 
     String getDeclaredClassSimpleName() {
@@ -33,5 +47,68 @@ public class ControllerMethodMeta {
 
     String getMethodName() {
         return methodName;
+    }
+
+    String getPath() {
+        return path;
+    }
+
+    private static @Nullable String getPath(AnnotatedElement annotatedElement) {
+        try {
+            for (Annotation annotation : annotatedElement.getDeclaredAnnotations()) {
+                Class<?> annotationClass = annotation.annotationType();
+                if (annotationClass.getName()
+                        .equals("org.springframework.web.bind.annotation.RequestMapping")) {
+                    return getRequestMappingAttribute(annotationClass, annotation, "value");
+                }
+            }
+        } catch (Throwable t) {
+            logger.error(t.getMessage(), t);
+        }
+        return null;
+    }
+
+    private static @Nullable String getRequestMappingAttribute(Class<?> requestMappingClass,
+            Object requestMapping, String attributeName) throws Exception {
+        Method method = requestMappingClass.getMethod(attributeName);
+        String[] values = (String[]) method.invoke(requestMapping);
+        if (values == null || values.length == 0) {
+            return null;
+        }
+        // TODO handle more than one value
+        return values[0];
+    }
+
+    // VisibleForTesting
+    static String combine(@Nullable String classPath, @Nullable String methodPath) {
+        if (classPath == null || classPath.isEmpty() || classPath.equals("/")) {
+            return normalize(methodPath, false);
+        }
+        if (methodPath == null || methodPath.isEmpty() || methodPath.equals("/")) {
+            return normalize(classPath, false);
+        }
+        return normalize(classPath, methodPath == null) + '/' + normalize(methodPath, false);
+    }
+
+    private static String normalize(@Nullable String path, boolean baseUri) {
+        if (path == null || path.isEmpty() || path.equals("/")) {
+            return "";
+        }
+        int pathLength = path.length();
+        boolean stripFirstChar = path.charAt(0) == '/';
+        boolean addTrailingSlash = baseUri && path.charAt(pathLength - 1) != '/';
+        if (stripFirstChar && addTrailingSlash) {
+            return replacePathSegmentsWithAsterisk(path.substring(1)) + '/';
+        } else if (stripFirstChar) {
+            return replacePathSegmentsWithAsterisk(path.substring(1));
+        } else if (addTrailingSlash) {
+            return replacePathSegmentsWithAsterisk(path) + '/';
+        } else {
+            return replacePathSegmentsWithAsterisk(path);
+        }
+    }
+
+    private static String replacePathSegmentsWithAsterisk(String path) {
+        return path.replaceAll("\\{[^}]*\\}", "*");
     }
 }

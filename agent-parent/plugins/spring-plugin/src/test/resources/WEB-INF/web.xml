@@ -18,6 +18,6 @@
   </servlet>
   <servlet-mapping>
     <servlet-name>dispatcher</servlet-name>
-    <url-pattern>/*</url-pattern>
+    <url-pattern>/spring/*</url-pattern>
   </servlet-mapping>
 </web-app>

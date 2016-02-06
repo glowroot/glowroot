@@ -15,20 +15,61 @@
  */
 package org.glowroot.agent.plugin.spring;
 
+import javax.annotation.Nullable;
+
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
+import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindMethodMeta;
+import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
+import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
+import org.glowroot.agent.plugin.api.weaving.Shim;
 
+// TODO optimize away servletPath thread local, e.g. store servlet path in thread context via
+// servlet plugin and retrieve here
 public class ControllerAspect {
+
+    private static final FastThreadLocal</*@Nullable*/ String> servletPath =
+            new FastThreadLocal</*@Nullable*/ String>();
+
+    @Shim("javax.servlet.http.HttpServletRequest")
+    public interface HttpServletRequest {
+        @Nullable
+        String getServletPath();
+    }
+
+    @Pointcut(className = "org.springframework.web.servlet.DispatcherServlet",
+            methodDeclaringClassName = "javax.servlet.Servlet", methodName = "service",
+            methodParameterTypes = {"javax.servlet.ServletRequest",
+                    "javax.servlet.ServletResponse"})
+    public static class CaptureServletPathAdvice {
+        @OnBefore
+        public static @Nullable FastThreadLocal.Holder</*@Nullable*/ String> onBefore(
+                @BindParameter @Nullable Object req) {
+            if (req == null || !(req instanceof HttpServletRequest)) {
+                return null;
+            }
+            FastThreadLocal.Holder</*@Nullable*/ String> holder = servletPath.getHolder();
+            holder.set(((HttpServletRequest) req).getServletPath());
+            return holder;
+        }
+        @OnAfter
+        public static void onAfter(
+                @BindTraveler @Nullable FastThreadLocal.Holder</*@Nullable*/ String> holder) {
+            if (holder != null) {
+                holder.set(null);
+            }
+        }
+    }
 
     @Pointcut(classAnnotation = "org.springframework.stereotype.Controller",
             methodAnnotation = "org.springframework.web.bind.annotation.RequestMapping",
@@ -38,8 +79,14 @@ public class ControllerAspect {
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context,
                 @BindMethodMeta ControllerMethodMeta controllerMethodMeta) {
-            context.setTransactionName(controllerMethodMeta.getDeclaredClassSimpleName() + '/'
-                    + controllerMethodMeta.getMethodName());
+            String prefix = servletPath.get();
+            if (prefix == null || prefix.isEmpty()) {
+                context.setTransactionName(controllerMethodMeta.getPath());
+            } else if (prefix.length() == 1 && prefix.charAt(0) == '/') {
+                context.setTransactionName(prefix + controllerMethodMeta.getPath());
+            } else {
+                context.setTransactionName(prefix + '/' + controllerMethodMeta.getPath());
+            }
             return context.startTraceEntry(
                     MessageSupplier.from("spring controller: {}.{}()",
                             controllerMethodMeta.getDeclaredClassSimpleName(),
