@@ -1,0 +1,7 @@
+{
+  "name": "JAX-RS Plugin",
+  "id": "jaxrs",
+  "aspects": [
+    "org.glowroot.agent.plugin.jaxrs.ControllerAspect"
+  ]
+}

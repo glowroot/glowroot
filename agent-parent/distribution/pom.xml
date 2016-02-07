@@ -44,6 +44,11 @@
     </dependency>
     <dependency>
       <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-jaxrs-plugin</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-jdbc-plugin</artifactId>
       <version>${project.version}</version>
     </dependency>
