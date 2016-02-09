@@ -110,7 +110,7 @@ case "$1" in
                  # need to limit memory of all JVM forks for travis docker build
                  # see https://github.com/travis-ci/travis-ci/issues/3396
                  sed -i 's#/bin/sh#/bin/bash#' $HOME/checker-framework/checker/bin/javac
-                 sed -i 's#"java" "-jar" "${mydir}"/../dist/checker.jar "$@"#"java" "-Xmx512m" "-jar" "${mydir}"/../dist/checker.jar -J-Xmx512m "$@" 2>\&1 | tee /tmp/checker.out ; test ${PIPESTATUS[0]} -eq 0#' $HOME/checker-framework/checker/bin/javac
+                 sed -i 's#"java" "-jar" "${mydir}"/../dist/checker.jar ${args}#"java" "-Xmx512m" "-jar" "${mydir}"/../dist/checker.jar -J-Xmx512m ${args} 2>\&1 | tee /tmp/checker.out ; test ${PIPESTATUS[0]} -eq 0#' $HOME/checker-framework/checker/bin/javac
                fi
 
                set +e
@@ -130,7 +130,10 @@ case "$1" in
 
                # TODO find way to not omit these (especially it-harness)
                # omitting wire-api and agent-parent/it-harness from checker framework validation since they contain protobuf generated code which does not pass
-               mvn clean install -am -pl wire-api,agent-parent/it-harness
+               mvn clean install -am -pl wire-api,agent-parent/it-harness \
+                                 -Dglowroot.ui.skip \
+                                 -DskipTests \
+                                 -B
                # FIXME central is currently omitted due to https://github.com/typetools/checker-framework/issues/529
                mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/it-harness,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!central \
                                  -Pchecker \
@@ -152,7 +155,7 @@ case "$1" in
 
   "saucelabs") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" == "false" ]]
                then
-                 mvn clean install -DskipTests=true \
+                 mvn clean install -DskipTests \
                                    -B
                  cd agent-parent/webdriver-tests
                  mvn clean verify -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \

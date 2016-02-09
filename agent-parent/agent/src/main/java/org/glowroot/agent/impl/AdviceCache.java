@@ -78,7 +78,8 @@ public class AdviceCache {
     public AdviceCache(List<PluginDescriptor> pluginDescriptors, List<File> pluginJars,
             List<InstrumentationConfig> reweavableConfigs,
             @Nullable Instrumentation instrumentation,
-            ExtraBootResourceFinder extraBootResourceFinder, File baseDir) throws Exception {
+            @Nullable ExtraBootResourceFinder extraBootResourceFinder, File baseDir)
+                    throws Exception {
 
         List<Advice> pluginAdvisors = Lists.newArrayList();
         List<ShimType> shimTypes = Lists.newArrayList();
@@ -216,7 +217,7 @@ public class AdviceCache {
     }
 
     private static List<MixinType> getMixinTypes(Class<?> aspectClass,
-            ExtraBootResourceFinder extraBootResourceFinder) throws IOException {
+            @Nullable ExtraBootResourceFinder extraBootResourceFinder) throws IOException {
         List<MixinType> mixinTypes = Lists.newArrayList();
         for (Class<?> memberClass : aspectClass.getClasses()) {
             Mixin mixin = memberClass.getAnnotation(Mixin.class);
