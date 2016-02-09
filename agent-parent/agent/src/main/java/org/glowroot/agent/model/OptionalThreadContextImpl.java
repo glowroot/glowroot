@@ -136,23 +136,23 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public void setTransactionType(@Nullable String transactionType) {
+    public void setTransactionType(@Nullable String transactionType, int priority) {
         if (threadContext != null) {
-            threadContext.setTransactionType(transactionType);
+            threadContext.setTransactionType(transactionType, priority);
         }
     }
 
     @Override
-    public void setTransactionName(@Nullable String transactionName) {
+    public void setTransactionName(@Nullable String transactionName, int priority) {
         if (threadContext != null) {
-            threadContext.setTransactionName(transactionName);
+            threadContext.setTransactionName(transactionName, priority);
         }
     }
 
     @Override
-    public void setTransactionUser(@Nullable String user) {
+    public void setTransactionUser(@Nullable String user, int priority) {
         if (threadContext != null) {
-            threadContext.setTransactionUser(user);
+            threadContext.setTransactionUser(user, priority);
         }
     }
 
@@ -164,9 +164,9 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public void setTransactionSlowThreshold(long threshold, TimeUnit unit) {
+    public void setTransactionSlowThreshold(long threshold, TimeUnit unit, int priority) {
         if (threadContext != null) {
-            threadContext.setTransactionSlowThreshold(threshold, unit);
+            threadContext.setTransactionSlowThreshold(threshold, unit, priority);
         }
     }
 

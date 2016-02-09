@@ -27,6 +27,7 @@ import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.OptionalThreadContext;
+import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
@@ -73,9 +74,9 @@ public class NestableCallAspect {
             }
             int index = count % (USERS.size() + 1);
             if (index < USERS.size()) {
-                context.setTransactionUser(USERS.get(index));
+                context.setTransactionUser(USERS.get(index), Priority.USER_PLUGIN);
             } else {
-                context.setTransactionUser(null);
+                context.setTransactionUser(null, Priority.USER_PLUGIN);
             }
             if (random.nextBoolean()) {
                 context.addTransactionAttribute("My First Attribute", "hello world");

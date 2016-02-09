@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.InstrumentationConfig;
+import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.weaving.Advice;
 import org.glowroot.agent.weaving.AdviceBuilder;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
@@ -48,6 +49,7 @@ import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ACONST_NULL;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ARETURN;
+import static org.objectweb.asm.Opcodes.BIPUSH;
 import static org.objectweb.asm.Opcodes.CHECKCAST;
 import static org.objectweb.asm.Opcodes.GETFIELD;
 import static org.objectweb.asm.Opcodes.GETSTATIC;
@@ -413,8 +415,9 @@ public class AdviceGenerator {
         if (!config.transactionType().isEmpty() && !config.isTransaction()) {
             mv.visitVarInsn(ALOAD, 0);
             mv.visitLdcInsn(config.transactionType());
+            mv.visitIntInsn(BIPUSH, Priority.USER_CONFIG);
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
-                    "setTransactionType", "(Ljava/lang/String;)V", true);
+                    "setTransactionType", "(Ljava/lang/String;I)V", true);
         }
         if (!config.transactionNameTemplate().isEmpty() && !config.isTransaction()) {
             mv.visitVarInsn(ALOAD, 0);
@@ -434,8 +437,9 @@ public class AdviceGenerator {
                     false);
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/agent/advicegen/GenericMessageSupplier",
                     "getMessageText", "()Ljava/lang/String;", false);
+            mv.visitIntInsn(BIPUSH, Priority.USER_CONFIG);
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
-                    "setTransactionName", "(Ljava/lang/String;)V", true);
+                    "setTransactionName", "(Ljava/lang/String;I)V", true);
         }
         if (!config.transactionUserTemplate().isEmpty()) {
             mv.visitVarInsn(ALOAD, 0);
@@ -455,8 +459,9 @@ public class AdviceGenerator {
                     false);
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/agent/advicegen/GenericMessageSupplier",
                     "getMessageText", "()Ljava/lang/String;", false);
+            mv.visitIntInsn(BIPUSH, Priority.USER_CONFIG);
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
-                    "setTransactionUser", "(Ljava/lang/String;)V", true);
+                    "setTransactionUser", "(Ljava/lang/String;I)V", true);
         }
         int i = 0;
         for (String attrName : config.transactionAttributeTemplates().keySet()) {
@@ -489,8 +494,9 @@ public class AdviceGenerator {
             mv.visitLdcInsn(slowThresholdMillis.longValue());
             mv.visitFieldInsn(GETSTATIC, "java/util/concurrent/TimeUnit", "MILLISECONDS",
                     "Ljava/util/concurrent/TimeUnit;");
+            mv.visitIntInsn(BIPUSH, Priority.USER_CONFIG);
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
-                    "setTransactionSlowThreshold", "(JLjava/util/concurrent/TimeUnit;)V", true);
+                    "setTransactionSlowThreshold", "(JLjava/util/concurrent/TimeUnit;I)V", true);
 
         }
     }

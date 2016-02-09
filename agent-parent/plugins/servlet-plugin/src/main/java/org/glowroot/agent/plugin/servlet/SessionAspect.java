@@ -21,6 +21,7 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
@@ -72,13 +73,13 @@ public class SessionAspect {
         if (!sessionUserAttributePath.isEmpty()) {
             // capture user now, don't use a lazy supplier
             if (sessionUserAttributePath.equals(name)) {
-                context.setTransactionUser(value.toString());
+                context.setTransactionUser(value.toString(), Priority.CORE_PLUGIN);
             } else if (sessionUserAttributePath.startsWith(name + ".")) {
                 String user = HttpSessions.getSessionAttributeTextValue(session,
                         sessionUserAttributePath);
                 if (user != null) {
                     // if user is null, don't clear it by setting Suppliers.ofInstance(null)
-                    context.setTransactionUser(user);
+                    context.setTransactionUser(user, Priority.CORE_PLUGIN);
                 }
             }
         }

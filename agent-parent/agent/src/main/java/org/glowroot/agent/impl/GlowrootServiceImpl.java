@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.internal.GlowrootService;
 import org.glowroot.agent.model.Transaction;
-import org.glowroot.agent.model.Transaction.OverrideSource;
+import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 
 public class GlowrootServiceImpl implements GlowrootService {
 
@@ -45,7 +45,7 @@ public class GlowrootServiceImpl implements GlowrootService {
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
-            transaction.setTransactionType(transactionType, OverrideSource.USER_API);
+            transaction.setTransactionType(transactionType, Priority.USER_API);
         }
     }
 
@@ -56,7 +56,7 @@ public class GlowrootServiceImpl implements GlowrootService {
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
-            transaction.setTransactionName(transactionName, OverrideSource.USER_API);
+            transaction.setTransactionName(transactionName, Priority.USER_API);
         }
     }
 
@@ -67,7 +67,7 @@ public class GlowrootServiceImpl implements GlowrootService {
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
-            transaction.setUser(user, OverrideSource.USER_API);
+            transaction.setUser(user, Priority.USER_API);
         }
     }
 
@@ -97,7 +97,7 @@ public class GlowrootServiceImpl implements GlowrootService {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
             int thresholdMillis = Ints.saturatedCast(unit.toMillis(threshold));
-            transaction.setSlowThresholdMillis(thresholdMillis, OverrideSource.USER_API);
+            transaction.setSlowThresholdMillis(thresholdMillis, Priority.USER_API);
         }
     }
 }

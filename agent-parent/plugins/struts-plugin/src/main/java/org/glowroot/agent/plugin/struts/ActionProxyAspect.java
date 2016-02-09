@@ -18,6 +18,7 @@ package org.glowroot.agent.plugin.struts;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
@@ -51,7 +52,8 @@ public class ActionProxyAspect {
             Class<?> actionClass = actionProxy.getAction().getClass();
             String actionMethod = actionProxy.getMethod();
             String methodName = actionMethod != null ? actionMethod : "execute";
-            context.setTransactionName(actionClass.getSimpleName() + "#" + methodName);
+            context.setTransactionName(actionClass.getSimpleName() + "#" + methodName,
+                    Priority.CORE_PLUGIN);
             return context.startTraceEntry(MessageSupplier.from("struts action: {}.{}()",
                     actionClass.getName(), methodName), timerName);
         }
@@ -79,7 +81,8 @@ public class ActionProxyAspect {
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context, @BindReceiver Object action) {
             Class<?> actionClass = action.getClass();
-            context.setTransactionName(actionClass.getSimpleName() + "#execute");
+            context.setTransactionName(actionClass.getSimpleName() + "#execute",
+                    Priority.CORE_PLUGIN);
             return context.startTraceEntry(
                     MessageSupplier.from("struts action: {}.execute()", actionClass.getName()),
                     timerName);

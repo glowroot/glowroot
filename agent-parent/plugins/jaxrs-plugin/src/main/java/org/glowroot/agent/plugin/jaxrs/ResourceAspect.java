@@ -20,6 +20,7 @@ import javax.annotation.Nullable;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
@@ -100,12 +101,14 @@ public class ResourceAspect {
                 @BindMethodMeta ResourceMethodMeta resourceMethodMeta) {
             String prefix = servletPath.get();
             if (useAltTransactionNaming.value()) {
-                context.setTransactionName(resourceMethodMeta.getAltTransactionName());
+                context.setTransactionName(resourceMethodMeta.getAltTransactionName(),
+                        Priority.CORE_PLUGIN);
             } else {
                 if (prefix == null || prefix.isEmpty()) {
-                    context.setTransactionName(resourceMethodMeta.getPath());
+                    context.setTransactionName(resourceMethodMeta.getPath(), Priority.CORE_PLUGIN);
                 } else {
-                    context.setTransactionName(prefix + resourceMethodMeta.getPath());
+                    context.setTransactionName(prefix + resourceMethodMeta.getPath(),
+                            Priority.CORE_PLUGIN);
                 }
             }
             return context.startTraceEntry(MessageSupplier.from("jaxrs resource: {}.{}()",

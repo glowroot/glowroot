@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableMap;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.OptionalThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
@@ -145,12 +146,10 @@ public class ServletAspect {
             // more specific name for the transaction
             String transactionNameOverride = request.getHeader("Glowroot-Transaction-Name");
             if (transactionNameOverride != null) {
-                // using setTransactionName() instead of passing this into startTransaction() so
-                // that it will be the first override and other overrides won't replace it
-                context.setTransactionName(transactionNameOverride);
+                context.setTransactionName(transactionNameOverride, Priority.CORE_MAX);
             }
             if (user != null) {
-                context.setTransactionUser(user);
+                context.setTransactionUser(user, Priority.CORE_PLUGIN);
             }
             return traceEntry;
         }
@@ -263,7 +262,7 @@ public class ServletAspect {
         public static void onReturn(@BindReturn @Nullable Principal principal,
                 ThreadContext context) {
             if (principal != null) {
-                context.setTransactionUser(principal.getName());
+                context.setTransactionUser(principal.getName(), Priority.CORE_PLUGIN);
             }
         }
     }

@@ -43,8 +43,8 @@ public interface ThreadContext {
      * {@code maxTraceEntriesPerTransaction * 2}) on the total number of (real) entries is applied
      * when escalating dummy entries to real entries.
      * 
-     * If there is no current transaction, this method does nothing, and returns a no-op instance of
-     * {@link TraceEntry}.
+     * If there is no current transaction then this method does nothing, and returns a no-op
+     * instance of {@link TraceEntry}.
      */
     TraceEntry startTraceEntry(MessageSupplier messageSupplier, TimerName timerName);
 
@@ -69,8 +69,8 @@ public interface ThreadContext {
      * timer name, it will keep an internal counter of the number of starts, and it will only end
      * the timer after the corresponding number of ends.
      * 
-     * If there is no current transaction, this method does nothing, and returns a no-op instance of
-     * {@link Timer}.
+     * If there is no current transaction then this method does nothing, and returns a no-op
+     * instance of {@link Timer}.
      */
     Timer startTimer(TimerName timerName);
 
@@ -82,16 +82,32 @@ public interface ThreadContext {
     /**
      * Set the transaction type that is used for aggregation.
      * 
-     * If there is no current transaction, this method does nothing.
+     * Calling this method with a non-null non-empty value overrides the transaction type set in
+     * {@link OptionalThreadContext#startTransaction(String, String, MessageSupplier, TimerName)}.
+     * 
+     * If this method is called multiple times within a single transaction, the highest priority
+     * non-null non-empty value wins, and priority ties go to the first caller.
+     * 
+     * See {@link Priority} for common priority values.
+     * 
+     * If there is no current transaction then this method does nothing.
      */
-    void setTransactionType(@Nullable String transactionType);
+    void setTransactionType(@Nullable String transactionType, int priority);
 
     /**
      * Set the transaction name that is used for aggregation.
+     *
+     * Calling this method with a non-null non-empty value overrides the transaction name set in
+     * {@link OptionalThreadContext#startTransaction(String, String, MessageSupplier, TimerName)}.
      * 
-     * If there is no current transaction, this method does nothing.
+     * If this method is called multiple times within a single transaction, the highest priority
+     * non-null non-empty value wins, and priority ties go to the first caller.
+     * 
+     * See {@link Priority} for common priority values.
+     * 
+     * If there is no current transaction then this method does nothing.
      */
-    void setTransactionName(@Nullable String transactionName);
+    void setTransactionName(@Nullable String transactionName, int priority);
 
     /**
      * Sets the user attribute on the transaction. This attribute is shared across all plugins, and
@@ -113,9 +129,14 @@ public interface ThreadContext {
      * at the time that this method is called, so it is best to call this method early in the
      * transaction.
      * 
-     * If there is no current transaction, this method does nothing.
+     * If this method is called multiple times within a single transaction, the highest priority
+     * non-null non-empty value wins, and priority ties go to the first caller.
+     * 
+     * See {@link Priority} for common priority values.
+     * 
+     * If there is no current transaction then this method does nothing.
      */
-    void setTransactionUser(@Nullable String user);
+    void setTransactionUser(@Nullable String user, int priority);
 
     /**
      * Adds an attribute on the current transaction with the specified {@code name} and
@@ -126,7 +147,7 @@ public interface ThreadContext {
      * an additional attribute if there is not already an attribute with the same {@code name} and
      * {@code value}.
      * 
-     * If there is no current transaction, this method does nothing.
+     * If there is no current transaction then this method does nothing.
      * 
      * {@code null} values are normalized to the empty string.
      */
@@ -137,12 +158,14 @@ public interface ThreadContext {
      * threshold) for the current transaction. This can be used to store particular traces at a
      * lower or higher threshold than the general threshold.
      * 
-     * If this is called multiple times for a given transaction, the minimum {@code threshold} will
-     * be used.
+     * If this method is called multiple times within a single transaction, the highest priority
+     * non-null non-empty value wins, and priority ties go to the first caller.
      * 
-     * If there is no current transaction, this method does nothing.
+     * See {@link Priority} for common priority values.
+     * 
+     * If there is no current transaction then this method does nothing.
      */
-    void setTransactionSlowThreshold(long threshold, TimeUnit unit);
+    void setTransactionSlowThreshold(long threshold, TimeUnit unit, int priority);
 
     /**
      * Marks the transaction as an error with the given message. Normally transactions are only
@@ -158,10 +181,10 @@ public interface ThreadContext {
      * E.g., this method is called from the logger plugin, to mark the entire transaction as an
      * error if an error is logged through one of the supported logger APIs.
      * 
-     * If this is called multiple times within a single transaction, only the first call has any
-     * effect, and subsequent calls are ignored.
+     * If this method is called multiple times within a single transaction, only the first call has
+     * any effect, and subsequent calls are ignored.
      * 
-     * If there is no current transaction, this method does nothing.
+     * If there is no current transaction then this method does nothing.
      */
     void setTransactionError(Throwable t);
 
@@ -177,10 +200,10 @@ public interface ThreadContext {
      * E.g., this method is called from the logger plugin, to mark the entire transaction as an
      * error if an error is logged through one of the supported logger APIs.
      * 
-     * If this is called multiple times within a single transaction, only the first call has any
-     * effect, and subsequent calls are ignored.
+     * If this method is called multiple times within a single transaction, only the first call has
+     * any effect, and subsequent calls are ignored.
      * 
-     * If there is no current transaction, this method does nothing.
+     * If there is no current transaction then this method does nothing.
      */
     void setTransactionError(@Nullable String message);
 
@@ -199,10 +222,10 @@ public interface ThreadContext {
      * E.g., this method is called from the logger plugin, to mark the entire transaction as an
      * error if an error is logged through one of the supported logger APIs.
      * 
-     * If this is called multiple times within a single transaction, only the first call has any
-     * effect, and subsequent calls are ignored.
+     * If this method is called multiple times within a single transaction, only the first call has
+     * any effect, and subsequent calls are ignored.
      * 
-     * If there is no current transaction, this method does nothing.
+     * If there is no current transaction then this method does nothing.
      */
     void setTransactionError(@Nullable String message, Throwable t);
 
@@ -218,7 +241,7 @@ public interface ThreadContext {
      * {@code maxTraceEntriesPerTransaction * 2}) on the total number of entries is still applied,
      * after which this method does nothing.
      * 
-     * If there is no current transaction, this method does nothing.
+     * If there is no current transaction then this method does nothing.
      */
     void addErrorEntry(Throwable t);
 
@@ -236,7 +259,7 @@ public interface ThreadContext {
      * {@code maxTraceEntriesPerTransaction * 2}) on the total number of entries is still applied,
      * after which this method does nothing.
      * 
-     * If there is no current transaction, this method does nothing.
+     * If there is no current transaction then this method does nothing.
      */
     void addErrorEntry(@Nullable String message);
 
@@ -253,7 +276,19 @@ public interface ThreadContext {
      * {@code maxTraceEntriesPerTransaction * 2}) on the total number of entries is still applied,
      * after which this method does nothing.
      * 
-     * If there is no current transaction, this method does nothing.
+     * If there is no current transaction then this method does nothing.
      */
     void addErrorEntry(@Nullable String message, Throwable t);
+
+    interface Priority {
+        int CORE_PLUGIN = -100;
+        int USER_PLUGIN = 100;
+        int USER_API = 1000;
+        int USER_CONFIG = 10000;
+        // this is used for very special circumstances, currently only
+        // when setting transaction name from HTTP header "Glowroot-Transaction-Type"
+        // and for setting slow threshold (to zero) for Startup transactions
+        // and for setting slow threshold for user-specific profiling
+        int CORE_MAX = 1000000;
+    }
 }

@@ -36,11 +36,11 @@ import org.glowroot.agent.model.TimerNameImpl;
 import org.glowroot.agent.model.TraceEntryImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.model.Transaction.CompletionCallback;
-import org.glowroot.agent.model.Transaction.OverrideSource;
 import org.glowroot.agent.plugin.api.AdvancedService;
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.QueryEntry;
+import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
@@ -143,7 +143,7 @@ public class TransactionServiceImpl implements AdvancedService, ConfigListener {
                 threadAllocatedBytes, transactionCompletionCallback, ticker, transactionRegistry,
                 this, configService, userProfileScheduler, threadContextHolder);
         if (transactionType.equals("Startup")) {
-            transaction.setSlowThresholdMillis(0, OverrideSource.STARTUP);
+            transaction.setSlowThresholdMillis(0, Priority.CORE_MAX);
         }
         transactionRegistry.addTransaction(transaction);
         threadContextHolder.set(transaction.getMainThreadContext());

@@ -20,6 +20,7 @@ import javax.annotation.Nullable;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
@@ -98,13 +99,16 @@ public class ControllerAspect {
         public static TraceEntry onBefore(ThreadContext context,
                 @BindMethodMeta ControllerMethodMeta controllerMethodMeta) {
             if (useAltTransactionNaming.value()) {
-                context.setTransactionName(controllerMethodMeta.getAltTransactionName());
+                context.setTransactionName(controllerMethodMeta.getAltTransactionName(),
+                        Priority.CORE_PLUGIN);
             } else {
                 String prefix = servletPath.get();
                 if (prefix == null || prefix.isEmpty()) {
-                    context.setTransactionName(controllerMethodMeta.getPath());
+                    context.setTransactionName(controllerMethodMeta.getPath(),
+                            Priority.CORE_PLUGIN);
                 } else {
-                    context.setTransactionName(prefix + controllerMethodMeta.getPath());
+                    context.setTransactionName(prefix + controllerMethodMeta.getPath(),
+                            Priority.CORE_PLUGIN);
                 }
             }
             return context.startTraceEntry(MessageSupplier.from("spring controller: {}.{}()",

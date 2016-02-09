@@ -38,7 +38,6 @@ import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.AsyncContextImpl;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionServiceImpl;
-import org.glowroot.agent.model.Transaction.OverrideSource;
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
 import org.glowroot.agent.plugin.api.AsyncTraceEntry;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
@@ -466,24 +465,24 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public void setTransactionType(@Nullable String transactionType) {
+    public void setTransactionType(@Nullable String transactionType, int priority) {
         if (Strings.isNullOrEmpty(transactionType)) {
             return;
         }
-        transaction.setTransactionType(transactionType, OverrideSource.PLUGIN_API);
+        transaction.setTransactionType(transactionType, priority);
     }
 
     @Override
-    public void setTransactionName(@Nullable String transactionName) {
+    public void setTransactionName(@Nullable String transactionName, int priority) {
         if (Strings.isNullOrEmpty(transactionName)) {
             return;
         }
-        transaction.setTransactionName(transactionName, OverrideSource.PLUGIN_API);
+        transaction.setTransactionName(transactionName, priority);
     }
 
     @Override
     public void setTransactionError(Throwable t) {
-        transaction.setError(ErrorMessage.from(t), OverrideSource.PLUGIN_API);
+        transaction.setError(ErrorMessage.from(t));
     }
 
     @Override
@@ -491,20 +490,20 @@ public class ThreadContextImpl implements ThreadContextPlus {
         if (Strings.isNullOrEmpty(message)) {
             return;
         }
-        transaction.setError(ErrorMessage.from(message), OverrideSource.PLUGIN_API);
+        transaction.setError(ErrorMessage.from(message));
     }
 
     @Override
     public void setTransactionError(@Nullable String message, Throwable t) {
-        transaction.setError(ErrorMessage.from(message, t), OverrideSource.PLUGIN_API);
+        transaction.setError(ErrorMessage.from(message, t));
     }
 
     @Override
-    public void setTransactionUser(@Nullable String user) {
+    public void setTransactionUser(@Nullable String user, int priority) {
         if (Strings.isNullOrEmpty(user)) {
             return;
         }
-        transaction.setUser(user, OverrideSource.PLUGIN_API);
+        transaction.setUser(user, priority);
     }
 
     @Override
@@ -517,7 +516,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public void setTransactionSlowThreshold(long threshold, TimeUnit unit) {
+    public void setTransactionSlowThreshold(long threshold, TimeUnit unit, int priority) {
         if (threshold < 0) {
             logger.error(
                     "setTransactionSlowThreshold(): argument 'threshold' must be non-negative");
@@ -528,7 +527,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             return;
         }
         int thresholdMillis = Ints.saturatedCast(unit.toMillis(threshold));
-        transaction.setSlowThresholdMillis(thresholdMillis, OverrideSource.PLUGIN_API);
+        transaction.setSlowThresholdMillis(thresholdMillis, priority);
     }
 
     public boolean isInTransaction() {

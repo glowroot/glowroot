@@ -93,13 +93,13 @@ public class Transaction {
     private final long startTick;
 
     private volatile String transactionType;
-    private volatile @Nullable OverrideSource transactionTypeOverrideSource;
+    private volatile int transactionTypePriority = Integer.MIN_VALUE;
 
     private volatile String transactionName;
-    private volatile @Nullable OverrideSource transactionNameOverrideSource;
+    private volatile int transactionNamePriority = Integer.MIN_VALUE;
 
     private volatile @Nullable String user;
-    private volatile @Nullable OverrideSource userOverrideSource;
+    private volatile int userPriority = Integer.MIN_VALUE;
 
     // lazy loaded to reduce memory when custom attributes are not used
     @GuardedBy("attributes")
@@ -107,7 +107,6 @@ public class Transaction {
 
     // trace-level error
     private volatile @Nullable ErrorMessage errorMessage;
-    private volatile @Nullable OverrideSource errorMessageOverrideSource;
 
     private final boolean captureThreadStats;
     private final GcActivityComponent gcActivityComponent;
@@ -122,7 +121,7 @@ public class Transaction {
     // overrides general store threshold
     // -1 means don't override the general store threshold
     private volatile int slowThresholdMillis = USE_GENERAL_STORE_THRESHOLD;
-    private volatile @Nullable OverrideSource slowThresholdMillisOverrideSource;
+    private volatile int slowThresholdMillisPriority = Integer.MIN_VALUE;
 
     // these are stored in the trace so they are only scheduled a single time, and also so they can
     // be canceled at trace completion
@@ -443,26 +442,24 @@ public class Transaction {
         return auxThreadContexts;
     }
 
-    public void setTransactionType(String transactionType, OverrideSource overrideSource) {
-        if (transactionTypeOverrideSource == null
-                || transactionTypeOverrideSource.priority < overrideSource.priority) {
+    public void setTransactionType(String transactionType, int priority) {
+        if (priority > transactionTypePriority && !transactionType.isEmpty()) {
             this.transactionType = transactionType;
-            transactionTypeOverrideSource = overrideSource;
+            transactionTypePriority = priority;
         }
     }
 
-    public void setTransactionName(String transactionName, OverrideSource overrideSource) {
-        if (transactionNameOverrideSource == null
-                || transactionNameOverrideSource.priority < overrideSource.priority) {
+    public void setTransactionName(String transactionName, int priority) {
+        if (priority > transactionNamePriority && !transactionName.isEmpty()) {
             this.transactionName = transactionName;
-            transactionNameOverrideSource = overrideSource;
+            transactionNamePriority = priority;
         }
     }
 
-    public void setUser(String user, OverrideSource overrideSource) {
-        if (userOverrideSource == null || userOverrideSource.priority < overrideSource.priority) {
+    public void setUser(String user, int priority) {
+        if (priority > userPriority && !user.isEmpty()) {
             this.user = user;
-            userOverrideSource = overrideSource;
+            userPriority = priority;
             if (userProfileRunnable == null) {
                 userProfileScheduler.maybeScheduleUserProfiling(this, user);
             }
@@ -483,20 +480,17 @@ public class Transaction {
         }
     }
 
-    public void setError(ErrorMessage errorMessage, OverrideSource overrideSource) {
-        if (errorMessageOverrideSource == null
-                || errorMessageOverrideSource.priority < overrideSource.priority) {
+    public void setError(ErrorMessage errorMessage) {
+        if (this.errorMessage == null) {
             this.errorMessage = errorMessage;
-            errorMessageOverrideSource = overrideSource;
         }
     }
 
-    public void setSlowThresholdMillis(int slowThresholdMillis, OverrideSource overrideSource) {
-        if (slowThresholdMillisOverrideSource == null
-                || slowThresholdMillisOverrideSource.priority < overrideSource.priority) {
+    public void setSlowThresholdMillis(int slowThresholdMillis, int priority) {
+        if (priority > slowThresholdMillisPriority) {
             this.slowThresholdMillis = slowThresholdMillis;
-            slowThresholdMillisOverrideSource = overrideSource;
-        } else if (slowThresholdMillisOverrideSource.priority == overrideSource.priority) {
+            slowThresholdMillisPriority = priority;
+        } else if (priority == slowThresholdMillisPriority) {
             // use the minimum threshold from the same override source
             this.slowThresholdMillis = Math.min(this.slowThresholdMillis, slowThresholdMillis);
         }
@@ -617,19 +611,6 @@ public class Transaction {
 
     public static interface CompletionCallback {
         void completed(Transaction transaction);
-    }
-
-    public enum OverrideSource {
-
-        // higher priority wins
-        // STARTUP is max to ensure startup threshold (which is 0) cannot be accidentally overridden
-        PLUGIN_API(1), USER_API(2), USER_RECORDING(3), STARTUP(1000);
-
-        private final int priority;
-
-        private OverrideSource(int priority) {
-            this.priority = priority;
-        }
     }
 
     private static class AuxThreadRootMessageSupplier extends MessageSupplier {

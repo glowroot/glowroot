@@ -35,7 +35,7 @@ import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.UserRecordingConfig;
 import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.Transaction;
-import org.glowroot.agent.model.Transaction.OverrideSource;
+import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.common.util.Cancellable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -65,7 +65,7 @@ public class UserProfileScheduler {
             return;
         }
         // for now lumping user recording into slow traces tab
-        transaction.setSlowThresholdMillis(0, OverrideSource.USER_RECORDING);
+        transaction.setSlowThresholdMillis(0, Priority.CORE_MAX);
 
         // schedule the first stack collection for configured interval after transaction start (or
         // immediately, if the transaction's total time already exceeds configured collection
