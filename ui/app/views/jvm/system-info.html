@@ -1,0 +1,121 @@
+<!--
+  Copyright 2013-2016 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<fieldset style="padding-bottom: 22px;">
+  <legend style="margin-bottom: 10px;">Host</legend>
+  <div class="row gt-jvm-general-row">
+    <div>
+      <label class="col-md-3" style="text-align: right;">Host name</label>
+    </div>
+    <div class="col-md-9">
+      {{data.host.hostName}}
+    </div>
+  </div>
+  <div class="row gt-jvm-general-row">
+    <div>
+      <label class="col-md-3" style="text-align: right;">Available processors</label>
+    </div>
+    <div class="col-md-9">
+      {{data.host.availableProcessors}}
+    </div>
+  </div>
+  <div class="row gt-jvm-general-row">
+    <div>
+      <label class="col-md-3" style="text-align: right;">Total physical memory</label>
+    </div>
+    <div class="col-md-9">
+      {{data.host.totalPhysicalMemoryBytes | gtBytes}}
+    </div>
+  </div>
+  <div class="row gt-jvm-general-row">
+    <div>
+      <label class="col-md-3" style="text-align: right;">OS name</label>
+    </div>
+    <div class="col-md-9">
+      {{data.host.osName}}
+    </div>
+  </div>
+  <div class="row gt-jvm-general-row">
+    <div>
+      <label class="col-md-3" style="text-align: right;">OS version</label>
+    </div>
+    <div class="col-md-9">
+      {{data.host.osVersion}}
+    </div>
+  </div>
+</fieldset>
+<fieldset style="padding-bottom: 22px;">
+  <legend style="margin-bottom: 10px;">Process</legend>
+  <div class="row gt-jvm-general-row">
+    <div>
+      <label class="col-md-3" style="text-align: right;">Process ID</label>
+    </div>
+    <div class="col-md-9">
+      {{data.process.processId === undefined ? 'N/A' : data.process.processId}}
+    </div>
+  </div>
+  <div class="row gt-jvm-general-row">
+    <div>
+      <label class="col-md-3" style="text-align: right;">Start time</label>
+    </div>
+    <div class="col-md-9">
+      {{data.process.startTime | date:'medium'}}
+    </div>
+  </div>
+</fieldset>
+<fieldset style="padding-bottom: 17px;">
+  <legend style="margin-bottom: 10px;">Java</legend>
+  <div class="row gt-jvm-general-row">
+    <div>
+      <label class="col-md-3" style="text-align: right;">Version</label>
+    </div>
+    <div class="col-md-9">
+      {{data.java.version}}
+    </div>
+  </div>
+  <div class="row gt-jvm-general-row">
+    <div>
+      <label class="col-md-3" style="text-align: right;">VM</label>
+    </div>
+    <div class="col-md-9">
+      {{data.java.vm}}
+    </div>
+  </div>
+  <div class="row gt-jvm-general-row">
+    <div>
+      <label class="col-md-3" style="text-align: right;">Args</label>
+    </div>
+    <div class="col-md-9">
+      <!-- track by $index is needed since duplicates are possible in this list -->
+      <div ng-repeat="arg in data.java.args track by $index">
+        <div class="gt-jvm-argument gt-break-word">
+          <span style="white-space: nowrap;">{{argFirstPart(arg)}}</span>{{argSecondPart(arg)}}
+        </div>
+      </div>
+    </div>
+  </div>
+</fieldset>
+<fieldset style="padding-bottom: 22px;">
+  <legend style="margin-bottom: 10px;">Glowroot agent</legend>
+  <div class="row gt-jvm-general-row">
+    <div>
+      <label class="col-md-3" style="text-align: right;">Version</label>
+    </div>
+    <div class="col-md-9">
+      {{data.java.glowrootAgentVersion}}
+    </div>
+  </div>
+</fieldset>

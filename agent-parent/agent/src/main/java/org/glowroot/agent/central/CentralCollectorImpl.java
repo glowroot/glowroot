@@ -46,7 +46,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -91,11 +91,11 @@ public class CentralCollectorImpl implements Collector {
     }
 
     @Override
-    public void init(File glowrootBaseDir, ProcessInfo jvmInfo, AgentConfig agentConfig,
+    public void init(File glowrootBaseDir, SystemInfo systemInfo, AgentConfig agentConfig,
             final AgentConfigUpdater agentConfigUpdater) {
         final InitMessage initMessage = InitMessage.newBuilder()
                 .setServerId(serverId)
-                .setProcessInfo(jvmInfo)
+                .setSystemInfo(systemInfo)
                 .setAgentConfig(agentConfig)
                 .build();
         centralConnection.callUntilSuccessful(new GrpcCall<InitResponse>() {

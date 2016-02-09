@@ -22,14 +22,14 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 
 public interface ServerRepository {
 
     List<ServerRollup> readServerRollups() throws Exception;
 
     @Nullable
-    ProcessInfo readProcessInfo(String serverId) throws Exception;
+    SystemInfo readSystemInfo(String serverId) throws Exception;
 
     @Value.Immutable
     @Styles.AllParameters

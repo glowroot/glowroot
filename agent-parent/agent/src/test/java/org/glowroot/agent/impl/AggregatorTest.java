@@ -36,7 +36,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -114,7 +114,7 @@ public class AggregatorTest {
         }
 
         @Override
-        public void init(File glowrootBaseDir, ProcessInfo processInfo, AgentConfig agentConfig,
+        public void init(File glowrootBaseDir, SystemInfo systemInfo, AgentConfig agentConfig,
                 AgentConfigUpdater agentConfigUpdater) {}
 
         @Override

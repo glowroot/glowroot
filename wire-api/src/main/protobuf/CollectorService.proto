@@ -19,16 +19,11 @@ service CollectorService {
 
 message InitMessage {
   string server_id = 1;
-  ProcessInfo process_info = 2;
-  // TODO if central doesn't have agent config then this is it
-  // TODO if central already has agent config then check for any new/removed plugin properties
-  // and update those in central
-  // TODO FINALLY if any differences, then return config back to agent
+  SystemInfo system_info = 2;
   AgentConfig agent_config = 3;
 }
 
 message InitResponse {
-  // TODO implement me, optional
   AgentConfig agent_config = 1;
 }
 
@@ -53,14 +48,30 @@ message LogMessage {
   LogEvent log_event = 2;
 }
 
-message ProcessInfo {
+message SystemInfo {
+  HostInfo host_info = 1;
+  ProcessInfo process_info = 2;
+  JavaInfo java_info = 3;
+}
+
+message HostInfo {
   string host_name = 1;
-  OptionalInt64 process_id = 2;
-  int64 start_time = 3;
-  string java = 4;
-  string jvm = 5;
-  repeated string jvm_arg = 6;
-  string heap_dump_default_dir = 7;
+  int32 available_processors = 2;
+  OptionalInt64 total_physical_memory_bytes = 3;
+  string os_name = 4;
+  string os_version = 5;
+}
+
+message ProcessInfo {
+  OptionalInt64 process_id = 1;
+  int64 start_time = 2;
+}
+
+message JavaInfo {
+  string version = 1;
+  string vm = 2;
+  repeated string arg = 3;
+  string heap_dump_default_dir = 4;
   string glowroot_agent_version = 15;
 }
 

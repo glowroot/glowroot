@@ -39,7 +39,7 @@ import org.glowroot.agent.fat.storage.SimpleRepoModule;
 import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.CollectorProxy;
-import org.glowroot.agent.init.ProcessInfoCreator;
+import org.glowroot.agent.init.SystemInfoCreator;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
 import org.glowroot.common.util.Clock;
@@ -135,7 +135,7 @@ class FatAgentModule {
                             simpleRepoModule.getAlertingService());
             collectorProxy.setInstance(collectorImpl);
             // fat agent's CollectorImpl does nothing with agent config parameter
-            collectorImpl.init(baseDir, ProcessInfoCreator.create(glowrootVersion),
+            collectorImpl.init(baseDir, SystemInfoCreator.create(glowrootVersion),
                     AgentConfig.getDefaultInstance(), new AgentConfigUpdater() {
                         @Override
                         public void update(AgentConfig agentConfig) {}

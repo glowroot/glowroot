@@ -41,7 +41,10 @@ import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.UsedByJsonSerialization;
 import org.glowroot.storage.repo.ServerRepository;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.HostInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.JavaInfo;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Availability;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
@@ -72,29 +75,46 @@ class JvmJsonService {
         return Boolean.toString(liveJvmService.isAvailable(serverId));
     }
 
-    @GET("/backend/jvm/process-info")
-    String getProcessInfo(String queryString) throws Exception {
+    @GET("/backend/jvm/system-info")
+    String getSystemInfo(String queryString) throws Exception {
         String serverId = getServerId(queryString);
-        ProcessInfo processInfo = serverRepository.readProcessInfo(serverId);
-        if (processInfo == null) {
+        SystemInfo systemInfo = serverRepository.readSystemInfo(serverId);
+        if (systemInfo == null) {
             return "{}";
         }
+        HostInfo hostInfo = systemInfo.getHostInfo();
+        ProcessInfo processInfo = systemInfo.getProcessInfo();
+        JavaInfo javaInfo = systemInfo.getJavaInfo();
+
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
         jg.writeStartObject();
-        jg.writeStringField("hostName", processInfo.getHostName());
+        jg.writeObjectFieldStart("host");
+        jg.writeStringField("hostName", hostInfo.getHostName());
+        jg.writeNumberField("availableProcessors", hostInfo.getAvailableProcessors());
+        if (hostInfo.hasTotalPhysicalMemoryBytes()) {
+            jg.writeNumberField("totalPhysicalMemoryBytes",
+                    hostInfo.getTotalPhysicalMemoryBytes().getValue());
+        }
+        jg.writeStringField("osName", hostInfo.getOsName());
+        jg.writeStringField("osVersion", hostInfo.getOsVersion());
+        jg.writeEndObject();
+        jg.writeObjectFieldStart("process");
         if (processInfo.hasProcessId()) {
             jg.writeNumberField("processId", processInfo.getProcessId().getValue());
         }
         jg.writeNumberField("startTime", processInfo.getStartTime());
-        jg.writeStringField("java", processInfo.getJava());
-        jg.writeStringField("jvm", processInfo.getJvm());
-        jg.writeArrayFieldStart("jvmArgs");
-        for (String jvmArg : processInfo.getJvmArgList()) {
-            jg.writeString(jvmArg);
+        jg.writeEndObject();
+        jg.writeObjectFieldStart("java");
+        jg.writeStringField("version", javaInfo.getVersion());
+        jg.writeStringField("vm", javaInfo.getVm());
+        jg.writeArrayFieldStart("args");
+        for (String arg : javaInfo.getArgList()) {
+            jg.writeString(arg);
         }
         jg.writeEndArray();
-        jg.writeStringField("glowrootAgentVersion", processInfo.getGlowrootAgentVersion());
+        jg.writeStringField("glowrootAgentVersion", javaInfo.getGlowrootAgentVersion());
+        jg.writeEndObject();
         jg.writeEndObject();
         jg.close();
         return sw.toString();
@@ -138,12 +158,12 @@ class JvmJsonService {
         if (!liveJvmService.isAvailable(serverId)) {
             return "{\"agentNotConnected\":true}";
         }
-        ProcessInfo processInfo = serverRepository.readProcessInfo(serverId);
-        checkNotNull(processInfo);
+        SystemInfo systemInfo = serverRepository.readSystemInfo(serverId);
+        checkNotNull(systemInfo);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeStringField("directory", processInfo.getHeapDumpDefaultDir());
+        jg.writeStringField("directory", systemInfo.getJavaInfo().getHeapDumpDefaultDir());
         jg.writeEndObject();
         jg.close();
         return sb.toString();

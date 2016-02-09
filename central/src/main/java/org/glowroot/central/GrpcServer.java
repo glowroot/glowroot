@@ -80,7 +80,7 @@ public class GrpcServer {
             AgentConfig updatedAgentConfig;
             try {
                 updatedAgentConfig = serverDao.store(request.getServerId(),
-                        request.getProcessInfo(), request.getAgentConfig());
+                        request.getSystemInfo(), request.getAgentConfig());
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
                 responseObserver.onError(t);

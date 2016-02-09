@@ -33,7 +33,7 @@ import org.glowroot.agent.fat.storage.util.Schemas.Column;
 import org.glowroot.agent.fat.storage.util.Schemas.ColumnType;
 import org.glowroot.storage.repo.ImmutableServerRollup;
 import org.glowroot.storage.repo.ServerRepository;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -41,7 +41,7 @@ import static com.google.common.base.Preconditions.checkState;
 public class ServerDao implements ServerRepository {
 
     private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
-            ImmutableColumn.of("process_info", ColumnType.VARBINARY));
+            ImmutableColumn.of("system_info", ColumnType.VARBINARY));
 
     private final DataSource dataSource;
 
@@ -50,7 +50,7 @@ public class ServerDao implements ServerRepository {
         dataSource.syncTable("server", columns);
         long rowCount = dataSource.queryForLong("select count(*) from server");
         if (rowCount == 0) {
-            dataSource.execute("insert into server (process_info) values (null)");
+            dataSource.execute("insert into server (system_info) values (null)");
         } else {
             checkState(rowCount == 1);
         }
@@ -64,50 +64,50 @@ public class ServerDao implements ServerRepository {
                 .build());
     }
 
-    public void store(ProcessInfo processInfo) throws Exception {
-        dataSource.update(new ProcessInfoBinder(processInfo));
+    public void store(SystemInfo systemInfo) throws Exception {
+        dataSource.update(new SystemInfoBinder(systemInfo));
     }
 
     @Override
-    public @Nullable ProcessInfo readProcessInfo(String serverId) throws Exception {
-        return dataSource.queryAtMostOne(new ProcessInfoRowMapper());
+    public @Nullable SystemInfo readSystemInfo(String serverId) throws Exception {
+        return dataSource.queryAtMostOne(new SystemInfoRowMapper());
     }
 
-    private static class ProcessInfoBinder implements JdbcUpdate {
+    private static class SystemInfoBinder implements JdbcUpdate {
 
-        private final ProcessInfo processInfo;
+        private final SystemInfo systemInfo;
 
-        private ProcessInfoBinder(ProcessInfo processInfo) {
-            this.processInfo = processInfo;
+        private SystemInfoBinder(SystemInfo systemInfo) {
+            this.systemInfo = systemInfo;
         }
 
         @Override
         public @Untainted String getSql() {
-            return "update server set process_info = ?";
+            return "update server set system_info = ?";
         }
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws SQLException {
-            preparedStatement.setBytes(1, processInfo.toByteArray());
+            preparedStatement.setBytes(1, systemInfo.toByteArray());
         }
     }
 
-    private static class ProcessInfoRowMapper implements JdbcRowQuery<ProcessInfo> {
+    private static class SystemInfoRowMapper implements JdbcRowQuery<SystemInfo> {
 
         @Override
         public @Untainted String getSql() {
-            return "select process_info from server where process_info is not null";
+            return "select system_info from server where system_info is not null";
         }
 
         @Override
         public void bind(PreparedStatement preparedStatement) {}
 
         @Override
-        public ProcessInfo mapRow(ResultSet resultSet) throws Exception {
+        public SystemInfo mapRow(ResultSet resultSet) throws Exception {
             byte[] bytes = resultSet.getBytes(1);
-            // query already filters out null process_info
+            // query already filters out null system_info
             checkNotNull(bytes);
-            return ProcessInfo.parseFrom(bytes);
+            return SystemInfo.parseFrom(bytes);
         }
     }
 }

@@ -309,10 +309,10 @@ glowroot.config([
       templateUrl: 'views/jvm/gauge-values.html',
       controller: 'JvmGaugeValuesCtrl'
     });
-    $stateProvider.state('jvm.processInfo', {
-      url: '/process-info?server-id&server-rollup',
-      templateUrl: 'views/jvm/process-info.html',
-      controller: 'JvmProcessInfoCtrl'
+    $stateProvider.state('jvm.systemInfo', {
+      url: '/system-info?server-id&server-rollup',
+      templateUrl: 'views/jvm/system-info.html',
+      controller: 'JvmSystemInfoCtrl'
     });
     $stateProvider.state('jvm.threadDump', {
       url: '/thread-dump?server-id&server-rollup',

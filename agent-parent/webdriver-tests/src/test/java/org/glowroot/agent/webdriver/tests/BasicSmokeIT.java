@@ -181,7 +181,7 @@ public class BasicSmokeIT extends WebDriverIT {
         // (first to get gauge list and then to get gauge points for default selected gauges)
         Thread.sleep(1000);
 
-        jvmSidebar.getProcessInfoLink().click();
+        jvmSidebar.getSystemInfoLink().click();
 
         jvmSidebar.getThreadDumpLink().click();
 

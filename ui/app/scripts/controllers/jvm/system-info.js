@@ -16,13 +16,13 @@
 
 /* global glowroot */
 
-glowroot.controller('JvmProcessInfoCtrl', [
+glowroot.controller('JvmSystemInfoCtrl', [
   '$scope',
   '$http',
   'httpErrors',
   function ($scope, $http, httpErrors) {
 
-    $scope.$parent.heading = 'Process info';
+    $scope.$parent.heading = 'System info';
 
     if ($scope.hideMainContent()) {
       return;
@@ -47,7 +47,7 @@ glowroot.controller('JvmProcessInfoCtrl', [
       }
     };
 
-    $http.get('backend/jvm/process-info?server-id=' + encodeURIComponent($scope.serverId))
+    $http.get('backend/jvm/system-info?server-id=' + encodeURIComponent($scope.serverId))
         .success(function (data) {
           $scope.loaded = true;
           $scope.data = data;

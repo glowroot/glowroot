@@ -89,7 +89,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                     collector = customCollector;
                 }
                 collectorProxy.setInstance(collector);
-                collector.init(baseDir, ProcessInfoCreator.create(glowrootVersion),
+                collector.init(baseDir, SystemInfoCreator.create(glowrootVersion),
                         configService.getAgentConfig(), agentConfigUpdater);
                 return null;
             }

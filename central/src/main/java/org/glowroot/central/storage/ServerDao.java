@@ -36,7 +36,7 @@ import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -49,9 +49,9 @@ public class ServerDao implements ServerRepository {
     private final PreparedStatement existsPS;
 
     private final PreparedStatement insertPS;
-    private final PreparedStatement insertProcessInfoPS;
+    private final PreparedStatement insertSystemInfoPS;
     private final PreparedStatement insertAgentConfigPS;
-    private final PreparedStatement readProcessInfoPS;
+    private final PreparedStatement readSystemInfoPS;
     private final PreparedStatement readAgentConfigPS;
 
     private final PreparedStatement updateDetailPS;
@@ -62,19 +62,19 @@ public class ServerDao implements ServerRepository {
         session.execute("create table if not exists server (one int, server_rollup varchar,"
                 + " leaf boolean, primary key (one, server_rollup))");
         session.execute("create table if not exists server_detail (server_id varchar,"
-                + " process_info blob, agent_config blob, primary key (server_id))");
+                + " system_info blob, agent_config blob, primary key (server_id))");
 
         existsPS = session
                 .prepare("select server_rollup from server where one = 1 and server_rollup = ?");
 
         insertPS =
                 session.prepare("insert into server (one, server_rollup, leaf) values (1, ?, ?)");
-        insertProcessInfoPS = session
-                .prepare("insert into server_detail (server_id, process_info) values (?, ?)");
+        insertSystemInfoPS = session
+                .prepare("insert into server_detail (server_id, system_info) values (?, ?)");
         insertAgentConfigPS = session
                 .prepare("insert into server_detail (server_id, agent_config) values (?, ?)");
-        readProcessInfoPS =
-                session.prepare("select process_info from server_detail where server_id = ?");
+        readSystemInfoPS =
+                session.prepare("select system_info from server_detail where server_id = ?");
         readAgentConfigPS =
                 session.prepare("select agent_config from server_detail where server_id = ?");
         updateDetailPS = session.prepare("insert into server_detail (server_id) values (?)");
@@ -93,8 +93,8 @@ public class ServerDao implements ServerRepository {
     }
 
     // returns stored agent config
-    public AgentConfig store(String serverId, ProcessInfo processInfo,
-            AgentConfig agentConfig) throws InvalidProtocolBufferException {
+    public AgentConfig store(String serverId, SystemInfo systemInfo, AgentConfig agentConfig)
+            throws InvalidProtocolBufferException {
         AgentConfig existingAgentConfig = null;
         BoundStatement boundStatement = existsPS.bind();
         boundStatement.setString(0, serverId);
@@ -102,9 +102,9 @@ public class ServerDao implements ServerRepository {
         if (results.one() != null) {
             existingAgentConfig = readAgentConfig(serverId);
         }
-        boundStatement = insertProcessInfoPS.bind();
+        boundStatement = insertSystemInfoPS.bind();
         boundStatement.setString(0, serverId);
-        boundStatement.setBytes(1, ByteBuffer.wrap(processInfo.toByteArray()));
+        boundStatement.setBytes(1, ByteBuffer.wrap(systemInfo.toByteArray()));
         session.execute(boundStatement);
         AgentConfig updatedAgentConfig;
         if (existingAgentConfig == null) {
@@ -155,7 +155,7 @@ public class ServerDao implements ServerRepository {
         boundStatement.setString(0, serverId);
         boundStatement.setBytes(1, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
         session.execute(boundStatement);
-        // insert into server last so readProcessInfo() and readAgentConfig() below are more likely
+        // insert into server last so readSystemInfo() and readAgentConfig() below are more likely
         // to return non-null
         boundStatement = insertPS.bind();
         boundStatement.setString(0, serverId);
@@ -165,9 +165,9 @@ public class ServerDao implements ServerRepository {
     }
 
     @Override
-    public @Nullable ProcessInfo readProcessInfo(String serverId)
+    public @Nullable SystemInfo readSystemInfo(String serverId)
             throws InvalidProtocolBufferException {
-        BoundStatement boundStatement = readProcessInfoPS.bind();
+        BoundStatement boundStatement = readSystemInfoPS.bind();
         boundStatement.setString(0, serverId);
         ResultSet results = session.execute(boundStatement);
         Row row = results.one();
@@ -177,10 +177,10 @@ public class ServerDao implements ServerRepository {
         }
         ByteBuffer bytes = row.getBytes(0);
         if (bytes == null) {
-            // for some reason received data from server, but not initial process info data
+            // for some reason received data from server, but not initial system info data
             return null;
         }
-        return ProcessInfo.parseFrom(ByteString.copyFrom(bytes));
+        return SystemInfo.parseFrom(ByteString.copyFrom(bytes));
     }
 
     public @Nullable AgentConfig readAgentConfig(String serverId)
@@ -195,7 +195,7 @@ public class ServerDao implements ServerRepository {
         }
         ByteBuffer bytes = row.getBytes(0);
         if (bytes == null) {
-            // for some reason received data from server, but not initial process info data
+            // for some reason received data from server, but not initial system info data
             return null;
         }
         return AgentConfig.parseFrom(ByteString.copyFrom(bytes));

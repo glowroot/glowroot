@@ -57,11 +57,6 @@
          gt-active="currentUrl() === 'jvm/gauges'">
     </div>
     <div gt-sidebar-item
-         gt-display="Process info"
-         gt-url="jvm/process-info{{serverQueryString()}}"
-         gt-active="currentUrl() === 'jvm/process-info'">
-    </div>
-    <div gt-sidebar-item
          gt-display="Thread dump"
          gt-url="jvm/thread-dump{{serverQueryString()}}"
          gt-active="currentUrl() === 'jvm/thread-dump'">
@@ -75,6 +70,11 @@
          gt-display="MBean tree"
          gt-url="jvm/mbean-tree{{serverQueryString()}}"
          gt-active="currentUrl() === 'jvm/mbean-tree'">
+    </div>
+    <div gt-sidebar-item
+         gt-display="System info"
+         gt-url="jvm/system-info{{serverQueryString()}}"
+         gt-active="currentUrl() === 'jvm/system-info'">
     </div>
   </ul>
 </div>

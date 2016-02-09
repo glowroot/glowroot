@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,8 +47,8 @@ public class JvmSidebar {
         return Utils.withWait(driver, getSidebar(), linkText("Heap dump"));
     }
 
-    public WebElement getProcessInfoLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Process info"));
+    public WebElement getSystemInfoLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("System info"));
     }
 
     private WebElement getSidebar() {
