@@ -45,6 +45,8 @@ public class ControllerAspect {
     public interface HttpServletRequest {
         @Nullable
         String getServletPath();
+        @Nullable
+        String getPathInfo();
     }
 
     @Pointcut(className = "org.springframework.web.servlet.DispatcherServlet",
@@ -58,8 +60,20 @@ public class ControllerAspect {
             if (req == null || !(req instanceof HttpServletRequest)) {
                 return null;
             }
-            FastThreadLocal.Holder</*@Nullable*/ String> holder = servletPath.getHolder();
-            holder.set(((HttpServletRequest) req).getServletPath());
+            HttpServletRequest request = (HttpServletRequest) req;
+            String pathInfo = request.getPathInfo();
+            String servletPath;
+            if (pathInfo == null) {
+                // pathInfo is null when the dispatcher servlet is mapped to "/" (not "/*") and
+                // therefore it is replacing the default servlet and getServletPath() returns the
+                // full path
+                servletPath = "";
+            } else {
+                servletPath = request.getServletPath();
+            }
+            FastThreadLocal.Holder</*@Nullable*/ String> holder =
+                    ControllerAspect.servletPath.getHolder();
+            holder.set(servletPath);
             return holder;
         }
         @OnAfter
@@ -82,10 +96,8 @@ public class ControllerAspect {
             String prefix = servletPath.get();
             if (prefix == null || prefix.isEmpty()) {
                 context.setTransactionName(controllerMethodMeta.getPath());
-            } else if (prefix.length() == 1 && prefix.charAt(0) == '/') {
-                context.setTransactionName(prefix + controllerMethodMeta.getPath());
             } else {
-                context.setTransactionName(prefix + '/' + controllerMethodMeta.getPath());
+                context.setTransactionName(prefix + controllerMethodMeta.getPath());
             }
             return context.startTraceEntry(
                     MessageSupplier.from("spring controller: {}.{}()",

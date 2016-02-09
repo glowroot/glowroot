@@ -59,10 +59,36 @@ public class ControllerIT {
     }
 
     @Test
-    public void shouldCaptureTransactionName() throws Exception {
+    public void shouldCaptureTransactionNameWithNormalServletMapping() throws Exception {
         // given
         // when
-        Trace trace = container.execute(InvokeSpringControllerInTomcat.class);
+        Trace trace = container.execute(WithNormalServletMapping.class);
+        // then
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/hello/echo/*");
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(1);
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.getMessage()).isEqualTo("spring controller: TestController.echo()");
+    }
+
+    @Test
+    public void shouldCaptureTransactionNameWithNormalServletMappingHittingRoot() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(WithNormalServletMappingHittingRoot.class);
+        // then
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/");
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(1);
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.getMessage()).isEqualTo("spring controller: RootController.echo()");
+    }
+
+    @Test
+    public void shouldCaptureTransactionNameWithNestedServletMapping() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(WithNestedServletMapping.class);
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/spring/hello/echo/*");
         List<Trace.Entry> entries = trace.getEntryList();
@@ -71,16 +97,98 @@ public class ControllerIT {
         assertThat(entry.getMessage()).isEqualTo("spring controller: TestController.echo()");
     }
 
-    public static class InvokeSpringControllerInTomcat implements AppUnderTest {
+    @Test
+    public void shouldCaptureTransactionNameWithNestedServletMappingHittingRoot() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(WithNestedServletMappingHittingRoot.class);
+        // then
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/spring/");
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(1);
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.getMessage()).isEqualTo("spring controller: RootController.echo()");
+    }
 
+    @Test
+    public void shouldCaptureTransactionNameWithLessNormalServletMapping() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(WithLessNormalServletMapping.class);
+        // then
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/hello/echo/*");
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(1);
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.getMessage()).isEqualTo("spring controller: TestController.echo()");
+    }
+
+    @Test
+    public void shouldCaptureTransactionNameWithLessNormalServletMappingHittingRoot()
+            throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(WithLessNormalServletMappingHittingRoot.class);
+        // then
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/");
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(1);
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.getMessage()).isEqualTo("spring controller: RootController.echo()");
+    }
+
+    public static class WithNormalServletMapping extends InvokeSpringControllerInTomcat {
         @Override
         public void executeApp() throws Exception {
+            executeApp("webapp1", "/hello/echo/5");
+        }
+    }
+
+    public static class WithNormalServletMappingHittingRoot extends InvokeSpringControllerInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp1", "/");
+        }
+    }
+
+    public static class WithNestedServletMapping extends InvokeSpringControllerInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp2", "/spring/hello/echo/5");
+        }
+    }
+
+    public static class WithNestedServletMappingHittingRoot extends InvokeSpringControllerInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp2", "/spring/");
+        }
+    }
+
+    public static class WithLessNormalServletMapping extends InvokeSpringControllerInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp3", "/hello/echo/5");
+        }
+    }
+
+    public static class WithLessNormalServletMappingHittingRoot
+            extends InvokeSpringControllerInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp3", "/");
+        }
+    }
+
+    private static abstract class InvokeSpringControllerInTomcat implements AppUnderTest {
+
+        public void executeApp(String webapp, String url) throws Exception {
             int port = getAvailablePort();
             Tomcat tomcat = new Tomcat();
             tomcat.setBaseDir("target/tomcat");
             tomcat.setPort(port);
-            Context context =
-                    tomcat.addWebapp("", new File("src/test/resources").getAbsolutePath());
+            Context context = tomcat.addWebapp("",
+                    new File("src/test/resources/" + webapp).getAbsolutePath());
 
             WebappLoader webappLoader =
                     new WebappLoader(InvokeSpringControllerInTomcat.class.getClassLoader());
@@ -88,8 +196,7 @@ public class ControllerIT {
 
             tomcat.start();
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://localhost:" + port + "/spring/hello/echo/5")
-                    .execute().get();
+            asyncHttpClient.prepareGet("http://localhost:" + port + url).execute().get();
             asyncHttpClient.close();
             tomcat.stop();
             tomcat.destroy();
@@ -107,6 +214,14 @@ public class ControllerIT {
     @RequestMapping("hello")
     public static class TestController {
         @RequestMapping("echo/{id}")
+        public @ResponseBody String echo() {
+            return "";
+        }
+    }
+
+    @Controller
+    public static class RootController {
+        @RequestMapping("")
         public @ResponseBody String echo() {
             return "";
         }
