@@ -1458,7 +1458,7 @@ public class WeaverTest {
         List<MixinType> mixinTypes = Lists.newArrayList();
         Mixin mixin = adviceOrShimOrMixinClass.getAnnotation(Mixin.class);
         if (mixin != null) {
-            mixinTypes.add(MixinType.from(mixin, adviceOrShimOrMixinClass));
+            mixinTypes.add(MixinType.from(mixin, adviceOrShimOrMixinClass, null));
         }
         List<ShimType> shimTypes = Lists.newArrayList();
         Shim shim = adviceOrShimOrMixinClass.getAnnotation(Shim.class);
@@ -1494,7 +1494,7 @@ public class WeaverTest {
         List<MixinType> mixinTypes = Lists.newArrayList();
         Mixin mixin = adviceOrShimOrMixinClass.getAnnotation(Mixin.class);
         if (mixin != null) {
-            mixinTypes.add(MixinType.from(mixin, adviceOrShimOrMixinClass));
+            mixinTypes.add(MixinType.from(mixin, adviceOrShimOrMixinClass, null));
         }
         List<ShimType> shimTypes = Lists.newArrayList();
         Shim shim = adviceOrShimOrMixinClass.getAnnotation(Shim.class);

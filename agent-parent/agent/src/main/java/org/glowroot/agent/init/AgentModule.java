@@ -124,7 +124,8 @@ public class AgentModule {
                 createExtraBootResourceFinder(instrumentation, pluginCache.pluginJars());
 
         adviceCache = new AdviceCache(pluginCache.pluginDescriptors(), pluginCache.pluginJars(),
-                configService.getInstrumentationConfigs(), instrumentation, baseDir);
+                configService.getInstrumentationConfigs(), instrumentation, extraBootResourceFinder,
+                baseDir);
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
                 adviceCache.getShimTypes(), adviceCache.getMixinTypes(), extraBootResourceFinder);
         final TimerNameCache timerNameCache = new TimerNameCache();

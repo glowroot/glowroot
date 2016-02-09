@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,8 @@ public abstract class MixinType {
 
     private static final Logger logger = LoggerFactory.getLogger(MixinType.class);
 
-    public static MixinType from(Mixin mixin, Class<?> implementation) throws IOException {
+    public static MixinType from(Mixin mixin, Class<?> implementation,
+            @Nullable ExtraBootResourceFinder extraBootResourceFinder) throws IOException {
         ImmutableMixinType.Builder builder = ImmutableMixinType.builder();
         builder.addTargets(mixin.value());
         builder.implementation(Type.getType(implementation));
@@ -73,6 +74,9 @@ public abstract class MixinType {
             url = ClassLoader.getSystemResource(resourceName);
         } else {
             url = loader.getResource(resourceName);
+        }
+        if (url == null && extraBootResourceFinder != null) {
+            url = extraBootResourceFinder.findResource(resourceName);
         }
         checkNotNull(url, "Could not find resource: %s", resourceName);
         builder.implementationBytes(Resources.toByteArray(url));

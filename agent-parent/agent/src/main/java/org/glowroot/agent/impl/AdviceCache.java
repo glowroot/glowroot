@@ -50,6 +50,7 @@ import org.glowroot.agent.weaving.Advice;
 import org.glowroot.agent.weaving.AdviceBuilder;
 import org.glowroot.agent.weaving.ClassLoaders;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
+import org.glowroot.agent.weaving.ExtraBootResourceFinder;
 import org.glowroot.agent.weaving.MixinType;
 import org.glowroot.agent.weaving.ShimType;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -76,7 +77,8 @@ public class AdviceCache {
 
     public AdviceCache(List<PluginDescriptor> pluginDescriptors, List<File> pluginJars,
             List<InstrumentationConfig> reweavableConfigs,
-            @Nullable Instrumentation instrumentation, File baseDir) throws Exception {
+            @Nullable Instrumentation instrumentation,
+            ExtraBootResourceFinder extraBootResourceFinder, File baseDir) throws Exception {
 
         List<Advice> pluginAdvisors = Lists.newArrayList();
         List<ShimType> shimTypes = Lists.newArrayList();
@@ -95,7 +97,7 @@ public class AdviceCache {
                             Class.forName(aspect, false, AdviceCache.class.getClassLoader());
                     pluginAdvisors.addAll(getAdvisors(aspectClass));
                     shimTypes.addAll(getShimTypes(aspectClass));
-                    mixinTypes.addAll(getMixinTypes(aspectClass));
+                    mixinTypes.addAll(getMixinTypes(aspectClass, extraBootResourceFinder));
                 } catch (ClassNotFoundException e) {
                     logger.warn("aspect not found: {}", aspect, e);
                 }
@@ -213,12 +215,13 @@ public class AdviceCache {
         return shimTypes;
     }
 
-    private static List<MixinType> getMixinTypes(Class<?> aspectClass) throws IOException {
+    private static List<MixinType> getMixinTypes(Class<?> aspectClass,
+            ExtraBootResourceFinder extraBootResourceFinder) throws IOException {
         List<MixinType> mixinTypes = Lists.newArrayList();
         for (Class<?> memberClass : aspectClass.getClasses()) {
             Mixin mixin = memberClass.getAnnotation(Mixin.class);
             if (mixin != null) {
-                mixinTypes.add(MixinType.from(mixin, memberClass));
+                mixinTypes.add(MixinType.from(mixin, memberClass, extraBootResourceFinder));
             }
         }
         return mixinTypes;
