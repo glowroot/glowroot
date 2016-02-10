@@ -22,6 +22,7 @@ import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
+import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindMethodMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
@@ -40,6 +41,9 @@ public class ControllerAspect {
 
     private static final FastThreadLocal</*@Nullable*/ String> servletPath =
             new FastThreadLocal</*@Nullable*/ String>();
+
+    private static final BooleanProperty useAltTransactionNaming =
+            Agent.getConfigService("spring").getBooleanProperty("useAltTransactionNaming");
 
     @Shim("javax.servlet.http.HttpServletRequest")
     public interface HttpServletRequest {
@@ -93,11 +97,15 @@ public class ControllerAspect {
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context,
                 @BindMethodMeta ControllerMethodMeta controllerMethodMeta) {
-            String prefix = servletPath.get();
-            if (prefix == null || prefix.isEmpty()) {
-                context.setTransactionName(controllerMethodMeta.getPath());
+            if (useAltTransactionNaming.value()) {
+                context.setTransactionName(controllerMethodMeta.getAltTransactionName());
             } else {
-                context.setTransactionName(prefix + controllerMethodMeta.getPath());
+                String prefix = servletPath.get();
+                if (prefix == null || prefix.isEmpty()) {
+                    context.setTransactionName(controllerMethodMeta.getPath());
+                } else {
+                    context.setTransactionName(prefix + controllerMethodMeta.getPath());
+                }
             }
             return context.startTraceEntry(MessageSupplier.from("spring controller: {}.{}()",
                     controllerMethodMeta.getDeclaredClassSimpleName(),

@@ -1,6 +1,15 @@
 {
   "name": "Spring Plugin",
   "id": "spring",
+  "properties": [
+    {
+      "name": "useAltTransactionNaming",
+      "type": "boolean",
+      "label": "Alternate transaction naming",
+      "checkboxLabel": "Use alternate transaction naming",
+      "description": "Set transaction name to the controller's className#methodName instead of using the controller's URL mapping"
+    }
+  ],
   "aspects": [
     "org.glowroot.agent.plugin.spring.ControllerAspect"
   ]

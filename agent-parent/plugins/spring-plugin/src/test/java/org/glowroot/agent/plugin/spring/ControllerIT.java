@@ -137,6 +137,20 @@ public class ControllerIT {
         assertThat(entry.getMessage()).isEqualTo("spring controller: RootController.echo()");
     }
 
+    @Test
+    public void shouldCaptureAltTransactionName() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty("spring", "useAltTransactionNaming", true);
+        // when
+        Trace trace = container.execute(WithNormalServletMapping.class);
+        // then
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("TestController#echo");
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(1);
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.getMessage()).isEqualTo("spring controller: TestController.echo()");
+    }
+
     public static class WithNormalServletMapping extends InvokeSpringControllerInTomcat {
         @Override
         public void executeApp() throws Exception {
