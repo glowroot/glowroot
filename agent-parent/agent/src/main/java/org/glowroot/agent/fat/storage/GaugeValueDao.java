@@ -69,8 +69,8 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     private final Object rollupLock = new Object();
 
-    GaugeValueDao(DataSource dataSource, GaugeDao gaugeMetaDao,
-            ConfigRepository configRepository, Clock clock) throws Exception {
+    GaugeValueDao(DataSource dataSource, GaugeDao gaugeMetaDao, ConfigRepository configRepository,
+            Clock clock) throws Exception {
         this.dataSource = dataSource;
         this.gaugeMetaDao = gaugeMetaDao;
         this.configRepository = configRepository;
@@ -152,8 +152,8 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public List<GaugeValue> readGaugeValues(String serverRollup, String gaugeName,
-            long from, long to, int rollupLevel) throws Exception {
+    public List<GaugeValue> readGaugeValues(String serverRollup, String gaugeName, long from,
+            long to, int rollupLevel) throws Exception {
         Long gaugeId = gaugeMetaDao.getGaugeId(gaugeName);
         if (gaugeId == null) {
             // not necessarily an error, gauge id not created until first store

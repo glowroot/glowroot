@@ -204,8 +204,7 @@ public class ResponseHeaderAspect {
     }
 
     @Pointcut(className = "javax.servlet.http.HttpServletResponse", methodName = "setIntHeader",
-            methodParameterTypes = {"java.lang.String", "int"},
-            nestingGroup = "servlet-inner-call")
+            methodParameterTypes = {"java.lang.String", "int"}, nestingGroup = "servlet-inner-call")
     public static class SetIntHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -278,8 +277,7 @@ public class ResponseHeaderAspect {
     }
 
     @Pointcut(className = "javax.servlet.http.HttpServletResponse", methodName = "addIntHeader",
-            methodParameterTypes = {"java.lang.String", "int"},
-            nestingGroup = "servlet-inner-call")
+            methodParameterTypes = {"java.lang.String", "int"}, nestingGroup = "servlet-inner-call")
     public static class AddIntHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {

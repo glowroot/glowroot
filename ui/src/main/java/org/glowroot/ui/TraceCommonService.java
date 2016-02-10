@@ -264,8 +264,7 @@ class TraceCommonService {
             jg.writeBooleanField("mainThreadProfileSampleLimitExceeded",
                     mainThreadProfileSampleLimitExceeded);
         }
-        jg.writeNumberField("auxThreadProfileSampleCount",
-                header.getAuxThreadProfileSampleCount());
+        jg.writeNumberField("auxThreadProfileSampleCount", header.getAuxThreadProfileSampleCount());
         boolean auxThreadProfileSampleLimitExceeded =
                 header.getAuxThreadProfileSampleLimitExceeded();
         if (auxThreadProfileSampleLimitExceeded) {
@@ -423,12 +422,10 @@ class TraceCommonService {
             jg.writeNumberField("totalCpuNanos", threadStats.getTotalCpuNanos().getValue());
         }
         if (threadStats.hasTotalBlockedNanos()) {
-            jg.writeNumberField("totalBlockedNanos",
-                    threadStats.getTotalBlockedNanos().getValue());
+            jg.writeNumberField("totalBlockedNanos", threadStats.getTotalBlockedNanos().getValue());
         }
         if (threadStats.hasTotalWaitedNanos()) {
-            jg.writeNumberField("totalWaitedNanos",
-                    threadStats.getTotalWaitedNanos().getValue());
+            jg.writeNumberField("totalWaitedNanos", threadStats.getTotalWaitedNanos().getValue());
         }
         if (threadStats.hasTotalAllocatedBytes()) {
             jg.writeNumberField("totalAllocatedBytes",

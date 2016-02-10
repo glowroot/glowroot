@@ -282,8 +282,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 Label catchStartLabel = new Label();
                 visitLabel(catchStartLabel);
                 catchHandlers
-                        .add(ImmutableCatchHandler.of(catchStartLabel,
-                                advisors.subList(0, i + 1)));
+                        .add(ImmutableCatchHandler.of(catchStartLabel, advisors.subList(0, i + 1)));
             }
         }
         if (needsOnReturn) {
@@ -861,8 +860,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         Label label2 = new Label();
         visitJumpInsn(IFNONNULL, label2);
         visitMethodInsn(INVOKESTATIC, transactionServiceHolderType.getInternalName(),
-                "getTransactionService", "()" + transactionServiceImplType.getDescriptor(),
-                false);
+                "getTransactionService", "()" + transactionServiceImplType.getDescriptor(), false);
         loadLocal(threadContextHolderLocal);
         visitMethodInsn(INVOKESTATIC, optionalThreadContextImplType.getInternalName(), "create",
                 "(" + transactionServiceImplType.getDescriptor()

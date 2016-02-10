@@ -102,8 +102,8 @@ public class AsyncHttpClientAspect {
             // executor" in which case will be over in @OnReturn
             String method = requestInvoker.getMethod(request);
             String url = requestInvoker.getUrl(request);
-            return context.startAsyncTraceEntry(new RequestMessageSupplier(method, url),
-                    timerName, timerName);
+            return context.startAsyncTraceEntry(new RequestMessageSupplier(method, url), timerName,
+                    timerName);
         }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable ListenableFutureMixin future,

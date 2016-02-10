@@ -31,9 +31,9 @@ class TransactionTypeDao implements TransactionTypeRepository {
 
     private static final String SERVER_ID = "";
 
-    private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
-            ImmutableColumn.of("transaction_type", ColumnType.VARCHAR),
-            ImmutableColumn.of("last_capture_time", ColumnType.BIGINT));
+    private static final ImmutableList<Column> columns =
+            ImmutableList.<Column>of(ImmutableColumn.of("transaction_type", ColumnType.VARCHAR),
+                    ImmutableColumn.of("last_capture_time", ColumnType.BIGINT));
 
     private final DataSource dataSource;
 
@@ -65,8 +65,10 @@ class TransactionTypeDao implements TransactionTypeRepository {
             int updateCount = dataSource.update("update transaction_types set last_capture_time = ?"
                     + " where transaction_type = ?", captureTime, transactionType);
             if (updateCount == 0) {
-                dataSource.update("insert into transaction_types (transaction_type,"
-                        + " last_capture_time) values (?, ?)", transactionType, captureTime);
+                dataSource.update(
+                        "insert into transaction_types (transaction_type,"
+                                + " last_capture_time) values (?, ?)",
+                        transactionType, captureTime);
             }
         }
     }

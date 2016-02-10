@@ -73,8 +73,7 @@ public class DownstreamServiceImpl implements DownstreamService {
         return connectedAgent.responseObserver;
     }
 
-    public void updateAgentConfig(String serverId, AgentConfig agentConfig)
-            throws Exception {
+    public void updateAgentConfig(String serverId, AgentConfig agentConfig) throws Exception {
         ConnectedAgent connectedAgent = connectedAgents.get(serverId);
         if (connectedAgent == null) {
             throw new AgentNotConnectedException();

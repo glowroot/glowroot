@@ -349,8 +349,7 @@ public class AggregateDao implements AggregateRepository {
         // get list of capped ids first since that is done under the data source lock
         // then do the expensive part of reading and constructing the protobuf messages outside of
         // the data source lock
-        List<CappedId> cappedIds =
-                dataSource.query(new CappedIdQuery(cappedIdColumnName, query));
+        List<CappedId> cappedIds = dataSource.query(new CappedIdQuery(cappedIdColumnName, query));
         long captureTime = Long.MIN_VALUE;
         for (CappedId cappedId : cappedIds) {
             captureTime = Math.max(captureTime, cappedId.captureTime());
@@ -436,8 +435,7 @@ public class AggregateDao implements AggregateRepository {
             maxAggregateQueriesPerQueryType =
                     advancedConfig.getMaxAggregateQueriesPerQueryType().getValue();
         } else {
-            maxAggregateQueriesPerQueryType =
-                    ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_QUERY_TYPE;
+            maxAggregateQueriesPerQueryType = ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_QUERY_TYPE;
         }
         return maxAggregateQueriesPerQueryType;
     }
@@ -694,8 +692,8 @@ public class AggregateDao implements AggregateRepository {
 
         private final TransactionSummaryCollector mergedTransactionSummaries;
 
-        private TransactionSummaryQuery(OverallQuery query, SummarySortOrder sortOrder,
-                int limit, TransactionSummaryCollector mergedTransactionSummaries) {
+        private TransactionSummaryQuery(OverallQuery query, SummarySortOrder sortOrder, int limit,
+                TransactionSummaryCollector mergedTransactionSummaries) {
             this.query = query;
             this.sortOrder = sortOrder;
             this.limit = limit;

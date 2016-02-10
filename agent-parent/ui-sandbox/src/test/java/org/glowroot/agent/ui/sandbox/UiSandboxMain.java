@@ -49,9 +49,10 @@ public class UiSandboxMain {
         File baseDir = new File("target");
         File configFile = new File(baseDir, "config.json");
         if (!configFile.exists()) {
-            Files.write("{\"transactions\":{\"profilingIntervalMillis\":100},"
-                    + "\"ui\":{\"defaultDisplayedTransactionType\":\"Sandbox\"}}", configFile,
-                    Charsets.UTF_8);
+            Files.write(
+                    "{\"transactions\":{\"profilingIntervalMillis\":100},"
+                            + "\"ui\":{\"defaultDisplayedTransactionType\":\"Sandbox\"}}",
+                    configFile, Charsets.UTF_8);
         }
         if (useJavaagent) {
             container = new JavaagentContainer(baseDir, true, false, ImmutableList.<String>of());

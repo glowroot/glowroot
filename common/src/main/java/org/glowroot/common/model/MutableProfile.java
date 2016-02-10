@@ -417,8 +417,7 @@ public class MutableProfile {
                     methodNameIndexMapping[toBeMergedNode.getMethodNameIndex()];
             int toBeMergedFileNameIndex = fileNameIndexMapping[toBeMergedNode.getFileNameIndex()];
             int toBeMergedLineNumber = toBeMergedNode.getLineNumber();
-            Profile.LeafThreadState toBeMergedLeafThreadState =
-                    toBeMergedNode.getLeafThreadState();
+            Profile.LeafThreadState toBeMergedLeafThreadState = toBeMergedNode.getLeafThreadState();
             for (ProfileNode destinationNode : destinationNodes) {
                 if (isMatch(destinationNode, toBeMergedPackageNameIndex, toBeMergedClassNameIndex,
                         toBeMergedMethodNameIndex, toBeMergedFileNameIndex, toBeMergedLineNumber,

@@ -288,8 +288,9 @@ public class ExpensiveCallAspect {
         double value = random.nextDouble();
         if (traceEntry == null) {
             if (value < 0.5) {
-                context.addErrorEntry(new IllegalStateException("Exception in execute" + num
-                        + "\nwith no trace entry text and no custom error message",
+                context.addErrorEntry(new IllegalStateException(
+                        "Exception in execute" + num
+                                + "\nwith no trace entry text and no custom error message",
                         getRandomCause()));
             } else {
                 context.addErrorEntry("randomized error\nwith no trace entry text",

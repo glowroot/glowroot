@@ -79,8 +79,7 @@ class GaugeConfigJsonService {
         String serverId = request.serverId();
         Optional<String> version = request.version();
         if (version.isPresent()) {
-            GaugeConfig gaugeConfig =
-                    configRepository.getGaugeConfig(serverId, version.get());
+            GaugeConfig gaugeConfig = configRepository.getGaugeConfig(serverId, version.get());
             if (gaugeConfig == null) {
                 throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
             }

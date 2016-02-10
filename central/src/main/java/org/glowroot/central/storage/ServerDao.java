@@ -69,8 +69,8 @@ public class ServerDao implements ServerRepository {
 
         insertPS =
                 session.prepare("insert into server (one, server_rollup, leaf) values (1, ?, ?)");
-        insertSystemInfoPS = session
-                .prepare("insert into server_detail (server_id, system_info) values (?, ?)");
+        insertSystemInfoPS =
+                session.prepare("insert into server_detail (server_id, system_info) values (?, ?)");
         insertAgentConfigPS = session
                 .prepare("insert into server_detail (server_id, agent_config) values (?, ?)");
         readSystemInfoPS =

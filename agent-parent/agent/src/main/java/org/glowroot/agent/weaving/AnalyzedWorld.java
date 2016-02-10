@@ -73,9 +73,8 @@ public class AnalyzedWorld {
     // not using the much more convenient (and concurrent) guava CacheBuilder since it uses many
     // additional classes that must then be pre-initialized since this is called from inside
     // ClassFileTransformer.transform() (see PreInitializeClasses)
-    private final Map<ClassLoader, ConcurrentMap<String, AnalyzedClass>> world =
-            Collections.synchronizedMap(
-                    new WeakHashMap<ClassLoader, ConcurrentMap<String, AnalyzedClass>>());
+    private final Map<ClassLoader, ConcurrentMap<String, AnalyzedClass>> world = Collections
+            .synchronizedMap(new WeakHashMap<ClassLoader, ConcurrentMap<String, AnalyzedClass>>());
 
     // the analyzed classes for the bootstrap class loader (null) have to be stored separately since
     // LoadingCache doesn't accept null keys, and using an Optional<ClassLoader> for the key makes

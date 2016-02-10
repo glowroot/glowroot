@@ -115,8 +115,7 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
                         Type.getType(owner).getClassName());
                 return;
             }
-            String transactionNameTemplate =
-                    transactionAnnotationVisitor.transactionNameTemplate;
+            String transactionNameTemplate = transactionAnnotationVisitor.transactionNameTemplate;
             if (transactionNameTemplate == null) {
                 logger.error("@Instrument.Transaction had no transactionNameTemplate attribute: {}",
                         Type.getType(owner).getClassName());

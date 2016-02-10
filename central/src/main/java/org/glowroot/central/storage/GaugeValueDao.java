@@ -69,8 +69,8 @@ public class GaugeValueDao implements GaugeValueRepository {
 
         List<PreparedStatement> insertNamePS = Lists.newArrayList();
         for (int i = 0; i < 1; i++) {
-            insertNamePS.add(session.prepare("insert into gauge_name(server_rollup, gauge_name)"
-                    + " values (?, ?)"));
+            insertNamePS.add(session
+                    .prepare("insert into gauge_name(server_rollup, gauge_name) values (?, ?)"));
         }
         this.insertNamePS = ImmutableList.copyOf(insertNamePS);
     }
@@ -113,11 +113,12 @@ public class GaugeValueDao implements GaugeValueRepository {
     @Override
     public List<GaugeValue> readGaugeValues(String serverRollup, String gaugeName,
             long captureTimeFrom, long captureTimeTo, int rollupLevel) {
-        ResultSet results = session.execute(
-                "select capture_time, value, weight from gauge_value_rollup_"
-                        + castUntainted(rollupLevel) + " where server_rollup = ?"
-                        + " and gauge_name = ?",
-                serverRollup, gaugeName);
+        ResultSet results =
+                session.execute(
+                        "select capture_time, value, weight from gauge_value_rollup_"
+                                + castUntainted(rollupLevel)
+                                + " where server_rollup = ? and gauge_name = ?",
+                        serverRollup, gaugeName);
         List<GaugeValue> gaugeValues = Lists.newArrayList();
         for (Row row : results) {
             gaugeValues.add(GaugeValue.newBuilder()

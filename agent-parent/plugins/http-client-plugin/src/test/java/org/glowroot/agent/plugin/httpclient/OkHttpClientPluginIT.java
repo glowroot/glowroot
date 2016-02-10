@@ -56,8 +56,8 @@ public class OkHttpClientPluginIT {
         Trace trace = container.execute(ExecuteHttpGet.class);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage()).matches(
-                "http client request: GET http://localhost:\\d+/hello1/");
+        assertThat(entries.get(0).getMessage())
+                .matches("http client request: GET http://localhost:\\d+/hello1/");
     }
 
     @Test
@@ -65,8 +65,8 @@ public class OkHttpClientPluginIT {
         Trace trace = container.execute(ExecuteHttpPost.class);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage()).matches(
-                "http client request: POST http://localhost:\\d+/hello2");
+        assertThat(entries.get(0).getMessage())
+                .matches("http client request: POST http://localhost:\\d+/hello2");
     }
 
     public static class ExecuteHttpGet extends ExecuteHttpBase {

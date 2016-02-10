@@ -71,8 +71,8 @@ public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes 
 
     protected boolean stackFrameTracking = true;
 
-    protected AdviceAdapter(final int api, final MethodVisitor mv,
-            final int access, final String name, final String desc) {
+    protected AdviceAdapter(final int api, final MethodVisitor mv, final int access,
+            final String name, final String desc) {
         super(api, mv, access, name, desc);
         methodAccess = access;
         methodDesc = desc;
@@ -314,8 +314,8 @@ public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes 
     }
 
     @Override
-    public void visitFieldInsn(final int opcode, final String owner,
-            final String name, final String desc) {
+    public void visitFieldInsn(final int opcode, final String owner, final String name,
+            final String desc) {
         mv.visitFieldInsn(opcode, owner, name, desc);
         if (stackFrameTracking) {
             char c = desc.charAt(0);
@@ -390,19 +390,18 @@ public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes 
 
     @Deprecated
     @Override
-    public void visitMethodInsn(final int opcode, final String owner,
-            final String name, final String desc) {
+    public void visitMethodInsn(final int opcode, final String owner, final String name,
+            final String desc) {
         if (api >= Opcodes.ASM5) {
             super.visitMethodInsn(opcode, owner, name, desc);
             return;
         }
-        doVisitMethodInsn(opcode, owner, name, desc,
-                opcode == Opcodes.INVOKEINTERFACE);
+        doVisitMethodInsn(opcode, owner, name, desc, opcode == Opcodes.INVOKEINTERFACE);
     }
 
     @Override
-    public void visitMethodInsn(final int opcode, final String owner,
-            final String name, final String desc, final boolean itf) {
+    public void visitMethodInsn(final int opcode, final String owner, final String name,
+            final String desc, final boolean itf) {
         if (api < Opcodes.ASM5) {
             super.visitMethodInsn(opcode, owner, name, desc, itf);
             return;
@@ -410,8 +409,8 @@ public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes 
         doVisitMethodInsn(opcode, owner, name, desc, itf);
     }
 
-    private void doVisitMethodInsn(int opcode, final String owner,
-            final String name, final String desc, final boolean itf) {
+    private void doVisitMethodInsn(int opcode, final String owner, final String name,
+            final String desc, final boolean itf) {
         mv.visitMethodInsn(opcode, owner, name, desc, itf);
         if (stackFrameTracking) {
             Type[] types = Type.getArgumentTypes(desc);
@@ -453,8 +452,7 @@ public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes 
     }
 
     @Override
-    public void visitInvokeDynamicInsn(String name, String desc, Handle bsm,
-            Object... bsmArgs) {
+    public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
         mv.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
         if (stackFrameTracking) {
             Type[] types = Type.getArgumentTypes(desc);
@@ -513,8 +511,7 @@ public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes 
     }
 
     @Override
-    public void visitLookupSwitchInsn(final Label dflt, final int[] keys,
-            final Label[] labels) {
+    public void visitLookupSwitchInsn(final Label dflt, final int[] keys, final Label[] labels) {
         mv.visitLookupSwitchInsn(dflt, keys, labels);
         if (stackFrameTracking) {
             popValue();
@@ -523,8 +520,8 @@ public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes 
     }
 
     @Override
-    public void visitTableSwitchInsn(final int min, final int max,
-            final Label dflt, final Label... labels) {
+    public void visitTableSwitchInsn(final int min, final int max, final Label dflt,
+            final Label... labels) {
         mv.visitTableSwitchInsn(min, max, dflt, labels);
         if (stackFrameTracking) {
             popValue();
@@ -533,8 +530,7 @@ public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes 
     }
 
     @Override
-    public void visitTryCatchBlock(Label start, Label end, Label handler,
-            String type) {
+    public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
         super.visitTryCatchBlock(start, end, handler, type);
         if (stackFrameTracking && !branches.containsKey(handler)) {
             List<Object> stackFrame = new ArrayList<Object>();

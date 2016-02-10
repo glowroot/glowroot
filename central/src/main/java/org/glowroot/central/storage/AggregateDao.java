@@ -149,8 +149,8 @@ public class AggregateDao implements AggregateRepository {
     private final List<PreparedStatement> insertNeedsRollup;
     private final List<PreparedStatement> readNeedsRollup;
 
-    public AggregateDao(Session session, ServerDao serverDao,
-            TransactionTypeDao transactionTypeDao, ConfigRepository configRepository) {
+    public AggregateDao(Session session, ServerDao serverDao, TransactionTypeDao transactionTypeDao,
+            ConfigRepository configRepository) {
         this.session = session;
         this.serverDao = serverDao;
         this.transactionTypeDao = transactionTypeDao;
@@ -497,8 +497,8 @@ public class AggregateDao implements AggregateRepository {
         throw new UnsupportedOperationException();
     }
 
-    private void storeOverallAggregate(int rollupLevel, String serverRollup,
-            String transactionType, long captureTime, Aggregate aggregate) throws IOException {
+    private void storeOverallAggregate(int rollupLevel, String serverRollup, String transactionType,
+            long captureTime, Aggregate aggregate) throws IOException {
 
         BoundStatement boundStatement = getInsertOverallPS(summaryTable, rollupLevel).bind();
         boundStatement.setString(0, serverRollup);

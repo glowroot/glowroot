@@ -185,8 +185,7 @@ class InstrumentationConfigJsonService {
 
     private String getInstrumentationConfigInternal(String serverId, String version)
             throws Exception {
-        InstrumentationConfig config =
-                configRepository.getInstrumentationConfig(serverId, version);
+        InstrumentationConfig config = configRepository.getInstrumentationConfig(serverId, version);
         if (config == null) {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }

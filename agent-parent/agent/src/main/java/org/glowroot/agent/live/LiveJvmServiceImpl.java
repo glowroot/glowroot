@@ -78,8 +78,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
             TransactionRegistry transactionRegistry, TransactionCollector transactionCollector,
             Availability threadAllocatedBytesAvailability) {
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
-        threadDumpService =
-                new ThreadDumpService(transactionRegistry, transactionCollector);
+        threadDumpService = new ThreadDumpService(transactionRegistry, transactionCollector);
         this.threadAllocatedBytesAvailability = threadAllocatedBytesAvailability;
     }
 

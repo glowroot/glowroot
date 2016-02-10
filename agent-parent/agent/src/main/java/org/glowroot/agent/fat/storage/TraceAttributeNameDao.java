@@ -54,13 +54,14 @@ class TraceAttributeNameDao {
     void updateLastCaptureTime(String transactionType, String traceAttributeName, long captureTime)
             throws Exception {
         synchronized (lock) {
-            int updateCount = dataSource.update("update trace_attribute_name"
-                    + " set last_capture_time = ? where transaction_type = ?"
-                    + " and trace_attribute_name = ?", captureTime, transactionType,
-                    traceAttributeName);
+            int updateCount = dataSource.update(
+                    "update trace_attribute_name set last_capture_time = ?"
+                            + " where transaction_type = ? and trace_attribute_name = ?",
+                    captureTime, transactionType, traceAttributeName);
             if (updateCount == 0) {
-                dataSource.update("insert into trace_attribute_name (transaction_type,"
-                        + " trace_attribute_name, last_capture_time) values (?, ?, ?)",
+                dataSource.update(
+                        "insert into trace_attribute_name (transaction_type, trace_attribute_name,"
+                                + " last_capture_time) values (?, ?, ?)",
                         transactionType, traceAttributeName, captureTime);
             }
         }

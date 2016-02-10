@@ -86,8 +86,7 @@ public class TraceCreator {
         Profile auxThreadProfile = transaction.getAuxThreadProfileProtobuf();
         long auxThreadProfileSampleCount = getProfileSampleCount(auxThreadProfile);
         Trace.Header header = createTraceHeader(transaction, slow, partial, captureTime,
-                captureTick, entryCount, mainThreadProfileSampleCount,
-                auxThreadProfileSampleCount);
+                captureTick, entryCount, mainThreadProfileSampleCount, auxThreadProfileSampleCount);
         Trace.Builder builder = Trace.newBuilder()
                 .setId(transaction.getTraceId())
                 .setHeader(header)

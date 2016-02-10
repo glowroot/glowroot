@@ -157,8 +157,8 @@ class TraceEntryComponent {
 
     TraceEntryImpl addErrorEntry(long startTick, long endTick,
             @Nullable MessageSupplier messageSupplier, ErrorMessage errorMessage) {
-        TraceEntryImpl entry = new TraceEntryImpl(threadContext, activeEntry, messageSupplier,
-                null, 1, startTick, null, null);
+        TraceEntryImpl entry = new TraceEntryImpl(threadContext, activeEntry, messageSupplier, null,
+                1, startTick, null, null);
         entry.immediateEndAsErrorEntry(errorMessage, endTick);
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;
@@ -220,8 +220,8 @@ class TraceEntryComponent {
         for (TraceEntryImpl childEntry : childEntries) {
             List<Trace.Entry> subChildEntries = getProtobufChildEntries(childEntry, parentChildMap,
                     transactionStartTick, captureTick);
-            protobufChildEntries.add(childEntry.toProto(transactionStartTick, captureTick,
-                    subChildEntries));
+            protobufChildEntries
+                    .add(childEntry.toProto(transactionStartTick, captureTick, subChildEntries));
         }
         return protobufChildEntries;
     }

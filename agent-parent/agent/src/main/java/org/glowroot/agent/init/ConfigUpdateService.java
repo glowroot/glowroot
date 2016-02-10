@@ -53,8 +53,8 @@ public class ConfigUpdateService implements AgentConfigUpdater {
                     TransactionConfig.create(agentConfig.getTransactionConfig()));
             configService.updateUserRecordingConfig(
                     UserRecordingConfig.create(agentConfig.getUserRecordingConfig()));
-            configService.updateAdvancedConfig(
-                    AdvancedConfig.create(agentConfig.getAdvancedConfig()));
+            configService
+                    .updateAdvancedConfig(AdvancedConfig.create(agentConfig.getAdvancedConfig()));
             Map<String, AgentConfig.PluginConfig> map = Maps.newHashMap();
             for (AgentConfig.PluginConfig pluginConfig : agentConfig.getPluginConfigList()) {
                 map.put(pluginConfig.getId(), pluginConfig);

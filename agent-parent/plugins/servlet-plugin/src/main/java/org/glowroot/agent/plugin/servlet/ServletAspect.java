@@ -182,9 +182,9 @@ public class ServletAspect {
         }
     }
 
-    @Pointcut(className = "javax.servlet.Filter",
-            methodName = "doFilter", methodParameterTypes = {"javax.servlet.ServletRequest",
-                    "javax.servlet.ServletResponse", "javax.servlet.FilterChain"},
+    @Pointcut(className = "javax.servlet.Filter", methodName = "doFilter",
+            methodParameterTypes = {"javax.servlet.ServletRequest", "javax.servlet.ServletResponse",
+                    "javax.servlet.FilterChain"},
             nestingGroup = "outer-servlet-or-filter", timerName = "http request")
     public static class DoFilterAdvice {
         @OnBefore

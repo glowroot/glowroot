@@ -35,8 +35,7 @@ public class Glowroot {
     static {
         GlowrootService service;
         try {
-            Class<?> registryClass =
-                    Class.forName("org.glowroot.agent.impl.ServiceRegistryImpl");
+            Class<?> registryClass = Class.forName("org.glowroot.agent.impl.ServiceRegistryImpl");
             Method getInstanceMethod = registryClass.getMethod("getGlowrootService");
             service = (GlowrootService) getInstanceMethod.invoke(null);
             if (service == null) {

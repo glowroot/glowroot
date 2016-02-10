@@ -536,8 +536,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     QueryEntry startTraceEntryInternal(MessageSupplier messageSupplier, @Nullable String queryType,
-            @Nullable String queryText,
-            long queryExecutionCount, TimerName timerName) {
+            @Nullable String queryText, long queryExecutionCount, TimerName timerName) {
         long startTick = ticker.read();
         if (transaction.allowAnotherEntry()) {
             TimerImpl timer = startTimer(timerName, startTick);

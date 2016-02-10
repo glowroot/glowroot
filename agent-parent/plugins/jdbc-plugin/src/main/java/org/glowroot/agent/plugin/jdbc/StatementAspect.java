@@ -299,8 +299,7 @@ public class StatementAspect {
                 return null;
             }
             MessageSupplier messageSupplier = new StatementMessageSupplier(sql);
-            QueryEntry query =
-                    context.startQueryEntry(QUERY_TYPE, sql, messageSupplier, timerName);
+            QueryEntry query = context.startQueryEntry(QUERY_TYPE, sql, messageSupplier, timerName);
             mirror.setLastQuery(query);
             return query;
         }
@@ -411,13 +410,13 @@ public class StatementAspect {
             MessageSupplier messageSupplier;
             String queryText = mirror.getSql();
             if (captureBindParameters.value()) {
-                messageSupplier = new PreparedStatementMessageSupplier(queryText,
-                        mirror.getParametersCopy());
+                messageSupplier =
+                        new PreparedStatementMessageSupplier(queryText, mirror.getParametersCopy());
             } else {
                 messageSupplier = new StatementMessageSupplier(queryText);
             }
-            QueryEntry queryEntry = context.startQueryEntry(QUERY_TYPE, queryText,
-                    messageSupplier, timerName);
+            QueryEntry queryEntry =
+                    context.startQueryEntry(QUERY_TYPE, queryText, messageSupplier, timerName);
             mirror.setLastQuery(queryEntry);
             return queryEntry;
         }
@@ -565,8 +564,7 @@ public class StatementAspect {
                 messageSupplier = new BatchPreparedStatementMessageSupplier(queryText,
                         mirror.getBatchedParameters());
             } else {
-                messageSupplier =
-                        new BatchPreparedStatementMessageSupplier2(queryText, batchSize);
+                messageSupplier = new BatchPreparedStatementMessageSupplier2(queryText, batchSize);
             }
             QueryEntry queryEntry = context.startQueryEntry(QUERY_TYPE, queryText, batchSize,
                     messageSupplier, timerName);
@@ -578,8 +576,8 @@ public class StatementAspect {
                 ThreadContext context) {
             MessageSupplier messageSupplier =
                     new BatchStatementMessageSupplier(mirror.getBatchedSql());
-            QueryEntry queryEntry = context.startQueryEntry(QUERY_TYPE,
-                    "<batch sql>", messageSupplier, timerName);
+            QueryEntry queryEntry =
+                    context.startQueryEntry(QUERY_TYPE, "<batch sql>", messageSupplier, timerName);
             mirror.setLastQuery(queryEntry);
             mirror.clearBatch();
             return queryEntry;

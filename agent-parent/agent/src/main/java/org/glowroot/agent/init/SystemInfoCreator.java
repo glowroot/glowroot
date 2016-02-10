@@ -126,8 +126,7 @@ public class SystemInfoCreator {
     }
 
     @VisibleForTesting
-    static @Nullable Long getTotalPhysicalMemoryBytes(
-            OperatingSystemMXBean operatingSystemMXBean) {
+    static @Nullable Long getTotalPhysicalMemoryBytes(OperatingSystemMXBean operatingSystemMXBean) {
         Class<?> sunClass;
         try {
             sunClass = Class.forName("com.sun.management.OperatingSystemMXBean");

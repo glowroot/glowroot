@@ -101,10 +101,8 @@ public class Log4jAspect {
             if (lvl <= DEBUG_INT) {
                 // include logger name for debug or lower
                 String loggerName = LoggerPlugin.getShortName(logger.getName());
-                return context.startTraceEntry(
-                        MessageSupplier.from("log {}: {} {}", getLevelStr(lvl), loggerName,
-                                messageText),
-                        timerName);
+                return context.startTraceEntry(MessageSupplier.from("log {}: {} {}",
+                        getLevelStr(lvl), loggerName, messageText), timerName);
             } else {
                 return context.startTraceEntry(
                         MessageSupplier.from("log {}: {}", getLevelStr(lvl), messageText),

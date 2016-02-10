@@ -86,11 +86,9 @@ public class ControllerAspect {
             } else {
                 context.setTransactionName(prefix + '/' + controllerMethodMeta.getPath());
             }
-            return context.startTraceEntry(
-                    MessageSupplier.from("jaxrs request: {}.{}()",
-                            controllerMethodMeta.getDeclaredClassSimpleName(),
-                            controllerMethodMeta.getMethodName()),
-                    timerName);
+            return context.startTraceEntry(MessageSupplier.from("jaxrs request: {}.{}()",
+                    controllerMethodMeta.getDeclaredClassSimpleName(),
+                    controllerMethodMeta.getMethodName()), timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {

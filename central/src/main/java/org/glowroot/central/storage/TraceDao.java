@@ -510,8 +510,8 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public Result<TracePoint> readErrorPoints(TraceQuery query, TracePointFilter filter,
-            int limit) throws IOException {
+    public Result<TracePoint> readErrorPoints(TraceQuery query, TracePointFilter filter, int limit)
+            throws IOException {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             BoundStatement boundStatement = readOverallErrorPoint.bind();
@@ -638,8 +638,9 @@ public class TraceDao implements TraceRepository {
         if (header == null) {
             return null;
         }
-        ResultSet results = session.execute("select count(*) from trace_entries where server_id = ?"
-                + " and trace_id = ?", serverId, traceId);
+        ResultSet results = session.execute(
+                "select count(*) from trace_entries where server_id = ? and trace_id = ?",
+                serverId, traceId);
         Existence entriesExistence = results.one().getLong(0) == 0 ? Existence.NO : Existence.YES;
         Existence profileExistence;
         results = session.execute("select count(*) from trace_main_thread_profile"
@@ -656,8 +657,9 @@ public class TraceDao implements TraceRepository {
 
     @Override
     public List<Trace.Entry> readEntries(String serverId, String traceId) throws IOException {
-        ResultSet results = session.execute("select entries_ from trace_entries where server_id = ?"
-                + " and trace_id = ?", serverId, traceId);
+        ResultSet results = session.execute(
+                "select entries_ from trace_entries where server_id = ? and trace_id = ?",
+                serverId, traceId);
         Row row = results.one();
         if (row == null) {
             return ImmutableList.of();
@@ -712,8 +714,8 @@ public class TraceDao implements TraceRepository {
         return Trace.Header.parseFrom(ByteString.copyFrom(bytes));
     }
 
-    private Result<TracePoint> processPoints(ResultSet results, TracePointFilter filter,
-            int limit, boolean errorPoints) throws IOException {
+    private Result<TracePoint> processPoints(ResultSet results, TracePointFilter filter, int limit,
+            boolean errorPoints) throws IOException {
         List<TracePoint> tracePoints = Lists.newArrayList();
         for (Row row : results) {
             int i = 0;

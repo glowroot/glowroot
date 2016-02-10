@@ -206,12 +206,9 @@ public class ExecutorIT {
         @Override
         public void transactionMarker() throws Exception {
             ExecutorService executor = Executors.newCachedThreadPool();
-            Future<Void> future1 =
-                    executor.submit((Callable<Void>) new RunnableAndCallableWork());
-            Future<Void> future2 =
-                    executor.submit((Callable<Void>) new RunnableAndCallableWork());
-            Future<Void> future3 =
-                    executor.submit((Callable<Void>) new RunnableAndCallableWork());
+            Future<Void> future1 = executor.submit((Callable<Void>) new RunnableAndCallableWork());
+            Future<Void> future2 = executor.submit((Callable<Void>) new RunnableAndCallableWork());
+            Future<Void> future3 = executor.submit((Callable<Void>) new RunnableAndCallableWork());
             future1.get();
             future2.get();
             future3.get();

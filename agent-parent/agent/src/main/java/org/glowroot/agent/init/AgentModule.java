@@ -132,9 +132,9 @@ public class AgentModule {
         weavingTimerService =
                 new WeavingTimerServiceImpl(transactionRegistry, configService, timerNameCache);
 
-        WeaverImpl weaver = new WeaverImpl(adviceCache.getAdvisorsSupplier(),
-                adviceCache.getShimTypes(), adviceCache.getMixinTypes(), analyzedWorld,
-                weavingTimerService);
+        WeaverImpl weaver =
+                new WeaverImpl(adviceCache.getAdvisorsSupplier(), adviceCache.getShimTypes(),
+                        adviceCache.getMixinTypes(), analyzedWorld, weavingTimerService);
 
         if (instrumentation == null) {
             // instrumentation is null when debugging with LocalContainer

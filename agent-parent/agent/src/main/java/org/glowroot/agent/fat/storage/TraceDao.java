@@ -91,17 +91,21 @@ public class TraceDao implements TraceRepository {
             // result set directly from the index without having to reference the table for each row
             //
             // trace_overall_slow_idx is for readSlowCount() and readSlowPoints()
-            ImmutableIndex.of("trace_overall_slow_idx", ImmutableList.of("transaction_type", "slow",
-                    "capture_time", "duration_nanos", "error", "id")),
+            ImmutableIndex.of("trace_overall_slow_idx",
+                    ImmutableList.of("transaction_type", "slow", "capture_time", "duration_nanos",
+                            "error", "id")),
             // trace_transaction_slow_idx is for readSlowCount() and readSlowPoints()
-            ImmutableIndex.of("trace_transaction_slow_idx", ImmutableList.of("transaction_type",
-                    "transaction_name", "slow", "capture_time", "duration_nanos", "error", "id")),
+            ImmutableIndex.of("trace_transaction_slow_idx",
+                    ImmutableList.of("transaction_type", "transaction_name", "slow", "capture_time",
+                            "duration_nanos", "error", "id")),
             // trace_overall_error_idx is for readErrorCount() and readErrorPoints()
-            ImmutableIndex.of("trace_error_idx", ImmutableList.of("transaction_type", "error",
-                    "capture_time", "duration_nanos", "error", "id")),
+            ImmutableIndex.of("trace_error_idx",
+                    ImmutableList.of("transaction_type", "error", "capture_time", "duration_nanos",
+                            "error", "id")),
             // trace_transaction_error_idx is for readErrorCount() and readErrorPoints()
-            ImmutableIndex.of("trace_transaction_error_idx", ImmutableList.of("transaction_type",
-                    "transaction_name", "error", "capture_time", "duration_nanos", "id")),
+            ImmutableIndex.of("trace_transaction_error_idx",
+                    ImmutableList.of("transaction_type", "transaction_name", "error",
+                            "capture_time", "duration_nanos", "id")),
             // trace_idx is for trace header lookup
             ImmutableIndex.of("trace_idx", ImmutableList.of("id")));
 
@@ -198,8 +202,8 @@ public class TraceDao implements TraceRepository {
     @Override
     public ErrorMessageResult readErrorMessages(TraceQuery query, ErrorMessageFilter filter,
             long resolutionMillis, long liveCaptureTime, int limit) throws Exception {
-        List<ErrorMessagePoint> points = dataSource.query(
-                new ErrorPointQuery(query, filter, resolutionMillis, liveCaptureTime));
+        List<ErrorMessagePoint> points = dataSource
+                .query(new ErrorPointQuery(query, filter, resolutionMillis, liveCaptureTime));
         List<ErrorMessageCount> counts =
                 dataSource.query(new ErrorMessageCountQuery(query, filter, limit + 1));
         // one extra record over the limit is fetched above to identify if the limit was hit
@@ -334,8 +338,8 @@ public class TraceDao implements TraceRepository {
                 mainThreadProfileId = null;
             }
             if (trace.hasMainThreadProfile()) {
-                auxThreadProfileId = traceCappedDatabase.writeMessage(
-                        trace.getAuxThreadProfile(), TraceCappedDatabaseStats.TRACE_PROFILES);
+                auxThreadProfileId = traceCappedDatabase.writeMessage(trace.getAuxThreadProfile(),
+                        TraceCappedDatabaseStats.TRACE_PROFILES);
             } else {
                 auxThreadProfileId = null;
             }

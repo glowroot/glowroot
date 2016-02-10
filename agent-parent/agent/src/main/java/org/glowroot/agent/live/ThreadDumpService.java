@@ -103,9 +103,8 @@ class ThreadDumpService {
             String traceId = transaction.getTraceId();
             TransactionThreadInfo transactionThreadInfo = transactionThreadInfos.get(traceId);
             if (transactionThreadInfo == null) {
-                transactionThreadInfo = new TransactionThreadInfo(
-                        transaction.getTransactionType(), transaction.getTransactionName(),
-                        transaction.getDurationNanos(),
+                transactionThreadInfo = new TransactionThreadInfo(transaction.getTransactionType(),
+                        transaction.getTransactionName(), transaction.getDurationNanos(),
                         transactionCollector.shouldStoreSlow(transaction));
                 transactionThreadInfos.put(traceId, transactionThreadInfo);
             }
@@ -151,12 +150,11 @@ class ThreadDumpService {
         builder.setState(threadInfo.getThreadState().name());
         builder.setLockName(Strings.nullToEmpty(threadInfo.getLockName()));
         for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
-            builder.addStackTraceElement(
-                    ThreadDump.StackTraceElement.newBuilder()
-                            .setClassName(stackTraceElement.getClassName())
-                            .setMethodName(Strings.nullToEmpty(stackTraceElement.getMethodName()))
-                            .setFileName(Strings.nullToEmpty(stackTraceElement.getFileName()))
-                            .setLineNumber(stackTraceElement.getLineNumber()));
+            builder.addStackTraceElement(ThreadDump.StackTraceElement.newBuilder()
+                    .setClassName(stackTraceElement.getClassName())
+                    .setMethodName(Strings.nullToEmpty(stackTraceElement.getMethodName()))
+                    .setFileName(Strings.nullToEmpty(stackTraceElement.getFileName()))
+                    .setLineNumber(stackTraceElement.getLineNumber()));
         }
         return builder.build();
     }

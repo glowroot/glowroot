@@ -156,8 +156,8 @@ public class TransactionServiceImpl implements AdvancedService, ConfigListener {
         long startTick = ticker.read();
         // FIXME implement limit on auxiliary thread context creation for a given transaction
         TimerName auxThreadTimerName = timerNameCache.getAuxThreadTimerName();
-        return transaction.startAuxThreadContext(parentTraceEntry, auxThreadTimerName,
-                startTick, threadContextHolder, threadAllocatedBytes);
+        return transaction.startAuxThreadContext(parentTraceEntry, auxThreadTimerName, startTick,
+                threadContextHolder, threadAllocatedBytes);
     }
 
     QueryEntry startTraceEntryInternal(ThreadContextImpl threadContext,
@@ -281,9 +281,8 @@ public class TransactionServiceImpl implements AdvancedService, ConfigListener {
             endInternal(endTick);
             if (threadContext.getTransaction().allowAnotherErrorEntry()) {
                 // entry won't be nested properly, but at least the error will get captured
-                org.glowroot.agent.model.TraceEntryImpl entry =
-                        threadContext.addErrorEntry(startTick, endTick, messageSupplier,
-                                errorMessage);
+                org.glowroot.agent.model.TraceEntryImpl entry = threadContext
+                        .addErrorEntry(startTick, endTick, messageSupplier, errorMessage);
                 if (errorMessage.throwable() == null) {
                     StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
                     // need to strip back a few stack calls:

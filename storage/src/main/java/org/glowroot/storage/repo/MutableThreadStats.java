@@ -62,8 +62,8 @@ public class MutableThreadStats {
             return;
         }
         if (threadStats.hasTotalCpuNanos()) {
-            totalCpuNanos = NotAvailableAware.add(totalCpuNanos,
-                    threadStats.getTotalCpuNanos().getValue());
+            totalCpuNanos =
+                    NotAvailableAware.add(totalCpuNanos, threadStats.getTotalCpuNanos().getValue());
         } else {
             totalCpuNanos = NotAvailableAware.NA;
         }

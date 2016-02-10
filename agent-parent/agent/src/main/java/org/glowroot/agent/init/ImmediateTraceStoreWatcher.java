@@ -79,8 +79,7 @@ class ImmediateTraceStoreWatcher extends ScheduledRunnable {
                 ScheduledRunnable immediateTraceStoreRunnable =
                         new ImmediateTraceStoreRunnable(transaction, transactionCollector);
                 immediateTraceStoreRunnable.scheduleWithFixedDelay(scheduledExecutor,
-                        initialDelayMillis,
-                        SECONDS.toMillis(immediatePartialStoreThresholdSeconds),
+                        initialDelayMillis, SECONDS.toMillis(immediatePartialStoreThresholdSeconds),
                         MILLISECONDS);
                 transaction.setImmediateTraceStoreRunnable(immediateTraceStoreRunnable);
             }

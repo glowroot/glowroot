@@ -200,9 +200,9 @@ public class Transaction {
             Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes) {
         ThreadContextImpl auxThreadContext = new ThreadContextImpl(this, parentTraceEntry,
-                AuxThreadRootMessageSupplier.INSTANCE, auxTimerName, startTick,
-                captureThreadStats, threadAllocatedBytes, true, transactionRegistry,
-                transactionService, configService, ticker, threadContextHolder);
+                AuxThreadRootMessageSupplier.INSTANCE, auxTimerName, startTick, captureThreadStats,
+                threadAllocatedBytes, true, transactionRegistry, transactionService, configService,
+                ticker, threadContextHolder);
         auxThreadContexts.add(auxThreadContext);
         threadContextHolder.set(auxThreadContext);
         return auxThreadContext.getRootEntry();
@@ -360,8 +360,7 @@ public class Transaction {
         Multimap<TraceEntryImpl, TraceEntryImpl> auxRootTraceEntries = ArrayListMultimap.create();
         for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
             // checkNotNull is safe b/c auxiliary thread contexts have non-null parent trace entry
-            TraceEntryImpl parentTraceEntry =
-                    checkNotNull(auxThreadContext.getParentTraceEntry());
+            TraceEntryImpl parentTraceEntry = checkNotNull(auxThreadContext.getParentTraceEntry());
             TraceEntryImpl rootEntry = auxThreadContext.getRootEntry();
             if (rootEntry.getNextTraceEntry() != null) {
                 // root entry is just "auxiliary thread" root placeholder, don't include if there

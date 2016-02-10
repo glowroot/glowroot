@@ -101,8 +101,8 @@ public interface LiveTraceRepository {
                     continue;
                 }
                 for (String attributeValue : entry.getValue()) {
-                    if (matchesUsingStringComparator(attributeValue,
-                            attributeValue(), attributeValueComparator())) {
+                    if (matchesUsingStringComparator(attributeValue, attributeValue(),
+                            attributeValueComparator())) {
                         // found matching name and value
                         return true;
                     }

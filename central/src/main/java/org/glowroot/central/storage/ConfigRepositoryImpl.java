@@ -200,8 +200,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteAlertConfig(String serverId, String version)
-            throws JsonProcessingException {
+    public void deleteAlertConfig(String serverId, String version) throws JsonProcessingException {
         synchronized (alertConfigLock) {
             List<AlertConfig> configs = Lists.newArrayList(getAlertConfigs(serverId));
             boolean found = false;

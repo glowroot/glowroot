@@ -318,8 +318,8 @@ class JvmJsonService {
         return QueryStringDecoder.decodeComponent(queryString.substring("server-id".length() + 1));
     }
 
-    private static void writeTransactionThread(ThreadDump.Transaction transaction,
-            JsonGenerator jg) throws IOException {
+    private static void writeTransactionThread(ThreadDump.Transaction transaction, JsonGenerator jg)
+            throws IOException {
         jg.writeStartObject();
         jg.writeStringField("traceId", transaction.getTraceId());
         jg.writeStringField("transactionType", transaction.getTransactionType());
@@ -339,8 +339,7 @@ class JvmJsonService {
         jg.writeStringField("state", thread.getState());
         jg.writeStringField("lockName", thread.getLockName());
         jg.writeArrayFieldStart("stackTraceElements");
-        for (ThreadDump.StackTraceElement stackTraceElement : thread
-                .getStackTraceElementList()) {
+        for (ThreadDump.StackTraceElement stackTraceElement : thread.getStackTraceElementList()) {
             writeStackTraceElement(stackTraceElement, jg);
         }
         jg.writeEndArray();

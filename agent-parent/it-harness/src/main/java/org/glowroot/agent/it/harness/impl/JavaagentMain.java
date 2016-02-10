@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,8 +76,7 @@ public class JavaagentMain {
                     throw new IllegalStateException(
                             "Could not terminate gRPC boss event loop group");
                 }
-                if (!workerEventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10,
-                        SECONDS)) {
+                if (!workerEventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
                     throw new IllegalStateException(
                             "Could not terminate gRPC worker event loop group");
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,8 +65,7 @@ class ClassAnalyzer {
             List<MixinType> mixinTypes, @Nullable ClassLoader loader, AnalyzedWorld analyzedWorld,
             @Nullable CodeSource codeSource) {
         this.thinClass = thinClass;
-        ImmutableList<String> interfaceNames =
-                ClassNames.fromInternalNames(thinClass.interfaces());
+        ImmutableList<String> interfaceNames = ClassNames.fromInternalNames(thinClass.interfaces());
         className = ClassNames.fromInternalName(thinClass.name());
         String superClassName = ClassNames.fromInternalName(thinClass.superName());
         analyzedClassBuilder = ImmutableAnalyzedClass.builder()
@@ -299,8 +298,7 @@ class ClassAnalyzer {
     }
 
     private static void addToMatchingAdvisorsIfTargetClassNameMatch(Set<Advice> matchingAdvisors,
-            List<Advice> advisors,
-            Set<String> superClassNames) {
+            List<Advice> advisors, Set<String> superClassNames) {
         for (Advice advice : advisors) {
             if (isTargetClassNameMatch(advice, superClassNames)) {
                 matchingAdvisors.add(advice);

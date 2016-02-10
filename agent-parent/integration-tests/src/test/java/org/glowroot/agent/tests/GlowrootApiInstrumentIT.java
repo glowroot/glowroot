@@ -86,8 +86,8 @@ public class GlowrootApiInstrumentIT {
             captureTransaction("zyx");
         }
 
-        @Instrument.Transaction(transactionType = "abc type",
-                transactionNameTemplate = "xyz {{0}}", timerName = "mmm")
+        @Instrument.Transaction(transactionType = "abc type", transactionNameTemplate = "xyz {{0}}",
+                timerName = "mmm")
         public void captureTransaction(@SuppressWarnings("unused") String str) {}
     }
 
