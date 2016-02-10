@@ -117,11 +117,17 @@ public class MainEntryPoint {
 
     @EnsuresNonNull("startupLogger")
     private static void initLogging(File baseDir) {
+        File logbackXmlOverride = new File(baseDir, "glowroot.logback.xml");
+        if (logbackXmlOverride.exists()) {
+            System.setProperty("glowroot.logback.configurationFile",
+                    logbackXmlOverride.getAbsolutePath());
+        }
         String prior = System.getProperty("glowroot.base.dir");
         try {
             System.setProperty("glowroot.base.dir", baseDir.getPath());
             startupLogger = LoggerFactory.getLogger("org.glowroot");
         } finally {
+            System.clearProperty("glowroot.logback.configurationFile");
             if (prior == null) {
                 System.clearProperty("glowroot.base.dir");
             } else {
