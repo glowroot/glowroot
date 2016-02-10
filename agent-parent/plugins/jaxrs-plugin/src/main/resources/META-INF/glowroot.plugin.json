@@ -1,6 +1,15 @@
 {
   "name": "JAX-RS Plugin",
   "id": "jaxrs",
+  "properties": [
+    {
+      "name": "useAltTransactionNaming",
+      "type": "boolean",
+      "label": "Alternate transaction naming",
+      "checkboxLabel": "Use alternate transaction naming",
+      "description": "Set transaction name to the resource's className#methodName instead of using the resource's URL mapping"
+    }
+  ],
   "aspects": [
     "org.glowroot.agent.plugin.jaxrs.ResourceAspect"
   ]

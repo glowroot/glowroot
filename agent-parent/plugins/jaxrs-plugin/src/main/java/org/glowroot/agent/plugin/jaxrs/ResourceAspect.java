@@ -22,6 +22,7 @@ import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
+import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindMethodMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
@@ -40,6 +41,9 @@ public class ResourceAspect {
 
     private static final FastThreadLocal</*@Nullable*/ String> servletPath =
             new FastThreadLocal</*@Nullable*/ String>();
+
+    private static final BooleanProperty useAltTransactionNaming =
+            Agent.getConfigService("jaxrs").getBooleanProperty("useAltTransactionNaming");
 
     @Shim("javax.servlet.http.HttpServletRequest")
     public interface HttpServletRequest {
@@ -95,10 +99,14 @@ public class ResourceAspect {
         public static TraceEntry onBefore(ThreadContext context,
                 @BindMethodMeta ResourceMethodMeta resourceMethodMeta) {
             String prefix = servletPath.get();
-            if (prefix == null || prefix.isEmpty()) {
-                context.setTransactionName(resourceMethodMeta.getPath());
+            if (useAltTransactionNaming.value()) {
+                context.setTransactionName(resourceMethodMeta.getAltTransactionName());
             } else {
-                context.setTransactionName(prefix + resourceMethodMeta.getPath());
+                if (prefix == null || prefix.isEmpty()) {
+                    context.setTransactionName(resourceMethodMeta.getPath());
+                } else {
+                    context.setTransactionName(prefix + resourceMethodMeta.getPath());
+                }
             }
             return context.startTraceEntry(MessageSupplier.from("jaxrs request: {}.{}()",
                     resourceMethodMeta.getDeclaredClassSimpleName(),

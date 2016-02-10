@@ -141,6 +141,20 @@ public class ResourceIT {
         assertThat(entry.getMessage()).isEqualTo("jaxrs request: RootResource.echo()");
     }
 
+    @Test
+    public void shouldCaptureAltTransactionName() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty("jaxrs", "useAltTransactionNaming", true);
+        // when
+        Trace trace = container.execute(WithNormalServletMapping.class);
+        // then
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("HelloResource#echo");
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(1);
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.getMessage()).isEqualTo("jaxrs request: HelloResource.echo()");
+    }
+
     public static class WithNormalServletMapping extends InvokeJaxrsResourceInTomcat {
         @Override
         public void executeApp() throws Exception {

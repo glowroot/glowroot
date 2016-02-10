@@ -33,12 +33,15 @@ public class ResourceMethodMeta {
 
     private final String path;
 
+    private final String altTransactionName;
+
     public ResourceMethodMeta(Method method) {
         declaredClassSimpleName = method.getDeclaringClass().getSimpleName();
         methodName = method.getName();
         String classPath = getPath(method.getDeclaringClass());
         String methodPath = getPath(method);
         path = combine(classPath, methodPath);
+        altTransactionName = declaredClassSimpleName + "#" + methodName;
     }
 
     String getDeclaredClassSimpleName() {
@@ -51,6 +54,10 @@ public class ResourceMethodMeta {
 
     String getPath() {
         return path;
+    }
+
+    String getAltTransactionName() {
+        return altTransactionName;
     }
 
     private static @Nullable String getPath(AnnotatedElement annotatedElement) {
