@@ -24,16 +24,16 @@ import javax.annotation.Nullable;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
 
-public class ControllerMethodMeta {
+public class ResourceMethodMeta {
 
-    private static final Logger logger = Agent.getLogger(ControllerMethodMeta.class);
+    private static final Logger logger = Agent.getLogger(ResourceMethodMeta.class);
 
     private final String declaredClassSimpleName;
     private final String methodName;
 
     private final String path;
 
-    public ControllerMethodMeta(Method method) {
+    public ResourceMethodMeta(Method method) {
         declaredClassSimpleName = method.getDeclaringClass().getSimpleName();
         methodName = method.getName();
         String classPath = getPath(method.getDeclaringClass());
@@ -76,27 +76,21 @@ public class ControllerMethodMeta {
     // VisibleForTesting
     static String combine(@Nullable String classPath, @Nullable String methodPath) {
         if (classPath == null || classPath.isEmpty() || classPath.equals("/")) {
-            return normalize(methodPath, false);
+            return normalize(methodPath);
         }
         if (methodPath == null || methodPath.isEmpty() || methodPath.equals("/")) {
-            return normalize(classPath, false);
+            return normalize(classPath);
         }
-        return normalize(classPath, methodPath == null) + '/' + normalize(methodPath, false);
+        return normalize(classPath) + normalize(methodPath);
     }
 
-    private static String normalize(@Nullable String path, boolean baseUri) {
+    private static String normalize(@Nullable String path) {
         if (path == null || path.isEmpty() || path.equals("/")) {
-            return "";
+            return "/";
         }
-        int pathLength = path.length();
-        boolean stripFirstChar = path.charAt(0) == '/';
-        boolean addTrailingSlash = baseUri && path.charAt(pathLength - 1) != '/';
-        if (stripFirstChar && addTrailingSlash) {
-            return replacePathSegmentsWithAsterisk(path.substring(1)) + '/';
-        } else if (stripFirstChar) {
-            return replacePathSegmentsWithAsterisk(path.substring(1));
-        } else if (addTrailingSlash) {
-            return replacePathSegmentsWithAsterisk(path) + '/';
+        boolean addLeadingSlash = path.charAt(0) != '/';
+        if (addLeadingSlash) {
+            return '/' + replacePathSegmentsWithAsterisk(path);
         } else {
             return replacePathSegmentsWithAsterisk(path);
         }

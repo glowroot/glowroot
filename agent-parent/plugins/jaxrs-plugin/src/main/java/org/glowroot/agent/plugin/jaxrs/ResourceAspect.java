@@ -36,7 +36,7 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 
 // TODO optimize away servletPath thread local, e.g. store servlet path in thread context via
 // servlet plugin and retrieve here
-public class ControllerAspect {
+public class ResourceAspect {
 
     private static final FastThreadLocal</*@Nullable*/ String> servletPath =
             new FastThreadLocal</*@Nullable*/ String>();
@@ -45,6 +45,8 @@ public class ControllerAspect {
     public interface HttpServletRequest {
         @Nullable
         String getServletPath();
+        @Nullable
+        String getPathInfo();
     }
 
     @Pointcut(className = "org.glassfish.jersey.servlet.ServletContainer",
@@ -58,8 +60,20 @@ public class ControllerAspect {
             if (req == null || !(req instanceof HttpServletRequest)) {
                 return null;
             }
-            FastThreadLocal.Holder</*@Nullable*/ String> holder = servletPath.getHolder();
-            holder.set(((HttpServletRequest) req).getServletPath());
+            HttpServletRequest request = (HttpServletRequest) req;
+            String pathInfo = request.getPathInfo();
+            String servletPath;
+            if (pathInfo == null) {
+                // pathInfo is null when the dispatcher servlet is mapped to "/" (not "/*") and
+                // therefore it is replacing the default servlet and getServletPath() returns the
+                // full path
+                servletPath = "";
+            } else {
+                servletPath = request.getServletPath();
+            }
+            FastThreadLocal.Holder</*@Nullable*/ String> holder =
+                    ResourceAspect.servletPath.getHolder();
+            holder.set(servletPath);
             return holder;
         }
         @OnAfter
@@ -71,24 +85,24 @@ public class ControllerAspect {
         }
     }
 
-    @Pointcut(classAnnotation = "javax.ws.rs.Path", methodAnnotation = "javax.ws.rs.Path",
+    @Pointcut(classAnnotation = "javax.ws.rs.Path",
+            methodAnnotation = "javax.ws.rs.Path|javax.ws.rs.DELETE|javax.ws.rs.GET"
+                    + "|javax.ws.rs.HEAD|javax.ws.rs.OPTIONS|javax.ws.rs.POST|javax.ws.rs.PUT",
             methodParameterTypes = {".."}, timerName = "jaxrs request")
-    public static class ControllerAdvice {
-        private static final TimerName timerName = Agent.getTimerName(ControllerAdvice.class);
+    public static class ResourceAdvice {
+        private static final TimerName timerName = Agent.getTimerName(ResourceAdvice.class);
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context,
-                @BindMethodMeta ControllerMethodMeta controllerMethodMeta) {
+                @BindMethodMeta ResourceMethodMeta resourceMethodMeta) {
             String prefix = servletPath.get();
             if (prefix == null || prefix.isEmpty()) {
-                context.setTransactionName(controllerMethodMeta.getPath());
-            } else if (prefix.length() == 1 && prefix.charAt(0) == '/') {
-                context.setTransactionName(prefix + controllerMethodMeta.getPath());
+                context.setTransactionName(resourceMethodMeta.getPath());
             } else {
-                context.setTransactionName(prefix + '/' + controllerMethodMeta.getPath());
+                context.setTransactionName(prefix + resourceMethodMeta.getPath());
             }
             return context.startTraceEntry(MessageSupplier.from("jaxrs request: {}.{}()",
-                    controllerMethodMeta.getDeclaredClassSimpleName(),
-                    controllerMethodMeta.getMethodName()), timerName);
+                    resourceMethodMeta.getDeclaredClassSimpleName(),
+                    resourceMethodMeta.getMethodName()), timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {

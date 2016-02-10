@@ -73,6 +73,17 @@ abstract class AdviceMatcher {
     }
 
     private boolean isMethodAnnotationMatch(List<String> methodAnnotations) {
+        Pattern pointcutMethodAnnotationPattern = advice().pointcutMethodAnnotationPattern();
+        if (pointcutMethodAnnotationPattern != null) {
+            for (String methodAnnotation : methodAnnotations) {
+                methodAnnotation = methodAnnotation.replace('/', '.').substring(1,
+                        methodAnnotation.length() - 1);
+                if (pointcutMethodAnnotationPattern.matcher(methodAnnotation).matches()) {
+                    return true;
+                }
+            }
+            return false;
+        }
         String pointcutMethodAnnotation = advice().pointcut().methodAnnotation();
         return isAnnotationMatch(methodAnnotations, pointcutMethodAnnotation);
     }
