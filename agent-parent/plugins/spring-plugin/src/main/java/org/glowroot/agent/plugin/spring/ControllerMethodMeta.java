@@ -28,7 +28,7 @@ public class ControllerMethodMeta {
 
     private static final Logger logger = Agent.getLogger(ControllerMethodMeta.class);
 
-    private final String declaredClassSimpleName;
+    private final String controllerClassName;
     private final String methodName;
 
     private final String path;
@@ -36,16 +36,17 @@ public class ControllerMethodMeta {
     private final String altTransactionName;
 
     public ControllerMethodMeta(Method method) {
-        declaredClassSimpleName = method.getDeclaringClass().getSimpleName();
+        Class<?> controllerClass = method.getDeclaringClass();
+        controllerClassName = controllerClass.getName();
         methodName = method.getName();
-        String classPath = getPath(method.getDeclaringClass());
+        String classPath = getPath(controllerClass);
         String methodPath = getPath(method);
         path = combine(classPath, methodPath);
-        altTransactionName = declaredClassSimpleName + "#" + methodName;
+        altTransactionName = controllerClass.getSimpleName() + "#" + methodName;
     }
 
-    String getDeclaredClassSimpleName() {
-        return declaredClassSimpleName;
+    String getControllerClassName() {
+        return controllerClassName;
     }
 
     String getMethodName() {

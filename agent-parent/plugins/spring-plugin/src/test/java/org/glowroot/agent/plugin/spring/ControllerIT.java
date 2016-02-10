@@ -68,7 +68,8 @@ public class ControllerIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller: TestController.echo()");
+        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+                + " org.glowroot.agent.plugin.spring.ControllerIT$TestController.echo()");
     }
 
     @Test
@@ -81,7 +82,8 @@ public class ControllerIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller: RootController.echo()");
+        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+                + " org.glowroot.agent.plugin.spring.ControllerIT$RootController.echo()");
     }
 
     @Test
@@ -94,7 +96,8 @@ public class ControllerIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller: TestController.echo()");
+        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+                + " org.glowroot.agent.plugin.spring.ControllerIT$TestController.echo()");
     }
 
     @Test
@@ -107,7 +110,8 @@ public class ControllerIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller: RootController.echo()");
+        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+                + " org.glowroot.agent.plugin.spring.ControllerIT$RootController.echo()");
     }
 
     @Test
@@ -120,7 +124,8 @@ public class ControllerIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller: TestController.echo()");
+        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+                + " org.glowroot.agent.plugin.spring.ControllerIT$TestController.echo()");
     }
 
     @Test
@@ -134,7 +139,8 @@ public class ControllerIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller: RootController.echo()");
+        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+                + " org.glowroot.agent.plugin.spring.ControllerIT$RootController.echo()");
     }
 
     @Test
@@ -148,7 +154,8 @@ public class ControllerIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("spring controller: TestController.echo()");
+        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+                + " org.glowroot.agent.plugin.spring.ControllerIT$TestController.echo()");
     }
 
     public static class WithNormalServletMapping extends InvokeSpringControllerInTomcat {

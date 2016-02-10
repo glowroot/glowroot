@@ -73,7 +73,8 @@ public class StrutsTwoIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("struts action: HelloAction#helloAction");
+        assertThat(entry.getMessage()).isEqualTo("struts action:"
+                + " org.glowroot.agent.plugin.struts.StrutsTwoIT$HelloAction.helloAction()");
     }
 
     public static class HelloAction {

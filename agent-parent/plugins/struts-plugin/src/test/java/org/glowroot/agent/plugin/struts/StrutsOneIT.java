@@ -72,7 +72,8 @@ public class StrutsOneIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("struts action: HelloWorldAction#execute");
+        assertThat(entry.getMessage()).isEqualTo("struts action:"
+                + " org.glowroot.agent.plugin.struts.StrutsOneIT$HelloWorldAction.execute()");
     }
 
     public static class HelloWorldAction extends Action {

@@ -92,7 +92,7 @@ public class ResourceAspect {
     @Pointcut(classAnnotation = "javax.ws.rs.Path",
             methodAnnotation = "javax.ws.rs.Path|javax.ws.rs.DELETE|javax.ws.rs.GET"
                     + "|javax.ws.rs.HEAD|javax.ws.rs.OPTIONS|javax.ws.rs.POST|javax.ws.rs.PUT",
-            methodParameterTypes = {".."}, timerName = "jaxrs request")
+            methodParameterTypes = {".."}, timerName = "jaxrs resource")
     public static class ResourceAdvice {
         private static final TimerName timerName = Agent.getTimerName(ResourceAdvice.class);
         @OnBefore
@@ -108,9 +108,9 @@ public class ResourceAspect {
                     context.setTransactionName(prefix + resourceMethodMeta.getPath());
                 }
             }
-            return context.startTraceEntry(MessageSupplier.from("jaxrs request: {}.{}()",
-                    resourceMethodMeta.getDeclaredClassSimpleName(),
-                    resourceMethodMeta.getMethodName()), timerName);
+            return context.startTraceEntry(MessageSupplier.from("jaxrs resource: {}.{}()",
+                    resourceMethodMeta.getResourceClassName(), resourceMethodMeta.getMethodName()),
+                    timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {

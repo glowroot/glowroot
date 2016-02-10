@@ -28,7 +28,7 @@ public class ResourceMethodMeta {
 
     private static final Logger logger = Agent.getLogger(ResourceMethodMeta.class);
 
-    private final String declaredClassSimpleName;
+    private final String resourceClassName;
     private final String methodName;
 
     private final String path;
@@ -36,16 +36,17 @@ public class ResourceMethodMeta {
     private final String altTransactionName;
 
     public ResourceMethodMeta(Method method) {
-        declaredClassSimpleName = method.getDeclaringClass().getSimpleName();
+        Class<?> resourceClass = method.getDeclaringClass();
+        resourceClassName = resourceClass.getName();
         methodName = method.getName();
-        String classPath = getPath(method.getDeclaringClass());
+        String classPath = getPath(resourceClass);
         String methodPath = getPath(method);
         path = combine(classPath, methodPath);
-        altTransactionName = declaredClassSimpleName + "#" + methodName;
+        altTransactionName = resourceClass.getSimpleName() + "#" + methodName;
     }
 
-    String getDeclaredClassSimpleName() {
-        return declaredClassSimpleName;
+    String getResourceClassName() {
+        return resourceClassName;
     }
 
     String getMethodName() {

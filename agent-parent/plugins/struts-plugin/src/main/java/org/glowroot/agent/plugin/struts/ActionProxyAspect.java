@@ -40,7 +40,7 @@ public class ActionProxyAspect {
     }
 
     @Pointcut(className = "com.opensymphony.xwork2.ActionProxy", methodName = "execute",
-            methodParameterTypes = {}, nestingGroup = "struts", timerName = "struts controller")
+            methodParameterTypes = {}, nestingGroup = "struts", timerName = "struts action")
     public static class ActionProxyAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(ActionProxyAdvice.class);
@@ -48,13 +48,12 @@ public class ActionProxyAspect {
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context,
                 @BindReceiver ActionProxy actionProxy) {
-            String actionClass = actionProxy.getAction().getClass().getSimpleName();
+            Class<?> actionClass = actionProxy.getAction().getClass();
             String actionMethod = actionProxy.getMethod();
             String methodName = actionMethod != null ? actionMethod : "execute";
-            context.setTransactionName(actionClass + "#" + methodName);
-            return context.startTraceEntry(
-                    MessageSupplier.from("struts action: {}#{}", actionClass, methodName),
-                    timerName);
+            context.setTransactionName(actionClass.getSimpleName() + "#" + methodName);
+            return context.startTraceEntry(MessageSupplier.from("struts action: {}.{}()",
+                    actionClass.getName(), methodName), timerName);
         }
 
         @OnReturn
@@ -72,17 +71,18 @@ public class ActionProxyAspect {
     @Pointcut(className = "org.apache.struts.action.Action", methodName = "execute",
             methodParameterTypes = {"org.apache.struts.action.ActionMapping",
                     "org.apache.struts.action.ActionForm", ".."},
-            nestingGroup = "struts", timerName = "struts controller")
+            nestingGroup = "struts", timerName = "struts action")
     public static class ActionAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(ActionProxyAdvice.class);
 
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context, @BindReceiver Object action) {
-            String actionClass = action.getClass().getSimpleName();
-            context.setTransactionName(actionClass + "#execute");
+            Class<?> actionClass = action.getClass();
+            context.setTransactionName(actionClass.getSimpleName() + "#execute");
             return context.startTraceEntry(
-                    MessageSupplier.from("struts action: {}#execute", actionClass), timerName);
+                    MessageSupplier.from("struts action: {}.execute()", actionClass.getName()),
+                    timerName);
         }
 
         @OnReturn

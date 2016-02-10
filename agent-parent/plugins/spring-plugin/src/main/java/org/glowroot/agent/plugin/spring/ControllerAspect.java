@@ -108,7 +108,7 @@ public class ControllerAspect {
                 }
             }
             return context.startTraceEntry(MessageSupplier.from("spring controller: {}.{}()",
-                    controllerMethodMeta.getDeclaredClassSimpleName(),
+                    controllerMethodMeta.getControllerClassName(),
                     controllerMethodMeta.getMethodName()), timerName);
         }
         @OnReturn

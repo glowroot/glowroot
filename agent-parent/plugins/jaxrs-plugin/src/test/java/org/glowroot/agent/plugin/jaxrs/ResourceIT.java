@@ -70,7 +70,8 @@ public class ResourceIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs request: HelloResource.echo()");
+        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+                + " org.glowroot.agent.plugin.jaxrs.ResourceIT$HelloResource.echo()");
     }
 
     @Test
@@ -83,7 +84,8 @@ public class ResourceIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs request: RootResource.echo()");
+        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+                + " org.glowroot.agent.plugin.jaxrs.ResourceIT$RootResource.echo()");
     }
 
     @Test
@@ -96,7 +98,8 @@ public class ResourceIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs request: HelloResource.echo()");
+        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+                + " org.glowroot.agent.plugin.jaxrs.ResourceIT$HelloResource.echo()");
     }
 
     @Test
@@ -109,7 +112,8 @@ public class ResourceIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs request: RootResource.echo()");
+        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+                + " org.glowroot.agent.plugin.jaxrs.ResourceIT$RootResource.echo()");
     }
 
     @Test
@@ -124,7 +128,8 @@ public class ResourceIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs request: RootResource.echo()");
+        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+                + " org.glowroot.agent.plugin.jaxrs.ResourceIT$RootResource.echo()");
     }
 
     @Test
@@ -138,7 +143,8 @@ public class ResourceIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs request: RootResource.echo()");
+        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+                + " org.glowroot.agent.plugin.jaxrs.ResourceIT$RootResource.echo()");
     }
 
     @Test
@@ -152,7 +158,8 @@ public class ResourceIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs request: HelloResource.echo()");
+        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+                + " org.glowroot.agent.plugin.jaxrs.ResourceIT$HelloResource.echo()");
     }
 
     public static class WithNormalServletMapping extends InvokeJaxrsResourceInTomcat {
