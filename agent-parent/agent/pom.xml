@@ -315,6 +315,9 @@
                   <excludes>
                     <exclude>META-INF/services/io.grpc.ManagedChannelProvider</exclude>
                     <exclude>META-INF/services/io.grpc.ServerProvider</exclude>
+                    <!-- TODO remove this exclusion (and local ProtocolNegotiators.java) after the
+                      next gRPC release -->
+                    <exclude>io/grpc/netty/ProtocolNegotiators*</exclude>
                   </excludes>
                 </filter>
                 <filter>
