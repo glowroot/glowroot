@@ -31,5 +31,11 @@
       </includes>
       <outputDirectory></outputDirectory>
     </fileSet>
+    <fileSet>
+      <includes>
+        <include>glowroot.properties</include>
+      </includes>
+      <outputDirectory></outputDirectory>
+    </fileSet>
   </fileSets>
 </assembly>
