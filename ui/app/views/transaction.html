@@ -18,19 +18,19 @@
   <div class="gt-header-page-name pull-left">
     <div style="margin-top: -16px;">
       <span class="gt-inline-block"
-            ng-show="hideServerRollupDropdown()">
+            ng-show="hideAgentRollupDropdown()">
         {{headerDisplay}}
       </span>
       <span class="gt-inline-block gt-header-menu"
-            ng-hide="hideServerRollupDropdown()">
+            ng-hide="hideAgentRollupDropdown()">
         <span class="dropdown">
           <a href="#" role="button" data-toggle="dropdown" class="dropdown-toggle">
-            {{serverRollup || '&lt;server&gt;'}}
+            {{agentRollup || '&lt;agent&gt;'}}
             <span class="gt-large-caret"></span>
           </a>
           <ul class="dropdown-menu" role="menu">
-            <li ng-repeat="(rollup, value) in layout.serverRollups"
-                ng-hide="rollup === serverRollup">
+            <li ng-repeat="(rollup, value) in layout.agentRollups"
+                ng-hide="rollup === agentRollup">
               <a role="menuitem"
                  tabindex="-1"
                  ng-href="{{currentTabUrl()}}{{headerQueryString(rollup, transactionType)}}">
@@ -58,9 +58,9 @@
             <span class="gt-large-caret"></span>
           </a>
           <ul class="dropdown-menu" role="menu">
-            <li ng-repeat="tt in layout.serverRollups[serverRollup].transactionTypes"
+            <li ng-repeat="tt in layout.agentRollups[agentRollup].transactionTypes"
                 ng-hide="tt === transactionType">
-              <a role="menuitem" tabindex="-1" ng-href="{{currentTabUrl()}}{{headerQueryString(serverRollup, tt)}}">
+              <a role="menuitem" tabindex="-1" ng-href="{{currentTabUrl()}}{{headerQueryString(agentRollup, tt)}}">
                 {{tt}}
               </a>
             </li>

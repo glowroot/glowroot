@@ -170,7 +170,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     });
 
     if (!$scope.hideMainContent()) {
-      $http.get('backend/jvm/all-gauges?server-rollup=' + encodeURIComponent($scope.serverRollup))
+      $http.get('backend/jvm/all-gauges?agent-rollup=' + encodeURIComponent($scope.agentRollup))
           .success(function (data) {
             $scope.loaded = true;
             $scope.allGauges = data;

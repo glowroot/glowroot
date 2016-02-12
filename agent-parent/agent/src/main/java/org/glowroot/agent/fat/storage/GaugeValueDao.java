@@ -111,7 +111,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public List<Gauge> getGauges(String serverRollup) throws Exception {
+    public List<Gauge> getGauges(String agentRollup) throws Exception {
         List<String> allGaugeNames = gaugeMetaDao.readAllGaugeNames();
         List<Gauge> gauges = Lists.newArrayList();
         for (String gaugeName : allGaugeNames) {
@@ -121,7 +121,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public void store(String serverId, List<GaugeValue> gaugeValues) throws Exception {
+    public void store(String agentId, List<GaugeValue> gaugeValues) throws Exception {
         if (gaugeValues.isEmpty()) {
             return;
         }
@@ -151,7 +151,7 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     // query.from() is INCLUSIVE
     @Override
-    public List<GaugeValue> readGaugeValues(String serverRollup, String gaugeName, long from,
+    public List<GaugeValue> readGaugeValues(String agentRollup, String gaugeName, long from,
             long to, int rollupLevel) throws Exception {
         Long gaugeId = gaugeMetaDao.getGaugeId(gaugeName);
         if (gaugeId == null) {
@@ -165,7 +165,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public void deleteAll(String serverRollup) throws Exception {
+    public void deleteAll(String agentRollup) throws Exception {
         dataSource.execute("truncate table gauge_value_rollup_0");
         for (int i = 1; i <= configRepository.getRollupConfigs().size(); i++) {
             dataSource.execute("truncate table gauge_value_rollup_" + castUntainted(i));

@@ -28,7 +28,7 @@ glowroot.controller('JvmCapabilitiesCtrl', [
       return;
     }
 
-    $http.get('backend/jvm/capabilities?server-id=' + encodeURIComponent($scope.serverId))
+    $http.get('backend/jvm/capabilities?agent-id=' + encodeURIComponent($scope.agentId))
         .success(function (data) {
           $scope.loaded = true;
           $scope.agentNotConnected = data.agentNotConnected;

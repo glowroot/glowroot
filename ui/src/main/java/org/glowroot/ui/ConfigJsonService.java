@@ -99,32 +99,32 @@ class ConfigJsonService {
 
     @GET("/backend/config/transaction")
     String getTransactionConfig(String queryString) throws Exception {
-        String serverId = getServerId(queryString);
-        return getTransactionConfigInternal(serverId);
+        String agentId = getAgentId(queryString);
+        return getTransactionConfigInternal(agentId);
     }
 
     @GET("/backend/config/user-recording")
     String getUserRecordingConfig(String queryString) throws Exception {
-        String serverId = getServerId(queryString);
-        return getUserRecordingConfigInternal(serverId);
+        String agentId = getAgentId(queryString);
+        return getUserRecordingConfigInternal(agentId);
     }
 
     @GET("/backend/config/advanced")
     String getAdvancedConfig(String queryString) throws Exception {
-        String serverId = getServerId(queryString);
-        return getAdvancedConfigInternal(serverId);
+        String agentId = getAgentId(queryString);
+        return getAdvancedConfigInternal(agentId);
     }
 
     @GET("/backend/config/plugins")
     String getPluginConfig(String queryString) throws Exception {
         PluginConfigRequest request = QueryStrings.decode(queryString, PluginConfigRequest.class);
-        String serverId = checkNotNull(request.serverId());
+        String agentId = checkNotNull(request.agentId());
         Optional<String> pluginId = request.pluginId();
         if (pluginId.isPresent()) {
-            return getPluginConfigInternal(serverId, request.pluginId().get());
+            return getPluginConfigInternal(agentId, request.pluginId().get());
         } else {
             List<PluginResponse> pluginResponses = Lists.newArrayList();
-            List<PluginConfig> pluginConfigs = configRepository.getPluginConfigs(serverId);
+            List<PluginConfig> pluginConfigs = configRepository.getPluginConfigs(agentId);
             for (PluginConfig pluginConfig : pluginConfigs) {
                 pluginResponses.add(ImmutablePluginResponse.builder()
                         .id(pluginConfig.getId())
@@ -136,8 +136,8 @@ class ConfigJsonService {
         }
     }
 
-    private String getPluginConfigInternal(String serverId, String pluginId) throws IOException {
-        PluginConfig config = configRepository.getPluginConfig(serverId, pluginId);
+    private String getPluginConfigInternal(String agentId, String pluginId) throws IOException {
+        PluginConfig config = configRepository.getPluginConfig(agentId, pluginId);
         if (config == null) {
             throw new IllegalArgumentException("Plugin id not found: " + pluginId);
         }
@@ -171,60 +171,60 @@ class ConfigJsonService {
     String updateTransactionConfig(String content) throws Exception {
         TransactionConfigDto configDto =
                 mapper.readValue(content, ImmutableTransactionConfigDto.class);
-        String serverId = configDto.serverId().get();
+        String agentId = configDto.agentId().get();
         try {
-            configRepository.updateTransactionConfig(serverId, configDto.convert(),
+            configRepository.updateTransactionConfig(agentId, configDto.convert(),
                     configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getTransactionConfigInternal(serverId);
+        return getTransactionConfigInternal(agentId);
     }
 
     @POST("/backend/config/user-recording")
     String updateUserRecordingConfig(String content) throws Exception {
         UserRecordingConfigDto configDto =
                 mapper.readValue(content, ImmutableUserRecordingConfigDto.class);
-        String serverId = configDto.serverId().get();
+        String agentId = configDto.agentId().get();
         try {
-            configRepository.updateUserRecordingConfig(serverId, configDto.convert(),
+            configRepository.updateUserRecordingConfig(agentId, configDto.convert(),
                     configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getUserRecordingConfigInternal(serverId);
+        return getUserRecordingConfigInternal(agentId);
     }
 
     @POST("/backend/config/advanced")
     String updateAdvancedConfig(String content) throws Exception {
         AdvancedConfigDto configDto = mapper.readValue(content, ImmutableAdvancedConfigDto.class);
-        String serverId = configDto.serverId().get();
+        String agentId = configDto.agentId().get();
         try {
-            configRepository.updateAdvancedConfig(serverId, configDto.convert(),
+            configRepository.updateAdvancedConfig(agentId, configDto.convert(),
                     configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getAdvancedConfigInternal(serverId);
+        return getAdvancedConfigInternal(agentId);
     }
 
     @POST("/backend/config/plugins")
     String updatePluginConfig(String content) throws Exception {
         PluginUpdateRequest pluginUpdateRequest =
                 mapper.readValue(content, ImmutablePluginUpdateRequest.class);
-        String serverId = pluginUpdateRequest.serverId();
+        String agentId = pluginUpdateRequest.agentId();
         String pluginId = pluginUpdateRequest.pluginId();
         List<PluginProperty> properties = Lists.newArrayList();
         for (PluginPropertyDto prop : pluginUpdateRequest.properties()) {
             properties.add(prop.convert());
         }
         try {
-            configRepository.updatePluginConfig(serverId, pluginId, properties,
+            configRepository.updatePluginConfig(agentId, pluginId, properties,
                     pluginUpdateRequest.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getPluginConfigInternal(serverId, pluginId);
+        return getPluginConfigInternal(agentId, pluginId);
     }
 
     @POST("/backend/config/ui")
@@ -282,22 +282,22 @@ class ConfigJsonService {
                 configRepository, mailService);
     }
 
-    private String getTransactionConfigInternal(String serverId) throws IOException {
-        TransactionConfig config = configRepository.getTransactionConfig(serverId);
+    private String getTransactionConfigInternal(String agentId) throws IOException {
+        TransactionConfig config = configRepository.getTransactionConfig(agentId);
         if (config == null) {
             return "{\"empty\": true}";
         }
         return mapper.writeValueAsString(TransactionConfigDto.create(config));
     }
 
-    private String getUserRecordingConfigInternal(String serverId) throws IOException {
-        UserRecordingConfig config = configRepository.getUserRecordingConfig(serverId);
+    private String getUserRecordingConfigInternal(String agentId) throws IOException {
+        UserRecordingConfig config = configRepository.getUserRecordingConfig(agentId);
         return mapper.writeValueAsString(UserRecordingConfigDto.create(config));
     }
 
-    private String getAdvancedConfigInternal(String serverId) throws IOException {
+    private String getAdvancedConfigInternal(String agentId) throws IOException {
         checkNotNull(liveWeavingService);
-        AdvancedConfig config = configRepository.getAdvancedConfig(serverId);
+        AdvancedConfig config = configRepository.getAdvancedConfig(agentId);
         checkNotNull(config);
         return mapper.writeValueAsString(AdvancedConfigDto.create(config));
     }
@@ -353,8 +353,8 @@ class ConfigJsonService {
                 .build());
     }
 
-    private static String getServerId(String queryString) {
-        return QueryStringDecoder.decodeComponent(queryString.substring("server-id".length() + 1));
+    private static String getAgentId(String queryString) {
+        return QueryStringDecoder.decodeComponent(queryString.substring("agent-id".length() + 1));
     }
 
     private static OptionalInt32 of(int value) {
@@ -421,7 +421,7 @@ class ConfigJsonService {
 
     @Value.Immutable
     interface PluginConfigRequest {
-        String serverId();
+        String agentId();
         Optional<String> pluginId();
     }
 
@@ -438,7 +438,7 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class TransactionConfigDto {
 
-        abstract Optional<String> serverId(); // only used in request
+        abstract Optional<String> agentId(); // only used in request
         abstract int slowThresholdMillis();
         abstract int profilingIntervalMillis();
         abstract boolean captureThreadStats();
@@ -464,7 +464,7 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class UserRecordingConfigDto {
 
-        abstract Optional<String> serverId(); // only used in request
+        abstract Optional<String> agentId(); // only used in request
         abstract ImmutableList<String> users();
         abstract @Nullable Integer profilingIntervalMillis();
         abstract String version();
@@ -492,7 +492,7 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class AdvancedConfigDto {
 
-        abstract Optional<String> serverId(); // only used in request
+        abstract Optional<String> agentId(); // only used in request
         abstract boolean weavingTimer();
         abstract int immediatePartialStoreThresholdSeconds();
         abstract int maxAggregateTransactionsPerTransactionType();
@@ -538,7 +538,7 @@ class ConfigJsonService {
 
     @Value.Immutable
     interface PluginUpdateRequest {
-        String serverId();
+        String agentId();
         String pluginId();
         List<ImmutablePluginPropertyDto> properties();
         String version();

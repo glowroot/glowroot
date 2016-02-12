@@ -68,24 +68,24 @@ class TraceExportHttpService implements HttpService {
     public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
             throws Exception {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-        List<String> serverIds = decoder.parameters().get("server-id");
-        if (serverIds == null) {
-            serverIds = ImmutableList.of("");
+        List<String> agentIds = decoder.parameters().get("agent-id");
+        if (agentIds == null) {
+            agentIds = ImmutableList.of("");
         }
-        String serverId = serverIds.get(0);
+        String agentId = agentIds.get(0);
         List<String> traceIds = decoder.parameters().get("trace-id");
         checkNotNull(traceIds, "Missing trace id in query string: %s", request.uri());
         String traceId = traceIds.get(0);
-        // check-live-traces is an optimization so central only has to check with remote agents when
-        // necessary
+        // check-live-traces is an optimization so glowroot server only has to check with remote
+        // agents when necessary
         List<String> checkLiveTracesParams = decoder.parameters().get("check-live-traces");
         boolean checkLiveTraces = false;
         if (checkLiveTracesParams != null && !checkLiveTracesParams.isEmpty()) {
             checkLiveTraces = Boolean.parseBoolean(checkLiveTracesParams.get(0));
         }
-        logger.debug("handleRequest(): serverId={}, traceId={}, checkLiveTraces={}", serverId,
+        logger.debug("handleRequest(): agentId={}, traceId={}, checkLiveTraces={}", agentId,
                 traceId, checkLiveTraces);
-        TraceExport traceExport = traceCommonService.getExport(serverId, traceId, checkLiveTraces);
+        TraceExport traceExport = traceCommonService.getExport(agentId, traceId, checkLiveTraces);
         if (traceExport == null) {
             logger.warn("no trace found for id: {}", traceId);
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);

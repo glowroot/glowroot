@@ -26,25 +26,25 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 
 public interface LiveJvmService {
 
-    boolean isAvailable(String serverId);
+    boolean isAvailable(String agentId);
 
-    ThreadDump getThreadDump(String serverId) throws Exception;
+    ThreadDump getThreadDump(String agentId) throws Exception;
 
-    long getAvailableDiskSpace(String serverId, String directory) throws Exception;
+    long getAvailableDiskSpace(String agentId, String directory) throws Exception;
 
-    HeapDumpFileInfo heapDump(String serverId, String directory) throws Exception;
+    HeapDumpFileInfo heapDump(String agentId, String directory) throws Exception;
 
-    void gc(String serverId) throws Exception;
+    void gc(String agentId) throws Exception;
 
-    MBeanDump getMBeanDump(String serverId, MBeanDumpKind mbeanDumpKind, List<String> objectNames)
+    MBeanDump getMBeanDump(String agentId, MBeanDumpKind mbeanDumpKind, List<String> objectNames)
             throws Exception;
 
-    List<String> getMatchingMBeanObjectNames(String serverId, String partialObjectName, int limit)
+    List<String> getMatchingMBeanObjectNames(String agentId, String partialObjectName, int limit)
             throws Exception;
 
-    MBeanMeta getMBeanMeta(String serverId, String mbeanObjectName) throws Exception;
+    MBeanMeta getMBeanMeta(String agentId, String mbeanObjectName) throws Exception;
 
-    Capabilities getCapabilities(String serverId) throws Exception;
+    Capabilities getCapabilities(String agentId) throws Exception;
 
     @SuppressWarnings("serial")
     public class AgentNotConnectedException extends Exception {}

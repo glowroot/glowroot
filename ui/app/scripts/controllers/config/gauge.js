@@ -84,7 +84,7 @@ glowroot.controller('ConfigGaugeCtrl', [
     }
 
     if (version) {
-      $http.get('backend/config/gauges?server-id=' + encodeURIComponent($scope.serverId) + '&version=' + version)
+      $http.get('backend/config/gauges?agent-id=' + encodeURIComponent($scope.agentId) + '&version=' + version)
           .success(function (data) {
             $scope.loaded = true;
             $scope.agentNotConnected = data.agentNotConnected;
@@ -92,7 +92,7 @@ glowroot.controller('ConfigGaugeCtrl', [
           })
           .error(httpErrors.handler($scope));
     } else {
-      $http.get('backend/jvm/agent-connected?server-id=' + encodeURIComponent($scope.serverId))
+      $http.get('backend/jvm/agent-connected?agent-id=' + encodeURIComponent($scope.agentId))
           .success(function (data) {
             $scope.loaded = true;
             $scope.agentNotConnected = !data;
@@ -137,7 +137,7 @@ glowroot.controller('ConfigGaugeCtrl', [
         return [suggestion];
       }
       var queryData = {
-        serverId: $scope.serverId,
+        agentId: $scope.agentId,
         partialObjectName: suggestion,
         limit: 10
       };
@@ -175,7 +175,7 @@ glowroot.controller('ConfigGaugeCtrl', [
 
     function fetchMBeanAttributes(mbeanObjectName) {
       var queryData = {
-        serverId: $scope.serverId,
+        agentId: $scope.agentId,
         objectName: mbeanObjectName,
         gaugeVersion: $scope.config.version || ''
       };
@@ -214,7 +214,7 @@ glowroot.controller('ConfigGaugeCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.serverId = $scope.serverId;
+      postData.agentId = $scope.agentId;
       postData.mbeanAttributes = $scope.config.mbeanAttributes;
       var url;
       if (version) {
@@ -228,8 +228,8 @@ glowroot.controller('ConfigGaugeCtrl', [
             deferred.resolve(version ? 'Saved' : 'Added');
             version = data.config.version;
             // fix current url (with updated version) before returning to list page in case back button is used later
-            if (postData.serverId) {
-              $location.search({'server-id': postData.serverId, v: version}).replace();
+            if (postData.agentId) {
+              $location.search({'agent-id': postData.agentId, v: version}).replace();
             } else {
               $location.search({v: version}).replace();
             }
@@ -246,14 +246,14 @@ glowroot.controller('ConfigGaugeCtrl', [
 
     $scope.delete = function (deferred) {
       var postData = {
-        serverId: $scope.serverId,
+        agentId: $scope.agentId,
         version: $scope.config.version
       };
       $http.post('backend/config/gauges/remove', postData)
           .success(function () {
             removeConfirmIfHasChangesListener();
-            if (postData.serverId) {
-              $location.url('config/gauge-list?server-id=' + encodeURIComponent(postData.serverId)).replace();
+            if (postData.agentId) {
+              $location.url('config/gauge-list?agent-id=' + encodeURIComponent(postData.agentId)).replace();
             } else {
               $location.url('config/gauge-list').replace();
             }

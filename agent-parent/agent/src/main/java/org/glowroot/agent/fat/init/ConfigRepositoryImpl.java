@@ -133,22 +133,22 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public AgentConfig.TransactionConfig getTransactionConfig(String serverId) {
+    public AgentConfig.TransactionConfig getTransactionConfig(String agentId) {
         return configService.getTransactionConfig().toProto();
     }
 
     @Override
-    public AgentConfig.UserRecordingConfig getUserRecordingConfig(String serverId) {
+    public AgentConfig.UserRecordingConfig getUserRecordingConfig(String agentId) {
         return configService.getUserRecordingConfig().toProto();
     }
 
     @Override
-    public @Nullable AgentConfig.AdvancedConfig getAdvancedConfig(String serverId) {
+    public @Nullable AgentConfig.AdvancedConfig getAdvancedConfig(String agentId) {
         return configService.getAdvancedConfig().toProto();
     }
 
     @Override
-    public List<AgentConfig.PluginConfig> getPluginConfigs(String serverId) {
+    public List<AgentConfig.PluginConfig> getPluginConfigs(String agentId) {
         List<AgentConfig.PluginConfig> configs = Lists.newArrayList();
         for (PluginConfig config : configService.getPluginConfigs()) {
             configs.add(config.toProto());
@@ -157,7 +157,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable AgentConfig.PluginConfig getPluginConfig(String serverId, String pluginId) {
+    public @Nullable AgentConfig.PluginConfig getPluginConfig(String agentId, String pluginId) {
         PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
         if (pluginConfig == null) {
             return null;
@@ -166,7 +166,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<AgentConfig.GaugeConfig> getGaugeConfigs(String serverId) {
+    public List<AgentConfig.GaugeConfig> getGaugeConfigs(String agentId) {
         List<AgentConfig.GaugeConfig> gaugeConfigs = Lists.newArrayList();
         for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
             gaugeConfigs.add(gaugeConfig.toProto());
@@ -175,7 +175,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable AgentConfig.GaugeConfig getGaugeConfig(String serverId, String version) {
+    public @Nullable AgentConfig.GaugeConfig getGaugeConfig(String agentId, String version) {
         for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
             AgentConfig.GaugeConfig config = gaugeConfig.toProto();
             if (Versions.getVersion(config).equals(version)) {
@@ -186,7 +186,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<AgentConfig.InstrumentationConfig> getInstrumentationConfigs(String serverId) {
+    public List<AgentConfig.InstrumentationConfig> getInstrumentationConfigs(String agentId) {
         List<AgentConfig.InstrumentationConfig> configs = Lists.newArrayList();
         for (InstrumentationConfig config : configService.getInstrumentationConfigs()) {
             configs.add(config.toProto());
@@ -195,7 +195,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable AgentConfig.InstrumentationConfig getInstrumentationConfig(String serverId,
+    public @Nullable AgentConfig.InstrumentationConfig getInstrumentationConfig(String agentId,
             String version) {
         for (InstrumentationConfig instrumentationConfig : configService
                 .getInstrumentationConfigs()) {
@@ -223,12 +223,12 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<AlertConfig> getAlertConfigs(String serverId) {
+    public List<AlertConfig> getAlertConfigs(String agentId) {
         return alertConfigs;
     }
 
     @Override
-    public @Nullable AlertConfig getAlertConfig(String serverId, String version) {
+    public @Nullable AlertConfig getAlertConfig(String agentId, String version) {
         for (AlertConfig alertConfig : alertConfigs) {
             if (alertConfig.version().equals(version)) {
                 return alertConfig;
@@ -238,7 +238,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateTransactionConfig(String serverId,
+    public void updateTransactionConfig(String agentId,
             AgentConfig.TransactionConfig updatedConfig, String priorVersion) throws Exception {
         synchronized (writeLock) {
             String currVersion =
@@ -249,7 +249,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateUserRecordingConfig(String serverId,
+    public void updateUserRecordingConfig(String agentId,
             AgentConfig.UserRecordingConfig userRecordingConfig, String priorVersion)
                     throws Exception {
         synchronized (writeLock) {
@@ -262,7 +262,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateAdvancedConfig(String serverId, AgentConfig.AdvancedConfig advancedConfig,
+    public void updateAdvancedConfig(String agentId, AgentConfig.AdvancedConfig advancedConfig,
             String priorVersion) throws Exception {
         synchronized (writeLock) {
             String currVersion = Versions.getVersion(configService.getAdvancedConfig().toProto());
@@ -272,7 +272,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updatePluginConfig(String serverId, String pluginId,
+    public void updatePluginConfig(String agentId, String pluginId,
             List<PluginProperty> properties, String priorVersion) throws Exception {
         synchronized (writeLock) {
             List<PluginConfig> configs = Lists.newArrayList(configService.getPluginConfigs());
@@ -303,7 +303,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void insertInstrumentationConfig(String serverId,
+    public void insertInstrumentationConfig(String agentId,
             AgentConfig.InstrumentationConfig instrumentationConfig) throws IOException {
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
@@ -314,7 +314,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateInstrumentationConfig(String serverId,
+    public void updateInstrumentationConfig(String agentId,
             AgentConfig.InstrumentationConfig instrumentationConfig, String priorVersion)
                     throws Exception {
         synchronized (writeLock) {
@@ -337,7 +337,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteInstrumentationConfig(String serverId, String version) throws Exception {
+    public void deleteInstrumentationConfig(String agentId, String version) throws Exception {
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
                     Lists.newArrayList(configService.getInstrumentationConfigs());
@@ -358,7 +358,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void insertGaugeConfig(String serverId, AgentConfig.GaugeConfig gaugeConfig)
+    public void insertGaugeConfig(String agentId, AgentConfig.GaugeConfig gaugeConfig)
             throws Exception {
         synchronized (writeLock) {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
@@ -374,7 +374,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateGaugeConfig(String serverId, AgentConfig.GaugeConfig gaugeConfig,
+    public void updateGaugeConfig(String agentId, AgentConfig.GaugeConfig gaugeConfig,
             String priorVersion) throws Exception {
         synchronized (writeLock) {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
@@ -398,7 +398,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteGaugeConfig(String serverId, String version) throws Exception {
+    public void deleteGaugeConfig(String agentId, String version) throws Exception {
         synchronized (writeLock) {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
             boolean found = false;
@@ -447,7 +447,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void insertAlertConfig(String serverId, AlertConfig alertConfig) throws Exception {
+    public void insertAlertConfig(String agentId, AlertConfig alertConfig) throws Exception {
         synchronized (writeLock) {
             List<AlertConfig> configs = Lists.newArrayList(alertConfigs);
             configs.add(alertConfig);
@@ -457,7 +457,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateAlertConfig(String serverId, AlertConfig alertConfig, String priorVersion)
+    public void updateAlertConfig(String agentId, AlertConfig alertConfig, String priorVersion)
             throws IOException {
         synchronized (writeLock) {
             List<AlertConfig> configs = Lists.newArrayList(alertConfigs);
@@ -476,7 +476,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteAlertConfig(String serverId, String version) throws IOException {
+    public void deleteAlertConfig(String agentId, String version) throws IOException {
         synchronized (writeLock) {
             List<AlertConfig> configs = Lists.newArrayList(alertConfigs);
             boolean found = false;

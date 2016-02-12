@@ -28,9 +28,9 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.central.CentralCollectorImpl;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
+import org.glowroot.agent.server.ServerCollectorImpl;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.agent.weaving.PreInitializeWeavingClasses;
 import org.glowroot.common.util.Clock;
@@ -43,7 +43,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class GlowrootThinAgentInit implements GlowrootAgentInit {
 
     private @MonotonicNonNull AgentModule agentModule;
-    private @MonotonicNonNull CentralCollectorImpl centralCollector;
+    private @MonotonicNonNull ServerCollectorImpl serverCollector;
 
     @Override
     public void init(final File baseDir, final @Nullable String collectorHost,
@@ -81,11 +81,11 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
             public @Nullable Void call() throws Exception {
                 Collector collector;
                 if (customCollector == null) {
-                    centralCollector = new CentralCollectorImpl(properties, collectorHost,
+                    serverCollector = new ServerCollectorImpl(properties, collectorHost,
                             agentModule.getLiveJvmService(), agentModule.getLiveWeavingService(),
                             agentModule.getLiveTraceRepository(),
                             agentModule.getScheduledExecutor(), agentConfigUpdater);
-                    collector = centralCollector;
+                    collector = serverCollector;
                 } else {
                     collector = customCollector;
                 }
@@ -108,16 +108,16 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
     @OnlyUsedByTests
     public void close() throws Exception {
         checkNotNull(agentModule).close();
-        if (centralCollector != null) {
-            centralCollector.close();
+        if (serverCollector != null) {
+            serverCollector.close();
         }
     }
 
     @Override
     @OnlyUsedByTests
     public void awaitClose() throws Exception {
-        if (centralCollector != null) {
-            centralCollector.awaitClose();
+        if (serverCollector != null) {
+            serverCollector.awaitClose();
         }
     }
 

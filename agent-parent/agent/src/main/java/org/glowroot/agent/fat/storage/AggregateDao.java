@@ -76,7 +76,7 @@ import static org.glowroot.agent.fat.storage.util.Checkers.castUntainted;
 
 public class AggregateDao implements AggregateRepository {
 
-    private static final String SERVER_ID = "";
+    private static final String AGENT_ID = "";
 
     private static final ImmutableList<Column> overallAggregatePointColumns =
             ImmutableList.<Column>of(
@@ -170,7 +170,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     @Override
-    public void store(String serverId, long captureTime, List<AggregatesByType> aggregatesByType)
+    public void store(String agentId, long captureTime, List<AggregatesByType> aggregatesByType)
             throws Exception {
         // intentionally not using batch update as that could cause memory spike while preparing a
         // large batch
@@ -314,7 +314,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     @Override
-    public void deleteAll(String serverRollup) throws Exception {
+    public void deleteAll(String agentRollup) throws Exception {
         for (int i = 0; i < configRepository.getRollupConfigs().size(); i++) {
             dataSource.execute("truncate table aggregate_tt_rollup_" + castUntainted(i));
             dataSource.execute("truncate table aggregate_tn_rollup_" + castUntainted(i));
@@ -422,7 +422,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private int getMaxAggregateQueriesPerQueryType() throws IOException {
-        AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(SERVER_ID);
+        AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(AGENT_ID);
         if (advancedConfig != null && advancedConfig.hasMaxAggregateQueriesPerQueryType()) {
             return advancedConfig.getMaxAggregateQueriesPerQueryType().getValue();
         } else {

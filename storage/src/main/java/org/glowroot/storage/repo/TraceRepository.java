@@ -31,9 +31,9 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface TraceRepository {
 
-    void collect(String serverId, Trace trace) throws Exception;
+    void collect(String agentId, Trace trace) throws Exception;
 
-    List<String> readTraceAttributeNames(String serverRollup, String transactionType)
+    List<String> readTraceAttributeNames(String agentRollup, String transactionType)
             throws Exception;
 
     Result<TracePoint> readSlowPoints(TraceQuery query, TracePointFilter filter, int limit)
@@ -50,21 +50,21 @@ public interface TraceRepository {
             long resolutionMillis, long liveCaptureTime, int limit) throws Exception;
 
     @Nullable
-    HeaderPlus readHeaderPlus(String serverId, String traceId) throws Exception;
+    HeaderPlus readHeaderPlus(String agentId, String traceId) throws Exception;
 
-    List<Trace.Entry> readEntries(String serverId, String traceId) throws Exception;
-
-    @Nullable
-    Profile readMainThreadProfile(String serverId, String traceId) throws Exception;
+    List<Trace.Entry> readEntries(String agentId, String traceId) throws Exception;
 
     @Nullable
-    Profile readAuxThreadProfile(String serverId, String traceId) throws Exception;
+    Profile readMainThreadProfile(String agentId, String traceId) throws Exception;
 
-    void deleteAll(String serverRollup) throws Exception;
+    @Nullable
+    Profile readAuxThreadProfile(String agentId, String traceId) throws Exception;
+
+    void deleteAll(String agentRollup) throws Exception;
 
     @Value.Immutable
     public interface TraceQuery {
-        String serverRollup();
+        String agentRollup();
         String transactionType();
         @Nullable
         String transactionName();

@@ -82,7 +82,7 @@ message ClientResponse {
 }
 
 message Hello {
-  string server_id = 1;
+  string agent_id = 1;
 }
 
 message HelloAck {

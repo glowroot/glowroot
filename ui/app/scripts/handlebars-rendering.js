@@ -364,7 +364,7 @@ HandlebarsRendering = (function () {
         renderNext(traceEntries, 0);
       } else {
         // this is not an export file
-        var serverId = $traceParent.data('gtServerId');
+        var agentId = $traceParent.data('gtAgentId');
         var traceId = $traceParent.data('gtTraceId');
         var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
         $selector.data('gtLoading', true);
@@ -376,7 +376,7 @@ HandlebarsRendering = (function () {
             spinner = Glowroot.showSpinner($button.parent().find('.gt-trace-detail-spinner'));
           }
         }, 100);
-        var url = 'backend/trace/entries?server-id=' + serverId + '&trace-id=' + traceId;
+        var url = 'backend/trace/entries?agent-id=' + agentId + '&trace-id=' + traceId;
         if (checkLiveTraces) {
           url += '&check-live-traces=true';
         }
@@ -423,10 +423,10 @@ HandlebarsRendering = (function () {
     var profile = $traceParent.data('gtMainThreadProfile');
     var url;
     if (!profile) {
-      var serverId = $traceParent.data('gtServerId');
+      var agentId = $traceParent.data('gtAgentId');
       var traceId = $traceParent.data('gtTraceId');
       var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
-      url = 'backend/trace/main-thread-profile?server-id=' + serverId + '&trace-id=' + traceId;
+      url = 'backend/trace/main-thread-profile?agent-id=' + agentId + '&trace-id=' + traceId;
       if (checkLiveTraces) {
         url += '&check-live-traces=true';
       }
@@ -440,10 +440,10 @@ HandlebarsRendering = (function () {
     var profile = $traceParent.data('gtAuxThreadProfile');
     var url;
     if (!profile) {
-      var serverId = $traceParent.data('gtServerId');
+      var agentId = $traceParent.data('gtAgentId');
       var traceId = $traceParent.data('gtTraceId');
       var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
-      url = 'backend/trace/aux-thread-profile?server-id=' + serverId + '&trace-id=' + traceId;
+      url = 'backend/trace/aux-thread-profile?agent-id=' + agentId + '&trace-id=' + traceId;
       if (checkLiveTraces) {
         url += '&check-live-traces=true';
       }
@@ -1067,12 +1067,12 @@ HandlebarsRendering = (function () {
   }
 
   return {
-    renderTrace: function (traceHeader, serverId, traceId, checkLiveTraces, $selector) {
+    renderTrace: function (traceHeader, agentId, traceId, checkLiveTraces, $selector) {
       var html = JST.trace(traceHeader);
       $selector.html(html);
       $selector.addClass('gt-trace-parent');
-      if (serverId !== undefined) {
-        $selector.data('gtServerId', serverId);
+      if (agentId !== undefined) {
+        $selector.data('gtAgentId', agentId);
         $selector.data('gtTraceId', traceId);
         $selector.data('gtCheckLiveTraces', checkLiveTraces);
       }

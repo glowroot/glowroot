@@ -33,7 +33,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class UiSandboxMain {
 
     private static final boolean useJavaagent = false;
-    private static final boolean useCentral = false;
+    private static final boolean useGlowrootServer = false;
     private static final boolean useReverseProxy = false;
 
     static {
@@ -56,9 +56,9 @@ public class UiSandboxMain {
         }
         if (useJavaagent) {
             container = new JavaagentContainer(baseDir, true, false, ImmutableList.<String>of());
-        } else if (useCentral) {
+        } else if (useGlowrootServer) {
             container = new LocalContainer(baseDir, true,
-                    ImmutableMap.of("glowroot.server.id", "UI Sandbox",
+                    ImmutableMap.of("glowroot.agent.id", "UI Sandbox",
                             "glowroot.collector.host", "localhost",
                             "glowroot.collector.port", "8181"));
         } else {

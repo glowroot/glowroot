@@ -69,7 +69,7 @@ glowroot.controller('TracesCtrl', [
     });
 
     function refreshChart(deferred) {
-      if (($scope.layout.central && !$scope.serverRollup) || !$scope.transactionType) {
+      if ((!$scope.agentRollup && !$scope.layout.fat) || !$scope.transactionType) {
         return;
       }
       var from = appliedFilter.from;
@@ -91,7 +91,7 @@ glowroot.controller('TracesCtrl', [
       if ($scope.transactionName) {
         query.transactionName = $scope.transactionName;
       }
-      query.serverRollup = $scope.serverRollup;
+      query.agentRollup = $scope.agentRollup;
       $scope.showChartSpinner++;
       $http.get('backend/' + traceKind + '/points' + queryStrings.encodeObject(query))
           .success(function (data) {
@@ -326,7 +326,7 @@ glowroot.controller('TracesCtrl', [
       if (item) {
         plot.unhighlight();
         plot.highlight(item.series, item.datapoint);
-        var serverId = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
+        var agentId = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
         var traceId = plot.getData()[item.seriesIndex].data[item.dataIndex][3];
         var checkLiveTraces = item.seriesIndex === 2;
         if (originalEvent.ctrlKey) {
@@ -336,8 +336,8 @@ glowroot.controller('TracesCtrl', [
           } else {
             url += '&';
           }
-          if (serverId) {
-            url += 'modal-server-id=' + serverId + '&';
+          if (agentId) {
+            url += 'modal-agent-id=' + agentId + '&';
           }
           url += 'modal-trace-id=' + traceId;
           if (checkLiveTraces) {
@@ -346,8 +346,8 @@ glowroot.controller('TracesCtrl', [
           window.open(url);
         } else {
           $scope.$apply(function () {
-            if (serverId) {
-              $location.search('modal-server-id', serverId);
+            if (agentId) {
+              $location.search('modal-agent-id', agentId);
             }
             $location.search('modal-trace-id', traceId);
             if (checkLiveTraces) {
@@ -434,13 +434,13 @@ glowroot.controller('TracesCtrl', [
         $scope.filterResponseTimeComparator = 'greater';
       }
 
-      var modalServer = $location.search()['modal-server-id'] || '';
+      var modalAgentId = $location.search()['modal-agent-id'] || '';
       var modalTraceId = $location.search()['modal-trace-id'];
       var modalCheckLiveTraces = $location.search()['modal-check-live-traces'];
       if (modalTraceId) {
         highlightedTraceId = modalTraceId;
-        $('#traceModal').data('location-query', ['modal-server-id', 'modal-trace-id', 'modal-check-live-traces']);
-        traceModal.displayModal(modalServer, modalTraceId, modalCheckLiveTraces);
+        $('#traceModal').data('location-query', ['modal-agent-id', 'modal-trace-id', 'modal-check-live-traces']);
+        traceModal.displayModal(modalAgentId, modalTraceId, modalCheckLiveTraces);
       } else {
         $('#traceModal').modal('hide');
       }
@@ -487,7 +487,7 @@ glowroot.controller('TracesCtrl', [
         query.limit = appliedFilter.limit;
       }
       // preserve modal-*, otherwise refresh on modal trace does not work
-      query['modal-server-id'] = $location.search()['modal-server-id'];
+      query['modal-agent-id'] = $location.search()['modal-agent-id'];
       query['modal-trace-id'] = $location.search()['modal-trace-id'];
       query['modal-check-live-traces'] = $location.search()['modal-check-live-traces'];
       $location.search(query);

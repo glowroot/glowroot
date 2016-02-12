@@ -29,7 +29,7 @@ import org.glowroot.storage.repo.TransactionTypeRepository;
 
 class TransactionTypeDao implements TransactionTypeRepository {
 
-    private static final String SERVER_ID = "";
+    private static final String AGENT_ID = "";
 
     private static final ImmutableList<Column> columns =
             ImmutableList.<Column>of(ImmutableColumn.of("transaction_type", ColumnType.VARCHAR),
@@ -50,13 +50,13 @@ class TransactionTypeDao implements TransactionTypeRepository {
                 "select transaction_type from transaction_types order by transaction_type");
         if (transactionTypes == null) {
             // data source is closing
-            return ImmutableMap.<String, List<String>>of(SERVER_ID, ImmutableList.<String>of());
+            return ImmutableMap.<String, List<String>>of(AGENT_ID, ImmutableList.<String>of());
         }
-        return ImmutableMap.of(SERVER_ID, transactionTypes);
+        return ImmutableMap.of(AGENT_ID, transactionTypes);
     }
 
     @Override
-    public void deleteAll(String serverRollup) throws Exception {
+    public void deleteAll(String agentRollup) throws Exception {
         dataSource.update("truncate table transaction_types");
     }
 

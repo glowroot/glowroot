@@ -54,7 +54,7 @@ import static org.mockito.Mockito.when;
 @Styles.Private
 public class AggregateDaoTest {
 
-    private static final String SERVER_ID = "";
+    private static final String AGENT_ID = "";
 
     private DataSource dataSource;
     private File cappedFile;
@@ -77,7 +77,7 @@ public class AggregateDaoTest {
                 .rollupExpirationHours(
                         ImmutableList.of(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE))
                 .build());
-        when(configRepository.getAdvancedConfig(SERVER_ID))
+        when(configRepository.getAdvancedConfig(AGENT_ID))
                 .thenReturn(AdvancedConfig.getDefaultInstance());
         ImmutableList<RollupConfig> rollupConfigs = ImmutableList.<RollupConfig>of(
                 ImmutableRollupConfig.of(1000, 0), ImmutableRollupConfig.of(15000, 3600000),
@@ -100,14 +100,14 @@ public class AggregateDaoTest {
         populateAggregates();
         // when
         TransactionQuery query = ImmutableTransactionQuery.builder()
-                .serverRollup(SERVER_ID)
+                .agentRollup(AGENT_ID)
                 .transactionType("a type")
                 .from(0)
                 .to(100000)
                 .rollupLevel(0)
                 .build();
         OverallQuery query2 = ImmutableOverallQuery.builder()
-                .serverRollup(SERVER_ID)
+                .agentRollup(AGENT_ID)
                 .transactionType("a type")
                 .from(0)
                 .to(100000)
@@ -174,7 +174,7 @@ public class AggregateDaoTest {
                 .setOverallAggregate(overallAggregate)
                 .addAllTransactionAggregate(transactionAggregates)
                 .build();
-        aggregateDao.store(SERVER_ID, 10000, ImmutableList.of(aggregatesByType));
+        aggregateDao.store(AGENT_ID, 10000, ImmutableList.of(aggregatesByType));
 
         List<TransactionAggregate> transactionAggregates2 = Lists.newArrayList();
         transactionAggregates2.add(TransactionAggregate.newBuilder()
@@ -209,7 +209,7 @@ public class AggregateDaoTest {
                 .setOverallAggregate(overallAggregate)
                 .addAllTransactionAggregate(transactionAggregates2)
                 .build();
-        aggregateDao.store(SERVER_ID, 20000, ImmutableList.of(aggregatesByType2));
+        aggregateDao.store(AGENT_ID, 20000, ImmutableList.of(aggregatesByType2));
     }
 
     // used by TransactionCommonServiceTest

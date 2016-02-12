@@ -44,7 +44,7 @@ glowroot.controller('ErrorMessagesCtrl', [
     });
 
     function refreshData(deferred) {
-      if (($scope.layout.central && !$scope.serverRollup) || !$scope.transactionType) {
+      if ((!$scope.agentRollup && !$scope.layout.fat) || !$scope.transactionType) {
         return;
       }
       $scope.parsingError = undefined;
@@ -54,7 +54,7 @@ glowroot.controller('ErrorMessagesCtrl', [
         return;
       }
       var query = {
-        serverRollup: $scope.serverRollup,
+        agentRollup: $scope.agentRollup,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
         from: $scope.chartFrom,
@@ -110,8 +110,8 @@ glowroot.controller('ErrorMessagesCtrl', [
 
     $scope.tracesQueryString = function (errorMessage) {
       var query = {};
-      if ($scope.layout.central) {
-        query['server-rollup'] = $scope.serverRollup;
+      if (!$scope.layout.fat) {
+        query['agent-rollup'] = $scope.agentRollup;
       }
       query['transaction-type'] = $scope.transactionType;
       query['transaction-name'] = $scope.transactionName;

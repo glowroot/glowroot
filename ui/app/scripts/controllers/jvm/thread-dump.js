@@ -50,9 +50,9 @@ glowroot.controller('JvmThreadDumpCtrl', [
       }
     });
 
-    Handlebars.registerHelper('serverIdQueryString', function () {
-      if ($scope.serverId) {
-        return 'server-id=' + encodeURIComponent($scope.serverId) + '&';
+    Handlebars.registerHelper('agentIdQueryString', function () {
+      if ($scope.agentId) {
+        return 'agent-id=' + encodeURIComponent($scope.agentId) + '&';
       } else {
         return '';
       }
@@ -69,14 +69,14 @@ glowroot.controller('JvmThreadDumpCtrl', [
       var modalCheckLiveTraces = $location.search()['modal-check-live-traces'];
       if (modalTraceId) {
         $('#traceModal').data('location-query', ['modal-trace-id', 'modal-check-live-traces']);
-        traceModal.displayModal($scope.serverId, modalTraceId, modalCheckLiveTraces);
+        traceModal.displayModal($scope.agentId, modalTraceId, modalCheckLiveTraces);
       } else {
         $('#traceModal').modal('hide');
       }
     });
 
     $scope.refresh = function (deferred) {
-      $http.get('backend/jvm/thread-dump?server-id=' + encodeURIComponent($scope.serverId))
+      $http.get('backend/jvm/thread-dump?agent-id=' + encodeURIComponent($scope.agentId))
           .success(function (data) {
             $scope.loaded = true;
             $scope.agentNotConnected = data.agentNotConnected;

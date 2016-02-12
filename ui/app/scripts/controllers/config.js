@@ -23,16 +23,16 @@ glowroot.controller('ConfigCtrl', [
     // \u00b7 is &middot;
     document.title = 'Configuration \u00b7 Glowroot';
 
-    $scope.hideServerRollupDropdown = function () {
+    $scope.hideAgentRollupDropdown = function () {
       if (!$scope.layout) {
         // this is ok, under grunt serve and layout hasn't loaded yet
         return true;
       }
-      return !$scope.layout.central || $scope.layout.serverRollups.length === 1;
+      return $scope.layout.agentRollups.length === 1 || $scope.layout.fat;
     };
 
     $scope.hideMainContent = function () {
-      return $scope.layout.central && !$scope.serverRollup && !$scope.serverId;
+      return !$scope.agentRollup && !$scope.agentId && !$scope.layout.fat;
     };
 
     $scope.percentileSuffix = function (percentile) {
@@ -83,10 +83,10 @@ glowroot.controller('ConfigCtrl', [
     };
 
     function onLocationChangeSuccess() {
-      if ($scope.layout.central && ($location.path() === '/config/ui' || $location.path() === '/config/smtp')) {
-        $scope.$parent.activeNavbarItem = 'configCentral';
+      if (($location.path() === '/config/ui' || $location.path() === '/config/smtp') && !$scope.layout.fat) {
+        $scope.$parent.activeNavbarItem = 'serverConfig';
       } else {
-        $scope.$parent.activeNavbarItem = 'config';
+        $scope.$parent.activeNavbarItem = 'agentConfig';
       }
     }
 

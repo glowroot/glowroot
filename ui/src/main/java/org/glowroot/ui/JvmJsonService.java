@@ -40,7 +40,7 @@ import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.UsedByJsonSerialization;
-import org.glowroot.storage.repo.ServerRepository;
+import org.glowroot.storage.repo.AgentRepository;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.HostInfo;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.JavaInfo;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
@@ -60,25 +60,25 @@ class JvmJsonService {
     private static final Logger logger = LoggerFactory.getLogger(JvmJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final ServerRepository serverRepository;
+    private final AgentRepository agentRepository;
     private final @Nullable LiveJvmService liveJvmService;
 
-    JvmJsonService(ServerRepository serverRepository, @Nullable LiveJvmService liveJvmService) {
-        this.serverRepository = serverRepository;
+    JvmJsonService(AgentRepository agentRepository, @Nullable LiveJvmService liveJvmService) {
+        this.agentRepository = agentRepository;
         this.liveJvmService = liveJvmService;
     }
 
     @GET("/backend/jvm/agent-connected")
     String getAgentConnected(String queryString) throws Exception {
         checkNotNull(liveJvmService);
-        String serverId = getServerId(queryString);
-        return Boolean.toString(liveJvmService.isAvailable(serverId));
+        String agentId = getAgentId(queryString);
+        return Boolean.toString(liveJvmService.isAvailable(agentId));
     }
 
     @GET("/backend/jvm/system-info")
     String getSystemInfo(String queryString) throws Exception {
-        String serverId = getServerId(queryString);
-        SystemInfo systemInfo = serverRepository.readSystemInfo(serverId);
+        String agentId = getAgentId(queryString);
+        SystemInfo systemInfo = agentRepository.readSystemInfo(agentId);
         if (systemInfo == null) {
             return "{}";
         }
@@ -123,10 +123,10 @@ class JvmJsonService {
     @GET("/backend/jvm/thread-dump")
     String getThreadDump(String queryString) throws Exception {
         checkNotNull(liveJvmService);
-        String serverId = getServerId(queryString);
+        String agentId = getAgentId(queryString);
         ThreadDump threadDump;
         try {
-            threadDump = liveJvmService.getThreadDump(serverId);
+            threadDump = liveJvmService.getThreadDump(agentId);
         } catch (AgentNotConnectedException e) {
             logger.debug(e.getMessage(), e);
             return "{\"agentNotConnected\":true}";
@@ -154,11 +154,11 @@ class JvmJsonService {
     @GET("/backend/jvm/heap-dump-default-dir")
     String getHeapDumpDefaultDir(String queryString) throws Exception {
         checkNotNull(liveJvmService);
-        String serverId = getServerId(queryString);
-        if (!liveJvmService.isAvailable(serverId)) {
+        String agentId = getAgentId(queryString);
+        if (!liveJvmService.isAvailable(agentId)) {
             return "{\"agentNotConnected\":true}";
         }
-        SystemInfo systemInfo = serverRepository.readSystemInfo(serverId);
+        SystemInfo systemInfo = agentRepository.readSystemInfo(agentId);
         checkNotNull(systemInfo);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -175,7 +175,7 @@ class JvmJsonService {
         HeapDumpRequest request = mapper.readValue(content, ImmutableHeapDumpRequest.class);
         try {
             return Long.toString(
-                    liveJvmService.getAvailableDiskSpace(request.serverId(), request.directory()));
+                    liveJvmService.getAvailableDiskSpace(request.agentId(), request.directory()));
         } catch (IOException e) {
             logger.debug(e.getMessage(), e);
             // this is for specific common errors, e.g. "Directory doesn't exist"
@@ -195,7 +195,7 @@ class JvmJsonService {
         HeapDumpRequest request = mapper.readValue(content, ImmutableHeapDumpRequest.class);
         HeapDumpFileInfo heapDumpFileInfo;
         try {
-            heapDumpFileInfo = liveJvmService.heapDump(request.serverId(), request.directory());
+            heapDumpFileInfo = liveJvmService.heapDump(request.agentId(), request.directory());
         } catch (IOException e) {
             logger.debug(e.getMessage(), e);
             // this is for specific common errors, e.g. "Directory doesn't exist"
@@ -220,8 +220,8 @@ class JvmJsonService {
     @POST("/backend/jvm/perform-gc")
     void performGC(String queryString) throws Exception {
         checkNotNull(liveJvmService);
-        String serverId = getServerId(queryString);
-        liveJvmService.gc(serverId);
+        String agentId = getAgentId(queryString);
+        liveJvmService.gc(agentId);
     }
 
     @GET("/backend/jvm/mbean-tree")
@@ -230,7 +230,7 @@ class JvmJsonService {
         MBeanTreeRequest request = QueryStrings.decode(queryString, MBeanTreeRequest.class);
         MBeanDump mbeanDump;
         try {
-            mbeanDump = liveJvmService.getMBeanDump(request.serverId(),
+            mbeanDump = liveJvmService.getMBeanDump(request.agentId(),
                     MBeanDumpKind.ALL_MBEANS_INCLUDE_ATTRIBUTES_FOR_SOME, request.expanded());
         } catch (AgentNotConnectedException e) {
             logger.debug(e.getMessage(), e);
@@ -269,7 +269,7 @@ class JvmJsonService {
         checkNotNull(liveJvmService);
         MBeanAttributeMapRequest request =
                 QueryStrings.decode(queryString, MBeanAttributeMapRequest.class);
-        MBeanDump mbeanDump = liveJvmService.getMBeanDump(request.serverId(),
+        MBeanDump mbeanDump = liveJvmService.getMBeanDump(request.agentId(),
                 MBeanDumpKind.SOME_MBEANS_INCLUDE_ATTRIBUTES,
                 ImmutableList.of(request.objectName()));
         List<MBeanDump.MBeanInfo> mbeanInfos = mbeanDump.getMbeanInfoList();
@@ -287,10 +287,10 @@ class JvmJsonService {
     @GET("/backend/jvm/capabilities")
     String getCapabilities(String queryString) throws Exception {
         checkNotNull(liveJvmService);
-        String serverId = getServerId(queryString);
+        String agentId = getAgentId(queryString);
         Capabilities capabilities;
         try {
-            capabilities = liveJvmService.getCapabilities(serverId);
+            capabilities = liveJvmService.getCapabilities(agentId);
         } catch (AgentNotConnectedException e) {
             logger.debug(e.getMessage(), e);
             return "{\"agentNotConnected\":true}";
@@ -314,8 +314,8 @@ class JvmJsonService {
         jg.writeEndObject();
     }
 
-    private static String getServerId(String queryString) {
-        return QueryStringDecoder.decodeComponent(queryString.substring("server-id".length() + 1));
+    private static String getAgentId(String queryString) {
+        return QueryStringDecoder.decodeComponent(queryString.substring("agent-id".length() + 1));
     }
 
     private static void writeTransactionThread(ThreadDump.Transaction transaction, JsonGenerator jg)
@@ -398,19 +398,19 @@ class JvmJsonService {
 
     @Value.Immutable
     interface MBeanAttributeMapRequest {
-        String serverId();
+        String agentId();
         String objectName();
     }
 
     @Value.Immutable
     interface HeapDumpRequest {
-        String serverId();
+        String agentId();
         String directory();
     }
 
     @Value.Immutable
     interface MBeanTreeRequest {
-        String serverId();
+        String agentId();
         List<String> expanded();
     }
 

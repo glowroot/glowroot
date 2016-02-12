@@ -37,7 +37,7 @@ import org.rauschig.jarchivelib.CompressionType;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-// see copy of this class in glowroot-central
+// see copy of this class in glowroot-server
 class CassandraWrapper {
 
     private static final String CASSANDRA_VERSION = "2.0.14";

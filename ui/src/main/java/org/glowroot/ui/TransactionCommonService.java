@@ -171,7 +171,7 @@ class TransactionCommonService {
 
     // query.from() is non-inclusive
     List<Aggregate.QueriesByType> getMergedQueries(TransactionQuery query) throws Exception {
-        return getMergedQueries(query, getMaxAggregateQueriesPerQueryType(query.serverRollup()));
+        return getMergedQueries(query, getMaxAggregateQueriesPerQueryType(query.agentRollup()));
     }
 
     private OverallSummary getMergedOverallSummary(OverallQuery query) throws Exception {
@@ -368,8 +368,8 @@ class TransactionCommonService {
         return rolledUpThroughputAggregates;
     }
 
-    private int getMaxAggregateQueriesPerQueryType(String serverRollup) throws IOException {
-        AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(serverRollup);
+    private int getMaxAggregateQueriesPerQueryType(String agentRollup) throws IOException {
+        AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(agentRollup);
         if (advancedConfig != null && advancedConfig.hasMaxAggregateQueriesPerQueryType()) {
             return advancedConfig.getMaxAggregateQueriesPerQueryType().getValue();
         } else {

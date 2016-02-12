@@ -99,14 +99,14 @@ glowroot.controller('TransactionTabCtrl', [
     });
 
     function updateTabBarData() {
-      if (($scope.layout.central && !$scope.serverRollup) || !$scope.transactionType) {
+      if ((!$scope.agentRollup && !$scope.layout.fat) || !$scope.transactionType) {
         $scope.tabBarData = {
           traceCount: 0
         };
         return;
       }
       var query = {
-        serverRollup: $scope.serverRollup,
+        agentRollup: $scope.agentRollup,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
         from: $scope.chartFrom,

@@ -251,7 +251,7 @@ class TransactionJsonService {
         TransactionSummaryRequest request =
                 QueryStrings.decode(queryString, TransactionSummaryRequest.class);
         ImmutableOverallQuery quer = ImmutableOverallQuery.builder()
-                .serverRollup(request.serverRollup())
+                .agentRollup(request.agentRollup())
                 .transactionType(request.transactionType())
                 .from(request.from())
                 .to(request.to())
@@ -277,7 +277,7 @@ class TransactionJsonService {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .serverRollup(request.serverRollup())
+                .agentRollup(request.agentRollup())
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
@@ -286,7 +286,7 @@ class TransactionJsonService {
         long traceCount = traceRepository.readSlowCount(query);
         boolean includeActiveTraces = shouldIncludeActiveTraces(request);
         if (includeActiveTraces) {
-            traceCount += liveTraceRepository.getMatchingTraceCount(request.serverRollup(),
+            traceCount += liveTraceRepository.getMatchingTraceCount(request.agentRollup(),
                     request.transactionType(), request.transactionName());
         }
         StringBuilder sb = new StringBuilder();
@@ -310,7 +310,7 @@ class TransactionJsonService {
 
     private TransactionQuery toQuery(RequestBase request) throws Exception {
         return ImmutableTransactionQuery.builder()
-                .serverRollup(request.serverRollup())
+                .agentRollup(request.agentRollup())
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
@@ -616,7 +616,7 @@ class TransactionJsonService {
 
     @Value.Immutable
     interface TransactionSummaryRequest {
-        String serverRollup();
+        String agentRollup();
         String transactionType();
         long from();
         long to();
@@ -625,7 +625,7 @@ class TransactionJsonService {
     }
 
     interface RequestBase {
-        String serverRollup();
+        String agentRollup();
         String transactionType();
         @Nullable
         String transactionName();

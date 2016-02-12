@@ -25,16 +25,16 @@ glowroot.controller('JvmCtrl', [
     document.title = 'JVM \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'jvm';
 
-    $scope.hideServerRollupDropdown = function () {
+    $scope.hideAgentRollupDropdown = function () {
       if (!$scope.layout) {
         // this is ok, under grunt serve and layout hasn't loaded yet
         return true;
       }
-      return !$scope.layout.central || $scope.layout.serverRollups.length === 1;
+      return $scope.layout.agentRollups.length === 1 || $scope.layout.fat;
     };
 
     $scope.hideMainContent = function () {
-      return $scope.layout.central && !$scope.serverRollup && !$scope.serverId;
+      return !$scope.agentRollup && !$scope.agentId && !$scope.layout.fat;
     };
 
     $scope.currentUrl = function () {

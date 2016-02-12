@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2015 the original author or authors.
+  Copyright 2013-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -170,7 +170,7 @@
                  gt-dont-validate-form="true"
                  class="pull-left"
                  style="margin-right: 8px;"
-                 ng-hide="layout.central">
+                 ng-show="layout.fat">
             </div>
             <div gt-button
                  gt-label="Delete all data"
@@ -179,7 +179,7 @@
                  gt-dont-validate-form="true"
                  gt-confirm-header="Delete all data?"
                  gt-confirm-body="This will delete all captured data, including aggregated transaction data, traces and gauge data."
-                 ng-hide="layout.central"
+                 ng-show="layout.fat"
                  class="pull-left">
             </div>
           </div>

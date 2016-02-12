@@ -54,25 +54,25 @@ class TraceDetailHttpService implements HttpService {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         String path = decoder.path();
         String traceComponent = path.substring(path.lastIndexOf('/') + 1);
-        List<String> serverIds = decoder.parameters().get("server-id");
-        checkNotNull(serverIds, "Missing server id in query string: %s", request.uri());
-        String serverId = serverIds.get(0);
+        List<String> agentIds = decoder.parameters().get("agent-id");
+        checkNotNull(agentIds, "Missing agent id in query string: %s", request.uri());
+        String agentId = agentIds.get(0);
         List<String> traceIds = decoder.parameters().get("trace-id");
         checkNotNull(traceIds, "Missing trace id in query string: %s", request.uri());
         String traceId = traceIds.get(0);
-        // check-live-traces is an optimization so central only has to check with remote agents when
-        // necessary
+        // check-live-traces is an optimization so glowroot server only has to check with remote
+        // agents when necessary
         List<String> checkLiveTracesParams = decoder.parameters().get("check-live-traces");
         boolean checkLiveTraces = false;
         if (checkLiveTracesParams != null && !checkLiveTracesParams.isEmpty()) {
             checkLiveTraces = Boolean.parseBoolean(checkLiveTracesParams.get(0));
         }
         logger.debug(
-                "handleRequest(): traceComponent={}, serverId={}, traceId={}, checkLiveTraces={}",
-                traceComponent, serverId, traceId, checkLiveTraces);
+                "handleRequest(): traceComponent={}, agentId={}, traceId={}, checkLiveTraces={}",
+                traceComponent, agentId, traceId, checkLiveTraces);
 
         ChunkSource detail =
-                getDetailChunkSource(traceComponent, serverId, traceId, checkLiveTraces);
+                getDetailChunkSource(traceComponent, agentId, traceId, checkLiveTraces);
         if (detail == null) {
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
         }
@@ -95,11 +95,11 @@ class TraceDetailHttpService implements HttpService {
         return null;
     }
 
-    private @Nullable ChunkSource getDetailChunkSource(String traceComponent, String serverName,
+    private @Nullable ChunkSource getDetailChunkSource(String traceComponent, String agentId,
             String traceId, boolean checkLiveTraces) throws Exception {
         if (traceComponent.equals("entries")) {
             String entriesJson =
-                    traceCommonService.getEntriesJson(serverName, traceId, checkLiveTraces);
+                    traceCommonService.getEntriesJson(agentId, traceId, checkLiveTraces);
             if (entriesJson == null) {
                 // this includes trace was found but the trace had no trace entries
                 // caller should check trace.entry_count
@@ -108,7 +108,7 @@ class TraceDetailHttpService implements HttpService {
             return ChunkSource.wrap(entriesJson);
         }
         if (traceComponent.equals("main-thread-profile")) {
-            String profileJson = traceCommonService.getMainThreadProfileJson(serverName, traceId,
+            String profileJson = traceCommonService.getMainThreadProfileJson(agentId, traceId,
                     checkLiveTraces);
             if (profileJson == null) {
                 return null;
@@ -116,7 +116,7 @@ class TraceDetailHttpService implements HttpService {
             return ChunkSource.wrap(profileJson);
         }
         if (traceComponent.equals("aux-thread-profile")) {
-            String profileJson = traceCommonService.getAuxThreadProfileJson(serverName, traceId,
+            String profileJson = traceCommonService.getAuxThreadProfileJson(agentId, traceId,
                     checkLiveTraces);
             if (profileJson == null) {
                 return null;

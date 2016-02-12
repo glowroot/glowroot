@@ -32,29 +32,29 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 public interface LiveTraceRepository {
 
     @Nullable
-    Trace.Header getHeader(String serverId, String traceId) throws Exception;
+    Trace.Header getHeader(String agentId, String traceId) throws Exception;
 
     // this is only called if the trace does have traces, so empty list response means trace was not
     // found (e.g. has expired)
-    List<Trace.Entry> getEntries(String serverId, String traceId) throws Exception;
+    List<Trace.Entry> getEntries(String agentId, String traceId) throws Exception;
 
     @Nullable
-    Profile getMainThreadProfile(String serverId, String traceId) throws Exception;
+    Profile getMainThreadProfile(String agentId, String traceId) throws Exception;
 
     @Nullable
-    Profile getAuxThreadProfile(String serverId, String traceId) throws Exception;
+    Profile getAuxThreadProfile(String agentId, String traceId) throws Exception;
 
     @Nullable
-    Trace getFullTrace(String serverId, String traceId) throws Exception;
+    Trace getFullTrace(String agentId, String traceId) throws Exception;
 
-    int getMatchingTraceCount(String serverId, String transactionType,
+    int getMatchingTraceCount(String agentId, String transactionType,
             @Nullable String transactionName);
 
-    List<TracePoint> getMatchingActiveTracePoints(TraceKind traceKind, String serverId,
+    List<TracePoint> getMatchingActiveTracePoints(TraceKind traceKind, String agentId,
             String transactionType, @Nullable String transactionName, TracePointFilter filter,
             int limit, long captureTime, long captureTick);
 
-    List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String serverId,
+    List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String agentId,
             String transactionType, @Nullable String transactionName, TracePointFilter filter,
             long captureTime);
 
@@ -123,7 +123,7 @@ public interface LiveTraceRepository {
 
     @Value.Immutable
     public interface TracePoint {
-        String serverId();
+        String agentId();
         String traceId();
         long captureTime();
         long durationNanos();
@@ -141,45 +141,45 @@ public interface LiveTraceRepository {
     public class LiveTraceRepositoryNop implements LiveTraceRepository {
 
         @Override
-        public @Nullable Trace.Header getHeader(String serverId, String traceId) {
+        public @Nullable Trace.Header getHeader(String agentId, String traceId) {
             return null;
         }
 
         @Override
-        public List<Trace.Entry> getEntries(String serverId, String traceId) {
+        public List<Trace.Entry> getEntries(String agentId, String traceId) {
             return ImmutableList.of();
         }
 
         @Override
-        public @Nullable Profile getMainThreadProfile(String serverId, String traceId) {
+        public @Nullable Profile getMainThreadProfile(String agentId, String traceId) {
             return null;
         }
 
         @Override
-        public @Nullable Profile getAuxThreadProfile(String serverId, String traceId) {
+        public @Nullable Profile getAuxThreadProfile(String agentId, String traceId) {
             return null;
         }
 
         @Override
-        public @Nullable Trace getFullTrace(String serverId, String traceId) {
+        public @Nullable Trace getFullTrace(String agentId, String traceId) {
             return null;
         }
 
         @Override
-        public int getMatchingTraceCount(String serverId, String transactionType,
+        public int getMatchingTraceCount(String agentId, String transactionType,
                 @Nullable String transactionName) {
             return 0;
         }
 
         @Override
-        public List<TracePoint> getMatchingActiveTracePoints(TraceKind traceKind, String serverId,
+        public List<TracePoint> getMatchingActiveTracePoints(TraceKind traceKind, String agentId,
                 String transactionType, @Nullable String transactionName, TracePointFilter filter,
                 int limit, long captureTime, long captureTick) {
             return ImmutableList.of();
         }
 
         @Override
-        public List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String serverId,
+        public List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String agentId,
                 String transactionType, @Nullable String transactionName, TracePointFilter filter,
                 long captureTime) {
             return ImmutableList.of();

@@ -21,11 +21,11 @@ glowroot.controller('NavbarCtrl', [
   '$location',
   'queryStrings',
   function ($scope, $location, queryStrings) {
-    $scope.queryString = function (preserveServerSelection, preserveTransactionType) {
+    $scope.queryString = function (preserveAgentSelection, preserveTransactionType) {
       var query = {};
-      if (preserveServerSelection) {
-        query['server-rollup'] = $location.search()['server-rollup'];
-        query['server-id'] = $location.search()['server-id'];
+      if (preserveAgentSelection) {
+        query['agent-rollup'] = $location.search()['agent-rollup'];
+        query['agent-id'] = $location.search()['agent-id'];
       }
       if (preserveTransactionType) {
         var transactionType = $location.search()['transaction-type'];
@@ -48,10 +48,10 @@ glowroot.controller('NavbarCtrl', [
       }
       return queryStrings.encodeObject(query);
     };
-    $scope.centralConfigQueryString = function () {
+    $scope.serverConfigQueryString = function () {
       var query = {};
-      query['server-rollup'] = $location.search()['server-rollup'];
-      query['server-id'] = $location.search()['server-id'];
+      query['agent-rollup'] = $location.search()['agent-rollup'];
+      query['agent-id'] = $location.search()['agent-id'];
       return queryStrings.encodeObject(query);
     };
   }

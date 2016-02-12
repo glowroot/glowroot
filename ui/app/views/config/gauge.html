@@ -18,7 +18,7 @@
     <h2>
       <a class="pull-right"
          style="font-size: 16px; padding-top: 14px;"
-         href="config/gauge-list{{serverQueryString()}}">
+         href="config/gauge-list{{agentQueryString()}}">
         Return to list
       </a>
       <span ng-class="{'gt-lighten-font': !loaded && !httpError}">
@@ -34,7 +34,7 @@
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-if="agentNotConnected" class="alert alert-warning">
-      Limited functionality since agent is not currently connected to the central server
+      Limited functionality since agent is not currently connected
     </div>
     <div ng-form
          gt-form-with-primary-button

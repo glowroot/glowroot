@@ -41,7 +41,7 @@ glowroot.controller('ConfigCommonCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.serverId = $scope.serverId;
+      postData.agentId = $scope.agentId;
       $http.post(backendUrl, postData)
           .success(function (data) {
             onNewData(data);
@@ -50,7 +50,7 @@ glowroot.controller('ConfigCommonCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get(backendUrl + '?server-id=' + encodeURIComponent($scope.serverId))
+    $http.get(backendUrl + '?agent-id=' + encodeURIComponent($scope.agentId))
         .success(onNewData)
         .error(httpErrors.handler($scope));
   }

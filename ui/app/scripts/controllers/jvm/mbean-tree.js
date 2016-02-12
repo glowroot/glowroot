@@ -37,8 +37,8 @@ glowroot.controller('JvmMBeanTreeCtrl', [
 
     function updateLocation() {
       var query = {};
-      if ($scope.layout.central) {
-        query['server-id'] = $scope.serverId;
+      if (!$scope.layout.fat) {
+        query['agent-id'] = $scope.agentId;
       }
       query.expanded = expandedObjectNames;
       $location.search(query).replace();
@@ -58,7 +58,7 @@ glowroot.controller('JvmMBeanTreeCtrl', [
       node.loading = true;
       node.expanded = true;
       var queryData = {
-        serverId: $scope.serverId,
+        agentId: $scope.agentId,
         objectName: node.objectName
       };
       $http.get('backend/jvm/mbean-attribute-map' + queryStrings.encodeObject(queryData))
@@ -82,7 +82,7 @@ glowroot.controller('JvmMBeanTreeCtrl', [
 
     $scope.refresh = function (deferred) {
       var queryData = {
-        serverId: $scope.serverId,
+        agentId: $scope.agentId,
         expanded: expandedObjectNames
       };
       $http.get('backend/jvm/mbean-tree' + queryStrings.encodeObject(queryData))

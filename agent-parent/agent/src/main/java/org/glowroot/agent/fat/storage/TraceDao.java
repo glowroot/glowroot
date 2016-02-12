@@ -59,7 +59,7 @@ import static org.glowroot.agent.fat.storage.util.Checkers.castUntainted;
 
 public class TraceDao implements TraceRepository {
 
-    private static final String SERVER_ID = "";
+    private static final String AGENT_ID = "";
 
     private static final ImmutableList<Column> traceColumns = ImmutableList.<Column>of(
             ImmutableColumn.of("id", ColumnType.VARCHAR),
@@ -130,7 +130,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public void collect(final String serverId, final Trace trace) throws Exception {
+    public void collect(final String agentId, final Trace trace) throws Exception {
         final Trace.Header header = trace.getHeader();
         boolean exists =
                 dataSource.queryForExists("select 1 from trace where id = ?", trace.getId());
@@ -150,7 +150,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public List<String> readTraceAttributeNames(String serverRollup, String transactionType)
+    public List<String> readTraceAttributeNames(String agentRollup, String transactionType)
             throws Exception {
         return traceAttributeNameDao.readTraceAttributeNames(transactionType);
     }
@@ -214,12 +214,12 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable HeaderPlus readHeaderPlus(String serverId, String traceId) throws Exception {
+    public @Nullable HeaderPlus readHeaderPlus(String agentId, String traceId) throws Exception {
         return dataSource.queryAtMostOne(new TraceHeaderQuery(traceId));
     }
 
     @Override
-    public List<Trace.Entry> readEntries(String serverId, String traceId) throws Exception {
+    public List<Trace.Entry> readEntries(String agentId, String traceId) throws Exception {
         Long cappedId = dataSource
                 .queryForOptionalLong("select entries_capped_id from trace where id = ?", traceId);
         if (cappedId == null) {
@@ -230,7 +230,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable Profile readMainThreadProfile(String serverId, String traceId)
+    public @Nullable Profile readMainThreadProfile(String agentId, String traceId)
             throws Exception {
         Long cappedId = dataSource.queryForOptionalLong(
                 "select main_thread_profile_capped_id from trace where id = ?", traceId);
@@ -242,7 +242,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable Profile readAuxThreadProfile(String serverId, String traceId)
+    public @Nullable Profile readAuxThreadProfile(String agentId, String traceId)
             throws Exception {
         Long cappedId = dataSource.queryForOptionalLong(
                 "select aux_thread_profile_capped_id from trace where id = ?", traceId);
@@ -254,7 +254,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public void deleteAll(String serverRollup) throws Exception {
+    public void deleteAll(String agentRollup) throws Exception {
         traceAttributeNameDao.deleteAll();
         dataSource.execute("truncate table trace");
         dataSource.execute("truncate table trace_attribute");
@@ -444,7 +444,7 @@ public class TraceDao implements TraceRepository {
         public TracePoint mapRow(ResultSet resultSet) throws SQLException {
             String traceId = checkNotNull(resultSet.getString(1));
             return ImmutableTracePoint.builder()
-                    .serverId(SERVER_ID)
+                    .agentId(AGENT_ID)
                     .traceId(traceId)
                     .captureTime(resultSet.getLong(2))
                     .durationNanos(resultSet.getLong(3))

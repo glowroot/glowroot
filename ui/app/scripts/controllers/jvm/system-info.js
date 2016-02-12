@@ -47,7 +47,7 @@ glowroot.controller('JvmSystemInfoCtrl', [
       }
     };
 
-    $http.get('backend/jvm/system-info?server-id=' + encodeURIComponent($scope.serverId))
+    $http.get('backend/jvm/system-info?agent-id=' + encodeURIComponent($scope.agentId))
         .success(function (data) {
           $scope.loaded = true;
           $scope.data = data;

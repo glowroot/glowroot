@@ -83,17 +83,17 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public boolean isAvailable(String serverId) {
+    public boolean isAvailable(String agentId) {
         return true;
     }
 
     @Override
-    public ThreadDump getThreadDump(String serverId) {
+    public ThreadDump getThreadDump(String agentId) {
         return threadDumpService.getThreadDump();
     }
 
     @Override
-    public long getAvailableDiskSpace(String serverId, String directory) throws IOException {
+    public long getAvailableDiskSpace(String agentId, String directory) throws IOException {
         File dir = new File(directory);
         if (!dir.exists()) {
             throw new IOException("Directory doesn't exist");
@@ -105,7 +105,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public HeapDumpFileInfo heapDump(String serverId, String directory) throws Exception {
+    public HeapDumpFileInfo heapDump(String agentId, String directory) throws Exception {
         File dir = new File(directory);
         if (!dir.exists()) {
             throw new IOException("Directory doesn't exist");
@@ -132,14 +132,14 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public void gc(String serverId) {
+    public void gc(String agentId) {
         // using MemoryMXBean.gc() instead of System.gc() in hope that it will someday bypass
         // -XX:+DisableExplicitGC (see https://bugs.openjdk.java.net/browse/JDK-6396411)
         ManagementFactory.getMemoryMXBean().gc();
     }
 
     @Override
-    public MBeanDump getMBeanDump(String serverId, MBeanDumpKind mbeanDumpKind,
+    public MBeanDump getMBeanDump(String agentId, MBeanDumpKind mbeanDumpKind,
             List<String> objectNames) throws Exception {
         switch (mbeanDumpKind) {
             case ALL_MBEANS_INCLUDE_ATTRIBUTES:
@@ -190,7 +190,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public List<String> getMatchingMBeanObjectNames(String serverId, String partialObjectName,
+    public List<String> getMatchingMBeanObjectNames(String agentId, String partialObjectName,
             int limit) throws InterruptedException {
         ObjectNameQueryExp queryExp = new ObjectNameQueryExp(partialObjectName);
         Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null, queryExp);
@@ -213,7 +213,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public MBeanMeta getMBeanMeta(String serverId, String mbeanObjectName) throws Exception {
+    public MBeanMeta getMBeanMeta(String agentId, String mbeanObjectName) throws Exception {
         Set<ObjectName> objectNames = getObjectNames(mbeanObjectName);
         ImmutableList<String> attributeNames = Ordering.from(String.CASE_INSENSITIVE_ORDER)
                 .immutableSortedCopy(getAttributeNames(objectNames));
@@ -226,7 +226,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public Capabilities getCapabilities(String serverId) {
+    public Capabilities getCapabilities(String agentId) {
         return Capabilities.newBuilder()
                 .setThreadCpuTime(getThreadCpuTimeAvailability())
                 .setThreadContentionTime(getThreadContentionAvailability())

@@ -28,16 +28,16 @@ import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 
 public interface AggregateRepository {
 
-    void store(String serverId, long captureTime, List<AggregatesByType> aggregatesByType)
+    void store(String agentId, long captureTime, List<AggregatesByType> aggregatesByType)
             throws Exception;
 
     // query.from() is non-inclusive
     OverallSummary readOverallSummary(OverallQuery query) throws Exception;
 
     // query.from() is non-inclusive
-    // sortOrder and limit are only used by fat agent H2 collector, while the central collector
-    // which currently has to pull in all records anyways, just delegates ordering and limit to
-    // TransactionSummaryCollector
+    // sortOrder and limit are only used by fat agent H2 repository, while the glowroot server
+    // repository which currently has to pull in all records anyways, just delegates ordering and
+    // limit to TransactionSummaryCollector
     void mergeInTransactionSummaries(TransactionSummaryCollector mergedTransactionSummaries,
             OverallQuery query, SummarySortOrder sortOrder, int limit) throws Exception;
 
@@ -45,9 +45,9 @@ public interface AggregateRepository {
     OverallErrorSummary readOverallErrorSummary(OverallQuery query) throws Exception;
 
     // query.from() is non-inclusive
-    // sortOrder and limit are only used by fat agent H2 collector, while the central collector
-    // which currently has to pull in all records anyways, just delegates ordering and limit to
-    // TransactionErrorSummaryCollector
+    // sortOrder and limit are only used by fat agent H2 repository, while the glowroot server
+    // repository which currently has to pull in all records anyways, just delegates ordering and
+    // limit to TransactionErrorSummaryCollector
     void mergeInTransactionErrorSummaries(
             TransactionErrorSummaryCollector mergedTransactionErrorSummaries, OverallQuery query,
             ErrorSummarySortOrder sortOrder, int limit) throws Exception;
@@ -84,11 +84,11 @@ public interface AggregateRepository {
     // query.from() is non-inclusive
     boolean shouldHaveQueries(TransactionQuery query) throws Exception;
 
-    void deleteAll(String serverRollup) throws Exception;
+    void deleteAll(String agentRollup) throws Exception;
 
     @Value.Immutable
     public interface OverallQuery {
-        String serverRollup();
+        String agentRollup();
         String transactionType();
         long from();
         long to();
@@ -97,7 +97,7 @@ public interface AggregateRepository {
 
     @Value.Immutable
     public interface TransactionQuery {
-        String serverRollup();
+        String agentRollup();
         String transactionType();
         @Nullable
         String transactionName();

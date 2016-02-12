@@ -67,7 +67,7 @@ class GaugeValueJsonService {
 
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (String gaugeName : request.gaugeNames()) {
-            List<GaugeValue> gaugeValues = getGaugeValues(request.serverRollup(), revisedFrom,
+            List<GaugeValue> gaugeValues = getGaugeValues(request.agentRollup(), revisedFrom,
                     revisedTo, gaugeName, rollupLevel);
             dataSeriesList.add(convertToDataSeriesWithGaps(gaugeName, gaugeValues, gapMillis));
         }
@@ -82,16 +82,16 @@ class GaugeValueJsonService {
 
     @GET("/backend/jvm/all-gauges")
     String getAllGaugeNames(String queryString) throws Exception {
-        String serverRollup =
-                QueryStrings.decode(queryString, AllGaugeNamesRequest.class).serverRollup();
-        List<Gauge> gauges = gaugeValueRepository.getGauges(serverRollup);
+        String agentRollup =
+                QueryStrings.decode(queryString, AllGaugeNamesRequest.class).agentRollup();
+        List<Gauge> gauges = gaugeValueRepository.getGauges(agentRollup);
         ImmutableList<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
         return mapper.writeValueAsString(sortedGauges);
     }
 
-    private List<GaugeValue> getGaugeValues(String serverRollup, long from, long to,
+    private List<GaugeValue> getGaugeValues(String agentRollup, long from, long to,
             String gaugeName, int rollupLevel) throws Exception {
-        List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(serverRollup, gaugeName,
+        List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollup, gaugeName,
                 from, to, rollupLevel);
         if (rollupLevel == 0) {
             return gaugeValues;
@@ -102,7 +102,7 @@ class GaugeValueJsonService {
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<GaugeValue> orderedNonRolledUpGaugeValues = Lists.newArrayList();
-        orderedNonRolledUpGaugeValues.addAll(gaugeValueRepository.readGaugeValues(serverRollup,
+        orderedNonRolledUpGaugeValues.addAll(gaugeValueRepository.readGaugeValues(agentRollup,
                 gaugeName, nonRolledUpFrom, to, 0));
         gaugeValues = Lists.newArrayList(gaugeValues);
         gaugeValues
@@ -175,12 +175,12 @@ class GaugeValueJsonService {
 
     @Value.Immutable
     interface AllGaugeNamesRequest {
-        String serverRollup();
+        String agentRollup();
     }
 
     @Value.Immutable
     interface GaugeValueRequest {
-        String serverRollup();
+        String agentRollup();
         long from();
         long to();
         ImmutableList<String> gaugeNames();

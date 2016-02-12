@@ -21,13 +21,13 @@ glowroot.factory('traceModal', [
   'modals',
   function ($http, modals) {
 
-    function displayModal(serverId, traceId, checkLiveTraces) {
+    function displayModal(agentId, traceId, checkLiveTraces) {
 
       var spinner;
       var $modalContent = $('#traceModal .modal-body');
 
       modals.display('#traceModal');
-      var url = 'backend/trace/header?server-id=' + serverId + '&trace-id=' + traceId;
+      var url = 'backend/trace/header?agent-id=' + agentId + '&trace-id=' + traceId;
       if (checkLiveTraces) {
         url += '&check-live-traces=true';
       }
@@ -38,14 +38,14 @@ glowroot.factory('traceModal', [
               $modalContent.html('expired');
             } else {
               data.showExport = true;
-              HandlebarsRendering.renderTrace(data, serverId, traceId, checkLiveTraces, $modalContent);
+              HandlebarsRendering.renderTrace(data, agentId, traceId, checkLiveTraces, $modalContent);
               $('#traceModal .modal-body button.download-trace').click(function () {
                 var $traceParent = $(this).parents('.gt-trace-parent');
                 var traceId = $traceParent.data('gtTraceId');
                 var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
                 var url = document.getElementsByTagName('base')[0].href + 'export/trace?';
-                if (serverId) {
-                  url += 'server-id=' + serverId + '&';
+                if (agentId) {
+                  url += 'agent-id=' + agentId + '&';
                 }
                 url += 'trace-id=' + traceId;
                 if (checkLiveTraces) {

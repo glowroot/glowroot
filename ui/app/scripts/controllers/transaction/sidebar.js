@@ -87,13 +87,13 @@ glowroot.controller('TransactionSidebarCtrl', [
     });
 
     function updateSummaries(initialLoading, moreLoading) {
-      if (($scope.layout.central && !$scope.serverRollup) || !$scope.transactionType) {
+      if ((!$scope.agentRollup && !$scope.layout.fat) || !$scope.transactionType) {
         $scope.summariesNoSearch = true;
         return;
       }
       $scope.summariesNoSearch = false;
       var query = {
-        serverRollup: $scope.serverRollup,
+        agentRollup: $scope.agentRollup,
         transactionType: $scope.transactionType,
         from: $scope.chartFrom,
         to: $scope.chartTo,

@@ -30,14 +30,14 @@ glowroot.controller('ConfigPluginListCtrl', [
 
     $scope.pluginQueryString = function (plugin) {
       var query = {};
-      if ($scope.serverId) {
-        query.serverId = $scope.serverId;
+      if ($scope.agentId) {
+        query.agentId = $scope.agentId;
       }
       query.pluginId = plugin.id;
       return queryStrings.encodeObject(query);
     };
 
-    $http.get('backend/config/plugins?server-id=' + encodeURIComponent($scope.serverId))
+    $http.get('backend/config/plugins?agent-id=' + encodeURIComponent($scope.agentId))
         .success(function (data) {
           $scope.loaded = true;
           $scope.plugins = [];

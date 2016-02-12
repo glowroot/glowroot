@@ -54,7 +54,7 @@ glowroot.controller('ConfigUserRecordingCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.serverId = $scope.serverId;
+      postData.agentId = $scope.agentId;
       $http.post('backend/config/user-recording', postData)
           .success(function (data) {
             onNewData(data);
@@ -63,7 +63,7 @@ glowroot.controller('ConfigUserRecordingCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/user-recording?server-id=' + encodeURIComponent($scope.serverId))
+    $http.get('backend/config/user-recording?agent-id=' + encodeURIComponent($scope.agentId))
         .success(onNewData)
         .error(httpErrors.handler($scope));
   }

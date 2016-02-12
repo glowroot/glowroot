@@ -80,14 +80,14 @@ class ErrorJsonService {
     String getData(String queryString) throws Exception {
         ErrorMessageRequest request = QueryStrings.decode(queryString, ErrorMessageRequest.class);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .serverRollup(request.serverRollup())
+                .agentRollup(request.agentRollup())
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
                 .to(request.to())
                 .build();
         TransactionQuery transactionQuery = ImmutableTransactionQuery.builder()
-                .serverRollup(request.serverRollup())
+                .agentRollup(request.agentRollup())
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
@@ -142,7 +142,7 @@ class ErrorJsonService {
     String getSummaries(String queryString) throws Exception {
         ErrorSummaryRequest request = QueryStrings.decode(queryString, ErrorSummaryRequest.class);
         OverallQuery query = ImmutableOverallQuery.builder()
-                .serverRollup(request.serverRollup())
+                .agentRollup(request.agentRollup())
                 .transactionType(request.transactionType())
                 .from(request.from())
                 .to(request.to())
@@ -213,7 +213,7 @@ class ErrorJsonService {
 
     @Value.Immutable
     interface ErrorSummaryRequest {
-        String serverRollup();
+        String agentRollup();
         String transactionType();
         long from();
         long to();
@@ -223,7 +223,7 @@ class ErrorJsonService {
 
     @Value.Immutable
     interface ErrorMessageRequest {
-        String serverRollup();
+        String agentRollup();
         String transactionType();
         @Nullable
         String transactionName();

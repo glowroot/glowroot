@@ -46,7 +46,7 @@ glowroot.controller('ConfigPluginCtrl', [
         });
       });
       var postData = {
-        serverId: $scope.serverId,
+        agentId: $scope.agentId,
         pluginId: $stateParams['plugin-id'],
         properties: properties,
         version: $scope.config.version
@@ -55,8 +55,8 @@ glowroot.controller('ConfigPluginCtrl', [
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Saved');
-            if (postData.serverId) {
-              $location.url('config/plugin-list?server-id=' + encodeURIComponent($scope.serverId));
+            if (postData.agentId) {
+              $location.url('config/plugin-list?agent-id=' + encodeURIComponent($scope.agentId));
             } else {
               $location.url('config/plugin-list');
             }
@@ -64,7 +64,7 @@ glowroot.controller('ConfigPluginCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/plugins?server-id=' + encodeURIComponent($scope.serverId) + '&plugin-id=' + $stateParams['plugin-id'])
+    $http.get('backend/config/plugins?agent-id=' + encodeURIComponent($scope.agentId) + '&plugin-id=' + $stateParams['plugin-id'])
         .success(function (data) {
           onNewData(data);
         })

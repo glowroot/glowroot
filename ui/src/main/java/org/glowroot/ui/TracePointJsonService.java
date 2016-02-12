@@ -54,7 +54,7 @@ class TracePointJsonService {
     private final TraceRepository traceRepository;
     private final LiveTraceRepository liveTraceRepository;
     private final ConfigRepository configRepository;
-    // null in central (due to shading issue, and not needed in central anyways)
+    // null in glowroot server (due to shading issue, and not needed in glowroot server anyways)
     private final @Nullable Ticker ticker;
     private final Clock clock;
 
@@ -88,7 +88,7 @@ class TracePointJsonService {
             durationNanosHigh = Math.round(durationMillisHigh * NANOSECONDS_PER_MILLISECOND);
         }
         TraceQuery query = ImmutableTraceQuery.builder()
-                .serverRollup(request.serverRollup())
+                .agentRollup(request.agentRollup())
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
@@ -133,7 +133,7 @@ class TracePointJsonService {
                 // capture active traces first to make sure that none are missed in the transition
                 // between active and pending/stored (possible duplicates are removed below)
                 activeTracePoints.addAll(liveTraceRepository.getMatchingActiveTracePoints(traceKind,
-                        query.serverRollup(), query.transactionType(), query.transactionName(),
+                        query.agentRollup(), query.transactionType(), query.transactionName(),
                         filter, limit, captureTime, captureTick));
             }
             Result<TracePoint> queryResult =
@@ -143,7 +143,7 @@ class TracePointJsonService {
             boolean expired = points.isEmpty() && query.to() < clock.currentTimeMillis()
                     - HOURS.toMillis(configRepository.getStorageConfig().traceExpirationHours());
             List<String> traceAttributeNames = traceRepository
-                    .readTraceAttributeNames(query.serverRollup(), query.transactionType());
+                    .readTraceAttributeNames(query.agentRollup(), query.transactionType());
             return writeResponse(points, activeTracePoints, queryResult.moreAvailable(), expired,
                     traceAttributeNames);
         }
@@ -162,7 +162,7 @@ class TracePointJsonService {
                 // important to grab pending traces before stored points to ensure none are
                 // missed in the transition between pending and stored
                 matchingPendingPoints = liveTraceRepository.getMatchingPendingPoints(traceKind,
-                        query.serverRollup(), query.transactionType(), query.transactionName(),
+                        query.agentRollup(), query.transactionType(), query.transactionName(),
                         filter, captureTime);
             } else {
                 matchingPendingPoints = ImmutableList.of();
@@ -281,7 +281,7 @@ class TracePointJsonService {
             jg.writeStartArray();
             jg.writeNumber(point.captureTime());
             jg.writeNumber(point.durationNanos() / NANOSECONDS_PER_MILLISECOND);
-            jg.writeString(point.serverId());
+            jg.writeString(point.agentId());
             jg.writeString(point.traceId());
             jg.writeEndArray();
         }
@@ -291,7 +291,7 @@ class TracePointJsonService {
     @Value.Immutable
     public abstract static class TracePointRequest {
 
-        public abstract String serverRollup();
+        public abstract String agentRollup();
         public abstract String transactionType();
         public abstract @Nullable String transactionName();
         public abstract long from();

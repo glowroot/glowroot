@@ -34,34 +34,34 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
 import org.glowroot.storage.config.UserInterfaceConfig;
 import org.glowroot.storage.config.UserInterfaceConfig.AnonymousAccess;
+import org.glowroot.storage.repo.AgentRepository;
+import org.glowroot.storage.repo.AgentRepository.AgentRollup;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
-import org.glowroot.storage.repo.ServerRepository;
-import org.glowroot.storage.repo.ServerRepository.ServerRollup;
 import org.glowroot.storage.repo.TransactionTypeRepository;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
 class LayoutService {
 
-    private static final String SERVER_ID = "";
+    private static final String AGENT_ID = "";
 
     private static final JsonFactory jsonFactory = new JsonFactory();
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final boolean central;
+    private final boolean fat;
     private final String version;
     private final ConfigRepository configRepository;
-    private final ServerRepository serverRepository;
+    private final AgentRepository agentRepository;
     private final TransactionTypeRepository transactionTypeRepository;
 
-    LayoutService(boolean central, String version, ConfigRepository configRepository,
-            ServerRepository serverRepository,
+    LayoutService(boolean fat, String version, ConfigRepository configRepository,
+            AgentRepository agentRepository,
             TransactionTypeRepository transactionTypeRepository) {
-        this.central = central;
+        this.fat = fat;
         this.version = version;
         this.configRepository = configRepository;
-        this.serverRepository = serverRepository;
+        this.agentRepository = agentRepository;
         this.transactionTypeRepository = transactionTypeRepository;
     }
 
@@ -100,34 +100,34 @@ class LayoutService {
                 userInterfaceConfig.defaultDisplayedTransactionType();
 
         // linked hash map to preserve ordering
-        Map<String, ServerRollupLayout> serverRollups = Maps.newLinkedHashMap();
+        Map<String, AgentRollupLayout> agentRollups = Maps.newLinkedHashMap();
         Map<String, List<String>> transactionTypesMap =
                 transactionTypeRepository.readTransactionTypes();
-        if (central) {
-            for (ServerRollup serverRollup : serverRepository.readServerRollups()) {
-                ImmutableServerRollupLayout.Builder builder = ImmutableServerRollupLayout.builder()
-                        .leaf(serverRollup.leaf());
-                List<String> transactionTypes = transactionTypesMap.get(serverRollup.name());
-                if (transactionTypes != null) {
-                    builder.addAllTransactionTypes(transactionTypes);
-                }
-                serverRollups.put(serverRollup.name(), builder.build());
-            }
-        } else {
-            // a couple of special cases for non-central
+        if (fat) {
+            // a couple of special cases for fat agent
             Set<String> transactionTypes = Sets.newHashSet();
-            List<String> storedTransactionTypes = transactionTypesMap.get(SERVER_ID);
+            List<String> storedTransactionTypes = transactionTypesMap.get(AGENT_ID);
             if (storedTransactionTypes != null) {
                 transactionTypes.addAll(storedTransactionTypes);
             }
             transactionTypes.add(defaultDisplayedTransactionType);
-            serverRollups.put(SERVER_ID, ImmutableServerRollupLayout.builder()
+            agentRollups.put(AGENT_ID, ImmutableAgentRollupLayout.builder()
                     .leaf(true)
                     .addAllTransactionTypes(transactionTypes)
                     .build());
+        } else {
+            for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
+                ImmutableAgentRollupLayout.Builder builder = ImmutableAgentRollupLayout.builder()
+                        .leaf(agentRollup.leaf());
+                List<String> transactionTypes = transactionTypesMap.get(agentRollup.name());
+                if (transactionTypes != null) {
+                    builder.addAllTransactionTypes(transactionTypes);
+                }
+                agentRollups.put(agentRollup.name(), builder.build());
+            }
         }
         return ImmutableLayout.builder()
-                .central(central)
+                .fat(fat)
                 .footerMessage("Glowroot version " + version)
                 .adminPasswordEnabled(userInterfaceConfig.adminPasswordEnabled())
                 .readOnlyPasswordEnabled(userInterfaceConfig.readOnlyPasswordEnabled())
@@ -137,14 +137,14 @@ class LayoutService {
                 .gaugeCollectionIntervalMillis(configRepository.getGaugeCollectionIntervalMillis())
                 .defaultTransactionType(defaultDisplayedTransactionType)
                 .addAllDefaultPercentiles(userInterfaceConfig.defaultDisplayedPercentiles())
-                .serverRollups(serverRollups)
+                .agentRollups(agentRollups)
                 .build();
     }
 
     @Value.Immutable
     abstract static class Layout {
 
-        abstract boolean central();
+        abstract boolean fat();
         abstract String footerMessage();
         abstract boolean adminPasswordEnabled();
         abstract boolean readOnlyPasswordEnabled();
@@ -155,7 +155,7 @@ class LayoutService {
 
         abstract String defaultTransactionType();
         abstract ImmutableList<Double> defaultPercentiles();
-        abstract ImmutableMap<String, ServerRollupLayout> serverRollups();
+        abstract ImmutableMap<String, AgentRollupLayout> agentRollups();
 
         @Value.Derived
         public String version() {
@@ -164,7 +164,7 @@ class LayoutService {
     }
 
     @Value.Immutable
-    interface ServerRollupLayout {
+    interface AgentRollupLayout {
         boolean leaf();
         List<String> transactionTypes();
     }

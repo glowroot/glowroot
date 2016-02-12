@@ -24,9 +24,8 @@ glowroot.config([
     var waitForLayout = function (needsTransactionType) {
       return ['$q', '$rootScope', '$location', function ($q, $rootScope, $location) {
         if (window.layout) {
-          var hasServer = !$rootScope.layout.central || $location.search()['server-id']
-              || $location.search()['server-rollup'];
-          if (hasServer && needsTransactionType && !$location.search()['transaction-type']) {
+          var hasAgent = $location.search()['agent-id'] || $location.search()['agent-rollup'] || $rootScope.layout.fat;
+          if (hasAgent && needsTransactionType && !$location.search()['transaction-type']) {
             $location.search('transaction-type', $rootScope.defaultTransactionType());
             $location.replace();
           }
@@ -38,9 +37,9 @@ glowroot.config([
             if (!value) {
               return;
             }
-            var hasServer = !$rootScope.layout.central || $location.search()['server-id']
-                || $location.search()['server-rollup'];
-            if (hasServer && needsTransactionType && !$location.search()['transaction-type']) {
+            var hasAgent = $location.search()['agent-id'] || $location.search()['agent-rollup']
+                || $rootScope.layout.fat;
+            if (hasAgent && needsTransactionType && !$location.search()['transaction-type']) {
               $location.search('transaction-type', $rootScope.defaultTransactionType());
               $location.replace();
             }
@@ -56,7 +55,7 @@ glowroot.config([
     });
     $stateProvider.state('transaction', {
       abstract: true,
-      url: '/transaction?server-id&server-rollup&transaction-type',
+      url: '/transaction?agent-id&agent-rollup&transaction-type',
       templateUrl: 'views/transaction.html',
       controller: 'TransactionCtrl',
       resolve: {
@@ -109,7 +108,7 @@ glowroot.config([
       }
     });
     $stateProvider.state('transaction.detail.average', {
-      url: '/average?server-id&transaction-type&transaction-name',
+      url: '/average?agent-id&transaction-type&transaction-name',
       views: {
         'main@transaction': {
           templateUrl: 'views/transaction/average.html',
@@ -118,7 +117,7 @@ glowroot.config([
       }
     });
     $stateProvider.state('transaction.detail.percentiles', {
-      url: '/percentiles?server-id&transaction-type&transaction-name',
+      url: '/percentiles?agent-id&transaction-type&transaction-name',
       views: {
         'main@transaction': {
           templateUrl: 'views/transaction/percentiles.html',
@@ -127,7 +126,7 @@ glowroot.config([
       }
     });
     $stateProvider.state('transaction.detail.throughput', {
-      url: '/throughput?server-id&transaction-type&transaction-name',
+      url: '/throughput?agent-id&transaction-type&transaction-name',
       views: {
         'main@transaction': {
           templateUrl: 'views/transaction/throughput.html',
@@ -136,7 +135,7 @@ glowroot.config([
       }
     });
     $stateProvider.state('transaction.detail.queries', {
-      url: '/queries?server-id&transaction-type&transaction-name',
+      url: '/queries?agent-id&transaction-type&transaction-name',
       views: {
         'main@transaction': {
           templateUrl: 'views/transaction/queries.html',
@@ -145,7 +144,7 @@ glowroot.config([
       }
     });
     $stateProvider.state('transaction.detail.mainThreadProfile', {
-      url: '/main-thread-profile?server-id&transaction-type&transaction-name',
+      url: '/main-thread-profile?agent-id&transaction-type&transaction-name',
       views: {
         'main@transaction': {
           templateUrl: 'views/transaction/profile.html',
@@ -159,7 +158,7 @@ glowroot.config([
       }
     });
     $stateProvider.state('transaction.detail.auxThreadProfile', {
-      url: '/aux-thread-profile?server-id&transaction-type&transaction-name',
+      url: '/aux-thread-profile?agent-id&transaction-type&transaction-name',
       views: {
         'main@transaction': {
           templateUrl: 'views/transaction/profile.html',
@@ -173,7 +172,7 @@ glowroot.config([
       }
     });
     $stateProvider.state('transaction.detail.traces', {
-      url: '/traces?server-id&transaction-type&transaction-name',
+      url: '/traces?agent-id&transaction-type&transaction-name',
       views: {
         'main@transaction': {
           templateUrl: 'views/transaction/traces.html',
@@ -226,7 +225,7 @@ glowroot.config([
     });
     $stateProvider.state('error', {
       abstract: true,
-      url: '/error?server-id&server-rollup&transaction-type',
+      url: '/error?agent-id&agent-rollup&transaction-type',
       templateUrl: 'views/transaction.html',
       controller: 'TransactionCtrl',
       resolve: {
@@ -274,7 +273,7 @@ glowroot.config([
       }
     });
     $stateProvider.state('error.detail.messages', {
-      url: '/messages?server-id&transaction-type&transaction-name',
+      url: '/messages?agent-id&transaction-type&transaction-name',
       views: {
         'main@error': {
           templateUrl: 'views/transaction/error-messages.html',
@@ -283,7 +282,7 @@ glowroot.config([
       }
     });
     $stateProvider.state('error.detail.traces', {
-      url: '/traces?server-id&transaction-type&transaction-name',
+      url: '/traces?agent-id&transaction-type&transaction-name',
       views: {
         'main@error': {
           templateUrl: 'views/transaction/traces.html',
@@ -305,32 +304,32 @@ glowroot.config([
       }
     });
     $stateProvider.state('jvm.gauges', {
-      url: '/gauges?server-id&server-rollup',
+      url: '/gauges?agent-id&agent-rollup',
       templateUrl: 'views/jvm/gauge-values.html',
       controller: 'JvmGaugeValuesCtrl'
     });
     $stateProvider.state('jvm.systemInfo', {
-      url: '/system-info?server-id&server-rollup',
+      url: '/system-info?agent-id&agent-rollup',
       templateUrl: 'views/jvm/system-info.html',
       controller: 'JvmSystemInfoCtrl'
     });
     $stateProvider.state('jvm.threadDump', {
-      url: '/thread-dump?server-id&server-rollup',
+      url: '/thread-dump?agent-id&agent-rollup',
       templateUrl: 'views/jvm/thread-dump.html',
       controller: 'JvmThreadDumpCtrl'
     });
     $stateProvider.state('jvm.heapDump', {
-      url: '/heap-dump?server-id&server-rollup',
+      url: '/heap-dump?agent-id&agent-rollup',
       templateUrl: 'views/jvm/heap-dump.html',
       controller: 'JvmHeapDumpCtrl'
     });
     $stateProvider.state('jvm.mbeanTree', {
-      url: '/mbean-tree?server-id&server-rollup',
+      url: '/mbean-tree?agent-id&agent-rollup',
       templateUrl: 'views/jvm/mbean-tree.html',
       controller: 'JvmMBeanTreeCtrl'
     });
     $stateProvider.state('jvm.capabilities', {
-      url: '/capabilities?server-id&server-rollup',
+      url: '/capabilities?agent-id&agent-rollup',
       templateUrl: 'views/jvm/capabilities.html',
       controller: 'JvmCapabilitiesCtrl'
     });
@@ -348,7 +347,7 @@ glowroot.config([
       }
     });
     $stateProvider.state('config.transaction', {
-      url: '/transaction?server-id',
+      url: '/transaction?agent-id',
       templateUrl: 'views/config/transaction.html',
       controller: 'ConfigCommonCtrl',
       resolve: {
@@ -358,47 +357,47 @@ glowroot.config([
       }
     });
     $stateProvider.state('config.instrumentationList', {
-      url: '/instrumentation-list?server-id',
+      url: '/instrumentation-list?agent-id',
       templateUrl: 'views/config/instrumentation-list.html',
       controller: 'ConfigInstrumentationListCtrl'
     });
     $stateProvider.state('config.instrumentation', {
-      url: '/instrumentation?server-id&v',
+      url: '/instrumentation?agent-id&v',
       templateUrl: 'views/config/instrumentation.html',
       controller: 'ConfigInstrumentationCtrl'
     });
     $stateProvider.state('config.gaugeList', {
-      url: '/gauge-list?server-id',
+      url: '/gauge-list?agent-id',
       templateUrl: 'views/config/gauge-list.html',
       controller: 'ConfigGaugeListCtrl'
     });
     $stateProvider.state('config.gauge', {
-      url: '/gauge?server-id&v',
+      url: '/gauge?agent-id&v',
       templateUrl: 'views/config/gauge.html',
       controller: 'ConfigGaugeCtrl'
     });
     $stateProvider.state('config.alertList', {
-      url: '/alert-list?server-id',
+      url: '/alert-list?agent-id',
       templateUrl: 'views/config/alert-list.html',
       controller: 'ConfigAlertListCtrl'
     });
     $stateProvider.state('config.alert', {
-      url: '/alert?server-id&v',
+      url: '/alert?agent-id&v',
       templateUrl: 'views/config/alert.html',
       controller: 'ConfigAlertCtrl'
     });
     $stateProvider.state('config.pluginList', {
-      url: '/plugin-list?server-id',
+      url: '/plugin-list?agent-id',
       templateUrl: 'views/config/plugin-list.html',
       controller: 'ConfigPluginListCtrl'
     });
     $stateProvider.state('config.plugin', {
-      url: '/plugin?server-id&plugin-id',
+      url: '/plugin?agent-id&plugin-id',
       templateUrl: 'views/config/plugin.html',
       controller: 'ConfigPluginCtrl'
     });
     $stateProvider.state('config.advanced', {
-      url: '/advanced?server-id',
+      url: '/advanced?agent-id',
       templateUrl: 'views/config/advanced.html',
       controller: 'ConfigCommonCtrl',
       resolve: {

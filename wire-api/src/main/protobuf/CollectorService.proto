@@ -18,7 +18,7 @@ service CollectorService {
 }
 
 message InitMessage {
-  string server_id = 1;
+  string agent_id = 1;
   SystemInfo system_info = 2;
   AgentConfig agent_config = 3;
 }
@@ -28,23 +28,23 @@ message InitResponse {
 }
 
 message AggregateMessage {
-  string server_id = 1;
+  string agent_id = 1;
   int64 capture_time = 2;
   repeated AggregatesByType aggregates_by_type = 3;
 }
 
 message GaugeValueMessage {
-  string server_id = 1;
+  string agent_id = 1;
   repeated GaugeValue gauge_values = 2;
 }
 
 message TraceMessage {
-  string server_id = 1;
+  string agent_id = 1;
   Trace trace = 2;
 }
 
 message LogMessage {
-  string server_id = 1;
+  string agent_id = 1;
   LogEvent log_event = 2;
 }
 

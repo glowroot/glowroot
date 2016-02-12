@@ -31,11 +31,11 @@ import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.PercentileAggregate;
 import org.glowroot.storage.repo.ConfigRepository;
+import org.glowroot.storage.repo.ImmutableAgentRollup;
 import org.glowroot.storage.repo.ImmutablePercentileAggregate;
-import org.glowroot.storage.repo.ImmutableServerRollup;
 import org.glowroot.storage.repo.ImmutableTransactionQuery;
-import org.glowroot.storage.repo.ServerRepository;
-import org.glowroot.storage.repo.ServerRepository.ServerRollup;
+import org.glowroot.storage.repo.AgentRepository;
+import org.glowroot.storage.repo.AgentRepository.AgentRollup;
 import org.glowroot.storage.repo.TriggeredAlertRepository;
 import org.glowroot.storage.repo.Utils;
 import org.glowroot.storage.util.Encryption;
@@ -47,10 +47,10 @@ import static org.mockito.Mockito.when;
 
 public class AlertingServiceTest {
 
-    private static final String SERVER_ID = "";
+    private static final String AGENT_ID = "";
 
     private ConfigRepository configRepository;
-    private ServerRepository serverRepository;
+    private AgentRepository agentRepository;
     private TriggeredAlertRepository triggeredAlertRepository;
     private AggregateRepository aggregateRepository;
     private RollupLevelService rollupLevelService;
@@ -59,9 +59,9 @@ public class AlertingServiceTest {
     @Before
     public void beforeEachTest() throws Exception {
         configRepository = mock(ConfigRepository.class);
-        serverRepository = mock(ServerRepository.class);
-        when(serverRepository.readServerRollups())
-                .thenReturn(ImmutableList.<ServerRollup>of(ImmutableServerRollup.of("", true)));
+        agentRepository = mock(AgentRepository.class);
+        when(agentRepository.readAgentRollups())
+                .thenReturn(ImmutableList.<AgentRollup>of(ImmutableAgentRollup.of("", true)));
         triggeredAlertRepository = mock(TriggeredAlertRepository.class);
         aggregateRepository = mock(AggregateRepository.class);
         rollupLevelService = mock(RollupLevelService.class);
@@ -83,7 +83,7 @@ public class AlertingServiceTest {
     public void shouldSendMail() throws Exception {
         // given
         setup(1000000);
-        AlertingService alertingService = new AlertingService(configRepository, serverRepository,
+        AlertingService alertingService = new AlertingService(configRepository, agentRepository,
                 triggeredAlertRepository, aggregateRepository, rollupLevelService, mailService);
         // when
         alertingService.checkAlerts(120000);
@@ -95,7 +95,7 @@ public class AlertingServiceTest {
     public void shouldNotSendMail() throws Exception {
         // given
         setup(999000);
-        AlertingService alertingService = new AlertingService(configRepository, serverRepository,
+        AlertingService alertingService = new AlertingService(configRepository, agentRepository,
                 triggeredAlertRepository, aggregateRepository, rollupLevelService, mailService);
         // when
         alertingService.checkAlerts(120000);
@@ -158,10 +158,10 @@ public class AlertingServiceTest {
                 .transactionCount(1)
                 .histogram(lazyHistogram.toProto(new ScratchBuffer()))
                 .build();
-        when(configRepository.getAlertConfigs(SERVER_ID))
+        when(configRepository.getAlertConfigs(AGENT_ID))
                 .thenReturn(ImmutableList.of(alertConfig));
         ImmutableTransactionQuery query = ImmutableTransactionQuery.builder()
-                .serverRollup(SERVER_ID)
+                .agentRollup(AGENT_ID)
                 .transactionType("tt")
                 .from(60001)
                 .to(120000)

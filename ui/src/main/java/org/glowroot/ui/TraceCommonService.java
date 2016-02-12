@@ -50,18 +50,18 @@ class TraceCommonService {
     }
 
     @Nullable
-    String getHeaderJson(String serverId, String traceId, boolean checkLiveTraces)
+    String getHeaderJson(String agentId, String traceId, boolean checkLiveTraces)
             throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace
             // is not missed if it is in transition between these states
-            Trace.Header header = liveTraceRepository.getHeader(serverId, traceId);
+            Trace.Header header = liveTraceRepository.getHeader(agentId, traceId);
             if (header != null) {
                 return toJsonLiveHeader(header);
             }
         }
-        HeaderPlus header = getStoredHeader(serverId, traceId, new RetryCountdown(checkLiveTraces));
+        HeaderPlus header = getStoredHeader(agentId, traceId, new RetryCountdown(checkLiveTraces));
         if (header == null) {
             return null;
         }
@@ -72,60 +72,60 @@ class TraceCommonService {
     // overwritten entries will return {"overwritten":true}
     // expired (not found) trace will return {"expired":true}
     @Nullable
-    String getEntriesJson(String serverId, String traceId, boolean checkLiveTraces)
+    String getEntriesJson(String agentId, String traceId, boolean checkLiveTraces)
             throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace is not missed if it is in transition between these states
-            List<Trace.Entry> entries = liveTraceRepository.getEntries(serverId, traceId);
+            List<Trace.Entry> entries = liveTraceRepository.getEntries(agentId, traceId);
             if (!entries.isEmpty()) {
                 return toJson(entries);
             }
         }
-        return toJson(getStoredEntries(serverId, traceId, new RetryCountdown(checkLiveTraces)));
+        return toJson(getStoredEntries(agentId, traceId, new RetryCountdown(checkLiveTraces)));
     }
 
     // overwritten profile will return {"overwritten":true}
     // expired (not found) trace will return {"expired":true}
     @Nullable
-    String getMainThreadProfileJson(String serverId, String traceId, boolean checkLiveTraces)
+    String getMainThreadProfileJson(String agentId, String traceId, boolean checkLiveTraces)
             throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace is not missed if it is in transition between these states
-            Profile profile = liveTraceRepository.getMainThreadProfile(serverId, traceId);
+            Profile profile = liveTraceRepository.getMainThreadProfile(agentId, traceId);
             if (profile != null) {
                 return toJson(profile);
             }
         }
         return toJson(
-                getStoredMainThreadProfile(serverId, traceId, new RetryCountdown(checkLiveTraces)));
+                getStoredMainThreadProfile(agentId, traceId, new RetryCountdown(checkLiveTraces)));
     }
 
     // overwritten profile will return {"overwritten":true}
     // expired (not found) trace will return {"expired":true}
     @Nullable
-    String getAuxThreadProfileJson(String serverId, String traceId, boolean checkLiveTraces)
+    String getAuxThreadProfileJson(String agentId, String traceId, boolean checkLiveTraces)
             throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace is not missed if it is in transition between these states
-            Profile profile = liveTraceRepository.getAuxThreadProfile(serverId, traceId);
+            Profile profile = liveTraceRepository.getAuxThreadProfile(agentId, traceId);
             if (profile != null) {
                 return toJson(profile);
             }
         }
         return toJson(
-                getStoredAuxThreadProfile(serverId, traceId, new RetryCountdown(checkLiveTraces)));
+                getStoredAuxThreadProfile(agentId, traceId, new RetryCountdown(checkLiveTraces)));
     }
 
     @Nullable
-    TraceExport getExport(String serverId, String traceId, boolean checkLiveTraces)
+    TraceExport getExport(String agentId, String traceId, boolean checkLiveTraces)
             throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace is not missed if it is in transition between these states
-            Trace trace = liveTraceRepository.getFullTrace(serverId, traceId);
+            Trace trace = liveTraceRepository.getFullTrace(agentId, traceId);
             if (trace != null) {
                 Trace.Header header = trace.getHeader();
                 return ImmutableTraceExport.builder()
@@ -138,61 +138,61 @@ class TraceCommonService {
             }
         }
         RetryCountdown retryCountdown = new RetryCountdown(checkLiveTraces);
-        HeaderPlus header = getStoredHeader(serverId, traceId, retryCountdown);
+        HeaderPlus header = getStoredHeader(agentId, traceId, retryCountdown);
         if (header == null) {
             return null;
         }
         ImmutableTraceExport.Builder builder = ImmutableTraceExport.builder()
                 .fileName(getFileName(header.header()))
                 .headerJson(toJsonRepoHeader(header));
-        builder.entriesJson(toJson(getStoredEntries(serverId, traceId, retryCountdown)));
+        builder.entriesJson(toJson(getStoredEntries(agentId, traceId, retryCountdown)));
         builder.mainThreadProfileJson(
-                toJson(getStoredMainThreadProfile(serverId, traceId, retryCountdown)));
+                toJson(getStoredMainThreadProfile(agentId, traceId, retryCountdown)));
         builder.auxThreadProfileJson(
-                toJson(getStoredAuxThreadProfile(serverId, traceId, retryCountdown)));
+                toJson(getStoredAuxThreadProfile(agentId, traceId, retryCountdown)));
         return builder.build();
     }
 
-    private @Nullable HeaderPlus getStoredHeader(String serverId, String traceId,
+    private @Nullable HeaderPlus getStoredHeader(String agentId, String traceId,
             RetryCountdown retryCountdown) throws Exception {
-        HeaderPlus headerPlus = traceRepository.readHeaderPlus(serverId, traceId);
+        HeaderPlus headerPlus = traceRepository.readHeaderPlus(agentId, traceId);
         while (headerPlus == null && retryCountdown.remaining-- > 0) {
-            // trace may be completed, but still in transit from agent to central
+            // trace may be completed, but still in transit from agent to glowroot server
             Thread.sleep(500);
-            headerPlus = traceRepository.readHeaderPlus(serverId, traceId);
+            headerPlus = traceRepository.readHeaderPlus(agentId, traceId);
         }
         return headerPlus;
     }
 
-    private List<Trace.Entry> getStoredEntries(String serverId, String traceId,
+    private List<Trace.Entry> getStoredEntries(String agentId, String traceId,
             RetryCountdown retryCountdown) throws Exception {
-        List<Trace.Entry> entries = traceRepository.readEntries(serverId, traceId);
+        List<Trace.Entry> entries = traceRepository.readEntries(agentId, traceId);
         while (entries.isEmpty() && retryCountdown.remaining-- > 0) {
-            // trace may be completed, but still in transit from agent to central
+            // trace may be completed, but still in transit from agent to glowroot server
             Thread.sleep(500);
-            entries = traceRepository.readEntries(serverId, traceId);
+            entries = traceRepository.readEntries(agentId, traceId);
         }
         return entries;
     }
 
-    private @Nullable Profile getStoredMainThreadProfile(String serverId, String traceId,
+    private @Nullable Profile getStoredMainThreadProfile(String agentId, String traceId,
             RetryCountdown retryCountdown) throws Exception {
-        Profile profile = traceRepository.readMainThreadProfile(serverId, traceId);
+        Profile profile = traceRepository.readMainThreadProfile(agentId, traceId);
         while (profile == null && retryCountdown.remaining-- > 0) {
-            // trace may be completed, but still in transit from agent to central
+            // trace may be completed, but still in transit from agent to glowroot server
             Thread.sleep(500);
-            profile = traceRepository.readMainThreadProfile(serverId, traceId);
+            profile = traceRepository.readMainThreadProfile(agentId, traceId);
         }
         return profile;
     }
 
-    private @Nullable Profile getStoredAuxThreadProfile(String serverId, String traceId,
+    private @Nullable Profile getStoredAuxThreadProfile(String agentId, String traceId,
             RetryCountdown retryCountdown) throws Exception {
-        Profile profile = traceRepository.readAuxThreadProfile(serverId, traceId);
+        Profile profile = traceRepository.readAuxThreadProfile(agentId, traceId);
         while (profile == null && retryCountdown.remaining-- > 0) {
-            // trace may be completed, but still in transit from agent to central
+            // trace may be completed, but still in transit from agent to glowroot server
             Thread.sleep(500);
-            profile = traceRepository.readAuxThreadProfile(serverId, traceId);
+            profile = traceRepository.readAuxThreadProfile(agentId, traceId);
         }
         return profile;
     }

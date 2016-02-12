@@ -83,7 +83,7 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
     }
 
     @Override
-    public GlobalMeta getGlobalMeta(String serverId) {
+    public GlobalMeta getGlobalMeta(String agentId) {
         return GlobalMeta.newBuilder()
                 .setJvmOutOfSync(adviceCache.isOutOfSync(configService.getInstrumentationConfigs()))
                 .setJvmRetransformClassesSupported(jvmRetransformClassesSupported)
@@ -91,18 +91,18 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
     }
 
     @Override
-    public void preloadClasspathCache(String serverId) {
+    public void preloadClasspathCache(String agentId) {
         getClasspathCache().updateCache();
     }
 
     @Override
-    public List<String> getMatchingClassNames(String serverId, String partialClassName, int limit) {
+    public List<String> getMatchingClassNames(String agentId, String partialClassName, int limit) {
         return getClasspathCache().getMatchingClassNames(partialClassName, limit);
     }
 
     // returns the first <limit> matching method names, ordered alphabetically (case-insensitive)
     @Override
-    public List<String> getMatchingMethodNames(String serverId, String className,
+    public List<String> getMatchingMethodNames(String agentId, String className,
             String partialMethodName, int limit) {
         String partialMethodNameUpper = partialMethodName.toUpperCase(Locale.ENGLISH);
         Set<String> methodNames = Sets.newHashSet();
@@ -128,7 +128,7 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
     }
 
     @Override
-    public List<MethodSignature> getMethodSignatures(String serverId, String className,
+    public List<MethodSignature> getMethodSignatures(String agentId, String className,
             String methodName) {
         if (methodName.contains("*") || methodName.contains("|")) {
             return ImmutableList.of();
@@ -153,7 +153,7 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
     }
 
     @Override
-    public int reweave(String serverId) throws Exception {
+    public int reweave(String agentId) throws Exception {
         // this action is not displayed in the UI when instrumentation is null
         // (which is only in dev mode anyways)
         checkNotNull(instrumentation);

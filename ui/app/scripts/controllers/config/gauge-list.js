@@ -34,21 +34,21 @@ glowroot.controller('ConfigGaugeListCtrl', [
 
     $scope.gaugeQueryString = function (gauge) {
       var query = {};
-      if ($scope.serverId) {
-        query.serverId = $scope.serverId;
+      if ($scope.agentId) {
+        query.agentId = $scope.agentId;
       }
       query.v = gauge.config.version;
       return queryStrings.encodeObject(query);
     };
 
     $scope.newQueryString = function () {
-      if ($scope.serverId) {
-        return '?server-id=' + encodeURIComponent($scope.serverId) + '&new';
+      if ($scope.agentId) {
+        return '?agent-id=' + encodeURIComponent($scope.agentId) + '&new';
       }
       return '?new';
     };
 
-    $http.get('backend/config/gauges?server-id=' + encodeURIComponent($scope.serverId))
+    $http.get('backend/config/gauges?agent-id=' + encodeURIComponent($scope.agentId))
         .success(function (data) {
           $scope.loaded = true;
           $scope.gauges = data;

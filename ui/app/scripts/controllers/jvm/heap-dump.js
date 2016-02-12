@@ -30,7 +30,7 @@ glowroot.controller('JvmHeapDumpCtrl', [
 
     $scope.checkDiskSpace = function (deferred) {
       var postData = {
-        serverId: $scope.serverId,
+        agentId: $scope.agentId,
         directory: $scope.directory
       };
       $scope.availableDiskSpaceBytes = undefined;
@@ -49,7 +49,7 @@ glowroot.controller('JvmHeapDumpCtrl', [
 
     $scope.heapDump = function (deferred) {
       var postData = {
-        serverId: $scope.serverId,
+        agentId: $scope.agentId,
         directory: $scope.directory
       };
       $scope.availableDiskSpaceBytes = undefined;
@@ -66,7 +66,7 @@ glowroot.controller('JvmHeapDumpCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/jvm/heap-dump-default-dir?server-id=' + encodeURIComponent($scope.serverId))
+    $http.get('backend/jvm/heap-dump-default-dir?agent-id=' + encodeURIComponent($scope.agentId))
         .success(function (data) {
           $scope.loaded = true;
           $scope.agentNotConnected = data.agentNotConnected;

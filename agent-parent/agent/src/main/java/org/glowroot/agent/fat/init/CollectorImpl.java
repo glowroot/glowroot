@@ -18,7 +18,7 @@ package org.glowroot.agent.fat.init;
 import java.io.File;
 import java.util.List;
 
-import org.glowroot.agent.fat.storage.ServerDao;
+import org.glowroot.agent.fat.storage.AgentDao;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.TraceRepository;
@@ -33,18 +33,18 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class CollectorImpl implements Collector {
 
-    private static final String SERVER_ID = "";
+    private static final String AGENT_ID = "";
 
-    private final ServerDao serverDao;
+    private final AgentDao agentDao;
     private final AggregateRepository aggregateRepository;
     private final TraceRepository traceRepository;
     private final GaugeValueRepository gaugeValueRepository;
     private final AlertingService alertingService;
 
-    CollectorImpl(ServerDao serverDao, AggregateRepository aggregateRepository,
+    CollectorImpl(AgentDao agentDao, AggregateRepository aggregateRepository,
             TraceRepository traceRepository, GaugeValueRepository gaugeValueRepository,
             AlertingService alertingService) {
-        this.serverDao = serverDao;
+        this.agentDao = agentDao;
         this.aggregateRepository = aggregateRepository;
         this.traceRepository = traceRepository;
         this.gaugeValueRepository = gaugeValueRepository;
@@ -54,24 +54,24 @@ class CollectorImpl implements Collector {
     @Override
     public void init(File glowrootBaseDir, SystemInfo systemInfo, AgentConfig agentConfig,
             AgentConfigUpdater agentConfigUpdater) throws Exception {
-        serverDao.store(systemInfo);
+        agentDao.store(systemInfo);
     }
 
     @Override
     public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType)
             throws Exception {
-        aggregateRepository.store(SERVER_ID, captureTime, aggregatesByType);
+        aggregateRepository.store(AGENT_ID, captureTime, aggregatesByType);
         alertingService.checkAlerts(captureTime);
     }
 
     @Override
     public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
-        gaugeValueRepository.store(SERVER_ID, gaugeValues);
+        gaugeValueRepository.store(AGENT_ID, gaugeValues);
     }
 
     @Override
     public void collectTrace(Trace trace) throws Exception {
-        traceRepository.collect(SERVER_ID, trace);
+        traceRepository.collect(AGENT_ID, trace);
     }
 
     @Override

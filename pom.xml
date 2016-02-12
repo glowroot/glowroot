@@ -534,7 +534,7 @@
         <jdk>1.8</jdk>
       </activation>
       <modules>
-        <module>central</module>
+        <module>server</module>
       </modules>
     </profile>
     <profile>

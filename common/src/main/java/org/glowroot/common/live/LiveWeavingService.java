@@ -22,18 +22,18 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignature;
 
 public interface LiveWeavingService {
 
-    GlobalMeta getGlobalMeta(String serverId) throws Exception;
+    GlobalMeta getGlobalMeta(String agentId) throws Exception;
 
-    void preloadClasspathCache(String serverId) throws Exception;
+    void preloadClasspathCache(String agentId) throws Exception;
 
-    List<String> getMatchingClassNames(String serverId, String partialClassName, int limit)
+    List<String> getMatchingClassNames(String agentId, String partialClassName, int limit)
             throws Exception;
 
-    List<String> getMatchingMethodNames(String serverId, String className, String partialMethodName,
+    List<String> getMatchingMethodNames(String agentId, String className, String partialMethodName,
             int limit) throws Exception;
 
-    List<MethodSignature> getMethodSignatures(String serverId, String className, String methodName)
+    List<MethodSignature> getMethodSignatures(String agentId, String className, String methodName)
             throws Exception;
 
-    int reweave(String serverId) throws Exception;
+    int reweave(String agentId) throws Exception;
 }

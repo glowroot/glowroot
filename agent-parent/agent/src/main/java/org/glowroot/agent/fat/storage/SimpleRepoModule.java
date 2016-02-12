@@ -61,7 +61,7 @@ public class SimpleRepoModule {
     private final DataSource dataSource;
     private final ImmutableList<CappedDatabase> rollupCappedDatabases;
     private final CappedDatabase traceCappedDatabase;
-    private final ServerDao serverDao;
+    private final AgentDao agentDao;
     private final TransactionTypeDao transactionTypeDao;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
@@ -94,7 +94,7 @@ public class SimpleRepoModule {
         traceCappedDatabase = new CappedDatabase(new File(dataDir, "trace-detail.capped.db"),
                 storageConfig.traceCappedDatabaseSizeMb() * 1024, ticker);
 
-        serverDao = new ServerDao(dataSource);
+        agentDao = new AgentDao(dataSource);
         transactionTypeDao = new TransactionTypeDao(dataSource);
         rollupLevelService = new RollupLevelService(configRepository, clock);
         aggregateDao = new AggregateDao(dataSource, this.rollupCappedDatabases, configRepository,
@@ -107,7 +107,7 @@ public class SimpleRepoModule {
                 configRepository);
 
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
-        alertingService = new AlertingService(configRepository, serverDao, triggeredAlertDao,
+        alertingService = new AlertingService(configRepository, agentDao, triggeredAlertDao,
                 aggregateDao, rollupLevelService, new MailService());
         if (reaperDisabled) {
             reaperRunnable = null;
@@ -148,8 +148,8 @@ public class SimpleRepoModule {
         });
     }
 
-    public ServerDao getServerDao() {
-        return serverDao;
+    public AgentDao getAgentDao() {
+        return agentDao;
     }
 
     public TransactionTypeRepository getTransactionTypeRepository() {

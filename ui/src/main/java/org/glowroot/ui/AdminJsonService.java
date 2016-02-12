@@ -56,21 +56,21 @@ class AdminJsonService {
 
     @POST("/backend/admin/delete-all-data")
     void deleteAllData(String content) throws Exception {
-        String serverRollup =
-                mapper.readValue(content, ImmutableRequestWithServerRollup.class).serverRollup();
+        String agentRollup =
+                mapper.readValue(content, ImmutableRequestWithAgentRollup.class).agentRollup();
         // TODO optimize by just deleting and re-creating h2 db
-        traceRepository.deleteAll(serverRollup);
-        aggregateRepository.deleteAll(serverRollup);
-        transactionTypeRepository.deleteAll(serverRollup);
-        gaugeValueRepository.deleteAll(serverRollup);
+        traceRepository.deleteAll(agentRollup);
+        aggregateRepository.deleteAll(agentRollup);
+        transactionTypeRepository.deleteAll(agentRollup);
+        gaugeValueRepository.deleteAll(agentRollup);
         repoAdmin.defrag();
     }
 
     @POST("/backend/admin/reweave")
     String reweave(String content) throws Exception {
         checkNotNull(liveWeavingService);
-        String serverId = mapper.readValue(content, ImmutableRequestWithServerId.class).serverId();
-        int count = liveWeavingService.reweave(serverId);
+        String agentId = mapper.readValue(content, ImmutableRequestWithAgentId.class).agentId();
+        int count = liveWeavingService.reweave(agentId);
         return "{\"classes\":" + count + "}";
     }
 
@@ -80,12 +80,12 @@ class AdminJsonService {
     }
 
     @Value.Immutable
-    interface RequestWithServerRollup {
-        String serverRollup();
+    interface RequestWithAgentRollup {
+        String agentRollup();
     }
 
     @Value.Immutable
-    interface RequestWithServerId {
-        String serverId();
+    interface RequestWithAgentId {
+        String agentId();
     }
 }

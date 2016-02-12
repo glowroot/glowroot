@@ -99,33 +99,35 @@ glowroot.run([
   'queryStrings',
   function ($rootScope, $http, $location, $state, login, queryStrings) {
 
-    $rootScope.serverId = '';
+    $rootScope.agentId = '';
 
     $rootScope.$on('$locationChangeSuccess', function () {
-      $rootScope.serverId = $location.search()['server-id'] || '';
-      $rootScope.serverRollup = $location.search()['server-rollup'] || $rootScope.serverId;
+      $rootScope.agentId = $location.search()['agent-id'] || '';
+      $rootScope.agentRollup = $location.search()['agent-rollup'] || $rootScope.agentId;
     });
 
-    $rootScope.serverQueryString = function () {
-      if ($rootScope.layout.central) {
-        if ($rootScope.serverId) {
-          return '?server-id=' + encodeURIComponent($rootScope.serverId);
-        } else if ($rootScope.serverRollup) {
-          return '?server-rollup=' + encodeURIComponent($rootScope.serverRollup);
-        }
+    $rootScope.agentQueryString = function () {
+      if ($rootScope.layout.fat) {
+        return '';
       }
-      return '';
+      if ($rootScope.agentId) {
+        return '?agent-id=' + encodeURIComponent($rootScope.agentId);
+      } else if ($rootScope.agentRollup) {
+        return '?agent-rollup=' + encodeURIComponent($rootScope.agentRollup);
+      } else {
+        return '';
+      }
     };
 
-    $rootScope.serverRollupUrl = function (serverRollup, leaf) {
+    $rootScope.agentRollupUrl = function (agentRollup, leaf) {
       var url = $location.path().substring(1);
       // preserve query string
       var query = angular.copy($location.search());
-      if ($rootScope.layout.central) {
+      if (!$rootScope.layout.fat) {
         if (leaf) {
-          query['server-id'] = serverRollup;
+          query['agent-id'] = agentRollup;
         } else {
-          query['server-rollup'] = serverRollup;
+          query['agent-rollup'] = agentRollup;
         }
       }
       url += queryStrings.encodeObject(query);
@@ -136,22 +138,22 @@ glowroot.run([
       if (!$rootScope.layout) {
         return [];
       }
-      // can't use $rootScope.serverRollup here because this function is called from waitForLayout() function in
-      // routes.js before $rootScope.serverRollup is set (note for testing, this is only a problem when not under grunt
+      // can't use $rootScope.agentRollup here because this function is called from waitForLayout() function in
+      // routes.js before $rootScope.agentRollup is set (note for testing, this is only a problem when not under grunt
       // serve)
-      var serverRollup = $location.search()['server-rollup'] || $location.search()['server-id'];
-      var serverRollupObj = $rootScope.layout.serverRollups[serverRollup];
-      if (!serverRollupObj) {
+      var agentRollup = $location.search()['agent-rollup'] || $location.search()['agent-id'];
+      var agentRollupObj = $rootScope.layout.agentRollups[agentRollup];
+      if (!agentRollupObj) {
         return [];
       }
-      return serverRollupObj.transactionTypes;
+      return agentRollupObj.transactionTypes;
     };
 
     $rootScope.defaultTransactionType = function () {
       if (!$rootScope.layout) {
         return '';
       }
-      if (!$rootScope.layout.central) {
+      if ($rootScope.layout.fat) {
         return $rootScope.layout.defaultTransactionType;
       }
       var transactionTypes = $rootScope.transactionTypes();

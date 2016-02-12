@@ -29,11 +29,11 @@ import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.storage.repo.AgentRepository;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.RepoAdmin;
-import org.glowroot.storage.repo.ServerRepository;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.TransactionTypeRepository;
 import org.glowroot.storage.repo.helper.RollupLevelService;
@@ -45,13 +45,13 @@ public class UiModule {
 
     @Builder.Factory
     public static UiModule createUiModule(
-            boolean central,
-            @Nullable Ticker ticker, // @Nullable to deal with shading from central
+            boolean fat,
+            @Nullable Ticker ticker, // @Nullable to deal with shading from glowroot server
             Clock clock,
             File logDir,
             @Nullable LiveJvmService liveJvmService,
             ConfigRepository configRepository,
-            ServerRepository serverRepository,
+            AgentRepository agentRepository,
             TransactionTypeRepository transactionTypeRepository,
             AggregateRepository aggregateRepository,
             TraceRepository traceRepository,
@@ -64,8 +64,8 @@ public class UiModule {
             int numWorkerThreads,
             String version) throws Exception {
 
-        LayoutService layoutService = new LayoutService(central, version, configRepository,
-                serverRepository, transactionTypeRepository);
+        LayoutService layoutService = new LayoutService(fat, version, configRepository,
+                agentRepository, transactionTypeRepository);
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(configRepository, clock, layoutService);
         IndexHtmlHttpService indexHtmlHttpService =
@@ -106,7 +106,7 @@ public class UiModule {
         jsonServices.add(errorJsonService);
         jsonServices.add(configJsonService);
         jsonServices.add(gaugeValueJsonService);
-        jsonServices.add(new JvmJsonService(serverRepository, liveJvmService));
+        jsonServices.add(new JvmJsonService(agentRepository, liveJvmService));
         if (liveJvmService != null) {
             jsonServices.add(new GaugeConfigJsonService(configRepository, liveJvmService));
         }

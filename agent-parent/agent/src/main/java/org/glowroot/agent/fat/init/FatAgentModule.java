@@ -128,7 +128,7 @@ class FatAgentModule {
 
             // now inject the real collector into the proxy
             CollectorImpl collectorImpl =
-                    new CollectorImpl(simpleRepoModule.getServerDao(),
+                    new CollectorImpl(simpleRepoModule.getAgentDao(),
                             simpleRepoModule.getAggregateRepository(),
                             simpleRepoModule.getTraceRepository(),
                             simpleRepoModule.getGaugeValueRepository(),
@@ -151,13 +151,13 @@ class FatAgentModule {
     void initEmbeddedServer() throws Exception {
         if (agentModule != null) {
             uiModule = new CreateUiModuleBuilder()
-                    .central(false)
+                    .fat(true)
                     .ticker(ticker)
                     .clock(clock)
                     .logDir(baseDir)
                     .liveJvmService(agentModule.getLiveJvmService())
                     .configRepository(simpleRepoModule.getConfigRepository())
-                    .serverRepository(simpleRepoModule.getServerDao())
+                    .agentRepository(simpleRepoModule.getAgentDao())
                     .transactionTypeRepository(simpleRepoModule.getTransactionTypeRepository())
                     .aggregateRepository(simpleRepoModule.getAggregateRepository())
                     .traceRepository(simpleRepoModule.getTraceRepository())
@@ -173,13 +173,13 @@ class FatAgentModule {
         } else {
             checkNotNull(viewerAgentModule);
             uiModule = new CreateUiModuleBuilder()
-                    .central(false)
+                    .fat(true)
                     .ticker(ticker)
                     .clock(clock)
                     .logDir(baseDir)
                     .liveJvmService(null)
                     .configRepository(simpleRepoModule.getConfigRepository())
-                    .serverRepository(simpleRepoModule.getServerDao())
+                    .agentRepository(simpleRepoModule.getAgentDao())
                     .transactionTypeRepository(simpleRepoModule.getTransactionTypeRepository())
                     .aggregateRepository(simpleRepoModule.getAggregateRepository())
                     .traceRepository(simpleRepoModule.getTraceRepository())

@@ -30,25 +30,25 @@ glowroot.controller('TransactionCtrl', [
     document.title = headerDisplay + ' \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = shortName;
 
-    if ($scope.layout.central) {
-      $scope.headerDisplay = $scope.serverRollup || '<server>';
-    } else {
+    if ($scope.layout.fat) {
       $scope.headerDisplay = headerDisplay;
+    } else {
+      $scope.headerDisplay = $scope.agentRollup || '<agent>';
     }
     $scope.shortName = shortName;
     $scope.defaultSummarySortOrder = defaultSummarySortOrder;
 
-    $scope.hideServerRollupDropdown = function () {
-      return !$scope.layout.central || $scope.layout.serverRollups.length === 1;
+    $scope.hideAgentRollupDropdown = function () {
+      return $scope.layout.agentRollups.length === 1 || $scope.layout.fat;
     };
 
     $scope.hideTransactionTypeDropdown = function () {
-      var serverRollup = $scope.layout.serverRollups[$scope.serverRollup];
-      if (!serverRollup) {
+      var agentRollup = $scope.layout.agentRollups[$scope.agentRollup];
+      if (!agentRollup) {
         // show empty dropdown
         return false;
       }
-      var transactionTypes = serverRollup.transactionTypes;
+      var transactionTypes = agentRollup.transactionTypes;
       if (!transactionTypes) {
         // show empty dropdown
         return false;
@@ -60,20 +60,20 @@ glowroot.controller('TransactionCtrl', [
     };
 
     $scope.hideMainContent = function () {
-      return ($scope.layout.central && !$scope.serverRollup) || !$scope.transactionType;
+      return (!$scope.agentRollup && !$scope.layout.fat) || !$scope.transactionType;
     };
 
-    $scope.headerQueryString = function (serverRollup, transactionType) {
-      var serverRollupObj = $scope.layout.serverRollups[serverRollup];
+    $scope.headerQueryString = function (agentRollup, transactionType) {
+      var agentRollupObj = $scope.layout.agentRollups[agentRollup];
       var query = {};
-      if ($scope.layout.central) {
-        if (serverRollupObj.leaf) {
-          query['server-id'] = serverRollup;
+      if (!$scope.layout.fat) {
+        if (agentRollupObj.leaf) {
+          query['agent-id'] = agentRollup;
         } else {
-          query['server-rollup'] = serverRollup;
+          query['agent-rollup'] = agentRollup;
         }
       }
-      var transactionTypes = serverRollupObj.transactionTypes;
+      var transactionTypes = agentRollupObj.transactionTypes;
       if (transactionTypes.length === 0) {
         query['transaction-type'] = '';
       } else if (transactionTypes.indexOf(transactionType) !== -1) {
@@ -158,13 +158,13 @@ glowroot.controller('TransactionCtrl', [
     // TODO this is exact duplicate of same function in gauges.js
     $scope.buildQueryObject = function (baseQuery) {
       var query = baseQuery || angular.copy($location.search());
-      if ($scope.layout.central) {
-        var serverRollupObj = $scope.layout.serverRollups[$scope.serverRollup];
-        if (serverRollupObj) {
-          if (serverRollupObj.leaf) {
-            query['server-id'] = $scope.serverRollup;
+      if (!$scope.layout.fat) {
+        var agentRollupObj = $scope.layout.agentRollups[$scope.agentRollup];
+        if (agentRollupObj) {
+          if (agentRollupObj.leaf) {
+            query['agent-id'] = $scope.agentRollup;
           } else {
-            query['server-rollup'] = $scope.serverRollup;
+            query['agent-rollup'] = $scope.agentRollup;
           }
         }
       }

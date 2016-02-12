@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ public class TraceJsonServiceTest {
         TraceCommonService traceCommonService = mock(TraceCommonService.class);
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
         // when
-        String json = traceJsonService.getHeader("server-id=&trace-id=1234");
+        String json = traceJsonService.getHeader("agent-id=&trace-id=1234");
         // then
         assertThat(json).isEqualTo("{\"expired\":true}");
     }

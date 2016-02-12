@@ -51,8 +51,8 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
 
     $scope.instrumentationQueryString = function (config) {
       var query = {};
-      if ($scope.serverId) {
-        query.serverId = $scope.serverId;
+      if ($scope.agentId) {
+        query.agentId = $scope.agentId;
       }
       query.v = config.version;
       return queryStrings.encodeObject(query);
@@ -60,14 +60,14 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
 
 
     $scope.newQueryString = function () {
-      if ($scope.serverId) {
-        return '?server-id=' + encodeURIComponent($scope.serverId) + '&new';
+      if ($scope.agentId) {
+        return '?agent-id=' + encodeURIComponent($scope.agentId) + '&new';
       }
       return '?new';
     };
 
     function refresh(deferred) {
-      $http.get('backend/config/instrumentation?server-id=' + encodeURIComponent($scope.serverId))
+      $http.get('backend/config/instrumentation?agent-id=' + encodeURIComponent($scope.agentId))
           .success(function (data) {
             $scope.loaded = true;
             $scope.configs = data.configs;
@@ -78,7 +78,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
               deferred.resolve();
             } else {
               // preload cache for class name and method name auto completion
-              $http.get('backend/config/preload-classpath-cache?server-id=' + encodeURIComponent($scope.serverId));
+              $http.get('backend/config/preload-classpath-cache?agent-id=' + encodeURIComponent($scope.agentId));
             }
           })
           .error(httpErrors.handler($scope, deferred));
@@ -95,7 +95,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
     $scope.importFromJson = function () {
       $scope.importErrorMessage = '';
       var postData = {
-        serverId: $scope.serverId,
+        agentId: $scope.agentId,
         classAnnotation: '',
         methodDeclaringClassName: '',
         methodAnnotation: '',
@@ -155,7 +155,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
 
     $scope.retransformClasses = function (deferred) {
       var postData = {
-        serverId: $scope.serverId
+        agentId: $scope.agentId
       };
       $http.post('backend/admin/reweave', postData)
           .success(function (data) {

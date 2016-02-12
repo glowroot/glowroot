@@ -38,7 +38,7 @@ import static org.mockito.Mockito.mock;
 
 public class TraceDaoTest {
 
-    private static final String SERVER_ID = "";
+    private static final String AGENT_ID = "";
 
     private DataSource dataSource;
     private File cappedFile;
@@ -67,9 +67,9 @@ public class TraceDaoTest {
     public void shouldReadTrace() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(SERVER_ID, trace);
+        traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .serverRollup(SERVER_ID)
+                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -80,7 +80,7 @@ public class TraceDaoTest {
                 .build();
         Result<TracePoint> queryResult = traceDao.readSlowPoints(query, filter, 1);
         Trace.Header header =
-                traceDao.readHeaderPlus(SERVER_ID, queryResult.records().get(0).traceId()).header();
+                traceDao.readHeaderPlus(AGENT_ID, queryResult.records().get(0).traceId()).header();
         // then
         assertThat(header.getPartial()).isEqualTo(trace.getHeader().getPartial());
         assertThat(header.getStartTime()).isEqualTo(trace.getHeader().getStartTime());
@@ -94,9 +94,9 @@ public class TraceDaoTest {
     public void shouldReadTraceWithDurationNanosQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(SERVER_ID, trace);
+        traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .serverRollup(SERVER_ID)
+                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -115,9 +115,9 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithHighDurationNanosQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(SERVER_ID, trace);
+        traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .serverRollup(SERVER_ID)
+                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -136,9 +136,9 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithLowDurationNanosQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(SERVER_ID, trace);
+        traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .serverRollup(SERVER_ID)
+                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -157,9 +157,9 @@ public class TraceDaoTest {
     public void shouldReadTraceWithAttributeQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(SERVER_ID, trace);
+        traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .serverRollup(SERVER_ID)
+                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -181,9 +181,9 @@ public class TraceDaoTest {
     public void shouldReadTraceWithAttributeQualifier2() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(SERVER_ID, trace);
+        traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .serverRollup(SERVER_ID)
+                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -205,9 +205,9 @@ public class TraceDaoTest {
     public void shouldReadTraceWithAttributeQualifier3() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(SERVER_ID, trace);
+        traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .serverRollup(SERVER_ID)
+                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -229,9 +229,9 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithNonMatchingAttributeQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(SERVER_ID, trace);
+        traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .serverRollup(SERVER_ID)
+                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -253,9 +253,9 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithNonMatchingAttributeQualifier2() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(SERVER_ID, trace);
+        traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .serverRollup(SERVER_ID)
+                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -277,10 +277,10 @@ public class TraceDaoTest {
     public void shouldDeletedTrace() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(SERVER_ID, trace);
+        traceDao.collect(AGENT_ID, trace);
         // when
         traceDao.deleteBefore(100);
         // then
-        assertThat(traceDao.readHeaderPlus(SERVER_ID, trace.getId())).isNull();
+        assertThat(traceDao.readHeaderPlus(AGENT_ID, trace.getId())).isNull();
     }
 }

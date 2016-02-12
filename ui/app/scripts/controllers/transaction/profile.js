@@ -64,8 +64,8 @@ glowroot.controller('TransactionProfileCtrl', [
 
     $scope.flameGraphHref = function () {
       var query = {};
-      if ($scope.layout.central) {
-        query['server-rollup'] = $scope.serverRollup;
+      if (!$scope.layout.fat) {
+        query['agent-rollup'] = $scope.agentRollup;
       }
       query['transaction-type'] = $scope.transactionType;
       query['transaction-name'] = $scope.transactionName;
@@ -125,7 +125,7 @@ glowroot.controller('TransactionProfileCtrl', [
         return;
       }
       var query = {
-        serverRollup: $scope.serverRollup,
+        agentRollup: $scope.agentRollup,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
         from: $scope.chartFrom,
