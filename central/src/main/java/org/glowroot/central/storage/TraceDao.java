@@ -480,7 +480,7 @@ public class TraceDao implements TraceRepository {
         ResultSet results = session.execute(boundStatement);
         List<String> attributeNames = Lists.newArrayList();
         for (Row row : results) {
-            attributeNames.add(row.getString(0));
+            attributeNames.add(checkNotNull(row.getString(0)));
         }
         return attributeNames;
     }
@@ -700,7 +700,7 @@ public class TraceDao implements TraceRepository {
         throw new UnsupportedOperationException();
     }
 
-    private Trace.Header readHeader(String serverId, String traceId)
+    private @Nullable Trace.Header readHeader(String serverId, String traceId)
             throws InvalidProtocolBufferException {
         BoundStatement boundStatement = readHeader.bind();
         boundStatement.setString(0, serverId);

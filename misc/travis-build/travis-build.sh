@@ -134,8 +134,7 @@ case "$1" in
                                  -Dglowroot.ui.skip \
                                  -DskipTests \
                                  -B
-               # FIXME central is currently omitted due to https://github.com/typetools/checker-framework/issues/529
-               mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/it-harness,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!central \
+               mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/it-harness,!agent-parent/benchmarks,!agent-parent/ui-sandbox \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \

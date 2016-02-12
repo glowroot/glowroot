@@ -583,8 +583,8 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setTimestamp(1, new Date(sortOfSafeRollupTime));
         ResultSet results = session.execute(boundStatement);
         for (Row row : results) {
-            long captureTime = row.getTimestamp(0).getTime();
-            String transactionType = row.getString(1);
+            long captureTime = checkNotNull(row.getTimestamp(0)).getTime();
+            String transactionType = checkNotNull(row.getString(1));
             UUID lastUpdate = row.getUUID(2);
             rollupOne(rollupLevel, serverRollup, transactionType,
                     captureTime - rollupIntervalMillis, captureTime);
@@ -882,7 +882,7 @@ public class AggregateDao implements AggregateRepository {
         }
         Map<String, MutableSummary> summaries = Maps.newHashMap();
         for (Row row : results) {
-            String transactionName = row.getString(0);
+            String transactionName = checkNotNull(row.getString(0));
             MutableSummary summary = summaries.get(transactionName);
             if (summary == null) {
                 summary = new MutableSummary();
@@ -918,7 +918,7 @@ public class AggregateDao implements AggregateRepository {
         }
         Map<String, MutableErrorSummary> summaries = Maps.newHashMap();
         for (Row row : results) {
-            String transactionName = row.getString(0);
+            String transactionName = checkNotNull(row.getString(0));
             MutableErrorSummary summary = summaries.get(transactionName);
             if (summary == null) {
                 summary = new MutableErrorSummary();

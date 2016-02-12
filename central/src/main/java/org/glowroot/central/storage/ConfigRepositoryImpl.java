@@ -642,6 +642,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private PluginConfig buildPluginConfig(PluginConfig existingPluginConfig,
             List<PluginProperty> properties) {
+        // TODO submit checker framework issue
+        @SuppressWarnings("methodref.receiver.invalid")
         Map<String, PluginProperty> props =
                 Maps.newHashMap(Maps.uniqueIndex(properties, PluginProperty::getName));
         PluginConfig.Builder builder = PluginConfig.newBuilder()

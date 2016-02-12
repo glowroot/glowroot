@@ -179,6 +179,8 @@ public class GaugeValueDao implements GaugeValueRepository {
         serverDao.updateLastCaptureTime(serverId, true);
         if (!rollup.getAndSet(true)) {
             try {
+                // TODO submit checker framework issue
+                @SuppressWarnings("assignment.type.incompatible")
                 long overallMaxCaptureTime =
                         maxCaptureTimes.values().stream().max(Long::compareTo).orElse(0L);
                 rollup(overallMaxCaptureTime - 60000);
@@ -247,8 +249,8 @@ public class GaugeValueDao implements GaugeValueRepository {
         boundStatement.setTimestamp(1, new Date(sortOfSafeRollupTime));
         ResultSet results = session.execute(boundStatement);
         for (Row row : results) {
-            long captureTime = row.getTimestamp(0).getTime();
-            String gaugeName = row.getString(1);
+            long captureTime = checkNotNull(row.getTimestamp(0)).getTime();
+            String gaugeName = checkNotNull(row.getString(1));
             UUID lastUpdate = row.getUUID(2);
             rollupOne(rollupLevel, serverRollup, gaugeName, captureTime - rollupIntervalMillis,
                     captureTime);

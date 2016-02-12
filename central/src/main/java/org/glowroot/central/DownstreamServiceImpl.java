@@ -517,7 +517,9 @@ public class DownstreamServiceImpl implements DownstreamService {
             responseHolders.put(request.getRequestId(), responseHolder);
             requestObserver.onNext(request);
             // timeout is in case agent never responds
-            ClientResponse response = responseHolder.response.exchange(null, 1, HOURS);
+            // passing ClientResponse.getDefaultInstance() is just dummy (non-null) value
+            ClientResponse response =
+                    responseHolder.response.exchange(ClientResponse.getDefaultInstance(), 1, HOURS);
             if (response.getMessageCase() == MessageCase.UNKNOWN_REQUEST_RESPONSE) {
                 throw new OutdatedAgentException();
             }
@@ -529,7 +531,7 @@ public class DownstreamServiceImpl implements DownstreamService {
     }
 
     private static class ResponseHolder {
-        private final Exchanger<ClientResponse> response = new Exchanger<>();
+        private final Exchanger<ClientResponse> response = new Exchanger<ClientResponse>();
     }
 
     @SuppressWarnings("serial")
