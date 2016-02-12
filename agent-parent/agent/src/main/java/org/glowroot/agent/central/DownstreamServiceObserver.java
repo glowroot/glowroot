@@ -27,20 +27,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.Collector.AgentConfigUpdater;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceStub;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AuxThreadProfileResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpaceResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CapabilitiesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ExceptionResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.FullTraceResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMetaResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeaderResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Hello;
@@ -50,6 +55,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpResponse
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMetaRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMetaResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MainThreadProfileResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MatchingClassNamesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MatchingClassNamesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MatchingMBeanObjectNamesRequest;
@@ -66,6 +72,8 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ServerRequest.Mes
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDumpResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.UnknownRequestResponse;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -79,6 +87,7 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
     private final AgentConfigUpdater agentConfigUpdater;
     private final LiveJvmService liveJvmService;
     private final LiveWeavingService liveWeavingService;
+    private final LiveTraceRepository liveTraceRepository;
     private final String serverId;
 
     private volatile @Nullable StreamObserver<ClientResponse> currResponseObserver;
@@ -90,12 +99,14 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
 
     DownstreamServiceObserver(CentralConnection centralConnection,
             AgentConfigUpdater agentConfigUpdater, LiveJvmService liveJvmService,
-            LiveWeavingService liveWeavingService, String serverId) throws Exception {
+            LiveWeavingService liveWeavingService, LiveTraceRepository liveTraceRepository,
+            String serverId) throws Exception {
         this.centralConnection = centralConnection;
         downstreamServiceStub = DownstreamServiceGrpc.newStub(centralConnection.getChannel());
         this.agentConfigUpdater = agentConfigUpdater;
         this.liveJvmService = liveJvmService;
         this.liveWeavingService = liveWeavingService;
+        this.liveTraceRepository = liveTraceRepository;
         this.serverId = serverId;
     }
 
@@ -231,6 +242,21 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
                 return;
             case REWEAVE_REQUEST:
                 reweaveAndRespond(request, responseObserver);
+                return;
+            case HEADER_REQUEST:
+                getHeaderAndRespond(request, responseObserver);
+                return;
+            case ENTRIES_REQUEST:
+                getEntriesAndRespond(request, responseObserver);
+                return;
+            case MAIN_THREAD_PROFILE_REQUEST:
+                getMainThreadProfileAndRespond(request, responseObserver);
+                return;
+            case AUX_THREAD_PROFILE_REQUEST:
+                getAuxThreadProfileAndRespond(request, responseObserver);
+                return;
+            case FULL_TRACE_REQUEST:
+                getFullTraceAndRespond(request, responseObserver);
                 return;
             default:
                 responseObserver.onNext(ClientResponse.newBuilder()
@@ -500,6 +526,122 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
                 .setRequestId(request.getRequestId())
                 .setReweaveResponse(ReweaveResponse.newBuilder()
                         .setClassUpdateCount(classUpdateCount))
+                .build());
+    }
+
+    private void getHeaderAndRespond(ServerRequest request,
+            StreamObserver<ClientResponse> responseObserver) throws Exception {
+        Trace.Header header;
+        try {
+            header = liveTraceRepository.getHeader("", request.getHeaderRequest().getTraceId());
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            sendExceptionResponse(request, responseObserver);
+            return;
+        }
+        HeaderResponse response;
+        if (header == null) {
+            response = HeaderResponse.getDefaultInstance();
+        } else {
+            response = HeaderResponse.newBuilder()
+                    .setHeader(header)
+                    .build();
+        }
+        responseObserver.onNext(ClientResponse.newBuilder()
+                .setRequestId(request.getRequestId())
+                .setHeaderResponse(response)
+                .build());
+    }
+
+    private void getEntriesAndRespond(ServerRequest request,
+            StreamObserver<ClientResponse> responseObserver) throws Exception {
+        List<Trace.Entry> entries;
+        try {
+            entries = liveTraceRepository.getEntries("", request.getEntriesRequest().getTraceId());
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            sendExceptionResponse(request, responseObserver);
+            return;
+        }
+        responseObserver.onNext(ClientResponse.newBuilder()
+                .setRequestId(request.getRequestId())
+                .setEntriesResponse(EntriesResponse.newBuilder()
+                        .addAllEntry(entries))
+                .build());
+    }
+
+    private void getMainThreadProfileAndRespond(ServerRequest request,
+            StreamObserver<ClientResponse> responseObserver) throws Exception {
+        Profile profile;
+        try {
+            profile = liveTraceRepository.getMainThreadProfile("",
+                    request.getMainThreadProfileRequest().getTraceId());
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            sendExceptionResponse(request, responseObserver);
+            return;
+        }
+        MainThreadProfileResponse response;
+        if (profile == null) {
+            response = MainThreadProfileResponse.getDefaultInstance();
+        } else {
+            response = MainThreadProfileResponse.newBuilder()
+                    .setProfile(profile)
+                    .build();
+        }
+        responseObserver.onNext(ClientResponse.newBuilder()
+                .setRequestId(request.getRequestId())
+                .setMainThreadProfileResponse(response)
+                .build());
+    }
+
+    private void getAuxThreadProfileAndRespond(ServerRequest request,
+            StreamObserver<ClientResponse> responseObserver) throws Exception {
+        Profile profile;
+        try {
+            profile = liveTraceRepository.getAuxThreadProfile("",
+                    request.getAuxThreadProfileRequest().getTraceId());
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            sendExceptionResponse(request, responseObserver);
+            return;
+        }
+        AuxThreadProfileResponse response;
+        if (profile == null) {
+            response = AuxThreadProfileResponse.getDefaultInstance();
+        } else {
+            response = AuxThreadProfileResponse.newBuilder()
+                    .setProfile(profile)
+                    .build();
+        }
+        responseObserver.onNext(ClientResponse.newBuilder()
+                .setRequestId(request.getRequestId())
+                .setAuxThreadProfileResponse(response)
+                .build());
+    }
+
+    private void getFullTraceAndRespond(ServerRequest request,
+            StreamObserver<ClientResponse> responseObserver) throws Exception {
+        Trace trace;
+        try {
+            trace = liveTraceRepository.getFullTrace("",
+                    request.getFullTraceRequest().getTraceId());
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            sendExceptionResponse(request, responseObserver);
+            return;
+        }
+        FullTraceResponse response;
+        if (trace == null) {
+            response = FullTraceResponse.getDefaultInstance();
+        } else {
+            response = FullTraceResponse.newBuilder()
+                    .setTrace(trace)
+                    .build();
+        }
+        responseObserver.onNext(ClientResponse.newBuilder()
+                .setRequestId(request.getRequestId())
+                .setFullTraceResponse(response)
                 .build());
     }
 

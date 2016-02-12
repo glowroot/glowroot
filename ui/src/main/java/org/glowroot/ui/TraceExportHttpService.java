@@ -76,8 +76,16 @@ class TraceExportHttpService implements HttpService {
         List<String> traceIds = decoder.parameters().get("trace-id");
         checkNotNull(traceIds, "Missing trace id in query string: %s", request.uri());
         String traceId = traceIds.get(0);
-        logger.debug("handleRequest(): serverId={}, traceId={}", serverId, traceId);
-        TraceExport traceExport = traceCommonService.getExport(serverId, traceId);
+        // check-live-traces is an optimization so central only has to check with remote agents when
+        // necessary
+        List<String> checkLiveTracesParams = decoder.parameters().get("check-live-traces");
+        boolean checkLiveTraces = false;
+        if (checkLiveTracesParams != null && !checkLiveTracesParams.isEmpty()) {
+            checkLiveTraces = Boolean.parseBoolean(checkLiveTracesParams.get(0));
+        }
+        logger.debug("handleRequest(): serverId={}, traceId={}, checkLiveTraces={}", serverId,
+                traceId, checkLiveTraces);
+        TraceExport traceExport = traceCommonService.getExport(serverId, traceId, checkLiveTraces);
         if (traceExport == null) {
             logger.warn("no trace found for id: {}", traceId);
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);

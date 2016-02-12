@@ -82,7 +82,8 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                 Collector collector;
                 if (customCollector == null) {
                     centralCollector = new CentralCollectorImpl(properties, collectorHost,
-                            agentModule.getLiveWeavingService(), agentModule.getLiveJvmService(),
+                            agentModule.getLiveJvmService(), agentModule.getLiveWeavingService(),
+                            agentModule.getLiveTraceRepository(),
                             agentModule.getScheduledExecutor(), agentConfigUpdater);
                     collector = centralCollector;
                 } else {

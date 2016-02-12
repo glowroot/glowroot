@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.annotation.Nullable;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Maps;
@@ -32,14 +34,18 @@ import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamService;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AuxThreadProfileRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpaceRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CapabilitiesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse.MessageCase;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.FullTraceRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMetaRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeaderRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HelloAck;
@@ -48,6 +54,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpKind;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMetaRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MainThreadProfileRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MatchingClassNamesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MatchingMBeanObjectNamesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MatchingMethodNamesRequest;
@@ -58,6 +65,8 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ServerRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDumpRequest;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
@@ -200,6 +209,50 @@ public class DownstreamServiceImpl implements DownstreamService {
             throw new AgentNotConnectedException();
         }
         return connectedAgent.reweave();
+    }
+
+    @Nullable
+    Trace.Header getHeader(String serverId, String traceId) throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(serverId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.getHeader(traceId);
+    }
+
+    List<Trace.Entry> getEntries(String serverId, String traceId) throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(serverId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.getEntries(traceId);
+    }
+
+    @Nullable
+    Profile getMainThreadProfile(String serverId, String traceId) throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(serverId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.getMainThreadProfile(traceId);
+    }
+
+    @Nullable
+    Profile getAuxThreadProfile(String serverId, String traceId) throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(serverId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.getAuxThreadProfile(traceId);
+    }
+
+    @Nullable
+    Trace getFullTrace(String serverId, String traceId) throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(serverId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.getFullTrace(traceId);
     }
 
     private class ConnectedAgent {
@@ -396,6 +449,67 @@ public class DownstreamServiceImpl implements DownstreamService {
                     .setReweaveRequest(ReweaveRequest.getDefaultInstance())
                     .build());
             return response.getReweaveResponse().getClassUpdateCount();
+        }
+
+        private @Nullable Trace.Header getHeader(String traceId) throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setHeaderRequest(HeaderRequest.newBuilder()
+                            .setTraceId(traceId))
+                    .build());
+            if (response.getHeaderResponse().hasHeader()) {
+                return response.getHeaderResponse().getHeader();
+            } else {
+                return null;
+            }
+        }
+
+        private List<Trace.Entry> getEntries(String traceId) throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setEntriesRequest(EntriesRequest.newBuilder()
+                            .setTraceId(traceId))
+                    .build());
+            return response.getEntriesResponse().getEntryList();
+        }
+
+        private @Nullable Profile getMainThreadProfile(String traceId) throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setMainThreadProfileRequest(MainThreadProfileRequest.newBuilder()
+                            .setTraceId(traceId))
+                    .build());
+            if (response.getMainThreadProfileResponse().hasProfile()) {
+                return response.getMainThreadProfileResponse().getProfile();
+            } else {
+                return null;
+            }
+        }
+
+        private @Nullable Profile getAuxThreadProfile(String traceId) throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setAuxThreadProfileRequest(AuxThreadProfileRequest.newBuilder()
+                            .setTraceId(traceId))
+                    .build());
+            if (response.getAuxThreadProfileResponse().hasProfile()) {
+                return response.getAuxThreadProfileResponse().getProfile();
+            } else {
+                return null;
+            }
+        }
+
+        private @Nullable Trace getFullTrace(String traceId) throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setFullTraceRequest(FullTraceRequest.newBuilder()
+                            .setTraceId(traceId))
+                    .build());
+            if (response.getFullTraceResponse().hasTrace()) {
+                return response.getFullTraceResponse().getTrace();
+            } else {
+                return null;
+            }
         }
 
         private ClientResponse sendRequest(ServerRequest request) throws Exception {

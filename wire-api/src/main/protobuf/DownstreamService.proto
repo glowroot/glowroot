@@ -1,6 +1,8 @@
 syntax = "proto3";
 
 import "AgentConfig.proto";
+import "Trace.proto";
+import "Profile.proto";
 
 package org_glowroot_wire_api_model;
 
@@ -33,6 +35,13 @@ message ServerRequest {
     MatchingMethodNamesRequest matching_method_names_request = 403;
     MethodSignaturesRequest method_signatures_request = 404;
     ReweaveRequest reweave_request = 405;
+
+    // LiveTraceRepository
+    HeaderRequest header_request = 500;
+    EntriesRequest entries_request = 501;
+    MainThreadProfileRequest main_thread_profile_request = 502;
+    AuxThreadProfileRequest aux_thread_profile_request = 503;
+    FullTraceRequest full_trace_request = 504;
   }
 }
 
@@ -59,6 +68,13 @@ message ClientResponse {
     MatchingMethodNamesResponse matching_method_names_response = 403;
     MethodSignaturesResponse method_signatures_response = 404;
     ReweaveResponse reweave_response = 405;
+
+    // LiveTraceRepository
+    HeaderResponse header_response = 500;
+    EntriesResponse entries_response = 501;
+    MainThreadProfileResponse main_thread_profile_response = 502;
+    AuxThreadProfileResponse aux_thread_profile_response = 503;
+    FullTraceResponse full_trace_response = 504;
 
     UnknownRequestResponse unknown_request_response = 10000;
     ExceptionResponse exception_response = 10001;
@@ -187,6 +203,46 @@ message ReweaveRequest {
 
 message ReweaveResponse {
   int32 class_update_count = 1;
+}
+
+message HeaderRequest {
+  string trace_id = 1;
+}
+
+message HeaderResponse {
+  Trace.Header header = 1;
+}
+
+message EntriesRequest {
+  string trace_id = 1;
+}
+
+message EntriesResponse {
+  repeated Trace.Entry entry = 1;
+}
+
+message MainThreadProfileRequest {
+  string trace_id = 1;
+}
+
+message MainThreadProfileResponse {
+  Profile profile = 1;
+}
+
+message AuxThreadProfileRequest {
+  string trace_id = 1;
+}
+
+message AuxThreadProfileResponse {
+  Profile profile = 1;
+}
+
+message FullTraceRequest {
+  string trace_id = 1;
+}
+
+message FullTraceResponse {
+  Trace trace = 1;
 }
 
 message UnknownRequestResponse {

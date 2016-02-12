@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,28 +21,37 @@ glowroot.factory('traceModal', [
   'modals',
   function ($http, modals) {
 
-    function displayModal(serverId, traceId) {
+    function displayModal(serverId, traceId, checkLiveTraces) {
 
       var spinner;
       var $modalContent = $('#traceModal .modal-body');
 
       modals.display('#traceModal');
-      $http.get('backend/trace/header?server-id=' + serverId + '&trace-id=' + traceId)
+      var url = 'backend/trace/header?server-id=' + serverId + '&trace-id=' + traceId;
+      if (checkLiveTraces) {
+        url += '&check-live-traces=true';
+      }
+      $http.get(url)
           .success(function (data) {
             spinner.stop();
             if (data.expired) {
               $modalContent.html('expired');
             } else {
               data.showExport = true;
-              HandlebarsRendering.renderTrace(data, serverId, traceId, $modalContent);
+              HandlebarsRendering.renderTrace(data, serverId, traceId, checkLiveTraces, $modalContent);
               $('#traceModal .modal-body button.download-trace').click(function () {
                 var $traceParent = $(this).parents('.gt-trace-parent');
                 var traceId = $traceParent.data('gtTraceId');
+                var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
                 var url = document.getElementsByTagName('base')[0].href + 'export/trace?';
                 if (serverId) {
                   url += 'server-id=' + serverId + '&';
                 }
-                window.location = url + 'trace-id=' + traceId;
+                url += 'trace-id=' + traceId;
+                if (checkLiveTraces) {
+                  url += '&check-live-traces=true';
+                }
+                window.location = url;
               });
             }
           })

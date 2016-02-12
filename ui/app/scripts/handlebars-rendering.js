@@ -366,6 +366,7 @@ HandlebarsRendering = (function () {
         // this is not an export file
         var serverId = $traceParent.data('gtServerId');
         var traceId = $traceParent.data('gtTraceId');
+        var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
         $selector.data('gtLoading', true);
         var loaded;
         var spinner;
@@ -375,7 +376,11 @@ HandlebarsRendering = (function () {
             spinner = Glowroot.showSpinner($button.parent().find('.gt-trace-detail-spinner'));
           }
         }, 100);
-        $.get('backend/trace/entries?server-id=' + serverId + '&trace-id=' + traceId)
+        var url = 'backend/trace/entries?server-id=' + serverId + '&trace-id=' + traceId;
+        if (checkLiveTraces) {
+          url += '&check-live-traces=true';
+        }
+        $.get(url)
             .done(function (data) {
               if (data.overwritten) {
                 $('#sps').append('<div style="padding: 1em;">The trace entries have expired, see' +
@@ -420,7 +425,11 @@ HandlebarsRendering = (function () {
     if (!profile) {
       var serverId = $traceParent.data('gtServerId');
       var traceId = $traceParent.data('gtTraceId');
-      url = 'backend/trace/main-thread-profile' + '?server-id=' + serverId + '&trace-id=' + traceId;
+      var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
+      url = 'backend/trace/main-thread-profile?server-id=' + serverId + '&trace-id=' + traceId;
+      if (checkLiveTraces) {
+        url += '&check-live-traces=true';
+      }
     }
     profileToggle($button, '#mainThreadProfileOuter', profile, url);
   });
@@ -433,7 +442,11 @@ HandlebarsRendering = (function () {
     if (!profile) {
       var serverId = $traceParent.data('gtServerId');
       var traceId = $traceParent.data('gtTraceId');
-      url = 'backend/trace/aux-thread-profile' + '?server-id=' + serverId + '&trace-id=' + traceId;
+      var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
+      url = 'backend/trace/aux-thread-profile?server-id=' + serverId + '&trace-id=' + traceId;
+      if (checkLiveTraces) {
+        url += '&check-live-traces=true';
+      }
     }
     profileToggle($button, '#auxThreadProfileOuter', profile, url);
   });
@@ -1054,20 +1067,21 @@ HandlebarsRendering = (function () {
   }
 
   return {
-    renderTrace: function (traceHeader, serverId, traceId, $selector) {
+    renderTrace: function (traceHeader, serverId, traceId, checkLiveTraces, $selector) {
       var html = JST.trace(traceHeader);
       $selector.html(html);
       $selector.addClass('gt-trace-parent');
       if (serverId !== undefined) {
         $selector.data('gtServerId', serverId);
         $selector.data('gtTraceId', traceId);
+        $selector.data('gtCheckLiveTraces', checkLiveTraces);
       }
     },
     renderTraceFromExport: function (traceHeader, $selector, traceEntries, mainThreadProfile, auxThreadProfile) {
       $selector.data('gtTraceEntries', traceEntries);
       $selector.data('gtMainThreadProfile', mainThreadProfile);
       $selector.data('gtAuxThreadProfile', auxThreadProfile);
-      this.renderTrace(traceHeader, undefined, undefined, $selector);
+      this.renderTrace(traceHeader, undefined, undefined, false, $selector);
     },
     formatBytes: formatBytes,
     formatMillis: formatMillis,

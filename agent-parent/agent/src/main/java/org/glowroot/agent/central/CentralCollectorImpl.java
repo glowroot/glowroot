@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.central.CentralConnection.GrpcCall;
 import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.Collector;
@@ -62,9 +63,9 @@ public class CentralCollectorImpl implements Collector {
     private final DownstreamServiceObserver downstreamServiceObserver;
 
     public CentralCollectorImpl(Map<String, String> properties, @Nullable String collectorHost,
-            LiveWeavingService liveWeavingService, LiveJvmService liveJvmService,
-            ScheduledExecutorService scheduledExecutor, AgentConfigUpdater agentConfigUpdater)
-                    throws Exception {
+            LiveJvmService liveJvmService, LiveWeavingService liveWeavingService,
+            LiveTraceRepository liveTraceRepository, ScheduledExecutorService scheduledExecutor,
+            AgentConfigUpdater agentConfigUpdater) throws Exception {
 
         String serverId = properties.get("glowroot.server.id");
         if (Strings.isNullOrEmpty(serverId)) {
@@ -86,7 +87,8 @@ public class CentralCollectorImpl implements Collector {
         centralConnection = new CentralConnection(collectorHost, collectorPort, scheduledExecutor);
         collectorServiceStub = CollectorServiceGrpc.newStub(centralConnection.getChannel());
         downstreamServiceObserver = new DownstreamServiceObserver(centralConnection,
-                agentConfigUpdater, liveJvmService, liveWeavingService, serverId);
+                agentConfigUpdater, liveJvmService, liveWeavingService, liveTraceRepository,
+                serverId);
         downstreamServiceObserver.connectAsync();
     }
 

@@ -60,10 +60,19 @@ class TraceDetailHttpService implements HttpService {
         List<String> traceIds = decoder.parameters().get("trace-id");
         checkNotNull(traceIds, "Missing trace id in query string: %s", request.uri());
         String traceId = traceIds.get(0);
-        logger.debug("handleRequest(): traceComponent={}, serverId={}, traceId={}", traceComponent,
-                serverId, traceId);
+        // check-live-traces is an optimization so central only has to check with remote agents when
+        // necessary
+        List<String> checkLiveTracesParams = decoder.parameters().get("check-live-traces");
+        boolean checkLiveTraces = false;
+        if (checkLiveTracesParams != null && !checkLiveTracesParams.isEmpty()) {
+            checkLiveTraces = Boolean.parseBoolean(checkLiveTracesParams.get(0));
+        }
+        logger.debug(
+                "handleRequest(): traceComponent={}, serverId={}, traceId={}, checkLiveTraces={}",
+                traceComponent, serverId, traceId, checkLiveTraces);
 
-        ChunkSource detail = getDetailChunkSource(traceComponent, serverId, traceId);
+        ChunkSource detail =
+                getDetailChunkSource(traceComponent, serverId, traceId, checkLiveTraces);
         if (detail == null) {
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
         }
@@ -87,9 +96,10 @@ class TraceDetailHttpService implements HttpService {
     }
 
     private @Nullable ChunkSource getDetailChunkSource(String traceComponent, String serverName,
-            String traceId) throws Exception {
+            String traceId, boolean checkLiveTraces) throws Exception {
         if (traceComponent.equals("entries")) {
-            String entriesJson = traceCommonService.getEntriesJson(serverName, traceId);
+            String entriesJson =
+                    traceCommonService.getEntriesJson(serverName, traceId, checkLiveTraces);
             if (entriesJson == null) {
                 // this includes trace was found but the trace had no trace entries
                 // caller should check trace.entry_count
@@ -98,14 +108,16 @@ class TraceDetailHttpService implements HttpService {
             return ChunkSource.wrap(entriesJson);
         }
         if (traceComponent.equals("main-thread-profile")) {
-            String profileJson = traceCommonService.getMainThreadProfileJson(serverName, traceId);
+            String profileJson = traceCommonService.getMainThreadProfileJson(serverName, traceId,
+                    checkLiveTraces);
             if (profileJson == null) {
                 return null;
             }
             return ChunkSource.wrap(profileJson);
         }
         if (traceComponent.equals("aux-thread-profile")) {
-            String profileJson = traceCommonService.getAuxThreadProfileJson(serverName, traceId);
+            String profileJson = traceCommonService.getAuxThreadProfileJson(serverName, traceId,
+                    checkLiveTraces);
             if (profileJson == null) {
                 return null;
             }

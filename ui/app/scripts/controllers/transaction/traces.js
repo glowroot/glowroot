@@ -328,6 +328,7 @@ glowroot.controller('TracesCtrl', [
         plot.highlight(item.series, item.datapoint);
         var serverId = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
         var traceId = plot.getData()[item.seriesIndex].data[item.dataIndex][3];
+        var checkLiveTraces = item.seriesIndex === 2;
         if (originalEvent.ctrlKey) {
           var url = $location.url();
           if (url.indexOf('?') === -1) {
@@ -339,6 +340,9 @@ glowroot.controller('TracesCtrl', [
             url += 'modal-server-id=' + serverId + '&';
           }
           url += 'modal-trace-id=' + traceId;
+          if (checkLiveTraces) {
+            url += '&modal-check-live-traces=true';
+          }
           window.open(url);
         } else {
           $scope.$apply(function () {
@@ -346,6 +350,9 @@ glowroot.controller('TracesCtrl', [
               $location.search('modal-server-id', serverId);
             }
             $location.search('modal-trace-id', traceId);
+            if (checkLiveTraces) {
+              $location.search('modal-check-live-traces', 'true');
+            }
           });
         }
         highlightedTraceId = item.seriesIndex === 2 ? traceId : null;
@@ -429,10 +436,11 @@ glowroot.controller('TracesCtrl', [
 
       var modalServer = $location.search()['modal-server-id'] || '';
       var modalTraceId = $location.search()['modal-trace-id'];
+      var modalCheckLiveTraces = $location.search()['modal-check-live-traces'];
       if (modalTraceId) {
         highlightedTraceId = modalTraceId;
-        $('#traceModal').data('location-query', ['modal-server-id', 'modal-trace-id']);
-        traceModal.displayModal(modalServer, modalTraceId);
+        $('#traceModal').data('location-query', ['modal-server-id', 'modal-trace-id', 'modal-check-live-traces']);
+        traceModal.displayModal(modalServer, modalTraceId, modalCheckLiveTraces);
       } else {
         $('#traceModal').modal('hide');
       }
@@ -481,6 +489,7 @@ glowroot.controller('TracesCtrl', [
       // preserve modal-*, otherwise refresh on modal trace does not work
       query['modal-server-id'] = $location.search()['modal-server-id'];
       query['modal-trace-id'] = $location.search()['modal-trace-id'];
+      query['modal-check-live-traces'] = $location.search()['modal-check-live-traces'];
       $location.search(query);
     }
 

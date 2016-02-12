@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,8 @@ class TraceJsonService {
     @GET("/backend/trace/header")
     String getHeader(String queryString) throws Exception {
         HeaderRequest request = QueryStrings.decode(queryString, HeaderRequest.class);
-        String headerJson = traceCommonService.getHeaderJson(request.serverId(), request.traceId());
+        String headerJson = traceCommonService.getHeaderJson(request.serverId(), request.traceId(),
+                request.checkLiveTraces());
         if (headerJson == null) {
             logger.debug("no trace found for server id '{}' and trace id '{}'", request.serverId(),
                     request.traceId());
@@ -44,8 +45,12 @@ class TraceJsonService {
     }
 
     @Value.Immutable
-    interface HeaderRequest {
-        String serverId();
-        String traceId();
+    abstract static class HeaderRequest {
+        abstract String serverId();
+        abstract String traceId();
+        @Value.Default
+        boolean checkLiveTraces() {
+            return false;
+        }
     }
 }

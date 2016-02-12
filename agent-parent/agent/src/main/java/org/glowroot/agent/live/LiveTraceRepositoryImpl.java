@@ -70,6 +70,8 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         return null;
     }
 
+    // this is only called if the trace does have traces, so empty list response means trace was not
+    // found (e.g. has expired)
     @Override
     public List<Trace.Entry> getEntries(String serverId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),

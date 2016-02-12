@@ -15,7 +15,6 @@
  */
 package org.glowroot.common.live;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -33,18 +32,20 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 public interface LiveTraceRepository {
 
     @Nullable
-    Trace.Header getHeader(String serverId, String traceId) throws IOException;
+    Trace.Header getHeader(String serverId, String traceId) throws Exception;
 
-    List<Trace.Entry> getEntries(String serverId, String traceId) throws IOException;
-
-    @Nullable
-    Profile getMainThreadProfile(String serverId, String traceId) throws IOException;
-
-    @Nullable
-    Profile getAuxThreadProfile(String serverId, String traceId) throws IOException;
+    // this is only called if the trace does have traces, so empty list response means trace was not
+    // found (e.g. has expired)
+    List<Trace.Entry> getEntries(String serverId, String traceId) throws Exception;
 
     @Nullable
-    Trace getFullTrace(String serverId, String traceId) throws IOException;
+    Profile getMainThreadProfile(String serverId, String traceId) throws Exception;
+
+    @Nullable
+    Profile getAuxThreadProfile(String serverId, String traceId) throws Exception;
+
+    @Nullable
+    Trace getFullTrace(String serverId, String traceId) throws Exception;
 
     int getMatchingTraceCount(String serverId, String transactionType,
             @Nullable String transactionName);

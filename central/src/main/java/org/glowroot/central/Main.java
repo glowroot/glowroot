@@ -36,7 +36,6 @@ import org.glowroot.central.storage.GaugeValueDao;
 import org.glowroot.central.storage.ServerDao;
 import org.glowroot.central.storage.TraceDao;
 import org.glowroot.central.storage.TransactionTypeDao;
-import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Version;
 import org.glowroot.storage.repo.AggregateRepository;
@@ -101,7 +100,7 @@ public class Main {
                 .gaugeValueRepository(gaugeValueRepository)
                 .repoAdmin(new NopRepoAdmin())
                 .rollupLevelService(rollupLevelService)
-                .liveTraceRepository(new LiveTraceRepositoryNop())
+                .liveTraceRepository(new LiveTraceRepositoryImpl(server.getDownstreamService()))
                 .liveWeavingService(new LiveWeavingServiceImpl(server.getDownstreamService()))
                 .bindAddress("0.0.0.0")
                 .numWorkerThreads(50)

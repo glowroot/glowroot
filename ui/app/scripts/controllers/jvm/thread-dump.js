@@ -50,6 +50,14 @@ glowroot.controller('JvmThreadDumpCtrl', [
       }
     });
 
+    Handlebars.registerHelper('serverIdQueryString', function () {
+      if ($scope.serverId) {
+        return 'server-id=' + encodeURIComponent($scope.serverId) + '&';
+      } else {
+        return '';
+      }
+    });
+
     $scope.exportAsText = function () {
       var textWindow = window.open();
       var exportHtml = threadDumpHtml.replace(/ <a [^>]*>view trace<\/a>/g, '');
@@ -58,9 +66,10 @@ glowroot.controller('JvmThreadDumpCtrl', [
 
     locationChanges.on($scope, function() {
       var modalTraceId = $location.search()['modal-trace-id'];
+      var modalCheckLiveTraces = $location.search()['modal-check-live-traces'];
       if (modalTraceId) {
-        $('#traceModal').data('location-query', 'modal-trace-id');
-        traceModal.displayModal($scope.serverId, modalTraceId);
+        $('#traceModal').data('location-query', ['modal-trace-id', 'modal-check-live-traces']);
+        traceModal.displayModal($scope.serverId, modalTraceId, modalCheckLiveTraces);
       } else {
         $('#traceModal').modal('hide');
       }
