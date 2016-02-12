@@ -311,6 +311,7 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
         } else {
             asyncTimer.end(endTick);
         }
+        endQueryData(endTick);
         this.errorMessage = errorMessage;
         this.endTick = endTick;
         if (isAsync()) {
