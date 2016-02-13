@@ -46,14 +46,18 @@ public class Utils {
                         return null;
                     }
                 } catch (StaleElementReferenceException e) {
-                    // this can happen if dom is updated in between findElements() and checking
-                    // isDisplayed()
+                    // dom was updated in between findElements() and isDisplayed()
                     return null;
                 }
                 List<WebElement> overlayElements =
                         driver.findElements(By.className("gt-panel-overlay"));
                 for (WebElement overlayElement : overlayElements) {
-                    if (overlayElement.isDisplayed()) {
+                    try {
+                        if (overlayElement.isDisplayed()) {
+                            return null;
+                        }
+                    } catch (StaleElementReferenceException e) {
+                        // dom was updated in between findElements() and isDisplayed()
                         return null;
                     }
                 }

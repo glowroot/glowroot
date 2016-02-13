@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import java.util.List;
 
 import com.google.common.base.Function;
 import org.openqa.selenium.By;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -71,14 +72,24 @@ class GlobalNavbar {
                     return null;
                 }
                 WebElement element = elements.get(0);
-                if (!element.isDisplayed()) {
-                    openNavbar();
+                try {
+                    if (!element.isDisplayed()) {
+                        openNavbar();
+                        return null;
+                    }
+                } catch (StaleElementReferenceException e) {
+                    // dom was updated in between findElements() and isDisplayed()
                     return null;
                 }
                 List<WebElement> overlayElements =
                         driver.findElements(By.className("gt-panel-overlay"));
                 for (WebElement overlayElement : overlayElements) {
-                    if (overlayElement.isDisplayed()) {
+                    try {
+                        if (overlayElement.isDisplayed()) {
+                            return null;
+                        }
+                    } catch (StaleElementReferenceException e) {
+                        // dom was updated in between findElements() and isDisplayed()
                         return null;
                     }
                 }
