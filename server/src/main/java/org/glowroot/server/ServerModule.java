@@ -44,25 +44,28 @@ import org.glowroot.storage.repo.RepoAdmin;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.ui.CreateUiModuleBuilder;
+import org.glowroot.ui.UiModule;
 
-public class Main {
+public class ServerModule {
 
-    private Main() {}
+    private final Cluster cluster;
+    private final Session session;
+    private final GrpcServer server;
+    private final UiModule uiModule;
 
-    public static void main(String[] args) throws Exception {
-
+    ServerModule() throws Exception {
         // install jul-to-slf4j bridge for protobuf which logs to jul
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
 
         Clock clock = Clock.systemClock();
-        String version = Version.getVersion(Main.class);
+        String version = Version.getVersion(Bootstrap.class);
 
         List<String> contactPoints = getCassandraContactPoints();
-        Cluster cluster = Cluster.builder()
+        cluster = Cluster.builder()
                 .addContactPoints(contactPoints.toArray(new String[0]))
                 .build();
-        Session session = cluster.connect();
+        session = cluster.connect();
         session.execute("create keyspace if not exists glowroot with replication ="
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
         session.execute("use glowroot");
@@ -81,13 +84,13 @@ public class Main {
         GaugeValueRepository gaugeValueRepository =
                 new GaugeValueDao(session, agentDao, configRepository);
 
-        GrpcServer server = new GrpcServer(8181, agentDao, aggregateRepository,
+        server = new GrpcServer(8181, agentDao, aggregateRepository,
                 gaugeValueRepository, traceRepository);
         configRepository.setDownstreamService(server.getDownstreamService());
 
         RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
 
-        new CreateUiModuleBuilder()
+        uiModule = new CreateUiModuleBuilder()
                 .fat(false)
                 .clock(clock)
                 .logDir(new File("."))
@@ -106,8 +109,13 @@ public class Main {
                 .numWorkerThreads(50)
                 .version(version)
                 .build();
+    }
 
-        Thread.sleep(Long.MAX_VALUE);
+    void close() throws InterruptedException {
+        uiModule.close();
+        server.close();
+        session.close();
+        cluster.close();
     }
 
     private static List<String> getCassandraContactPoints() throws IOException {

@@ -17,6 +17,7 @@ package org.glowroot.server;
 
 import java.io.IOException;
 
+import io.grpc.internal.ServerImpl;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -51,6 +52,8 @@ public class GrpcServer {
 
     private final DownstreamServiceImpl downstreamService;
 
+    private final ServerImpl server;
+
     public GrpcServer(int port, AgentDao agentDao, AggregateRepository aggregateRepository,
             GaugeValueRepository gaugeValueRepository, TraceRepository traceRepository)
                     throws IOException {
@@ -61,7 +64,7 @@ public class GrpcServer {
 
         downstreamService = new DownstreamServiceImpl();
 
-        NettyServerBuilder.forPort(port)
+        server = NettyServerBuilder.forPort(port)
                 .addService(CollectorServiceGrpc.bindService(new CollectorServiceImpl()))
                 .addService(DownstreamServiceGrpc.bindService(downstreamService))
                 .build()
@@ -70,6 +73,10 @@ public class GrpcServer {
 
     DownstreamServiceImpl getDownstreamService() {
         return downstreamService;
+    }
+
+    void close() {
+        server.shutdown();
     }
 
     private class CollectorServiceImpl implements CollectorService {

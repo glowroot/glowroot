@@ -113,7 +113,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>org.glowroot.server.Main</mainClass>
+              <mainClass>org.glowroot.server.Bootstrap</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>
