@@ -150,7 +150,8 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
             serverConnection.suppressLogCollector(new Runnable() {
                 @Override
                 public void run() {
-                    logger.warn("unable to connect to glowroot server (will keep trying...)");
+                    logger.warn("unable to connect to glowroot server (will keep trying...): "
+                            + t.getMessage());
                     logger.debug(t.getMessage(), t);
                 }
             });
