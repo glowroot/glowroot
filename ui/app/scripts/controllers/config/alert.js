@@ -50,8 +50,7 @@ glowroot.controller('ConfigAlertCtrl', [
     } else {
       $scope.loaded = true;
       onNewData({
-        // FIXME
-        transactionType: $scope.layout.defaultTransactionType,
+        transactionType: $scope.defaultTransactionType(),
         minTransactionCount: 1,
         emailAddresses: []
       });
