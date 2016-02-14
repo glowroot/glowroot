@@ -31,8 +31,8 @@ import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import org.glowroot.storage.repo.ImmutableAgentRollup;
 import org.glowroot.storage.repo.AgentRepository;
+import org.glowroot.storage.repo.ImmutableAgentRollup;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
@@ -46,43 +46,41 @@ public class AgentDao implements AgentRepository {
 
     private final Session session;
 
-    private final PreparedStatement existsPS;
-
     private final PreparedStatement insertPS;
-    private final PreparedStatement insertSystemInfoPS;
-    private final PreparedStatement insertAgentConfigPS;
+    private final PreparedStatement insertConfigOnlyPS;
     private final PreparedStatement readSystemInfoPS;
     private final PreparedStatement readAgentConfigPS;
+    private final PreparedStatement updateLastCaptureTimePS;
 
-    private final PreparedStatement updateDetailPS;
+    private final PreparedStatement existsRollupPS;
+    private final PreparedStatement insertRollupPS;
+    private final PreparedStatement readRollupPS;
 
     public AgentDao(Session session) {
         this.session = session;
 
-        session.execute("create table if not exists agent (one int, agent_rollup varchar,"
+        session.execute("create table if not exists agent (agent_id varchar, system_info blob,"
+                + " config blob, primary key (agent_id))");
+        session.execute("create table if not exists agent_rollup (one int, agent_rollup varchar,"
                 + " leaf boolean, primary key (one, agent_rollup))");
-        session.execute("create table if not exists agent_detail (agent_id varchar,"
-                + " system_info blob, agent_config blob, primary key (agent_id))");
 
-        existsPS = session
-                .prepare("select agent_rollup from agent where one = 1 and agent_rollup = ?");
+        insertPS = session
+                .prepare("insert into agent (agent_id, system_info, config) values (?, ?, ?)");
+        insertConfigOnlyPS = session.prepare("insert into agent (agent_id, config) values (?, ?)");
+        readSystemInfoPS = session.prepare("select system_info from agent where agent_id = ?");
+        readAgentConfigPS = session.prepare("select config from agent where agent_id = ?");
+        updateLastCaptureTimePS = session.prepare("insert into agent (agent_id) values (?)");
 
-        insertPS =
-                session.prepare("insert into agent (one, agent_rollup, leaf) values (1, ?, ?)");
-        insertSystemInfoPS =
-                session.prepare("insert into agent_detail (agent_id, system_info) values (?, ?)");
-        insertAgentConfigPS = session
-                .prepare("insert into agent_detail (agent_id, agent_config) values (?, ?)");
-        readSystemInfoPS =
-                session.prepare("select system_info from agent_detail where agent_id = ?");
-        readAgentConfigPS =
-                session.prepare("select agent_config from agent_detail where agent_id = ?");
-        updateDetailPS = session.prepare("insert into agent_detail (agent_id) values (?)");
+        existsRollupPS = session.prepare(
+                "select agent_rollup from agent_rollup where one = 1 and agent_rollup = ?");
+        insertRollupPS = session
+                .prepare("insert into agent_rollup (one, agent_rollup, leaf) values (1, ?, ?)");
+        readRollupPS = session.prepare("select agent_rollup, leaf from agent_rollup where one = 1");
     }
 
     @Override
     public List<AgentRollup> readAgentRollups() {
-        ResultSet results = session.execute("select agent_rollup, leaf from agent where one = 1");
+        ResultSet results = session.execute(readRollupPS.bind());
         List<AgentRollup> rollups = Lists.newArrayList();
         for (Row row : results) {
             String agentRollup = checkNotNull(row.getString(0));
@@ -96,16 +94,14 @@ public class AgentDao implements AgentRepository {
     public AgentConfig store(String agentId, SystemInfo systemInfo, AgentConfig agentConfig)
             throws InvalidProtocolBufferException {
         AgentConfig existingAgentConfig = null;
-        BoundStatement boundStatement = existsPS.bind();
+        // checking if agent exists in agent_rollup table since if it doesn't, then user no longer
+        // sees the agent in the UI and and it doesn't make sense for it to have an existing config
+        BoundStatement boundStatement = existsRollupPS.bind();
         boundStatement.setString(0, agentId);
         ResultSet results = session.execute(boundStatement);
         if (results.one() != null) {
             existingAgentConfig = readAgentConfig(agentId);
         }
-        boundStatement = insertSystemInfoPS.bind();
-        boundStatement.setString(0, agentId);
-        boundStatement.setBytes(1, ByteBuffer.wrap(systemInfo.toByteArray()));
-        session.execute(boundStatement);
         AgentConfig updatedAgentConfig;
         if (existingAgentConfig == null) {
             updatedAgentConfig = agentConfig;
@@ -151,13 +147,14 @@ public class AgentDao implements AgentRepository {
                     .addAllPluginConfig(pluginConfigs)
                     .build();
         }
-        boundStatement = insertAgentConfigPS.bind();
+        boundStatement = insertPS.bind();
         boundStatement.setString(0, agentId);
-        boundStatement.setBytes(1, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
+        boundStatement.setBytes(1, ByteBuffer.wrap(systemInfo.toByteArray()));
+        boundStatement.setBytes(2, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
         session.execute(boundStatement);
         // insert into agent last so readSystemInfo() and readAgentConfig() below are more likely
         // to return non-null
-        boundStatement = insertPS.bind();
+        boundStatement = insertRollupPS.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setBool(1, true);
         session.execute(boundStatement);
@@ -202,18 +199,18 @@ public class AgentDao implements AgentRepository {
     }
 
     public void storeAgentConfig(String agentId, AgentConfig agentConfig) {
-        BoundStatement boundStatement = insertAgentConfigPS.bind();
+        BoundStatement boundStatement = insertConfigOnlyPS.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setBytes(1, ByteBuffer.wrap(agentConfig.toByteArray()));
         session.execute(boundStatement);
     }
 
     void updateLastCaptureTime(String agentRollup, boolean leaf) {
-        BoundStatement boundStatement = insertPS.bind();
+        BoundStatement boundStatement = insertRollupPS.bind();
         boundStatement.setString(0, agentRollup);
         boundStatement.setBool(1, leaf);
         session.execute(boundStatement);
-        boundStatement = updateDetailPS.bind();
+        boundStatement = updateLastCaptureTimePS.bind();
         boundStatement.setString(0, agentRollup);
         session.execute(boundStatement);
     }
