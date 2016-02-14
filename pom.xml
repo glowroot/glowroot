@@ -180,6 +180,11 @@
         <version>${logback.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.codehaus.janino</groupId>
+        <artifactId>janino</artifactId>
+        <version>2.7.8</version>
+      </dependency>
+      <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>4.12</version>
@@ -391,6 +396,11 @@
         <plugin>
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>2.18.1</version>
+          <configuration>
+            <systemPropertyVariables>
+              <glowroot.test.fileLoggingOnly>true</glowroot.test.fileLoggingOnly>
+            </systemPropertyVariables>
+          </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-install-plugin</artifactId>
@@ -432,6 +442,11 @@
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>2.18.1</version>
+          <configuration>
+            <systemPropertyVariables>
+              <glowroot.test.fileLoggingOnly>true</glowroot.test.fileLoggingOnly>
+            </systemPropertyVariables>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.sonarsource.scanner.maven</groupId>

@@ -11,34 +11,39 @@ case "$1" in
                then
                  skip_shading_opt=-Dglowroot.shade.skip
                fi
-               mvn clean install -Dglowroot.it.harness=$GLOWROOT_HARNESS \
-                                 -DargLine="$surefire_jvm_args" \
-                                $skip_shading_opt \
+               mvn clean install -DargLine="$surefire_jvm_args" \
+                                 $skip_shading_opt \
+                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                 -Dglowroot.test.fileLoggingOnly=false \
                                  -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
+                                -DargLine="$surefire_jvm_args" \
+                                $skip_shading_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                -Dglowroot.test.fileLoggingOnly=false \
                                 -Dglowroot.test.jdbcConnectionType=H2 \
-                                -DargLine="$surefire_jvm_args" \
-                                $skip_shading_opt \
                                 -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
+                                -DargLine="$surefire_jvm_args" \
+                                $skip_shading_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                -Dglowroot.test.fileLoggingOnly=false \
                                 -Dglowroot.test.jdbcConnectionType=COMMONS_DBCP_WRAPPED \
-                                -DargLine="$surefire_jvm_args" \
-                                $skip_shading_opt \
                                 -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
-                                -Dglowroot.it.harness=$GLOWROOT_HARNESS \
-                                -Dglowroot.test.jdbcConnectionType=TOMCAT_JDBC_POOL_WRAPPED \
                                 -DargLine="$surefire_jvm_args" \
                                 $skip_shading_opt \
+                                -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                -Dglowroot.test.fileLoggingOnly=false \
+                                -Dglowroot.test.jdbcConnectionType=TOMCAT_JDBC_POOL_WRAPPED \
                                 -B
                ;;
 
      "deploy") # build shaded distribution zip which will be uploaded to s3 in travis-ci deploy step
                mvn clean install -Pjavadoc \
-                                 -Dglowroot.build.commit=$TRAVIS_COMMIT \
                                  -DargLine="$surefire_jvm_args" \
+                                 -Dglowroot.build.commit=$TRAVIS_COMMIT \
+                                 -Dglowroot.test.fileLoggingOnly=false \
                                  -B
                # only deploy snapshot versions (release versions need pgp signature)
                version=`mvn help:evaluate -Dexpression=project.version | grep -v '\['`
@@ -47,8 +52,9 @@ case "$1" in
                  # deploy only glowroot-parent, glowroot-agent-api, glowroot-agent-plugin-api, glowroot-agent and glowroot-agent-it-harness artifacts to maven repository
                  mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent,:glowroot-agent-it-harness \
                                   -Pjavadoc \
-                                  -Dglowroot.build.commit=$TRAVIS_COMMIT \
                                   -DargLine="$surefire_jvm_args" \
+                                  -Dglowroot.build.commit=$TRAVIS_COMMIT \
+                                  -Dglowroot.test.fileLoggingOnly=false \
                                   --settings misc/travis-build/settings.xml \
                                   -B
                fi
@@ -72,14 +78,16 @@ case "$1" in
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                  -Dglowroot.shade.skip \
+                                 -Dglowroot.test.fileLoggingOnly=false \
                                  -B
                  # intentionally calling failsafe plugin directly in order to skip surefire (unit test) execution
                  mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent-integration test-compile failsafe:integration-test failsafe:verify \
-                                 -Dglowroot.it.harness=javaagent \
                                  -Djacoco.destFile=$PWD/jacoco-combined-it.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                  -Dglowroot.shade.skip \
+                                 -Dglowroot.it.harness=javaagent \
+                                 -Dglowroot.test.fileLoggingOnly=false \
                                  -B
                  # the sonar.jdbc.password system property is set in the pom.xml using the
                  # environment variable SONAR_DB_PASSWORD (instead of setting the system
@@ -92,6 +100,7 @@ case "$1" in
                                  -Dsonar.jacoco.itReportPath=$PWD/jacoco-combined-it.exec \
                                  -DargLine="$surefire_jvm_args" \
                                  -Dglowroot.shade.skip \
+                                 -Dglowroot.test.fileLoggingOnly=false \
                                  -B
                else
                  echo skipping, sonar analysis only runs against master repository and master branch
@@ -164,6 +173,7 @@ case "$1" in
                                   -Dsaucelabs.device.orientation="$SAUCELABS_DEVICE_ORIENTATION" \
                                   -Dsaucelabs.tunnel.identifier="$TRAVIS_JOB_NUMBER" \
                                   -DargLine="$surefire_jvm_args" \
+                                  -Dglowroot.test.fileLoggingOnly=false \
                                   -B
                else
                  echo skipping, saucelabs only runs against master repository and master branch
