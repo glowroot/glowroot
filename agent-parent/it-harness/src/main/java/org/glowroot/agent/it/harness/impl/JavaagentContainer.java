@@ -42,6 +42,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.reflect.Reflection;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NegotiationType;
@@ -69,6 +70,10 @@ public class JavaagentContainer implements Container {
     private static final boolean XDEBUG = Boolean.getBoolean("glowroot.test.xdbug");
 
     private static final Logger logger = LoggerFactory.getLogger(JavaagentContainer.class);
+
+    static {
+        Reflection.initialize(InitLogging.class);
+    }
 
     private final File baseDir;
     private final boolean deleteBaseDirOnClose;

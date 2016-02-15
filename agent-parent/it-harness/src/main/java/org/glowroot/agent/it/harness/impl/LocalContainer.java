@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.common.reflect.Reflection;
 
 import org.glowroot.agent.MainEntryPoint;
 import org.glowroot.agent.init.GlowrootAgentInit;
@@ -40,6 +41,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LocalContainer implements Container {
+
+    static {
+        Reflection.initialize(InitLogging.class);
+    }
 
     private final File baseDir;
     private final boolean deleteBaseDirOnClose;

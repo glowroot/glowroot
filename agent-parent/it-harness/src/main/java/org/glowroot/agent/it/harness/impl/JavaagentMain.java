@@ -27,6 +27,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.EventLoopGroup;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc;
 
@@ -35,6 +36,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class JavaagentMain {
 
     public static void main(String... args) throws Exception {
+
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
 
         int port = Integer.parseInt(args[0]);
         // socket is never closed since program is still running after main returns
