@@ -52,6 +52,7 @@
     }
   ],
   "aspects": [
-    "org.glowroot.agent.plugin.httpclient.AsyncHttpClientAspect"
+    "org.glowroot.agent.plugin.httpclient.AsyncHttpClientAspect",
+    "org.glowroot.agent.plugin.httpclient.SoapOutInterceptorAspect"
   ]
 }
