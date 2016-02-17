@@ -27,4 +27,7 @@
   <root level="warn">
     <appender-ref ref="FILE" />
   </root>
+  <!-- this is needed to suppress WARN o.e.j.server.handler.AbstractHandler -
+    No Server set for org.apache.cxf.transport.http_jetty.JettyHTTPServerEngine$1 -->
+  <logger name="org.eclipse.jetty.server.handler.AbstractHandler" level="error" />
 </configuration>

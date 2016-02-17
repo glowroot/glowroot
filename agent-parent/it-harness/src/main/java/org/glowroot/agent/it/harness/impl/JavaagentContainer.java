@@ -367,7 +367,8 @@ public class JavaagentContainer implements Container {
                     || name.matches("freemarker-.*\\.jar")
                     || name.matches("spring-.*\\.jar")
                     || name.matches("jersey-.*\\.jar")
-                    || name.matches("hibernate-.*\\.jar")) {
+                    || name.matches("hibernate-.*\\.jar")
+                    || name.matches("cxf-.*\\.jar")) {
                 // TODO ideally all test dependencies would be in system classpath, but not sure how
                 // to differentiate here, so just hard-coding test dependencies as necessary for now
                 paths.add(path);
