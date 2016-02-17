@@ -126,6 +126,8 @@ public class JsfRenderIT {
                     .setHeader("Content-Type", "application/x-www-form-urlencoded")
                     .setBody(postBody).execute().get();
             asyncHttpClient.close();
+            // sleep a bit to make sure the "last trace" is not the first http request from above
+            Thread.sleep(200);
         }
     }
 
