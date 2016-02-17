@@ -26,6 +26,8 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import org.immutables.value.Value;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import org.glowroot.common.util.Clock;
@@ -61,14 +63,14 @@ public class ServerModule {
         Clock clock = Clock.systemClock();
         String version = Version.getVersion(Bootstrap.class);
 
-        List<String> contactPoints = getCassandraContactPoints();
+        ServerConfiguration serverConfig = getCassandraContactPoints();
         cluster = Cluster.builder()
-                .addContactPoints(contactPoints.toArray(new String[0]))
+                .addContactPoints(serverConfig.cassandraContactPoint().toArray(new String[0]))
                 .build();
         session = cluster.connect();
-        session.execute("create keyspace if not exists glowroot with replication ="
-                + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
-        session.execute("use glowroot");
+        session.execute("create keyspace if not exists " + serverConfig.cassandraKeyspace()
+                + " with replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
+        session.execute("use " + serverConfig.cassandraKeyspace());
 
         AgentDao agentDao = new AgentDao(session);
         TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session);
@@ -84,7 +86,7 @@ public class ServerModule {
         GaugeValueRepository gaugeValueRepository =
                 new GaugeValueDao(session, agentDao, configRepository);
 
-        server = new GrpcServer(8181, agentDao, aggregateRepository,
+        server = new GrpcServer(serverConfig.grpcPort(), agentDao, aggregateRepository,
                 gaugeValueRepository, traceRepository);
         configRepository.setDownstreamService(server.getDownstreamService());
 
@@ -118,11 +120,11 @@ public class ServerModule {
         cluster.close();
     }
 
-    private static List<String> getCassandraContactPoints() throws IOException {
+    private static ServerConfiguration getCassandraContactPoints() throws IOException {
+        ImmutableServerConfiguration.Builder builder = ImmutableServerConfiguration.builder();
         File propFile = new File("glowroot-server.properties");
         if (!propFile.exists()) {
-            throw new IllegalStateException(
-                    "Configuration file missing: glowroot-server.properties");
+            return builder.build();
         }
         Properties props = new Properties();
         InputStream in = new FileInputStream(propFile);
@@ -131,11 +133,37 @@ public class ServerModule {
         } finally {
             in.close();
         }
-        String contactPoints = props.getProperty("cassandra.contact.points");
-        if (Strings.isNullOrEmpty(contactPoints)) {
-            throw new IllegalStateException("Configuration missing: cassandra.contact.points");
+        String cassandraContactPoints = props.getProperty("cassandra.contact.points");
+        if (!Strings.isNullOrEmpty(cassandraContactPoints)) {
+            builder.cassandraContactPoint(Splitter.on(',').trimResults().omitEmptyStrings()
+                    .splitToList(cassandraContactPoints));
         }
-        return Splitter.on(',').trimResults().omitEmptyStrings().splitToList(contactPoints);
+        String cassandraKeyspace = props.getProperty("cassandra.keyspace");
+        if (!Strings.isNullOrEmpty(cassandraKeyspace)) {
+            builder.cassandraKeyspace(cassandraKeyspace);
+        }
+        String grpcPortText = props.getProperty("grpc.port");
+        if (!Strings.isNullOrEmpty(grpcPortText)) {
+            builder.grpcPort(Integer.parseInt(grpcPortText));
+        }
+        return builder.build();
+    }
+
+    @Value.Immutable
+    static abstract class ServerConfiguration {
+        @Value.Default
+        @SuppressWarnings("immutables")
+        List<String> cassandraContactPoint() {
+            return ImmutableList.of("127.0.0.1");
+        }
+        @Value.Default
+        String cassandraKeyspace() {
+            return "glowroot";
+        }
+        @Value.Default
+        int grpcPort() {
+            return 8181;
+        }
     }
 
     private static class NopRepoAdmin implements RepoAdmin {
