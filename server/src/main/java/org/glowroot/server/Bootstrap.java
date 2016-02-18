@@ -15,33 +15,20 @@
  */
 package org.glowroot.server;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.annotation.Nullable;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 // this class is designed to be used with apache commons daemon
 // http://commons.apache.org/proper/commons-daemon/procrun.html
 public class Bootstrap {
-
-    private static final AtomicBoolean stopping = new AtomicBoolean();
 
     private static volatile @Nullable ServerModule serverModule;
 
     public static void main(String[] args) throws Exception {
         if (args.length == 0 || args[0].equals("start")) {
             serverModule = new ServerModule();
-            synchronized (stopping) {
-                while (!stopping.get()) {
-                    stopping.wait();
-                }
-            }
         } else if (args[0].equals("stop")) {
-            checkNotNull(serverModule).close();
-            stopping.set(true);
-            synchronized (stopping) {
-                stopping.notifyAll();
+            if (serverModule != null) {
+                serverModule.close();
             }
         } else {
             throw new IllegalStateException("Unexpected arg: " + args[0]);

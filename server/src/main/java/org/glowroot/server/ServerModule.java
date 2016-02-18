@@ -26,8 +26,11 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import org.glowroot.common.util.Clock;
@@ -50,67 +53,96 @@ import org.glowroot.ui.UiModule;
 
 public class ServerModule {
 
+    private static final Logger logger = LoggerFactory.getLogger(ServerModule.class);
+
     private final Cluster cluster;
     private final Session session;
     private final GrpcServer server;
     private final UiModule uiModule;
 
     ServerModule() throws Exception {
-        // install jul-to-slf4j bridge for protobuf which logs to jul
-        SLF4JBridgeHandler.removeHandlersForRootLogger();
-        SLF4JBridgeHandler.install();
+        Cluster cluster = null;
+        Session session = null;
+        GrpcServer server = null;
+        UiModule uiModule = null;
+        try {
+            // install jul-to-slf4j bridge for protobuf which logs to jul
+            SLF4JBridgeHandler.removeHandlersForRootLogger();
+            SLF4JBridgeHandler.install();
 
-        Clock clock = Clock.systemClock();
-        String version = Version.getVersion(Bootstrap.class);
+            Clock clock = Clock.systemClock();
+            String version = Version.getVersion(Bootstrap.class);
 
-        ServerConfiguration serverConfig = getCassandraContactPoints();
-        cluster = Cluster.builder()
-                .addContactPoints(serverConfig.cassandraContactPoint().toArray(new String[0]))
-                .build();
-        session = cluster.connect();
-        session.execute("create keyspace if not exists " + serverConfig.cassandraKeyspace()
-                + " with replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
-        session.execute("use " + serverConfig.cassandraKeyspace());
+            ServerConfiguration serverConfig = getCassandraContactPoints();
+            cluster = Cluster.builder()
+                    .addContactPoints(serverConfig.cassandraContactPoint().toArray(new String[0]))
+                    .build();
+            session = cluster.connect();
+            session.execute("create keyspace if not exists " + serverConfig.cassandraKeyspace()
+                    + " with replication = {'class': 'SimpleStrategy', 'replication_factor': 1}");
+            session.execute("use " + serverConfig.cassandraKeyspace());
 
-        AgentDao agentDao = new AgentDao(session);
-        TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session);
+            AgentDao agentDao = new AgentDao(session);
+            TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session);
 
-        ServerConfigDao serverConfigDao = new ServerConfigDao(session);
-        AlertConfigDao alertConfigDao = new AlertConfigDao(session);
-        ConfigRepositoryImpl configRepository =
-                new ConfigRepositoryImpl(agentDao, serverConfigDao, alertConfigDao);
+            ServerConfigDao serverConfigDao = new ServerConfigDao(session);
+            AlertConfigDao alertConfigDao = new AlertConfigDao(session);
+            ConfigRepositoryImpl configRepository =
+                    new ConfigRepositoryImpl(agentDao, serverConfigDao, alertConfigDao);
 
-        AggregateRepository aggregateRepository =
-                new AggregateDao(session, agentDao, transactionTypeDao, configRepository);
-        TraceRepository traceRepository = new TraceDao(session, agentDao, transactionTypeDao);
-        GaugeValueRepository gaugeValueRepository =
-                new GaugeValueDao(session, agentDao, configRepository);
+            AggregateRepository aggregateRepository =
+                    new AggregateDao(session, agentDao, transactionTypeDao, configRepository);
+            TraceRepository traceRepository = new TraceDao(session, agentDao, transactionTypeDao);
+            GaugeValueRepository gaugeValueRepository =
+                    new GaugeValueDao(session, agentDao, configRepository);
 
-        server = new GrpcServer(serverConfig.grpcPort(), agentDao, aggregateRepository,
-                gaugeValueRepository, traceRepository);
-        configRepository.setDownstreamService(server.getDownstreamService());
+            server = new GrpcServer(serverConfig.grpcPort(), agentDao, aggregateRepository,
+                    gaugeValueRepository, traceRepository);
+            configRepository.setDownstreamService(server.getDownstreamService());
 
-        RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
+            RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
 
-        uiModule = new CreateUiModuleBuilder()
-                .fat(false)
-                .clock(clock)
-                .logDir(new File("."))
-                .liveJvmService(new LiveJvmServiceImpl(server.getDownstreamService()))
-                .configRepository(configRepository)
-                .agentRepository(agentDao)
-                .transactionTypeRepository(transactionTypeDao)
-                .traceRepository(traceRepository)
-                .aggregateRepository(aggregateRepository)
-                .gaugeValueRepository(gaugeValueRepository)
-                .repoAdmin(new NopRepoAdmin())
-                .rollupLevelService(rollupLevelService)
-                .liveTraceRepository(new LiveTraceRepositoryImpl(server.getDownstreamService()))
-                .liveWeavingService(new LiveWeavingServiceImpl(server.getDownstreamService()))
-                .bindAddress("0.0.0.0")
-                .numWorkerThreads(50)
-                .version(version)
-                .build();
+            uiModule = new CreateUiModuleBuilder()
+                    .fat(false)
+                    .clock(clock)
+                    .logDir(new File("."))
+                    .liveJvmService(new LiveJvmServiceImpl(server.getDownstreamService()))
+                    .configRepository(configRepository)
+                    .agentRepository(agentDao)
+                    .transactionTypeRepository(transactionTypeDao)
+                    .traceRepository(traceRepository)
+                    .aggregateRepository(aggregateRepository)
+                    .gaugeValueRepository(gaugeValueRepository)
+                    .repoAdmin(new NopRepoAdmin())
+                    .rollupLevelService(rollupLevelService)
+                    .liveTraceRepository(new LiveTraceRepositoryImpl(server.getDownstreamService()))
+                    .liveWeavingService(new LiveWeavingServiceImpl(server.getDownstreamService()))
+                    .bindAddress("0.0.0.0")
+                    .numWorkerThreads(50)
+                    .version(version)
+                    .build();
+        } catch (Throwable t) {
+            logger.error(t.getMessage(), t);
+            // try to shut down cleanly, otherwise apache commons daemon (via Bootstrap) doesn't
+            // know service failed to start up
+            if (uiModule != null) {
+                uiModule.close();
+            }
+            if (server != null) {
+                server.close();
+            }
+            if (session != null) {
+                session.close();
+            }
+            if (cluster != null) {
+                cluster.close();
+            }
+            throw Throwables.propagate(t);
+        }
+        this.cluster = cluster;
+        this.session = session;
+        this.server = server;
+        this.uiModule = uiModule;
     }
 
     void close() throws InterruptedException {
