@@ -136,6 +136,7 @@ glowroot.controller('TransactionSidebarCtrl', [
             } else {
               $scope.summariesRefreshing--;
             }
+            concurrentUpdateCount--;
             httpErrors.handler($scope)(data, status);
           });
     }

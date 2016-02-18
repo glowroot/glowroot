@@ -124,7 +124,10 @@ glowroot.controller('TransactionTabCtrl', [
             }
             $scope.tabBarData = data;
           })
-          .error(httpErrors.handler($scope));
+          .error(function (data, status) {
+            concurrentUpdateCount--;
+            httpErrors.handler($scope)(data, status);
+          });
     }
 
     $timeout(function () {
