@@ -103,7 +103,7 @@ public class MutableAggregate {
                 .addAllMainThreadRootTimer(toProto(mainThreadRootTimers))
                 .addAllAuxThreadRootTimer(toProto(auxThreadRootTimers))
                 .addAllAsyncRootTimer(toProto(asyncRootTimers))
-                .setTotalDurationNanosHistogram(lazyHistogram.toProto(scratchBuffer));
+                .setDurationNanosHistogram(lazyHistogram.toProto(scratchBuffer));
         if (!mainThreadStats.isNA()) {
             builder.setMainThreadStats(mainThreadStats.toProto());
         }

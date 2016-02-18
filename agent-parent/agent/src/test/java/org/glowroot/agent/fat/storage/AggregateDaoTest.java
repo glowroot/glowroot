@@ -139,7 +139,7 @@ public class AggregateDaoTest {
                 .setTotalDurationNanos(1000000)
                 .setErrorCount(0)
                 .setTransactionCount(10)
-                .setTotalDurationNanosHistogram(getFakeHistogram())
+                .setDurationNanosHistogram(getFakeHistogram())
                 .build();
         List<TransactionAggregate> transactionAggregates = Lists.newArrayList();
         transactionAggregates.add(TransactionAggregate.newBuilder()
@@ -148,7 +148,7 @@ public class AggregateDaoTest {
                         .setTotalDurationNanos(100000)
                         .setErrorCount(0)
                         .setTransactionCount(1)
-                        .setTotalDurationNanosHistogram(getFakeHistogram())
+                        .setDurationNanosHistogram(getFakeHistogram())
                         .build())
                 .build());
         transactionAggregates.add(TransactionAggregate.newBuilder()
@@ -157,7 +157,7 @@ public class AggregateDaoTest {
                         .setTotalDurationNanos(300000)
                         .setErrorCount(0)
                         .setTransactionCount(2)
-                        .setTotalDurationNanosHistogram(getFakeHistogram())
+                        .setDurationNanosHistogram(getFakeHistogram())
                         .build())
                 .build());
         transactionAggregates.add(TransactionAggregate.newBuilder()
@@ -166,7 +166,7 @@ public class AggregateDaoTest {
                         .setTotalDurationNanos(1400000)
                         .setErrorCount(0)
                         .setTransactionCount(7)
-                        .setTotalDurationNanosHistogram(getFakeHistogram())
+                        .setDurationNanosHistogram(getFakeHistogram())
                         .build())
                 .build());
         AggregatesByType aggregatesByType = AggregatesByType.newBuilder()
@@ -183,7 +183,7 @@ public class AggregateDaoTest {
                         .setTotalDurationNanos(100000)
                         .setErrorCount(0)
                         .setTransactionCount(1)
-                        .setTotalDurationNanosHistogram(getFakeHistogram())
+                        .setDurationNanosHistogram(getFakeHistogram())
                         .build())
                 .build());
         transactionAggregates2.add(TransactionAggregate.newBuilder()
@@ -192,7 +192,7 @@ public class AggregateDaoTest {
                         .setTotalDurationNanos(300000)
                         .setErrorCount(0)
                         .setTransactionCount(2)
-                        .setTotalDurationNanosHistogram(getFakeHistogram())
+                        .setDurationNanosHistogram(getFakeHistogram())
                         .build())
                 .build());
         transactionAggregates2.add(TransactionAggregate.newBuilder()
@@ -201,7 +201,7 @@ public class AggregateDaoTest {
                         .setTotalDurationNanos(1400000)
                         .setErrorCount(0)
                         .setTransactionCount(7)
-                        .setTotalDurationNanosHistogram(getFakeHistogram())
+                        .setDurationNanosHistogram(getFakeHistogram())
                         .build())
                 .build());
         AggregatesByType aggregatesByType2 = AggregatesByType.newBuilder()

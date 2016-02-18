@@ -125,7 +125,7 @@ class AggregateCollector {
                 .addAllMainThreadRootTimer(getRootTimersProtobuf(mainThreadRootTimers))
                 .addAllAuxThreadRootTimer(getRootTimersProtobuf(auxThreadRootTimers))
                 .addAllAsyncRootTimer(getRootTimersProtobuf(asyncRootTimers))
-                .setTotalDurationNanosHistogram(lazyHistogram.toProto(scratchBuffer));
+                .setDurationNanosHistogram(lazyHistogram.toProto(scratchBuffer));
         if (!mainThreadStats.isNA()) {
             builder.setMainThreadStats(mainThreadStats.toProto());
         }

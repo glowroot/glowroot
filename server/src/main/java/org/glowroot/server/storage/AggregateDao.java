@@ -977,7 +977,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setTimestamp(2, new Date(captureTime));
         boundStatement.setDouble(3, aggregate.getTotalDurationNanos());
         boundStatement.setLong(4, aggregate.getTransactionCount());
-        boundStatement.setBytes(5, toByteBuffer(aggregate.getTotalDurationNanosHistogram()));
+        boundStatement.setBytes(5, toByteBuffer(aggregate.getDurationNanosHistogram()));
         session.execute(boundStatement);
 
         boundStatement = getInsertOverallPS(throughputTable, rollupLevel).bind();
@@ -1055,7 +1055,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setTimestamp(3, new Date(captureTime));
         boundStatement.setDouble(4, aggregate.getTotalDurationNanos());
         boundStatement.setLong(5, aggregate.getTransactionCount());
-        boundStatement.setBytes(6, toByteBuffer(aggregate.getTotalDurationNanosHistogram()));
+        boundStatement.setBytes(6, toByteBuffer(aggregate.getDurationNanosHistogram()));
         session.execute(boundStatement);
 
         boundStatement = getInsertTransactionPS(throughputTable, rollupLevel).bind();

@@ -557,7 +557,7 @@ public class AggregateDao implements AggregateRepository {
             } else {
                 this.auxThreadStats = null;
             }
-            histogramBytes = aggregate.getTotalDurationNanosHistogram().toByteArray();
+            histogramBytes = aggregate.getDurationNanosHistogram().toByteArray();
         }
 
         @Override
