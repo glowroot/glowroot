@@ -93,7 +93,7 @@ public class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("async_root_timers", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("main_thread_stats", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("aux_thread_stats", ColumnType.VARBINARY), // protobuf
-                    ImmutableColumn.of("histogram", ColumnType.VARBINARY)); // protobuf
+                    ImmutableColumn.of("duration_nanos_histogram", ColumnType.VARBINARY)); // protobuf
 
     private static final ImmutableList<Column> transactionAggregateColumns =
             ImmutableList.<Column>of(
@@ -111,7 +111,7 @@ public class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("async_root_timers", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("main_thread_stats", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("aux_thread_stats", ColumnType.VARBINARY), // protobuf
-                    ImmutableColumn.of("histogram", ColumnType.VARBINARY)); // protobuf
+                    ImmutableColumn.of("duration_nanos_histogram", ColumnType.VARBINARY)); // protobuf
 
     // this index includes all columns needed for the overall aggregate query so h2 can return
     // the result set directly from the index without having to reference the table for each row
@@ -370,7 +370,7 @@ public class AggregateDao implements AggregateRepository {
         byte[] asyncRootTimers = resultSet.getBytes(i++);
         byte[] mainThreadStats = resultSet.getBytes(i++);
         byte[] auxThreadStats = resultSet.getBytes(i++);
-        byte[] histogram = checkNotNull(resultSet.getBytes(i++));
+        byte[] durationNanosHistogram = checkNotNull(resultSet.getBytes(i++));
 
         mergedAggregate.addTotalDurationNanos(totalDurationNanos);
         mergedAggregate.addTransactionCount(transactionCount);
@@ -397,7 +397,8 @@ public class AggregateDao implements AggregateRepository {
         } else {
             mergedAggregate.mergeAuxThreadStats(Aggregate.ThreadStats.parseFrom(auxThreadStats));
         }
-        mergedAggregate.mergeHistogram(Aggregate.Histogram.parseFrom(histogram));
+        mergedAggregate
+                .mergeDurationNanosHistogram(Aggregate.Histogram.parseFrom(durationNanosHistogram));
         if (mainThreadProfileCappedId != null) {
             Profile mainThreadProfile = rollupCappedDatabases.get(fromRollupLevel)
                     .readMessage(mainThreadProfileCappedId, Profile.parser());
@@ -484,7 +485,7 @@ public class AggregateDao implements AggregateRepository {
         private final byte /*@Nullable*/[] asyncRootTimers;
         private final byte /*@Nullable*/[] mainThreadStats;
         private final byte /*@Nullable*/[] auxThreadStats;
-        private final byte[] histogramBytes;
+        private final byte[] durationNanosHistogramBytes;
 
         private final int rollupLevel;
 
@@ -557,7 +558,7 @@ public class AggregateDao implements AggregateRepository {
             } else {
                 this.auxThreadStats = null;
             }
-            histogramBytes = aggregate.getDurationNanosHistogram().toByteArray();
+            durationNanosHistogramBytes = aggregate.getDurationNanosHistogram().toByteArray();
         }
 
         @Override
@@ -578,8 +579,9 @@ public class AggregateDao implements AggregateRepository {
             sb.append(" capture_time, total_duration_nanos, transaction_count, error_count,"
                     + " main_thread_profile_capped_id, async_thread_profile_capped_id,"
                     + " queries_capped_id, main_thread_root_timers, aux_thread_root_timers,"
-                    + " async_root_timers, main_thread_stats, aux_thread_stats, histogram)"
-                    + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?");
+                    + " async_root_timers, main_thread_stats, aux_thread_stats,"
+                    + " duration_nanos_histogram) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
+                    + " ?");
             if (transactionName != null) {
                 sb.append(", ?");
             }
@@ -627,7 +629,7 @@ public class AggregateDao implements AggregateRepository {
             } else {
                 preparedStatement.setBytes(i++, auxThreadStats);
             }
-            preparedStatement.setBytes(i++, histogramBytes);
+            preparedStatement.setBytes(i++, durationNanosHistogramBytes);
         }
     }
 
@@ -927,9 +929,10 @@ public class AggregateDao implements AggregateRepository {
         public @Untainted String getSql() {
             String tableName = getTableName(query);
             String transactionNameCriteria = getTransactionNameCriteria(query);
-            return "select capture_time, total_duration_nanos, transaction_count, histogram from "
-                    + tableName + " where transaction_type = ?" + transactionNameCriteria
-                    + " and capture_time >= ? and capture_time <= ? order by capture_time";
+            return "select capture_time, total_duration_nanos, transaction_count,"
+                    + " duration_nanos_histogram from " + tableName + " where transaction_type = ?"
+                    + transactionNameCriteria + " and capture_time >= ? and capture_time <= ?"
+                    + " order by capture_time";
         }
 
         @Override
@@ -944,8 +947,9 @@ public class AggregateDao implements AggregateRepository {
                     .captureTime(resultSet.getLong(i++))
                     .totalDurationNanos(resultSet.getLong(i++))
                     .transactionCount(resultSet.getLong(i++));
-            byte[] histogram = checkNotNull(resultSet.getBytes(i++));
-            builder.histogram(Aggregate.Histogram.parser().parseFrom(histogram));
+            byte[] durationNanosHistogram = checkNotNull(resultSet.getBytes(i++));
+            builder.durationNanosHistogram(
+                    Aggregate.Histogram.parser().parseFrom(durationNanosHistogram));
             return builder.build();
         }
     }
@@ -1003,9 +1007,10 @@ public class AggregateDao implements AggregateRepository {
             return "select transaction_type, total_duration_nanos, transaction_count, error_count,"
                     + " main_thread_profile_capped_id, async_thread_profile_capped_id,"
                     + " queries_capped_id, main_thread_root_timers, aux_thread_root_timers,"
-                    + " async_root_timers, main_thread_stats, aux_thread_stats, histogram"
-                    + " from aggregate_tt_rollup_" + castUntainted(fromRollupLevel)
-                    + " where capture_time > ? and capture_time <= ? order by transaction_type";
+                    + " async_root_timers, main_thread_stats, aux_thread_stats,"
+                    + " duration_nanos_histogram from aggregate_tt_rollup_"
+                    + castUntainted(fromRollupLevel) + " where capture_time > ?"
+                    + " and capture_time <= ? order by transaction_type";
         }
 
         @Override
@@ -1067,7 +1072,7 @@ public class AggregateDao implements AggregateRepository {
                     + " transaction_count, error_count, main_thread_profile_capped_id,"
                     + " async_thread_profile_capped_id, queries_capped_id, main_thread_root_timers,"
                     + " aux_thread_root_timers, async_root_timers, main_thread_stats,"
-                    + " aux_thread_stats, histogram from aggregate_tn_rollup_"
+                    + " aux_thread_stats, duration_nanos_histogram from aggregate_tn_rollup_"
                     + castUntainted(fromRollupLevel) + " where capture_time > ?"
                     + " and capture_time <= ? order by transaction_type, transaction_name";
         }

@@ -330,7 +330,7 @@ class TransactionCommonService {
                     .addTotalDurationNanos(nonRolledUpPercentileAggregate.totalDurationNanos());
             currMergedAggregate
                     .addTransactionCount(nonRolledUpPercentileAggregate.transactionCount());
-            currMergedAggregate.mergeHistogram(nonRolledUpPercentileAggregate.histogram());
+            currMergedAggregate.mergeDurationNanosHistogram(nonRolledUpPercentileAggregate.durationNanosHistogram());
         }
         if (!currMergedAggregate.isEmpty()) {
             // roll up final one

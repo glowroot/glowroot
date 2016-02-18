@@ -26,10 +26,7 @@
              class="gt-second-line-indent"
              style="padding-bottom: 8px;">
           <a ng-href="config/alert{{alertQueryString(alert)}}">
-            {{alert.transactionType}} -
-            {{alert.percentile}}{{percentileSuffix(alert.percentile)}} percentile
-            over a {{alert.timePeriodMinutes}} minute period
-            exceeds {{alert.thresholdMillis}} milliseconds
+            {{alertText(alert)}}
           </a>
         </div>
         <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly

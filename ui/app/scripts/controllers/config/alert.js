@@ -21,9 +21,13 @@ glowroot.controller('ConfigAlertCtrl', [
   '$location',
   '$http',
   '$timeout',
+  'gauges',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $location, $http, $timeout, confirmIfHasChanges, httpErrors) {
+  function ($scope, $location, $http, $timeout, gauges, confirmIfHasChanges, httpErrors) {
+
+    // initialize page binding object
+    $scope.page = {};
 
     var version = $location.search().v;
 
@@ -32,13 +36,39 @@ glowroot.controller('ConfigAlertCtrl', [
       $scope.originalConfig = angular.copy(data);
 
       if (data.emailAddresses.length) {
-        $scope.heading = data.transactionType + ' - ' + data.percentile + $scope.percentileSuffix(data.percentile) +
-        ' percentile over a ' + data.timePeriodMinutes + ' minute period';
+        $scope.page.timePeriodMinutes = data.timePeriodSeconds / 60;
+        if (data.kind === 'transaction') {
+          $scope.heading = data.transactionType + ' - ' + data.transactionPercentile
+              + $scope.percentileSuffix(data.transactionPercentile) + ' percentile over a '
+              + data.timePeriodSeconds + ' minute period';
+        }
+        if (data.kind === 'gauge') {
+          $scope.heading = data.gaugeDisplay + ' - average over a ' + data.timePeriodSeconds / 60 + ' minute period';
+          // \u200b is zero width space and \u00a0 is non-breaking space
+          // these are used to change wrapping behavior on smaller screens (or larger mbean names)
+          $scope.heading = $scope.heading.replace(/\//g, '\u200b/');
+          $scope.heading = $scope.heading.replace(/ /g, '\u00a0');
+        }
         $scope.emailAddresses = data.emailAddresses.join(', ');
       } else {
         $scope.heading = '<New>';
       }
     }
+
+    $scope.unit = function () {
+      return gauges.unit($scope.config.gaugeName);
+    };
+
+    $http.get('backend/jvm/all-gauges?agent-rollup=' + encodeURIComponent($scope.agentRollup))
+        .success(function (data) {
+          $scope.loaded = true;
+          $scope.gaugeNames = [];
+          angular.forEach(data, function (gauge) {
+            $scope.gauges = data;
+            gauges.createShortDataSeriesNames(data);
+          });
+        })
+        .error(httpErrors.handler($scope));
 
     if (version) {
       $http.get('backend/config/alerts?agent-id=' + encodeURIComponent($scope.agentId) + '&version=' + version)
@@ -50,11 +80,36 @@ glowroot.controller('ConfigAlertCtrl', [
     } else {
       $scope.loaded = true;
       onNewData({
+        kind: 'transaction',
         transactionType: $scope.defaultTransactionType(),
         minTransactionCount: 1,
+        gaugeName: '',
         emailAddresses: []
       });
     }
+
+    $scope.$watch('config.kind', function (newValue) {
+      if (!$scope.config) {
+        return;
+      }
+      if (newValue === 'transaction') {
+        $scope.config.gaugeName = '';
+        $scope.config.gaugeThreshold = undefined;
+      }
+      if (newValue === 'gauge') {
+        $scope.config.transactionType = '';
+        $scope.config.transactionPercentile = undefined;
+        $scope.config.transactionThresholdMillis = undefined;
+        $scope.config.minTransactionCount = 1;
+      }
+    });
+
+    $scope.$watch('page.timePeriodMinutes', function (newValue) {
+      if (!$scope.config) {
+        return;
+      }
+      $scope.config.timePeriodSeconds = newValue * 60;
+    });
 
     $scope.$watch('emailAddresses', function (newValue) {
       if (newValue) {
@@ -77,7 +132,7 @@ glowroot.controller('ConfigAlertCtrl', [
     var removeConfirmIfHasChangesListener = $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
     $scope.saveDisabled = function () {
-      return !$scope.hasChanges() || $scope.formCtrl.$invalid;
+      return !$scope.hasChanges() || ($scope.formCtrl && $scope.formCtrl.$invalid);
     };
 
     $scope.save = function (deferred) {

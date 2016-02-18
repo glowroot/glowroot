@@ -25,21 +25,24 @@ import org.junit.Test;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.storage.config.AlertConfig;
+import org.glowroot.storage.config.AlertConfig.AlertKind;
 import org.glowroot.storage.config.ImmutableAlertConfig;
 import org.glowroot.storage.config.ImmutableSmtpConfig;
 import org.glowroot.storage.config.SmtpConfig;
+import org.glowroot.storage.repo.AgentRepository;
+import org.glowroot.storage.repo.AgentRepository.AgentRollup;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.PercentileAggregate;
 import org.glowroot.storage.repo.ConfigRepository;
+import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.ImmutableAgentRollup;
 import org.glowroot.storage.repo.ImmutablePercentileAggregate;
 import org.glowroot.storage.repo.ImmutableTransactionQuery;
-import org.glowroot.storage.repo.AgentRepository;
-import org.glowroot.storage.repo.AgentRepository.AgentRollup;
 import org.glowroot.storage.repo.TriggeredAlertRepository;
 import org.glowroot.storage.repo.Utils;
 import org.glowroot.storage.util.Encryption;
 import org.glowroot.storage.util.MailService;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -53,6 +56,7 @@ public class AlertingServiceTest {
     private AgentRepository agentRepository;
     private TriggeredAlertRepository triggeredAlertRepository;
     private AggregateRepository aggregateRepository;
+    private GaugeValueRepository gaugeValueRepository;
     private RollupLevelService rollupLevelService;
     private MockMailService mailService;
 
@@ -64,6 +68,7 @@ public class AlertingServiceTest {
                 .thenReturn(ImmutableList.<AgentRollup>of(ImmutableAgentRollup.of("", true)));
         triggeredAlertRepository = mock(TriggeredAlertRepository.class);
         aggregateRepository = mock(AggregateRepository.class);
+        gaugeValueRepository = mock(GaugeValueRepository.class);
         rollupLevelService = mock(RollupLevelService.class);
         mailService = new MockMailService();
         SecretKey secretKey = Encryption.generateNewKey();
@@ -80,11 +85,12 @@ public class AlertingServiceTest {
     }
 
     @Test
-    public void shouldSendMail() throws Exception {
+    public void shouldSendMailForTransactionAlert() throws Exception {
         // given
-        setup(1000000);
+        setupForTransaction(1000000);
         AlertingService alertingService = new AlertingService(configRepository, agentRepository,
-                triggeredAlertRepository, aggregateRepository, rollupLevelService, mailService);
+                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
+                rollupLevelService, mailService);
         // when
         alertingService.checkAlerts(120000);
         // then
@@ -92,11 +98,38 @@ public class AlertingServiceTest {
     }
 
     @Test
-    public void shouldNotSendMail() throws Exception {
+    public void shouldNotSendMailForTransactionAlert() throws Exception {
         // given
-        setup(999000);
+        setupForTransaction(999000);
         AlertingService alertingService = new AlertingService(configRepository, agentRepository,
-                triggeredAlertRepository, aggregateRepository, rollupLevelService, mailService);
+                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
+                rollupLevelService, mailService);
+        // when
+        alertingService.checkAlerts(120000);
+        // then
+        assertThat(mailService.getMessage()).isNull();
+    }
+
+    @Test
+    public void shouldSendMailForGaugeAlert() throws Exception {
+        // given
+        setupForGauge(500);
+        AlertingService alertingService = new AlertingService(configRepository, agentRepository,
+                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
+                rollupLevelService, mailService);
+        // when
+        alertingService.checkAlerts(120000);
+        // then
+        assertThat(mailService.getMessage()).isNotNull();
+    }
+
+    @Test
+    public void shouldNotSendMailForGaugeAlert() throws Exception {
+        // given
+        setupForGauge(499);
+        AlertingService alertingService = new AlertingService(configRepository, agentRepository,
+                triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
+                rollupLevelService, mailService);
         // when
         alertingService.checkAlerts(120000);
         // then
@@ -139,13 +172,15 @@ public class AlertingServiceTest {
         assertThat(Utils.getPercentileWithSuffix(50.24)).isEqualTo("50.24th");
     }
 
-    private void setup(long... histogramValues) throws Exception {
+    private void setupForTransaction(long... histogramValues) throws Exception {
         AlertConfig alertConfig = ImmutableAlertConfig.builder()
+                .kind(AlertKind.TRANSACTION)
                 .transactionType("tt")
-                .percentile(95)
-                .timePeriodMinutes(1)
-                .thresholdMillis(1)
+                .transactionPercentile(95.0)
+                .transactionThresholdMillis(1)
+                .timePeriodSeconds(60)
                 .minTransactionCount(0)
+                .gaugeName("")
                 .addEmailAddresses("to@example.org")
                 .build();
         LazyHistogram lazyHistogram = new LazyHistogram();
@@ -156,7 +191,7 @@ public class AlertingServiceTest {
                 .captureTime(120000)
                 .totalDurationNanos(1000000)
                 .transactionCount(1)
-                .histogram(lazyHistogram.toProto(new ScratchBuffer()))
+                .durationNanosHistogram(lazyHistogram.toProto(new ScratchBuffer()))
                 .build();
         when(configRepository.getAlertConfigs(AGENT_ID))
                 .thenReturn(ImmutableList.of(alertConfig));
@@ -169,6 +204,28 @@ public class AlertingServiceTest {
                 .build();
         when(aggregateRepository.readPercentileAggregates(query))
                 .thenReturn(ImmutableList.of(aggregate));
+    }
+
+    private void setupForGauge(double value) throws Exception {
+        AlertConfig alertConfig = ImmutableAlertConfig.builder()
+                .kind(AlertKind.GAUGE)
+                .gaugeName("abc:xyz")
+                .gaugeThreshold(500.0)
+                .timePeriodSeconds(60)
+                .minTransactionCount(0)
+                .transactionType("")
+                .addEmailAddresses("to@example.org")
+                .build();
+        GaugeValue gaugeValue = GaugeValue.newBuilder()
+                .setGaugeName("abc")
+                .setCaptureTime(120000)
+                .setValue(value)
+                .setWeight(1)
+                .build();
+        when(configRepository.getAlertConfigs(AGENT_ID))
+                .thenReturn(ImmutableList.of(alertConfig));
+        when(gaugeValueRepository.readGaugeValues(AGENT_ID, "abc:xyz", 60001, 120000, 0))
+                .thenReturn(ImmutableList.of(gaugeValue));
     }
 
     static class MockMailService extends MailService {

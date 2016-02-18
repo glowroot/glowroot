@@ -17,6 +17,8 @@ package org.glowroot.ui;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
@@ -30,9 +32,11 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.storage.config.AlertConfig;
+import org.glowroot.storage.config.AlertConfig.AlertKind;
 import org.glowroot.storage.config.ImmutableAlertConfig;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.DuplicateMBeanObjectNameException;
+import org.glowroot.storage.repo.helper.Gauges;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 
@@ -46,7 +50,17 @@ class AlertConfigJsonService {
     static final Ordering<AlertConfig> orderingByName = new Ordering<AlertConfig>() {
         @Override
         public int compare(AlertConfig left, AlertConfig right) {
-            return left.transactionType().compareToIgnoreCase(right.transactionType());
+            if (left.kind() == AlertKind.TRANSACTION && right.kind() == AlertKind.TRANSACTION) {
+                return left.transactionType().compareToIgnoreCase(right.transactionType());
+            }
+            if (left.kind() == AlertKind.GAUGE && right.kind() == AlertKind.GAUGE) {
+                return left.gaugeName().compareToIgnoreCase(right.gaugeName());
+            }
+            if (left.kind() == AlertKind.TRANSACTION && right.kind() == AlertKind.GAUGE) {
+                return -1;
+            }
+            // left is gauge, right is transaction
+            return 1;
         }
     };
 
@@ -116,33 +130,47 @@ class AlertConfigJsonService {
     @Value.Immutable
     abstract static class AlertConfigDto {
 
+        abstract AlertKind kind();
+
         abstract Optional<String> agentId(); // only used in request
         abstract String transactionType();
-        abstract double percentile();
-        abstract int timePeriodMinutes();
-        abstract int thresholdMillis();
-        abstract int minTransactionCount();
+        abstract @Nullable Double transactionPercentile();
+        abstract @Nullable Integer transactionThresholdMillis();
+        abstract @Nullable Integer minTransactionCount();
+        abstract String gaugeName();
+        abstract @Nullable String gaugeDisplay(); // only used in response
+        abstract @Nullable Double gaugeThreshold();
+        abstract int timePeriodSeconds();
         abstract ImmutableList<String> emailAddresses();
         abstract Optional<String> version(); // absent for insert operations
 
         private AlertConfig convert() {
             return ImmutableAlertConfig.builder()
+                    .kind(kind())
                     .transactionType(transactionType())
-                    .percentile(percentile())
-                    .timePeriodMinutes(timePeriodMinutes())
-                    .thresholdMillis(thresholdMillis())
+                    .transactionPercentile(transactionPercentile())
+                    .transactionThresholdMillis(transactionThresholdMillis())
                     .minTransactionCount(minTransactionCount())
+                    .gaugeName(gaugeName())
+                    .gaugeThreshold(gaugeThreshold())
+                    .timePeriodSeconds(timePeriodSeconds())
                     .addAllEmailAddresses(emailAddresses())
                     .build();
         }
 
         private static AlertConfigDto create(AlertConfig alertConfig) {
+            String gaugeDisplay = alertConfig.kind() == AlertKind.GAUGE
+                    ? Gauges.getGauge(alertConfig.gaugeName()).display() : null;
             return ImmutableAlertConfigDto.builder()
+                    .kind(alertConfig.kind())
                     .transactionType(alertConfig.transactionType())
-                    .percentile(alertConfig.percentile())
-                    .timePeriodMinutes(alertConfig.timePeriodMinutes())
-                    .thresholdMillis(alertConfig.thresholdMillis())
+                    .transactionPercentile(alertConfig.transactionPercentile())
+                    .transactionThresholdMillis(alertConfig.transactionThresholdMillis())
                     .minTransactionCount(alertConfig.minTransactionCount())
+                    .gaugeName(alertConfig.gaugeName())
+                    .gaugeDisplay(gaugeDisplay)
+                    .gaugeThreshold(alertConfig.gaugeThreshold())
+                    .timePeriodSeconds(alertConfig.timePeriodSeconds())
                     .addAllEmailAddresses(alertConfig.emailAddresses())
                     .version(alertConfig.version())
                     .build();

@@ -18,6 +18,7 @@ package org.glowroot.ui;
 import org.junit.Test;
 
 import org.glowroot.storage.config.AlertConfig;
+import org.glowroot.storage.config.AlertConfig.AlertKind;
 import org.glowroot.storage.config.ImmutableAlertConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,19 +26,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class AlertConfigOrderingTest {
 
     private final AlertConfig left = ImmutableAlertConfig.builder()
+            .kind(AlertKind.TRANSACTION)
             .transactionType("tt")
-            .percentile(50)
-            .timePeriodMinutes(1)
-            .thresholdMillis(500)
+            .transactionPercentile(50.0)
+            .transactionThresholdMillis(500)
+            .timePeriodSeconds(60)
             .minTransactionCount(5)
+            .gaugeName("")
             .build();
 
     private final AlertConfig right = ImmutableAlertConfig.builder()
+            .kind(AlertKind.TRANSACTION)
             .transactionType("uu")
-            .percentile(50)
-            .timePeriodMinutes(1)
-            .thresholdMillis(500)
+            .transactionPercentile(50.0)
+            .transactionThresholdMillis(500)
+            .timePeriodSeconds(60)
             .minTransactionCount(5)
+            .gaugeName("")
             .build();
 
     @Test

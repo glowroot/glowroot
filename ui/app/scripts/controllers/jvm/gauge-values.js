@@ -22,12 +22,13 @@ glowroot.controller('JvmGaugeValuesCtrl', [
   '$filter',
   '$http',
   '$timeout',
+  'gauges',
   'locationChanges',
   'charts',
   'keyedColorPools',
   'queryStrings',
   'httpErrors',
-  function ($scope, $location, $filter, $http, $timeout, locationChanges, charts, keyedColorPools, queryStrings, httpErrors) {
+  function ($scope, $location, $filter, $http, $timeout, gauges, locationChanges, charts, keyedColorPools, queryStrings, httpErrors) {
 
     $scope.$parent.heading = 'Gauges';
 
@@ -174,7 +175,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           .success(function (data) {
             $scope.loaded = true;
             $scope.allGauges = data;
-            createShortDataSeriesNames(data);
+            gauges.createShortDataSeriesNames(data);
             var allGaugeNames = [];
             gaugeShortDisplayMap = {};
             angular.forEach(data, function (gauge) {
@@ -271,41 +272,6 @@ glowroot.controller('JvmGaugeValuesCtrl', [
         }
       }
       $scope.chartNoData = nodata;
-    }
-
-    function createShortDataSeriesNames(gauges) {
-      var splitGaugeNames = [];
-      angular.forEach(gauges, function (gauge) {
-        splitGaugeNames.push(gauge.display.split('/'));
-      });
-      var minRequiredForUniqueName;
-      var i, j;
-      for (i = 0; i < gauges.length; i++) {
-        var splitGaugeName = splitGaugeNames[i];
-        var gaugeName = gauges[i].name;
-        var separator = gaugeName.lastIndexOf(':');
-        // at least include the last step in the mbean object name
-        minRequiredForUniqueName = gaugeName.substring(separator + 1).split('/').length + 1;
-        for (j = 0; j < gauges.length; j++) {
-          if (j === i) {
-            continue;
-          }
-          var splitGaugeName2 = splitGaugeNames[j];
-          minRequiredForUniqueName = Math.max(minRequiredForUniqueName,
-              numSamePartsStartingAtEnd(splitGaugeName, splitGaugeName2) + 1);
-        }
-        gauges[i].shortDisplay = splitGaugeName.slice(-minRequiredForUniqueName).join('/');
-      }
-    }
-
-    function numSamePartsStartingAtEnd(array1, array2) {
-      var k = 0;
-      var len1 = array1.length;
-      var len2 = array2.length;
-      while (k < Math.min(len1, len2) && array1[len1 - 1 - k] === array2[len2 - 1 - k]) {
-        k++;
-      }
-      return k;
     }
 
     $scope.lineBreakableGaugeName = function (gaugeName) {
@@ -436,40 +402,6 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       },
       tooltipOpts: {
         content: function (label, xval, yval, flotItem) {
-
-          function unitFromLabel(label) {
-            // TODO units should be configurable per gauge config
-            var unit = '';
-            if (label.match(/java.lang:type=Memory:(Non)?HeapMemoryUsage\/(init|used|committed|max)/)) {
-              unit = ' bytes';
-            }
-            if (label.match(/java.lang:type=OperatingSystem:(Free|Total)(Physical|Swap)MemorySize/)) {
-              unit = ' bytes';
-            }
-            if (label.match(/java.lang:type=Runtime:Uptime/)) {
-              unit = ' milliseconds';
-            }
-            if (label.match(/java.lang:type=Threading:CurrentThread(Cpu|User)Time/)) {
-              unit = ' nanoseconds';
-            }
-            if (label.match(/java.lang:type=MemoryPool,name=[a-zA-Z0-9 ]+:(Peak)?Usage\/(init|used|committed|max)/)) {
-              unit = ' bytes';
-            }
-            if (label.match(/java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+:LastGcInfo\/duration/)) {
-              unit = ' milliseconds';
-            }
-            if (label.match(/java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+:CollectionTime/)) {
-              unit = ' milliseconds';
-            }
-            if (label.match(/java.lang:type=Compilation:TotalCompilationTime/)) {
-              unit = ' milliseconds';
-            }
-            if (counterGauges[label]) {
-              unit += ' per second';
-            }
-            return unit;
-          }
-
           var rollupConfig0 = $scope.layout.rollupConfigs[0];
           if (charts.getDataPointIntervalMillis($scope.chartFrom, $scope.chartTo) === rollupConfig0.intervalMillis
               && $scope.chartTo - $scope.chartFrom < rollupConfig0.viewThresholdMillis) {
@@ -479,7 +411,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
             tooltip += '</td></tr><tr><td style="padding-right: 10px;">Time:</td><td style="font-weight: 400;">';
             tooltip += moment(xval).format('h:mm:ss.SSS a (Z)') + '</td></tr>';
             tooltip += '<tr><td style="padding-right: 10px;">Value:</td><td style="font-weight: 600;">';
-            tooltip += $filter('number')(nonScaledValue) + unitFromLabel(label) + '</td></tr>';
+            tooltip += $filter('number')(nonScaledValue) + gauges.unit(label, true) + '</td></tr>';
             tooltip += '</table>';
             return tooltip;
           }
@@ -490,7 +422,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           return charts.renderTooltipHtml(from, to, undefined, flotItem.dataIndex, flotItem.seriesIndex,
               chartState.plot, function (value, label) {
                 var nonScaledValue = yvalMaps[label][xval];
-                return displaySixDigitsOfPrecision(nonScaledValue) + unitFromLabel(label);
+                return displaySixDigitsOfPrecision(nonScaledValue) + gauges.unit(label, true);
               }, ' (average value over this interval)');
         }
       }

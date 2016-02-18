@@ -24,6 +24,7 @@ glowroot.controller('ConfigStorageCtrl', [
   'confirmIfHasChanges',
   'httpErrors',
   function ($scope, $http, $location, $timeout, confirmIfHasChanges, httpErrors) {
+
     // initialize page binding object
     $scope.page = {};
 

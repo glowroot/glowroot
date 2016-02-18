@@ -47,8 +47,6 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignature;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 @JsonService
 class InstrumentationConfigJsonService {
 
@@ -170,8 +168,7 @@ class InstrumentationConfigJsonService {
                 mapper.readValue(content, ImmutableInstrumentationConfigDto.class);
         String agentId = configDto.agentId().get();
         InstrumentationConfig config = configDto.convert();
-        String version = configDto.version();
-        checkNotNull(version, "Missing required request property: version");
+        String version = configDto.version().get();
         configRepository.updateInstrumentationConfig(agentId, config, version);
         return getInstrumentationConfigInternal(agentId, Versions.getVersion(config));
     }
@@ -309,7 +306,7 @@ class InstrumentationConfigJsonService {
         abstract @Nullable Integer transactionSlowThresholdMillis();
         abstract String enabledProperty();
         abstract String traceEntryEnabledProperty();
-        abstract @Nullable String version(); // absent for insert operations
+        abstract Optional<String> version(); // absent for insert operations
 
         private InstrumentationConfig convert() {
             InstrumentationConfig.Builder builder = InstrumentationConfig.newBuilder()

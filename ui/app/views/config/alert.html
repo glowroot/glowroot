@@ -38,81 +38,155 @@
          gt-form-autofocus-on-first-input
          class="form-horizontal"
          name="formCtrl">
-      <div class="form-group" ng-class="{'has-error': formCtrl.transactionType.$invalid}">
-        <label class="col-lg-3 control-label"
-               for="transactionType">
-          Transaction type
+      <div class="form-group gt-form-group-without-help-block">
+        <label class="col-lg-3 control-label">
+          Based on
         </label>
-
         <div class="col-lg-9">
-          <select ng-model="config.transactionType"
-                  class="form-control"
-                  ng-required="loaded"
-                  name="transactionType"
-                  id="transactionType"
-                  style="width: auto;">
-            <option ng-repeat="transactionType in transactionTypes()"
-                    value="{{transactionType}}"
-                    ng-selected="transactionType === config.transactionType">
-              {{transactionType}}
-            </option>
-          </select>
-
-          <div class="help-block">
-            The transaction type that this alert monitors.
+          <div class="radio">
+            <label>
+              <input type="radio"
+                     class="gt-autofocus-ignore"
+                     ng-model="config.kind"
+                     value="transaction">
+              Transaction response times
+            </label>
+          </div>
+          <div class="radio">
+            <label>
+              <input type="radio"
+                     class="gt-autofocus-ignore"
+                     ng-model="config.kind"
+                     value="gauge">
+              Gauge values
+            </label>
           </div>
         </div>
       </div>
-      <div gt-form-group
-           gt-label="Percentile"
-           gt-model="config.percentile"
-           gt-number="true"
-           gt-pattern="pattern.percentile"
-           gt-required="loaded"
-           gt-width="7em"
-           gt-addon="percentile">
-        <div class="help-block">
-          <em>Percentile</em>, <em>time period</em> and <em>threshold</em> all work together.
+      <div ng-if="config.kind === 'transaction'">
+        <div class="form-group" ng-class="{'has-error': formCtrl.transactionType.$invalid}">
+          <label class="col-lg-3 control-label"
+                 for="transactionType">
+            Transaction type
+          </label>
+          <div class="col-lg-9">
+            <select ng-model="config.transactionType"
+                    class="form-control"
+                    ng-required="loaded"
+                    name="transactionType"
+                    id="transactionType"
+                    style="width: auto;">
+              <option ng-repeat="transactionType in transactionTypes()"
+                      value="{{transactionType}}"
+                      ng-selected="transactionType === config.transactionType">
+                {{transactionType}}
+              </option>
+            </select>
+            <div class="help-block">
+              The transaction type that this alert monitors.
+            </div>
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Percentile"
+             gt-model="config.transactionPercentile"
+             gt-number="true"
+             gt-pattern="pattern.percentile"
+             gt-required="loaded"
+             gt-width="7em"
+             gt-addon="percentile">
+          <div class="help-block">
+            <em>Percentile</em>, <em>threshold</em> and <em>time period</em> all work together.
 
-          Every minute, the given percentile (e.g. 95)
-          will be calculated over the given prior time period (e.g. the last 5 minutes) and if it exceeds the given
-          threshold (e.g. 2000 milliseconds) then the alert will be triggered.
+            Every minute, the given percentile (e.g. 95)
+            will be calculated over the given prior time period (e.g. the last 5 minutes) and if it exceeds the given
+            threshold (e.g. 2000 milliseconds) then the alert will be triggered.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Threshold"
+             gt-model="config.transactionThresholdMillis"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-width="7em"
+             gt-addon="milliseconds">
+          <div class="help-block">
+            The threshold that will trigger the alert.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Time period"
+             gt-model="page.timePeriodMinutes"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-width="7em"
+             gt-addon="minutes">
+          <div class="help-block">
+            The time period over which the percentile is calculated.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Minimum transaction count"
+             gt-model="config.minTransactionCount"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-width="7em">
+          <div class="help-block">
+            Time periods with very few transactions have much less reliable percentiles, so increasing this can be used
+            to suppress alerts from being generated unless the time period meets this minimum transaction count.
+          </div>
         </div>
       </div>
-      <div gt-form-group
-           gt-label="Time period"
-           gt-model="config.timePeriodMinutes"
-           gt-number="true"
-           gt-pattern="pattern.integer"
-           gt-required="loaded"
-           gt-width="7em"
-           gt-addon="minutes">
-        <div class="help-block">
-          The time period over which the percentile is calculated.
+      <div ng-if="config.kind === 'gauge'">
+        <div class="form-group" ng-class="{'has-error': formCtrl.gaugeName.$invalid}">
+          <label class="col-lg-3 control-label"
+                 for="gaugeName">
+            Gauge name
+          </label>
+          <div class="col-lg-9">
+            <select ng-model="config.gaugeName"
+                    class="form-control"
+                    ng-required="loaded"
+                    name="gaugeName"
+                    id="gaugeName"
+                    style="width: auto;">
+              <option ng-repeat="gauge in gauges"
+                      value="{{gauge.name}}"
+                      ng-selected="gauge.name === config.gaugeName">
+                {{gauge.display}}
+              </option>
+            </select>
+            <div class="help-block">
+              The gauge that this alert monitors.
+            </div>
+          </div>
         </div>
-      </div>
-      <div gt-form-group
-           gt-label="Threshold"
-           gt-model="config.thresholdMillis"
-           gt-number="true"
-           gt-pattern="pattern.integer"
-           gt-required="loaded"
-           gt-width="7em"
-           gt-addon="milliseconds">
-        <div class="help-block">
-          The threshold that will trigger the alert.
+        <div gt-form-group
+             gt-label="Threshold"
+             gt-model="config.gaugeThreshold"
+             gt-number="true"
+             gt-pattern="pattern.double"
+             gt-required="loaded"
+             gt-width="7em"
+             gt-addon="{{unit()}}">
+          <div class="help-block">
+            The threshold that will trigger the alert.
+          </div>
         </div>
-      </div>
-      <div gt-form-group
-           gt-label="Minimum transaction count"
-           gt-model="config.minTransactionCount"
-           gt-number="true"
-           gt-pattern="pattern.integer"
-           gt-required="loaded"
-           gt-width="7em">
-        <div class="help-block">
-          Time periods with very few transactions have much less reliable percentiles, so increasing this can be used to
-          suppress alerts from being generated unless the time period meets this minimum transaction count.
+        <div gt-form-group
+             gt-label="Time period"
+             gt-model="page.timePeriodMinutes"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-width="7em"
+             gt-addon="minutes">
+          <div class="help-block">
+            The time period over which the average is calculated.
+          </div>
         </div>
       </div>
       <div gt-form-group

@@ -54,7 +54,7 @@ class AggregateCollector {
     private final MutableThreadStats auxThreadStats = new MutableThreadStats();
     // histogram values are in nanoseconds, but with microsecond precision to reduce the number of
     // buckets (and memory) required
-    private final LazyHistogram lazyHistogram = new LazyHistogram();
+    private final LazyHistogram durationNanosHistogram = new LazyHistogram();
     // TODO lazy instantiate mutable profiles to reduce memory footprint (same as MutableAggregate)
     private final MutableProfile mainThreadProfile = new MutableProfile();
     private final MutableProfile auxThreadProfile = new MutableProfile();
@@ -85,7 +85,7 @@ class AggregateCollector {
         for (ThreadStats auxThreadStats : transaction.getAuxThreadStats()) {
             this.auxThreadStats.addThreadStats(auxThreadStats);
         }
-        lazyHistogram.add(totalDurationNanos);
+        durationNanosHistogram.add(totalDurationNanos);
     }
 
     void mergeMainThreadRootTimer(TimerImpl toBeMergedRootTimer) {
@@ -125,7 +125,7 @@ class AggregateCollector {
                 .addAllMainThreadRootTimer(getRootTimersProtobuf(mainThreadRootTimers))
                 .addAllAuxThreadRootTimer(getRootTimersProtobuf(auxThreadRootTimers))
                 .addAllAsyncRootTimer(getRootTimersProtobuf(asyncRootTimers))
-                .setDurationNanosHistogram(lazyHistogram.toProto(scratchBuffer));
+                .setDurationNanosHistogram(durationNanosHistogram.toProto(scratchBuffer));
         if (!mainThreadStats.isNA()) {
             builder.setMainThreadStats(mainThreadStats.toProto());
         }

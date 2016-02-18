@@ -29,7 +29,8 @@ message Aggregate {
                                        // be greater than time in parent
   ThreadStats main_thread_stats = 7;
   ThreadStats aux_thread_stats = 8;
-  Histogram duration_nanos_histogram = 9;
+  Histogram duration_nanos_histogram = 9; // histogram values are in nanoseconds with microsecond
+                                          // precision
   Profile main_thread_profile = 10;
   Profile aux_thread_profile = 11;
   repeated QueriesByType queries_by_type = 12;

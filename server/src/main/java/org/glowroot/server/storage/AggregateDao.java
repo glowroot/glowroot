@@ -114,7 +114,7 @@ public class AggregateDao implements AggregateRepository {
             .partialName("histogram")
             .addColumns(ImmutableColumn.of("total_duration_nanos", "double"))
             .addColumns(ImmutableColumn.of("transaction_count", "bigint"))
-            .addColumns(ImmutableColumn.of("histogram", "blob"))
+            .addColumns(ImmutableColumn.of("duration_nanos_histogram", "blob"))
             .summary(false)
             .fromInclusive(true)
             .build();
@@ -449,13 +449,13 @@ public class AggregateDao implements AggregateRepository {
             double totalDurationNanos = row.getDouble(1);
             long transactionCount = row.getLong(2);
             ByteBuffer bytes = checkNotNull(row.getBytes(3));
-            Aggregate.Histogram histogram =
+            Aggregate.Histogram durationNanosHistogram =
                     Aggregate.Histogram.parseFrom(ByteString.copyFrom(bytes));
             percentileAggregates.add(ImmutablePercentileAggregate.builder()
                     .captureTime(captureTime)
                     .totalDurationNanos(totalDurationNanos)
                     .transactionCount(transactionCount)
-                    .histogram(histogram)
+                    .durationNanosHistogram(durationNanosHistogram)
                     .build());
         }
         return percentileAggregates;
@@ -759,14 +759,12 @@ public class AggregateDao implements AggregateRepository {
         }
         double totalDurationNanos = 0;
         long transactionCount = 0;
-        LazyHistogram lazyHistogram = new LazyHistogram();
+        LazyHistogram durationNanosHistogram = new LazyHistogram();
         for (Row row : results) {
             totalDurationNanos += row.getDouble(0);
             transactionCount += row.getLong(1);
             ByteBuffer bytes = checkNotNull(row.getBytes(2));
-            Aggregate.Histogram histogram =
-                    Aggregate.Histogram.parseFrom(ByteString.copyFrom(bytes));
-            lazyHistogram.merge(histogram);
+            durationNanosHistogram.merge(Aggregate.Histogram.parseFrom(ByteString.copyFrom(bytes)));
         }
         BoundStatement boundStatement;
         if (query.transactionName() == null) {
@@ -783,7 +781,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setTimestamp(i++, new Date(query.to()));
         boundStatement.setDouble(i++, totalDurationNanos);
         boundStatement.setLong(i++, transactionCount);
-        boundStatement.setBytes(i++, toByteBuffer(lazyHistogram.toProto(scratchBuffer)));
+        boundStatement.setBytes(i++, toByteBuffer(durationNanosHistogram.toProto(scratchBuffer)));
         session.execute(boundStatement);
     }
 

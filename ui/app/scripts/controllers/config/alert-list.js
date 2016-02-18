@@ -20,9 +20,11 @@ glowroot.controller('ConfigAlertListCtrl', [
   '$scope',
   '$location',
   '$http',
+  '$filter',
+  'gauges',
   'queryStrings',
   'httpErrors',
-  function ($scope, $location, $http, queryStrings, httpErrors) {
+  function ($scope, $location, $http, $filter, gauges, queryStrings, httpErrors) {
 
     if ($scope.hideMainContent()) {
       return;
@@ -35,6 +37,25 @@ glowroot.controller('ConfigAlertListCtrl', [
       }
       query.v = alert.version;
       return queryStrings.encodeObject(query);
+    };
+
+    $scope.alertText = function (alert) {
+      if (alert.kind === 'transaction') {
+        return alert.transactionType + ' - ' + alert.transactionPercentile
+            + $scope.percentileSuffix(alert.transactionPercentile) + ' percentile over a '
+            + alert.timePeriodSeconds / 60 + ' minute period exceeds ' + alert.transactionThresholdMillis
+            + ' milliseconds';
+      } else {
+        var threshold;
+        var unit = gauges.unit(alert.gaugeName);
+        if (unit === 'bytes') {
+          threshold = $filter('gtBytes')(alert.gaugeThreshold);
+        } else {
+          threshold = alert.gaugeThreshold;
+        }
+        return 'Gauge - ' + alert.gaugeDisplay + ' - average over a ' + alert.timePeriodSeconds / 60
+            + ' minute period exceeds ' + threshold;
+      }
     };
 
     $scope.newQueryString = function () {

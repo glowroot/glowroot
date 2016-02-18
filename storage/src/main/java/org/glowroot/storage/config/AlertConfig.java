@@ -15,9 +15,9 @@
  */
 package org.glowroot.storage.config;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
@@ -26,17 +26,30 @@ import org.glowroot.common.util.Versions;
 @Value.Immutable
 public abstract class AlertConfig {
 
-    @JsonInclude(value = Include.NON_EMPTY)
+    public abstract AlertKind kind();
+
+    // transaction alert
     public abstract String transactionType();
-    public abstract double percentile();
-    public abstract int timePeriodMinutes();
-    public abstract int thresholdMillis();
-    public abstract int minTransactionCount();
+    public abstract @Nullable Double transactionPercentile();
+    public abstract @Nullable Integer transactionThresholdMillis();
+    public abstract @Nullable Integer minTransactionCount();
+
+    // gauge alert
+    public abstract String gaugeName();
+    public abstract @Nullable Double gaugeThreshold();
+
+    // both
+    public abstract int timePeriodSeconds();
+
     public abstract ImmutableList<String> emailAddresses();
 
     @Value.Derived
     @JsonIgnore
     public String version() {
         return Versions.getJsonVersion(this);
+    }
+
+    public static enum AlertKind {
+        TRANSACTION, GAUGE
     }
 }

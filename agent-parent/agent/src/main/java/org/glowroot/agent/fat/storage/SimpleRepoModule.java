@@ -108,7 +108,7 @@ public class SimpleRepoModule {
 
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
         alertingService = new AlertingService(configRepository, agentDao, triggeredAlertDao,
-                aggregateDao, rollupLevelService, new MailService());
+                aggregateDao, gaugeValueDao, rollupLevelService, new MailService());
         if (reaperDisabled) {
             reaperRunnable = null;
         } else {

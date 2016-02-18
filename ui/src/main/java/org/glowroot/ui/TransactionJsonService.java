@@ -383,21 +383,22 @@ class TransactionJsonService {
                         percentileAggregate.captureTime(), dataSeriesList, null);
             }
             lastPercentileAggregate = percentileAggregate;
-            LazyHistogram histogram = new LazyHistogram(percentileAggregate.histogram());
+            LazyHistogram durationNanosHistogram =
+                    new LazyHistogram(percentileAggregate.durationNanosHistogram());
             for (int i = 0; i < percentiles.size(); i++) {
                 DataSeries dataSeries = dataSeriesList.get(i);
                 double percentile = percentiles.get(i);
                 // convert to milliseconds
                 dataSeries.add(percentileAggregate.captureTime(),
-                        histogram.getValueAtPercentile(percentile) / NANOSECONDS_PER_MILLISECOND);
+                        durationNanosHistogram.getValueAtPercentile(percentile)
+                                / NANOSECONDS_PER_MILLISECOND);
             }
-
             if (percentileAggregate.captureTime() > request.from()) {
                 // filtering out the left most aggregate since it is not really in the requested
                 // interval since it is for prior capture times
                 transactionCount += percentileAggregate.transactionCount();
                 totalDurationNanos += percentileAggregate.totalDurationNanos();
-                mergedHistogram.merge(histogram);
+                mergedHistogram.merge(durationNanosHistogram);
             }
         }
         if (lastPercentileAggregate != null) {

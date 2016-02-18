@@ -157,7 +157,7 @@ public interface AggregateRepository {
         // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
         double totalDurationNanos();
         long transactionCount();
-        Aggregate.Histogram histogram();
+        Aggregate.Histogram durationNanosHistogram();
     }
 
     @Value.Immutable

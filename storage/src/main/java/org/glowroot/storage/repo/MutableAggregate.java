@@ -45,7 +45,9 @@ public class MutableAggregate {
     private final List<MutableTimer> asyncRootTimers = Lists.newArrayList();
     private final MutableThreadStats mainThreadStats = new MutableThreadStats();
     private final MutableThreadStats auxThreadStats = new MutableThreadStats();
-    private final LazyHistogram lazyHistogram = new LazyHistogram();
+    // histogram values are in nanoseconds, but with microsecond precision to reduce the number of
+    // buckets (and memory) required
+    private final LazyHistogram durationNanosHistogram = new LazyHistogram();
     // lazy instantiated to reduce memory footprint
     private @MonotonicNonNull MutableProfile mainThreadProfile;
     private @MonotonicNonNull MutableProfile auxThreadProfile;
@@ -91,8 +93,9 @@ public class MutableAggregate {
         auxThreadStats.addThreadStats(threadStats);
     }
 
-    public void mergeHistogram(Aggregate.Histogram toBeMergedHistogram) throws DataFormatException {
-        lazyHistogram.merge(toBeMergedHistogram);
+    public void mergeDurationNanosHistogram(Aggregate.Histogram toBeMergedDurationNanosHistogram)
+            throws DataFormatException {
+        durationNanosHistogram.merge(toBeMergedDurationNanosHistogram);
     }
 
     public Aggregate toAggregate(ScratchBuffer scratchBuffer) throws IOException {
@@ -103,7 +106,7 @@ public class MutableAggregate {
                 .addAllMainThreadRootTimer(toProto(mainThreadRootTimers))
                 .addAllAuxThreadRootTimer(toProto(auxThreadRootTimers))
                 .addAllAsyncRootTimer(toProto(asyncRootTimers))
-                .setDurationNanosHistogram(lazyHistogram.toProto(scratchBuffer));
+                .setDurationNanosHistogram(durationNanosHistogram.toProto(scratchBuffer));
         if (!mainThreadStats.isNA()) {
             builder.setMainThreadStats(mainThreadStats.toProto());
         }
@@ -142,7 +145,7 @@ public class MutableAggregate {
                 .captureTime(captureTime)
                 .totalDurationNanos(totalDurationNanos)
                 .transactionCount(transactionCount)
-                .histogram(lazyHistogram.toProto(new ScratchBuffer()))
+                .durationNanosHistogram(durationNanosHistogram.toProto(new ScratchBuffer()))
                 .build();
     }
 
