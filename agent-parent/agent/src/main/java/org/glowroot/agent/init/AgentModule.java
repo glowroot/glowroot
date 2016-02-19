@@ -21,17 +21,15 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.jar.JarFile;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +71,6 @@ import org.glowroot.wire.api.Collector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class AgentModule {
 
@@ -98,7 +95,6 @@ public class AgentModule {
 
     private final ImmediateTraceStoreWatcher immedateTraceStoreWatcher;
 
-    private final ScheduledExecutorService scheduledExecutor;
     private final GaugeCollector gaugeCollector;
     private final StackTraceCollector stackTraceCollector;
 
@@ -112,7 +108,8 @@ public class AgentModule {
 
     // accepts @Nullable Ticker to deal with shading issues when called from GlowrootModule
     public AgentModule(Clock clock, @Nullable Ticker nullableTicker, final PluginCache pluginCache,
-            final ConfigService configService, Collector collector,
+            final ConfigService configService,
+            Supplier<ScheduledExecutorService> scheduledExecutorSupplier, Collector collector,
             @Nullable Instrumentation instrumentation, File baseDir) throws Exception {
 
         Ticker ticker = nullableTicker == null ? Tickers.getTicker() : nullableTicker;
@@ -154,9 +151,8 @@ public class AgentModule {
             }
         }
 
-        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
-                .setNameFormat("Glowroot-Background-%d").build();
-        scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
+        // now that instrumentation is set up, it is safe to create scheduled executor
+        ScheduledExecutorService scheduledExecutor = scheduledExecutorSupplier.get();
 
         aggregator = new Aggregator(scheduledExecutor, collector, configService,
                 ROLLUP_0_INTERVAL_MILLIS, clock);
@@ -251,10 +247,6 @@ public class AgentModule {
         return pluginCache.pluginDescriptors();
     }
 
-    public ScheduledExecutorService getScheduledExecutor() {
-        return scheduledExecutor;
-    }
-
     private static @Nullable ExtraBootResourceFinder createExtraBootResourceFinder(
             @Nullable Instrumentation instrumentation, List<File> pluginJars) throws IOException {
         if (instrumentation == null) {
@@ -287,9 +279,5 @@ public class AgentModule {
         aggregator.close();
         gaugeCollector.close();
         stackTraceCollector.close();
-        scheduledExecutor.shutdown();
-        if (!scheduledExecutor.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate agent scheduled executor");
-        }
     }
 }

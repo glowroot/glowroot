@@ -19,11 +19,17 @@ import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 
 import javax.annotation.Nullable;
 
 import ch.qos.logback.core.Context;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,11 +45,14 @@ import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.Collector.AgentConfigUpdater;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class GlowrootThinAgentInit implements GlowrootAgentInit {
 
     private @MonotonicNonNull AgentModule agentModule;
     private @MonotonicNonNull ServerCollectorImpl serverCollector;
+
+    private @MonotonicNonNull ScheduledExecutorService scheduledExecutor;
 
     @Override
     public void init(final File baseDir, final @Nullable String collectorHost,
@@ -70,8 +79,21 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         collectorLogbackAppender.start();
         attachAppender(collectorLogbackAppender);
 
+        // need to delay creation of the scheduled executor until after instrumentation is set up
+        Supplier<ScheduledExecutorService> scheduledExecutorSupplier =
+                Suppliers.memoize(new Supplier<ScheduledExecutorService>() {
+                    @Override
+                    public ScheduledExecutorService get() {
+                        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
+                                .setNameFormat("Glowroot-Background-%d").build();
+                        return Executors.newScheduledThreadPool(2, threadFactory);
+                    }
+                });
+
         final AgentModule agentModule = new AgentModule(clock, ticker, pluginCache, configService,
-                collectorProxy, instrumentation, baseDir);
+                scheduledExecutorSupplier, collectorProxy, instrumentation, baseDir);
+
+        final ScheduledExecutorService scheduledExecutor = scheduledExecutorSupplier.get();
 
         final AgentConfigUpdater agentConfigUpdater =
                 new ConfigUpdateService(configService, pluginCache);
@@ -83,8 +105,8 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                 if (customCollector == null) {
                     serverCollector = new ServerCollectorImpl(properties, collectorHost,
                             agentModule.getLiveJvmService(), agentModule.getLiveWeavingService(),
-                            agentModule.getLiveTraceRepository(),
-                            agentModule.getScheduledExecutor(), agentConfigUpdater);
+                            agentModule.getLiveTraceRepository(), scheduledExecutor,
+                            agentConfigUpdater);
                     collector = serverCollector;
                 } else {
                     collector = customCollector;
@@ -96,6 +118,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
             }
         });
         this.agentModule = agentModule;
+        this.scheduledExecutor = scheduledExecutor;
     }
 
     @Override
@@ -110,6 +133,11 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         checkNotNull(agentModule).close();
         if (serverCollector != null) {
             serverCollector.close();
+        }
+        checkNotNull(scheduledExecutor);
+        scheduledExecutor.shutdown();
+        if (!scheduledExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate agent scheduled executor");
         }
     }
 

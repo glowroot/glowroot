@@ -159,6 +159,9 @@ class ServerConnection {
 
         @Override
         public void onError(final Throwable t) {
+            if (closed) {
+                return;
+            }
             suppressLogCollector(new Runnable() {
                 @Override
                 public void run() {

@@ -28,6 +28,7 @@ import javax.management.MBeanServer;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
+import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -112,15 +113,18 @@ class FatAgentModule {
             CollectorProxy collectorProxy = new CollectorProxy();
             ConfigService configService =
                     ConfigService.create(baseDir, pluginCache.pluginDescriptors());
-            agentModule = new AgentModule(clock, null, pluginCache, configService, collectorProxy,
-                    instrumentation, baseDir);
+
+            ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
+                    .setNameFormat("Glowroot-Background-%d").build();
+            scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
+
+            agentModule = new AgentModule(clock, null, pluginCache, configService,
+                    Suppliers.ofInstance(scheduledExecutor), collectorProxy, instrumentation,
+                    baseDir);
 
             PreInitializeStorageShutdownClasses.preInitializeClasses();
             ConfigRepository configRepository = ConfigRepositoryImpl.create(baseDir,
                     agentModule.getConfigService(), pluginCache);
-            ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
-                    .setNameFormat("Glowroot-Background-%d").build();
-            scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
                     configRepository, scheduledExecutor, false);
             simpleRepoModule.registerMBeans(
