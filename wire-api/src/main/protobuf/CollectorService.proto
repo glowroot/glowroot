@@ -90,7 +90,7 @@ message LogEvent {
   int64 timestamp = 1;
   Level level = 2;
   string logger_name = 3;
-  string formatted_message = 4;
+  string message = 4;
   Throwable throwable = 5;
 
   enum Level {

@@ -54,7 +54,7 @@ class CollectorLogbackAppender extends AppenderBase<ILoggingEvent> {
                 .setTimestamp(event.getTimeStamp())
                 .setLevel(toProto(event.getLevel()))
                 .setLoggerName(event.getLoggerName())
-                .setFormattedMessage(event.getFormattedMessage());
+                .setMessage(event.getFormattedMessage());
         IThrowableProxy throwable = event.getThrowableProxy();
         if (throwable != null) {
             builder.setThrowable(toProto(throwable));

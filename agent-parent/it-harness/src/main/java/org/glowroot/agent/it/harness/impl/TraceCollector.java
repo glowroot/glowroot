@@ -138,7 +138,7 @@ class TraceCollector implements Collector {
         }
         ExpectedLogMessage expectedMessage = expectedMessages.get(0);
         if (expectedMessage.loggerName().equals(logEvent.getLoggerName())
-                && logEvent.getFormattedMessage().contains(expectedMessage.partialMessage())) {
+                && logEvent.getMessage().contains(expectedMessage.partialMessage())) {
             expectedMessages.remove(0);
             return true;
         }

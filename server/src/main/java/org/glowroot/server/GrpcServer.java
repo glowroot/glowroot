@@ -163,11 +163,11 @@ public class GrpcServer {
                 Proto.Throwable t = logEvent.getThrowable();
                 if (t == null) {
                     logger.warn("{} -- {} -- {} -- {}", request.getAgentId(), logEvent.getLevel(),
-                            logEvent.getLoggerName(), logEvent.getFormattedMessage());
+                            logEvent.getLoggerName(), logEvent.getMessage());
                 } else {
                     logger.warn("{} -- {} -- {} -- {}\n{}", request.getAgentId(),
                             logEvent.getLevel(), logEvent.getLoggerName(),
-                            logEvent.getFormattedMessage(), t);
+                            logEvent.getMessage(), t);
                 }
             } catch (Throwable t) {
                 responseObserver.onError(t);
