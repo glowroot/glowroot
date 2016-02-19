@@ -1,13 +1,6 @@
 import org.checkerframework.checker.nullness.qual.*;
 
 /* ========================================================================== */
-package io.netty.channel;
-
-public interface ChannelPipeline {
-    ChannelPipeline replace(ChannelHandler oldHandler, @Nullable String newName, ChannelHandler newHandler);
-}
-
-/* ========================================================================== */
 package io.netty.handler.codec.http;
 
 public interface HttpHeaders {

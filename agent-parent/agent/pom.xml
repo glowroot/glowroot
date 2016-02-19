@@ -177,7 +177,7 @@
       <!-- this is included to test weaving against jdk 1.7 bytecode -->
       <groupId>io.undertow</groupId>
       <artifactId>undertow-core</artifactId>
-      <version>1.3.16.Final</version>
+      <version>1.3.17.Final</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -319,9 +319,6 @@
                   <excludes>
                     <exclude>META-INF/services/io.grpc.ManagedChannelProvider</exclude>
                     <exclude>META-INF/services/io.grpc.ServerProvider</exclude>
-                    <!-- TODO remove this exclusion (and local ProtocolNegotiators.java) after the
-                      next gRPC release -->
-                    <exclude>io/grpc/netty/ProtocolNegotiators*</exclude>
                   </excludes>
                 </filter>
                 <filter>

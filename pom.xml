@@ -73,13 +73,14 @@
   </scm>
 
   <properties>
+    <!-- can't upgrade to 0.13.0 due to https://github.com/grpc/grpc-java/issues/1455 -->
     <grpc.version>0.12.0</grpc.version>
     <protobuf.version>3.0.0-beta-2</protobuf.version>
     <netty.version>4.1.0.CR2</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.5</jackson.version>
-    <logback.version>1.1.3</logback.version>
-    <immutables.version>2.1.10</immutables.version>
+    <logback.version>1.1.5</logback.version>
+    <immutables.version>2.1.11</immutables.version>
     <javax.mail.version>1.5.5</javax.mail.version>
     <jmh.version>1.11.3</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -167,7 +168,7 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.14</version>
+        <version>1.7.16</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
@@ -274,6 +275,24 @@
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-generator-annprocess</artifactId>
         <version>${jmh.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-core</artifactId>
+        <!-- tomcat 8 requires JDK 7+ -->
+        <version>7.0.68</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-jasper</artifactId>
+        <!-- tomcat 8 requires JDK 7+ -->
+        <version>7.0.68</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-logging-juli</artifactId>
+        <!-- tomcat 8 requires JDK 7+ -->
+        <version>7.0.68</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -461,7 +480,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.7.5.201505241946</version>
+          <version>0.7.6.201602180812</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.m2e</groupId>

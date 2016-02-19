@@ -41,22 +41,16 @@
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-core</artifactId>
-      <!-- tomcat 8 requires JDK 7+ -->
-      <version>7.0.67</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-jasper</artifactId>
-      <!-- tomcat 8 requires JDK 7+ -->
-      <version>7.0.67</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-logging-juli</artifactId>
-      <!-- tomcat 8 requires JDK 7+ -->
-      <version>7.0.67</version>
       <scope>test</scope>
     </dependency>
     <dependency>

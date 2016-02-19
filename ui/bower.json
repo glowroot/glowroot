@@ -3,7 +3,7 @@
   "dependencies": {
     "angular": "1.5.0",
     "angular-ui-bootstrap": "1.1.2",
-    "angular-ui-router": "0.2.17",
+    "angular-ui-router": "0.2.18",
     "bootstrap": "3.3.6",
     "bootstrap-select": "1.9.4",
     "d3-flame-graph": "0eecc604dea7eb7318053d176dbaefea9e47a605",

@@ -99,13 +99,6 @@ public interface Future<V extends @Nullable Object> {
 }
 
 /* ========================================================================== */
-package java.util.logging;
-
-public class Logger {
-    public void log(Level level, String msg, @Nullable Throwable thrown);
-}
-
-/* ========================================================================== */
 package java.util.jar;
 
 public class Attributes {
