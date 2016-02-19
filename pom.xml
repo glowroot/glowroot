@@ -52,6 +52,7 @@
     <module>agent-parent/plugins/http-client-plugin</module>
     <module>agent-parent/plugins/jaxrs-plugin</module>
     <module>agent-parent/plugins/jdbc-plugin</module>
+    <module>agent-parent/plugins/jedis-plugin</module>
     <module>agent-parent/plugins/jms-plugin</module>
     <module>agent-parent/plugins/jsf-plugin</module>
     <module>agent-parent/plugins/jsp-plugin</module>
