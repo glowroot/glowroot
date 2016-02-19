@@ -121,6 +121,8 @@ public class AlertingServiceTest {
         alertingService.checkGaugeAlerts(120000);
         // then
         assertThat(mailService.getMessage()).isNotNull();
+        assertThat(((String) mailService.getMessage().getContent()).trim())
+                .isEqualTo("Average over the last 1 minutes was 500.0 milliseconds per second.");
     }
 
     @Test
@@ -209,7 +211,8 @@ public class AlertingServiceTest {
     private void setupForGauge(double value) throws Exception {
         AlertConfig alertConfig = ImmutableAlertConfig.builder()
                 .kind(AlertKind.GAUGE)
-                .gaugeName("abc:xyz")
+                .gaugeName("java.lang:type=GarbageCollector,name=ConcurrentMarkSweep"
+                        + ":CollectionTime[counter]")
                 .gaugeThreshold(500.0)
                 .timePeriodSeconds(60)
                 .minTransactionCount(0)
@@ -224,8 +227,9 @@ public class AlertingServiceTest {
                 .build();
         when(configRepository.getAlertConfigs(AGENT_ID))
                 .thenReturn(ImmutableList.of(alertConfig));
-        when(gaugeValueRepository.readGaugeValues(AGENT_ID, "abc:xyz", 60001, 120000, 0))
-                .thenReturn(ImmutableList.of(gaugeValue));
+        when(gaugeValueRepository.readGaugeValues(AGENT_ID,
+                "java.lang:type=GarbageCollector,name=ConcurrentMarkSweep:CollectionTime[counter]",
+                60001, 120000, 0)).thenReturn(ImmutableList.of(gaugeValue));
     }
 
     static class MockMailService extends MailService {

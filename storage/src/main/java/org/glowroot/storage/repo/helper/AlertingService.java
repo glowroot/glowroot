@@ -42,6 +42,7 @@ import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.PercentileAggregate;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
+import org.glowroot.storage.repo.GaugeValueRepository.Gauge;
 import org.glowroot.storage.repo.ImmutableTransactionQuery;
 import org.glowroot.storage.repo.TriggeredAlertRepository;
 import org.glowroot.storage.repo.Utils;
@@ -233,7 +234,8 @@ public class AlertingService {
         if (!agentRollup.equals("")) {
             subject += " - " + agentRollup;
         }
-        subject += " - " + Gauges.getGauge(alertConfig.gaugeName()).display();
+        Gauge gauge = Gauges.getGauge(alertConfig.gaugeName());
+        subject += " - " + gauge.display();
         if (ok) {
             subject += " - OK";
         }
@@ -242,6 +244,11 @@ public class AlertingService {
         sb.append(alertConfig.timePeriodSeconds() / 60);
         sb.append(" minutes was ");
         sb.append(average);
+        String unit = gauge.unit();
+        if (!unit.isEmpty()) {
+            sb.append(" ");
+            sb.append(unit);
+        }
         sb.append(".\n\n");
         sendAlert(alertConfig.emailAddresses(), subject, sb.toString());
     }

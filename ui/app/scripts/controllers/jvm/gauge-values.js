@@ -22,13 +22,12 @@ glowroot.controller('JvmGaugeValuesCtrl', [
   '$filter',
   '$http',
   '$timeout',
-  'gauges',
   'locationChanges',
   'charts',
   'keyedColorPools',
   'queryStrings',
   'httpErrors',
-  function ($scope, $location, $filter, $http, $timeout, gauges, locationChanges, charts, keyedColorPools, queryStrings, httpErrors) {
+  function ($scope, $location, $filter, $http, $timeout, locationChanges, charts, keyedColorPools, queryStrings, httpErrors) {
 
     $scope.$parent.heading = 'Gauges';
 
@@ -42,7 +41,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     var emptyGaugeNames = {};
 
     var gaugeShortDisplayMap = {};
-    var counterGauges = {};
+    var gaugeUnits = {};
 
     $scope.gaugeFilter = '';
 
@@ -175,14 +174,17 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           .success(function (data) {
             $scope.loaded = true;
             $scope.allGauges = data;
-            gauges.createShortDataSeriesNames(data);
+            createShortDataSeriesNames(data);
             var allGaugeNames = [];
             gaugeShortDisplayMap = {};
+            gaugeUnits = {};
             angular.forEach(data, function (gauge) {
               allGaugeNames.push(gauge.name);
               gaugeShortDisplayMap[gauge.name] = gauge.shortDisplay;
-              if (gauge.counter) {
-                counterGauges[gauge.name] = true;
+              if (gauge.unit) {
+                gaugeUnits[gauge.name] = ' ' + gauge.unit;
+              } else {
+                gaugeUnits[gauge.name] = '';
               }
             });
             refreshData();
@@ -272,6 +274,41 @@ glowroot.controller('JvmGaugeValuesCtrl', [
         }
       }
       $scope.chartNoData = nodata;
+    }
+
+    function createShortDataSeriesNames(gauges) {
+      var splitGaugeNames = [];
+      angular.forEach(gauges, function (gauge) {
+        splitGaugeNames.push(gauge.display.split('/'));
+      });
+      var minRequiredForUniqueName;
+      var i, j;
+      for (i = 0; i < gauges.length; i++) {
+        var splitGaugeName = splitGaugeNames[i];
+        var gaugeName = gauges[i].name;
+        var separator = gaugeName.lastIndexOf(':');
+        // at least include the last step in the mbean object name
+        minRequiredForUniqueName = gaugeName.substring(separator + 1).split('/').length + 1;
+        for (j = 0; j < gauges.length; j++) {
+          if (j === i) {
+            continue;
+          }
+          var splitGaugeName2 = splitGaugeNames[j];
+          minRequiredForUniqueName = Math.max(minRequiredForUniqueName,
+              numSamePartsStartingAtEnd(splitGaugeName, splitGaugeName2) + 1);
+        }
+        gauges[i].shortDisplay = splitGaugeName.slice(-minRequiredForUniqueName).join('/');
+      }
+    }
+
+    function numSamePartsStartingAtEnd(array1, array2) {
+      var k = 0;
+      var len1 = array1.length;
+      var len2 = array2.length;
+      while (k < Math.min(len1, len2) && array1[len1 - 1 - k] === array2[len2 - 1 - k]) {
+        k++;
+      }
+      return k;
     }
 
     $scope.lineBreakableGaugeName = function (gaugeName) {
@@ -411,7 +448,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
             tooltip += '</td></tr><tr><td style="padding-right: 10px;">Time:</td><td style="font-weight: 400;">';
             tooltip += moment(xval).format('h:mm:ss.SSS a (Z)') + '</td></tr>';
             tooltip += '<tr><td style="padding-right: 10px;">Value:</td><td style="font-weight: 600;">';
-            tooltip += $filter('number')(nonScaledValue) + gauges.unit(label, true) + '</td></tr>';
+            tooltip += $filter('number')(nonScaledValue) + gaugeUnits[label] + '</td></tr>';
             tooltip += '</table>';
             return tooltip;
           }
@@ -422,7 +459,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           return charts.renderTooltipHtml(from, to, undefined, flotItem.dataIndex, flotItem.seriesIndex,
               chartState.plot, function (value, label) {
                 var nonScaledValue = yvalMaps[label][xval];
-                return displaySixDigitsOfPrecision(nonScaledValue) + gauges.unit(label, true);
+                return displaySixDigitsOfPrecision(nonScaledValue) + gaugeUnits[label];
               }, ' (average value over this interval)');
         }
       }

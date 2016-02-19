@@ -36,6 +36,7 @@ import org.glowroot.storage.config.AlertConfig.AlertKind;
 import org.glowroot.storage.config.ImmutableAlertConfig;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.DuplicateMBeanObjectNameException;
+import org.glowroot.storage.repo.GaugeValueRepository.Gauge;
 import org.glowroot.storage.repo.helper.Gauges;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
@@ -138,8 +139,9 @@ class AlertConfigJsonService {
         abstract @Nullable Integer transactionThresholdMillis();
         abstract @Nullable Integer minTransactionCount();
         abstract String gaugeName();
-        abstract @Nullable String gaugeDisplay(); // only used in response
         abstract @Nullable Double gaugeThreshold();
+        abstract @Nullable String gaugeDisplay(); // only used in response
+        abstract @Nullable String gaugeUnit(); // only used in response
         abstract int timePeriodSeconds();
         abstract ImmutableList<String> emailAddresses();
         abstract Optional<String> version(); // absent for insert operations
@@ -159,8 +161,10 @@ class AlertConfigJsonService {
         }
 
         private static AlertConfigDto create(AlertConfig alertConfig) {
-            String gaugeDisplay = alertConfig.kind() == AlertKind.GAUGE
-                    ? Gauges.getGauge(alertConfig.gaugeName()).display() : null;
+            Gauge gauge = null;
+            if (alertConfig.kind() == AlertKind.GAUGE) {
+                gauge = Gauges.getGauge(alertConfig.gaugeName());
+            }
             return ImmutableAlertConfigDto.builder()
                     .kind(alertConfig.kind())
                     .transactionType(alertConfig.transactionType())
@@ -168,8 +172,9 @@ class AlertConfigJsonService {
                     .transactionThresholdMillis(alertConfig.transactionThresholdMillis())
                     .minTransactionCount(alertConfig.minTransactionCount())
                     .gaugeName(alertConfig.gaugeName())
-                    .gaugeDisplay(gaugeDisplay)
                     .gaugeThreshold(alertConfig.gaugeThreshold())
+                    .gaugeDisplay(gauge == null ? "" : gauge.display())
+                    .gaugeUnit(gauge == null ? "" : gauge.unit())
                     .timePeriodSeconds(alertConfig.timePeriodSeconds())
                     .addAllEmailAddresses(alertConfig.emailAddresses())
                     .version(alertConfig.version())

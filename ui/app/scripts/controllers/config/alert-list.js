@@ -21,10 +21,9 @@ glowroot.controller('ConfigAlertListCtrl', [
   '$location',
   '$http',
   '$filter',
-  'gauges',
   'queryStrings',
   'httpErrors',
-  function ($scope, $location, $http, $filter, gauges, queryStrings, httpErrors) {
+  function ($scope, $location, $http, $filter, queryStrings, httpErrors) {
 
     if ($scope.hideMainContent()) {
       return;
@@ -47,9 +46,10 @@ glowroot.controller('ConfigAlertListCtrl', [
             + ' milliseconds';
       } else {
         var threshold;
-        var unit = gauges.unit(alert.gaugeName);
-        if (unit === 'bytes') {
+        if (alert.gaugeUnit === 'bytes') {
           threshold = $filter('gtBytes')(alert.gaugeThreshold);
+        } else if (alert.gaugeUnit) {
+          threshold = alert.gaugeThreshold + ' ' + alert.gaugeUnit;
         } else {
           threshold = alert.gaugeThreshold;
         }

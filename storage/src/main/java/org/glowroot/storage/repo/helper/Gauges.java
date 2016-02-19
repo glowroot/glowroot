@@ -16,14 +16,42 @@
 package org.glowroot.storage.repo.helper;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import org.glowroot.storage.repo.GaugeValueRepository.Gauge;
 import org.glowroot.storage.repo.ImmutableGauge;
 
 public class Gauges {
+
+    private static final ImmutableList<UnitPattern> unitPatterns;
+
+    static {
+        List<UnitPattern> patterns = Lists.newArrayList();
+        patterns.add(new UnitPattern(
+                "java.lang:type=Memory:(Non)?HeapMemoryUsage\\/(init|used|committed|max)",
+                "bytes"));
+        patterns.add(new UnitPattern(
+                "java.lang:type=OperatingSystem:(Free|Total)(Physical|Swap)MemorySize", "bytes"));
+        patterns.add(new UnitPattern("java.lang:type=Runtime:Uptime", "milliseconds"));
+        patterns.add(new UnitPattern("java.lang:type=Threading:CurrentThread(Cpu|User)Time",
+                "nanoseconds"));
+        patterns.add(new UnitPattern("java.lang:type=MemoryPool,name=[a-zA-Z0-9 ]+:(Peak)?Usage"
+                + "\\/(init|used|committed|max)", "bytes"));
+        patterns.add(new UnitPattern(
+                "java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+:LastGcInfo\\/duration",
+                "milliseconds"));
+        patterns.add(
+                new UnitPattern("java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+:CollectionTime",
+                        "milliseconds"));
+        patterns.add(
+                new UnitPattern("java.lang:type=Compilation:TotalCompilationTime", "milliseconds"));
+        unitPatterns = ImmutableList.copyOf(patterns);
+    }
 
     private Gauges() {}
 
@@ -37,7 +65,7 @@ public class Gauges {
                     mbeanAttributeName.length() - "[counter]".length());
         }
         String display = display(mbeanObjectName) + '/' + mbeanAttributeName;
-        return ImmutableGauge.of(gaugeName, display, counter);
+        return ImmutableGauge.of(gaugeName, display, counter, unit(gaugeName));
     }
 
     public static String display(String mbeanObjectName) {
@@ -50,5 +78,34 @@ public class Gauges {
             name.append(parts.get(i).split("=")[1]);
         }
         return name.toString();
+    }
+
+    private static String unit(String gaugeName) {
+        if (gaugeName.endsWith("[counter]")) {
+            return getBaseUnit(gaugeName.substring(0, gaugeName.length() - "[counter]".length()))
+                    + " per second";
+        } else {
+            return getBaseUnit(gaugeName);
+        }
+    }
+
+    private static String getBaseUnit(String gaugeName) {
+        for (UnitPattern unitPattern : unitPatterns) {
+            if (unitPattern.pattern.matcher(gaugeName).matches()) {
+                return unitPattern.unit;
+            }
+        }
+        return "";
+    }
+
+    private static class UnitPattern {
+
+        private final Pattern pattern;
+        private final String unit;
+
+        private UnitPattern(String pattern, String unit) {
+            this.pattern = Pattern.compile(pattern);
+            this.unit = unit;
+        }
     }
 }

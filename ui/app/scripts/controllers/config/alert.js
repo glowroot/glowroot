@@ -21,10 +21,9 @@ glowroot.controller('ConfigAlertCtrl', [
   '$location',
   '$http',
   '$timeout',
-  'gauges',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $location, $http, $timeout, gauges, confirmIfHasChanges, httpErrors) {
+  function ($scope, $location, $http, $timeout, confirmIfHasChanges, httpErrors) {
 
     // initialize page binding object
     $scope.page = {};
@@ -56,7 +55,13 @@ glowroot.controller('ConfigAlertCtrl', [
     }
 
     $scope.unit = function () {
-      return gauges.unit($scope.config.gaugeName);
+      var i;
+      for (i = 0; i < $scope.gauges.length; i++) {
+        if ($scope.gauges[i].name === $scope.config.gaugeName) {
+          return $scope.gauges[i].unit;
+        }
+      }
+      return '';
     };
 
     $http.get('backend/jvm/all-gauges?agent-rollup=' + encodeURIComponent($scope.agentRollup))
@@ -65,7 +70,6 @@ glowroot.controller('ConfigAlertCtrl', [
           $scope.gaugeNames = [];
           angular.forEach(data, function (gauge) {
             $scope.gauges = data;
-            gauges.createShortDataSeriesNames(data);
           });
         })
         .error(httpErrors.handler($scope));
