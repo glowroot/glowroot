@@ -25,6 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TriggeredAlertDaoTest {
 
+    private static final String AGENT_ID = "";
+
     private DataSource dataSource;
     private TriggeredAlertDao triggeredAlertDao;
 
@@ -44,20 +46,20 @@ public class TriggeredAlertDaoTest {
 
     @Test
     public void shouldNotExist() throws Exception {
-        assertThat(triggeredAlertDao.exists("vvv1")).isFalse();
+        assertThat(triggeredAlertDao.exists(AGENT_ID, "vvv1")).isFalse();
     }
 
     @Test
     public void shouldExistAfterInsert() throws Exception {
-        triggeredAlertDao.insert("vvv2", 1234);
-        assertThat(triggeredAlertDao.exists("vvv1")).isFalse();
-        assertThat(triggeredAlertDao.exists("vvv2")).isTrue();
+        triggeredAlertDao.insert(AGENT_ID, "vvv2");
+        assertThat(triggeredAlertDao.exists(AGENT_ID, "vvv1")).isFalse();
+        assertThat(triggeredAlertDao.exists(AGENT_ID, "vvv2")).isTrue();
     }
 
     @Test
     public void shouldNotExistAfterDelete() throws Exception {
-        triggeredAlertDao.insert("vvv3", 1234);
-        triggeredAlertDao.delete("vvv3");
-        assertThat(triggeredAlertDao.exists("vvv3")).isFalse();
+        triggeredAlertDao.insert(AGENT_ID, "vvv3");
+        triggeredAlertDao.delete(AGENT_ID, "vvv3");
+        assertThat(triggeredAlertDao.exists(AGENT_ID, "vvv3")).isFalse();
     }
 }

@@ -43,11 +43,14 @@ import org.glowroot.server.storage.GaugeValueDao;
 import org.glowroot.server.storage.ServerConfigDao;
 import org.glowroot.server.storage.TraceDao;
 import org.glowroot.server.storage.TransactionTypeDao;
+import org.glowroot.server.storage.TriggeredAlertDao;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.RepoAdmin;
 import org.glowroot.storage.repo.TraceRepository;
+import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.storage.repo.helper.RollupLevelService;
+import org.glowroot.storage.util.MailService;
 import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.UiModule;
 
@@ -95,12 +98,15 @@ public class ServerModule {
             TraceRepository traceRepository = new TraceDao(session, agentDao, transactionTypeDao);
             GaugeValueRepository gaugeValueRepository =
                     new GaugeValueDao(session, agentDao, configRepository);
+            TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session);
+            RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
+            AlertingService alertingService = new AlertingService(configRepository, agentDao,
+                    triggeredAlertDao, aggregateRepository, gaugeValueRepository,
+                    rollupLevelService, new MailService());
 
             server = new GrpcServer(serverConfig.grpcPort(), agentDao, aggregateRepository,
-                    gaugeValueRepository, traceRepository);
+                    gaugeValueRepository, traceRepository, alertingService);
             configRepository.setDownstreamService(server.getDownstreamService());
-
-            RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
 
             uiModule = new CreateUiModuleBuilder()
                     .fat(false)

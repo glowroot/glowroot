@@ -77,19 +77,35 @@ public class AlertingService {
         this.mailService = mailService;
     }
 
-    public void checkAlerts(long endTime) throws Exception {
-        for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
-            for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollup.name())) {
-                try {
-                    if (alertConfig.kind() == AlertKind.TRANSACTION) {
-                        checkTransactionAlert(agentRollup.name(), alertConfig, endTime);
-                    } else if (alertConfig.kind() == AlertKind.GAUGE) {
-                        checkGaugeAlert(agentRollup.name(), alertConfig, endTime);
+    public void checkTransactionAlerts(long endTime) throws Exception {
+        try {
+            for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
+                for (AlertConfig alertConfig : configRepository
+                        .getAlertConfigs(agentRollup.name())) {
+                    if (alertConfig.kind() != AlertKind.TRANSACTION) {
+                        continue;
                     }
-                } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
+                    checkTransactionAlert(agentRollup.name(), alertConfig, endTime);
                 }
             }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    public void checkGaugeAlerts(long endTime) throws Exception {
+        try {
+            for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
+                for (AlertConfig alertConfig : configRepository
+                        .getAlertConfigs(agentRollup.name())) {
+                    if (alertConfig.kind() != AlertKind.GAUGE) {
+                        continue;
+                    }
+                    checkGaugeAlert(agentRollup.name(), alertConfig, endTime);
+                }
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
         }
     }
 
@@ -138,15 +154,16 @@ public class AlertingService {
             // don't clear existing triggered alert
             return;
         }
-        boolean previouslyTriggered = triggeredAlertRepository.exists(alertConfig.version());
+        boolean previouslyTriggered =
+                triggeredAlertRepository.exists(agentRollup, alertConfig.version());
         long valueAtPercentile = durationNanosHistogram.getValueAtPercentile(percentile);
         boolean currentlyTriggered = valueAtPercentile >= MILLISECONDS.toNanos(thresholdMillis);
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertRepository.delete(alertConfig.version());
+            triggeredAlertRepository.delete(agentRollup, alertConfig.version());
             sendTransactionAlert(agentRollup, alertConfig, percentile, valueAtPercentile,
                     transactionCount, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertRepository.insert(alertConfig.version(), endTime);
+            triggeredAlertRepository.insert(agentRollup, alertConfig.version());
             sendTransactionAlert(agentRollup, alertConfig, percentile, valueAtPercentile,
                     transactionCount, false);
         }
@@ -173,13 +190,14 @@ public class AlertingService {
             totalWeight += gaugeValue.getWeight();
         }
         double average = totalWeightedValue / totalWeight;
-        boolean previouslyTriggered = triggeredAlertRepository.exists(alertConfig.version());
+        boolean previouslyTriggered =
+                triggeredAlertRepository.exists(agentRollup, alertConfig.version());
         boolean currentlyTriggered = average >= threshold;
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertRepository.delete(alertConfig.version());
+            triggeredAlertRepository.delete(agentRollup, alertConfig.version());
             sendGaugeAlert(agentRollup, alertConfig, average, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertRepository.insert(alertConfig.version(), endTime);
+            triggeredAlertRepository.insert(agentRollup, alertConfig.version());
             sendGaugeAlert(agentRollup, alertConfig, average, false);
         }
     }

@@ -61,7 +61,7 @@ class CollectorImpl implements Collector {
     public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType)
             throws Exception {
         aggregateRepository.store(AGENT_ID, captureTime, aggregatesByType);
-        alertingService.checkAlerts(captureTime);
+        alertingService.checkTransactionAlerts(captureTime);
     }
 
     @Override

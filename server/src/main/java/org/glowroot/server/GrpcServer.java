@@ -27,11 +27,13 @@ import org.glowroot.server.storage.AgentDao;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.TraceRepository;
+import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorService;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
@@ -49,18 +51,20 @@ public class GrpcServer {
     private final AggregateRepository aggregateRepository;
     private final GaugeValueRepository gaugeValueRepository;
     private final TraceRepository traceRepository;
+    private final AlertingService alertingService;
 
     private final DownstreamServiceImpl downstreamService;
 
     private final ServerImpl server;
 
     public GrpcServer(int port, AgentDao agentDao, AggregateRepository aggregateRepository,
-            GaugeValueRepository gaugeValueRepository, TraceRepository traceRepository)
-                    throws IOException {
+            GaugeValueRepository gaugeValueRepository, TraceRepository traceRepository,
+            AlertingService alertingService) throws IOException {
         this.agentDao = agentDao;
         this.aggregateRepository = aggregateRepository;
         this.gaugeValueRepository = gaugeValueRepository;
         this.traceRepository = traceRepository;
+        this.alertingService = alertingService;
 
         downstreamService = new DownstreamServiceImpl();
 
@@ -109,6 +113,7 @@ public class GrpcServer {
             try {
                 aggregateRepository.store(request.getAgentId(), request.getCaptureTime(),
                         request.getAggregatesByTypeList());
+                alertingService.checkTransactionAlerts(request.getCaptureTime());
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
                 responseObserver.onError(t);
@@ -123,6 +128,11 @@ public class GrpcServer {
                 StreamObserver<EmptyMessage> responseObserver) {
             try {
                 gaugeValueRepository.store(request.getAgentId(), request.getGaugeValuesList());
+                long maxCaptureTime = 0;
+                for (GaugeValue gaugeValue : request.getGaugeValuesList()) {
+                    maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
+                }
+                alertingService.checkGaugeAlerts(maxCaptureTime);
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
                 responseObserver.onError(t);

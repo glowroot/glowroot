@@ -28,8 +28,7 @@ import org.glowroot.storage.repo.TriggeredAlertRepository;
 class TriggeredAlertDao implements TriggeredAlertRepository {
 
     private static final ImmutableList<Column> triggeredAlertColumns = ImmutableList.<Column>of(
-            ImmutableColumn.of("alert_config_version", ColumnType.VARCHAR),
-            ImmutableColumn.of("end_time", ColumnType.BIGINT));
+            ImmutableColumn.of("alert_config_version", ColumnType.VARCHAR));
 
     private static final ImmutableList<Index> triggeredAlertIndexes = ImmutableList.<Index>of(
             ImmutableIndex.of("triggered_alert_idx", ImmutableList.of("alert_config_version")));
@@ -43,20 +42,18 @@ class TriggeredAlertDao implements TriggeredAlertRepository {
     }
 
     @Override
-    public void insert(String version, long endTime) throws Exception {
-        dataSource.update(
-                "insert into triggered_alert (alert_config_version, end_time) values (?, ?)",
-                version, endTime);
+    public void insert(String agentRollup, String version) throws Exception {
+        dataSource.update("insert into triggered_alert (alert_config_version) values (?)", version);
     }
 
     @Override
-    public boolean exists(String version) throws Exception {
+    public boolean exists(String agentRollup, String version) throws Exception {
         return dataSource.queryForExists(
                 "select 1 from triggered_alert where alert_config_version = ?", version);
     }
 
     @Override
-    public void delete(String version) throws Exception {
+    public void delete(String agentRollup, String version) throws Exception {
         dataSource.update("delete from triggered_alert where alert_config_version = ?", version);
     }
 

@@ -92,7 +92,7 @@ public class AlertingServiceTest {
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkAlerts(120000);
+        alertingService.checkTransactionAlerts(120000);
         // then
         assertThat(mailService.getMessage()).isNotNull();
     }
@@ -105,7 +105,7 @@ public class AlertingServiceTest {
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkAlerts(120000);
+        alertingService.checkTransactionAlerts(120000);
         // then
         assertThat(mailService.getMessage()).isNull();
     }
@@ -118,7 +118,7 @@ public class AlertingServiceTest {
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkAlerts(120000);
+        alertingService.checkGaugeAlerts(120000);
         // then
         assertThat(mailService.getMessage()).isNotNull();
     }
@@ -131,7 +131,7 @@ public class AlertingServiceTest {
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkAlerts(120000);
+        alertingService.checkTransactionAlerts(120000);
         // then
         assertThat(mailService.getMessage()).isNull();
     }
