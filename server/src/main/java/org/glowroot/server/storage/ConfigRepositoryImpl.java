@@ -382,7 +382,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
                     .setUserRecordingConfig(userRecordingConfig)
                     .build();
-            agentDao.storeAgentConfig(agentId, agentConfig);
+            agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
             sendUpdatedAgentConfig(agentId, updatedAgentConfig);
         }

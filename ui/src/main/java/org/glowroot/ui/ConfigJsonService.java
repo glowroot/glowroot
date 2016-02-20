@@ -481,10 +481,13 @@ class ConfigJsonService {
         }
 
         private static UserRecordingConfigDto create(UserRecordingConfig config) {
-            return ImmutableUserRecordingConfigDto.builder()
-                    .users(config.getUserList())
-                    .profilingIntervalMillis(config.getProfilingIntervalMillis().getValue())
-                    .version(Versions.getVersion(config))
+            ImmutableUserRecordingConfigDto.Builder builder =
+                    ImmutableUserRecordingConfigDto.builder()
+                            .users(config.getUserList());
+            if (config.hasProfilingIntervalMillis()) {
+                builder.profilingIntervalMillis(config.getProfilingIntervalMillis().getValue());
+            }
+            return builder.version(Versions.getVersion(config))
                     .build();
         }
     }
