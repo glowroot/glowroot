@@ -7,23 +7,22 @@
     </encoder>
   </appender>
   <appender name="FILE" class="org.glowroot.agent.shaded.qos.logback.core.rolling.RollingFileAppender">
-    <file>${glowroot.base.dir}/glowroot.log</file>
-    <rollingPolicy class="org.glowroot.agent.shaded.qos.logback.core.rolling.FixedWindowRollingPolicy">
-      <fileNamePattern>${glowroot.base.dir}/glowroot.%i.log</fileNamePattern>
-      <minIndex>1</minIndex>
-      <maxIndex>1</maxIndex>
+    <rollingPolicy class="org.glowroot.agent.shaded.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${glowroot.base.dir}/glowroot.%d{yyyy-MM-dd}.log</fileNamePattern>
+      <maxHistory>14</maxHistory>
     </rollingPolicy>
-    <triggeringPolicy class="org.glowroot.agent.shaded.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-      <maxFileSize>5MB</maxFileSize>
-    </triggeringPolicy>
+    <!-- prudent is needed when multiple JVMs use the same (e.g. default) glowroot.base.dir -->
+    <prudent>true</prudent>
     <encoder>
+      <!-- including date even though it is in filename to make it easier on log aggregators -->
       <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
   <logger name="org.glowroot.agent.shaded" level="warn" />
   <!-- this is to deal with "Sending GOAWAY failed" that occur when connection to central fails
     (which is already logged more nicely by DownstreamServiceObserver) -->
-  <logger name="org.glowroot.agent.shaded.netty.handler.codec.http2.Http2ConnectionHandler" level="off" />
+  <logger name="org.glowroot.agent.shaded.netty.handler.codec.http2.Http2ConnectionHandler"
+    level="off" />
   <root level="info">
     <appender-ref ref="CONSOLE" />
     <appender-ref ref="FILE" />
