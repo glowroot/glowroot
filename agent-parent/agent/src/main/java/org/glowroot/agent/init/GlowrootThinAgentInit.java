@@ -84,8 +84,17 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                 Suppliers.memoize(new Supplier<ScheduledExecutorService>() {
                     @Override
                     public ScheduledExecutorService get() {
-                        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
-                                .setNameFormat("Glowroot-Background-%d").build();
+                        final ThreadFactory backingThreadFactory = new ThreadFactoryBuilder()
+                                .setDaemon(true).setNameFormat("Glowroot-Background-%d").build();
+                        ThreadFactory threadFactory = new ThreadFactory() {
+                            @Override
+                            public Thread newThread(Runnable r) {
+                                Thread thread = backingThreadFactory.newThread(r);
+                                thread.setContextClassLoader(
+                                        GlowrootThinAgentInit.class.getClassLoader());
+                                return thread;
+                            }
+                        };
                         return Executors.newScheduledThreadPool(2, threadFactory);
                     }
                 });
