@@ -1,0 +1,18 @@
+{
+  "name": "Jedis Plugin",
+  "id": "jedis",
+  "instrumentation": [
+    {
+      "className": "redis.clients.jedis.Connection",
+      "methodName": "sendCommand",
+      "methodParameterTypes": [
+        "redis.clients.jedis.Protocol$Command",
+        ".."
+      ],
+      "nestingGroup": "redis",
+      "captureKind": "trace-entry",
+      "timerName": "jedis sendCommand",
+      "traceEntryMessageTemplate": "jedis {{this.host}}:{{this.port}} {{0}}"
+    }
+  ]
+}
