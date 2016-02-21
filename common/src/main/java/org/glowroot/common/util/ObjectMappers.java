@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,16 @@ package org.glowroot.common.util;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.Iterator;
 import java.util.Locale;
+import java.util.Map.Entry;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.PrettyPrinter;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -35,11 +40,25 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
 import com.fasterxml.jackson.databind.jsonFormatVisitors.JsonFormatVisitorWrapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.ContainerNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.std.NonTypedScalarSerializerBase;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.google.common.base.StandardSystemProperty;
 
 public class ObjectMappers {
+
+    public static final String NEWLINE;
+
+    static {
+        String newline = StandardSystemProperty.LINE_SEPARATOR.value();
+        if (newline == null) {
+            NEWLINE = "\n";
+        } else {
+            NEWLINE = newline;
+        }
+    }
 
     private ObjectMappers() {}
 
@@ -58,6 +77,24 @@ public class ObjectMappers {
         }
         mapper.setSerializationInclusion(Include.NON_ABSENT);
         return mapper;
+    }
+
+    public static PrettyPrinter getPrettyPrinter() {
+        CustomPrettyPrinter prettyPrinter = new CustomPrettyPrinter();
+        prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
+        return prettyPrinter;
+    }
+
+    public static void stripEmptyContainerNodes(ObjectNode objectNode) {
+        Iterator<Entry<String, JsonNode>> i = objectNode.fields();
+        while (i.hasNext()) {
+            Entry<String, JsonNode> entry = i.next();
+            JsonNode value = entry.getValue();
+            if (value instanceof ContainerNode && ((ContainerNode<?>) value).size() == 0) {
+                // remove empty nodes, e.g. unused "smtp" and "alerts" nodes
+                i.remove();
+            }
+        }
     }
 
     // com.fasterxml.jackson.databind.ser.std.BooleanSerializer is final so cannot subclass
@@ -116,6 +153,15 @@ public class ObjectMappers {
                             jp.getValueAsString().replace('-', '_').toUpperCase(Locale.ENGLISH));
                 }
             };
+        }
+    }
+
+    @SuppressWarnings("serial")
+    private static class CustomPrettyPrinter extends DefaultPrettyPrinter {
+
+        @Override
+        public void writeObjectFieldValueSeparator(JsonGenerator jg) throws IOException {
+            jg.writeRaw(": ");
         }
     }
 }

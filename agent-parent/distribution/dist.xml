@@ -9,17 +9,11 @@
   <dependencySets>
     <dependencySet>
       <includes>
-        <include>org.glowroot:glowroot-agent</include>
+        <include>org.glowroot:glowroot-agent-distribution:jar:dist0</include>
       </includes>
       <useProjectArtifact>false</useProjectArtifact>
+      <useProjectAttachments>true</useProjectAttachments>
       <outputFileNameMapping>glowroot.jar</outputFileNameMapping>
-    </dependencySet>
-    <dependencySet>
-      <outputDirectory>plugins</outputDirectory>
-      <includes>
-        <include>org.glowroot:glowroot-agent-*-plugin</include>
-      </includes>
-      <useProjectArtifact>false</useProjectArtifact>
     </dependencySet>
   </dependencySets>
   <fileSets>

@@ -64,6 +64,7 @@
     <module>agent-parent/benchmarks</module>
     <module>agent-parent/webdriver-tests</module>
     <module>agent-parent/ui-sandbox</module>
+    <module>agent-parent/dist-maven-plugin</module>
     <module>agent-parent/distribution</module>
   </modules>
 
@@ -330,7 +331,6 @@
                 <requireMavenVersion>
                   <version>[3.0,)</version>
                 </requireMavenVersion>
-                <requirePluginVersions />
                 <requireUpperBoundDeps />
               </rules>
             </configuration>
@@ -650,6 +650,7 @@
               <rules>
                 <requireReleaseDeps />
                 <requireReleaseVersion />
+                <requirePluginVersions />
               </rules>
             </configuration>
           </plugin>

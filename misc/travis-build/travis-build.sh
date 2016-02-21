@@ -143,14 +143,18 @@ case "$1" in
                                  -Dglowroot.ui.skip \
                                  -DskipTests \
                                  -B
-               mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/it-harness,!agent-parent/benchmarks,!agent-parent/ui-sandbox \
-                                 -Pchecker \
-                                 -Dchecker.install.dir=$HOME/checker-framework \
-                                 -Dchecker.stubs.dir=$PWD/misc/checker-stubs \
-                                 -Dglowroot.ui.skip \
-                                 -DargLine="$surefire_jvm_args" \
-                                 -B \
-                                 | sed 's/\[ERROR\] .*[\/]\([^\/.]*\.java\):\[\([0-9]*\),\([0-9]*\)\]/[ERROR] (\1:\2) [column \3]/'
+               # process-classes is needed (as opposed to compile) in order to generate glowroot-agent-dist-maven-plugin's plugin.xml
+               # otherwise glowroot-agent-distribution module fails with
+               # "Failed to parse plugin descriptor for org.glowroot:glowroot-agent-dist-maven-plugin:0.9-SNAPSHOT
+               # (/home/travis/build/trask/glowroot/agent-parent/dist-maven-plugin/target/classes): No plugin descriptor found at META-INF/maven/plugin.xml"
+               mvn clean process-classes -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/it-harness,!agent-parent/benchmarks,!agent-parent/ui-sandbox \
+                                         -Pchecker \
+                                         -Dchecker.install.dir=$HOME/checker-framework \
+                                         -Dchecker.stubs.dir=$PWD/misc/checker-stubs \
+                                         -Dglowroot.ui.skip \
+                                         -DargLine="$surefire_jvm_args" \
+                                         -B \
+                                         | sed 's/\[ERROR\] .*[\/]\([^\/.]*\.java\):\[\([0-9]*\),\([0-9]*\)\]/[ERROR] (\1:\2) [column \3]/'
                # preserve exit status from mvn (needed because of pipe to sed)
                mvn_status=${PIPESTATUS[0]}
                git checkout -- .

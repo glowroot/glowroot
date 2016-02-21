@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration>
+<configuration>
+  <!-- this is to override glowroot.logback.xml in glowroot-agent, which is relevant because
+    when this plugin runs, it uses org.glowroot.agent.config.PluginDescriptor, which triggers shaded
+    log configuration and creates empty glowroot.base.dir_IS_UNDEFINED/glowroot.log -->
+  <appender name="CONSOLE" class="org.glowroot.agent.shaded.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <root>
+    <appender-ref ref="CONSOLE" />
+  </root>
+</configuration>

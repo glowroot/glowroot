@@ -15,17 +15,58 @@
  */
 package org.glowroot.agent.config;
 
+import java.io.IOException;
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
-@Value.Immutable
-public interface PluginDescriptor {
+import org.glowroot.common.util.ObjectMappers;
 
-    String id();
-    String name();
-    ImmutableList<PropertyDescriptor> properties();
+@Value.Immutable
+public abstract class PluginDescriptor {
+
+    public abstract String id();
+    public abstract String name();
+    public abstract ImmutableList<PropertyDescriptor> properties();
     @JsonProperty("instrumentation")
-    ImmutableList<InstrumentationConfig> instrumentationConfigs();
-    ImmutableList<String> aspects();
+    public abstract ImmutableList<InstrumentationConfig> instrumentationConfigs();
+    public abstract ImmutableList<String> aspects();
+
+    // this is only for use by packager-maven-plugin, which needs to perform de-serialization of
+    // shaded immutables objects using shaded jackson
+    public static PluginDescriptor readValue(String content) throws IOException {
+        SimpleModule module = new SimpleModule();
+        module.addAbstractTypeMapping(InstrumentationConfig.class,
+                ImmutableInstrumentationConfig.class);
+        module.addAbstractTypeMapping(PropertyDescriptor.class, ImmutablePropertyDescriptor.class);
+        ObjectMapper mapper = ObjectMappers.create(module);
+        return mapper.readValue(content, ImmutablePluginDescriptor.class);
+    }
+
+    // this is only for use by packager-maven-plugin, which needs to perform serialization of shaded
+    // immutables objects using shaded jackson
+    public static String writeValue(List<PluginDescriptor> pluginDescriptors) throws IOException {
+        ObjectMapper mapper = ObjectMappers.create();
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))
+                .setPrettyPrinter(ObjectMappers.getPrettyPrinter());
+        jg.writeStartArray();
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+            ObjectNode objectNode = mapper.valueToTree(pluginDescriptor);
+            ObjectMappers.stripEmptyContainerNodes(objectNode);
+            jg.writeTree(objectNode);
+        }
+        jg.writeEndArray();
+        jg.close();
+        // newline is not required, just a personal preference
+        sb.append(ObjectMappers.NEWLINE);
+        return sb.toString();
+    }
 }

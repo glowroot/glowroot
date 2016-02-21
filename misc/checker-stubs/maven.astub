@@ -1,0 +1,8 @@
+import org.checkerframework.checker.nullness.qual.*;
+
+/* ========================================================================== */
+package org.apache.maven.plugin;
+
+public class MojoExecutionException {
+    public MojoExecutionException(@Nullable String message, Exception cause);
+}

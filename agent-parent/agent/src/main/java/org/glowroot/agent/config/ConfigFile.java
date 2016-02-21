@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package org.glowroot.agent.config;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -26,14 +25,10 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.core.util.DefaultIndenter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ContainerNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
-import com.google.common.base.StandardSystemProperty;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
@@ -48,17 +43,6 @@ class ConfigFile {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigFile.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
-
-    private static final String NEWLINE;
-
-    static {
-        String newline = StandardSystemProperty.LINE_SEPARATOR.value();
-        if (newline == null) {
-            NEWLINE = "\n";
-        } else {
-            NEWLINE = newline;
-        }
-    }
 
     private final File file;
     private final ObjectNode rootObjectNode;
@@ -160,32 +144,13 @@ class ConfigFile {
 
     private String writeConfigAsString() throws IOException {
         ObjectNode rootObjectNode = this.rootObjectNode.deepCopy();
-        Iterator<Entry<String, JsonNode>> i = rootObjectNode.fields();
-        while (i.hasNext()) {
-            Entry<String, JsonNode> entry = i.next();
-            JsonNode value = entry.getValue();
-            if (value instanceof ContainerNode && ((ContainerNode<?>) value).size() == 0) {
-                // remove empty nodes, e.g. unused "smtp" and "alerts" nodes
-                i.remove();
-            }
-        }
-        CustomPrettyPrinter prettyPrinter = new CustomPrettyPrinter();
-        prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
+        ObjectMappers.stripEmptyContainerNodes(rootObjectNode);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))
-                .setPrettyPrinter(prettyPrinter);
+                .setPrettyPrinter(ObjectMappers.getPrettyPrinter());
         jg.writeTree(rootObjectNode);
         jg.close();
         // newline is not required, just a personal preference
-        return sb.toString() + NEWLINE;
-    }
-
-    @SuppressWarnings("serial")
-    private static class CustomPrettyPrinter extends DefaultPrettyPrinter {
-
-        @Override
-        public void writeObjectFieldValueSeparator(JsonGenerator jg) throws IOException {
-            jg.writeRaw(": ");
-        }
+        return sb.toString() + ObjectMappers.NEWLINE;
     }
 }

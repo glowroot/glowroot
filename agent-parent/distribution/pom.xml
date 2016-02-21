@@ -103,14 +103,51 @@
     <finalName>glowroot-${project.version}</finalName>
     <plugins>
       <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <descriptors>
-            <descriptor>dist.xml</descriptor>
-          </descriptors>
-        </configuration>
+        <groupId>org.glowroot</groupId>
+        <artifactId>glowroot-agent-dist-maven-plugin</artifactId>
+        <version>${project.version}</version>
         <executions>
           <execution>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>dist0</id>
+            <configuration>
+              <descriptors>
+                <descriptor>dist0.xml</descriptor>
+              </descriptors>
+              <archive>
+                <manifestEntries>
+                  <Implementation-Title>${project.name}</Implementation-Title>
+                  <Implementation-Version>${project.version}</Implementation-Version>
+                  <Build-Commit>${glowroot.build.commit}</Build-Commit>
+                  <Build-Time>${maven.build.timestamp}</Build-Time>
+                  <Main-Class>org.glowroot.agent.Viewer</Main-Class>
+                  <Premain-Class>org.glowroot.agent.AgentPremain</Premain-Class>
+                  <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                  <Can-Retransform-Classes>true</Can-Retransform-Classes>
+                </manifestEntries>
+              </archive>
+            </configuration>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>dist</id>
+            <configuration>
+              <descriptors>
+                <descriptor>dist.xml</descriptor>
+              </descriptors>
+            </configuration>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
