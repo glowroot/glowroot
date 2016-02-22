@@ -60,7 +60,6 @@ public class TransactionRegistry {
     }
 
     void removeTransaction(Transaction transaction) {
-        currentThreadContext.set(null);
         transactions.remove(transaction);
     }
 
