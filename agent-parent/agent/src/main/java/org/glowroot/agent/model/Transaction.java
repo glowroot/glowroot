@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
@@ -79,8 +78,6 @@ public class Transaction {
 
     // this is just to limit memory (and also to limit display size of trace)
     private static final long ATTRIBUTE_VALUES_PER_KEY_LIMIT = 10000;
-
-    private static final AtomicBoolean loggedBackgroundTransactionSuggestion = new AtomicBoolean();
 
     private final Supplier<UUID> uuid = Suppliers.memoize(new Supplier<UUID>() {
         @Override
@@ -203,7 +200,10 @@ public class Transaction {
                 threadAllocatedBytes, true, transactionRegistry, transactionService, configService,
                 ticker, threadContextHolder);
         auxThreadContexts.add(auxThreadContext);
-        threadContextHolder.set(auxThreadContext);
+        // see counterpart to this synchronization (and explanation) in ThreadContextImpl.detach()
+        synchronized (threadContextHolder) {
+            threadContextHolder.set(auxThreadContext);
+        }
         return auxThreadContext.getRootEntry();
     }
 
@@ -284,12 +284,12 @@ public class Transaction {
     }
 
     public TimerImpl getMainThreadRootTimer() {
-        readMemoryBarrier();
+        memoryBarrierRead();
         return mainThreadContext.getRootTimer();
     }
 
     public Iterable<TimerImpl> getAuxThreadRootTimers() {
-        readMemoryBarrier();
+        memoryBarrierRead();
         if (auxThreadContexts.isEmpty()) {
             // optimization for common case
             return ImmutableList.of();
@@ -298,7 +298,7 @@ public class Transaction {
     }
 
     public List<AsyncTimerImpl> getAsyncRootTimers() {
-        readMemoryBarrier();
+        memoryBarrierRead();
         return asyncRootTimers;
     }
 
@@ -324,7 +324,7 @@ public class Transaction {
     }
 
     public Iterator<QueryData> getQueries() {
-        readMemoryBarrier();
+        memoryBarrierRead();
         if (auxThreadContexts.size() == 1) {
             // optimization for common case
             return mainThreadContext.getQueries();
@@ -355,7 +355,7 @@ public class Transaction {
     }
 
     public List<Trace.Entry> getEntriesProtobuf(long captureTick) {
-        readMemoryBarrier();
+        memoryBarrierRead();
         Multimap<TraceEntryImpl, TraceEntryImpl> auxRootTraceEntries = ArrayListMultimap.create();
         for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
             // checkNotNull is safe b/c auxiliary thread contexts have non-null parent trace entry
@@ -558,29 +558,29 @@ public class Transaction {
     void end(long endTick) {
         completed = true;
         this.endTick = endTick;
-        for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
-            // FIXME how to suppress false positives??
-            if (!loggedBackgroundTransactionSuggestion.get()) {
+        Iterator<ThreadContextImpl> i = auxThreadContexts.iterator();
+        while (i.hasNext()) {
+            ThreadContextImpl auxThreadContext = i.next();
+            if (auxThreadContext.isCompleted()) {
+                continue;
+            }
+            if (logger.isDebugEnabled()) {
                 ThreadInfo threadInfo = ManagementFactory.getThreadMXBean()
                         .getThreadInfo(auxThreadContext.getThreadId(), Integer.MAX_VALUE);
-                if (threadInfo != null && !auxThreadContext.isCompleted()) {
-                    // still not complete, got a valid stack trace from auxiliary thread
-
-                    // race condition getting/setting the static atomic boolean is ok, at worst it
-                    // logs the message 2x
-                    loggedBackgroundTransactionSuggestion.set(true);
+                if (!auxThreadContext.isCompleted() && threadInfo != null) {
+                    // still not complete and got a valid stack trace from auxiliary thread
                     StringBuilder sb = new StringBuilder();
                     for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
                         sb.append("    ");
                         sb.append(stackTraceElement.toString());
                         sb.append('\n');
                     }
-                    logger.warn("auxiliary thread extended beyond the transaction which started it,"
-                            + " maybe this should be captured as a background transaction instead"
-                            + " -- this message will be logged only once\n{}", sb);
+                    logger.debug("auxiliary thread extended beyond the transaction which started it"
+                            + "\n{}", sb);
                 }
             }
-            // FIXME detach transaction from auxiliary thread context for memory consideration
+            auxThreadContext.detach();
+            i.remove();
         }
         if (immedateTraceStoreRunnable != null) {
             immedateTraceStoreRunnable.cancel();
@@ -601,12 +601,17 @@ public class Transaction {
         return captureTime;
     }
 
-    private boolean readMemoryBarrier() {
+    boolean memoryBarrierRead() {
         return memoryBarrier;
     }
 
-    void writeMemoryBarrier() {
+    void memoryBarrierWrite() {
         memoryBarrier = true;
+    }
+
+    void memoryBarrierReadWrite() {
+        memoryBarrierRead();
+        memoryBarrierWrite();
     }
 
     public static interface CompletionCallback {

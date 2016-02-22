@@ -249,7 +249,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
             @Nullable MessageSupplier messageSupplier, ErrorMessage errorMessage) {
         TraceEntryImpl entry = traceEntryComponent.addErrorEntry(startTick, endTick,
                 messageSupplier, errorMessage);
-        transaction.writeMemoryBarrier();
+        // memory barrier write ensures partial trace capture will see data collected up to now
+        // memory barrier read ensures timely visibility of detach()
+        transaction.memoryBarrierReadWrite();
         return entry;
     }
 
@@ -262,12 +264,16 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
         TraceEntryImpl entry = traceEntryComponent.startAsyncEntry(startTick, messageSupplier,
                 syncTimer, asyncTimer, queryData, queryExecutionCount);
-        transaction.writeMemoryBarrier();
+        // memory barrier write ensures partial trace capture will see data collected up to now
+        // memory barrier read ensures timely visibility of detach()
+        transaction.memoryBarrierReadWrite();
         return entry;
     }
 
     public void captureStackTrace(ThreadInfo threadInfo, int limit) {
         transaction.captureStackTrace(auxiliary, threadInfo, limit);
+        // memory barrier read ensures timely visibility of detach()
+        transaction.memoryBarrierRead();
     }
 
     @Override
@@ -286,7 +292,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
     void popEntry(TraceEntryImpl entry, long endTick) {
         traceEntryComponent.popEntry(entry, endTick);
-        transaction.writeMemoryBarrier();
+        // memory barrier write ensures partial trace capture will see data collected up to now
+        // memory barrier read ensures timely visibility of detach()
+        transaction.memoryBarrierReadWrite();
         if (traceEntryComponent.isCompleted()) {
             if (!auxiliary) {
                 transaction.end(endTick);
@@ -296,6 +304,22 @@ public class ThreadContextImpl implements ThreadContextPlus {
             }
             threadContextHolder.set(null);
         }
+    }
+
+    // detach is called from another thread
+    void detach() {
+        // this synchronization protects against clobbering valid thread context in race condition
+        // where thread context ends naturally and thread re-starts a new thread context quickly
+        // see counterpart to this synchronized block in Transaction.startAuxThreadContext()
+        synchronized (threadContextHolder) {
+            if (threadContextHolder.get() == this) {
+                threadContextHolder.set(null);
+            }
+        }
+        // memory barrier write is needed to ensure the running thread sees that the thread
+        // context holder has been cleared (at least after the thread completes its next trace entry
+        // or profile sample, which both perform memory barrier reads)
+        transaction.memoryBarrierWrite();
     }
 
     private Map<String, QueryData> getOrCreateQueriesForQueryType(String queryType) {

@@ -42,9 +42,9 @@ class TraceEntryComponent {
     private static final Logger logger = LoggerFactory.getLogger(TraceEntryComponent.class);
 
     private final long startTick;
-    // not volatile, so depends on memory barrier in ThreadContextImpl for visibility
+    // not volatile, so depends on memory barrier in Transaction for visibility
     private boolean completed;
-    // not volatile, so depends on memory barrier in ThreadContextImpl for visibility
+    // not volatile, so depends on memory barrier in Transaction for visibility
     private long endTick;
 
     private final ThreadContextImpl threadContext;

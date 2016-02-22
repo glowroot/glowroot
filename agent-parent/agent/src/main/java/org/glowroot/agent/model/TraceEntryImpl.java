@@ -315,7 +315,7 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
         this.errorMessage = errorMessage;
         this.endTick = endTick;
         if (isAsync()) {
-            threadContext.getTransaction().writeMemoryBarrier();
+            threadContext.getTransaction().memoryBarrierWrite();
         } else {
             this.selfNestingLevel--;
             threadContext.popEntry(this, endTick);
