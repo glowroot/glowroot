@@ -95,7 +95,8 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>9.3.7.v20160115</version>
+      <!-- jetty 9 requires JDK 7+ -->
+      <version>8.1.19.v20160209</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

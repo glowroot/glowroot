@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.google.common.base.StandardSystemProperty;
 import com.ning.http.client.AsyncHttpClient;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -47,7 +44,6 @@ public class JettyHandlerIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        assumeJdk8();
         container = Containers.create();
     }
 
@@ -75,11 +71,6 @@ public class JettyHandlerIT {
         assertThat(header.getTransactionName()).isEqualTo("/hello");
     }
 
-    private static void assumeJdk8() {
-        String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
-        Assume.assumeFalse(javaVersion.startsWith("1.6") || javaVersion.startsWith("1.7"));
-    }
-
     public static class ExecuteJettyHandler implements AppUnderTest {
 
         @Override
@@ -87,7 +78,7 @@ public class JettyHandlerIT {
             Server server = new Server(0);
             server.setHandler(new HelloHandler());
             server.start();
-            int port = ((ServerConnector) server.getConnectors()[0]).getLocalPort();
+            int port = server.getConnectors()[0].getLocalPort();
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
             asyncHttpClient.prepareGet("http://localhost:" + port + "/hello").execute().get();
             asyncHttpClient.close();
