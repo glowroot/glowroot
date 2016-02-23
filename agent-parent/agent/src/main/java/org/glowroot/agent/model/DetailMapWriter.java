@@ -116,7 +116,7 @@ class DetailMapWriter {
             Optional<?> val = (Optional<?>) value;
             return val.orNull();
         }
-        if (isUnshadedGuavaOptionalClass(value)) {
+        if (isUnshadedGuavaOptional(value) || isGuavaOptionalInAnotherClassLoader(value)) {
             // this is just for plugin tests that run against shaded glowroot-core
             Class<?> optionalClass = value.getClass().getSuperclass();
             // just tested that super class is not null in condition
@@ -132,9 +132,14 @@ class DetailMapWriter {
         return value;
     }
 
-    private static boolean isUnshadedGuavaOptionalClass(Object value) {
+    private static boolean isUnshadedGuavaOptional(Object value) {
         Class<?> superClass = value.getClass().getSuperclass();
         return superClass != null
                 && superClass.getName().equals(UNSHADED_GUAVA_OPTIONAL_CLASS_NAME);
+    }
+
+    private static boolean isGuavaOptionalInAnotherClassLoader(Object value) {
+        Class<?> superClass = value.getClass().getSuperclass();
+        return superClass != null && superClass.getName().equals(Optional.class.getName());
     }
 }

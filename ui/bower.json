@@ -12,7 +12,7 @@
     "flot.tooltip": "0.8.5",
     "fontawesome": "4.5.0",
     "handlebars": "4.0.5",
-    "jquery": "2.2.0",
+    "jquery": "2.2.1",
     "moment": "2.11.2",
     "sequeljs": "trask/sequeljs#glowroot-0.8",
     "spinjs": "2.3.2",
