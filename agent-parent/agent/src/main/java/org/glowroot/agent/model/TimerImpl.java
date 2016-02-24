@@ -205,6 +205,31 @@ public class TimerImpl implements Timer, CommonTimerImpl {
         }
     }
 
+    // only called after transaction completion
+    @Override
+    public void mergeChildTimersInto2(List<org.glowroot.agent.impl.MutableTimer> mutableTimers) {
+        TimerImpl curr = headChild;
+        while (curr != null) {
+            String currName = curr.getName();
+            boolean extended = curr.isExtended();
+            org.glowroot.agent.impl.MutableTimer matchingChildTimer = null;
+            for (org.glowroot.agent.impl.MutableTimer childTimer : mutableTimers) {
+                if (currName.equals(childTimer.getName()) && extended == childTimer.isExtended()) {
+                    matchingChildTimer = childTimer;
+                    break;
+                }
+            }
+            if (matchingChildTimer == null) {
+                matchingChildTimer = new org.glowroot.agent.impl.MutableTimer(curr.getName(),
+                        curr.isExtended(), 0, 0,
+                        new ArrayList<org.glowroot.agent.impl.MutableTimer>());
+                mutableTimers.add(matchingChildTimer);
+            }
+            matchingChildTimer.merge(curr);
+            curr = curr.nextSibling;
+        }
+    }
+
     // only called by transaction thread
     public TimerImpl startNestedTimer(TimerName timerName) {
         // timer names are guaranteed one instance per name so pointer equality can be used

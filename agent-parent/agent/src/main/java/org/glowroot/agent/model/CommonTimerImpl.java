@@ -31,5 +31,7 @@ public interface CommonTimerImpl {
 
     void mergeChildTimersInto(List<MutableTimer> mutableTimers);
 
+    void mergeChildTimersInto2(List<org.glowroot.agent.impl.MutableTimer> childTimers);
+
     TimerImplSnapshot getSnapshot();
 }

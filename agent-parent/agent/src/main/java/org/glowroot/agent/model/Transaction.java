@@ -22,15 +22,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
@@ -81,12 +78,7 @@ public class Transaction {
     // this is just to limit memory (and also to limit display size of trace)
     private static final long ATTRIBUTE_VALUES_PER_KEY_LIMIT = 10000;
 
-    private final Supplier<UUID> uuid = Suppliers.memoize(new Supplier<UUID>() {
-        @Override
-        public UUID get() {
-            return UUID.randomUUID();
-        }
-    });
+    private volatile @Nullable UUID uuid;
 
     private final long startTime;
     private final long startTick;
@@ -141,9 +133,11 @@ public class Transaction {
 
     private final CompletionCallback completionCallback;
 
-    private final AtomicInteger entryLimitCounter = new AtomicInteger();
-    private final AtomicInteger extraErrorEntryLimitCounter = new AtomicInteger();
-    private final AtomicInteger aggregateQueryLimitCounter = new AtomicInteger();
+    // ideally would use AtomicInteger here, but using plain volatile int as optimization since
+    // it's ok if race condition in limit check
+    private volatile int entryLimitCounter;
+    private volatile int extraErrorEntryLimitCounter;
+    private volatile int aggregateQueryLimitCounter;
 
     private final ThreadContextImpl mainThreadContext;
     // FIXME impose simple max on number of auxiliary thread contexts (AdvancedConfig)
@@ -152,7 +146,6 @@ public class Transaction {
     // (those corresponding to async trace entries)
     // FIXME impose simple max on number of async root timers (AdvancedConfig)
     private volatile @MonotonicNonNull List<AsyncTimerImpl> asyncRootTimers = null;
-    private final Object concurrentListCreationLock = new Object();
 
     private volatile boolean completed;
     private volatile long endTick;
@@ -204,7 +197,10 @@ public class Transaction {
                 ticker, threadContextHolder);
         if (auxThreadContexts == null) {
             // double-checked locking works here because auxThreadContexts is volatile
-            synchronized (concurrentListCreationLock) {
+            //
+            // synchronized on "this" as a micro-optimization just so don't need to create an empty
+            // object to lock on
+            synchronized (this) {
                 if (auxThreadContexts == null) {
                     auxThreadContexts = Lists.newCopyOnWriteArrayList();
                 }
@@ -223,7 +219,18 @@ public class Transaction {
     }
 
     public String getTraceId() {
-        return uuid.get().toString();
+        if (uuid == null) {
+            // double-checked locking works here because uuid is volatile
+            //
+            // synchronized on "this" as a micro-optimization just so don't need to create an empty
+            // object to lock on
+            synchronized (this) {
+                if (uuid == null) {
+                    uuid = UUID.randomUUID();
+                }
+            }
+        }
+        return uuid.toString();
     }
 
     public long getStartTick() {
@@ -343,18 +350,18 @@ public class Transaction {
     }
 
     public boolean allowAnotherEntry() {
-        return entryLimitCounter.getAndIncrement() < maxTraceEntriesPerTransaction;
+        return entryLimitCounter++ < maxTraceEntriesPerTransaction;
     }
 
     public boolean allowAnotherErrorEntry() {
         // use higher entry limit when adding errors, but still need some kind of cap
-        return entryLimitCounter.getAndIncrement() < maxTraceEntriesPerTransaction
-                || extraErrorEntryLimitCounter.getAndIncrement() < 2
+        return entryLimitCounter++ < maxTraceEntriesPerTransaction
+                || extraErrorEntryLimitCounter++ < 2
                         * maxTraceEntriesPerTransaction;
     }
 
     public boolean allowAnotherAggregateQuery() {
-        return aggregateQueryLimitCounter.getAndIncrement() < maxAggregateQueriesPerQueryType
+        return aggregateQueryLimitCounter++ < maxAggregateQueriesPerQueryType
                 * AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER;
     }
 
@@ -538,7 +545,10 @@ public class Transaction {
         AsyncTimerImpl asyncTimer = new AsyncTimerImpl((TimerNameImpl) asyncTimerName, startTick);
         if (asyncRootTimers == null) {
             // double-checked locking works here because auxThreadContexts is volatile
-            synchronized (concurrentListCreationLock) {
+            //
+            // synchronized on "this" as a micro-optimization just so don't need to create an empty
+            // object to lock on
+            synchronized (this) {
                 if (asyncRootTimers == null) {
                     asyncRootTimers = Lists.newCopyOnWriteArrayList();
                 }
@@ -549,7 +559,7 @@ public class Transaction {
     }
 
     boolean isEntryLimitExceeded() {
-        return entryLimitCounter.get() > maxTraceEntriesPerTransaction;
+        return entryLimitCounter++ > maxTraceEntriesPerTransaction;
     }
 
     public void captureStackTrace(boolean auxiliary, ThreadInfo threadInfo, int limit) {

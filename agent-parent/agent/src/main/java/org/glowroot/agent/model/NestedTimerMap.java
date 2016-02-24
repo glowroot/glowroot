@@ -25,11 +25,11 @@ class NestedTimerMap {
     private static final Object CHAINED_KEY = new Object();
 
     // capacity must always be a power of 2, see comments in get() and put()
-    private int capacity = 8;
+    private int capacity = 4;
     private @Nullable Object[] table = new Object[capacity << 1];
 
     private int size = 0;
-    private int threshold = 6; // 0.75 * capacity
+    private int threshold = 3; // 0.75 * capacity
 
     @Nullable
     TimerImpl get(TimerNameImpl key) {

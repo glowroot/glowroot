@@ -62,8 +62,8 @@ public class QueryCollector {
             for (MutableQuery query : entry.getValue().values()) {
                 queries.add(query.toProto());
             }
-            order(queries);
             if (queries.size() > limit) {
+                order(queries);
                 queries = queries.subList(0, limit);
             }
             queriesByType.add(Aggregate.QueriesByType.newBuilder()

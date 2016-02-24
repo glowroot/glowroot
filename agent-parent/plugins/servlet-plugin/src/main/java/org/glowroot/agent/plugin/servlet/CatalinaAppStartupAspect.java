@@ -20,6 +20,7 @@ import javax.annotation.Nullable;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.OptionalThreadContext;
+import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
@@ -30,6 +31,8 @@ import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 // this covers Tomcat, TomEE, Glassfish, JBoss EAP
 public class CatalinaAppStartupAspect {
@@ -59,8 +62,10 @@ public class CatalinaAppStartupAspect {
             } else {
                 transactionName = "Servlet context: " + path;
             }
-            return context.startTransaction("Startup", transactionName,
+            TraceEntry traceEntry = context.startTransaction("Startup", transactionName,
                     MessageSupplier.from(transactionName), timerName);
+            context.setTransactionSlowThreshold(0, MILLISECONDS, Priority.CORE_PLUGIN);
+            return traceEntry;
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {

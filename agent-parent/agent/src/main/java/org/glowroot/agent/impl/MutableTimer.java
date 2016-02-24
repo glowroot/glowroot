@@ -23,7 +23,7 @@ import com.google.common.collect.Lists;
 import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
-class MutableTimer {
+public class MutableTimer {
 
     private final String name;
     private final boolean extended;
@@ -36,7 +36,7 @@ class MutableTimer {
         return new MutableTimer(name, extended, 0, 0, new ArrayList<MutableTimer>());
     }
 
-    private MutableTimer(String name, boolean extended, double totalDurationNanos, long count,
+    public MutableTimer(String name, boolean extended, double totalDurationNanos, long count,
             List<MutableTimer> nestedTimers) {
         this.name = name;
         this.extended = extended;
@@ -45,14 +45,18 @@ class MutableTimer {
         this.childTimers = Lists.newArrayList(nestedTimers);
     }
 
-    String getName() {
+    public String getName() {
         return name;
     }
 
-    void merge(CommonTimerImpl timer) {
+    public boolean isExtended() {
+        return extended;
+    }
+
+    public void merge(CommonTimerImpl timer) {
         count += timer.getCount();
         totalDurationNanos += timer.getTotalNanos();
-
+        timer.mergeChildTimersInto2(childTimers);
     }
 
     Aggregate.Timer toProto() {

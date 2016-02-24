@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import org.glowroot.agent.plugin.jdbc.message.BindParameterList;
 // PreparedStatement values cannot be inspected after they have been set
 class PreparedStatementMirror extends StatementMirror {
 
-    private static final int PARAMETERS_INITIAL_CAPACITY = 20;
+    private static final int PARAMETERS_INITIAL_CAPACITY = 4;
 
     private final String sql;
     // ok for this field to be non-volatile since it is only temporary storage for a single thread

@@ -77,6 +77,11 @@ public class AsyncTimerImpl implements CommonTimerImpl {
     }
 
     @Override
+    public void mergeChildTimersInto2(List<org.glowroot.agent.impl.MutableTimer> mutableTimers) {
+        // async timers have no child timers
+    }
+
+    @Override
     public TimerImplSnapshot getSnapshot() {
         long totalNanos = this.totalNanos;
         boolean active = false;
