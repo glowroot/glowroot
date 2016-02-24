@@ -301,18 +301,6 @@ class TraceCommonService {
             jg.writeFieldName("auxThreadStats");
             writeThreadStats(header.getAuxThreadStats(), jg);
         }
-        List<Trace.GarbageCollectionActivity> gcActivityList = header.getGcActivityList();
-        if (!gcActivityList.isEmpty()) {
-            jg.writeArrayFieldStart("gcActivity");
-            for (Trace.GarbageCollectionActivity gcActivity : gcActivityList) {
-                jg.writeStartObject();
-                jg.writeStringField("collectorName", gcActivity.getCollectorName());
-                jg.writeNumberField("totalMillis", gcActivity.getTotalMillis());
-                jg.writeNumberField("count", gcActivity.getCount());
-                jg.writeEndObject();
-            }
-            jg.writeEndArray();
-        }
         jg.writeNumberField("entryCount", header.getEntryCount());
         boolean entryLimitExceeded = header.getEntryLimitExceeded();
         if (entryLimitExceeded) {

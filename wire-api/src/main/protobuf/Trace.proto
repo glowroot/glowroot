@@ -35,13 +35,12 @@ message Trace {
                                           // be greater than time in parent
     ThreadStats main_thread_stats = 17;
     ThreadStats aux_thread_stats = 18;
-    repeated GarbageCollectionActivity gc_activity = 19;
-    int64 entry_count = 20;
-    bool entry_limit_exceeded = 21;
-    int64 main_thread_profile_sample_count = 22;
-    bool main_thread_profile_sample_limit_exceeded = 23;
-    int64 aux_thread_profile_sample_count = 24;
-    bool aux_thread_profile_sample_limit_exceeded = 25;
+    int64 entry_count = 19;
+    bool entry_limit_exceeded = 20;
+    int64 main_thread_profile_sample_count = 21;
+    bool main_thread_profile_sample_limit_exceeded = 22;
+    int64 aux_thread_profile_sample_count = 23;
+    bool aux_thread_profile_sample_limit_exceeded = 24;
   }
 
   message Attribute {

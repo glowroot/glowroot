@@ -108,7 +108,6 @@ public class Transaction {
     private volatile @Nullable ErrorMessage errorMessage;
 
     private final boolean captureThreadStats;
-    private final GcActivityComponent gcActivityComponent;
 
     private final int maxTraceEntriesPerTransaction;
     private final int maxAggregateQueriesPerQueryType;
@@ -181,7 +180,6 @@ public class Transaction {
         this.transactionType = transactionType;
         this.transactionName = transactionName;
         this.captureThreadStats = captureThreadStats;
-        gcActivityComponent = new GcActivityComponent();
         this.maxTraceEntriesPerTransaction = maxTraceEntriesPerTransaction;
         this.maxAggregateQueriesPerQueryType = maxAggregateQueriesPerQueryType;
         this.completionCallback = completionCallback;
@@ -332,11 +330,6 @@ public class Transaction {
             return ImmutableList.of(ThreadStats.NA);
         }
         return Iterables.transform(auxThreadContexts, GetThreadStatsFunction.INSTANCE);
-    }
-
-    // can be called from a non-transaction thread
-    List<Trace.GarbageCollectionActivity> getGcActivity() {
-        return gcActivityComponent.getGcActivity();
     }
 
     public void mergeQueriesInto(QueryCollector queries) {
@@ -605,7 +598,6 @@ public class Transaction {
     // called by the transaction thread
     public void onCompleteWillStoreTrace(long captureTime) {
         this.captureTime = captureTime;
-        gcActivityComponent.onComplete();
     }
 
     long getCaptureTime() {

@@ -326,17 +326,6 @@
     </div>
   {{/ifNotNA}}
 {{/if}}
-{{#ifNonEmptyObject gcActivity}}
-  <div class="gt-bold gt-breakdown-header">
-    GC activity
-  </div>
-  {{#each gcActivity}}
-    <div class="gt-indent2">
-      <span>{{collectorName}}:</span>
-      {{totalMillis}} milliseconds ({{count}} collection{{#ifNotOne count}}s{{/ifNotOne}})
-    </div>
-  {{/each}}
-{{/ifNonEmptyObject}}
 <br>
 {{#ifExistenceYes entriesExistence}}
   <div>

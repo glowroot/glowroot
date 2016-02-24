@@ -161,7 +161,6 @@ public class TraceCreator {
                 builder.setAuxThreadStats(auxThreadStatsProto);
             }
         }
-        builder.addAllGcActivity(transaction.getGcActivity());
         builder.setEntryCount(entryCount);
         builder.setEntryLimitExceeded(transaction.isEntryLimitExceeded());
         builder.setMainThreadProfileSampleCount(mainProfileSampleCount);
