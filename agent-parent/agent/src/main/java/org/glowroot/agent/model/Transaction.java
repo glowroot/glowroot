@@ -18,7 +18,6 @@ package org.glowroot.agent.model;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -631,14 +630,11 @@ public class Transaction {
         if (auxThreadContexts == null) {
             return;
         }
-        Iterator<ThreadContextImpl> i = auxThreadContexts.iterator();
-        while (i.hasNext()) {
-            ThreadContextImpl auxThreadContext = i.next();
+        for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
             if (auxThreadContext.isCompleted()) {
                 continue;
             }
             auxThreadContext.detach();
-            i.remove();
             if (logger.isDebugEnabled()) {
                 ThreadInfo threadInfo = ManagementFactory.getThreadMXBean()
                         .getThreadInfo(auxThreadContext.getThreadId(), Integer.MAX_VALUE);
