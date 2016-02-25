@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
@@ -137,6 +138,8 @@ public class Transaction {
     private volatile int entryLimitCounter;
     private volatile int extraErrorEntryLimitCounter;
     private volatile int aggregateQueryLimitCounter;
+
+    private volatile @Nullable AtomicInteger throwableFrameLimitCounter;
 
     private final ThreadContextImpl mainThreadContext;
     // FIXME impose simple max on number of auxiliary thread contexts (AdvancedConfig)
@@ -497,9 +500,9 @@ public class Transaction {
         }
     }
 
-    public void setError(ErrorMessage errorMessage) {
+    public void setError(@Nullable String message, @Nullable Throwable t) {
         if (this.errorMessage == null) {
-            this.errorMessage = errorMessage;
+            this.errorMessage = ErrorMessage.from(message, t, getThrowableFrameLimitCounter());
         }
     }
 
@@ -611,6 +614,21 @@ public class Transaction {
 
     long getCaptureTime() {
         return captureTime;
+    }
+
+    AtomicInteger getThrowableFrameLimitCounter() {
+        if (throwableFrameLimitCounter == null) {
+            // double-checked locking works here because throwableFrameLimitCounter is volatile
+            //
+            // synchronized on "this" as a micro-optimization just so don't need to create an empty
+            // object to lock on
+            synchronized (this) {
+                if (throwableFrameLimitCounter == null) {
+                    throwableFrameLimitCounter = new AtomicInteger();
+                }
+            }
+        }
+        return throwableFrameLimitCounter;
     }
 
     boolean memoryBarrierRead() {

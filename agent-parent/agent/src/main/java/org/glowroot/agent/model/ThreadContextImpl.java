@@ -456,17 +456,17 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public void addErrorEntry(Throwable t) {
-        addErrorEntryInternal(ErrorMessage.from(t));
+        addErrorEntryInternal(null, t);
     }
 
     @Override
     public void addErrorEntry(@Nullable String message) {
-        addErrorEntryInternal(ErrorMessage.from(message));
+        addErrorEntryInternal(message, null);
     }
 
     @Override
     public void addErrorEntry(@Nullable String message, Throwable t) {
-        addErrorEntryInternal(ErrorMessage.from(message, t));
+        addErrorEntryInternal(message, t);
     }
 
     @Override
@@ -487,7 +487,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public void setTransactionError(Throwable t) {
-        transaction.setError(ErrorMessage.from(t));
+        transaction.setError(null, t);
     }
 
     @Override
@@ -495,12 +495,12 @@ public class ThreadContextImpl implements ThreadContextPlus {
         if (Strings.isNullOrEmpty(message)) {
             return;
         }
-        transaction.setError(ErrorMessage.from(message));
+        transaction.setError(message, null);
     }
 
     @Override
     public void setTransactionError(@Nullable String message, Throwable t) {
-        transaction.setError(ErrorMessage.from(message, t));
+        transaction.setError(message, t);
     }
 
     @Override
@@ -567,13 +567,15 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 queryText, queryExecutionCount, startTick);
     }
 
-    private void addErrorEntryInternal(ErrorMessage errorMessage) {
+    private void addErrorEntryInternal(@Nullable String message, @Nullable Throwable t) {
         // use higher entry limit when adding errors, but still need some kind of cap
         if (transaction.allowAnotherErrorEntry()) {
             long currTick = ticker.read();
+            ErrorMessage errorMessage =
+                    ErrorMessage.from(message, t, transaction.getThrowableFrameLimitCounter());
             org.glowroot.agent.model.TraceEntryImpl entry =
                     addErrorEntry(currTick, currTick, null, errorMessage);
-            if (errorMessage.throwable() == null) {
+            if (t == null) {
                 StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
                 // need to strip back a few stack calls:
                 // skip i=0 which is "java.lang.Thread.getStackTrace()"
@@ -667,27 +669,29 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
         @Override
         public void endWithError(Throwable t) {
-            endWithErrorInternal(ErrorMessage.from(t));
+            endWithErrorInternal(null, t);
         }
 
         @Override
         public void endWithError(@Nullable String message) {
-            endWithErrorInternal(ErrorMessage.from(message));
+            endWithErrorInternal(message, null);
         }
 
         @Override
         public void endWithError(@Nullable String message, Throwable t) {
-            endWithErrorInternal(ErrorMessage.from(message, t));
+            endWithErrorInternal(message, t);
         }
 
-        private void endWithErrorInternal(ErrorMessage errorMessage) {
+        private void endWithErrorInternal(@Nullable String message, @Nullable Throwable t) {
             long endTick = ticker.read();
             endInternal(endTick);
             if (transaction.allowAnotherErrorEntry()) {
+                ErrorMessage errorMessage =
+                        ErrorMessage.from(message, t, transaction.getThrowableFrameLimitCounter());
                 // entry won't be nested properly, but at least the error will get captured
                 org.glowroot.agent.model.TraceEntryImpl entry =
                         addErrorEntry(startTick, endTick, messageSupplier, errorMessage);
-                if (errorMessage.throwable() == null) {
+                if (t == null) {
                     StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
                     // need to strip back a few stack calls:
                     // skip i=0 which is "java.lang.Thread.getStackTrace()"

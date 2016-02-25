@@ -18,6 +18,7 @@ package org.glowroot.agent.model;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 
@@ -32,20 +33,28 @@ import org.glowroot.wire.api.model.Proto;
 @Styles.AllParameters
 public abstract class ErrorMessage {
 
+    private static final int TRANSACTION_THROWABLE_FRAME_LIMIT;
+
+    static {
+        TRANSACTION_THROWABLE_FRAME_LIMIT =
+                Integer.getInteger("glowroot.transaction.throwable.frame.limit", 100000);
+    }
+
     public abstract String message();
     public abstract @Nullable Proto.Throwable throwable();
 
-    public static ErrorMessage from(Throwable t) {
-        return from("", t);
-    }
-
-    // accepts null message so callers don't have to check if passing it in from elsewhere
-    public static ErrorMessage from(@Nullable String message) {
-        return ImmutableErrorMessage.of(Strings.nullToEmpty(message), null);
-    }
-
     // accepts null values so callers don't have to check if passing it in from elsewhere
-    public static ErrorMessage from(@Nullable String message, Throwable t) {
+    public static ErrorMessage from(@Nullable String message, @Nullable Throwable t,
+            AtomicInteger transactionThrowableFrameCount) {
+        if (t == null) {
+            return ImmutableErrorMessage.of(Strings.nullToEmpty(message), null);
+        } else {
+            return fromThrowable(message, t, transactionThrowableFrameCount);
+        }
+    }
+
+    private static ErrorMessage fromThrowable(@Nullable String message, Throwable t,
+            AtomicInteger transactionThrowableFrameCount) {
         String msg = Strings.nullToEmpty(message);
         if (msg.isEmpty()) {
             msg = Strings.nullToEmpty(t.getMessage());
@@ -53,29 +62,37 @@ public abstract class ErrorMessage {
         if (msg.isEmpty()) {
             msg = Strings.nullToEmpty(t.getClass().getName());
         }
-        return ImmutableErrorMessage.of(msg, buildThrowableInfo(t, null));
+        return ImmutableErrorMessage.of(msg,
+                buildThrowableInfo(t, null, transactionThrowableFrameCount));
     }
 
+    // recursionDepth is important because protobuf limits to 100 total levels of nesting by default
     private static Proto.Throwable buildThrowableInfo(Throwable t,
-            @Nullable List<StackTraceElement> causedStackTrace) {
+            @Nullable List<StackTraceElement> causedStackTrace,
+            AtomicInteger transactionThrowableFrameCount) {
         int framesInCommonWithEnclosing = 0;
-        ImmutableList<StackTraceElement> stackTrace = ImmutableList.copyOf(t.getStackTrace());
-        if (causedStackTrace != null) {
-            ListIterator<StackTraceElement> i = stackTrace.listIterator(stackTrace.size());
-            ListIterator<StackTraceElement> j =
-                    causedStackTrace.listIterator(causedStackTrace.size());
-            while (i.hasPrevious() && j.hasPrevious()) {
-                StackTraceElement element = i.previous();
-                StackTraceElement causedElement = j.previous();
-                if (!element.equals(causedElement)) {
-                    break;
+        ImmutableList<StackTraceElement> stackTrace = ImmutableList.of();
+        if (transactionThrowableFrameCount.get() < TRANSACTION_THROWABLE_FRAME_LIMIT) {
+            stackTrace = ImmutableList.copyOf(t.getStackTrace());
+            if (causedStackTrace != null) {
+                ListIterator<StackTraceElement> i = stackTrace.listIterator(stackTrace.size());
+                ListIterator<StackTraceElement> j =
+                        causedStackTrace.listIterator(causedStackTrace.size());
+                while (i.hasPrevious() && j.hasPrevious()) {
+                    StackTraceElement element = i.previous();
+                    StackTraceElement causedElement = j.previous();
+                    if (!element.equals(causedElement)) {
+                        break;
+                    }
+                    framesInCommonWithEnclosing++;
                 }
-                framesInCommonWithEnclosing++;
+                if (framesInCommonWithEnclosing > 0) {
+                    // strip off common frames
+                    stackTrace =
+                            stackTrace.subList(0, stackTrace.size() - framesInCommonWithEnclosing);
+                }
             }
-            if (framesInCommonWithEnclosing > 0) {
-                // strip off common frames
-                stackTrace = stackTrace.subList(0, stackTrace.size() - framesInCommonWithEnclosing);
-            }
+            transactionThrowableFrameCount.addAndGet(stackTrace.size());
         }
         Proto.Throwable.Builder builder = Proto.Throwable.newBuilder()
                 .setClassName(t.getClass().getName());
@@ -88,10 +105,16 @@ public abstract class ErrorMessage {
         }
         builder.setFramesInCommonWithEnclosing(framesInCommonWithEnclosing);
         Throwable cause = t.getCause();
-        if (cause != null) {
+        if (cause != null
+                && transactionThrowableFrameCount.get() > TRANSACTION_THROWABLE_FRAME_LIMIT) {
+            builder.setCause(Proto.Throwable.newBuilder()
+                    .setMessage("Throwable frame capture limit exceeded")
+                    .build());
+        } else if (cause != null) {
             // pass t's original stack trace to construct the nested cause
             // (not stackTraces, which now has common frames removed)
-            builder.setCause(buildThrowableInfo(cause, Arrays.asList(t.getStackTrace())));
+            builder.setCause(buildThrowableInfo(cause, Arrays.asList(t.getStackTrace()),
+                    transactionThrowableFrameCount));
         }
         return builder.build();
     }

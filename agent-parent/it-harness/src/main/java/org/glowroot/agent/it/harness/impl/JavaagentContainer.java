@@ -329,7 +329,13 @@ public class JavaagentContainer implements Container {
         String javaExecutable = StandardSystemProperty.JAVA_HOME.value() + File.separator + "bin"
                 + File.separator + "java";
         command.add(javaExecutable);
-        command.addAll(extraJvmArgs);
+        boolean hasXmx = false;
+        for (String extraJvmArg : extraJvmArgs) {
+            command.add(extraJvmArg);
+            if (extraJvmArg.startsWith("-Xmx")) {
+                hasXmx = true;
+            }
+        }
         // it is important for jacoco javaagent to be prior to glowroot javaagent so that jacoco
         // will use original class bytes to form its class id at runtime which will then match up
         // with the class id at analysis time
@@ -412,7 +418,9 @@ public class JavaagentContainer implements Container {
         if (sourceOfRandomness != null) {
             command.add("-Djava.security.egd=" + sourceOfRandomness);
         }
-        command.add("-Xmx" + Runtime.getRuntime().maxMemory());
+        if (!hasXmx) {
+            command.add("-Xmx" + Runtime.getRuntime().maxMemory());
+        }
         for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
             Object keyObject = entry.getKey();
             if (!(keyObject instanceof String)) {

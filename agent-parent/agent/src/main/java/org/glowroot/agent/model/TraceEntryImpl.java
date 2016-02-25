@@ -200,17 +200,17 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
 
     @Override
     public void endWithError(Throwable t) {
-        endWithErrorInternal(ErrorMessage.from(t));
+        endWithErrorInternal(null, t);
     }
 
     @Override
     public void endWithError(@Nullable String message) {
-        endWithErrorInternal(ErrorMessage.from(message));
+        endWithErrorInternal(message, null);
     }
 
     @Override
     public void endWithError(@Nullable String message, Throwable t) {
-        endWithErrorInternal(ErrorMessage.from(message, t));
+        endWithErrorInternal(message, t);
     }
 
     // for async trace entries, extend must be called by the same thread that started the async
@@ -285,11 +285,13 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
         return asyncTimer != null;
     }
 
-    private void endWithErrorInternal(ErrorMessage errorMessage) {
+    private void endWithErrorInternal(@Nullable String message, @Nullable Throwable t) {
+        ErrorMessage errorMessage = ErrorMessage.from(message, t,
+                threadContext.getTransaction().getThrowableFrameLimitCounter());
         endInternal(ticker.read(), errorMessage);
         // it is not helpful to capture stack trace at end of async trace entry since it is
         // ended by a different thread (and by not capturing, it reduces thread safety needs)
-        if (!isAsync() && errorMessage.throwable() == null) {
+        if (!isAsync() && t == null) {
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
             // need to strip back a few stack calls:
             // skip i=0 which is "java.lang.Thread.getStackTrace()"

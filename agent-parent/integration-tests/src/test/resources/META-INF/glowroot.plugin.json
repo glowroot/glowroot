@@ -122,6 +122,16 @@
       "captureKind": "trace-entry",
       "timerName": "coverage",
       "traceEntryMessageTemplate": "Coverage put: {{0}}"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.StackOverflowTester",
+      "methodName": "recurse5",
+      "methodParameterTypes": [
+      ],
+      "captureKind": "trace-entry",
+      "traceEntryCaptureSelfNested": true,
+      "timerName": "recurse",
+      "traceEntryMessageTemplate": "Recurse"
     }
   ],
   "aspects": [
