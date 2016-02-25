@@ -27,4 +27,6 @@
   <root level="warn">
     <appender-ref ref="FILE" />
   </root>
+  <!-- this is needed to deal with a sporadic error message -->
+  <logger name="org.eclipse.jetty.util.thread.QueuedThreadPool" level="error" />
 </configuration>
