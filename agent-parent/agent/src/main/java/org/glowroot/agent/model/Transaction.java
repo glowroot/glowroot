@@ -580,7 +580,7 @@ public class Transaction {
                 }
             }
             auxThreadContext.detach();
-            i.remove();
+//            i.remove();
         }
         if (immedateTraceStoreRunnable != null) {
             immedateTraceStoreRunnable.cancel();
