@@ -219,6 +219,12 @@ public class ControllerIT {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
             asyncHttpClient.prepareGet("http://localhost:" + port + url).execute().get();
             asyncHttpClient.close();
+            // spring still does a bit of work after the response is concluded,
+            // see org.springframework.web.servlet.FrameworkServlet.publishRequestHandledEvent(),
+            // so give a bit of time here, otherwise end up with sporadic test failures due to
+            // ERROR logged by org.apache.catalina.loader.WebappClassLoaderBase, e.g.
+            // "The web application [] is still processing a request that has yet to finish"
+            Thread.sleep(200);
             tomcat.stop();
             tomcat.destroy();
         }
