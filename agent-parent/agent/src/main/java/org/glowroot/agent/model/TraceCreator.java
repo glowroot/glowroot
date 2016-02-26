@@ -51,7 +51,7 @@ public class TraceCreator {
 
     public static Trace.Header createPartialTraceHeader(Transaction transaction, long captureTime,
             long captureTick) throws IOException {
-        long entryCount = getEntryCount(transaction.getEntriesProtobuf(captureTick));
+        int entryCount = transaction.getEntriesProtobuf(captureTick).size();
         long mainThreadProfileSampleCount =
                 getProfileSampleCount(transaction.getMainThreadProfileProtobuf());
         long auxThreadProfileSampleCount =
@@ -63,7 +63,7 @@ public class TraceCreator {
 
     public static Trace.Header createCompletedTraceHeader(Transaction transaction)
             throws IOException {
-        long entryCount = getEntryCount(transaction.getEntriesProtobuf(Long.MAX_VALUE));
+        int entryCount = transaction.getEntriesProtobuf(Long.MAX_VALUE).size();
         long mainProfileSampleCount =
                 getProfileSampleCount(transaction.getMainThreadProfileProtobuf());
         long auxProfileSampleCount =
@@ -80,7 +80,7 @@ public class TraceCreator {
     private static Trace createFullTrace(Transaction transaction, boolean slow, boolean partial,
             long captureTime, long captureTick) throws IOException {
         List<Trace.Entry> entries = transaction.getEntriesProtobuf(captureTick);
-        long entryCount = getEntryCount(entries);
+        int entryCount = entries.size();
         Profile mainThreadProfile = transaction.getMainThreadProfileProtobuf();
         long mainThreadProfileSampleCount = getProfileSampleCount(mainThreadProfile);
         Profile auxThreadProfile = transaction.getAuxThreadProfileProtobuf();
@@ -101,7 +101,7 @@ public class TraceCreator {
     }
 
     private static Trace.Header createTraceHeader(Transaction transaction, boolean slow,
-            boolean partial, long captureTime, long captureTick, long entryCount,
+            boolean partial, long captureTime, long captureTick, int entryCount,
             long mainProfileSampleCount, long auxProfileSampleCount) throws IOException {
         Trace.Header.Builder builder = Trace.Header.newBuilder();
         builder.setPartial(partial);
@@ -198,14 +198,6 @@ public class TraceCreator {
                 toBeMergedRootTimer.isExtended());
         rootTimer.merge(toBeMergedRootTimer);
         rootTimers.add(rootTimer);
-    }
-
-    private static long getEntryCount(List<Trace.Entry> entries) {
-        long entryCount = entries.size();
-        for (Trace.Entry entry : entries) {
-            entryCount += getEntryCount(entry.getChildEntryList());
-        }
-        return entryCount;
     }
 
     private static long getProfileSampleCount(@Nullable Profile profile) {

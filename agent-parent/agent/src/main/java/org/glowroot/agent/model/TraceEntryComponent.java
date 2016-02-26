@@ -227,18 +227,23 @@ class TraceEntryComponent {
     private static List<Trace.Entry> getProtobufChildEntries(TraceEntryImpl entry,
             Multimap<TraceEntryImpl, TraceEntryImpl> parentChildMap, long transactionStartTick,
             long captureTick) {
+        List<Trace.Entry> entries = Lists.newArrayList();
+        addProtobufChildEntries(entry, parentChildMap, transactionStartTick, captureTick, 0,
+                entries);
+        return entries;
+    }
+
+    private static void addProtobufChildEntries(TraceEntryImpl entry,
+            Multimap<TraceEntryImpl, TraceEntryImpl> parentChildMap, long transactionStartTick,
+            long captureTick, int depth, List<Trace.Entry> entries) {
         if (!parentChildMap.containsKey(entry)) {
-            return ImmutableList.of();
+            return;
         }
         Collection<TraceEntryImpl> childEntries = parentChildMap.get(entry);
-        List<Trace.Entry> protobufChildEntries =
-                Lists.newArrayListWithCapacity(childEntries.size());
         for (TraceEntryImpl childEntry : childEntries) {
-            List<Trace.Entry> subChildEntries = getProtobufChildEntries(childEntry, parentChildMap,
-                    transactionStartTick, captureTick);
-            protobufChildEntries
-                    .add(childEntry.toProto(transactionStartTick, captureTick, subChildEntries));
+            entries.add(childEntry.toProto(depth, transactionStartTick, captureTick));
+            addProtobufChildEntries(childEntry, parentChildMap, transactionStartTick, captureTick,
+                    depth + 1, entries);
         }
-        return protobufChildEntries;
     }
 }

@@ -24,6 +24,9 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
@@ -197,15 +200,32 @@ class TraceCommonService {
         return profile;
     }
 
-    private static @Nullable String toJson(List<Trace.Entry> entries) throws IOException {
+    @VisibleForTesting
+    static @Nullable String toJson(List<Trace.Entry> entries) throws IOException {
         if (entries.isEmpty()) {
             return null;
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartArray();
-        for (Trace.Entry entry : entries) {
+        PeekingIterator<Trace.Entry> i = Iterators.peekingIterator(entries.iterator());
+        while (i.hasNext()) {
+            Trace.Entry entry = i.next();
+            int depth = entry.getDepth();
+            jg.writeStartObject();
             writeJson(entry, jg);
+            int nextDepth = i.hasNext() ? i.peek().getDepth() : 0;
+            if (nextDepth > depth) {
+                jg.writeArrayFieldStart("childEntries");
+            } else if (nextDepth < depth) {
+                jg.writeEndObject();
+                for (int j = depth; j > nextDepth; j--) {
+                    jg.writeEndArray();
+                    jg.writeEndObject();
+                }
+            } else {
+                jg.writeEndObject();
+            }
         }
         jg.writeEndArray();
         jg.close();
@@ -331,7 +351,6 @@ class TraceCommonService {
     }
 
     private static void writeJson(Trace.Entry entry, JsonGenerator jg) throws IOException {
-        jg.writeStartObject();
         jg.writeNumberField("startOffsetNanos", entry.getStartOffsetNanos());
         jg.writeNumberField("durationNanos", entry.getDurationNanos());
         if (entry.getActive()) {
@@ -356,15 +375,6 @@ class TraceCommonService {
             jg.writeFieldName("error");
             writeError(entry.getError(), jg);
         }
-        List<Trace.Entry> childEntries = entry.getChildEntryList();
-        if (!childEntries.isEmpty()) {
-            jg.writeArrayFieldStart("childEntries");
-            for (Trace.Entry childEntry : childEntries) {
-                writeJson(childEntry, jg);
-            }
-            jg.writeEndArray();
-        }
-        jg.writeEndObject();
     }
 
     private static void writeDetailEntries(List<Trace.DetailEntry> detailEntries, JsonGenerator jg)

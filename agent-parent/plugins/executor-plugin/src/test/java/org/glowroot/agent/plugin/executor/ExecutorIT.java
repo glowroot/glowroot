@@ -146,17 +146,25 @@ public class ExecutorIT {
         assertThat(trace.hasAuxThreadProfile()).isTrue();
         assertThat(header.getAuxThreadProfileSampleCount()).isGreaterThanOrEqualTo(1);
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(3);
-        checkEntry(entries.get(0));
-        checkEntry(entries.get(1));
-        checkEntry(entries.get(2));
-    }
-
-    private static void checkEntry(Trace.Entry entry) {
-        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
-        assertThat(entry.getChildEntryCount()).isEqualTo(1);
-        assertThat(entry.getChildEntry(0).getMessage())
-                .isEqualTo("trace marker / CreateTraceEntry");
+        assertThat(entries).hasSize(6);
+        Trace.Entry entry1 = entries.get(0);
+        assertThat(entry1.getDepth()).isEqualTo(0);
+        assertThat(entry1.getMessage()).isEqualTo("auxiliary thread");
+        Trace.Entry entry2 = entries.get(1);
+        assertThat(entry2.getDepth()).isEqualTo(1);
+        assertThat(entry2.getMessage()).isEqualTo("trace marker / CreateTraceEntry");
+        Trace.Entry entry3 = entries.get(2);
+        assertThat(entry3.getDepth()).isEqualTo(0);
+        assertThat(entry3.getMessage()).isEqualTo("auxiliary thread");
+        Trace.Entry entry4 = entries.get(3);
+        assertThat(entry4.getDepth()).isEqualTo(1);
+        assertThat(entry4.getMessage()).isEqualTo("trace marker / CreateTraceEntry");
+        Trace.Entry entry5 = entries.get(4);
+        assertThat(entry5.getDepth()).isEqualTo(0);
+        assertThat(entry5.getMessage()).isEqualTo("auxiliary thread");
+        Trace.Entry entry6 = entries.get(5);
+        assertThat(entry6.getDepth()).isEqualTo(1);
+        assertThat(entry6.getMessage()).isEqualTo("trace marker / CreateTraceEntry");
     }
 
     public static class DoSomeCallableWork implements AppUnderTest, TransactionMarker {

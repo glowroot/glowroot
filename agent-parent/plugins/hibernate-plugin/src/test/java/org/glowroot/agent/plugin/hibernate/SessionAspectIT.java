@@ -77,7 +77,6 @@ public class SessionAspectIT {
         Trace.Entry entry = entries.get(0);
         assertThat(entry.getMessage())
                 .isEqualTo("hibernate save: org.glowroot.agent.plugin.hibernate.Employee");
-        assertThat(entry.getChildEntryCount()).isZero();
     }
 
     @Test
@@ -91,7 +90,6 @@ public class SessionAspectIT {
         Trace.Entry entry = entries.get(0);
         assertThat(entry.getMessage())
                 .isEqualTo("hibernate save: org.glowroot.agent.plugin.hibernate.Employee");
-        assertThat(entry.getChildEntryCount()).isZero();
     }
 
     @Test
@@ -105,7 +103,6 @@ public class SessionAspectIT {
         Trace.Entry entry = entries.get(0);
         assertThat(entry.getMessage())
                 .isEqualTo("hibernate saveOrUpdate: org.glowroot.agent.plugin.hibernate.Employee");
-        assertThat(entry.getChildEntryCount()).isZero();
     }
 
     @Test
@@ -119,7 +116,6 @@ public class SessionAspectIT {
         Trace.Entry entry = entries.get(0);
         assertThat(entry.getMessage())
                 .isEqualTo("hibernate saveOrUpdate: org.glowroot.agent.plugin.hibernate.Employee");
-        assertThat(entry.getChildEntryCount()).isZero();
     }
 
     @Test
@@ -133,7 +129,6 @@ public class SessionAspectIT {
         Trace.Entry entry = entries.get(1);
         assertThat(entry.getMessage())
                 .isEqualTo("hibernate update: org.glowroot.agent.plugin.hibernate.Employee");
-        assertThat(entry.getChildEntryCount()).isZero();
     }
 
     @Test
@@ -147,7 +142,6 @@ public class SessionAspectIT {
         Trace.Entry entry = entries.get(1);
         assertThat(entry.getMessage())
                 .isEqualTo("hibernate update: org.glowroot.agent.plugin.hibernate.Employee");
-        assertThat(entry.getChildEntryCount()).isZero();
     }
 
     @Test
@@ -187,7 +181,6 @@ public class SessionAspectIT {
         Trace.Entry entry = entries.get(0);
         assertThat(entry.getMessage())
                 .isEqualTo("hibernate persist: org.glowroot.agent.plugin.hibernate.Employee");
-        assertThat(entry.getChildEntryCount()).isZero();
     }
 
     @Test
@@ -201,7 +194,6 @@ public class SessionAspectIT {
         Trace.Entry entry = entries.get(0);
         assertThat(entry.getMessage())
                 .isEqualTo("hibernate persist: org.glowroot.agent.plugin.hibernate.Employee");
-        assertThat(entry.getChildEntryCount()).isZero();
     }
 
     @Test
@@ -215,7 +207,6 @@ public class SessionAspectIT {
         Trace.Entry entry = entries.get(1);
         assertThat(entry.getMessage())
                 .isEqualTo("hibernate delete: org.glowroot.agent.plugin.hibernate.Employee");
-        assertThat(entry.getChildEntryCount()).isZero();
     }
 
     @Test
@@ -229,7 +220,6 @@ public class SessionAspectIT {
         Trace.Entry entry = entries.get(1);
         assertThat(entry.getMessage())
                 .isEqualTo("hibernate delete: org.glowroot.agent.plugin.hibernate.Employee");
-        assertThat(entry.getChildEntryCount()).isZero();
     }
 
     @Test
@@ -244,7 +234,6 @@ public class SessionAspectIT {
                 .isEqualTo("hibernate merge: org.glowroot.agent.plugin.hibernate.Employee");
         Trace.Entry entry = entries.get(1);
         assertThat(entry.getMessage()).isEqualTo("hibernate flush");
-        assertThat(entry.getChildEntryCount()).isZero();
     }
 
     @Test
@@ -259,7 +248,6 @@ public class SessionAspectIT {
                 .isEqualTo("hibernate save: org.glowroot.agent.plugin.hibernate.Employee");
         Trace.Entry entry = entries.get(1);
         assertThat(entry.getMessage()).isEqualTo("hibernate commit");
-        assertThat(entry.getChildEntryCount()).isZero();
     }
 
     @Test
@@ -274,7 +262,6 @@ public class SessionAspectIT {
                 .isEqualTo("hibernate save: org.glowroot.agent.plugin.hibernate.Employee");
         Trace.Entry entry = entries.get(1);
         assertThat(entry.getMessage()).isEqualTo("hibernate rollback");
-        assertThat(entry.getChildEntryCount()).isZero();
     }
 
     public abstract static class DoWithSession implements AppUnderTest, TransactionMarker {

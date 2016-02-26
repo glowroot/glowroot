@@ -73,15 +73,16 @@ public class ErrorCaptureIT {
         assertThat(header.hasError()).isTrue();
         assertThat(header.getError().getMessage()).isEqualTo(RuntimeException.class.getName());
         assertThat(header.getError().hasException()).isTrue();
-        assertThat(entries).hasSize(1);
+        assertThat(entries).hasSize(3);
         Trace.Entry entry1 = entries.get(0);
         assertThat(entry1.hasError()).isFalse();
-        assertThat(entry1.getChildEntryList()).hasSize(1);
-        Trace.Entry entry2 = entry1.getChildEntryList().get(0);
+        assertThat(entry1.getDepth()).isEqualTo(0);
+        Trace.Entry entry2 = entries.get(1);
         assertThat(entry2.hasError()).isFalse();
-        assertThat(entry2.getChildEntryList()).hasSize(1);
-        Trace.Entry entry3 = entry2.getChildEntryList().get(0);
+        assertThat(entry2.getDepth()).isEqualTo(1);
+        Trace.Entry entry3 = entries.get(2);
         assertThat(entry3.hasError()).isFalse();
+        assertThat(entry3.getDepth()).isEqualTo(2);
     }
 
     @Test
@@ -92,12 +93,14 @@ public class ErrorCaptureIT {
         // then
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(trace.getHeader().hasError()).isFalse();
-        assertThat(entries).hasSize(1);
-        List<Trace.Entry> childEntries = entries.get(0).getChildEntryList();
-        assertThat(childEntries).hasSize(1);
-        assertThat(childEntries.get(0).getError().getMessage()).isNotEmpty();
+        assertThat(entries).hasSize(2);
+        Trace.Entry entry1 = entries.get(0);
+        assertThat(entry1.getDepth()).isEqualTo(0);
+        Trace.Entry entry2 = entries.get(1);
+        assertThat(entry2.getDepth()).isEqualTo(1);
+        assertThat(entry2.getError().getMessage()).isNotEmpty();
         List<Proto.StackTraceElement> stackTraceElements =
-                childEntries.get(0).getLocationStackTraceElementList();
+                entry2.getLocationStackTraceElementList();
         assertThat(stackTraceElements.get(0).getClassName()).isEqualTo(LogError.class.getName());
         assertThat(stackTraceElements.get(0).getMethodName()).isEqualTo("addNestedErrorEntry");
         assertThat(stackTraceElements.get(0).getFileName()).isEqualTo("LogError.java");
@@ -160,14 +163,13 @@ public class ErrorCaptureIT {
         // then
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(trace.getHeader().hasError()).isFalse();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("outer entry to test nesting level");
-        List<Trace.Entry> childEntries = entry.getChildEntryList();
-        assertThat(childEntries).hasSize(1);
-        Trace.Entry childEntry = childEntries.get(0);
-        assertThat(childEntry.getError().getMessage())
-                .isEqualTo("test add nested error entry message");
+        assertThat(entries).hasSize(2);
+        Trace.Entry entry1 = entries.get(0);
+        assertThat(entry1.getDepth()).isEqualTo(0);
+        assertThat(entry1.getMessage()).isEqualTo("outer entry to test nesting level");
+        Trace.Entry entry2 = entries.get(1);
+        assertThat(entry2.getDepth()).isEqualTo(1);
+        assertThat(entry2.getError().getMessage()).isEqualTo("test add nested error entry message");
     }
 
     public static class ShouldCaptureError implements AppUnderTest {

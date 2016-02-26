@@ -103,10 +103,11 @@ public class DetailMapIT {
         assertThat(levelThreeTimer.getChildTimerList()).hasSize(1);
         assertThat(levelThreeTimer.getChildTimerList().get(0).getName()).isEqualTo("level four");
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry2 = entries.get(0);
-        assertThat(entry2.getMessage()).isEqualTo("Level Two");
-        details = entry2.getDetailEntryList();
+        assertThat(entries).hasSize(3);
+        Trace.Entry entry1 = entries.get(0);
+        assertThat(entry1.getDepth()).isEqualTo(0);
+        assertThat(entry1.getMessage()).isEqualTo("Level Two");
+        details = entry1.getDetailEntryList();
         assertThat(details).hasSize(2);
         assertThat(details.get(0).getName()).isEqualTo("arg1");
         assertThat(details.get(0).getValueList()).hasSize(1);
@@ -114,11 +115,10 @@ public class DetailMapIT {
         assertThat(details.get(1).getName()).isEqualTo("arg2");
         assertThat(details.get(1).getValueList()).hasSize(1);
         assertThat(details.get(1).getValueList().get(0).getString()).isEqualTo("bx");
-        List<Trace.Entry> childEntries2 = entry2.getChildEntryList();
-        assertThat(childEntries2).hasSize(1);
-        Trace.Entry entry3 = childEntries2.get(0);
-        assertThat(entry3.getMessage()).isEqualTo("Level Three");
-        details = entry3.getDetailEntryList();
+        Trace.Entry entry2 = entries.get(1);
+        assertThat(entry2.getDepth()).isEqualTo(1);
+        assertThat(entry2.getMessage()).isEqualTo("Level Three");
+        details = entry2.getDetailEntryList();
         assertThat(details).hasSize(2);
         assertThat(details.get(0).getName()).isEqualTo("arg1");
         assertThat(details.get(0).getValueList()).hasSize(1);
@@ -127,11 +127,10 @@ public class DetailMapIT {
         assertThat(details.get(1).getValueList()).hasSize(1);
         assertThat(details.get(1).getValueList().get(0).getString()).isEqualTo("bxy");
         // there's no way offsetNanos should be 0
-        assertThat(entry3.getStartOffsetNanos()).isGreaterThan(0);
-        List<Trace.Entry> childEntries3 = entry3.getChildEntryList();
-        assertThat(childEntries3).hasSize(1);
-        Trace.Entry entry4 = childEntries3.get(0);
-        assertThat(entry4.getMessage()).isEqualTo("Level Four: axy, bxy");
+        assertThat(entry2.getStartOffsetNanos()).isGreaterThan(0);
+        Trace.Entry entry3 = entries.get(2);
+        assertThat(entry3.getDepth()).isEqualTo(2);
+        assertThat(entry3.getMessage()).isEqualTo("Level Four: axy, bxy");
     }
 
     @Test

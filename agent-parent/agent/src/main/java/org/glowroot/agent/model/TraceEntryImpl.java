@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.model;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -109,8 +108,7 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
         return errorMessage;
     }
 
-    Trace.Entry toProto(long transactionStartTick, long captureTick,
-            List<Trace.Entry> childEntries) {
+    Trace.Entry toProto(int depth, long transactionStartTick, long captureTick) {
         long offsetNanos = startTick - transactionStartTick;
         long durationNanos;
         boolean active;
@@ -128,6 +126,7 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
                 messageSupplier == null ? null : (ReadableMessage) messageSupplier.get();
 
         Trace.Entry.Builder builder = Trace.Entry.newBuilder()
+                .setDepth(depth)
                 .setStartOffsetNanos(offsetNanos)
                 .setDurationNanos(durationNanos)
                 .setActive(active);
@@ -157,7 +156,6 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
                         .build();
             }
         }
-        builder.addAllChildEntry(childEntries);
         return builder.build();
     }
 

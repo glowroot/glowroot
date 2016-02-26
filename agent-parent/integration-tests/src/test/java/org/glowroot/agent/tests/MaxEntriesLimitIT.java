@@ -115,8 +115,8 @@ public class MaxEntriesLimitIT {
         assertThat(trace.getHeader().getEntryCount()).isEqualTo(101);
         assertThat(trace.getHeader().getEntryLimitExceeded()).isTrue();
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(26);
-        assertThat(entries.get(25).getMessage()).isEqualTo("ERROR -- abc");
+        assertThat(entries).hasSize(101);
+        assertThat(entries.get(100).getMessage()).isEqualTo("ERROR -- abc");
     }
 
     public static class GenerateLotsOfEntries implements AppUnderTest, TransactionMarker {

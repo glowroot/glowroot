@@ -72,19 +72,18 @@ public class InstrumentationConfigEnabledPropertyIT {
         Trace.Timer levelFourTimer = levelThreeTimer.getChildTimerList().get(0);
         assertThat(levelFourTimer.getChildTimerList().get(0).getName()).isEqualTo("level five");
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry2 = entries.get(0);
-        assertThat(entry2.getMessage()).isEqualTo("Level Two");
-        List<Trace.Entry> childEntries2 = entry2.getChildEntryList();
-        assertThat(childEntries2).hasSize(1);
-        Trace.Entry entry3 = childEntries2.get(0);
-        assertThat(entry3.getMessage()).isEqualTo("Level Three");
+        assertThat(entries).hasSize(3);
+        Trace.Entry entry1 = entries.get(0);
+        assertThat(entry1.getDepth()).isEqualTo(0);
+        assertThat(entry1.getMessage()).isEqualTo("Level Two");
+        Trace.Entry entry2 = entries.get(1);
+        assertThat(entry2.getDepth()).isEqualTo(1);
+        assertThat(entry2.getMessage()).isEqualTo("Level Three");
         // there's no way offsetNanos should be 0
-        assertThat(entry3.getStartOffsetNanos()).isGreaterThan(0);
-        List<Trace.Entry> childEntries3 = entry3.getChildEntryList();
-        assertThat(childEntries3).hasSize(1);
-        Trace.Entry entry4 = childEntries3.get(0);
-        assertThat(entry4.getMessage()).isEqualTo("Level Four: axy, bxy");
+        assertThat(entry2.getStartOffsetNanos()).isGreaterThan(0);
+        Trace.Entry entry3 = entries.get(2);
+        assertThat(entry3.getDepth()).isEqualTo(2);
+        assertThat(entry3.getMessage()).isEqualTo("Level Four: axy, bxy");
     }
 
     @Test
@@ -110,23 +109,21 @@ public class InstrumentationConfigEnabledPropertyIT {
         Trace.Timer levelFourTimer = levelThreeTimer.getChildTimerList().get(0);
         assertThat(levelFourTimer.getChildTimerList().get(0).getName()).isEqualTo("level five");
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry2 = entries.get(0);
-        assertThat(entry2.getMessage()).isEqualTo("Level Two");
-        List<Trace.Entry> childEntries2 = entry2.getChildEntryList();
-        assertThat(childEntries2).hasSize(1);
-        Trace.Entry entry3 = childEntries2.get(0);
-        assertThat(entry3.getMessage()).isEqualTo("Level Three");
+        assertThat(entries).hasSize(4);
+        Trace.Entry entry1 = entries.get(0);
+        assertThat(entry1.getDepth()).isEqualTo(0);
+        assertThat(entry1.getMessage()).isEqualTo("Level Two");
+        Trace.Entry entry2 = entries.get(1);
+        assertThat(entry2.getDepth()).isEqualTo(1);
+        assertThat(entry2.getMessage()).isEqualTo("Level Three");
         // there's no way offsetNanos should be 0
-        assertThat(entry3.getStartOffsetNanos()).isGreaterThan(0);
-        List<Trace.Entry> childEntries3 = entry3.getChildEntryList();
-        assertThat(childEntries3).hasSize(1);
-        Trace.Entry entry4 = childEntries3.get(0);
-        assertThat(entry4.getMessage()).isEqualTo("Level Four: axy, bxy");
-        List<Trace.Entry> childEntries4 = entry4.getChildEntryList();
-        assertThat(childEntries4).hasSize(1);
-        Trace.Entry entry5 = childEntries4.get(0);
-        assertThat(entry5.getMessage()).isEqualTo("Level Five: axy, bxy");
+        assertThat(entry2.getStartOffsetNanos()).isGreaterThan(0);
+        Trace.Entry entry3 = entries.get(2);
+        assertThat(entry3.getDepth()).isEqualTo(2);
+        assertThat(entry3.getMessage()).isEqualTo("Level Four: axy, bxy");
+        Trace.Entry entry4 = entries.get(3);
+        assertThat(entry4.getDepth()).isEqualTo(3);
+        assertThat(entry4.getMessage()).isEqualTo("Level Five: axy, bxy");
     }
 
     public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest {
