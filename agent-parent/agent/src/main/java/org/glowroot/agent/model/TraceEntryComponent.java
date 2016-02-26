@@ -31,10 +31,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 // this supports updating by a single thread and reading by multiple threads
 class TraceEntryComponent {
@@ -74,7 +73,7 @@ class TraceEntryComponent {
 
     // this does not include the root trace entry
     public List<Trace.Entry> toProto(long captureTick,
-            Multimap<TraceEntryImpl, TraceEntryImpl> asyncRootTraceEntries) {
+            Multimap<TraceEntryImpl, TraceEntryImpl> auxRootTraceEntries) {
         if (captureTick < startTick) {
             return ImmutableList.of();
         }
@@ -88,19 +87,22 @@ class TraceEntryComponent {
         // checking completed is short circuit optimization for the common case
         while (entry != null
                 && (completed || Tickers.lessThanOrEqual(entry.getStartTick(), captureTick))) {
-            // checkNotNull is safe because only the root entry has null parent
-            TraceEntryImpl parentTraceEntry = checkNotNull(entry.getParentTraceEntry());
+            TraceEntryImpl parentTraceEntry = entry.getParentTraceEntry();
+            if (parentTraceEntry == null) {
+                logFoundNonRootEntryWithNullParent(entry);
+                continue;
+            }
             parentChildMap.put(parentTraceEntry, entry);
             entry = entry.getNextTraceEntry();
         }
-        // merge in async trace entry roots
-        for (Entry<TraceEntryImpl, Collection<TraceEntryImpl>> entries : asyncRootTraceEntries
+        // merge in aux trace entry roots
+        for (Entry<TraceEntryImpl, Collection<TraceEntryImpl>> entries : auxRootTraceEntries
                 .asMap().entrySet()) {
             TraceEntryImpl parentTraceEntry = entries.getKey();
             List<TraceEntryImpl> childTraceEntries =
                     Lists.newArrayList(parentChildMap.get(parentTraceEntry));
-            for (TraceEntryImpl asyncRootTraceEntry : entries.getValue()) {
-                TraceEntryImpl loopEntry = asyncRootTraceEntry;
+            for (TraceEntryImpl auxRootTraceEntry : entries.getValue()) {
+                TraceEntryImpl loopEntry = auxRootTraceEntry;
                 while (loopEntry != null && (completed
                         || Tickers.lessThanOrEqual(loopEntry.getStartTick(), captureTick))) {
                     TraceEntryImpl loopParentEntry = loopEntry.getParentTraceEntry();
@@ -194,18 +196,32 @@ class TraceEntryComponent {
     }
 
     // split typically unused path into separate method to not affect inlining budget
-    private void popEntryBailout(TraceEntryImpl expectingEntry) {
-        logger.error("found entry {} at top of stack when expecting entry {}", activeEntry,
-                expectingEntry);
-        while (activeEntry != null && activeEntry != expectingEntry) {
+    private void popEntryBailout(TraceEntryImpl entry) {
+        logger.error("found entry {} at top of stack when expecting entry {}", activeEntry, entry);
+        if (entry == rootEntry) {
+            activeEntry = null;
+            return;
+        }
+        // don't pop the root trace entry
+        while (activeEntry != null && activeEntry != rootEntry && activeEntry != entry) {
             activeEntry = activeEntry.getParentTraceEntry();
         }
-        if (activeEntry != null) {
-            // now perform pop
-            activeEntry = activeEntry.getParentTraceEntry();
-        } else {
-            logger.error("popped entire stack, never found entry: {}", expectingEntry);
+    }
+
+    private void logFoundNonRootEntryWithNullParent(TraceEntryImpl entry) {
+        Transaction transaction = threadContext.getTransaction();
+        MessageSupplier messageSupplier = entry.getMessageSupplier();
+        ErrorMessage errorMessage = entry.getErrorMessage();
+        String traceEntryMessage = "";
+        if (messageSupplier != null) {
+            ReadableMessage message = (ReadableMessage) messageSupplier.get();
+            traceEntryMessage = message.getText();
+        } else if (errorMessage != null) {
+            traceEntryMessage = errorMessage.message();
         }
+        logger.error("found non-root trace entry with null parent trace entry"
+                + "\ntrace entry: {}\ntransaction: {} - {}", traceEntryMessage,
+                transaction.getTransactionType(), transaction.getTransactionName());
     }
 
     private static List<Trace.Entry> getProtobufChildEntries(TraceEntryImpl entry,

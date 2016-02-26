@@ -140,8 +140,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     public List<Trace.Entry> getEntriesProtobuf(long captureTick,
-            Multimap<TraceEntryImpl, TraceEntryImpl> asyncRootTraceEntries) {
-        return traceEntryComponent.toProto(captureTick, asyncRootTraceEntries);
+            Multimap<TraceEntryImpl, TraceEntryImpl> auxRootTraceEntries) {
+        return traceEntryComponent.toProto(captureTick, auxRootTraceEntries);
     }
 
     public ThreadStats getThreadStats() {

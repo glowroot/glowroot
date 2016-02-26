@@ -73,6 +73,6 @@ public class TraceEntryComponentTest {
         traceEntryComponent.pushEntry(0, messageSupplier2, null, 0, timer2);
         traceEntryComponent.popEntry(mock(TraceEntryImpl.class), 0);
         // then
-        assertThat(traceEntryComponent.isCompleted()).isTrue();
+        assertThat(traceEntryComponent.isCompleted()).isFalse();
     }
 }
