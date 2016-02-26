@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,11 @@ public class AppServerDetection {
         String command = getCommand();
         return command != null && (command.equals("org.jboss.modules.Main")
                 || command.endsWith("jboss-modules.jar"));
+    }
+
+    public static boolean isOldJBoss() {
+        String command = getCommand();
+        return command != null && command.equals("org.jboss.Main");
     }
 
     public static boolean isGlassfish() {

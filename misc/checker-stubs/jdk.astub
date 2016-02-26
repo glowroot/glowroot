@@ -111,6 +111,13 @@ public class JarInputStream {
 }
 
 /* ========================================================================== */
+package javax.management;
+
+public class MBeanServerFactory {
+    public static ArrayList<MBeanServer> findMBeanServer(@Nullable String agentId);
+}
+
+/* ========================================================================== */
 package javax.management.openmbean;
 
 public class CompositeType {

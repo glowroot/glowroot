@@ -24,6 +24,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.annotation.Nullable;
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanServer;
+import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
 import com.google.common.base.Ticker;
@@ -143,6 +144,17 @@ public class SimpleRepoModule {
                     //
                     // log exception at debug level
                     logger.debug(e.getMessage(), e);
+                } catch (NotCompliantMBeanException e) {
+                    if (e.getStackTrace()[0].getClassName()
+                            .equals("org.jboss.mx.metadata.MBeanCapability")) {
+                        // this happens in jboss 4.2.3 because it doesn't know about Java 6 "MXBean"
+                        // naming convention
+                        // it's not really that important if these diagnostic mbeans aren't
+                        // registered
+                        logger.debug(e.getMessage(), e);
+                    } else {
+                        throw e;
+                    }
                 }
             }
         });

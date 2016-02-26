@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
-import javax.management.JMRuntimeException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
 
@@ -55,14 +55,15 @@ public class LazyPlatformMBeanServer {
     @GuardedBy("initListeners")
     private final List<InitListener> initListeners = Lists.newArrayList();
 
-    private final boolean jbossModules;
-    private final boolean glassfish;
+    private final boolean waitForMBeanServer;
+    private final boolean needsManualPatternMatching;
 
     private volatile @MonotonicNonNull MBeanServer mbeanServer;
 
     public LazyPlatformMBeanServer() {
-        jbossModules = AppServerDetection.isJBossModules();
-        glassfish = AppServerDetection.isGlassfish();
+        waitForMBeanServer = AppServerDetection.isJBossModules() || AppServerDetection.isOldJBoss()
+                || AppServerDetection.isGlassfish();
+        needsManualPatternMatching = AppServerDetection.isOldJBoss();
     }
 
     public void invoke(ObjectName name, String operationName, Object[] params, String[] signature)
@@ -74,7 +75,11 @@ public class LazyPlatformMBeanServer {
     public Set<ObjectName> queryNames(@Nullable ObjectName name, @Nullable QueryExp query)
             throws InterruptedException {
         ensureInit();
-        return mbeanServer.queryNames(name, query);
+        if (needsManualPatternMatching && name != null && name.isPattern()) {
+            return mbeanServer.queryNames(null, new ObjectNamePatternQueryExp(name));
+        } else {
+            return mbeanServer.queryNames(name, query);
+        }
     }
 
     public MBeanInfo getMBeanInfo(ObjectName name) throws Exception {
@@ -109,19 +114,17 @@ public class LazyPlatformMBeanServer {
 
     @EnsuresNonNull("mbeanServer")
     private void ensureInit() throws InterruptedException {
-        if (mbeanServer == null && jbossModules) {
-            // if running under jboss-modules, wait for it to set up JUL before calling
-            // getPlatformMBeanServer()
-            waitForJBossModuleInitialization(Stopwatch.createUnstarted());
-        }
-        if (mbeanServer == null && glassfish) {
-            // if running under glassfish, wait for it to set up javax.management.builder.initial
-            // before calling getPlatformMBeanServer()
-            waitForGlassfishInitialization(Stopwatch.createUnstarted());
+        if (mbeanServer == null && waitForMBeanServer) {
+            waitForMBeanServer(Stopwatch.createUnstarted());
         }
         synchronized (initListeners) {
             if (mbeanServer == null) {
-                mbeanServer = ManagementFactory.getPlatformMBeanServer();
+                List<MBeanServer> mbeanServers = MBeanServerFactory.findMBeanServer(null);
+                if (mbeanServers.size() == 1) {
+                    mbeanServer = mbeanServers.get(0);
+                } else {
+                    mbeanServer = ManagementFactory.getPlatformMBeanServer();
+                }
                 for (InitListener initListener : initListeners) {
                     try {
                         initListener.postInit(mbeanServer);
@@ -134,54 +137,36 @@ public class LazyPlatformMBeanServer {
     }
 
     @VisibleForTesting
-    public static void waitForJBossModuleInitialization(Stopwatch stopwatch)
-            throws InterruptedException {
+    public static void waitForMBeanServer(Stopwatch stopwatch) throws InterruptedException {
         stopwatch.start();
-        while (stopwatch.elapsed(SECONDS) < 60) {
-            if (System.getProperty("java.util.logging.manager") != null) {
-                return;
-            }
+        while (stopwatch.elapsed(SECONDS) < 60
+                && MBeanServerFactory.findMBeanServer(null).isEmpty()) {
             Thread.sleep(100);
         }
-        // something has gone wrong
-        logger.error("this jvm appears to be running jboss-modules, but it did not set up"
-                + " java.util.logging.manager");
-    }
-
-    private static void waitForGlassfishInitialization(Stopwatch stopwatch)
-            throws InterruptedException {
-        stopwatch.start();
-        while (stopwatch.elapsed(SECONDS) < 60) {
-            if (System.getProperty("javax.management.builder.initial") != null) {
-                waitForMBeanServerBuilderSetup(stopwatch);
-                return;
-            }
-            Thread.sleep(100);
+        if (MBeanServerFactory.findMBeanServer(null).isEmpty()) {
+            logger.error("mbean server was never created by container");
         }
-        // something has gone wrong
-        logger.error("this jvm appears to be running glassfish, but it did not set up"
-                + " javax.management.builder.initial");
-    }
-
-    private static void waitForMBeanServerBuilderSetup(Stopwatch stopwatch)
-            throws InterruptedException {
-        while (stopwatch.elapsed(SECONDS) < 60) {
-            try {
-                ManagementFactory.getPlatformMBeanServer();
-                return;
-            } catch (JMRuntimeException e) {
-                // this is caused by ClassNotFoundException until glassfish calls
-                // ManagementFactory.getPlatformMBeanServer() using a context class loader
-                // that has the "javax.management.builder.initial" class
-            }
-            Thread.sleep(100);
-        }
-        // something has gone wrong
-        logger.error("this jvm appears to be running glassfish, but glassfish never"
-                + " finished setting up javax.management.builder.initial");
     }
 
     public interface InitListener {
         void postInit(MBeanServer mbeanServer) throws Exception;
+    }
+
+    @SuppressWarnings("serial")
+    private static class ObjectNamePatternQueryExp implements QueryExp {
+
+        private final ObjectName pattern;
+
+        private ObjectNamePatternQueryExp(ObjectName pattern) {
+            this.pattern = pattern;
+        }
+
+        @Override
+        public boolean apply(ObjectName name) {
+            return pattern.apply(name);
+        }
+
+        @Override
+        public void setMBeanServer(MBeanServer s) {}
     }
 }
