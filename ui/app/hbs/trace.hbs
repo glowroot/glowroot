@@ -39,7 +39,10 @@
       <span class="gt-inline-block gt-unexpanded-content gt-link-color">exception</span>
       {{! using span so background will stretch beyond page border if needed }}
       <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide">
-        {{{exceptionHtml error.exception}}}
+        <div class="gt-link-color">exception</div>
+        <div class="gt-monospace">
+          {{{exceptionHtml error.exception}}}
+        </div>
         <i class="fa fa-clipboard gt-clip"></i>
       </div>
     </div>
@@ -118,7 +121,7 @@
         <tr class="align-top">
           <td style="text-align: left;">
             <div class="gt-indent2">
-              <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}em;">
+              <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
                 {{name}}{{#if extended}} (extended){{/if}}
               </div>
             </div>
@@ -186,7 +189,7 @@
         <tr class="align-top">
           <td style="text-align: left;">
             <div class="gt-indent2">
-              <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}em;">
+              <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
                 {{name}}{{#if extended}} (extended){{/if}}
               </div>
             </div>
@@ -254,7 +257,7 @@
         <tr class="align-top">
           <td style="text-align: left;">
             <div class="gt-indent2">
-              <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}em;">
+              <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
                 {{name}}{{#if extended}} (extended){{/if}}
               </div>
             </div>
@@ -337,13 +340,13 @@
       <div class="hide gt-trace-detail-spinner"></div>
     </div>
   </div>
-  <div style="margin: 10px 0;">
-    <div id="sps"></div>
+  <div style="margin: 10px 0 0 1em;">
+    <div id="sps" style="font-family: Cousine;"></div>
   </div>
 {{/ifExistenceYes}}
 {{#ifExistenceYes profileExistence}}
   {{#if mainThreadProfileSampleCount}}
-    <div>
+    <div style="margin-top: 10px;">
       <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-main-thread-profile-toggle">
         <span class="gt-link-color">Profile ({{mainThreadProfileSampleCount}})</span>
       </button>
@@ -353,19 +356,19 @@
       </div>
     </div>
     <div style="margin: 10px 0;">
-      <div class="gt-nowrap hide" id="mainThreadProfileOuter">
+      <div class="gt-indent2 gt-nowrap hide" id="mainThreadProfileOuter">
         <div style="padding-bottom: 10px;">
           <input class="form-control gt-profile-text-filter"
                  style="display: inline-block; width: 25em;"
                  placeholder="filter the profile tree">
         </div>
 
-        <div class="gt-profile gt-indent1"></div>
+        <div class="gt-profile"></div>
       </div>
     </div>
   {{/if}}
   {{#if auxThreadProfileSampleCount}}
-    <div>
+    <div style="margin-top: 10px;">
       <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-aux-thread-profile-toggle">
         <span class="gt-link-color">Auxiliary Thread Profile ({{auxThreadProfileSampleCount}})</span>
       </button>
@@ -375,14 +378,14 @@
       </div>
     </div>
     <div style="margin: 10px 0;">
-      <div class="gt-nowrap hide" id="auxThreadProfileOuter">
+      <div class="gt-indent2 gt-nowrap hide" id="auxThreadProfileOuter">
         <div style="padding-bottom: 10px;">
           <input class="form-control gt-profile-text-filter"
                  style="display: inline-block; width: 25em;"
                  placeholder="filter the profile tree">
         </div>
 
-        <div class="gt-profile gt-indent1"></div>
+        <div class="gt-profile"></div>
       </div>
     </div>
   {{/if}}

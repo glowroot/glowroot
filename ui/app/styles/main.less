@@ -90,8 +90,8 @@
   font-weight: 400;
   src: local('Open Sans'),
   local('OpenSans'),
-  url(../fonts/opensans-regular-webfont.woff2) format('woff2'),
-  url(../fonts/opensans-regular-webfont.woff) format('woff');
+  url(../fonts/opensans-regular.woff2) format('woff2'),
+  url(../fonts/opensans-regular.woff) format('woff');
 }
 
 @font-face {
@@ -99,8 +99,8 @@
   font-weight: 600;
   src: local('Open Sans Semibold'),
   local('OpenSans-Semibold'),
-  url(../fonts/opensans-semibold-webfont.woff2) format('woff2'),
-  url(../fonts/opensans-semibold-webfont.woff) format('woff');
+  url(../fonts/opensans-semibold.woff2) format('woff2'),
+  url(../fonts/opensans-semibold.woff) format('woff');
 }
 
 @font-face {
@@ -108,8 +108,17 @@
   font-weight: 700;
   src: local('Open Sans Bold'),
   local('OpenSans-Bold'),
-  url(../fonts/opensans-bold-webfont.woff2) format('woff2'),
-  url(../fonts/opensans-bold-webfont.woff) format('woff');
+  url(../fonts/opensans-bold.woff2) format('woff2'),
+  url(../fonts/opensans-bold.woff) format('woff');
+}
+
+@font-face {
+  font-family: 'Cousine';
+  font-weight: 400;
+  src: local('Cousine'),
+  local('Cousine'),
+  url(../fonts/cousine-regular.woff2) format('woff2'),
+  url(../fonts/cousine-regular.woff) format('woff');
 }
 
 // explicitly specifiying font-face for font-awesome since only supporting IE9+ and so only need woff/woff2
@@ -219,6 +228,14 @@ body {
   .container {
     width: 1370px;
   }
+}
+
+.gt-monospace {
+  font-family: Cousine, monospace;
+}
+
+.gt-opensans {
+  font-family: 'Open Sans', sans-serif;
 }
 
 // since the angular script is not loaded in the html head, the ng-cloak css style must be provided here
@@ -364,6 +381,7 @@ hr.soften {
 }
 
 .gt-query-text-column {
+  font-family: Cousine;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
@@ -376,10 +394,17 @@ hr.soften {
 
 .gt-query-total-column {
   width: 60px;
+  text-align: right;
 }
 
 .gt-query-other-column {
   width: 80px;
+  text-align: right;
+}
+
+.gt-query-rows-column {
+  width: 100px;
+  text-align: right;
 }
 
 .caret.gt-caret-reversed {

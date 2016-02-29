@@ -88,8 +88,11 @@ glowroot.controller('TransactionAverageCtrl', [
     function createTreeTimers(rootTimer) {
       var treeTimers = [];
 
+      // indent1 must be sync'd with $indent1 variable in common-trace.less
+      var indent1 = 8.41; // px
+
       function traverse(timer, nestingLevel) {
-        timer.nestingLevel = nestingLevel;
+        timer.nestingIndent = nestingLevel * indent1 * 2;
         treeTimers.push(timer);
         if (timer.childTimers) {
           timer.childTimers.sort(function (a, b) {

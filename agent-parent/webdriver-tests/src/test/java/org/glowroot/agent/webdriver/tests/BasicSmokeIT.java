@@ -115,7 +115,7 @@ public class BasicSmokeIT extends WebDriverIT {
         Utils.withWait(driver, By.partialLinkText("percentiles")).click();
         Utils.withWait(driver, By.partialLinkText("throughput")).click();
         Utils.withWait(driver, By.partialLinkText("Slow traces")).click();
-        Utils.withWait(driver, By.partialLinkText("External queries")).click();
+        Utils.withWait(driver, By.partialLinkText("Queries")).click();
         Utils.withWait(driver, By.partialLinkText("Continuous profiling")).click();
         Utils.withWait(driver, By.xpath("//input[@ng-model='filter']")).sendKeys("JdbcServlet");
         Utils.withWait(driver, By.xpath("//button[@ng-click='refreshButtonClick()']")).click();
@@ -129,7 +129,7 @@ public class BasicSmokeIT extends WebDriverIT {
         Utils.withWait(driver, By.partialLinkText("/jdbcservlet")).click();
         Utils.withWait(driver, By.partialLinkText("percentiles")).click();
         Utils.withWait(driver, By.partialLinkText("Slow traces")).click();
-        Utils.withWait(driver, By.partialLinkText("External queries")).click();
+        Utils.withWait(driver, By.partialLinkText("Queries")).click();
         Utils.withWait(driver, By.partialLinkText("Continuous profiling")).click();
         Utils.withWait(driver, By.linkText("View flame graph (experimental)")).click();
     }

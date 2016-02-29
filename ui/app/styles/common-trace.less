@@ -16,13 +16,13 @@
 @import "variables";
 
 // @indent1 must be sync'd with indent1 javascript variable in trace-renderer.js
-@indent1: 1em;
-@horizontal-padding: 1em;
+@indent1: 8.41px;
+@horizontal-padding: 8.41px;
 // by default using flatButtonVerticalPadding, but these are really independent vars
 @vertical-padding: @gt-flat-button-vertical-padding;
 
 .gt-content-detail {
-  margin-left: (2 * @indent1);
+  margin-left: 6 * @indent1;
 }
 
 .gt-timers-table td {
@@ -73,12 +73,24 @@
   padding: @vertical-padding 0;
 }
 
-.gt-indent1 {
-  margin-left: @indent1;
+.gt-indent2 {
+  margin-left: 2 * @indent1;
 }
 
-.gt-indent2 {
-  margin-left: (2 * @indent1);
+.gt-indent4 {
+  margin-left: 4 * @indent1;
+}
+
+.gt-indent6 {
+  margin-left: 6 * @indent1;
+}
+
+.gt-width2 {
+  width: 2 * @indent1;
+}
+
+.gt-width6 {
+  width: 6 * @indent1;
 }
 
 .gt-pad1 {
@@ -88,6 +100,12 @@
 
 .gt-pad1aligned {
   margin-left: -@horizontal-padding;
+  .gt-pad1;
+}
+
+.gt-pad1profile {
+  padding-top: 1px;
+  padding-bottom: 1px;
   .gt-pad1;
 }
 
@@ -151,6 +169,18 @@
 .gt-breakdown-header {
   padding-top: 5px;
   padding-bottom: 3px;
+}
+
+
+.gt-trace-entry-bar-outer {
+  height: 13px;
+  margin-top: 5px;
+  border: 1px #ccc solid;
+}
+
+.gt-trace-entry-bar {
+  background-color: @gt-yellow;
+  height: 100%;
 }
 
 .gt-with-clip {

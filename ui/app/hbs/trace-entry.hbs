@@ -1,57 +1,51 @@
-<div class="clearfix">
-  <div class="gt-indent1 gt-left-numeric-column" style="width: {{offsetColumnWidth}}em; float: left;">
-    +{{nanosToMillis startOffsetNanos}}
+<div id="gtTraceEntry{{index}}">
+  <div style="width: 102px; vertical-align: top; float: left;"
+       title="duration {{nanosToMillis durationNanos}} milliseconds, offset {{nanosToMillis startOffsetNanos}} milliseconds">
+    <div class="gt-trace-entry-bar-outer">
+      <div class="gt-trace-entry-bar"
+           style="margin-left: {{traceEntryBarLeft startOffsetNanos}}px; width: {{traceEntryBarWidth durationNanos}}px;">
+      </div>
+    </div>
   </div>
-  {{! +1 at the beginning is for the indent1 of the offset column }}
-  <div style="margin-left: {{traceEntryIndent .}}em; float: left;">
-      <span class="gt-inline-block gt-left-numeric-column" style="width: {{durationColumnWidth}}em;">
-        {{nanosToMillis durationNanos}}{{#if active}}..{{/if}}
-      </span>
-  </div>
-  <div style="overflow: hidden; padding-left: 0.5em;">
+  <div style="overflow: hidden; padding-left: {{traceEntryIndentPx .}}px;">
+    {{#if childEntries}}
+      <div class="gt-width2 gt-trace-entry-toggle" data-index="{{index}}" style="float: left;">
+        <i title="Collapse" class="fa fa-minus-square-o" style="padding: 5px; margin-left: -5px;"></i>
+      </div>
+    {{/if}}
     {{#ifDisplayMessage .}}
       {{#ifLongMessage message}}
       {{! surrounding div is needed as common parent for toggling unexpanded/expanded content }}
-        <div>
-          <div class="gt-inline-block gt-unexpanded-content">
-            {{firstPart message}}
-            <span class="gt-link-color"><strong>...</strong></span>
-            {{lastPart message}}
+        <div class="gt-indent2">
+          <div class="gt-inline-block gt-unexpanded-content gt-monospace">
+            {{firstPart .}}&nbsp;<span class="gt-link-color"><strong
+              class="gt-opensans">...</strong></span>&nbsp;{{lastPart .}}
           </div>
           <!-- only convert newlines to <br>s for long messages -->
           <div class="gt-expanded-content gt-with-clip hide"
                style="position: relative; display: inline-block;">
             <i class="fa fa-clipboard gt-clip"></i>
 
-            <div class="gt-break-word gt-pre-wrap"><!--
+            <div class="gt-break-word gt-pre-wrap gt-monospace"><!--
                 lack of space here is significant because of gt-pre-wrap
              -->{{message}}<!--
            --></div>
           </div>
         </div>
       {{^}}
-      {{! surrounding div is needed as common parent for toggling unexpanded/expanded content }}
-        <div>
-          <div class="gt-inline-block gt-unexpanded-content">
+        <div class="gt-indent2">
+          <div class="gt-inline-block gt-content-padding gt-monospace">
             {{message}}
-          </div>
-          <div class="gt-expanded-content gt-with-clip hide"
-               style="position: relative; display: inline-block;">
-            <i class="fa fa-clipboard gt-clip"></i>
-
-            <div class="gt-break-word gt-pre-wrap"><!--
-                lack of space here is significant because of gt-pre-wrap
-             -->{{message}}<!--
-           --></div>
           </div>
         </div>
       {{/ifLongMessage}}
       {{#ifNonEmptyObject detail}}
         <div class="gt-content-detail">
-          <span class="gt-inline-block gt-unexpanded-content gt-link-color">detail</span>
-            <span class="gt-inline-block gt-expanded-content hide">
-              {{{entryDetailHtml detail}}}
-            </span>
+          <span class="gt-inline-block gt-unexpanded-content gt-link-color gt-opensans">detail</span>
+        <span class="gt-inline-block gt-expanded-content hide">
+          <span class="gt-inline-block gt-link-color gt-opensans">detail</span>
+          {{{entryDetailHtml detail}}}
+        </span>
         </div>
       {{/ifNonEmptyObject}}
     {{/ifDisplayMessage}}
@@ -67,10 +61,11 @@
         </div>
         {{#if error.exception}}
           <div class="{{{exceptionIndentClass message}}}">
-            <div class="gt-inline-block gt-unexpanded-content gt-link-color">exception</div>
+            <div class="gt-inline-block gt-unexpanded-content gt-link-color gt-opensans">exception</div>
             {{! using span so background will stretch beyond page border if needed }}
             <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide"
                  style="overflow-x: auto;">
+              <div class="gt-inline-block gt-link-color gt-opensans">exception</div>
               {{{exceptionHtml error.exception}}}
               <i class="fa fa-clipboard gt-clip"></i>
             </div>
@@ -79,11 +74,12 @@
       </div>
     {{/if}}
     {{#if locationStackTraceElements}}
-      <div class="gt-indent2">
-        <div class="gt-inline-block gt-unexpanded-content gt-link-color">location stack trace</div>
+      <div class="gt-indent6">
+        <div class="gt-inline-block gt-unexpanded-content gt-link-color gt-opensans">location stack trace</div>
         {{! using span so background will stretch beyond page border if needed }}
         <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide"
              style="overflow-x: auto;">
+          <div class="gt-inline-block gt-link-color gt-opensans">location stack trace</div>
           {{{locationStackTraceHtml locationStackTraceElements}}}
           <i class="fa fa-clipboard gt-clip"></i>
         </div>

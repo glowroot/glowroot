@@ -55,38 +55,38 @@
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('total-time')}}" class="gt-sortable-table-header">
             Total<br>
             time<br>
-            (ms)
             <span ng-class="sortIconClass('total-time')"
                   ng-show="sortAttribute === 'total-time'">
             </span>
+            (ms)
           </a>
         </th>
         <th class="gt-query-other-column">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('execution-count')}}" class="gt-sortable-table-header">
             Execution<br>
-            count
             <span ng-class="sortIconClass('execution-count')"
                   ng-show="sortAttribute === 'execution-count'">
             </span>
+            count
           </a>
         </th>
         <th class="gt-query-other-column">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('time-per-execution')}}" class="gt-sortable-table-header">
             Time per<br>
             execution<br>
-            (ms)
             <span ng-class="sortIconClass('time-per-execution')"
                   ng-show="sortAttribute === 'time-per-execution'">
             </span>
+            (ms)
           </a>
         </th>
-        <th class="gt-query-other-column">
+        <th class="gt-query-rows-column">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('rows-per-execution')}}" class="gt-sortable-table-header">
             Rows per<br>
-            execution
             <span ng-class="sortIconClass('rows-per-execution')"
                   ng-show="sortAttribute === 'rows-per-execution'">
             </span>
+            execution
           </a>
         </th>
       </tr>
@@ -106,7 +106,7 @@
         <td class="gt-query-other-column">
           {{query.timePerExecution | gtMillis}}
         </td>
-        <td class="gt-query-other-column">
+        <td class="gt-query-rows-column">
           {{query.rowsPerExecution | gtCount}}
         </td>
       </tr>
@@ -126,10 +126,14 @@
     <div class="modal-body">
       <!-- display: inline-block is so that true width can be calculated and modal shrunk to fit if possible -->
       <!-- not using ng-show/hide here since need it to be visible for size calculation -->
-      <pre id="formattedQuery"
+      <pre class="gt-monospace"
+           id="formattedQuery"
            style="white-space: pre-wrap; display: inline-block; margin: 0;">
       </pre>
-      <div id="unformattedQuery" style="padding-bottom: 5px;"></div>
+      <div class="gt-monospace"
+           id="unformattedQuery"
+           style="padding-bottom: 5px;">
+      </div>
       <div>
         <a href="#"
            id="formattingToggle"

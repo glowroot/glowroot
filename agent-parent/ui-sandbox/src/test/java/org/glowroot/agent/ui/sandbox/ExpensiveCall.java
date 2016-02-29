@@ -173,8 +173,8 @@ public class ExpensiveCall {
         for (int i = 0; i < traceEntryMessageLength; i++) {
             // random lowercase character
             sb.append((char) ('a' + random.nextInt(26)));
-            if (spaces && random.nextInt(6) == 0) {
-                // on average, one of six characters will be a space
+            if (spaces && random.nextInt(6) == 0 && i != 0 && i != traceEntryMessageLength - 1) {
+                // on average, one of six characters will be a space (but not first or last char)
                 sb.append(' ');
             }
         }

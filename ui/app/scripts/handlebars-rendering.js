@@ -33,9 +33,16 @@ var SHOW_ELLIPSED_NODE_MARKERS = false;
 
 HandlebarsRendering = (function () {
   // indent1 must be sync'd with $indent1 variable in common-trace.less
-  var indent1 = 1; // em
+  var indent1 = 8.41; // px
+  var indent2 = indent1 * 2; // px
+
+  var monospaceCharWidth = 8.41;
 
   var traceEntryLineLength;
+  var traceEntryBarWidth = 50;
+  var traceDurationNanos;
+
+  var flattenedTraceEntries;
 
   Handlebars.registerHelper('eachKeyValuePair', function (map, options) {
     var buffer = '';
@@ -226,7 +233,7 @@ HandlebarsRendering = (function () {
           ret += messageDetailHtml(subdetail, bold);
         });
       } else if (typeof propVal === 'object' && propVal !== null) {
-        ret += maybeBoldPropName(propName) + '<br><div class="gt-indent1">' + messageDetailHtml(propVal) + '</div>';
+        ret += maybeBoldPropName(propName) + '<br><div class="gt-indent2">' + messageDetailHtml(propVal) + '</div>';
       } else {
         // outer div with clearfix is needed when propVal is empty
         ret += '<div class="clearfix"><div style="float: left;">' + maybeBoldPropName(propName) + '&nbsp;</div>'
@@ -252,38 +259,42 @@ HandlebarsRendering = (function () {
 
   Handlebars.registerHelper('errorIndentClass', function (message) {
     if (message) {
-      return 'gt-indent2';
-    }
-    return '';
-  });
-
-  Handlebars.registerHelper('exceptionIndentClass', function (message) {
-    if (message) {
-      return 'gt-indent1';
+      return 'gt-indent6';
     }
     return 'gt-indent2';
   });
 
-  Handlebars.registerHelper('addIndent2', function (width) {
-    return width + 2 * indent1;
+  Handlebars.registerHelper('exceptionIndentClass', function (message) {
+    if (message) {
+      return 'gt-indent2';
+    }
+    return 'gt-indent4';
   });
 
-  Handlebars.registerHelper('traceEntryIndent', function (traceEntry) {
-    return indent1 * (1 + traceEntry.depth);
+  Handlebars.registerHelper('traceEntryIndentPx', function (traceEntry) {
+    return 2 * monospaceCharWidth * (traceEntry.depth + 1);
   });
 
   Handlebars.registerHelper('timerIndent', function (timer) {
     return indent1 * timer.depth;
   });
 
-  Handlebars.registerHelper('firstPart', function (message) {
-    // -3 to leave room in the middle for ' ... '
-    return message.slice(0, traceEntryLineLength / 2 - 3);
+  Handlebars.registerHelper('traceEntryBarLeft', function (nanos) {
+    return 2 * Math.floor(traceEntryBarWidth * nanos / traceDurationNanos);
   });
 
-  Handlebars.registerHelper('lastPart', function (message) {
-    // -3 to leave room in the middle for ' ... '
-    return message.slice(-(traceEntryLineLength / 2 - 3));
+  Handlebars.registerHelper('traceEntryBarWidth', function (nanos) {
+    return 2 * Math.max(1, Math.floor(traceEntryBarWidth * (nanos - 1) / traceDurationNanos));
+  });
+
+  Handlebars.registerHelper('firstPart', function (traceEntry) {
+    var totalChars = traceEntryLineLength - 2 * traceEntry.depth;
+    return traceEntry.message.slice(0, Math.ceil(totalChars / 2));
+  });
+
+  Handlebars.registerHelper('lastPart', function (traceEntry) {
+    var totalChars = traceEntryLineLength - 2 * traceEntry.depth;
+    return traceEntry.message.slice(-Math.floor(totalChars / 2));
   });
 
   Handlebars.registerHelper('exceptionHtml', function (throwable) {
@@ -314,7 +325,7 @@ HandlebarsRendering = (function () {
 
   Handlebars.registerHelper('locationStackTraceHtml', function (stackTraceElements) {
     // don't pre-wrap stack traces (using overflow-x: auto on container)
-    var html = '<div style="white-space: pre;">';
+    var html = '<div class="gt-monospace" style="white-space: pre;">';
     var i;
     for (i = 0; i < stackTraceElements.length; i++) {
       html += escapeHtml(stackTraceElements[i]) + '\n';
@@ -358,10 +369,10 @@ HandlebarsRendering = (function () {
         $selector.data('gtLoaded', true);
         // first time opening
         initTraceEntryLineLength();
-        traceEntries = flattenTraceEntries(traceEntries);
+        flattenedTraceEntries = flattenTraceEntries(traceEntries);
         // un-hide before building in case there are lots of trace entries, at least can see first few quickly
         $selector.removeClass('hide');
-        renderNext(traceEntries, 0);
+        renderNext(flattenedTraceEntries, 0);
       } else {
         // this is not an export file
         var agentId = $traceParent.data('gtAgentId');
@@ -391,10 +402,13 @@ HandlebarsRendering = (function () {
               } else {
                 // first time opening
                 initTraceEntryLineLength();
-                data = flattenTraceEntries(data);
+                var last = data[data.length - 1];
+                // updating traceDurationNanos is needed for live traces
+                traceDurationNanos = Math.max(traceDurationNanos, last.startOffsetNanos + last.durationNanos);
+                flattenedTraceEntries = flattenTraceEntries(data);
                 // un-hide before building in case there are lots of trace entries, at least can see first few quickly
                 $selector.removeClass('hide');
-                renderNext(data, 0);
+                renderNext(flattenedTraceEntries, 0);
               }
             })
             .fail(function () {
@@ -414,6 +428,29 @@ HandlebarsRendering = (function () {
       $selector.removeClass('hide');
     } else {
       $selector.addClass('hide');
+    }
+  });
+
+  $(document).on('click', '.gt-trace-entry-toggle', function () {
+    var traceEntryIndex = $(this).data('index');
+    function hideTraceEntries(childEntries) {
+      var i;
+      for (i = 0; i < childEntries.length; i++) {
+        var entry = childEntries[i];
+        $('#gtTraceEntry' + entry.index).toggle();
+        if (entry.childEntries) {
+          hideTraceEntries(entry.childEntries);
+        }
+      }
+    }
+    hideTraceEntries(flattenedTraceEntries[traceEntryIndex].childEntries);
+    var $i = $(this).find('i');
+    if ($i.hasClass('fa-minus-square-o')) {
+      $i.removeClass('fa-minus-square-o');
+      $i.addClass('fa-plus-square-o');
+    } else {
+      $i.removeClass('fa-plus-square-o');
+      $i.addClass('fa-minus-square-o');
     }
   });
 
@@ -509,17 +546,15 @@ HandlebarsRendering = (function () {
   }
 
   function initTraceEntryLineLength() {
-    // using an average character (width-wise) 'o'
-    $('body').prepend('<span class="gt-offscreen" id="bodyFontCharWidth">o</span>');
-    var charWidth = $('#bodyFontCharWidth').width();
     // -170 for the left margin of the trace entry lines
-    traceEntryLineLength = ($('#sps').width() - 170) / charWidth;
-    // min value of 80, otherwise not enough context provided by the elipsed line
-    traceEntryLineLength = Math.max(traceEntryLineLength, 80);
+    traceEntryLineLength = ($('#sps').width() - 220) / monospaceCharWidth;
+    // min value of 60, otherwise not enough context provided by the elipsed line
+    traceEntryLineLength = Math.max(traceEntryLineLength, 60);
   }
 
   function flattenTraceEntries(traceEntries) {
     var flattenedTraceEntries = [];
+    var traceEntryIndex = 0;
 
     function flattenAndRecurse(traceEntries, depth) {
       var i;
@@ -528,6 +563,7 @@ HandlebarsRendering = (function () {
         traceEntry = traceEntries[i];
         traceEntry.depth = depth;
         flattenedTraceEntries.push(traceEntry);
+        traceEntry.index = traceEntryIndex++;
         if (traceEntry.childEntries) {
           flattenAndRecurse(traceEntry.childEntries, depth + 1);
         }
@@ -538,49 +574,25 @@ HandlebarsRendering = (function () {
     return flattenedTraceEntries;
   }
 
-  function renderNext(traceEntries, start, durationColumnWidth) {
+  function renderNext(traceEntries, start) {
     // large numbers of trace entries (e.g. 20,000) render much faster when grouped into sub-divs
     var batchSize;
     var i;
     if (start === 0) {
       // first batch size is smaller to make the records show up on screen right away
       batchSize = 100;
-      var maxDuration = 0;
-      // find the largest entry duration, not including trace entry exceeded/extended markers which have no duration
-      for (i = 0; i < traceEntries.length; i++) {
-        var entryDuration = traceEntries[i].durationNanos;
-        if (entryDuration) {
-          if (traceEntries[i].active) {
-            entryDuration *= 10; // need space for the ..
-          }
-          maxDuration = Math.max(maxDuration, entryDuration);
-        }
-      }
-      durationColumnWidth = formatMillis(maxDuration / 1000000).length / 2 + indent1;
     } else {
       // rest of batches are optimized for total throughput
       batchSize = 500;
     }
-    var html = '<div id="block' + start + '">';
-    var maxStartOffsetNanos;
-    // find the last entry offset, not including trace entry exceeded/extended markers which have no offset
-    for (i = traceEntries.length - 1; i >= 0; i--) {
-      maxStartOffsetNanos = traceEntries[i].startOffsetNanos;
-      if (maxStartOffsetNanos) {
-        break;
-      }
-    }
-    var offsetColumnWidth = formatMillis(maxStartOffsetNanos / 1000000).length / 2 + indent1;
+    var html = '';
     for (i = start; i < Math.min(start + batchSize, traceEntries.length); i++) {
-      traceEntries[i].offsetColumnWidth = offsetColumnWidth;
-      traceEntries[i].durationColumnWidth = durationColumnWidth;
       html += JST['trace-entry'](traceEntries[i]);
     }
-    html += '</div>';
     $('#sps').append(html);
     if (start + 100 < traceEntries.length) {
       setTimeout(function () {
-        renderNext(traceEntries, start + batchSize, durationColumnWidth);
+        renderNext(traceEntries, start + batchSize);
       }, 10);
     }
   }
@@ -625,22 +637,22 @@ HandlebarsRendering = (function () {
             console.log(sql);
           }
         } else {
-          var rows = beforeRowsStripped.substring(beforeParamsStripped.length);
-          var parameters = beforeParamsStripped.substring(sql.length);
+          var rows = beforeRowsStripped.substring(beforeParamsStripped.length + 1);
+          var parameters = beforeParamsStripped.substring(sql.length + 1);
           var html = 'jdbc execution:\n\n';
           // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
           // there are extra newlines after the pre tag
-          html += '<span style="display: inline-block; margin: 0; white-space: pre-wrap; font-family: monospace;">'
+          html += '<span class="gt-indent2 gt-inline-block" style="white-space: pre-wrap;">'
               + formatted + '</span>';
           if (parameters) {
             // the absolutely positioned &nbsp; is just for the copy to clipboard
-            html += '\n\nparameters:\n\n<span style="position: absolute;">&nbsp;</span>'
-                + '<span style="display: inline-block; margin: 0; padding-left: 15px;">' + parameters + '</span>';
+            html += '\n\n<span class="gt-indent2">parameters:</span>\n\n'
+                + '<span class="gt-indent2 gt-inline-block">&nbsp;&nbsp;' + parameters + '</span>';
           }
           if (rows) {
             // the absolutely positioned &nbsp; is just for the copy to clipboard
-            html += '\n\nrows:\n\n<span style="position: absolute;">&nbsp;</span>'
-                + '<span style="display: inline-block; margin: 0; padding-left: 15px;">' + rows + '</span>';
+            html += '\n\n<span class="gt-indent2">rows:</span>\n\n'
+                + '<span class="gt-indent2 gt-inline-block">&nbsp;&nbsp;' + rows + '</span>';
           }
           expanded.css('padding-bottom', '10px');
           var $clip = expanded.find('.gt-clip');
@@ -896,7 +908,7 @@ HandlebarsRendering = (function () {
           nodeSampleCount = nodes[nodes.length - 1].sampleCount;
         }
         var ret = '<span id="gtProfileNode' + node.id + '">';
-        ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + level + 'em;"';
+        ret += '<span class="gt-inline-block gt-width6" style="margin-left: ' + (2 * level * indent1) + 'px;"';
         ret += ' id="gtProfileNodePercent' + node.id + '">';
         var samplePercentage = (nodeSampleCount / profile.unfilteredSampleCount) * 100;
         ret += formatPercent(samplePercentage);
@@ -907,28 +919,30 @@ HandlebarsRendering = (function () {
         ret += '% </span>';
         if (nodes.length === 1) {
           ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-          ret += '<span class="gt-inline-block" style="padding: 1px 1em;">';
-          ret += '<span id="gtProfileNodeText' + node.id + '">' + escapeHtml(node.stackTraceElement);
+          ret += '<span class="gt-inline-block gt-pad1profile">';
+          ret += '<span class="gt-monospace" id="gtProfileNodeText' + node.id + '">';
+          ret += escapeHtml(node.stackTraceElement);
           ret += '</span></span><br>';
         } else {
           ret += '<span>';
           ret += '<span class="gt-inline-block gt-unexpanded-content" style="vertical-align: top;">';
           ret += '<span class="gt-link-color"><strong>...</strong> </span>';
-          ret += '<span id="gtProfileNodeTextUnexpanded' + nodes[nodes.length - 1].id + '">';
+          ret += '<span class="gt-monospace" id="gtProfileNodeTextUnexpanded' + nodes[nodes.length - 1].id + '">';
           ret += escapeHtml(nodes[nodes.length - 1].stackTraceElement) + '</span><br></span>';
           ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
           ret += '<span class="gt-inline-block gt-expanded-content hide" style="vertical-align: top;">';
           $.each(nodes, function (index, node) {
-            ret += '<span id="gtProfileNodeText' + node.id + '">' + escapeHtml(node.stackTraceElement)
-                + '</span><br>';
+            ret += '<span class="gt-monospace" id="gtProfileNodeText' + node.id + '">'
+                + escapeHtml(node.stackTraceElement) + '</span><br>';
           });
           ret += '</span></span><br>';
         }
         if (node.leafThreadState) {
-          ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + (level + 2) + 'em;"></span>';
+          ret += '<span class="gt-inline-block gt-width4" style="margin-left: ' + (level + 5) * indent2
+              + 'px;"></span>';
           ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-          ret += '<span class="gt-inline-block" style="padding: 1px 1em;"';
-          ret += ' id="gtProfileNodeThreadState' + node.id + '">';
+          ret += '<span class="gt-inline-block gt-pad1profile gt-monospace" id="gtProfileNodeThreadState';
+          ret += node.id + '">';
           ret += escapeHtml(node.leafThreadState);
           ret += '</span><br>';
         }
@@ -949,17 +963,19 @@ HandlebarsRendering = (function () {
         if (SHOW_ELLIPSED_NODE_MARKERS && node.ellipsedSampleCount) {
           var ellipsedSamplePercentage = (node.ellipsedSampleCount / rootNode.sampleCount) * 100;
           ret += '<div id="gtProfileNodeEllipsed' + node.id + '">';
-          ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + (level + 1) + 'em;"></span>';
+          ret += '<span class="gt-inline-block gt-width4" style="margin-left: ' + (level + 5) * indent2
+              + 'px;"></span>';
           ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-          ret += '<span class="gt-inline-block" style="padding: 1px 1em;">(one or more branches ~ ';
+          ret += '<span class="gt-inline-block gt-pad1profile">(one or more branches ~ ';
           ret += formatPercent(ellipsedSamplePercentage);
           ret += '%)</span></div>';
         }
         if (!SHOW_ELLIPSED_NODE_MARKERS && !node.childNodes && !node.leafThreadState) {
           ret += '<div id="gtProfileNodeEllipsed' + node.id + '">';
-          ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + (level + 1) + 'em;"></span>';
+          ret += '<span class="gt-inline-block gt-width4" style="margin-left: ' + (level + 5) * indent2
+              + 'px;"></span>';
           ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-          ret += '<span class="gt-inline-block" style="padding: 1px 1em;">(truncated branches)';
+          ret += '<span class="gt-inline-block gt-pad1profile" style="font-style: italic;">truncated branches';
           ret += '</span></div>';
         }
         ret += '</span>';
@@ -1081,6 +1097,7 @@ HandlebarsRendering = (function () {
         $selector.data('gtTraceId', traceId);
         $selector.data('gtCheckLiveTraces', checkLiveTraces);
       }
+      traceDurationNanos = traceHeader.durationNanos;
     },
     renderTraceFromExport: function (traceHeader, $selector, traceEntries, mainThreadProfile, auxThreadProfile) {
       $selector.data('gtTraceEntries', traceEntries);

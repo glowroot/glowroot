@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015 the original author or authors.
+  Copyright 2015-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -120,7 +120,7 @@
         <tbody>
         <tr ng-repeat="errorMessage in errorMessages">
           <!-- no whitespace/indentation inside td is important here -->
-          <td style="word-break: break-all; white-space: pre-line;">{{errorMessage.message}}</td>
+          <td class="gt-monospace" style="word-break: break-all; white-space: pre-line;">{{errorMessage.message}}</td>
           <td style="text-align: right;">
             {{errorMessage.count}}
           </td>

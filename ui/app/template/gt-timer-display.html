@@ -51,7 +51,7 @@
       ng-repeat="treeTimer in treeTimers">
     <td style="text-align: left;">
       <div class="gt-indent2">
-        <div class="gt-break-word gt-second-line-indent" ng-style="{'margin-left': treeTimer.nestingLevel + 'em'}">
+        <div class="gt-break-word gt-second-line-indent" ng-style="{'margin-left': treeTimer.nestingIndent + 'px'}">
           {{treeTimer.name}}{{treeTimer.extended ? ' (extended)' : ''}}
         </div>
       </div>
