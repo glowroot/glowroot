@@ -103,7 +103,7 @@ glowroot.controller('TracesCtrl', [
               var i;
               for (i = 0; i < dataPoints.length; i++) {
                 var activePoint = dataPoints[i];
-                if (activePoint[2] === highlightedTraceId) {
+                if (activePoint[3] === highlightedTraceId) {
                   plot.highlight(dataSeries, activePoint.slice(0, 2));
                   return true;
                 }
