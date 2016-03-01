@@ -80,10 +80,10 @@ class TracePointJsonService {
     private String getPoints(TraceKind traceKind, String queryString) throws Exception {
         TracePointRequest request = QueryStrings.decode(queryString, TracePointRequest.class);
 
-        double durationMillisLow = request.responseTimeMillisLow();
+        double durationMillisLow = request.durationMillisLow();
         long durationNanosLow = Math.round(durationMillisLow * NANOSECONDS_PER_MILLISECOND);
         Long durationNanosHigh = null;
-        Double durationMillisHigh = request.responseTimeMillisHigh();
+        Double durationMillisHigh = request.durationMillisHigh();
         if (durationMillisHigh != null) {
             durationNanosHigh = Math.round(durationMillisHigh * NANOSECONDS_PER_MILLISECOND);
         }
@@ -298,8 +298,8 @@ class TracePointJsonService {
         public abstract @Nullable String transactionName();
         public abstract long from();
         public abstract long to();
-        public abstract double responseTimeMillisLow();
-        public abstract @Nullable Double responseTimeMillisHigh();
+        public abstract double durationMillisLow();
+        public abstract @Nullable Double durationMillisHigh();
         public abstract @Nullable StringComparator headlineComparator();
         public abstract @Nullable String headline();
         public abstract @Nullable StringComparator errorMessageComparator();

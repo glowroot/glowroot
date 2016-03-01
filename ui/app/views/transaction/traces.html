@@ -100,9 +100,9 @@
        class="col-lg-9 col-lg-pull-3 form-horizontal trace-filters"
        style="margin: 20px auto 0 auto;">
     <div class="form-group"
-         ng-class="{'has-error': formCtrl.filterResponseTimeMillisLow.$invalid || formCtrl.filterResponseTimeMillisHigh.$invalid}">
+         ng-class="{'has-error': formCtrl.filterDurationMillisLow.$invalid || formCtrl.filterDurationMillisHigh.$invalid}">
       <label class="col-lg-4 control-label"
-             for="{{filterResponseTimeComparator !== 'less' ? 'filterResponseTimeMillisLow' : 'filterResponseTimeMillisHigh'}}">
+             for="{{filterDurationComparator !== 'less' ? 'filterDurationMillisLow' : 'filterDurationMillisHigh'}}">
         Response time
       </label>
 
@@ -110,31 +110,31 @@
         <!-- input-group needs to be in a sub-div so it doesn't try to fill the entire width,
              which would push the addon "milliseconds" label flush right -->
         <div class="input-group"
-             style="width: {{filterResponseTimeComparator === 'between' ? 30 : 25}}em;">
+             style="width: {{filterDurationComparator === 'between' ? 30 : 25}}em;">
           <div gt-input-group-dropdown
-               gt-model="filterResponseTimeComparator"
-               gt-items="filterResponseTimeComparatorOptions"
+               gt-model="filterDurationComparator"
+               gt-items="filterDurationComparatorOptions"
                class="input-group-left">
           </div>
           <input type="text"
-                 ng-model="filter.responseTimeMillisLow"
-                 ng-show="filterResponseTimeComparator !== 'less'"
+                 ng-model="filter.durationMillisLow"
+                 ng-show="filterDurationComparator !== 'less'"
                  ng-pattern="/^(0|[1-9][0-9]*)$/"
                  class="form-control"
-                 id="filterResponseTimeMillisLow"
-                 name="filterResponseTimeMillisLow">
-        <span ng-show="filterResponseTimeComparator === 'between'"
+                 id="filterDurationMillisLow"
+                 name="filterDurationMillisLow">
+        <span ng-show="filterDurationComparator === 'between'"
               class="input-group-addon"
               style="border-left-width: 0; border-right-width: 0;">
           and
         </span>
           <input type="text"
-                 ng-model="filter.responseTimeMillisHigh"
-                 ng-show="filterResponseTimeComparator !== 'greater'"
+                 ng-model="filter.durationMillisHigh"
+                 ng-show="filterDurationComparator !== 'greater'"
                  ng-pattern="/^(0|[1-9][0-9]*)$/"
                  class="form-control"
-                 id="filterResponseTimeMillisHigh"
-                 name="filterResponseTimeMillisHigh">
+                 id="filterDurationMillisHigh"
+                 name="filterDurationMillisHigh">
         <span class="input-group-addon">
           milliseconds
         </span>
