@@ -118,7 +118,7 @@ public class BasicSmokeIT extends WebDriverIT {
         Utils.withWait(driver, By.partialLinkText("Queries")).click();
         Utils.withWait(driver, By.partialLinkText("Continuous profiling")).click();
         Utils.withWait(driver, By.xpath("//input[@ng-model='filter']")).sendKeys("JdbcServlet");
-        Utils.withWait(driver, By.xpath("//button[@ng-click='refreshButtonClick()']")).click();
+        Utils.withWait(driver, By.xpath("//button[@ng-click='refresh()']")).click();
         new WebDriverWait(driver, 30).until(ExpectedConditions
                 .textToBePresentInElementLocated(By.className("gt-profile"), "JdbcServlet"));
 
@@ -155,7 +155,7 @@ public class BasicSmokeIT extends WebDriverIT {
                 By.xpath("//a[@gt-display='All Servlet Transactions'][not(contains(., '%'))]"));
 
         Utils.withWait(driver, By.xpath("//input[@ng-model='filter']")).sendKeys("xyz");
-        Utils.withWait(driver, By.xpath("//button[@ng-click='refreshButtonClick()']")).click();
+        Utils.withWait(driver, By.xpath("//button[@ng-click='refresh()']")).click();
         Utils.withWait(driver, By.partialLinkText("Error traces")).click();
         globalNavbar.getErrorsLink().click();
         try {

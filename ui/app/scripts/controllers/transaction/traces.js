@@ -57,9 +57,9 @@ glowroot.controller('TracesCtrl', [
       {text: '5,000', value: 5000}
     ];
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
-      appliedFilter.from = $scope.traceChartFrom || $scope.chartFrom;
-      appliedFilter.to = $scope.traceChartTo || $scope.chartTo;
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function () {
+      appliedFilter.from = $scope.traceChartFrom || $scope.range.chartFrom;
+      appliedFilter.to = $scope.traceChartTo || $scope.range.chartTo;
       updateLocation();
       if ($scope.suppressChartRefresh) {
         $scope.suppressChartRefresh = false;
@@ -92,7 +92,11 @@ glowroot.controller('TracesCtrl', [
         query.transactionName = $scope.transactionName;
       }
       query.agentRollup = $scope.agentRollup;
-      $scope.showChartSpinner++;
+      var showChartSpinner = !$scope.suppressChartSpinner;
+      if (showChartSpinner) {
+        $scope.showChartSpinner++;
+      }
+      $scope.suppressChartSpinner = false;
       $http.get('backend/' + traceKind + '/points' + queryStrings.encodeObject(query))
           .success(function (data) {
             function tryHighlight(dataPoints, dataSeries) {
@@ -117,8 +121,11 @@ glowroot.controller('TracesCtrl', [
               tryHighlight(data.activePoints, plot.getData()[2]);
             }
 
-            $scope.showChartSpinner--;
+            if (showChartSpinner) {
+              $scope.showChartSpinner--;
+            }
             if ($scope.showChartSpinner) {
+              // ignore this response, another response has been stacked
               return;
             }
             var traceCount = data.normalPoints.length + data.errorPoints.length + data.activePoints.length;
@@ -166,10 +173,10 @@ glowroot.controller('TracesCtrl', [
       }
     }
 
-    $scope.refreshButtonClick = function () {
+    $scope.refresh = function () {
       $scope.applyLast();
       angular.extend(appliedFilter, $scope.filter);
-      $scope.$parent.chartRefresh++;
+      $scope.range.chartRefresh++;
     };
 
     $scope.clearCriteria = function () {
@@ -186,24 +193,24 @@ glowroot.controller('TracesCtrl', [
       $scope.filter.attributeValueComparator = 'begins';
       $scope.filter.attributeValue = '';
       $scope.filter.limit = defaultFilterLimit;
-      $scope.refreshButtonClick();
+      $scope.refresh();
     };
 
     function postUpdateRange(range) {
       if (range.to - range.from >= 300000) {
         // lock to overall chartFrom/chartTo (just updated above in updateRange) if range > 5 minutes
-        range.from = $scope.chartFrom;
-        range.to = $scope.chartTo;
+        range.from = $scope.range.chartFrom;
+        range.to = $scope.range.chartTo;
         delete $scope.traceChartFrom;
         delete $scope.traceChartTo;
       } else {
         // use chartFrom/chartTo (just updated above in updateRange) as bounds for from/to:
-        range.from = Math.max(range.from, $scope.chartFrom);
-        range.to = Math.min(range.to, $scope.chartTo);
+        range.from = Math.max(range.from, $scope.range.chartFrom);
+        range.to = Math.min(range.to, $scope.range.chartTo);
         $scope.traceChartFrom = range.from;
         $scope.traceChartTo = range.to;
         // last doesn't make sense with trace-chart-from/trace-chart-to (what to do on browser refresh at later time?)
-        delete $scope.$parent.last;
+        delete $scope.range.last;
       }
     }
 
@@ -214,7 +221,7 @@ glowroot.controller('TracesCtrl', [
           from: plot.getAxes().xaxis.options.min,
           to: plot.getAxes().xaxis.options.max
         };
-        charts.updateRange($scope.$parent, range.from, range.to, zoomingOut);
+        charts.updateRange($scope, range.from, range.to, zoomingOut);
         postUpdateRange(range);
         if (zoomingOut) {
           // scroll zooming out, reset duration limits
@@ -246,7 +253,7 @@ glowroot.controller('TracesCtrl', [
           from: ranges.xaxis.from,
           to: ranges.xaxis.to
         };
-        charts.updateRange($scope.$parent, range.from, range.to, false, true, true);
+        charts.updateRange($scope, range.from, range.to, false, true, true);
         postUpdateRange(range);
         updateFilter(range.from, range.to, ranges.yaxis.from, ranges.yaxis.to);
         if ($scope.chartLimitExceeded) {
@@ -269,19 +276,19 @@ glowroot.controller('TracesCtrl', [
     });
 
     $scope.zoomOut = function () {
-      var currMin = $scope.chartFrom;
-      var currMax = $scope.chartTo;
+      var currMin = $scope.range.chartFrom;
+      var currMax = $scope.range.chartTo;
       var currRange = currMax - currMin;
       var range = {
         from: currMin - currRange / 2,
         to: currMax + currRange / 2
       };
-      charts.updateRange($scope.$parent, range.from, range.to, true);
+      charts.updateRange($scope, range.from, range.to, true);
       postUpdateRange(range);
       if ($scope.traceChartFrom && $scope.traceChartTo) {
-        // use updated $scope.chartFrom/To as bounds for from/to:
-        $scope.traceChartFrom = Math.max(range.from, $scope.chartFrom);
-        $scope.traceChartTo = Math.min(range.to, $scope.chartTo);
+        // use updated $scope.range.chartFrom/To as bounds for from/to:
+        $scope.traceChartFrom = Math.max(range.from, $scope.range.chartFrom);
+        $scope.traceChartTo = Math.min(range.to, $scope.range.chartTo);
       }
     };
 
@@ -405,8 +412,8 @@ glowroot.controller('TracesCtrl', [
       appliedFilter.transactionType = $scope.transactionType;
       $scope.traceChartFrom = Number($location.search()['trace-chart-from']);
       $scope.traceChartTo = Number($location.search()['trace-chart-to']);
-      appliedFilter.from = $scope.traceChartFrom || $scope.chartFrom;
-      appliedFilter.to = $scope.traceChartTo || $scope.chartTo;
+      appliedFilter.from = $scope.traceChartFrom || $scope.range.chartFrom;
+      appliedFilter.to = $scope.traceChartTo || $scope.range.chartTo;
       appliedFilter.durationMillisLow = Number($location.search()['duration-millis-low']) || 0;
       appliedFilter.durationMillisHigh = Number($location.search()['duration-millis-high']) || undefined;
       appliedFilter.headlineComparator = $location.search()['headline-comparator'] || 'begins';
@@ -422,7 +429,7 @@ glowroot.controller('TracesCtrl', [
 
       if (priorAppliedFilter !== undefined && !angular.equals(appliedFilter, priorAppliedFilter)) {
         // e.g. back or forward button was used to navigate
-        $scope.$parent.chartRefresh++;
+        $scope.range.chartRefresh++;
       }
 
       $scope.filter = angular.copy(appliedFilter);

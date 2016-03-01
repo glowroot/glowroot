@@ -38,6 +38,8 @@ glowroot.controller('TransactionCtrl', [
     $scope.shortName = shortName;
     $scope.defaultSummarySortOrder = defaultSummarySortOrder;
 
+    $scope.range = {};
+
     $scope.hideAgentRollupDropdown = function () {
       return $scope.layout.agentRollups.length === 1 || $scope.layout.fat;
     };
@@ -84,26 +86,26 @@ glowroot.controller('TransactionCtrl', [
         query['transaction-type'] = transactionTypes[0];
       }
 
-      if ($scope.last) {
-        if ($scope.last !== 4 * 60 * 60 * 1000) {
-          query.last = $scope.last;
+      if ($scope.range.last) {
+        if ($scope.range.last !== 4 * 60 * 60 * 1000) {
+          query.last = $scope.range.last;
         }
       } else {
-        query.from = $scope.chartFrom;
-        query.to = $scope.chartTo;
+        query.from = $scope.range.chartFrom;
+        query.to = $scope.range.chartTo;
       }
       return queryStrings.encodeObject(query);
     };
 
     // TODO this is exact duplicate of same function in gauges.js
     $scope.applyLast = function () {
-      if (!$scope.last) {
+      if (!$scope.range.last) {
         return;
       }
-      var dataPointIntervalMillis = charts.getDataPointIntervalMillis(0, 1.1 * $scope.last);
+      var dataPointIntervalMillis = charts.getDataPointIntervalMillis(0, 1.1 * $scope.range.last);
       var now = moment().startOf('second').valueOf();
-      var from = now - $scope.last;
-      var to = now + $scope.last / 10;
+      var from = now - $scope.range.last;
+      var to = now + $scope.range.last / 10;
       var revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
       var revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
       var revisedDataPointIntervalMillis = charts.getDataPointIntervalMillis(revisedFrom, revisedTo);
@@ -113,8 +115,8 @@ glowroot.controller('TransactionCtrl', [
         revisedFrom = Math.floor(from / revisedDataPointIntervalMillis) * revisedDataPointIntervalMillis;
         revisedTo = Math.ceil(to / revisedDataPointIntervalMillis) * revisedDataPointIntervalMillis;
       }
-      $scope.chartFrom = revisedFrom;
-      $scope.chartTo = revisedTo;
+      $scope.range.chartFrom = revisedFrom;
+      $scope.range.chartTo = revisedTo;
     };
 
     function onLocationChangeSuccess() {
@@ -124,14 +126,14 @@ glowroot.controller('TransactionCtrl', [
       }
       $scope.transactionType = $location.search()['transaction-type'];
       $scope.transactionName = $location.search()['transaction-name'];
-      $scope.last = Number($location.search().last);
-      $scope.chartFrom = Number($location.search().from);
-      $scope.chartTo = Number($location.search().to);
+      $scope.range.last = Number($location.search().last);
+      $scope.range.chartFrom = Number($location.search().from);
+      $scope.range.chartTo = Number($location.search().to);
       // both from and to must be supplied or neither will take effect
-      if (!isNaN($scope.chartFrom) && !isNaN($scope.chartTo)) {
-        $scope.last = 0;
-      } else if (!$scope.last) {
-        $scope.last = 4 * 60 * 60 * 1000;
+      if (!isNaN($scope.range.chartFrom) && !isNaN($scope.range.chartTo)) {
+        $scope.range.last = 0;
+      } else if (!$scope.range.last) {
+        $scope.range.last = 4 * 60 * 60 * 1000;
       }
       $scope.summarySortOrder = $location.search()['summary-sort-order'] || $scope.defaultSummarySortOrder;
 
@@ -145,7 +147,7 @@ glowroot.controller('TransactionCtrl', [
     });
     onLocationChangeSuccess();
 
-    $scope.$watchGroup(['last', 'chartFrom', 'chartTo', 'summarySortOrder'], function (newValues, oldValues) {
+    $scope.$watchGroup(['range', 'summarySortOrder'], function (newValues, oldValues) {
       if (newValues !== oldValues) {
         $location.search($scope.buildQueryObject());
       }
@@ -170,12 +172,12 @@ glowroot.controller('TransactionCtrl', [
       }
       query['transaction-type'] = $scope.transactionType;
       query['transaction-name'] = $scope.transactionName;
-      if (!$scope.last) {
-        query.from = $scope.chartFrom;
-        query.to = $scope.chartTo;
+      if (!$scope.range.last) {
+        query.from = $scope.range.chartFrom;
+        query.to = $scope.range.chartTo;
         delete query.last;
-      } else if ($scope.last !== 4 * 60 * 60 * 1000) {
-        query.last = $scope.last;
+      } else if ($scope.range.last !== 4 * 60 * 60 * 1000) {
+        query.last = $scope.range.last;
         delete query.from;
         delete query.to;
       }

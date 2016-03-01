@@ -37,10 +37,10 @@ glowroot.controller('TransactionPercentilesCtrl', [
     var appliedPercentiles;
 
     function refreshData() {
-      charts.refreshData('backend/transaction/percentiles', chartState, $scope.$parent, addToQuery, onRefreshData);
+      charts.refreshData('backend/transaction/percentiles', chartState, $scope, addToQuery, onRefreshData);
     }
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function () {
       if (angular.equals(appliedPercentiles, $scope.layout.defaultPercentiles)) {
         $location.search('percentile', null);
       } else {
@@ -51,7 +51,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
 
     $scope.clickTopRadioButton = function (item) {
       if (item === 'percentiles') {
-        $scope.$parent.chartRefresh++;
+        $scope.range.chartRefresh++;
       } else {
         $location.url('transaction/' + item + $scope.tabQueryString());
       }
@@ -59,7 +59,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
 
     $scope.clickActiveTopLink = function (event) {
       if (!event.ctrlKey) {
-        $scope.$parent.chartRefresh++;
+        $scope.range.chartRefresh++;
         // suppress normal link
         event.preventDefault();
         return false;
@@ -84,7 +84,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
       });
       sortNumbers(appliedPercentiles);
       $('#customPercentilesModal').modal('hide');
-      $scope.$parent.chartRefresh++;
+      $scope.range.chartRefresh++;
     };
 
     locationChanges.on($scope, function () {
@@ -100,7 +100,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
       }
 
       if (priorAppliedPercentiles !== undefined && !angular.equals(appliedPercentiles, priorAppliedPercentiles)) {
-        $scope.$parent.chartRefresh++;
+        $scope.range.chartRefresh++;
       }
       $scope.percentiles = appliedPercentiles;
     });
@@ -142,8 +142,8 @@ glowroot.controller('TransactionPercentilesCtrl', [
       }
     };
 
-    charts.init(chartState, $('#chart'), $scope.$parent);
-    charts.plot([[]], chartOptions, chartState, $('#chart'), $scope.$parent);
+    charts.init(chartState, $('#chart'), $scope);
+    charts.plot([[]], chartOptions, chartState, $('#chart'), $scope);
     charts.initResize(chartState.plot, $scope);
   }
 ]);

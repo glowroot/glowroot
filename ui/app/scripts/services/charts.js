@@ -21,10 +21,11 @@ glowroot.factory('charts', [
   '$http',
   '$location',
   '$rootScope',
+  '$timeout',
   'keyedColorPools',
   'queryStrings',
   'httpErrors',
-  function ($http, $location, $rootScope, keyedColorPools, queryStrings, httpErrors) {
+  function ($http, $location, $rootScope, $timeout, keyedColorPools, queryStrings, httpErrors) {
 
     function createState() {
       return {
@@ -33,7 +34,7 @@ glowroot.factory('charts', [
       };
     }
 
-    function init(chartState, $chart, $scope) {
+    function init(chartState, $chart, $scope, $parentScope) {
 
       $scope.showChartSpinner = 0;
 
@@ -56,15 +57,15 @@ glowroot.factory('charts', [
       });
 
       $scope.zoomOut = function () {
-        var currMin = $scope.chartFrom;
-        var currMax = $scope.chartTo;
+        var currMin = $scope.range.chartFrom;
+        var currMax = $scope.range.chartTo;
         var currRange = currMax - currMin;
         updateRange($scope, currMin - currRange / 2, currMax + currRange / 2, true);
       };
 
       $scope.refresh = function () {
         $scope.applyLast();
-        $scope.chartRefresh++;
+        $scope.range.chartRefresh++;
       };
     }
 
@@ -78,10 +79,10 @@ glowroot.factory('charts', [
 
     function updateRange($scope, from, to, zoomingOut, selection, selectionNearestLarger) {
       // force chart refresh even if chartFrom/chartTo don't change (e.g. trying to zoom in beyond single interval)
-      $scope.chartRefresh++;
+      $scope.range.chartRefresh++;
 
-      if (zoomingOut && $scope.last) {
-        $scope.last = roundUpLast($scope.last * 2);
+      if (zoomingOut && $scope.range.last) {
+        $scope.range.last = roundUpLast($scope.range.last * 2);
         $scope.applyLast();
         return;
       }
@@ -117,20 +118,20 @@ glowroot.factory('charts', [
       var now = new Date().getTime();
       // need to compare original 'to' in case it was revised below 'now'
       if (revisedTo > now || to > now) {
-        if (!zoomingOut && !selection && $scope.last) {
+        if (!zoomingOut && !selection && $scope.range.last) {
           // double-click or scrollwheel zooming in, need special case here, otherwise might zoom in a bit too much
           // due to shrinking the zoom to data point interval, which could result in strange 2 days --> 22 hours
           // instead of the more obvious 2 days --> 1 day
-          $scope.last = roundUpLast($scope.last / 2);
+          $scope.range.last = roundUpLast($scope.range.last / 2);
           $scope.applyLast();
           return;
         }
-        $scope.last = roundUpLast(now - revisedFrom, selection);
+        $scope.range.last = roundUpLast(now - revisedFrom, selection);
         $scope.applyLast();
       } else {
-        $scope.chartFrom = revisedFrom;
-        $scope.chartTo = revisedTo;
-        $scope.last = 0;
+        $scope.range.chartFrom = revisedFrom;
+        $scope.range.chartTo = revisedTo;
+        $scope.range.last = 0;
       }
     }
 
@@ -192,8 +193,8 @@ glowroot.factory('charts', [
           timezone: 'browser',
           twelveHourClock: true,
           ticks: 5,
-          min: $scope.chartFrom,
-          max: $scope.chartTo,
+          min: $scope.range.chartFrom,
+          max: $scope.range.chartTo,
           reserveSpace: false
         },
         yaxis: {
@@ -233,8 +234,8 @@ glowroot.factory('charts', [
 
     function refreshData(url, chartState, $scope, addToQuery, onRefreshData) {
       // addToQuery may change query.from/query.to (see gauges.js)
-      var chartFrom = $scope.chartFrom;
-      var chartTo = $scope.chartTo;
+      var chartFrom = $scope.range.chartFrom;
+      var chartTo = $scope.range.chartTo;
       var query = {
         agentRollup: $scope.agentRollup,
         transactionType: $scope.transactionType,
@@ -245,10 +246,16 @@ glowroot.factory('charts', [
       if (addToQuery) {
         addToQuery(query);
       }
-      $scope.showChartSpinner++;
+      var showChartSpinner = !$scope.suppressChartSpinner;
+      if (showChartSpinner) {
+        $scope.showChartSpinner++;
+      }
+      $scope.suppressChartSpinner = false;
       $http.get(url + queryStrings.encodeObject(query))
           .success(function (data) {
-            $scope.showChartSpinner--;
+            if (showChartSpinner) {
+              $scope.showChartSpinner--;
+            }
             if ($scope.showChartSpinner) {
               // ignore this response, another response has been stacked
               return;

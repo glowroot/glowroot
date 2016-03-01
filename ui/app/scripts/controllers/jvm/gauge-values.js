@@ -45,6 +45,8 @@ glowroot.controller('JvmGaugeValuesCtrl', [
 
     $scope.gaugeFilter = '';
 
+    $scope.range = {};
+
     $scope.currentTabUrl = function () {
       return 'jvm/gauges';
     };
@@ -53,19 +55,20 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       charts.refreshData('backend/jvm/gauge-values', chartState, $scope, addToQuery, onRefreshData);
     }
 
-    $scope.$watch('[last, chartFrom, chartTo, gaugeNames, chartRefresh]', function (newValues, oldValues) {
-      if (newValues !== oldValues) {
-        $location.search($scope.buildQueryObject());
-        if ($scope.gaugeNames.length) {
-          refreshData();
-        } else {
-          // ideally wouldn't need to refreshData here, but this seems a rare condition (to de-select all gauges)
-          // and need some way to clear the last gauge from the chart, and this is easy
-          refreshData();
-          $scope.chartNoData = true;
-        }
-      }
-    }, true);
+    $scope.$watchGroup(['range.last', 'range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'gaugeNames'],
+        function (newValues, oldValues) {
+          if (newValues !== oldValues) {
+            $location.search($scope.buildQueryObject());
+            if ($scope.gaugeNames.length) {
+              refreshData();
+            } else {
+              // ideally wouldn't need to refreshData here, but this seems a rare condition (to de-select all gauges)
+              // and need some way to clear the last gauge from the chart, and this is easy
+              refreshData();
+              $scope.chartNoData = true;
+            }
+          }
+        }, true);
 
     $scope.$watch('seriesLabels', function (newValues, oldValues) {
       if (newValues !== oldValues) {
@@ -84,11 +87,11 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       delete query.from;
       delete query.to;
       delete query.last;
-      if (!$scope.last) {
-        query.from = $scope.chartFrom;
-        query.to = $scope.chartTo;
-      } else if ($scope.last !== 4 * 60 * 60 * 1000) {
-        query.last = $scope.last;
+      if (!$scope.range.last) {
+        query.from = $scope.range.chartFrom;
+        query.to = $scope.range.chartTo;
+      } else if ($scope.range.last !== 4 * 60 * 60 * 1000) {
+        query.last = $scope.range.last;
       }
       if (angular.equals($scope.gaugeNames, DEFAULT_GAUGES)) {
         delete query['gauge-name'];
@@ -100,13 +103,13 @@ glowroot.controller('JvmGaugeValuesCtrl', [
 
     // TODO this is exact duplicate of same function in transaction.js
     $scope.applyLast = function () {
-      if (!$scope.last) {
+      if (!$scope.range.last) {
         return;
       }
-      var dataPointIntervalMillis = charts.getDataPointIntervalMillis(0, 1.1 * $scope.last);
+      var dataPointIntervalMillis = charts.getDataPointIntervalMillis(0, 1.1 * $scope.range.last);
       var now = moment().startOf('second').valueOf();
-      var from = now - $scope.last;
-      var to = now + $scope.last / 10;
+      var from = now - $scope.range.last;
+      var to = now + $scope.range.last / 10;
       var revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
       var revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
       var revisedDataPointIntervalMillis = charts.getDataPointIntervalMillis(revisedFrom, revisedTo);
@@ -116,8 +119,8 @@ glowroot.controller('JvmGaugeValuesCtrl', [
         revisedFrom = Math.floor(from / revisedDataPointIntervalMillis) * revisedDataPointIntervalMillis;
         revisedTo = Math.ceil(to / revisedDataPointIntervalMillis) * revisedDataPointIntervalMillis;
       }
-      $scope.chartFrom = revisedFrom;
-      $scope.chartTo = revisedTo;
+      $scope.range.chartFrom = revisedFrom;
+      $scope.range.chartTo = revisedTo;
     };
 
     var location;
@@ -164,7 +167,9 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       if (!angular.equals(location, priorLocation)) {
         // only update scope if relevant change
         $scope.gaugeNames = angular.copy(location.gaugeNames);
-        angular.extend($scope, location);
+        $scope.range.last = location.last;
+        $scope.range.chartFrom = location.chartFrom;
+        $scope.range.chartTo = location.chartTo;
         $scope.applyLast();
       }
     });
@@ -440,8 +445,8 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       tooltipOpts: {
         content: function (label, xval, yval, flotItem) {
           var rollupConfig0 = $scope.layout.rollupConfigs[0];
-          if (charts.getDataPointIntervalMillis($scope.chartFrom, $scope.chartTo) === rollupConfig0.intervalMillis
-              && $scope.chartTo - $scope.chartFrom < rollupConfig0.viewThresholdMillis) {
+          if (charts.getDataPointIntervalMillis($scope.range.chartFrom, $scope.range.chartTo) === rollupConfig0.intervalMillis
+              && $scope.range.chartTo - $scope.range.chartFrom < rollupConfig0.viewThresholdMillis) {
             var nonScaledValue = yvalMaps[label][xval];
             var tooltip = '<table class="gt-chart-tooltip">';
             tooltip += '<tr><td colspan="2" style="font-weight: 600;">' + gaugeShortDisplayMap[label];

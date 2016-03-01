@@ -29,14 +29,15 @@ glowroot.controller('TransactionTabCtrl', [
     var filteredTraceTabCount;
     var concurrentUpdateCount = 0;
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'transactionName', 'chartRefresh'], function (newValues, oldValues) {
-      if (newValues !== oldValues) {
-        $timeout(function () {
-          // slight delay to de-prioritize tab bar data request
-          updateTabBarData();
-        }, 100);
-      }
-    });
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'transactionName'],
+        function (newValues, oldValues) {
+          if (newValues !== oldValues) {
+            $timeout(function () {
+              // slight delay to de-prioritize tab bar data request
+              updateTabBarData();
+            }, 100);
+          }
+        });
 
     $scope.$on('updateTraceTabCount', function (event, traceCount) {
       filteredTraceTabCount = traceCount;
@@ -54,7 +55,7 @@ glowroot.controller('TransactionTabCtrl', [
 
     $scope.clickTab = function (tabItem, event) {
       if (tabItem === $scope.activeTabItem && !event.ctrlKey) {
-        $scope.$parent.chartRefresh++;
+        $scope.range.chartRefresh++;
         // suppress normal link
         event.preventDefault();
         return false;
@@ -90,7 +91,7 @@ glowroot.controller('TransactionTabCtrl', [
           activeElement.blur();
         }
       }
-      if ($scope.last) {
+      if ($scope.range.last) {
         $timeout(function () {
           // slight delay to de-prioritize summaries data request
           updateTabBarData();
@@ -109,8 +110,8 @@ glowroot.controller('TransactionTabCtrl', [
         agentRollup: $scope.agentRollup,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
-        from: $scope.chartFrom,
-        to: $scope.chartTo
+        from: $scope.range.chartFrom,
+        to: $scope.range.chartTo
       };
       concurrentUpdateCount++;
       $http.get('backend/' + shortName + '/tab-bar-data' + queryStrings.encodeObject(query))

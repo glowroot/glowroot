@@ -32,13 +32,12 @@ glowroot.controller('ErrorMessagesCtrl', [
 
     var chartState = charts.createState();
 
-    $scope.showChartOverlay = 0;
     $scope.showChartSpinner = 0;
 
     var errorMessageLimit = 25;
     var dataSeriesExtra;
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function () {
       $location.search('filter', $scope.filter || null);
       refreshData();
     });
@@ -57,25 +56,24 @@ glowroot.controller('ErrorMessagesCtrl', [
         agentRollup: $scope.agentRollup,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
-        from: $scope.chartFrom,
-        to: $scope.chartTo,
+        from: $scope.range.chartFrom,
+        to: $scope.range.chartTo,
         include: parseResult.includes,
         exclude: parseResult.excludes,
         errorMessageLimit: errorMessageLimit
       };
-      if (deferred) {
-        $scope.showChartOverlay++;
-      } else {
+      var showChartSpinner = !$scope.suppressChartSpinner;
+      if (showChartSpinner) {
         $scope.showChartSpinner++;
       }
+      $scope.suppressChartSpinner = false;
       $http.get('backend/error/messages' + queryStrings.encodeObject(query))
           .success(function (data) {
-            if (deferred) {
-              $scope.showChartOverlay--;
-            } else {
+            if (showChartSpinner) {
               $scope.showChartSpinner--;
             }
-            if ($scope.showChartOverlay || $scope.showChartSpinner) {
+            if ($scope.showChartSpinner) {
+              // ignore this response, another response has been stacked
               return;
             }
             $scope.chartNoData = !data.dataSeries.data.length;
@@ -99,11 +97,7 @@ glowroot.controller('ErrorMessagesCtrl', [
             }
           })
           .error(function (data, status) {
-            if (deferred) {
-              $scope.showChartOverlay--;
-            } else {
-              $scope.showChartSpinner--;
-            }
+            $scope.showChartSpinner--;
             httpErrors.handler($scope, deferred)(data, status);
           });
     }
@@ -115,8 +109,8 @@ glowroot.controller('ErrorMessagesCtrl', [
       }
       query['transaction-type'] = $scope.transactionType;
       query['transaction-name'] = $scope.transactionName;
-      query.from = $scope.chartFrom;
-      query.to = $scope.chartTo;
+      query.from = $scope.range.chartFrom;
+      query.to = $scope.range.chartTo;
       if (errorMessage.message.length <= 1000) {
         query.errorComparator = 'equals';
         query.error = errorMessage.message;
@@ -134,10 +128,10 @@ glowroot.controller('ErrorMessagesCtrl', [
       refreshData(deferred);
     };
 
-    $scope.refreshButtonClick = function () {
+    $scope.refresh = function () {
       $scope.applyLast();
       appliedFilter = $scope.filter;
-      $scope.$parent.chartRefresh++;
+      $scope.range.chartRefresh++;
     };
 
     locationChanges.on($scope, function () {
@@ -146,7 +140,7 @@ glowroot.controller('ErrorMessagesCtrl', [
 
       if (priorAppliedFilter !== undefined && appliedFilter !== priorAppliedFilter) {
         // e.g. back or forward button was used to navigate
-        $scope.$parent.chartRefresh++;
+        $scope.range.chartRefresh++;
       }
       $scope.filter = appliedFilter;
     });
@@ -186,8 +180,8 @@ glowroot.controller('ErrorMessagesCtrl', [
       }
     };
 
-    charts.init(chartState, $('#chart'), $scope.$parent);
-    charts.plot([[]], chartOptions, chartState, $('#chart'), $scope.$parent);
+    charts.init(chartState, $('#chart'), $scope);
+    charts.plot([[]], chartOptions, chartState, $('#chart'), $scope);
     charts.initResize(chartState.plot, $scope);
   }
 ]);

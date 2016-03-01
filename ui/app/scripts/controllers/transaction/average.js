@@ -19,8 +19,9 @@
 glowroot.controller('TransactionAverageCtrl', [
   '$scope',
   '$location',
+  '$timeout',
   'charts',
-  function ($scope, $location, charts) {
+  function ($scope, $location, $timeout, charts) {
 
     $scope.$parent.activeTabItem = 'time';
 
@@ -34,13 +35,13 @@ glowroot.controller('TransactionAverageCtrl', [
       charts.refreshData('backend/transaction/average', chartState, $scope, undefined, onRefreshData);
     }
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function () {
       refreshData();
     });
 
     $scope.clickTopRadioButton = function (item) {
       if (item === 'average') {
-        $scope.$parent.chartRefresh++;
+        $scope.range.chartRefresh++;
       } else {
         $location.url('transaction/' + item + $scope.tabQueryString());
       }
@@ -48,7 +49,7 @@ glowroot.controller('TransactionAverageCtrl', [
 
     $scope.clickActiveTopLink = function (event) {
       if (!event.ctrlKey) {
-        $scope.$parent.chartRefresh++;
+        $scope.range.chartRefresh++;
         // suppress normal link
         event.preventDefault();
         return false;
@@ -106,7 +107,7 @@ glowroot.controller('TransactionAverageCtrl', [
 
       // add the root node(s)
       if (angular.isArray(rootTimer)) {
-        angular.forEach(rootTimer, function(item) {
+        angular.forEach(rootTimer, function (item) {
           traverse(item, 0);
         });
       } else {
@@ -144,7 +145,7 @@ glowroot.controller('TransactionAverageCtrl', [
 
       // add the root node(s)
       if (angular.isArray(rootTimer)) {
-        angular.forEach(rootTimer, function(item) {
+        angular.forEach(rootTimer, function (item) {
           traverse(item, []);
         });
       } else {
@@ -187,8 +188,8 @@ glowroot.controller('TransactionAverageCtrl', [
       }
     };
 
-    charts.init(chartState, $('#chart'), $scope.$parent);
-    charts.plot([[]], chartOptions, chartState, $('#chart'), $scope.$parent);
+    charts.init(chartState, $('#chart'), $scope);
+    charts.plot([[]], chartOptions, chartState, $('#chart'), $scope);
     charts.initResize(chartState.plot, $scope);
   }
 ]);

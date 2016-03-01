@@ -33,16 +33,16 @@ glowroot.controller('TransactionThroughputCtrl', [
     var chartState = charts.createState();
 
     function refreshData() {
-      charts.refreshData('backend/transaction/throughput', chartState, $scope.$parent, undefined, onRefreshData);
+      charts.refreshData('backend/transaction/throughput', chartState, $scope, undefined, onRefreshData);
     }
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (newval, oldval) {
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function (newval, oldval) {
       refreshData();
     });
 
     $scope.clickTopRadioButton = function (item) {
       if (item === 'throughput') {
-        $scope.$parent.chartRefresh++;
+        $scope.range.chartRefresh++;
       } else {
         $location.url('transaction/' + item + $scope.tabQueryString());
       }
@@ -50,7 +50,7 @@ glowroot.controller('TransactionThroughputCtrl', [
 
     $scope.clickActiveTopLink = function (event) {
       if (!event.ctrlKey) {
-        $scope.$parent.chartRefresh++;
+        $scope.range.chartRefresh++;
         // suppress normal link
         event.preventDefault();
         return false;
@@ -105,8 +105,8 @@ glowroot.controller('TransactionThroughputCtrl', [
       }
     };
 
-    charts.init(chartState, $('#chart'), $scope.$parent);
-    charts.plot([[]], chartOptions, chartState, $('#chart'), $scope.$parent);
+    charts.init(chartState, $('#chart'), $scope);
+    charts.plot([[]], chartOptions, chartState, $('#chart'), $scope);
     charts.initResize(chartState.plot, $scope);
   }
 ]);

@@ -36,7 +36,7 @@ glowroot.controller('TransactionQueriesCtrl', [
     $scope.showQueries = false;
     $scope.showSpinner = 0;
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function () {
       refreshData();
     });
 
@@ -188,8 +188,8 @@ glowroot.controller('TransactionQueriesCtrl', [
         agentRollup: $scope.agentRollup,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
-        from: $scope.chartFrom,
-        to: $scope.chartTo
+        from: $scope.range.chartFrom,
+        to: $scope.range.chartTo
       };
 
       $scope.showSpinner++;

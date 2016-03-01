@@ -60,14 +60,15 @@ glowroot.controller('TransactionSidebarCtrl', [
       updateSummaries(false, true);
     };
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'summarySortOrder', 'chartRefresh'], function (newValues, oldValues) {
-      if (newValues !== oldValues) {
-        $timeout(function () {
-          // slight delay to de-prioritize summaries data request
-          updateSummaries();
-        }, 100);
-      }
-    });
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'summarySortOrder'],
+        function (newValues, oldValues) {
+          if (newValues !== oldValues) {
+            $timeout(function () {
+              // slight delay to de-prioritize summaries data request
+              updateSummaries();
+            }, 100);
+          }
+        });
 
     $scope.$on('$stateChangeStart', function () {
       // don't let the active sidebar selection get out of sync (which can happen after using the back button)
@@ -78,7 +79,7 @@ glowroot.controller('TransactionSidebarCtrl', [
           activeElement.blur();
         }
       }
-      if ($scope.last) {
+      if ($scope.range.last) {
         $timeout(function () {
           // slight delay to de-prioritize summaries data request
           updateSummaries();
@@ -95,8 +96,8 @@ glowroot.controller('TransactionSidebarCtrl', [
       var query = {
         agentRollup: $scope.agentRollup,
         transactionType: $scope.transactionType,
-        from: $scope.chartFrom,
-        to: $scope.chartTo,
+        from: $scope.range.chartFrom,
+        to: $scope.range.chartTo,
         sortOrder: $scope.summarySortOrder,
         limit: $scope.summaryLimit
       };

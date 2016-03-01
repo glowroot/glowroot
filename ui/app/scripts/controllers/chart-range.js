@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ glowroot.controller('ChartRangeCtrl', [
   'modals',
   function ($scope, $location, queryStrings, charts, modals) {
 
-    $scope.$parent.chartRefresh = 0;
+    $scope.range.chartRefresh = 0;
 
     function fancyDate(date) {
       var today = new Date();
@@ -68,16 +68,17 @@ glowroot.controller('ChartRangeCtrl', [
     };
 
     $scope.timeDisplay = function () {
-      if ($scope.last) {
-        return $scope.lastDisplay($scope.last);
+      if ($scope.range.last) {
+        return $scope.lastDisplay($scope.range.last);
       }
-      var fromDate = fancyDate($scope.chartFrom);
-      var toDate = fancyDate($scope.chartTo);
+      var fromDate = fancyDate($scope.range.chartFrom);
+      var toDate = fancyDate($scope.range.chartTo);
       if (fromDate === toDate) {
-        return fromDate + ', ' + moment($scope.chartFrom).format('LT') + ' to ' + moment($scope.chartTo).format('LT');
+        return fromDate + ', ' + moment($scope.range.chartFrom).format('LT') + ' to '
+            + moment($scope.range.chartTo).format('LT');
       } else {
-        return fromDate + ' ' + moment($scope.chartFrom).format('LT') + ' to ' + toDate + ' ' +
-            moment($scope.chartTo).format('LT');
+        return fromDate + ' ' + moment($scope.range.chartFrom).format('LT') + ' to ' + toDate + ' ' +
+            moment($scope.range.chartTo).format('LT');
       }
     };
 
@@ -96,9 +97,9 @@ glowroot.controller('ChartRangeCtrl', [
     };
 
     $scope.updateLast = function (last, event) {
-      if (last === $scope.$parent.last && !event.ctrlKey) {
+      if (last === $scope.range.last && !event.ctrlKey) {
         // no change, force refresh
-        $scope.$parent.chartRefresh++;
+        $scope.range.chartRefresh++;
         // suppress normal link
         event.preventDefault();
         return false;
@@ -128,8 +129,8 @@ glowroot.controller('ChartRangeCtrl', [
         previous: 'fa fa-chevron-left',
         next: 'fa fa-chevron-right'
       };
-      var from = $scope.chartFrom;
-      var to = $scope.chartTo;
+      var from = $scope.range.chartFrom;
+      var to = $scope.range.chartTo;
       $('#customDateRangeFromDate').datetimepicker({
         icons: icons,
         format: 'L'
@@ -163,10 +164,10 @@ glowroot.controller('ChartRangeCtrl', [
       var fromTime = $('#customDateRangeFromTime').data('DateTimePicker').date();
       var toDate = $('#customDateRangeToDate').data('DateTimePicker').date();
       var toTime = $('#customDateRangeToTime').data('DateTimePicker').date();
-      $scope.$parent.chartFrom = fromDate + timeComponent(fromTime);
-      $scope.$parent.chartTo = toDate + timeComponent(toTime);
-      $scope.$parent.last = 0;
-      $scope.$parent.chartRefresh++;
+      $scope.range.chartFrom = fromDate + timeComponent(fromTime);
+      $scope.range.chartTo = toDate + timeComponent(toTime);
+      $scope.range.last = 0;
+      $scope.range.chartRefresh++;
       $('#customDateRangeModal').modal('hide');
     };
   }

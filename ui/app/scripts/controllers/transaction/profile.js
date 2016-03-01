@@ -38,14 +38,14 @@ glowroot.controller('TransactionProfileCtrl', [
     $scope.showProfile = false;
     $scope.showSpinner = 0;
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function () {
       $location.search('filter', $scope.filter || null);
       refreshData();
     });
 
     $scope.clickTopRadioButton = function (item) {
       if (($scope.auxiliary && item === 'aux-thread-profile') || (!$scope.auxiliary && item === 'main-thread-profile')) {
-        $scope.$parent.chartRefresh++;
+        $scope.range.chartRefresh++;
       } else {
         $location.url('transaction/' + item + $scope.tabQueryString());
       }
@@ -54,7 +54,7 @@ glowroot.controller('TransactionProfileCtrl', [
     $scope.clickActiveTopLink = function (event, item) {
       if (($scope.auxiliary && item === 'aux-thread-profile') || (!$scope.auxiliary && item === 'main-thread-profile')) {
         if (!event.ctrlKey) {
-          $scope.$parent.chartRefresh++;
+          $scope.range.chartRefresh++;
           // suppress normal link
           event.preventDefault();
           return false;
@@ -69,13 +69,13 @@ glowroot.controller('TransactionProfileCtrl', [
       }
       query['transaction-type'] = $scope.transactionType;
       query['transaction-name'] = $scope.transactionName;
-      if ($scope.last) {
-        if ($scope.last !== 4 * 60 * 60 * 1000) {
-          query.last = $scope.last;
+      if ($scope.range.last) {
+        if ($scope.range.last !== 4 * 60 * 60 * 1000) {
+          query.last = $scope.range.last;
         }
       } else {
-        query.from = $scope.chartFrom;
-        query.to = $scope.chartTo;
+        query.from = $scope.range.chartFrom;
+        query.to = $scope.range.chartTo;
       }
       if ($scope.filter) {
         query.filter = $scope.filter;
@@ -87,10 +87,10 @@ glowroot.controller('TransactionProfileCtrl', [
       }
     };
 
-    $scope.refreshButtonClick = function () {
+    $scope.refresh = function () {
       $scope.applyLast();
       appliedFilter = $scope.filter;
-      $scope.$parent.chartRefresh++;
+      $scope.range.chartRefresh++;
     };
 
     locationChanges.on($scope, function () {
@@ -99,7 +99,7 @@ glowroot.controller('TransactionProfileCtrl', [
 
       if (priorAppliedFilter !== undefined && appliedFilter !== priorAppliedFilter) {
         // e.g. back or forward button was used to navigate
-        $scope.$parent.chartRefresh++;
+        $scope.range.chartRefresh++;
       }
       $scope.filter = appliedFilter;
       $scope.truncateBranchPercentage = $location.search()['truncate-branch-percentage'] || 0.1;
@@ -108,7 +108,7 @@ glowroot.controller('TransactionProfileCtrl', [
     $('.gt-profile-text-filter').on('gtClearProfileFilter', function (event, response) {
       $scope.$apply(function () {
         $scope.filter = '';
-        $scope.refreshButtonClick();
+        $scope.refresh();
       });
       response.handled = true;
     });
@@ -128,8 +128,8 @@ glowroot.controller('TransactionProfileCtrl', [
         agentRollup: $scope.agentRollup,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
-        from: $scope.chartFrom,
-        to: $scope.chartTo,
+        from: $scope.range.chartFrom,
+        to: $scope.range.chartTo,
         auxiliary: $scope.auxiliary,
         include: parseResult.includes,
         exclude: parseResult.excludes,
