@@ -79,25 +79,9 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         collectorLogbackAppender.start();
         attachAppender(collectorLogbackAppender);
 
-        // need to delay creation of the scheduled executor until after instrumentation is set up
+        // need to delay creation of the scheduled executor until instrumentation is set up
         Supplier<ScheduledExecutorService> scheduledExecutorSupplier =
-                Suppliers.memoize(new Supplier<ScheduledExecutorService>() {
-                    @Override
-                    public ScheduledExecutorService get() {
-                        final ThreadFactory backingThreadFactory = new ThreadFactoryBuilder()
-                                .setDaemon(true).setNameFormat("Glowroot-Background-%d").build();
-                        ThreadFactory threadFactory = new ThreadFactory() {
-                            @Override
-                            public Thread newThread(Runnable r) {
-                                Thread thread = backingThreadFactory.newThread(r);
-                                thread.setContextClassLoader(
-                                        GlowrootThinAgentInit.class.getClassLoader());
-                                return thread;
-                            }
-                        };
-                        return Executors.newScheduledThreadPool(2, threadFactory);
-                    }
-                });
+                createScheduledExecutorSupplier();
 
         final AgentModule agentModule = new AgentModule(clock, ticker, pluginCache, configService,
                 scheduledExecutorSupplier, collectorProxy, instrumentation, baseDir);
@@ -156,6 +140,26 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         if (serverCollector != null) {
             serverCollector.awaitClose();
         }
+    }
+
+    public static Supplier<ScheduledExecutorService> createScheduledExecutorSupplier() {
+        return Suppliers.memoize(new Supplier<ScheduledExecutorService>() {
+            @Override
+            public ScheduledExecutorService get() {
+                final ThreadFactory backingThreadFactory = new ThreadFactoryBuilder()
+                        .setDaemon(true).setNameFormat("Glowroot-Background-%d").build();
+                ThreadFactory threadFactory = new ThreadFactory() {
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        Thread thread = backingThreadFactory.newThread(r);
+                        thread.setContextClassLoader(
+                                GlowrootThinAgentInit.class.getClassLoader());
+                        return thread;
+                    }
+                };
+                return Executors.newScheduledThreadPool(2, threadFactory);
+            }
+        });
     }
 
     private static void attachAppender(CollectorLogbackAppender appender) {

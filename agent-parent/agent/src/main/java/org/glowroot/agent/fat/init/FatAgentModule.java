@@ -19,18 +19,15 @@ import java.io.Closeable;
 import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 
 import javax.annotation.Nullable;
 import javax.management.MBeanServer;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
-import com.google.common.base.Suppliers;
+import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.agent.config.ConfigService;
@@ -40,6 +37,7 @@ import org.glowroot.agent.fat.storage.SimpleRepoModule;
 import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.CollectorProxy;
+import org.glowroot.agent.init.GlowrootThinAgentInit;
 import org.glowroot.agent.init.SystemInfoCreator;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
@@ -114,13 +112,14 @@ class FatAgentModule {
             ConfigService configService =
                     ConfigService.create(baseDir, pluginCache.pluginDescriptors());
 
-            ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
-                    .setNameFormat("Glowroot-Background-%d").build();
-            scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
+            // need to delay creation of the scheduled executor until instrumentation is set up
+            Supplier<ScheduledExecutorService> scheduledExecutorSupplier =
+                    GlowrootThinAgentInit.createScheduledExecutorSupplier();
 
             agentModule = new AgentModule(clock, null, pluginCache, configService,
-                    Suppliers.ofInstance(scheduledExecutor), collectorProxy, instrumentation,
-                    baseDir);
+                    scheduledExecutorSupplier, collectorProxy, instrumentation, baseDir);
+
+            scheduledExecutor = scheduledExecutorSupplier.get();
 
             PreInitializeStorageShutdownClasses.preInitializeClasses();
             ConfigRepository configRepository = ConfigRepositoryImpl.create(baseDir,
