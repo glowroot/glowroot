@@ -63,6 +63,8 @@ public interface LiveTraceRepository {
 
         public abstract long durationNanosLow();
         public abstract @Nullable Long durationNanosHigh();
+        public abstract @Nullable StringComparator headlineComparator();
+        public abstract @Nullable String headline();
         public abstract @Nullable StringComparator errorMessageComparator();
         public abstract @Nullable String errorMessage();
         public abstract @Nullable StringComparator userComparator();
@@ -77,6 +79,10 @@ public interface LiveTraceRepository {
             }
             Long durationNanosHigh = durationNanosHigh();
             return durationNanosHigh == null || durationNanos <= durationNanosHigh;
+        }
+
+        public boolean matchesHeadline(String headline) {
+            return matchesUsingStringComparator(headline, headline(), headlineComparator());
         }
 
         public boolean matchesError(String errorMessage) {

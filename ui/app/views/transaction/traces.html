@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2015 the original author or authors.
+  Copyright 2012-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -138,6 +138,27 @@
         <span class="input-group-addon">
           milliseconds
         </span>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="col-lg-4 control-label"
+             for="filterHeadline">
+        Headline/URL
+      </label>
+
+      <div class="col-lg-8">
+        <div class="input-group"
+             style="width: 25em;">
+          <div gt-input-group-dropdown
+               gt-model="filter.headlineComparator"
+               gt-items="filterTextComparatorOptions"
+               class="input-group-left">
+          </div>
+          <input type="text"
+                 ng-model="filter.headline"
+                 class="form-control"
+                 id="filterHeadline">
         </div>
       </div>
     </div>

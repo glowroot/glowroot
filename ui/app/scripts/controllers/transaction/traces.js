@@ -176,6 +176,8 @@ glowroot.controller('TracesCtrl', [
       $scope.filter.responseTimeMillisLow = 0;
       $scope.filter.responseTimeMillisHigh = undefined;
       $scope.filterResponseTimeComparator = 'greater';
+      $scope.filter.headlineComparator = 'begins';
+      $scope.filter.headline = '';
       $scope.filter.errorMessageComparator = 'begins';
       $scope.filter.errorMessage = '';
       $scope.filter.userComparator = 'begins';
@@ -407,6 +409,8 @@ glowroot.controller('TracesCtrl', [
       appliedFilter.to = $scope.traceChartTo || $scope.chartTo;
       appliedFilter.responseTimeMillisLow = Number($location.search()['response-time-millis-low']) || 0;
       appliedFilter.responseTimeMillisHigh = Number($location.search()['response-time-millis-high']) || undefined;
+      appliedFilter.headlineComparator = $location.search()['headline-comparator'] || 'begins';
+      appliedFilter.headline = $location.search().headline || '';
       appliedFilter.errorMessageComparator = $location.search()['error-message-comparator'] || 'begins';
       appliedFilter.errorMessage = $location.search()['error-message'] || '';
       appliedFilter.userComparator = $location.search()['user-comparator'] || 'begins';
@@ -467,6 +471,10 @@ glowroot.controller('TracesCtrl', [
       }
       if (Number(appliedFilter.responseTimeMillisHigh)) {
         query['response-time-millis-high'] = appliedFilter.responseTimeMillisHigh;
+      }
+      if (appliedFilter.headline) {
+        query['headline-comparator'] = appliedFilter.headlineComparator;
+        query.headline = appliedFilter.headline;
       }
       if (appliedFilter.errorMessage) {
         query['error-message-comparator'] = appliedFilter.errorMessageComparator;

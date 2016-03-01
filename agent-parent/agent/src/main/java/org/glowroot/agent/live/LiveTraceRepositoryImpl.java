@@ -228,6 +228,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                 && matchesTransactionType(transaction, transactionType)
                 && matchesTransactionName(transaction, transactionName)
                 && filter.matchesDuration(transaction.getDurationNanos())
+                && filter.matchesHeadline(transaction.getHeadline())
                 && filter.matchesError(errorMessage == null ? "" : errorMessage.message())
                 && filter.matchesUser(transaction.getUser())
                 && filter.matchesAttributes(transaction.getAttributes().asMap());

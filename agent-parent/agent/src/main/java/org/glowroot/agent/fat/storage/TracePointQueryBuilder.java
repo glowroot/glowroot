@@ -72,8 +72,9 @@ class TracePointQueryBuilder {
         appendTransactionTypeCriteria(builder);
         appendTransactionNameCriteria(builder);
         appendDurationNanosCriteria(builder);
-        appendUserCriteria(builder);
+        appendHeadlineCriteria(builder);
         appendErrorCriteria(builder);
+        appendUserCriteria(builder);
         appendOrderByAndLimit(builder);
         return builder.build();
     }
@@ -133,6 +134,16 @@ class TracePointQueryBuilder {
         if (durationNanosHigh != null) {
             builder.appendText(" and trace.duration_nanos <= ?");
             builder.addArg(durationNanosHigh);
+        }
+    }
+
+    private void appendHeadlineCriteria(ParameterizedSqlBuilder builder) {
+        StringComparator headlineComparator = filter.headlineComparator();
+        String headline = filter.headline();
+        if (headlineComparator != null && !Strings.isNullOrEmpty(headline)) {
+            builder.appendText(
+                    " and upper(trace.headline) " + headlineComparator.getComparator() + " ?");
+            builder.addArg(headlineComparator.formatParameter(headline));
         }
     }
 

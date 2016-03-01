@@ -97,6 +97,8 @@ class TracePointJsonService {
         TracePointFilter filter = ImmutableTracePointFilter.builder()
                 .durationNanosLow(durationNanosLow)
                 .durationNanosHigh(durationNanosHigh)
+                .headlineComparator(request.headlineComparator())
+                .headline(request.headline())
                 .errorMessageComparator(request.errorMessageComparator())
                 .errorMessage(request.errorMessage())
                 .userComparator(request.userComparator())
@@ -298,6 +300,8 @@ class TracePointJsonService {
         public abstract long to();
         public abstract double responseTimeMillisLow();
         public abstract @Nullable Double responseTimeMillisHigh();
+        public abstract @Nullable StringComparator headlineComparator();
+        public abstract @Nullable String headline();
         public abstract @Nullable StringComparator errorMessageComparator();
         public abstract @Nullable String errorMessage();
         public abstract @Nullable StringComparator userComparator();
