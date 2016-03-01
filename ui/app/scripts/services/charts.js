@@ -377,6 +377,23 @@ glowroot.factory('charts', [
       return html;
     }
 
+    function startAutoRefresh($scope, delay) {
+      function nextRefresh() {
+        var timer = $timeout(function () {
+          if ($scope.range.last) {
+            $scope.suppressChartSpinner = true;
+            $scope.refresh();
+          }
+          nextRefresh();
+        }, delay);
+        $scope.$on('$destroy', function (event) {
+          $timeout.cancel(timer);
+        });
+      }
+
+      nextRefresh();
+    }
+
     return {
       createState: createState,
       init: init,
@@ -385,7 +402,8 @@ glowroot.factory('charts', [
       refreshData: refreshData,
       renderTooltipHtml: renderTooltipHtml,
       updateRange: updateRange,
-      getDataPointIntervalMillis: getDataPointIntervalMillis
+      getDataPointIntervalMillis: getDataPointIntervalMillis,
+      startAutoRefresh: startAutoRefresh
     };
   }
 ]);

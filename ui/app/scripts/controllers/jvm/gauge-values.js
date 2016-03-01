@@ -473,5 +473,6 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     charts.init(chartState, $('#chart'), $scope);
     charts.plot([[]], chartOptions, chartState, $('#chart'), $scope);
     charts.initResize(chartState.plot, $scope);
+    charts.startAutoRefresh($scope, 60000);
   }
 ]);

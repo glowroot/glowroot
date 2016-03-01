@@ -568,5 +568,6 @@ glowroot.controller('TracesCtrl', [
 
     plot.getAxes().yaxis.options.max = undefined;
     charts.initResize(plot, $scope);
+    charts.startAutoRefresh($scope, 60000);
   }
 ]);
