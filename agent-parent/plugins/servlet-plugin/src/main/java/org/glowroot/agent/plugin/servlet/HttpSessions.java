@@ -30,8 +30,6 @@ import org.glowroot.agent.plugin.servlet.ServletAspect.HttpSession;
 
 class HttpSessions {
 
-    private static final String HTTP_SESSION_ID_ATTR = "::id";
-
     private HttpSessions() {}
 
     static ImmutableMap<String, String> getSessionAttributes(HttpSession session) {
@@ -61,7 +59,7 @@ class HttpSessions {
     }
 
     static @Nullable Object getSessionAttribute(HttpSession session, String attributePath) {
-        if (attributePath.equals(HTTP_SESSION_ID_ATTR)) {
+        if (attributePath.equals(ServletPluginProperties.HTTP_SESSION_ID_ATTR)) {
             return session.getId();
         }
         int index = attributePath.indexOf('.');
@@ -87,7 +85,7 @@ class HttpSessions {
                 continue;
             }
             String valueString;
-            if (attributeName.equals(HTTP_SESSION_ID_ATTR)) {
+            if (attributeName.equals(ServletPluginProperties.HTTP_SESSION_ID_ATTR)) {
                 valueString = Strings.nullToEmpty(session.getId());
             } else {
                 Object value = session.getAttribute(attributeName);

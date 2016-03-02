@@ -15,12 +15,14 @@
  */
 package org.glowroot.agent.plugin.servlet;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -335,6 +337,98 @@ public class SessionAttributeIT {
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
     }
 
+    @Test
+    public void testHasHttpSession() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "::id");
+        // when
+        Trace trace = container.execute(HasHttpSession.class);
+        // then
+        assertThat(getSessionAttributes(trace)).isNotNull();
+        assertThat(getSessionAttributes(trace).get("::id")).isEqualTo("123456789");
+        assertThat(getInitialSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+    }
+
+    @Test
+    public void testHasNoHttpSession() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "::id");
+        // when
+        Trace trace = container.execute(HasNoHttpSession.class);
+        // then
+        assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getInitialSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+    }
+
+    @Test
+    public void testCreateHttpSession() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "::id");
+        // when
+        Trace trace = container.execute(CreateHttpSession.class);
+        // then
+        assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getInitialSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace).get("::id")).isEqualTo("123456789");
+    }
+
+    @Test
+    public void testCreateHttpSessionTrue() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "::id");
+        // when
+        Trace trace = container.execute(CreateHttpSessionTrue.class);
+        // then
+        assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getInitialSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace).get("::id")).isEqualTo("123456789");
+    }
+
+    @Test
+    public void testCreateHttpSessionFalse() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "::id");
+        // when
+        Trace trace = container.execute(CreateHttpSessionFalse.class);
+        // then
+        assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getInitialSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+    }
+
+    @Test
+    public void testChangeHttpSession() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "::id");
+        // when
+        Trace trace = container.execute(ChangeHttpSession.class);
+        // then
+        assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getInitialSessionAttributes(trace).get("::id")).isEqualTo("123456789");
+        assertThat(getUpdatedSessionAttributes(trace).get("::id")).isEqualTo("abcdef");
+    }
+
+    @Test
+    public void testCreateAndChangeHttpSession() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "::id");
+        // when
+        Trace trace = container.execute(CreateAndChangeHttpSession.class);
+        // then
+        assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getInitialSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace).get("::id")).isEqualTo("abcdef");
+    }
+
     private static @Nullable Map<String, String> getSessionAttributes(Trace trace) {
         return getDetailMap(trace, "Session attributes");
     }
@@ -438,6 +532,87 @@ public class SessionAttributeIT {
                     return Collections.enumeration(Lists.newArrayList((String) null));
                 }
             });
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class HasHttpSession extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            MockHttpSession session = new MockHttpSession(request.getServletContext(), "123456789");
+            ((MockHttpServletRequest) request).setSession(session);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class HasNoHttpSession extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {}
+    }
+
+    @SuppressWarnings("serial")
+    public static class CreateHttpSession extends TestServlet {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException {
+            MockHttpSession session = new MockHttpSession(request.getServletContext(), "123456789");
+            ((MockHttpServletRequest) request).setSession(session);
+            request.getSession();
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class CreateHttpSessionTrue extends TestServlet {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException {
+            MockHttpSession session = new MockHttpSession(request.getServletContext(), "123456789");
+            ((MockHttpServletRequest) request).setSession(session);
+            request.getSession(true);
+            super.service(request, response);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class CreateHttpSessionFalse extends TestServlet {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException {
+            request.getSession(false);
+            super.service(request, response);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class ChangeHttpSession extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            MockHttpSession session = new MockHttpSession(request.getServletContext(), "123456789");
+            ((MockHttpServletRequest) request).setSession(session);
+        }
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException {
+            request.getSession().invalidate();
+            MockHttpSession session = new MockHttpSession(request.getServletContext(), "abcdef");
+            ((MockHttpServletRequest) request).setSession(session);
+            request.getSession();
+            super.service(request, response);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class CreateAndChangeHttpSession extends TestServlet {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException {
+            MockHttpSession session = new MockHttpSession(request.getServletContext(), "123456789");
+            ((MockHttpServletRequest) request).setSession(session);
+            request.getSession().invalidate();
+            session = new MockHttpSession(request.getServletContext(), "abcdef");
+            ((MockHttpServletRequest) request).setSession(session);
+            request.getSession();
+            super.service(request, response);
         }
     }
 

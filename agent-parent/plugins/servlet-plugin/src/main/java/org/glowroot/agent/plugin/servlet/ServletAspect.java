@@ -275,6 +275,38 @@ public class ServletAspect {
         }
     }
 
+    @Pointcut(className = "javax.servlet.http.HttpServletRequest", methodName = "getSession",
+            methodParameterTypes = {}, nestingGroup = "servlet-inner-call")
+    public static class GetSessionAdvice {
+        @OnReturn
+        public static void onReturn(@BindReturn @Nullable HttpSession session,
+                ThreadContext context) {
+            if (session == null) {
+                return;
+            }
+            if (ServletPluginProperties.sessionUserAttributeIsId()) {
+                context.setTransactionUser(session.getId(), Priority.CORE_PLUGIN);
+            }
+            if (ServletPluginProperties.captureSessionAttributeNamesContainsId()) {
+                ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
+                if (messageSupplier != null) {
+                    messageSupplier.putSessionAttributeChangedValue(
+                            ServletPluginProperties.HTTP_SESSION_ID_ATTR, session.getId());
+                }
+            }
+        }
+    }
+
+    @Pointcut(className = "javax.servlet.http.HttpServletRequest", methodName = "getSession",
+            methodParameterTypes = {"boolean"}, nestingGroup = "servlet-inner-call")
+    public static class GetSessionOneArgAdvice {
+        @OnReturn
+        public static void onReturn(@BindReturn @Nullable HttpSession session,
+                ThreadContext context) {
+            GetSessionAdvice.onReturn(session, context);
+        }
+    }
+
     static @Nullable ServletMessageSupplier getServletMessageSupplier() {
         return currServletMessageSupplier.get();
     }

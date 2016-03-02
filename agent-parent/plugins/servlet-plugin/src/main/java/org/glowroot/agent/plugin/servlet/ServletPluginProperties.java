@@ -30,6 +30,8 @@ import org.glowroot.agent.plugin.api.config.ConfigService;
 
 class ServletPluginProperties {
 
+    static final String HTTP_SESSION_ID_ATTR = "::id";
+
     private static final String CAPTURE_REQUEST_PARAMS_PROPERTY_NAME = "captureRequestParameters";
     private static final String MASK_REQUEST_PARAMS_PROPERTY_NAME = "maskRequestParameters";
     private static final String CAPTURE_REQUEST_HEADER_PROPERTY_NAME = "captureRequestHeaders";
@@ -50,8 +52,11 @@ class ServletPluginProperties {
     private static boolean captureResponseHeadersNonEmpty;
 
     private static String sessionUserAttributePath = "";
+    private static boolean sessionUserAttributeIsId;
+
     private static ImmutableSet<String> captureSessionAttributePaths = ImmutableSet.of();
     private static ImmutableSet<String> captureSessionAttributeNames = ImmutableSet.of();
+    private static boolean captureSessionAttributeNamesContainsId;
 
     static {
         configService.registerConfigListener(new ConfigListener() {
@@ -88,6 +93,10 @@ class ServletPluginProperties {
         return sessionUserAttributePath;
     }
 
+    static boolean sessionUserAttributeIsId() {
+        return sessionUserAttributeIsId;
+    }
+
     static ImmutableSet<String> captureSessionAttributePaths() {
         return captureSessionAttributePaths;
     }
@@ -98,6 +107,10 @@ class ServletPluginProperties {
         return captureSessionAttributeNames;
     }
 
+    static boolean captureSessionAttributeNamesContainsId() {
+        return captureSessionAttributeNamesContainsId;
+    }
+
     private static void updateCache() {
         captureRequestParameters = buildPatternList(CAPTURE_REQUEST_PARAMS_PROPERTY_NAME);
         maskRequestParameters = buildPatternList(MASK_REQUEST_PARAMS_PROPERTY_NAME);
@@ -106,11 +119,14 @@ class ServletPluginProperties {
         captureResponseHeadersNonEmpty = !captureResponseHeaders.isEmpty();
         sessionUserAttributePath =
                 configService.getStringProperty(SESSION_USER_ATTRIBUTE_PROPERTY_NAME).value();
+        sessionUserAttributeIsId = sessionUserAttributePath.equals(HTTP_SESSION_ID_ATTR);
         String captureSessionAttributesText =
                 configService.getStringProperty(CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME).value();
         captureSessionAttributePaths =
                 ImmutableSet.copyOf(splitter.split(captureSessionAttributesText));
         captureSessionAttributeNames = buildCaptureSessionAttributeNames();
+        captureSessionAttributeNamesContainsId =
+                captureSessionAttributeNames.contains(HTTP_SESSION_ID_ATTR);
     }
 
     private static ImmutableList<Pattern> buildPatternList(String propertyName) {
