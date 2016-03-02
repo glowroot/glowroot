@@ -90,10 +90,13 @@ public class ServletAspect {
     public interface HttpSession {
 
         @Nullable
-        Object getAttribute(String attributePath);
+        Object getAttribute(String name);
 
         @Nullable
         Enumeration<?> getAttributeNames();
+
+        @Nullable
+        String getId();
     }
 
     @Pointcut(className = "javax.servlet.Servlet", methodName = "service",

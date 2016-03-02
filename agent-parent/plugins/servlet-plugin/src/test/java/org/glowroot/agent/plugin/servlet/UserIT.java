@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpSession;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
@@ -151,6 +152,27 @@ public class UserIT {
         assertThat(trace.getHeader().getUser()).isEmpty();
     }
 
+    @Test
+    public void testUsingHttpSessionIdForSessionUserAttribute() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "::id");
+        // when
+        Trace trace = container.execute(UsingHttpSessionIdForSessionUserAttribute.class);
+        // then
+        assertThat(trace.getHeader().getUser()).isEqualTo("123456789");
+    }
+
+    @Test
+    public void testUsingHttpSessionIdForSessionUserAttributeWithNoSession() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "::id");
+        // when
+        Trace trace =
+                container.execute(UsingHttpSessionIdForSessionUserAttributeWithNoSession.class);
+        // then
+        assertThat(trace.getHeader().getUser()).isEmpty();
+    }
+
     @SuppressWarnings("serial")
     public static class HasRequestUserPrincipal extends TestServlet {
         @Override
@@ -181,6 +203,21 @@ public class UserIT {
         protected void before(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("userattr", "abc");
         }
+    }
+
+    @SuppressWarnings("serial")
+    public static class UsingHttpSessionIdForSessionUserAttribute extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            MockHttpSession session = new MockHttpSession(request.getServletContext(), "123456789");
+            ((MockHttpServletRequest) request).setSession(session);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class UsingHttpSessionIdForSessionUserAttributeWithNoSession extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {}
     }
 
     @SuppressWarnings("serial")

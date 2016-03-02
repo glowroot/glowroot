@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ import org.glowroot.agent.plugin.servlet.ServletAspect.HttpSession;
 
 class HttpSessions {
 
+    private static final String HTTP_SESSION_ID_ATTR = "::id";
+
     private HttpSessions() {}
 
     static ImmutableMap<String, String> getSessionAttributes(HttpSession session) {
@@ -59,6 +61,9 @@ class HttpSessions {
     }
 
     static @Nullable Object getSessionAttribute(HttpSession session, String attributePath) {
+        if (attributePath.equals(HTTP_SESSION_ID_ATTR)) {
+            return session.getId();
+        }
         int index = attributePath.indexOf('.');
         if (index == -1) {
             // fast path
@@ -81,10 +86,15 @@ class HttpSessions {
                 // null check to be safe in case this is a very strange servlet container
                 continue;
             }
-            Object value = session.getAttribute(attributeName);
-            // value shouldn't be null, but its (remotely) possible that a concurrent
-            // request for the same session just removed the attribute
-            String valueString = value == null ? "" : value.toString();
+            String valueString;
+            if (attributeName.equals(HTTP_SESSION_ID_ATTR)) {
+                valueString = Strings.nullToEmpty(session.getId());
+            } else {
+                Object value = session.getAttribute(attributeName);
+                // value shouldn't be null, but its (remotely) possible that a concurrent
+                // request for the same session just removed the attribute
+                valueString = value == null ? "" : value.toString();
+            }
             // taking no chances on value.toString() possibly returning null
             captureMap.put(attributeName, Strings.nullToEmpty(valueString));
         }

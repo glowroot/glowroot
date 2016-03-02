@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,12 +103,13 @@ public class SessionAttributeIT {
     public void testHasSessionAttributeUsingWildcardPlusOther() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "*,other");
+                "*,other,::id");
         // when
         Trace trace = container.execute(HasSessionAttribute.class);
         // then
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
+        assertThat(getSessionAttributes(trace).get("::id")).isEqualTo("123456789");
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
     }
 
@@ -373,6 +374,8 @@ public class SessionAttributeIT {
     public static class HasSessionAttribute extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
+            MockHttpSession session = new MockHttpSession(request.getServletContext(), "123456789");
+            ((MockHttpServletRequest) request).setSession(session);
             request.getSession().setAttribute("testattr", "val");
         }
     }
