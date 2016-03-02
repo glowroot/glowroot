@@ -24,7 +24,9 @@ import java.util.Properties;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.google.common.base.Splitter;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -54,6 +56,9 @@ import org.glowroot.storage.util.MailService;
 import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.UiModule;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 public class ServerModule {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerModule.class);
@@ -77,10 +82,31 @@ public class ServerModule {
             String version = Version.getVersion(Bootstrap.class);
 
             ServerConfiguration serverConfig = getCassandraContactPoints();
-            cluster = Cluster.builder()
-                    .addContactPoints(serverConfig.cassandraContactPoint().toArray(new String[0]))
-                    .build();
-            session = cluster.connect();
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            boolean waitingForCassandraLogged = false;
+            NoHostAvailableException lastException = null;
+            while (stopwatch.elapsed(MINUTES) < 10) {
+                try {
+                    cluster = Cluster.builder()
+                            .addContactPoints(
+                                    serverConfig.cassandraContactPoint().toArray(new String[0]))
+                            .build();
+                    session = cluster.connect();
+                    break;
+                } catch (NoHostAvailableException e) {
+                    lastException = e;
+                    if (!waitingForCassandraLogged) {
+                        logger.info("waiting for cassandra...");
+                    }
+                    waitingForCassandraLogged = true;
+                    Thread.sleep(1000);
+                }
+            }
+            if (cluster == null) {
+                checkNotNull(lastException);
+                throw lastException;
+            }
+            checkNotNull(session);
             session.execute("create keyspace if not exists " + serverConfig.cassandraKeyspace()
                     + " with replication = {'class': 'SimpleStrategy', 'replication_factor': 1}");
             session.execute("use " + serverConfig.cassandraKeyspace());
