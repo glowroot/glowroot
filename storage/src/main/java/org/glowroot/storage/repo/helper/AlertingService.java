@@ -294,7 +294,7 @@ public class AlertingService {
         message.setFrom(new InternetAddress(fromEmailAddress, fromDisplayName));
         InternetAddress to = new InternetAddress(testEmailRecipient);
         message.setRecipient(Message.RecipientType.TO, to);
-        message.setSubject("Test email from Glowroot (EOM)");
+        message.setSubject("Test email from Glowroot");
         message.setText("");
         mailService.send(message);
     }
