@@ -135,14 +135,15 @@ public class TransactionServiceImpl implements AdvancedService, ConfigListener {
         return transaction.getMainThreadContext().getRootEntry();
     }
 
-    TraceEntry startAuxThreadContextInternal(Transaction transaction,
-            TraceEntryImpl parentTraceEntry,
+    TraceEntry startAuxThreadContextInternal(ThreadContextImpl parentThreadContext,
+            TraceEntryImpl parentTraceEntry, TraceEntryImpl parentThreadContextTailEntry,
             Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
         long startTick = ticker.read();
         // FIXME implement limit on auxiliary thread context creation for a given transaction
         TimerName auxThreadTimerName = timerNameCache.getAuxThreadTimerName();
-        return transaction.startAuxThreadContext(parentTraceEntry, auxThreadTimerName, startTick,
-                threadContextHolder, threadAllocatedBytes);
+        return parentThreadContext.startAuxThreadContext(parentTraceEntry,
+                parentThreadContextTailEntry, auxThreadTimerName, startTick, threadContextHolder,
+                threadAllocatedBytes);
     }
 
     @Override

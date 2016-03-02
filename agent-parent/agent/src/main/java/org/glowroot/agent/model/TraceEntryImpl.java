@@ -22,8 +22,6 @@ import javax.annotation.Nullable;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Ordering;
-import com.google.common.primitives.Longs;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,13 +38,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 // this supports updating by a single thread and reading by multiple threads
 public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
-
-    static final Ordering<TraceEntryImpl> orderingByStartTick = new Ordering<TraceEntryImpl>() {
-        @Override
-        public int compare(TraceEntryImpl left, TraceEntryImpl right) {
-            return Longs.compare(left.startTick, right.startTick);
-        }
-    };
 
     private static final Logger logger = LoggerFactory.getLogger(TraceEntryImpl.class);
     private static final Ticker ticker = Tickers.getTicker();

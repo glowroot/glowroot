@@ -123,6 +123,28 @@ public class ExecutorIT {
         assertThat(header.getMainThreadRootTimer().getChildTimerCount()).isZero();
     }
 
+    @Test
+    public void shouldCaptureNestedFutureGet() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(CallFutureGetOnNestedFuture.class);
+        // then
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getEntryCount()).isEqualTo(4);
+        Trace.Entry entry1 = trace.getEntry(0);
+        assertThat(entry1.getDepth()).isEqualTo(0);
+        assertThat(entry1.getMessage()).isEqualTo("auxiliary thread");
+        Trace.Entry entry2 = trace.getEntry(1);
+        assertThat(entry2.getDepth()).isEqualTo(1);
+        assertThat(entry2.getMessage()).isEqualTo("trace marker / CreateTraceEntry");
+        Trace.Entry entry3 = trace.getEntry(2);
+        assertThat(entry3.getDepth()).isEqualTo(1);
+        assertThat(entry3.getMessage()).isEqualTo("auxiliary thread");
+        Trace.Entry entry4 = trace.getEntry(3);
+        assertThat(entry4.getDepth()).isEqualTo(2);
+        assertThat(entry4.getMessage()).isEqualTo("trace marker / CreateTraceEntry");
+    }
+
     private static void checkTrace(Trace trace) {
         Trace.Header header = trace.getHeader();
         assertThat(header.getMainThreadRootTimer().getChildTimerCount()).isEqualTo(1);
@@ -286,6 +308,36 @@ public class ExecutorIT {
             while (!future.isDone()) {
                 Thread.sleep(1);
             }
+            future.get();
+        }
+    }
+
+    public static class CallFutureGetOnNestedFuture implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            final ExecutorService executor = Executors.newCachedThreadPool();
+            Future<Void> future = executor.submit(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    new CreateTraceEntry().transactionMarker();
+                    Thread.sleep(1000);
+                    Future<Void> future = executor.submit(new Callable<Void>() {
+                        @Override
+                        public Void call() {
+                            new CreateTraceEntry().transactionMarker();
+                            return null;
+                        }
+                    });
+                    future.get();
+                    return null;
+                }
+            });
             future.get();
         }
     }

@@ -17,23 +17,25 @@ package org.glowroot.agent.impl;
 
 import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.TraceEntryImpl;
-import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTraceEntry;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 
-public class AsyncContextImpl implements AuxThreadContext {
+public class AuxThreadContextImpl implements AuxThreadContext {
 
-    private final Transaction transaction;
+    private final ThreadContextImpl parentThreadContext;
     private final TraceEntryImpl parentTraceEntry;
+    private final TraceEntryImpl parentThreadContextTailEntry;
     private final TransactionRegistry transactionRegistry;
     private final TransactionServiceImpl transactionService;
 
-    public AsyncContextImpl(Transaction transaction, TraceEntryImpl parentTraceEntry,
+    public AuxThreadContextImpl(ThreadContextImpl parentThreadContext,
+            TraceEntryImpl parentTraceEntry, TraceEntryImpl parentThreadContextTailEntry,
             TransactionRegistry transactionRegistry, TransactionServiceImpl transactionService) {
-        this.transaction = transaction;
+        this.parentThreadContext = parentThreadContext;
         this.parentTraceEntry = parentTraceEntry;
+        this.parentThreadContextTailEntry = parentThreadContextTailEntry;
         this.transactionRegistry = transactionRegistry;
         this.transactionService = transactionService;
     }
@@ -45,7 +47,7 @@ public class AsyncContextImpl implements AuxThreadContext {
         if (threadContextHolder.get() != null) {
             return NopTraceEntry.INSTANCE;
         }
-        return transactionService.startAuxThreadContextInternal(transaction, parentTraceEntry,
-                threadContextHolder);
+        return transactionService.startAuxThreadContextInternal(parentThreadContext,
+                parentTraceEntry, parentThreadContextTailEntry, threadContextHolder);
     }
 }

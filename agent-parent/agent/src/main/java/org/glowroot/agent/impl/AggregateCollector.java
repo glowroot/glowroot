@@ -25,6 +25,7 @@ import com.google.common.collect.Lists;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.agent.model.Profile;
+import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
@@ -80,8 +81,8 @@ class AggregateCollector {
         } else {
             this.mainThreadStats.addThreadStats(transaction.getMainThreadStats());
         }
-        for (ThreadStats auxThreadStats : transaction.getAuxThreadStats()) {
-            this.auxThreadStats.addThreadStats(auxThreadStats);
+        for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
+            this.auxThreadStats.addThreadStats(auxThreadContext.getThreadStats());
         }
         durationNanosHistogram.add(totalDurationNanos);
     }

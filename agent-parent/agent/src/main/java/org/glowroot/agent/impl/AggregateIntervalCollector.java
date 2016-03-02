@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.agent.model.Profile;
+import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
@@ -171,8 +172,8 @@ public class AggregateIntervalCollector {
                 } else {
                     aggregateCollector.mergeMainThreadRootTimer(mainThreadRootTimer);
                 }
-                for (TimerImpl rootTimer : transaction.getAuxThreadRootTimers()) {
-                    aggregateCollector.mergeAuxThreadRootTimer(rootTimer);
+                for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
+                    aggregateCollector.mergeAuxThreadRootTimer(auxThreadContext.getRootTimer());
                 }
                 for (CommonTimerImpl rootTimer : transaction.getAsyncRootTimers()) {
                     aggregateCollector.mergeAsyncRootTimer(rootTimer);

@@ -26,6 +26,7 @@ import org.mockito.stubbing.Answer;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.ImmutableAdvancedConfig;
+import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
@@ -99,8 +100,7 @@ public class AggregatorTest {
         when(transaction.getDurationNanos()).thenReturn(MILLISECONDS.toNanos(123));
         when(transaction.getMainThreadRootTimer()).thenReturn(mainThreadRootTimer);
         when(transaction.getMainThreadStats()).thenReturn(ThreadStats.NA);
-        when(transaction.getAuxThreadRootTimers()).thenReturn(ImmutableList.<TimerImpl>of());
-        when(transaction.getAuxThreadStats()).thenReturn(ImmutableList.<ThreadStats>of());
+        when(transaction.getAuxThreadContexts()).thenReturn(ImmutableList.<ThreadContextImpl>of());
         return transaction;
     }
 

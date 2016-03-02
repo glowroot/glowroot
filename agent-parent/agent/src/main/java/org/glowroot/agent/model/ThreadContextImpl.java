@@ -15,7 +15,9 @@
  */
 package org.glowroot.agent.model;
 
+import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +27,11 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -33,12 +39,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.impl.AsyncContextImpl;
+import org.glowroot.agent.impl.AuxThreadContextImpl;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionServiceImpl;
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
 import org.glowroot.agent.plugin.api.AsyncTraceEntry;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
+import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.QueryEntry;
 import org.glowroot.agent.plugin.api.Timer;
@@ -49,8 +56,10 @@ import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAuxThread
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopQueryEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTraceEntry;
+import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
+import org.glowroot.agent.util.Tickers;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -65,6 +74,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private final Transaction transaction;
     // this is null for main thread, and non-null for auxiliary threads
     private final @Nullable TraceEntryImpl parentTraceEntry;
+    // this is null for main thread, and non-null for auxiliary threads
+    // it is used to help place aux thread context in the correct place inside parent
+    private final @Nullable TraceEntryImpl parentThreadContextTailEntry;
 
     private final TimerImpl rootTimer;
     // currentTimer doesn't need to be thread safe as it is only accessed by transaction thread
@@ -76,6 +88,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     // root entry for this trace
     private final TraceEntryComponent traceEntryComponent;
+
+    // FIXME impose simple max on number of auxiliary thread contexts (AdvancedConfig)
+    private volatile @MonotonicNonNull List<ThreadContextImpl> auxThreadContexts = null;
 
     // linked list of QueryData instances for safe concurrent access
     private @MonotonicNonNull QueryData headQueryData;
@@ -96,10 +111,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private final Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder;
 
     ThreadContextImpl(Transaction transaction, @Nullable TraceEntryImpl parentTraceEntry,
-            MessageSupplier messageSupplier, TimerName rootTimerName, long startTick,
-            boolean captureThreadStats, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
-            boolean auxiliary, TransactionRegistry transactionRegistry,
-            TransactionServiceImpl transactionService, ConfigService configService, Ticker ticker,
+            @Nullable TraceEntryImpl parentThreadContextTailEntry, MessageSupplier messageSupplier,
+            TimerName rootTimerName, long startTick, boolean captureThreadStats,
+            @Nullable ThreadAllocatedBytes threadAllocatedBytes, boolean auxiliary,
+            TransactionRegistry transactionRegistry, TransactionServiceImpl transactionService,
+            ConfigService configService, Ticker ticker,
             Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
         this.transaction = transaction;
         this.parentTraceEntry = parentTraceEntry;
@@ -107,6 +123,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         rootTimer.start(startTick);
         traceEntryComponent = new TraceEntryComponent(castInitialized(this), messageSupplier,
                 rootTimer, startTick, ticker);
+        this.parentThreadContextTailEntry = parentThreadContextTailEntry;
         threadId = Thread.currentThread().getId();
         threadStatsComponent =
                 captureThreadStats ? new ThreadStatsComponent(threadAllocatedBytes) : null;
@@ -139,9 +156,100 @@ public class ThreadContextImpl implements ThreadContextPlus {
         return rootTimer;
     }
 
-    public List<Trace.Entry> getEntriesProtobuf(long captureTick,
-            Multimap<TraceEntryImpl, TraceEntryImpl> auxRootTraceEntries) {
-        return traceEntryComponent.toProto(captureTick, auxRootTraceEntries);
+    public List<Trace.Entry> getEntriesProtobuf(long captureTick) {
+        ListMultimap<TraceEntryImpl, TraceEntryImpl> parentChildMap = ArrayListMultimap.create();
+        buildParentChildMap(parentChildMap, captureTick);
+        List<Trace.Entry> entries = Lists.newArrayList();
+        addProtobufChildEntries(getRootEntry(), parentChildMap, transaction.getStartTick(),
+                captureTick, 0, entries);
+        return entries;
+    }
+
+    private static void addProtobufChildEntries(TraceEntryImpl entry,
+            Multimap<TraceEntryImpl, TraceEntryImpl> parentChildMap, long transactionStartTick,
+            long captureTick, int depth, List<Trace.Entry> entries) {
+        if (!parentChildMap.containsKey(entry)) {
+            return;
+        }
+        Collection<TraceEntryImpl> childEntries = parentChildMap.get(entry);
+        for (TraceEntryImpl childEntry : childEntries) {
+            entries.add(childEntry.toProto(depth, transactionStartTick, captureTick));
+            addProtobufChildEntries(childEntry, parentChildMap, transactionStartTick,
+                    captureTick, depth + 1, entries);
+        }
+    }
+
+    private void buildParentChildMap(ListMultimap<TraceEntryImpl, TraceEntryImpl> parentChildMap,
+            long captureTick) {
+        if (captureTick < traceEntryComponent.getStartTick()) {
+            return;
+        }
+        boolean completed = isCompleted(captureTick);
+        ListMultimap<TraceEntryImpl, ThreadContextImpl> tailEntryAuxThreadContextMap =
+                buildTailEntryChildThreadContextMap();
+        TraceEntryImpl entry = getRootEntry();
+        boolean entryIsRoot = true;
+        // filter out entries that started after the capture tick
+        // checking completed is short circuit optimization for the common case
+        while (entry != null
+                && (completed || Tickers.lessThanOrEqual(entry.getStartTick(), captureTick))) {
+            TraceEntryImpl parentTraceEntry = entry.getParentTraceEntry();
+            if (parentTraceEntry == null && !entryIsRoot) {
+                logFoundNonRootEntryWithNullParent(entry);
+                continue;
+            }
+            if (!entryIsRoot) {
+                parentChildMap.put(parentTraceEntry, entry);
+            }
+            for (ThreadContextImpl auxThreadContext : tailEntryAuxThreadContextMap.get(entry)) {
+                TraceEntryImpl auxRootEntry = auxThreadContext.getRootEntry();
+                if (completed
+                        || Tickers.lessThanOrEqual(auxRootEntry.getStartTick(), captureTick)) {
+                    // checkNotNull is safe b/c aux thread contexts have non-null parent trace entry
+                    parentChildMap.put(checkNotNull(auxThreadContext.parentTraceEntry),
+                            auxRootEntry);
+                }
+            }
+            entry = entry.getNextTraceEntry();
+            entryIsRoot = false;
+        }
+        if (auxThreadContexts != null) {
+            for (ThreadContextImpl auxThreadContext : tailEntryAuxThreadContextMap.values()) {
+                auxThreadContext.buildParentChildMap(parentChildMap, captureTick);
+            }
+        }
+    }
+
+    private boolean isEmptyAux() {
+        if (getRootEntry().getNextTraceEntry() != null) {
+            return false;
+        }
+        if (auxThreadContexts == null) {
+            return true;
+        }
+        for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
+            if (!auxThreadContext.isEmptyAux()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private ListMultimap<TraceEntryImpl, ThreadContextImpl> buildTailEntryChildThreadContextMap() {
+        if (auxThreadContexts == null) {
+            return ImmutableListMultimap.of();
+        }
+        ListMultimap<TraceEntryImpl, ThreadContextImpl> parentChildMap = ArrayListMultimap.create();
+        for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
+            if (auxThreadContext.isEmptyAux()) {
+                continue;
+            }
+            // checkNotNull is safe b/c aux thread contexts have non-null parent trace context tail
+            // entries
+            parentChildMap.put(checkNotNull(auxThreadContext.parentThreadContextTailEntry),
+                    auxThreadContext);
+        }
+        return parentChildMap;
     }
 
     public ThreadStats getThreadStats() {
@@ -151,12 +259,28 @@ public class ThreadContextImpl implements ThreadContextPlus {
         return threadStatsComponent.getThreadStats();
     }
 
+    List<ThreadContextImpl> getAuxThreadContexts() {
+        if (auxThreadContexts == null) {
+            return ImmutableList.of();
+        }
+        List<ThreadContextImpl> auxThreadContexts = Lists.newArrayList();
+        addAuxThreadContextsAndRecurse(auxThreadContexts);
+        return auxThreadContexts;
+    }
+
     public long getThreadId() {
         return threadId;
     }
 
     public boolean isCompleted() {
         return traceEntryComponent.isCompleted();
+    }
+
+    public boolean isCompleted(long captureTick) {
+        if (!traceEntryComponent.isCompleted()) {
+            return false;
+        }
+        return traceEntryComponent.getEndTick() >= captureTick;
     }
 
     public @Nullable TimerImpl getCurrentTimer() {
@@ -179,6 +303,34 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.currentNestingGroupId = nestingGroupId;
     }
 
+    public TraceEntryImpl startAuxThreadContext(TraceEntryImpl parentTraceEntry,
+            TraceEntryImpl parentThreadContextTailEntry, TimerName auxTimerName, long startTick,
+            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder,
+            @Nullable ThreadAllocatedBytes threadAllocatedBytes) {
+        ThreadContextImpl auxThreadContext = new ThreadContextImpl(transaction, parentTraceEntry,
+                parentThreadContextTailEntry, AuxThreadRootMessageSupplier.INSTANCE, auxTimerName,
+                startTick, threadStatsComponent != null, threadAllocatedBytes, true,
+                transactionRegistry, transactionService, configService, ticker,
+                threadContextHolder);
+        if (auxThreadContexts == null) {
+            // double-checked locking works here because auxThreadContexts is volatile
+            //
+            // synchronized on "this" as a micro-optimization just so don't need to create an empty
+            // object to lock on
+            synchronized (this) {
+                if (auxThreadContexts == null) {
+                    auxThreadContexts = Lists.newCopyOnWriteArrayList();
+                }
+            }
+        }
+        auxThreadContexts.add(auxThreadContext);
+        // see counterpart to this synchronization (and explanation) in ThreadContextImpl.detach()
+        synchronized (threadContextHolder) {
+            threadContextHolder.set(auxThreadContext);
+        }
+        return auxThreadContext.getRootEntry();
+    }
+
     public TraceEntryImpl pushEntry(long startTick, MessageSupplier messageSupplier,
             @Nullable String queryType, @Nullable String queryText, long queryExecutionCount,
             TimerImpl timer) {
@@ -196,6 +348,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
             queries.mergeQuery(curr.getQueryType(), curr.getQueryText(),
                     curr.getTotalDurationNanos(), curr.getExecutionCount(), curr.getTotalRows());
             curr = curr.getNextQueryData();
+        }
+        if (auxThreadContexts != null) {
+            for (ThreadContextImpl threadContext : auxThreadContexts) {
+                threadContext.mergeQueriesInto(queries);
+            }
         }
     }
 
@@ -264,8 +421,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
             logger.warn("cannot create async context because active entry is null");
             return NopAuxThreadContext.INSTANCE;
         }
-        return new AsyncContextImpl(transaction, activeEntry, transactionRegistry,
-                transactionService);
+        return new AuxThreadContextImpl(this, activeEntry, traceEntryComponent.getTailEntry(),
+                transactionRegistry, transactionService);
     }
 
     // typically pop() methods don't require the objects to pop, but for safety, the entry to pop is
@@ -430,6 +587,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @Override
     public AsyncTraceEntry startAsyncTraceEntry(MessageSupplier messageSupplier,
             TimerName syncTimerName, TimerName asyncTimerName) {
+        System.out
+                .println("startAsyncEntry: " + ((ReadableMessage) messageSupplier.get()).getText());
         if (syncTimerName == null) {
             logger.error("startQuery(): argument 'syncTimerName' must be non-null");
             return NopAsyncQueryEntry.INSTANCE;
@@ -552,6 +711,33 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 queryExecutionCount, startTick);
     }
 
+    void endCheckAuxThreadContexts() {
+        if (auxThreadContexts == null) {
+            return;
+        }
+        for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
+            if (auxThreadContext.isCompleted()) {
+                continue;
+            }
+            auxThreadContext.detach();
+            if (logger.isDebugEnabled()) {
+                ThreadInfo threadInfo = ManagementFactory.getThreadMXBean()
+                        .getThreadInfo(auxThreadContext.getThreadId(), Integer.MAX_VALUE);
+                if (!auxThreadContext.isCompleted() && threadInfo != null) {
+                    // still not complete and got a valid stack trace from auxiliary thread
+                    StringBuilder sb = new StringBuilder();
+                    for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
+                        sb.append("    ");
+                        sb.append(stackTraceElement.toString());
+                        sb.append('\n');
+                    }
+                    logger.debug("auxiliary thread extended beyond the transaction which started it"
+                            + "\n{}", sb);
+                }
+            }
+        }
+    }
+
     private AsyncQueryEntry startAsyncTraceEntry(MessageSupplier messageSupplier,
             TimerName syncTimerName, TimerName asyncTimerName, @Nullable String queryType,
             @Nullable String queryText, long queryExecutionCount) {
@@ -627,6 +813,32 @@ public class ThreadContextImpl implements ThreadContextPlus {
         return transaction.startAsyncTimer(asyncTimerName, startTick);
     }
 
+    private void addAuxThreadContextsAndRecurse(List<ThreadContextImpl> auxThreadContexts) {
+        if (this.auxThreadContexts == null) {
+            return;
+        }
+        for (ThreadContextImpl auxThreadContext : this.auxThreadContexts) {
+            auxThreadContexts.add(auxThreadContext);
+            auxThreadContext.addAuxThreadContextsAndRecurse(auxThreadContexts);
+        }
+    }
+
+    private void logFoundNonRootEntryWithNullParent(TraceEntryImpl entry) {
+        MessageSupplier messageSupplier = entry.getMessageSupplier();
+        ErrorMessage errorMessage = entry.getErrorMessage();
+        String traceEntryMessage = "";
+        if (messageSupplier != null) {
+            ReadableMessage message = (ReadableMessage) messageSupplier.get();
+            traceEntryMessage = message.getText();
+        } else if (errorMessage != null) {
+            traceEntryMessage = errorMessage.message();
+        }
+        logger.error("found non-root trace entry with null parent trace entry"
+                + "\ntrace entry: {}\ntransaction: {} - {}", traceEntryMessage,
+                transaction.getTransactionType(), transaction.getTransactionName());
+    }
+
+    // this does not include the root trace entry
     private class DummyTraceEntryOrQuery extends QueryEntryBase implements AsyncQueryEntry, Timer {
 
         private final TimerImpl syncTimer;
@@ -748,6 +960,19 @@ public class ThreadContextImpl implements ThreadContextPlus {
         @Override
         public Timer extendSyncTimer() {
             return syncTimer.extend();
+        }
+    }
+
+    private static class AuxThreadRootMessageSupplier extends MessageSupplier {
+
+        private static final AuxThreadRootMessageSupplier INSTANCE =
+                new AuxThreadRootMessageSupplier();
+
+        private final Message message = Message.from("auxiliary thread");
+
+        @Override
+        public Message get() {
+            return message;
         }
     }
 }

@@ -131,7 +131,10 @@ public class TraceCreator {
             errorBuilder.build();
         }
         TimerImpl mainThreadRootTimer = transaction.getMainThreadRootTimer();
-        Iterable<TimerImpl> auxThreadRootTimers = transaction.getAuxThreadRootTimers();
+        List<TimerImpl> auxThreadRootTimers = Lists.newArrayList();
+        for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
+            auxThreadRootTimers.add(auxThreadContext.getRootTimer());
+        }
         if (transaction.isAsynchronous()) {
             // the main thread is treated as just another auxiliary thread
             builder.addAllAuxThreadRootTimer(mergeRootTimers(
@@ -142,7 +145,10 @@ public class TraceCreator {
         }
         builder.addAllAsyncRootTimer(mergeRootTimers(transaction.getAsyncRootTimers()));
         ThreadStats mainThreadStats = transaction.getMainThreadStats();
-        List<ThreadStats> auxThreadStats = Lists.newArrayList(transaction.getAuxThreadStats());
+        List<ThreadStats> auxThreadStats = Lists.newArrayList();
+        for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
+            auxThreadStats.add(auxThreadContext.getThreadStats());
+        }
         if (transaction.isAsynchronous()) {
             // the main thread is treated as just another auxiliary thread
             auxThreadStats.add(mainThreadStats);

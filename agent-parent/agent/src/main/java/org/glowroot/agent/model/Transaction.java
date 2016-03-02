@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.model;
 
-import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.util.Collection;
 import java.util.List;
@@ -26,17 +25,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
-import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -49,7 +43,6 @@ import org.glowroot.agent.impl.TransactionCollection.TransactionEntry;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionServiceImpl;
 import org.glowroot.agent.impl.UserProfileScheduler;
-import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.internal.ReadableMessage;
@@ -99,8 +92,6 @@ public class Transaction {
     // trace-level error
     private volatile @Nullable ErrorMessage errorMessage;
 
-    private final boolean captureThreadStats;
-
     private final int maxTraceEntriesPerTransaction;
     private final int maxAggregateQueriesPerQueryType;
 
@@ -142,8 +133,6 @@ public class Transaction {
     private volatile @Nullable AtomicInteger throwableFrameLimitCounter;
 
     private final ThreadContextImpl mainThreadContext;
-    // FIXME impose simple max on number of auxiliary thread contexts (AdvancedConfig)
-    private volatile @MonotonicNonNull List<ThreadContextImpl> auxThreadContexts = null;
     // async root timers are the root timers which do not have corresponding thread context
     // (those corresponding to async trace entries)
     // FIXME impose simple max on number of async root timers (AdvancedConfig)
@@ -154,9 +143,6 @@ public class Transaction {
 
     private final Ticker ticker;
 
-    private final TransactionRegistry transactionRegistry;
-    private final TransactionServiceImpl transactionService;
-    private final ConfigService configService;
     private final UserProfileScheduler userProfileScheduler;
 
     private @Nullable TransactionEntry transactionEntry;
@@ -174,46 +160,15 @@ public class Transaction {
         this.startTick = startTick;
         this.transactionType = transactionType;
         this.transactionName = transactionName;
-        this.captureThreadStats = captureThreadStats;
         this.maxTraceEntriesPerTransaction = maxTraceEntriesPerTransaction;
         this.maxAggregateQueriesPerQueryType = maxAggregateQueriesPerQueryType;
         this.completionCallback = completionCallback;
         this.ticker = ticker;
-        this.transactionRegistry = transactionRegistry;
-        this.transactionService = transactionService;
-        this.configService = configService;
         this.userProfileScheduler = userProfileScheduler;
-        mainThreadContext = new ThreadContextImpl(castInitialized(this), null, messageSupplier,
-                timerName, startTick, captureThreadStats, threadAllocatedBytes, false,
-                transactionRegistry, transactionService, configService, ticker,
+        mainThreadContext = new ThreadContextImpl(castInitialized(this), null, null,
+                messageSupplier, timerName, startTick, captureThreadStats, threadAllocatedBytes,
+                false, transactionRegistry, transactionService, configService, ticker,
                 threadContextHolder);
-    }
-
-    public TraceEntryImpl startAuxThreadContext(TraceEntryImpl parentTraceEntry,
-            TimerName auxTimerName, long startTick,
-            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder,
-            @Nullable ThreadAllocatedBytes threadAllocatedBytes) {
-        ThreadContextImpl auxThreadContext = new ThreadContextImpl(this, parentTraceEntry,
-                AuxThreadRootMessageSupplier.INSTANCE, auxTimerName, startTick, captureThreadStats,
-                threadAllocatedBytes, true, transactionRegistry, transactionService, configService,
-                ticker, threadContextHolder);
-        if (auxThreadContexts == null) {
-            // double-checked locking works here because auxThreadContexts is volatile
-            //
-            // synchronized on "this" as a micro-optimization just so don't need to create an empty
-            // object to lock on
-            synchronized (this) {
-                if (auxThreadContexts == null) {
-                    auxThreadContexts = Lists.newCopyOnWriteArrayList();
-                }
-            }
-        }
-        auxThreadContexts.add(auxThreadContext);
-        // see counterpart to this synchronization (and explanation) in ThreadContextImpl.detach()
-        synchronized (threadContextHolder) {
-            threadContextHolder.set(auxThreadContext);
-        }
-        return auxThreadContext.getRootEntry();
     }
 
     long getStartTime() {
@@ -308,15 +263,6 @@ public class Transaction {
         return mainThreadContext.getRootTimer();
     }
 
-    public Iterable<TimerImpl> getAuxThreadRootTimers() {
-        memoryBarrierRead();
-        if (auxThreadContexts == null) {
-            // optimization for common case
-            return ImmutableList.of();
-        }
-        return Iterables.transform(auxThreadContexts, GetRootTimerFunction.INSTANCE);
-    }
-
     public List<AsyncTimerImpl> getAsyncRootTimers() {
         memoryBarrierRead();
         if (asyncRootTimers == null) {
@@ -330,25 +276,9 @@ public class Transaction {
         return mainThreadContext.getThreadStats();
     }
 
-    // can be called from a non-transaction thread
-    public Iterable<ThreadStats> getAuxThreadStats() {
-        if (auxThreadContexts == null) {
-            return ImmutableList.of();
-        }
-        if (!captureThreadStats) {
-            return ImmutableList.of(ThreadStats.NA);
-        }
-        return Iterables.transform(auxThreadContexts, GetThreadStatsFunction.INSTANCE);
-    }
-
     public void mergeQueriesInto(QueryCollector queries) {
         memoryBarrierRead();
         mainThreadContext.mergeQueriesInto(queries);
-        if (auxThreadContexts != null) {
-            for (ThreadContextImpl threadContext : auxThreadContexts) {
-                threadContext.mergeQueriesInto(queries);
-            }
-        }
     }
 
     public boolean allowAnotherEntry() {
@@ -369,22 +299,7 @@ public class Transaction {
 
     public List<Trace.Entry> getEntriesProtobuf(long captureTick) {
         memoryBarrierRead();
-        if (auxThreadContexts == null) {
-            return mainThreadContext.getEntriesProtobuf(captureTick,
-                    ImmutableMultimap.<TraceEntryImpl, TraceEntryImpl>of());
-        }
-        Multimap<TraceEntryImpl, TraceEntryImpl> auxRootTraceEntries = ArrayListMultimap.create();
-        for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
-            // checkNotNull is safe b/c auxiliary thread contexts have non-null parent trace entry
-            TraceEntryImpl parentTraceEntry = checkNotNull(auxThreadContext.getParentTraceEntry());
-            TraceEntryImpl rootEntry = auxThreadContext.getRootEntry();
-            if (rootEntry.getNextTraceEntry() != null) {
-                // root entry is just "auxiliary thread" root placeholder, don't include if there
-                // are no sub entries
-                auxRootTraceEntries.put(parentTraceEntry, rootEntry);
-            }
-        }
-        return mainThreadContext.getEntriesProtobuf(captureTick, auxRootTraceEntries);
+        return mainThreadContext.getEntriesProtobuf(captureTick);
     }
 
     long getMainThreadProfileSampleCount() {
@@ -456,10 +371,7 @@ public class Transaction {
     }
 
     public List<ThreadContextImpl> getAuxThreadContexts() {
-        if (auxThreadContexts == null) {
-            return ImmutableList.of();
-        }
-        return auxThreadContexts;
+        return mainThreadContext.getAuxThreadContexts();
     }
 
     public void setTransactionType(String transactionType, int priority) {
@@ -597,7 +509,7 @@ public class Transaction {
     void end(long endTick) {
         completed = true;
         this.endTick = endTick;
-        endCheckAuxThreadContexts();
+        mainThreadContext.endCheckAuxThreadContexts();
         if (immedateTraceStoreRunnable != null) {
             immedateTraceStoreRunnable.cancel();
         }
@@ -644,70 +556,7 @@ public class Transaction {
         memoryBarrierWrite();
     }
 
-    private void endCheckAuxThreadContexts() {
-        if (auxThreadContexts == null) {
-            return;
-        }
-        for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
-            if (auxThreadContext.isCompleted()) {
-                continue;
-            }
-            auxThreadContext.detach();
-            if (logger.isDebugEnabled()) {
-                ThreadInfo threadInfo = ManagementFactory.getThreadMXBean()
-                        .getThreadInfo(auxThreadContext.getThreadId(), Integer.MAX_VALUE);
-                if (!auxThreadContext.isCompleted() && threadInfo != null) {
-                    // still not complete and got a valid stack trace from auxiliary thread
-                    StringBuilder sb = new StringBuilder();
-                    for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
-                        sb.append("    ");
-                        sb.append(stackTraceElement.toString());
-                        sb.append('\n');
-                    }
-                    logger.debug("auxiliary thread extended beyond the transaction which started it"
-                            + "\n{}", sb);
-                }
-            }
-        }
-    }
-
     public static interface CompletionCallback {
         void completed(Transaction transaction);
-    }
-
-    private static class AuxThreadRootMessageSupplier extends MessageSupplier {
-
-        private static final AuxThreadRootMessageSupplier INSTANCE =
-                new AuxThreadRootMessageSupplier();
-
-        private final Message message = Message.from("auxiliary thread");
-
-        @Override
-        public Message get() {
-            return message;
-        }
-    }
-
-    private static class GetRootTimerFunction implements Function<ThreadContextImpl, TimerImpl> {
-
-        private static final GetRootTimerFunction INSTANCE = new GetRootTimerFunction();
-
-        @Override
-        public TimerImpl apply(@Nullable ThreadContextImpl input) {
-            checkNotNull(input);
-            return input.getRootTimer();
-        }
-    }
-
-    private static class GetThreadStatsFunction
-            implements Function<ThreadContextImpl, ThreadStats> {
-
-        private static final GetThreadStatsFunction INSTANCE = new GetThreadStatsFunction();
-
-        @Override
-        public ThreadStats apply(@Nullable ThreadContextImpl input) {
-            checkNotNull(input);
-            return input.getThreadStats();
-        }
     }
 }

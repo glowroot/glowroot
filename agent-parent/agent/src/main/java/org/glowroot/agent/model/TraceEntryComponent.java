@@ -15,25 +15,13 @@
  */
 package org.glowroot.agent.model;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map.Entry;
-
 import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.plugin.api.MessageSupplier;
-import org.glowroot.agent.plugin.api.internal.ReadableMessage;
-import org.glowroot.agent.util.Tickers;
-import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 // this supports updating by a single thread and reading by multiple threads
 class TraceEntryComponent {
@@ -69,55 +57,6 @@ class TraceEntryComponent {
 
     TraceEntryImpl getRootEntry() {
         return rootEntry;
-    }
-
-    // this does not include the root trace entry
-    public List<Trace.Entry> toProto(long captureTick,
-            Multimap<TraceEntryImpl, TraceEntryImpl> auxRootTraceEntries) {
-        if (captureTick < startTick) {
-            return ImmutableList.of();
-        }
-        boolean completed = this.completed;
-        if (completed && endTick < captureTick) {
-            completed = false;
-        }
-        ListMultimap<TraceEntryImpl, TraceEntryImpl> parentChildMap = ArrayListMultimap.create();
-        TraceEntryImpl entry = rootEntry.getNextTraceEntry();
-        // filter out entries that started after the capture tick
-        // checking completed is short circuit optimization for the common case
-        while (entry != null
-                && (completed || Tickers.lessThanOrEqual(entry.getStartTick(), captureTick))) {
-            TraceEntryImpl parentTraceEntry = entry.getParentTraceEntry();
-            if (parentTraceEntry == null) {
-                logFoundNonRootEntryWithNullParent(entry);
-                continue;
-            }
-            parentChildMap.put(parentTraceEntry, entry);
-            entry = entry.getNextTraceEntry();
-        }
-        // merge in aux trace entry roots
-        for (Entry<TraceEntryImpl, Collection<TraceEntryImpl>> entries : auxRootTraceEntries
-                .asMap().entrySet()) {
-            TraceEntryImpl parentTraceEntry = entries.getKey();
-            List<TraceEntryImpl> childTraceEntries =
-                    Lists.newArrayList(parentChildMap.get(parentTraceEntry));
-            for (TraceEntryImpl auxRootTraceEntry : entries.getValue()) {
-                TraceEntryImpl loopEntry = auxRootTraceEntry;
-                while (loopEntry != null && (completed
-                        || Tickers.lessThanOrEqual(loopEntry.getStartTick(), captureTick))) {
-                    TraceEntryImpl loopParentEntry = loopEntry.getParentTraceEntry();
-                    if (loopParentEntry == null) {
-                        childTraceEntries.add(loopEntry);
-                    } else {
-                        parentChildMap.put(loopParentEntry, loopEntry);
-                    }
-                    loopEntry = loopEntry.getNextTraceEntry();
-                }
-            }
-            childTraceEntries = TraceEntryImpl.orderingByStartTick.sortedCopy(childTraceEntries);
-            parentChildMap.replaceValues(parentTraceEntry, childTraceEntries);
-        }
-        return getProtobufChildEntries(rootEntry, parentChildMap, startTick, captureTick);
     }
 
     long getStartTick() {
@@ -182,6 +121,10 @@ class TraceEntryComponent {
         return activeEntry;
     }
 
+    TraceEntryImpl getTailEntry() {
+        return tailEntry;
+    }
+
     private void popEntrySafe(TraceEntryImpl entry) {
         if (activeEntry == null) {
             logger.error("entry stack is empty, cannot pop entry: {}", entry);
@@ -205,45 +148,6 @@ class TraceEntryComponent {
         // don't pop the root trace entry
         while (activeEntry != null && activeEntry != rootEntry && activeEntry != entry) {
             activeEntry = activeEntry.getParentTraceEntry();
-        }
-    }
-
-    private void logFoundNonRootEntryWithNullParent(TraceEntryImpl entry) {
-        Transaction transaction = threadContext.getTransaction();
-        MessageSupplier messageSupplier = entry.getMessageSupplier();
-        ErrorMessage errorMessage = entry.getErrorMessage();
-        String traceEntryMessage = "";
-        if (messageSupplier != null) {
-            ReadableMessage message = (ReadableMessage) messageSupplier.get();
-            traceEntryMessage = message.getText();
-        } else if (errorMessage != null) {
-            traceEntryMessage = errorMessage.message();
-        }
-        logger.error("found non-root trace entry with null parent trace entry"
-                + "\ntrace entry: {}\ntransaction: {} - {}", traceEntryMessage,
-                transaction.getTransactionType(), transaction.getTransactionName());
-    }
-
-    private static List<Trace.Entry> getProtobufChildEntries(TraceEntryImpl entry,
-            Multimap<TraceEntryImpl, TraceEntryImpl> parentChildMap, long transactionStartTick,
-            long captureTick) {
-        List<Trace.Entry> entries = Lists.newArrayList();
-        addProtobufChildEntries(entry, parentChildMap, transactionStartTick, captureTick, 0,
-                entries);
-        return entries;
-    }
-
-    private static void addProtobufChildEntries(TraceEntryImpl entry,
-            Multimap<TraceEntryImpl, TraceEntryImpl> parentChildMap, long transactionStartTick,
-            long captureTick, int depth, List<Trace.Entry> entries) {
-        if (!parentChildMap.containsKey(entry)) {
-            return;
-        }
-        Collection<TraceEntryImpl> childEntries = parentChildMap.get(entry);
-        for (TraceEntryImpl childEntry : childEntries) {
-            entries.add(childEntry.toProto(depth, transactionStartTick, captureTick));
-            addProtobufChildEntries(childEntry, parentChildMap, transactionStartTick, captureTick,
-                    depth + 1, entries);
         }
     }
 }
