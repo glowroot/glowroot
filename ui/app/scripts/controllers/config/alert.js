@@ -135,10 +135,6 @@ glowroot.controller('ConfigAlertCtrl', [
     };
     var removeConfirmIfHasChangesListener = $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
-    $scope.saveDisabled = function () {
-      return !$scope.hasChanges() || ($scope.formCtrl && $scope.formCtrl.$invalid);
-    };
-
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
       postData.agentId = $scope.agentId;

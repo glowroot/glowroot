@@ -23,7 +23,6 @@
     <!-- not using gt-form-autofocus-on-first-input in order to handle special case #rollup-detail-capped-size
          and trace-detail-capped-size urls (see storage.js) -->
     <div ng-form
-         gt-form-with-primary-button
          class="form-horizontal"
          name="formCtrl">
       <fieldset>
@@ -159,7 +158,7 @@
             <div gt-button
                  gt-label="Save changes"
                  gt-click="save(deferred)"
-                 gt-disabled="!hasChanges() || formCtrl.$invalid"
+                 gt-disabled="formCtrl.$invalid"
                  class="pull-left"
                  style="margin-right: 8px;">
             </div>

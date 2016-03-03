@@ -18,8 +18,6 @@ package org.glowroot.agent.webdriver.tests.config;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.agent.webdriver.tests.Utils;
 
@@ -52,9 +50,6 @@ public class AdvancedConfigPage {
     public void clickSaveButton() {
         WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
         saveButton.click();
-        // wait for save to complete
-        new WebDriverWait(driver, 30)
-                .until(ExpectedConditions.not(ExpectedConditions.elementToBeClickable(saveButton)));
     }
 
     private WebElement withWait(By by) {

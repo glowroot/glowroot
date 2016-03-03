@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@ package org.glowroot.agent.webdriver.tests.config;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.agent.webdriver.tests.Utils;
 
@@ -44,9 +42,6 @@ public class UserRecordingConfigPage {
     public void clickSaveButton() {
         WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
         saveButton.click();
-        // wait for save to complete
-        new WebDriverWait(driver, 30)
-                .until(ExpectedConditions.not(ExpectedConditions.elementToBeClickable(saveButton)));
     }
 
     private WebElement withWait(By by) {

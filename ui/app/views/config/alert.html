@@ -34,7 +34,6 @@
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-form
-         gt-form-with-primary-button
          gt-form-autofocus-on-first-input
          class="form-horizontal"
          name="formCtrl">
@@ -205,7 +204,7 @@
             <div gt-button
                  gt-label="{{config.version ? 'Save changes' : 'Add'}}"
                  gt-click="save(deferred)"
-                 gt-disabled="saveDisabled()"
+                 gt-disabled="formCtrl.$invalid"
                  class="pull-left">
             </div>
             <!-- using ng-show instead of gt-show -->

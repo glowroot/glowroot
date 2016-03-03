@@ -55,11 +55,6 @@ glowroot.controller('ConfigPluginCtrl', [
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Saved');
-            if (postData.agentId) {
-              $location.url('config/plugin-list?agent-id=' + encodeURIComponent($scope.agentId));
-            } else {
-              $location.url('config/plugin-list');
-            }
           })
           .error(httpErrors.handler($scope, deferred));
     };

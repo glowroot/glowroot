@@ -208,8 +208,8 @@ glowroot.controller('ConfigGaugeCtrl', [
     };
 
     $scope.saveDisabled = function () {
-      return !$scope.hasChanges() || !$scope.config.mbeanAttributes.length || $scope.formCtrl.$invalid
-          || $scope.mbeanUnavailable || $scope.mbeanUnmatched || $scope.duplicateMBean;
+      return !$scope.config.mbeanAttributes.length || $scope.formCtrl.$invalid || $scope.mbeanUnavailable
+          || $scope.mbeanUnmatched || $scope.duplicateMBean;
     };
 
     $scope.save = function (deferred) {

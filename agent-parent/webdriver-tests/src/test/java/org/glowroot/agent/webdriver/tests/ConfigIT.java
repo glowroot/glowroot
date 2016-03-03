@@ -47,6 +47,8 @@ public class ConfigIT extends WebDriverIT {
         page.getProfilingIntervalTextField().sendKeys("3456");
         page.getCaptureThreadStatsCheckBox().click();
         page.clickSaveButton();
+        // wait for save to finish
+        Thread.sleep(200);
 
         // then
         app.open();
@@ -72,6 +74,8 @@ public class ConfigIT extends WebDriverIT {
         page.getDefaultDisplayedPercentilesTextField().clear();
         page.getDefaultDisplayedPercentilesTextField().sendKeys("3,4,5,6");
         page.clickSaveButton();
+        // wait for save to finish
+        Thread.sleep(200);
 
         // then
         app.open();
@@ -109,6 +113,8 @@ public class ConfigIT extends WebDriverIT {
         page.getPasswordTextField().clear();
         page.getPasswordTextField().sendKeys("p");
         page.clickSaveButton();
+        // wait for save to finish
+        Thread.sleep(200);
 
         // then
         app.open();
@@ -145,6 +151,8 @@ public class ConfigIT extends WebDriverIT {
         page.getProfileIntervalTextField().clear();
         page.getProfileIntervalTextField().sendKeys("2345");
         page.clickSaveButton();
+        // wait for save to finish
+        Thread.sleep(200);
 
         // then
         app.open();
@@ -181,6 +189,8 @@ public class ConfigIT extends WebDriverIT {
         page.getTraceCappedDatabaseSizeTextField().clear();
         page.getTraceCappedDatabaseSizeTextField().sendKeys("88");
         page.clickSaveButton();
+        // wait for save to finish
+        Thread.sleep(200);
 
         // then
         app.open();
@@ -221,6 +231,8 @@ public class ConfigIT extends WebDriverIT {
         page.getMaxStackTraceSamplesPerTransactionTextField().clear();
         page.getMaxStackTraceSamplesPerTransactionTextField().sendKeys("3456");
         page.clickSaveButton();
+        // wait for save to finish
+        Thread.sleep(200);
 
         // then
         app.open();
