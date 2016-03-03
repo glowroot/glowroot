@@ -82,7 +82,7 @@ glowroot.controller('TransactionTabCtrl', [
       }
     };
 
-    $scope.$on('$stateChangeStart', function () {
+    $scope.$on('$stateChangeSuccess', function () {
       // don't let the active tab selection get out of sync (which can happen after using the back button)
       var activeElement = document.activeElement;
       if (activeElement && $(activeElement).closest('.gt-transaction-tabs').length) {

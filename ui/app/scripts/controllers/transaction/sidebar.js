@@ -70,7 +70,7 @@ glowroot.controller('TransactionSidebarCtrl', [
           }
         });
 
-    $scope.$on('$stateChangeStart', function () {
+    $scope.$on('$stateChangeSuccess', function () {
       // don't let the active sidebar selection get out of sync (which can happen after using the back button)
       var activeElement = document.activeElement;
       if (activeElement && $(activeElement).closest('.gt-sidebar').length) {

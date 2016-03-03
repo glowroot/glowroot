@@ -68,7 +68,7 @@ glowroot.controller('ConfigCtrl', [
           || $location.path() === '/config/smtp';
     };
 
-    $scope.$on('$stateChangeStart', function () {
+    $scope.$on('$stateChangeSuccess', function () {
       // don't let the active sidebar selection get out of sync (which can happen after using the back button)
       if (document.activeElement) {
         var gtUrl = document.activeElement.getAttribute('gt-url');
