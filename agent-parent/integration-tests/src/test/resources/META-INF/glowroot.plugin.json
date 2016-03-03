@@ -142,6 +142,7 @@
     "org.glowroot.agent.tests.plugin.LogCauseAspect",
     "org.glowroot.agent.tests.plugin.PauseAspect",
     "org.glowroot.agent.tests.plugin.MockDriverAspect",
-    "org.glowroot.agent.tests.plugin.TraceGeneratorAspect"
+    "org.glowroot.agent.tests.plugin.TraceGeneratorAspect",
+    "org.glowroot.agent.tests.plugin.MixinAspect"
   ]
 }
