@@ -142,6 +142,9 @@ glowroot.run([
       // routes.js before $rootScope.agentRollup is set (note for testing, this is only a problem when not under grunt
       // serve)
       var agentRollup = $location.search()['agent-rollup'] || $location.search()['agent-id'] || '';
+      if (!$rootScope.layout.agentRollups) {
+        return [];
+      }
       var agentRollupObj = $rootScope.layout.agentRollups[agentRollup];
       if (!agentRollupObj) {
         return [];

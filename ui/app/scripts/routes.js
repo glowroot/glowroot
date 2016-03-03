@@ -21,9 +21,14 @@ glowroot.config([
   '$stateProvider',
   '$urlRouterProvider',
   function ($provide, $stateProvider, $urlRouterProvider) {
-    var waitForLayout = function (needsTransactionType) {
+    var waitForLayout = function (needsTransactionType, loginPage) {
       return ['$q', '$rootScope', '$location', function ($q, $rootScope, $location) {
         if (window.layout) {
+          if (loginPage && !$rootScope.layout.needsAuthentication && !$rootScope.layout.adminPasswordEnabled) {
+            // no need to log in
+            $location.path('/').replace();
+            return;
+          }
           var hasAgent = $location.search()['agent-id'] || $location.search()['agent-rollup'] || $rootScope.layout.fat;
           if (hasAgent && needsTransactionType && !$location.search()['transaction-type']) {
             $location.search('transaction-type', $rootScope.defaultTransactionType());
@@ -35,6 +40,11 @@ glowroot.config([
           var deferred = $q.defer();
           var unregisterWatch = $rootScope.$watch('layout', function (value) {
             if (!value) {
+              return;
+            }
+            if (loginPage && !$rootScope.layout.needsAuthentication && !$rootScope.layout.adminPasswordEnabled) {
+              // no need to log in
+              $location.path('/').replace();
               return;
             }
             var hasAgent = $location.search()['agent-id'] || $location.search()['agent-rollup']
@@ -431,7 +441,7 @@ glowroot.config([
       templateUrl: 'views/login.html',
       controller: 'LoginCtrl',
       resolve: {
-        waitForLayout: waitForLayout(false)
+        waitForLayout: waitForLayout(false, true)
       }
     });
   }

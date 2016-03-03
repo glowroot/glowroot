@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,14 @@
 glowroot.factory('login', [
   '$location',
   function ($location) {
-    var originalPath;
+    var originalUrl;
     var message;
     return {
       goToLogin: function (msg, doNotSaveLocation) {
         message = msg;
-        originalPath = doNotSaveLocation ? '/' : $location.path();
-        if (originalPath !== '/login') {
-          $location.path('/login').replace();
+        originalUrl = doNotSaveLocation ? '/' : $location.url();
+        if (originalUrl !== '/login') {
+          $location.url('/login').replace();
         }
       },
       getMessage: function () {
@@ -34,10 +34,10 @@ glowroot.factory('login', [
       },
       returnToOriginalPath: function () {
         // originalPath can be undefined if user hits login page directly
-        if (originalPath && originalPath !== '/login') {
-          $location.path(originalPath).replace();
+        if (originalUrl && originalUrl !== '/login') {
+          $location.url(originalUrl).replace();
         } else {
-          $location.path('/').replace();
+          $location.url('/').replace();
         }
       }
     };
