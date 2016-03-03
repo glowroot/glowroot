@@ -147,11 +147,12 @@ glowroot.controller('TransactionCtrl', [
     });
     onLocationChangeSuccess();
 
-    $scope.$watchGroup(['range', 'summarySortOrder'], function (newValues, oldValues) {
-      if (newValues !== oldValues) {
-        $location.search($scope.buildQueryObject());
-      }
-    });
+    $scope.$watchGroup(['range.last', 'range.chartFrom', 'range.chartTo', 'summarySortOrder'],
+        function (newValues, oldValues) {
+          if (newValues !== oldValues) {
+            $location.search($scope.buildQueryObject());
+          }
+        });
 
     $scope.tabQueryString = function () {
       return queryStrings.encodeObject($scope.buildQueryObject({}));
