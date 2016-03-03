@@ -24,7 +24,6 @@ import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
-import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindMethodMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
@@ -40,14 +39,22 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 // servlet plugin and retrieve here
 public class ResourceAspect {
 
-    private static final FastThreadLocal</*@Nullable*/ String> servletPath =
-            new FastThreadLocal</*@Nullable*/ String>();
+    @SuppressWarnings("nullness:type.argument.type.incompatible")
+    private static final ThreadLocal<RequestInfo> requestInfoHolder =
+            new ThreadLocal<RequestInfo>() {
+                @Override
+                protected RequestInfo initialValue() {
+                    return new RequestInfo();
+                }
+            };
 
     private static final BooleanProperty useAltTransactionNaming =
             Agent.getConfigService("jaxrs").getBooleanProperty("useAltTransactionNaming");
 
     @Shim("javax.servlet.http.HttpServletRequest")
     public interface HttpServletRequest {
+        @Nullable
+        String getMethod();
         @Nullable
         String getServletPath();
         @Nullable
@@ -60,8 +67,7 @@ public class ResourceAspect {
                     "javax.servlet.ServletResponse"})
     public static class CaptureServletPathAdvice {
         @OnBefore
-        public static @Nullable FastThreadLocal.Holder</*@Nullable*/ String> onBefore(
-                @BindParameter @Nullable Object req) {
+        public static @Nullable RequestInfo onBefore(@BindParameter @Nullable Object req) {
             if (req == null || !(req instanceof HttpServletRequest)) {
                 return null;
             }
@@ -76,16 +82,17 @@ public class ResourceAspect {
             } else {
                 servletPath = request.getServletPath();
             }
-            FastThreadLocal.Holder</*@Nullable*/ String> holder =
-                    ResourceAspect.servletPath.getHolder();
-            holder.set(servletPath);
-            return holder;
+            RequestInfo requestInfo = requestInfoHolder.get();
+            requestInfo.method = request.getMethod();
+            requestInfo.servletPath = servletPath;
+            return requestInfo;
         }
         @OnAfter
         public static void onAfter(
-                @BindTraveler @Nullable FastThreadLocal.Holder</*@Nullable*/ String> holder) {
-            if (holder != null) {
-                holder.set(null);
+                @BindTraveler @Nullable RequestInfo requestInfo) {
+            if (requestInfo != null) {
+                requestInfo.method = null;
+                requestInfo.servletPath = null;
             }
         }
     }
@@ -99,17 +106,14 @@ public class ResourceAspect {
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context,
                 @BindMethodMeta ResourceMethodMeta resourceMethodMeta) {
-            String prefix = servletPath.get();
             if (useAltTransactionNaming.value()) {
                 context.setTransactionName(resourceMethodMeta.getAltTransactionName(),
                         Priority.CORE_PLUGIN);
             } else {
-                if (prefix == null || prefix.isEmpty()) {
-                    context.setTransactionName(resourceMethodMeta.getPath(), Priority.CORE_PLUGIN);
-                } else {
-                    context.setTransactionName(prefix + resourceMethodMeta.getPath(),
-                            Priority.CORE_PLUGIN);
-                }
+                RequestInfo requestInfo = requestInfoHolder.get();
+                String transactionName = getTransactionName(requestInfo.method,
+                        requestInfo.servletPath, resourceMethodMeta.getPath());
+                context.setTransactionName(transactionName, Priority.CORE_PLUGIN);
             }
             return context.startTraceEntry(MessageSupplier.from("jaxrs resource: {}.{}()",
                     resourceMethodMeta.getResourceClassName(), resourceMethodMeta.getMethodName()),
@@ -124,5 +128,26 @@ public class ResourceAspect {
                 @BindTraveler TraceEntry traceEntry) {
             traceEntry.endWithError(throwable);
         }
+        private static String getTransactionName(@Nullable String method,
+                @Nullable String servletPath, String resourcePath) {
+            if (method != null) {
+                if (servletPath == null || servletPath.isEmpty()) {
+                    return method + " " + resourcePath;
+                } else {
+                    return method + " " + servletPath + resourcePath;
+                }
+            } else {
+                if (servletPath == null || servletPath.isEmpty()) {
+                    return resourcePath;
+                } else {
+                    return servletPath + resourcePath;
+                }
+            }
+        }
+    }
+
+    private static class RequestInfo {
+        private @Nullable String method;
+        private @Nullable String servletPath;
     }
 }

@@ -66,7 +66,7 @@ public class ResourceIT {
         // when
         Trace trace = container.execute(WithNormalServletMapping.class);
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/hello/*");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /hello/*");
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -80,7 +80,7 @@ public class ResourceIT {
         // when
         Trace trace = container.execute(WithNormalServletMappingHittingRoot.class);
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /");
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -94,7 +94,7 @@ public class ResourceIT {
         // when
         Trace trace = container.execute(WithNestedServletMapping.class);
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/rest/hello/*");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /rest/hello/*");
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -108,7 +108,7 @@ public class ResourceIT {
         // when
         Trace trace = container.execute(WithNestedServletMappingHittingRoot.class);
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/rest/");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /rest/");
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -124,7 +124,7 @@ public class ResourceIT {
         // then
         // JAX-RS (at least Jersey implementation) doesn't like this "less than normal" servlet
         // mapping, and ends up mapping everything to RootResource
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /");
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -139,7 +139,7 @@ public class ResourceIT {
         // when
         Trace trace = container.execute(WithLessNormalServletMappingHittingRoot.class);
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /");
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
