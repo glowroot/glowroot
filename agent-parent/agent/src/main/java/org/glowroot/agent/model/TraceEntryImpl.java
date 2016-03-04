@@ -265,7 +265,7 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
     void immediateEndAsErrorEntry(ErrorMessage errorMessage, long endTick) {
         this.errorMessage = errorMessage;
         this.endTick = endTick;
-        this.selfNestingLevel--;
+        selfNestingLevel--;
     }
 
     private boolean isCompleted() {
@@ -305,10 +305,10 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
         endQueryData(endTick);
         this.errorMessage = errorMessage;
         this.endTick = endTick;
+        selfNestingLevel--;
         if (isAsync()) {
             threadContext.getTransaction().memoryBarrierWrite();
         } else {
-            this.selfNestingLevel--;
             threadContext.popEntry(this, endTick);
         }
     }
