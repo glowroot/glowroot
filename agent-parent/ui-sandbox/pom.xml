@@ -29,14 +29,24 @@
     </dependency>
     <dependency>
       <!-- executor plugin is included to test UI display for auxiliary timers/profiles
-           (only when running in javaagent container) -->
+        (only when running in javaagent container) -->
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-executor-plugin</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <!-- http client plugin is included to test UI display for http queries -->
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-http-client-plugin</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.ning</groupId>
+      <artifactId>async-http-client</artifactId>
     </dependency>
   </dependencies>
 </project>

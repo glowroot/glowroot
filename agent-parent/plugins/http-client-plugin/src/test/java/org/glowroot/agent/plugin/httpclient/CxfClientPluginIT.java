@@ -63,8 +63,8 @@ public class CxfClientPluginIT {
         Trace trace = container.execute(ExecuteSoapRequest.class);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage()).matches(
-                "cxf client soap request: http://localhost:\\d+/cxf/helloWorld\\?wsdl hello");
+        assertThat(entries.get(0).getMessage()).matches("cxf client soap request:"
+                + " http://localhost:\\d+/cxf/helloWorld\\?wsdl, operation=hello");
     }
 
     public static class ExecuteSoapRequest implements AppUnderTest, TransactionMarker {

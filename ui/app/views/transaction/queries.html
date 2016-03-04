@@ -50,7 +50,15 @@
            style="table-layout: fixed;">
       <thead>
       <tr>
-        <th></th>
+        <th style="vertical-align: middle;">
+          <select class="form-control"
+                  ng-model="queryType"
+                  style="width: inherit;"
+                  ng-show="queryTypes.length > 1">
+            <option selected value="">(All)</option>
+            <option ng-repeat="queryType in queryTypes" value="{{queryType}}">{{queryType}}</option>
+          </select>
+        </th>
         <th class="gt-query-total-column">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('total-time')}}" class="gt-sortable-table-header">
             Total<br>
@@ -92,7 +100,7 @@
       </tr>
       </thead>
       <tbody>
-      <tr ng-repeat="query in queries | orderBy:sortAttr:sortReverse">
+      <tr ng-repeat="query in queries | filter:{queryType: queryType} | orderBy:sortAttr:sortReverse">
         <td class="gt-query-text-column"
             ng-click="showQueryModal(query)">
           {{query.queryText}}

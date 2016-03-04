@@ -314,7 +314,7 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
     }
 
     private String getRowCountSuffix() {
-        if (!isQueryNavigationAttempted()) {
+        if (!isRowNavigationAttempted()) {
             return "";
         }
         long rowCount = getRowCount();

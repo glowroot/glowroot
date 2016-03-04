@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "Profile.proto";
+import "Common.proto";
 
 package org_glowroot_wire_api_model;
 
@@ -72,7 +73,7 @@ message Aggregate {
   message Query {
     string text = 1;
     double total_duration_nanos = 2;
-    int64 total_rows = 3;
-    int64 execution_count = 4;
+    int64 execution_count = 3;
+    OptionalInt64 total_rows = 4;
   }
 }

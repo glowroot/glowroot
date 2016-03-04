@@ -19,7 +19,7 @@ import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.QueryEntry;
 
-// ideally this would a component of it's subclasses instead of a parent class, but for
+// ideally this would be a component of it's subclasses instead of a parent class, but for
 // micro-optimization purposes it is not (in order to prevent extra object instances/memory
 // addresses that must be navigated)
 public abstract class QueryEntryBase implements QueryEntry {
@@ -51,6 +51,11 @@ public abstract class QueryEntryBase implements QueryEntry {
     public void rowNavigationAttempted() {
         if (currRow == -1) {
             currRow = 0;
+            if (queryData != null) {
+                // queryData can be null here if the aggregated query limit is exceeded
+                // (though typically query limit is larger than trace entry limit)
+                queryData.setRowNavigationAttempted();
+            }
         }
     }
 
@@ -92,7 +97,7 @@ public abstract class QueryEntryBase implements QueryEntry {
 
     // row count -1 means no navigation has been attempted
     // row count 0 means that navigation has been attempted but there were 0 rows
-    boolean isQueryNavigationAttempted() {
+    boolean isRowNavigationAttempted() {
         return currRow != -1;
     }
 

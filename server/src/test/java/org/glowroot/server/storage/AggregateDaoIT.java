@@ -25,12 +25,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.common.model.QueryCollector;
-import org.glowroot.server.storage.AggregateDao;
-import org.glowroot.server.storage.AlertConfigDao;
-import org.glowroot.server.storage.ServerConfigDao;
-import org.glowroot.server.storage.ConfigRepositoryImpl;
-import org.glowroot.server.storage.AgentDao;
-import org.glowroot.server.storage.TransactionTypeDao;
 import org.glowroot.storage.repo.AggregateRepository.ErrorSummarySortOrder;
 import org.glowroot.storage.repo.AggregateRepository.OverallErrorSummary;
 import org.glowroot.storage.repo.AggregateRepository.OverallQuery;
@@ -53,6 +47,7 @@ import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.QueriesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.Query;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
+import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -167,7 +162,7 @@ public class AggregateDaoIT {
         assertThat(queriesByType.get(0).getQueryCount()).isEqualTo(1);
         assertThat(queriesByType.get(0).getQuery(0).getText()).isEqualTo("select 1");
         assertThat(queriesByType.get(0).getQuery(0).getTotalDurationNanos()).isEqualTo(14);
-        assertThat(queriesByType.get(0).getQuery(0).getTotalRows()).isEqualTo(10);
+        assertThat(queriesByType.get(0).getQuery(0).getTotalRows().getValue()).isEqualTo(10);
         assertThat(queriesByType.get(0).getQuery(0).getExecutionCount()).isEqualTo(4);
 
         // check that rolled-up data does not exist before rollup
@@ -269,7 +264,7 @@ public class AggregateDaoIT {
         assertThat(queriesByType.get(0).getQueryCount()).isEqualTo(1);
         assertThat(queriesByType.get(0).getQuery(0).getText()).isEqualTo("select 1");
         assertThat(queriesByType.get(0).getQuery(0).getTotalDurationNanos()).isEqualTo(14);
-        assertThat(queriesByType.get(0).getQuery(0).getTotalRows()).isEqualTo(10);
+        assertThat(queriesByType.get(0).getQuery(0).getTotalRows().getValue()).isEqualTo(10);
         assertThat(queriesByType.get(0).getQuery(0).getExecutionCount()).isEqualTo(4);
     }
 
@@ -312,7 +307,7 @@ public class AggregateDaoIT {
                         .addQuery(Query.newBuilder()
                                 .setText("select 1")
                                 .setTotalDurationNanos(7)
-                                .setTotalRows(5)
+                                .setTotalRows(OptionalInt64.newBuilder().setValue(5))
                                 .setExecutionCount(2)))
                 .build();
     }
@@ -340,7 +335,7 @@ public class AggregateDaoIT {
                                 .addQuery(Query.newBuilder()
                                         .setText("select 1")
                                         .setTotalDurationNanos(7)
-                                        .setTotalRows(5)
+                                        .setTotalRows(OptionalInt64.newBuilder().setValue(5))
                                         .setExecutionCount(2))))
                 .build();
     }

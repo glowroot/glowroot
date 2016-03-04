@@ -40,6 +40,14 @@ glowroot.controller('TransactionQueriesCtrl', [
       refreshData();
     });
 
+    $scope.$watch('queryType', function () {
+      if ($scope.queryType) {
+        $location.search('query-type', $scope.queryType);
+      } else {
+        $location.search('query-type', null);
+      }
+    });
+
     $scope.sort = function () {
       $location.search('sort-attribute', null);
       $location.search('sort-direction', null);
@@ -52,6 +60,9 @@ glowroot.controller('TransactionQueriesCtrl', [
       }
       if ($scope.sortAttribute === attributeName && !$scope.sortReverse) {
         query['sort-direction'] = 'asc';
+      }
+      if ($scope.queryType) {
+        query['query-type'] = $scope.queryType;
       }
       return queryStrings.encodeObject(query);
     };
@@ -79,6 +90,7 @@ glowroot.controller('TransactionQueriesCtrl', [
       } else if ($scope.sortAttribute === 'rows-per-execution') {
         $scope.sortAttr = '-rowsPerExecution';
       }
+      $scope.queryType = $location.search()['query-type'];
     });
 
     $scope.showQueryModal = function (query) {
@@ -204,10 +216,24 @@ glowroot.controller('TransactionQueriesCtrl', [
             }
             $scope.showQueries = data.length;
             $scope.queries = data;
+            var queryTypes = {};
             angular.forEach($scope.queries, function (query) {
               query.timePerExecution = query.totalDurationNanos / (1000000 * query.executionCount);
-              query.rowsPerExecution = query.totalRows / query.executionCount;
+              if (query.totalRows !== undefined) {
+                query.rowsPerExecution = query.totalRows / query.executionCount;
+              }
+              if (queryTypes[query.queryType] === undefined) {
+                queryTypes[query.queryType] = 0;
+              }
+              queryTypes[query.queryType] += query.totalDurationNanos;
             });
+            $scope.queryTypes = Object.keys(queryTypes);
+            $scope.queryTypes.sort(function (left, right) {
+              return queryTypes[right] - queryTypes[left];
+            });
+            if ($scope.queryType && $scope.queryTypes.indexOf($scope.queryType) === -1) {
+              $scope.queryTypes.push($scope.queryType);
+            }
           })
           .error(function (data, status) {
             $scope.showSpinner--;

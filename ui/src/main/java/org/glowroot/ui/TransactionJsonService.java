@@ -220,12 +220,14 @@ class TransactionJsonService {
         List<Query> queryList = Lists.newArrayList();
         for (Aggregate.QueriesByType queriesByType : queries) {
             for (Aggregate.Query aggQuery : queriesByType.getQueryList()) {
+                Long totalRows =
+                        aggQuery.hasTotalRows() ? aggQuery.getTotalRows().getValue() : null;
                 queryList.add(ImmutableQuery.builder()
                         .queryType(queriesByType.getType())
                         .queryText(aggQuery.getText())
                         .totalDurationNanos(aggQuery.getTotalDurationNanos())
                         .executionCount(aggQuery.getExecutionCount())
-                        .totalRows(aggQuery.getTotalRows())
+                        .totalRows(totalRows)
                         .build());
             }
         }
@@ -666,7 +668,8 @@ class TransactionJsonService {
         String queryText();
         double totalDurationNanos();
         long executionCount();
-        long totalRows();
+        @Nullable
+        Long totalRows();
     }
 
     @Value.Immutable

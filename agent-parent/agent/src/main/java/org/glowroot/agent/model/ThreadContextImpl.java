@@ -346,7 +346,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
         QueryData curr = headQueryData;
         while (curr != null) {
             queries.mergeQuery(curr.getQueryType(), curr.getQueryText(),
-                    curr.getTotalDurationNanos(), curr.getExecutionCount(), curr.getTotalRows());
+                    curr.getTotalDurationNanos(), curr.getExecutionCount(),
+                    curr.isRowNavigationAttempted(), curr.getTotalRows());
             curr = curr.getNextQueryData();
         }
         if (auxThreadContexts != null) {
@@ -587,8 +588,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @Override
     public AsyncTraceEntry startAsyncTraceEntry(MessageSupplier messageSupplier,
             TimerName syncTimerName, TimerName asyncTimerName) {
-        System.out
-                .println("startAsyncEntry: " + ((ReadableMessage) messageSupplier.get()).getText());
         if (syncTimerName == null) {
             logger.error("startQuery(): argument 'syncTimerName' must be non-null");
             return NopAsyncQueryEntry.INSTANCE;

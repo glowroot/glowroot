@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,17 +23,15 @@ import javax.annotation.Nullable;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
 
-public class RequestInvoker {
+public class AsyncHttpClientRequestInvoker {
 
-    private static final Logger logger = Agent.getLogger(RequestInvoker.class);
+    private static final Logger logger = Agent.getLogger(AsyncHttpClientRequestInvoker.class);
 
-    private final @Nullable Method getMethodMethod;
     private final @Nullable Method getUrlMethod;
     private final @Nullable Method getURIMethod;
 
-    public RequestInvoker(Class<?> clazz) {
+    public AsyncHttpClientRequestInvoker(Class<?> clazz) {
         Class<?> requestClass = getRequestClass(clazz);
-        getMethodMethod = Invokers.getMethod(requestClass, "getMethod");
         getUrlMethod = Invokers.getMethod(requestClass, "getUrl");
         // in async-http-client versions from 1.7.12 up until just prior to 1.9.0, getUrl() stripped
         // trailing "/"
@@ -48,10 +46,6 @@ public class RequestInvoker {
             }
         }
         this.getURIMethod = getURIMethod;
-    }
-
-    String getMethod(Object request) {
-        return Invokers.invoke(getMethodMethod, request, "");
     }
 
     // TODO report checker framework issue that occurs without this warning suppression

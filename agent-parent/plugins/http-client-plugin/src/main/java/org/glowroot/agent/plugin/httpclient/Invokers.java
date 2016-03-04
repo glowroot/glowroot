@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import javax.annotation.Nullable;
@@ -40,6 +41,20 @@ public class Invokers {
         }
     }
 
+    static @Nullable Field getDeclaredField(@Nullable Class<?> clazz, String fieldName) {
+        if (clazz == null) {
+            return null;
+        }
+        try {
+            Field field = clazz.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field;
+        } catch (Exception e) {
+            logger.warn(e.getMessage(), e);
+            return null;
+        }
+    }
+
     @SuppressWarnings("unchecked")
     static <T> T invoke(@Nullable Method method, Object obj, T defaultValue) {
         if (method == null) {
@@ -55,6 +70,19 @@ public class Invokers {
             logger.warn("error calling {}.{}()", method.getDeclaringClass().getName(),
                     method.getName(), t);
             return defaultValue;
+        }
+    }
+
+    static @Nullable Object get(@Nullable Field field, Object obj) {
+        if (field == null) {
+            return null;
+        }
+        try {
+            return field.get(obj);
+        } catch (Throwable t) {
+            logger.warn("error getting {}.{}()", field.getDeclaringClass().getName(),
+                    field.getName(), t);
+            return null;
         }
     }
 }

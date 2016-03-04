@@ -15,8 +15,6 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
-import java.net.URI;
-
 import javax.annotation.Nullable;
 import javax.xml.namespace.QName;
 
@@ -57,12 +55,30 @@ public class SoapOutInterceptorAspect {
             if (message == null) {
                 return null;
             }
-            URI description = (URI) message.getContextualProperty("javax.xml.ws.wsdl.description");
-            String uri = description == null ? "" : description.toString();
-            QName operation = (QName) message.getContextualProperty("javax.xml.ws.wsdl.operation");
-            String operationName = operation == null ? "" : operation.getLocalPart();
-            return context.startTraceEntry(
-                    MessageSupplier.from("cxf client soap request: {} {}", uri, operationName),
+            Object methodObj = message.getContextualProperty("javax.xml.ws.http.request.method");
+            String method;
+            if (methodObj == null) {
+                method = "";
+            } else {
+                method = methodObj.toString() + " ";
+            }
+            Object uriObj = message.getContextualProperty("javax.xml.ws.wsdl.description");
+            String uri;
+            if (uriObj == null) {
+                uri = "";
+            } else {
+                uri = uriObj.toString();
+            }
+            Object operationObj = message.getContextualProperty("javax.xml.ws.wsdl.operation");
+            String operationName;
+            if (operationObj instanceof QName) {
+                operationName = ", operation=" + ((QName) operationObj).getLocalPart();
+            } else {
+                operationName = "";
+            }
+            return context.startQueryEntry("HTTP",
+                    method + Uris.stripQueryString(uri), MessageSupplier
+                            .from("cxf client soap request: {}{}{}", method, uri, operationName),
                     timerName);
         }
 

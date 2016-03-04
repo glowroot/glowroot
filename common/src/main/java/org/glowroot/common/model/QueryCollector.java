@@ -93,13 +93,14 @@ public class QueryCollector {
     }
 
     public void mergeQuery(String queryType, String queryText, long totalDurationNanos,
-            long executionCount, long totalRows) {
+            long executionCount, boolean rowNavigationAttempted, long totalRows) {
         Map<String, MutableQuery> queriesForQueryType = queries.get(queryType);
         if (queriesForQueryType == null) {
             queriesForQueryType = Maps.newHashMap();
             queries.put(queryType, queriesForQueryType);
         }
-        mergeQuery(queryText, totalDurationNanos, executionCount, totalRows, queriesForQueryType);
+        mergeQuery(queryText, totalDurationNanos, executionCount, totalRows, rowNavigationAttempted,
+                queriesForQueryType);
     }
 
     private void mergeQuery(Aggregate.Query query, Map<String, MutableQuery> queriesForQueryType) {
@@ -114,11 +115,14 @@ public class QueryCollector {
         }
         aggregateQuery.addToTotalDurationNanos(query.getTotalDurationNanos());
         aggregateQuery.addToExecutionCount(query.getExecutionCount());
-        aggregateQuery.addToTotalRows(query.getTotalRows());
+        if (query.hasTotalRows()) {
+            aggregateQuery.addToTotalRows(true, query.getTotalRows().getValue());
+        }
     }
 
     private void mergeQuery(String queryText, long totalDurationNanos, long executionCount,
-            long totalRows, Map<String, MutableQuery> queriesForQueryType) {
+            long totalRows, boolean rowNavigationAttempted,
+            Map<String, MutableQuery> queriesForQueryType) {
         MutableQuery aggregateQuery = queriesForQueryType.get(queryText);
         if (aggregateQuery == null) {
             if (maxMultiplierWhileBuilding != 0
@@ -130,7 +134,7 @@ public class QueryCollector {
         }
         aggregateQuery.addToTotalDurationNanos(totalDurationNanos);
         aggregateQuery.addToExecutionCount(executionCount);
-        aggregateQuery.addToTotalRows(totalRows);
+        aggregateQuery.addToTotalRows(rowNavigationAttempted, totalRows);
     }
 
     private void order(List<Query> queries) {

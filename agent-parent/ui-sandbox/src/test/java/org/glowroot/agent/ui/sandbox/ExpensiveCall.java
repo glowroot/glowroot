@@ -15,15 +15,20 @@
  */
 package org.glowroot.agent.ui.sandbox;
 
+import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.ning.http.client.AsyncHttpClient;
 
 public class ExpensiveCall {
+
+    private static final AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
 
     private static final Random random = new Random();
 
@@ -94,6 +99,13 @@ public class ExpensiveCall {
     private void execute4() throws InterruptedException {
         expensive();
         execute5();
+        try {
+            asyncHttpClient.prepareGet("http://example.org/hello").execute().get();
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void execute5() throws InterruptedException {

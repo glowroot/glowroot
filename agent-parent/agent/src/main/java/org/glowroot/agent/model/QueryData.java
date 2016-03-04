@@ -51,6 +51,10 @@ public class QueryData {
     // nanosecond rollover (292 years) isn't a concern for total time on a single transaction
     private long totalDurationNanos;
     private long executionCount;
+
+    // this is needed to differentiate between queries that return no rows, and queries which don't
+    // even have a concept of row (e.g. http client requests which are also tracked as queries)
+    private boolean rowNavigationAttempted;
     private long totalRows;
 
     private long startTick;
@@ -94,7 +98,12 @@ public class QueryData {
         }
     }
 
+    void setRowNavigationAttempted() {
+        rowNavigationAttempted = true;
+    }
+
     void incrementRowCount(long inc) {
+        rowNavigationAttempted = true;
         totalRows += inc;
     }
 
@@ -105,6 +114,11 @@ public class QueryData {
     // only called after transaction completion
     public long getExecutionCount() {
         return executionCount;
+    }
+
+    // only called after transaction completion
+    public boolean isRowNavigationAttempted() {
+        return rowNavigationAttempted;
     }
 
     // only called after transaction completion

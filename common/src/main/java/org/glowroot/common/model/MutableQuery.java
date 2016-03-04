@@ -16,12 +16,16 @@
 package org.glowroot.common.model;
 
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
 class MutableQuery {
 
     private final String queryText;
+
     private double totalDurationNanos;
     private long executionCount;
+
+    private boolean rowNavigationAttempted;
     private long totalRows;
 
     MutableQuery(String queryText) {
@@ -36,16 +40,21 @@ class MutableQuery {
         this.executionCount += executionCount;
     }
 
-    void addToTotalRows(long totalRows) {
-        this.totalRows += totalRows;
+    void addToTotalRows(boolean rowNavigationAttempted, long totalRows) {
+        if (rowNavigationAttempted) {
+            this.rowNavigationAttempted = true;
+            this.totalRows += totalRows;
+        }
     }
 
     Aggregate.Query toProto() {
-        return Aggregate.Query.newBuilder()
+        Aggregate.Query.Builder builder = Aggregate.Query.newBuilder()
                 .setText(queryText)
                 .setTotalDurationNanos(totalDurationNanos)
-                .setExecutionCount(executionCount)
-                .setTotalRows(totalRows)
-                .build();
+                .setExecutionCount(executionCount);
+        if (rowNavigationAttempted) {
+            builder.setTotalRows(OptionalInt64.newBuilder().setValue(totalRows));
+        }
+        return builder.build();
     }
 }

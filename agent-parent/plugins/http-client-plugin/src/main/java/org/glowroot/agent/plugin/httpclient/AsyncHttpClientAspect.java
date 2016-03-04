@@ -22,7 +22,6 @@ import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.AsyncTraceEntry;
-import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.Timer;
@@ -52,6 +51,12 @@ public class AsyncHttpClientAspect {
             return false;
         }
     };
+
+    @Shim("com.ning.http.client.Request")
+    public interface Request {
+        @Nullable
+        String getMethod();
+    }
 
     // the field and method names are verbose to avoid conflict since they will become fields
     // and methods in all classes that extend com.ning.http.client.ListenableFuture
@@ -96,18 +101,31 @@ public class AsyncHttpClientAspect {
     public static class ExecuteRequestAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteRequestAdvice.class);
         @OnBefore
-        public static AsyncTraceEntry onBefore(ThreadContext context, @BindParameter Object request,
-                @BindClassMeta RequestInvoker requestInvoker) {
+        public static @Nullable AsyncTraceEntry onBefore(ThreadContext context,
+                @BindParameter @Nullable Request request,
+                @BindClassMeta AsyncHttpClientRequestInvoker requestInvoker) {
             // need to start trace entry @OnBefore in case it is executed in a "same thread
             // executor" in which case will be over in @OnReturn
-            String method = requestInvoker.getMethod(request);
+            if (request == null) {
+                return null;
+            }
+            String method = request.getMethod();
+            if (method == null) {
+                method = "";
+            } else {
+                method += " ";
+            }
             String url = requestInvoker.getUrl(request);
-            return context.startAsyncTraceEntry(new RequestMessageSupplier(method, url), timerName,
+            return context.startAsyncQueryEntry("HTTP", method + Uris.stripQueryString(url),
+                    MessageSupplier.from("http client request: {}{}", method, url), timerName,
                     timerName);
         }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable ListenableFutureMixin future,
-                final @BindTraveler AsyncTraceEntry asyncTraceEntry) {
+                final @BindTraveler @Nullable AsyncTraceEntry asyncTraceEntry) {
+            if (asyncTraceEntry == null) {
+                return;
+            }
             asyncTraceEntry.stopSyncTimer();
             if (future == null) {
                 asyncTraceEntry.end();
@@ -116,7 +134,10 @@ public class AsyncHttpClientAspect {
             future.glowroot$setAsyncTraceEntry(asyncTraceEntry);
             final ListenableFutureShim<?> listenableFuture = (ListenableFutureShim<?>) future;
             listenableFuture.addListener(new Runnable() {
+                // suppress warnings is needed because checker framework doesn't see that
+                // asyncTraceEntry must be non-null here
                 @Override
+                @SuppressWarnings("dereference.of.nullable")
                 public void run() {
                     Throwable t = getException(listenableFuture);
                     if (t == null) {
@@ -129,9 +150,11 @@ public class AsyncHttpClientAspect {
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable throwable,
-                @BindTraveler AsyncTraceEntry asyncTraceEntry) {
-            asyncTraceEntry.stopSyncTimer();
-            asyncTraceEntry.endWithError(throwable);
+                @BindTraveler @Nullable AsyncTraceEntry asyncTraceEntry) {
+            if (asyncTraceEntry != null) {
+                asyncTraceEntry.stopSyncTimer();
+                asyncTraceEntry.endWithError(throwable);
+            }
         }
     }
 
@@ -170,22 +193,6 @@ public class AsyncHttpClientAspect {
             ignoreFutureGet.set(true);
         }
         return null;
-    }
-
-    private static class RequestMessageSupplier extends MessageSupplier {
-
-        private final String method;
-        private final String url;
-
-        private RequestMessageSupplier(String method, String url) {
-            this.method = method;
-            this.url = url;
-        }
-
-        @Override
-        public Message get() {
-            return Message.from("http client request: {} {}", method, url);
-        }
     }
 
     private static class DirectExecutor implements Executor {
