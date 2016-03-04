@@ -1,0 +1,7 @@
+{
+  "name": "Grails Plugin",
+  "id": "grails",
+  "aspects": [
+    "org.glowroot.agent.plugin.grails.GrailsControllerClassAspect"
+  ]
+}

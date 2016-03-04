@@ -60,6 +60,7 @@
     <module>agent-parent/plugins/quartz-plugin</module>
     <module>agent-parent/plugins/servlet-plugin</module>
     <module>agent-parent/plugins/spring-plugin</module>
+    <module>agent-parent/plugins/grails-plugin</module>
     <module>agent-parent/plugins/struts-plugin</module>
     <module>agent-parent/benchmarks</module>
     <module>agent-parent/webdriver-tests</module>
