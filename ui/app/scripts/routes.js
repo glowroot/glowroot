@@ -144,12 +144,35 @@ glowroot.config([
         }
       }
     });
+    $stateProvider.state('transaction.detail.traces', {
+      url: '/traces?agent-id&transaction-type&transaction-name',
+      views: {
+        'main@transaction': {
+          templateUrl: 'views/transaction/traces.html',
+          controller: 'TracesCtrl',
+          resolve: {
+            traceKind: function () {
+              return 'transaction';
+            }
+          }
+        }
+      }
+    });
     $stateProvider.state('transaction.detail.queries', {
       url: '/queries?agent-id&transaction-type&transaction-name',
       views: {
         'main@transaction': {
           templateUrl: 'views/transaction/queries.html',
           controller: 'TransactionQueriesCtrl'
+        }
+      }
+    });
+    $stateProvider.state('transaction.detail.services', {
+      url: '/services?agent-id&transaction-type&transaction-name',
+      views: {
+        'main@transaction': {
+          templateUrl: 'views/transaction/services.html',
+          controller: 'TransactionServicesCtrl'
         }
       }
     });
@@ -176,20 +199,6 @@ glowroot.config([
           resolve: {
             auxiliary: function () {
               return true;
-            }
-          }
-        }
-      }
-    });
-    $stateProvider.state('transaction.detail.traces', {
-      url: '/traces?agent-id&transaction-type&transaction-name',
-      views: {
-        'main@transaction': {
-          templateUrl: 'views/transaction/traces.html',
-          controller: 'TracesCtrl',
-          resolve: {
-            traceKind: function () {
-              return 'transaction';
             }
           }
         }

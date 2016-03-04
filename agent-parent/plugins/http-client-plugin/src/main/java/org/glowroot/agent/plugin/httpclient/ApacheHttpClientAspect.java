@@ -21,9 +21,9 @@ import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.MessageSupplier;
-import org.glowroot.agent.plugin.api.QueryEntry;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
@@ -70,7 +70,7 @@ public class ApacheHttpClientAspect {
     public static class ExecuteAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAdvice.class);
         @OnBefore
-        public static @Nullable QueryEntry onBefore(ThreadContext context,
+        public static @Nullable TraceEntry onBefore(ThreadContext context,
                 @BindParameter @Nullable HttpUriRequest request) {
             if (request == null) {
                 return null;
@@ -88,21 +88,21 @@ public class ApacheHttpClientAspect {
             } else {
                 uri = uriObj.toString();
             }
-            return context.startQueryEntry("HTTP", method + Uris.stripQueryString(uri),
+            return context.startServiceCallEntry("HTTP", method + Uris.stripQueryString(uri),
                     MessageSupplier.from("http client request: {}{}", method, uri),
                     timerName);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable QueryEntry queryEntry) {
-            if (queryEntry != null) {
-                queryEntry.end();
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.end();
             }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable throwable,
-                @BindTraveler @Nullable QueryEntry queryEntry) {
-            if (queryEntry != null) {
-                queryEntry.endWithError(throwable);
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.endWithError(throwable);
             }
         }
     }
@@ -114,7 +114,7 @@ public class ApacheHttpClientAspect {
     public static class ExecuteWithHostAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteWithHostAdvice.class);
         @OnBefore
-        public static @Nullable QueryEntry onBefore(ThreadContext context,
+        public static @Nullable TraceEntry onBefore(ThreadContext context,
                 @BindParameter @Nullable HttpHost hostObj,
                 @BindParameter @Nullable HttpRequest request) {
             if (request == null) {
@@ -135,20 +135,20 @@ public class ApacheHttpClientAspect {
             if (uri == null) {
                 uri = "";
             }
-            return context.startQueryEntry("HTTP", method + Uris.stripQueryString(uri),
+            return context.startServiceCallEntry("HTTP", method + Uris.stripQueryString(uri),
                     MessageSupplier.from("http client request: {}{}{}", method, host, uri),
                     timerName);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable QueryEntry queryEntry) {
-            if (queryEntry != null) {
-                queryEntry.end();
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.end();
             }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable throwable,
-                @BindTraveler QueryEntry queryEntry) {
-            queryEntry.endWithError(throwable);
+                @BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithError(throwable);
         }
     }
 }

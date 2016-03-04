@@ -116,7 +116,7 @@ public class AsyncHttpClientAspect {
                 method += " ";
             }
             String url = requestInvoker.getUrl(request);
-            return context.startAsyncQueryEntry("HTTP", method + Uris.stripQueryString(url),
+            return context.startAsyncServiceCallEntry("HTTP", method + Uris.stripQueryString(url),
                     MessageSupplier.from("http client request: {}{}", method, url), timerName,
                     timerName);
         }

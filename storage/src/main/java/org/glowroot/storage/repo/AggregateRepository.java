@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.model.QueryCollector;
+import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
@@ -38,8 +39,8 @@ public interface AggregateRepository {
     // sortOrder and limit are only used by fat agent H2 repository, while the glowroot server
     // repository which currently has to pull in all records anyways, just delegates ordering and
     // limit to TransactionSummaryCollector
-    void mergeInTransactionSummaries(TransactionSummaryCollector mergedTransactionSummaries,
-            OverallQuery query, SummarySortOrder sortOrder, int limit) throws Exception;
+    void mergeInTransactionSummaries(TransactionSummaryCollector collector, OverallQuery query,
+            SummarySortOrder sortOrder, int limit) throws Exception;
 
     // query.from() is non-inclusive
     OverallErrorSummary readOverallErrorSummary(OverallQuery query) throws Exception;
@@ -48,9 +49,8 @@ public interface AggregateRepository {
     // sortOrder and limit are only used by fat agent H2 repository, while the glowroot server
     // repository which currently has to pull in all records anyways, just delegates ordering and
     // limit to TransactionErrorSummaryCollector
-    void mergeInTransactionErrorSummaries(
-            TransactionErrorSummaryCollector mergedTransactionErrorSummaries, OverallQuery query,
-            ErrorSummarySortOrder sortOrder, int limit) throws Exception;
+    void mergeInTransactionErrorSummaries(TransactionErrorSummaryCollector collector,
+            OverallQuery query, ErrorSummarySortOrder sortOrder, int limit) throws Exception;
 
     // query.from() is INCLUSIVE
     List<OverviewAggregate> readOverviewAggregates(TransactionQuery query) throws Exception;
@@ -62,27 +62,34 @@ public interface AggregateRepository {
     List<ThroughputAggregate> readThroughputAggregates(TransactionQuery query) throws Exception;
 
     // query.from() is non-inclusive
-    void mergeInMainThreadProfiles(ProfileCollector mergedProfile, TransactionQuery query)
+    void mergeInQueries(QueryCollector collector, TransactionQuery query) throws Exception;
+
+    // query.from() is non-inclusive
+    void mergeInServiceCalls(ServiceCallCollector collector, TransactionQuery query)
             throws Exception;
 
     // query.from() is non-inclusive
-    void mergeInAuxThreadProfiles(ProfileCollector mergedProfile, TransactionQuery query)
+    void mergeInMainThreadProfiles(ProfileCollector collector, TransactionQuery query)
             throws Exception;
 
     // query.from() is non-inclusive
-    void mergeInQueries(QueryCollector mergedQueries, TransactionQuery query) throws Exception;
+    void mergeInAuxThreadProfiles(ProfileCollector collector, TransactionQuery query)
+            throws Exception;
 
     // query.from() is non-inclusive
     boolean hasAuxThreadProfile(TransactionQuery query) throws Exception;
+
+    // query.from() is non-inclusive
+    boolean shouldHaveQueries(TransactionQuery query) throws Exception;
+
+    // query.from() is non-inclusive
+    boolean shouldHaveServiceCalls(TransactionQuery query) throws Exception;
 
     // query.from() is non-inclusive
     boolean shouldHaveMainThreadProfile(TransactionQuery query) throws Exception;
 
     // query.from() is non-inclusive
     boolean shouldHaveAuxThreadProfile(TransactionQuery query) throws Exception;
-
-    // query.from() is non-inclusive
-    boolean shouldHaveQueries(TransactionQuery query) throws Exception;
 
     void deleteAll(String agentRollup) throws Exception;
 

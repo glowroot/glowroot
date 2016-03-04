@@ -50,12 +50,12 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
     private volatile @Nullable ErrorMessage errorMessage;
 
     private final long startTick;
-    // not volatile, so depends on memory barrier in Transaction for visibility
+
+    // these fields are not volatile, so depends on memory barrier in Transaction for visibility
     private long revisedStartTick;
-    // not volatile, so depends on memory barrier in Transaction for visibility
     private int selfNestingLevel;
-    // not volatile, so depends on memory barrier in Transaction for visibility
     private long endTick;
+    private boolean initialComplete;
 
     // this is for maintaining linear list of trace entries
     private @Nullable TraceEntryImpl nextTraceEntry;
@@ -266,10 +266,13 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
         this.errorMessage = errorMessage;
         this.endTick = endTick;
         selfNestingLevel--;
+        initialComplete = true;
     }
 
     private boolean isCompleted() {
-        return selfNestingLevel == 0;
+        // initialComplete is needed for async trace entries which have selfNestingLevel = 0 after
+        // calling stopSyncTimer(), but are not complete until end() is called
+        return initialComplete && selfNestingLevel == 0;
     }
 
     private boolean isAsync() {
@@ -305,12 +308,13 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
         endQueryData(endTick);
         this.errorMessage = errorMessage;
         this.endTick = endTick;
-        selfNestingLevel--;
         if (isAsync()) {
             threadContext.getTransaction().memoryBarrierWrite();
         } else {
+            selfNestingLevel--;
             threadContext.popEntry(this, endTick);
         }
+        initialComplete = true;
     }
 
     private String getRowCountSuffix() {
@@ -327,16 +331,18 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
 
     @Override
     public void stopSyncTimer() {
-        // timer is only null for trace entries added using addEntryEntry(), and these trace entries
-        // are not returned from plugin api so no way for stopSyncTimer() to be called
+        // syncTimer is only null for trace entries added using addEntryEntry(), and these trace
+        // entries are not returned from plugin api so no way for stopSyncTimer() to be called
         checkNotNull(syncTimer);
         syncTimer.stop();
+        selfNestingLevel--;
+        threadContext.popNonRootEntry(this);
     }
 
     @Override
     public Timer extendSyncTimer() {
-        // timer is only null for trace entries added using addEntryEntry(), and these trace entries
-        // are not returned from plugin api so no way for extendSyncTimer() to be called
+        // syncTimer is only null for trace entries added using addEntryEntry(), and these trace
+        // entries are not returned from plugin api so no way for extendSyncTimer() to be called
         checkNotNull(syncTimer);
         return syncTimer.extend();
     }

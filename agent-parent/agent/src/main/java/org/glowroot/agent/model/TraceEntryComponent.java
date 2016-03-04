@@ -76,9 +76,10 @@ class TraceEntryComponent {
     }
 
     TraceEntryImpl pushEntry(long startTick, MessageSupplier messageSupplier,
-            @Nullable QueryData queryData, long queryExecutionCount, TimerImpl timer) {
+            TimerImpl syncTimer, @Nullable AsyncTimerImpl asyncTimer, @Nullable QueryData queryData,
+            long queryExecutionCount) {
         TraceEntryImpl entry = new TraceEntryImpl(threadContext, activeEntry, messageSupplier,
-                queryData, queryExecutionCount, startTick, timer, null);
+                queryData, queryExecutionCount, startTick, syncTimer, asyncTimer);
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;
         activeEntry = entry;
@@ -96,21 +97,18 @@ class TraceEntryComponent {
         }
     }
 
+    // typically pop() methods don't require the objects to pop, but for safety, the entry is
+    // passed in just to make sure it is the one on top (and if not, then pop until it is found,
+    // preventing any nasty bugs from a missed pop, e.g. an entry never being marked as complete)
+    void popNonRootEntry(TraceEntryImpl entry) {
+        popEntrySafe(entry);
+    }
+
     TraceEntryImpl addErrorEntry(long startTick, long endTick,
             @Nullable MessageSupplier messageSupplier, ErrorMessage errorMessage) {
         TraceEntryImpl entry = new TraceEntryImpl(threadContext, activeEntry, messageSupplier, null,
                 1, startTick, null, null);
         entry.immediateEndAsErrorEntry(errorMessage, endTick);
-        tailEntry.setNextTraceEntry(entry);
-        tailEntry = entry;
-        return entry;
-    }
-
-    TraceEntryImpl startAsyncEntry(long startTick, MessageSupplier messageSupplier,
-            TimerImpl syncTimer, AsyncTimerImpl asyncTimer, @Nullable QueryData queryData,
-            long queryExecutionCount) {
-        TraceEntryImpl entry = new TraceEntryImpl(threadContext, activeEntry, messageSupplier,
-                queryData, queryExecutionCount, startTick, syncTimer, asyncTimer);
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;
         return entry;

@@ -498,8 +498,9 @@ class ConfigJsonService {
         abstract Optional<String> agentId(); // only used in request
         abstract boolean weavingTimer();
         abstract int immediatePartialStoreThresholdSeconds();
-        abstract int maxAggregateTransactionsPerTransactionType();
-        abstract int maxAggregateQueriesPerQueryType();
+        abstract int maxAggregateTransactionsPerType();
+        abstract int maxAggregateQueriesPerType();
+        abstract int maxAggregateServiceCallsPerType();
         abstract int maxTraceEntriesPerTransaction();
         abstract int maxStackTraceSamplesPerTransaction();
         abstract int mbeanGaugeNotFoundDelaySeconds();
@@ -510,9 +511,9 @@ class ConfigJsonService {
                     .setWeavingTimer(weavingTimer())
                     .setImmediatePartialStoreThresholdSeconds(
                             of(immediatePartialStoreThresholdSeconds()))
-                    .setMaxAggregateTransactionsPerTransactionType(
-                            of(maxAggregateTransactionsPerTransactionType()))
-                    .setMaxAggregateQueriesPerQueryType(of(maxAggregateQueriesPerQueryType()))
+                    .setMaxAggregateTransactionsPerType(of(maxAggregateTransactionsPerType()))
+                    .setMaxAggregateQueriesPerType(of(maxAggregateQueriesPerType()))
+                    .setMaxAggregateServiceCallsPerType(of(maxAggregateServiceCallsPerType()))
                     .setMaxTraceEntriesPerTransaction(of(maxTraceEntriesPerTransaction()))
                     .setMaxStackTraceSamplesPerTransaction(of(maxStackTraceSamplesPerTransaction()))
                     .setMbeanGaugeNotFoundDelaySeconds(of(mbeanGaugeNotFoundDelaySeconds()))
@@ -524,10 +525,11 @@ class ConfigJsonService {
                     .weavingTimer(config.getWeavingTimer())
                     .immediatePartialStoreThresholdSeconds(
                             config.getImmediatePartialStoreThresholdSeconds().getValue())
-                    .maxAggregateTransactionsPerTransactionType(
-                            config.getMaxAggregateTransactionsPerTransactionType().getValue())
-                    .maxAggregateQueriesPerQueryType(
-                            config.getMaxAggregateQueriesPerQueryType().getValue())
+                    .maxAggregateTransactionsPerType(
+                            config.getMaxAggregateTransactionsPerType().getValue())
+                    .maxAggregateQueriesPerType(config.getMaxAggregateQueriesPerType().getValue())
+                    .maxAggregateServiceCallsPerType(
+                            config.getMaxAggregateServiceCallsPerType().getValue())
                     .maxTraceEntriesPerTransaction(
                             config.getMaxTraceEntriesPerTransaction().getValue())
                     .maxStackTraceSamplesPerTransaction(

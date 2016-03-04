@@ -49,6 +49,7 @@ import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.model.QueryCollector;
+import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.Cancellable;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -93,7 +94,8 @@ public class Transaction {
     private volatile @Nullable ErrorMessage errorMessage;
 
     private final int maxTraceEntriesPerTransaction;
-    private final int maxAggregateQueriesPerQueryType;
+    private final int maxAggregateQueriesPerType;
+    private final int maxAggregateServiceCallsPerType;
 
     // stack trace data constructed from profiling
     private volatile @MonotonicNonNull Profile mainThreadProfile;
@@ -129,6 +131,7 @@ public class Transaction {
     private volatile int entryLimitCounter;
     private volatile int extraErrorEntryLimitCounter;
     private volatile int aggregateQueryLimitCounter;
+    private volatile int aggregateServiceCallLimitCounter;
 
     private volatile @Nullable AtomicInteger throwableFrameLimitCounter;
 
@@ -150,7 +153,7 @@ public class Transaction {
     public Transaction(long startTime, long startTick, String transactionType,
             String transactionName, MessageSupplier messageSupplier, TimerName timerName,
             boolean captureThreadStats, int maxTraceEntriesPerTransaction,
-            int maxAggregateQueriesPerQueryType,
+            int maxAggregateQueriesPerType, int maxAggregateServiceCallsPerType,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             CompletionCallback completionCallback, Ticker ticker,
             TransactionRegistry transactionRegistry, TransactionServiceImpl transactionService,
@@ -161,7 +164,8 @@ public class Transaction {
         this.transactionType = transactionType;
         this.transactionName = transactionName;
         this.maxTraceEntriesPerTransaction = maxTraceEntriesPerTransaction;
-        this.maxAggregateQueriesPerQueryType = maxAggregateQueriesPerQueryType;
+        this.maxAggregateQueriesPerType = maxAggregateQueriesPerType;
+        this.maxAggregateServiceCallsPerType = maxAggregateServiceCallsPerType;
         this.completionCallback = completionCallback;
         this.ticker = ticker;
         this.userProfileScheduler = userProfileScheduler;
@@ -281,6 +285,11 @@ public class Transaction {
         mainThreadContext.mergeQueriesInto(queries);
     }
 
+    public void mergeServiceCallsInto(ServiceCallCollector serviceCalls) {
+        memoryBarrierRead();
+        mainThreadContext.mergeServiceCallsInto(serviceCalls);
+    }
+
     public boolean allowAnotherEntry() {
         return entryLimitCounter++ < maxTraceEntriesPerTransaction;
     }
@@ -293,8 +302,13 @@ public class Transaction {
     }
 
     public boolean allowAnotherAggregateQuery() {
-        return aggregateQueryLimitCounter++ < maxAggregateQueriesPerQueryType
+        return aggregateQueryLimitCounter++ < maxAggregateQueriesPerType
                 * AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER;
+    }
+
+    public boolean allowAnotherAggregateServiceCall() {
+        return aggregateServiceCallLimitCounter++ < maxAggregateServiceCallsPerType
+                * AdvancedConfig.OVERALL_AGGREGATE_SERVICE_CALLS_HARD_LIMIT_MULTIPLIER;
     }
 
     public List<Trace.Entry> getEntriesProtobuf(long captureTick) {

@@ -31,6 +31,7 @@ import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAsyncQueryEntry;
+import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAsyncTraceEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAuxThreadContext;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopQueryEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
@@ -82,6 +83,15 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
+    public AsyncTraceEntry startAsyncTraceEntry(MessageSupplier messageSupplier,
+            TimerName syncTimerName, TimerName asyncTimerName) {
+        if (threadContext == null) {
+            return NopAsyncQueryEntry.INSTANCE;
+        }
+        return threadContext.startAsyncTraceEntry(messageSupplier, syncTimerName, asyncTimerName);
+    }
+
+    @Override
     public QueryEntry startQueryEntry(String queryType, String queryText,
             MessageSupplier messageSupplier, TimerName timerName) {
         if (threadContext == null) {
@@ -111,12 +121,25 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public AsyncTraceEntry startAsyncTraceEntry(MessageSupplier messageSupplier,
-            TimerName syncTimerName, TimerName asyncTimerName) {
+    public TraceEntry startServiceCallEntry(String type, String text,
+            MessageSupplier messageSupplier, TimerName timerName) {
         if (threadContext == null) {
-            return NopAsyncQueryEntry.INSTANCE;
+            return NopTraceEntry.INSTANCE;
         }
-        return threadContext.startAsyncTraceEntry(messageSupplier, syncTimerName, asyncTimerName);
+        return threadContext.startServiceCallEntry(type, text,
+                messageSupplier,
+                timerName);
+    }
+
+    @Override
+    public AsyncTraceEntry startAsyncServiceCallEntry(String type, String text,
+            MessageSupplier messageSupplier, TimerName syncTimerName, TimerName asyncTimerName) {
+        if (threadContext == null) {
+            return NopAsyncTraceEntry.INSTANCE;
+        }
+        return threadContext.startAsyncServiceCallEntry(type, text,
+                messageSupplier,
+                syncTimerName, asyncTimerName);
     }
 
     @Override

@@ -28,6 +28,7 @@ import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.QueryCollector;
+import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.Styles;
 import org.glowroot.storage.repo.AggregateRepository.OverviewAggregate;
 import org.glowroot.storage.repo.AggregateRepository.PercentileAggregate;
@@ -49,12 +50,17 @@ public class MutableAggregate {
     // buckets (and memory) required
     private final LazyHistogram durationNanosHistogram = new LazyHistogram();
     // lazy instantiated to reduce memory footprint
+    private @MonotonicNonNull QueryCollector queries;
+    private @MonotonicNonNull ServiceCallCollector serviceCalls;
     private @MonotonicNonNull MutableProfile mainThreadProfile;
     private @MonotonicNonNull MutableProfile auxThreadProfile;
-    private QueryCollector queries;
 
-    public MutableAggregate(int maxAggregateQueriesPerQueryType) {
-        queries = new QueryCollector(maxAggregateQueriesPerQueryType, 0);
+    private final int maxAggregateQueriesPerType;
+    private final int maxAggregateServiceCallsPerType;
+
+    public MutableAggregate(int maxAggregateQueriesPerType, int maxAggregateServiceCallsPerType) {
+        this.maxAggregateQueriesPerType = maxAggregateQueriesPerType;
+        this.maxAggregateServiceCallsPerType = maxAggregateServiceCallsPerType;
     }
 
     public boolean isEmpty() {
@@ -113,14 +119,19 @@ public class MutableAggregate {
         if (!auxThreadStats.isNA()) {
             builder.setAuxThreadStats(auxThreadStats.toProto());
         }
+        if (queries != null) {
+            builder.addAllQueriesByType(queries.toProto());
+        }
+        if (serviceCalls != null) {
+            builder.addAllServiceCallsByType(serviceCalls.toProto());
+        }
         if (mainThreadProfile != null) {
             builder.setMainThreadProfile(mainThreadProfile.toProto());
         }
         if (auxThreadProfile != null) {
             builder.setAuxThreadProfile(auxThreadProfile.toProto());
         }
-        return builder.addAllQueriesByType(queries.toProto())
-                .build();
+        return builder.build();
     }
 
     public OverviewAggregate toOverviewAggregate(long captureTime) throws IOException {
@@ -149,6 +160,21 @@ public class MutableAggregate {
                 .build();
     }
 
+    public void mergeQueries(List<Aggregate.QueriesByType> toBeMergedQueries) throws IOException {
+        if (queries == null) {
+            queries = new QueryCollector(maxAggregateQueriesPerType, 0);
+        }
+        queries.mergeQueries(toBeMergedQueries);
+    }
+
+    public void mergeServiceCalls(List<Aggregate.ServiceCallsByType> toBeMergedServiceCalls)
+            throws IOException {
+        if (serviceCalls == null) {
+            serviceCalls = new ServiceCallCollector(maxAggregateServiceCallsPerType, 0);
+        }
+        serviceCalls.mergeServiceCalls(toBeMergedServiceCalls);
+    }
+
     public void mergeMainThreadProfile(Profile toBeMergedProfile) throws IOException {
         if (mainThreadProfile == null) {
             mainThreadProfile = new MutableProfile();
@@ -161,10 +187,6 @@ public class MutableAggregate {
             auxThreadProfile = new MutableProfile();
         }
         auxThreadProfile.merge(toBeMergedProfile);
-    }
-
-    public void mergeQueries(List<Aggregate.QueriesByType> toBeMergedQueries) throws IOException {
-        queries.mergeQueries(toBeMergedQueries);
     }
 
     public static void mergeRootTimers(List<Aggregate.Timer> toBeMergedRootTimers,

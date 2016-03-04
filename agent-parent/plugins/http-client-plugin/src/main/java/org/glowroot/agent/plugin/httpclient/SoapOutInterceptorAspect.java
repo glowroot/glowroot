@@ -76,7 +76,7 @@ public class SoapOutInterceptorAspect {
             } else {
                 operationName = "";
             }
-            return context.startQueryEntry("HTTP",
+            return context.startServiceCallEntry("HTTP",
                     method + Uris.stripQueryString(uri), MessageSupplier
                             .from("cxf client soap request: {}{}{}", method, uri, operationName),
                     timerName);

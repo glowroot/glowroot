@@ -48,15 +48,18 @@ public class AggregateIntervalCollector {
     private final long captureTime;
     private final Map<String, IntervalTypeCollector> typeCollectors = Maps.newConcurrentMap();
     private final int maxAggregateTransactionsPerTransactionType;
-    private final int maxAggregateQueriesPerQueryType;
+    private final int maxAggregateQueriesPerType;
+    private final int maxAggregateServiceCallsPerType;
 
     AggregateIntervalCollector(long currentTime, long aggregateIntervalMillis,
-            int maxAggregateTransactionsPerTransactionType, int maxAggregateQueriesPerQueryType) {
+            int maxAggregateTransactionsPerTransactionType, int maxAggregateQueriesPerType,
+            int maxAggregateServiceCallsPerType) {
         captureTime = (long) Math.ceil(currentTime / (double) aggregateIntervalMillis)
                 * aggregateIntervalMillis;
         this.maxAggregateTransactionsPerTransactionType =
                 maxAggregateTransactionsPerTransactionType;
-        this.maxAggregateQueriesPerQueryType = maxAggregateQueriesPerQueryType;
+        this.maxAggregateQueriesPerType = maxAggregateQueriesPerType;
+        this.maxAggregateServiceCallsPerType = maxAggregateServiceCallsPerType;
     }
 
     public long getCaptureTime() {
@@ -134,8 +137,8 @@ public class AggregateIntervalCollector {
                 Maps.newConcurrentMap();
 
         private IntervalTypeCollector() {
-            overallAggregateCollector =
-                    new AggregateCollector(null, maxAggregateQueriesPerQueryType);
+            overallAggregateCollector = new AggregateCollector(null, maxAggregateQueriesPerType,
+                    maxAggregateServiceCallsPerType);
         }
 
         private void add(Transaction transaction) {
@@ -144,8 +147,9 @@ public class AggregateIntervalCollector {
                     transactionAggregateCollectors.get(transaction.getTransactionName());
             if (transactionAggregateCollector == null && transactionAggregateCollectors
                     .size() < maxAggregateTransactionsPerTransactionType) {
-                transactionAggregateCollector = new AggregateCollector(
-                        transaction.getTransactionName(), maxAggregateQueriesPerQueryType);
+                transactionAggregateCollector =
+                        new AggregateCollector(transaction.getTransactionName(),
+                                maxAggregateQueriesPerType, maxAggregateServiceCallsPerType);
                 transactionAggregateCollectors.put(transaction.getTransactionName(),
                         transactionAggregateCollector);
             }
@@ -178,6 +182,8 @@ public class AggregateIntervalCollector {
                 for (CommonTimerImpl rootTimer : transaction.getAsyncRootTimers()) {
                     aggregateCollector.mergeAsyncRootTimer(rootTimer);
                 }
+                transaction.mergeQueriesInto(aggregateCollector.getQueryCollector());
+                transaction.mergeServiceCallsInto(aggregateCollector.getServiceCallCollector());
                 Profile mainThreadProfile = transaction.getMainThreadProfile();
                 if (mainThreadProfile != null) {
                     if (transaction.isAsynchronous()) {
@@ -191,7 +197,6 @@ public class AggregateIntervalCollector {
                 if (auxThreadProfile != null) {
                     aggregateCollector.mergeAuxThreadProfile(auxThreadProfile);
                 }
-                transaction.mergeQueriesInto(aggregateCollector.getQueryCollector());
             }
         }
     }

@@ -17,23 +17,15 @@
   <li ng-class="{active: activeTabItem === 'time'}">
     <a ng-href="transaction/average{{tabQueryString()}}"
        ng-click="clickTab('time', $event)"
-       ng-keydown="keydownTab(null, 'tab_profile', $event)"
+       ng-keydown="keydownTab(null, 'tab_traces', $event)"
        id="tab_time">
       Response time
-    </a>
-  </li>
-  <li ng-class="{active: activeTabItem === 'profile'}">
-    <a ng-href="transaction/main-thread-profile{{tabQueryString()}}"
-       ng-click="clickTab('profile', $event)"
-       ng-keydown="keydownTab('tab_time', 'tab_traces', $event)"
-       id="tab_profile">
-      Continuous profiling
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'traces'}">
     <a ng-href="transaction/traces{{tabQueryString()}}"
        ng-click="clickTab('traces', $event)"
-       ng-keydown="keydownTab('tab_profile', 'tab_queries', $event)"
+       ng-keydown="keydownTab('tab_time', 'tab_queries', $event)"
        id="tab_traces">
       {{transactionType === 'Startup' ? 'Traces' : 'Slow traces'}} ({{traceCount()}})
     </a>
@@ -41,9 +33,25 @@
   <li ng-class="{active: activeTabItem === 'queries'}">
     <a ng-href="transaction/queries{{tabQueryString()}}"
        ng-click="clickTab('queries', $event)"
-       ng-keydown="keydownTab('tab_traces', null, $event)"
+       ng-keydown="keydownTab('tab_traces', 'tab_services', $event)"
        id="tab_queries">
       Queries
+    </a>
+  </li>
+  <li ng-class="{active: activeTabItem === 'services'}">
+    <a ng-href="transaction/services{{tabQueryString()}}"
+       ng-click="clickTab('services', $event)"
+       ng-keydown="keydownTab('tab_queries', 'tab_profile', $event)"
+       id="tab_services">
+      Service calls
+    </a>
+  </li>
+  <li ng-class="{active: activeTabItem === 'profile'}">
+    <a ng-href="transaction/main-thread-profile{{tabQueryString()}}"
+       ng-click="clickTab('profile', $event)"
+       ng-keydown="keydownTab('tab_services', null, $event)"
+       id="tab_profile">
+      Continuous profiling
     </a>
   </li>
 </ul>

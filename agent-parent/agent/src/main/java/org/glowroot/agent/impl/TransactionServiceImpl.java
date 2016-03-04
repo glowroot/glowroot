@@ -60,7 +60,8 @@ public class TransactionServiceImpl implements AdvancedService, ConfigListener {
     // cache for fast read access
     // visibility is provided by memoryBarrier below
     private boolean captureThreadStats;
-    private int maxAggregateQueriesPerQueryType;
+    private int maxAggregateQueriesPerType;
+    private int maxAggregateServiceCallsPerType;
     private int maxTraceEntriesPerTransaction;
 
     public static TransactionServiceImpl create(TransactionRegistry transactionRegistry,
@@ -126,9 +127,10 @@ public class TransactionServiceImpl implements AdvancedService, ConfigListener {
         long startTick = ticker.read();
         Transaction transaction = new Transaction(clock.currentTimeMillis(), startTick,
                 transactionType, transactionName, messageSupplier, timerName, captureThreadStats,
-                maxTraceEntriesPerTransaction, maxAggregateQueriesPerQueryType,
-                threadAllocatedBytes, transactionCompletionCallback, ticker, transactionRegistry,
-                this, configService, userProfileScheduler, threadContextHolder);
+                maxTraceEntriesPerTransaction, maxAggregateQueriesPerType,
+                maxAggregateServiceCallsPerType, threadAllocatedBytes,
+                transactionCompletionCallback, ticker, transactionRegistry, this, configService,
+                userProfileScheduler, threadContextHolder);
         TransactionEntry transactionEntry = transactionRegistry.addTransaction(transaction);
         transaction.setTransactionEntry(transactionEntry);
         threadContextHolder.set(transaction.getMainThreadContext());
@@ -150,7 +152,8 @@ public class TransactionServiceImpl implements AdvancedService, ConfigListener {
     public void onChange() {
         AdvancedConfig advancedConfig = configService.getAdvancedConfig();
         captureThreadStats = configService.getTransactionConfig().captureThreadStats();
-        maxAggregateQueriesPerQueryType = advancedConfig.maxAggregateQueriesPerQueryType();
+        maxAggregateQueriesPerType = advancedConfig.maxAggregateQueriesPerType();
+        maxAggregateServiceCallsPerType = advancedConfig.maxAggregateServiceCallsPerType();
         maxTraceEntriesPerTransaction = advancedConfig.maxTraceEntriesPerTransaction();
     }
 

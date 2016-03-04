@@ -20,5 +20,6 @@ import org.glowroot.agent.fat.storage.util.CappedDatabaseStats;
 public interface RollupCappedDatabaseStatsMXBean {
 
     CappedDatabaseStats getAggregateQueries();
+    CappedDatabaseStats getAggregateServiceCalls();
     CappedDatabaseStats getAggregateProfiles();
 }

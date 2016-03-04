@@ -106,11 +106,11 @@ public class AggregateDaoIT {
         assertThat(overallSummary.totalDurationNanos()).isEqualTo(3579 * 2);
         assertThat(overallSummary.transactionCount()).isEqualTo(6);
 
-        TransactionSummaryCollector mergedTransactionSummaries = new TransactionSummaryCollector();
+        TransactionSummaryCollector summaryCollector = new TransactionSummaryCollector();
         SummarySortOrder sortOrder = SummarySortOrder.TOTAL_TIME;
-        aggregateDao.mergeInTransactionSummaries(mergedTransactionSummaries, overallQuery,
+        aggregateDao.mergeInTransactionSummaries(summaryCollector, overallQuery,
                 sortOrder, 10);
-        Result<TransactionSummary> result = mergedTransactionSummaries.getResult(sortOrder, 10);
+        Result<TransactionSummary> result = summaryCollector.getResult(sortOrder, 10);
         assertThat(result.records()).hasSize(2);
         assertThat(result.records().get(0).transactionName()).isEqualTo("tn2");
         assertThat(result.records().get(0).totalDurationNanos()).isEqualTo(2345 * 2);
@@ -124,13 +124,13 @@ public class AggregateDaoIT {
         assertThat(overallErrorSummary.errorCount()).isEqualTo(2);
         assertThat(overallErrorSummary.transactionCount()).isEqualTo(6);
 
-        TransactionErrorSummaryCollector mergedTransactionErrorSummaries =
+        TransactionErrorSummaryCollector errorSummaryCollector =
                 new TransactionErrorSummaryCollector();
         ErrorSummarySortOrder errorSortOrder = ErrorSummarySortOrder.ERROR_COUNT;
-        aggregateDao.mergeInTransactionErrorSummaries(mergedTransactionErrorSummaries, overallQuery,
+        aggregateDao.mergeInTransactionErrorSummaries(errorSummaryCollector, overallQuery,
                 errorSortOrder, 10);
         Result<TransactionErrorSummary> errorSummaryResult =
-                mergedTransactionErrorSummaries.getResult(errorSortOrder, 10);
+                errorSummaryCollector.getResult(errorSortOrder, 10);
         assertThat(errorSummaryResult.records()).hasSize(1);
         assertThat(errorSummaryResult.records().get(0).transactionName()).isEqualTo("tn2");
         assertThat(errorSummaryResult.records().get(0).errorCount()).isEqualTo(2);
@@ -178,20 +178,20 @@ public class AggregateDaoIT {
         assertThat(overallSummary.totalDurationNanos()).isEqualTo(0);
         assertThat(overallSummary.transactionCount()).isEqualTo(0);
 
-        mergedTransactionSummaries = new TransactionSummaryCollector();
-        aggregateDao.mergeInTransactionSummaries(mergedTransactionSummaries, overallQuery,
+        summaryCollector = new TransactionSummaryCollector();
+        aggregateDao.mergeInTransactionSummaries(summaryCollector, overallQuery,
                 sortOrder, 10);
-        result = mergedTransactionSummaries.getResult(sortOrder, 10);
+        result = summaryCollector.getResult(sortOrder, 10);
         assertThat(result.records()).isEmpty();
 
         overallErrorSummary = aggregateDao.readOverallErrorSummary(overallQuery);
         assertThat(overallErrorSummary.errorCount()).isEqualTo(0);
         assertThat(overallErrorSummary.transactionCount()).isEqualTo(0);
 
-        mergedTransactionErrorSummaries = new TransactionErrorSummaryCollector();
-        aggregateDao.mergeInTransactionErrorSummaries(mergedTransactionErrorSummaries, overallQuery,
+        errorSummaryCollector = new TransactionErrorSummaryCollector();
+        aggregateDao.mergeInTransactionErrorSummaries(errorSummaryCollector, overallQuery,
                 errorSortOrder, 10);
-        errorSummaryResult = mergedTransactionErrorSummaries.getResult(errorSortOrder, 10);
+        errorSummaryResult = errorSummaryCollector.getResult(errorSortOrder, 10);
         assertThat(errorSummaryResult.records()).isEmpty();
 
         overviewAggregates = aggregateDao.readOverviewAggregates(transactionQuery);
@@ -219,10 +219,10 @@ public class AggregateDaoIT {
         assertThat(overallSummary.totalDurationNanos()).isEqualTo(3579 * 2);
         assertThat(overallSummary.transactionCount()).isEqualTo(6);
 
-        mergedTransactionSummaries = new TransactionSummaryCollector();
-        aggregateDao.mergeInTransactionSummaries(mergedTransactionSummaries, overallQuery,
+        summaryCollector = new TransactionSummaryCollector();
+        aggregateDao.mergeInTransactionSummaries(summaryCollector, overallQuery,
                 sortOrder, 10);
-        result = mergedTransactionSummaries.getResult(sortOrder, 10);
+        result = summaryCollector.getResult(sortOrder, 10);
         assertThat(result.records()).hasSize(2);
         assertThat(result.records().get(0).transactionName()).isEqualTo("tn2");
         assertThat(result.records().get(0).totalDurationNanos()).isEqualTo(2345 * 2);
@@ -235,10 +235,10 @@ public class AggregateDaoIT {
         assertThat(overallErrorSummary.errorCount()).isEqualTo(2);
         assertThat(overallErrorSummary.transactionCount()).isEqualTo(6);
 
-        mergedTransactionErrorSummaries = new TransactionErrorSummaryCollector();
-        aggregateDao.mergeInTransactionErrorSummaries(mergedTransactionErrorSummaries, overallQuery,
+        errorSummaryCollector = new TransactionErrorSummaryCollector();
+        aggregateDao.mergeInTransactionErrorSummaries(errorSummaryCollector, overallQuery,
                 errorSortOrder, 10);
-        errorSummaryResult = mergedTransactionErrorSummaries.getResult(errorSortOrder, 10);
+        errorSummaryResult = errorSummaryCollector.getResult(errorSortOrder, 10);
         assertThat(errorSummaryResult.records()).hasSize(1);
         assertThat(errorSummaryResult.records().get(0).transactionName()).isEqualTo("tn2");
         assertThat(errorSummaryResult.records().get(0).errorCount()).isEqualTo(2);

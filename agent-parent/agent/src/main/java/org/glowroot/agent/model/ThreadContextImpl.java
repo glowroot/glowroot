@@ -52,6 +52,7 @@ import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAsyncQueryEntry;
+import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAsyncTraceEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAuxThreadContext;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopQueryEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
@@ -61,6 +62,7 @@ import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.common.model.QueryCollector;
+import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -92,11 +94,14 @@ public class ThreadContextImpl implements ThreadContextPlus {
     // FIXME impose simple max on number of auxiliary thread contexts (AdvancedConfig)
     private volatile @MonotonicNonNull List<ThreadContextImpl> auxThreadContexts = null;
 
-    // linked list of QueryData instances for safe concurrent access
+    // linked lists of QueryData instances for safe concurrent access
     private @MonotonicNonNull QueryData headQueryData;
+    private @MonotonicNonNull QueryData headServiceCallData;
     // these maps are only accessed by the transaction thread
-    private @MonotonicNonNull QueryDataMap firstQueryTypeQueries;
+    private @MonotonicNonNull QueryDataMap queriesForFirstType;
     private @MonotonicNonNull Map<String, QueryDataMap> allQueryTypesMap;
+    private @MonotonicNonNull QueryDataMap serviceCallsForFirstType;
+    private @MonotonicNonNull Map<String, QueryDataMap> allServiceCallTypesMap;
 
     private final long threadId;
 
@@ -331,17 +336,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
         return auxThreadContext.getRootEntry();
     }
 
-    public TraceEntryImpl pushEntry(long startTick, MessageSupplier messageSupplier,
-            @Nullable String queryType, @Nullable String queryText, long queryExecutionCount,
-            TimerImpl timer) {
-        QueryData queryData = null;
-        if (queryType != null && queryText != null) {
-            queryData = getOrCreateQueryDataIfPossible(queryType, queryText);
-        }
-        return traceEntryComponent.pushEntry(startTick, messageSupplier, queryData,
-                queryExecutionCount, timer);
-    }
-
     public void mergeQueriesInto(QueryCollector queries) {
         QueryData curr = headQueryData;
         while (curr != null) {
@@ -357,34 +351,75 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
     }
 
+    public void mergeServiceCallsInto(ServiceCallCollector serviceCalls) {
+        QueryData curr = headServiceCallData;
+        while (curr != null) {
+            serviceCalls.mergeServiceCall(curr.getQueryType(), curr.getQueryText(),
+                    curr.getTotalDurationNanos(), curr.getExecutionCount());
+            curr = curr.getNextQueryData();
+        }
+        if (auxThreadContexts != null) {
+            for (ThreadContextImpl threadContext : auxThreadContexts) {
+                threadContext.mergeServiceCallsInto(serviceCalls);
+            }
+        }
+    }
+
     // only called by transaction thread
-    public @Nullable QueryData getOrCreateQueryDataIfPossible(String queryType, String queryText) {
+    private @Nullable QueryData getOrCreateQueryDataIfPossible(String queryType, String queryText) {
         if (headQueryData == null) {
             if (!transaction.allowAnotherAggregateQuery()) {
                 return null;
             }
             QueryData queryData = new QueryData(queryType, queryText, null);
-            firstQueryTypeQueries = new QueryDataMap();
-            firstQueryTypeQueries.put(queryText, queryData);
+            queriesForFirstType = new QueryDataMap();
+            queriesForFirstType.put(queryText, queryData);
             headQueryData = queryData;
             return headQueryData;
         }
-        QueryDataMap currentQueryTypeQueries;
+        QueryDataMap queriesForCurrentType;
         if (queryType.equals(headQueryData.getQueryType())) {
-            currentQueryTypeQueries = checkNotNull(firstQueryTypeQueries);
+            queriesForCurrentType = checkNotNull(queriesForFirstType);
         } else {
-            currentQueryTypeQueries = getOrCreateQueriesForQueryType(queryType);
+            queriesForCurrentType = getOrCreateQueriesForType(queryType);
         }
-        QueryData queryData = currentQueryTypeQueries.get(queryText);
+        QueryData queryData = queriesForCurrentType.get(queryText);
         if (queryData == null && transaction.allowAnotherAggregateQuery()) {
             queryData = new QueryData(queryType, queryText, headQueryData);
-            currentQueryTypeQueries.put(queryText, queryData);
+            queriesForCurrentType.put(queryText, queryData);
             headQueryData = queryData;
         }
         return queryData;
     }
 
-    public TraceEntryImpl addErrorEntry(long startTick, long endTick,
+    // only called by transaction thread
+    private @Nullable QueryData getOrCreateServiceCallDataIfPossible(String type, String text) {
+        if (headServiceCallData == null) {
+            if (!transaction.allowAnotherAggregateServiceCall()) {
+                return null;
+            }
+            QueryData serviceCallData = new QueryData(type, text, null);
+            serviceCallsForFirstType = new QueryDataMap();
+            serviceCallsForFirstType.put(text, serviceCallData);
+            headServiceCallData = serviceCallData;
+            return headServiceCallData;
+        }
+        QueryDataMap serviceCallsForCurrentType;
+        if (type.equals(headServiceCallData.getQueryType())) {
+            serviceCallsForCurrentType = checkNotNull(serviceCallsForFirstType);
+        } else {
+            serviceCallsForCurrentType = getOrCreateServiceCallsForType(type);
+        }
+        QueryData serviceCallData = serviceCallsForCurrentType.get(text);
+        if (serviceCallData == null && transaction.allowAnotherAggregateServiceCall()) {
+            serviceCallData = new QueryData(type, text, headServiceCallData);
+            serviceCallsForCurrentType.put(text, serviceCallData);
+            headServiceCallData = serviceCallData;
+        }
+        return serviceCallData;
+    }
+
+    private TraceEntryImpl addErrorEntry(long startTick, long endTick,
             @Nullable MessageSupplier messageSupplier, ErrorMessage errorMessage) {
         TraceEntryImpl entry = traceEntryComponent.addErrorEntry(startTick, endTick,
                 messageSupplier, errorMessage);
@@ -394,15 +429,32 @@ public class ThreadContextImpl implements ThreadContextPlus {
         return entry;
     }
 
-    public TraceEntryImpl startAsyncEntry(long startTick, MessageSupplier messageSupplier,
-            TimerImpl syncTimer, AsyncTimerImpl asyncTimer, @Nullable String queryType,
-            @Nullable String queryText, long queryExecutionCount) {
-        QueryData queryData = null;
-        if (queryType != null && queryText != null) {
-            queryData = getOrCreateQueryDataIfPossible(queryType, queryText);
-        }
-        TraceEntryImpl entry = traceEntryComponent.startAsyncEntry(startTick, messageSupplier,
-                syncTimer, asyncTimer, queryData, queryExecutionCount);
+    private TraceEntryImpl startAsyncTraceEntry(long startTick, MessageSupplier messageSupplier,
+            TimerImpl syncTimer, AsyncTimerImpl asyncTimer) {
+        TraceEntryImpl entry = traceEntryComponent.pushEntry(startTick, messageSupplier, syncTimer,
+                asyncTimer, null, 0);
+        // memory barrier write ensures partial trace capture will see data collected up to now
+        // memory barrier read ensures timely visibility of detach()
+        transaction.memoryBarrierReadWrite();
+        return entry;
+    }
+
+    private TraceEntryImpl startAsyncQueryEntry(long startTick, MessageSupplier messageSupplier,
+            TimerImpl syncTimer, AsyncTimerImpl asyncTimer, @Nullable QueryData queryData,
+            long queryExecutionCount) {
+        TraceEntryImpl entry = traceEntryComponent.pushEntry(startTick, messageSupplier, syncTimer,
+                asyncTimer, queryData, queryExecutionCount);
+        // memory barrier write ensures partial trace capture will see data collected up to now
+        // memory barrier read ensures timely visibility of detach()
+        transaction.memoryBarrierReadWrite();
+        return entry;
+    }
+
+    private TraceEntryImpl startAsyncServiceCallEntry(long startTick,
+            MessageSupplier messageSupplier, TimerImpl syncTimer, AsyncTimerImpl asyncTimer,
+            @Nullable QueryData queryData) {
+        TraceEntryImpl entry = traceEntryComponent.pushEntry(startTick, messageSupplier,
+                syncTimer, asyncTimer, queryData, 1);
         // memory barrier write ensures partial trace capture will see data collected up to now
         // memory barrier read ensures timely visibility of detach()
         transaction.memoryBarrierReadWrite();
@@ -445,6 +497,16 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
     }
 
+    // typically pop() methods don't require the objects to pop, but for safety, the entry to pop is
+    // passed in just to make sure it is the one on top (and if not, then pop until is is found,
+    // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
+    void popNonRootEntry(TraceEntryImpl entry) {
+        traceEntryComponent.popNonRootEntry(entry);
+        // memory barrier write ensures partial trace capture will see data collected up to now
+        // memory barrier read ensures timely visibility of detach()
+        transaction.memoryBarrierReadWrite();
+    }
+
     // detach is called from another thread
     void detach() {
         // this synchronization protects against clobbering valid thread context in race condition
@@ -461,19 +523,34 @@ public class ThreadContextImpl implements ThreadContextPlus {
         transaction.memoryBarrierWrite();
     }
 
-    private QueryDataMap getOrCreateQueriesForQueryType(String queryType) {
+    private QueryDataMap getOrCreateQueriesForType(String queryType) {
         if (allQueryTypesMap == null) {
             allQueryTypesMap = new HashMap<String, QueryDataMap>(2);
-            QueryDataMap currentQueryTypeQueries = new QueryDataMap();
-            allQueryTypesMap.put(queryType, currentQueryTypeQueries);
-            return currentQueryTypeQueries;
+            QueryDataMap queriesForCurrentType = new QueryDataMap();
+            allQueryTypesMap.put(queryType, queriesForCurrentType);
+            return queriesForCurrentType;
         }
-        QueryDataMap currentQueryTypeQueries = allQueryTypesMap.get(queryType);
-        if (currentQueryTypeQueries == null) {
-            currentQueryTypeQueries = new QueryDataMap();
-            allQueryTypesMap.put(queryType, currentQueryTypeQueries);
+        QueryDataMap queriesForCurrentType = allQueryTypesMap.get(queryType);
+        if (queriesForCurrentType == null) {
+            queriesForCurrentType = new QueryDataMap();
+            allQueryTypesMap.put(queryType, queriesForCurrentType);
         }
-        return currentQueryTypeQueries;
+        return queriesForCurrentType;
+    }
+
+    private QueryDataMap getOrCreateServiceCallsForType(String type) {
+        if (allServiceCallTypesMap == null) {
+            allServiceCallTypesMap = new HashMap<String, QueryDataMap>(2);
+            QueryDataMap serviceCallsForCurrentType = new QueryDataMap();
+            allServiceCallTypesMap.put(type, serviceCallsForCurrentType);
+            return serviceCallsForCurrentType;
+        }
+        QueryDataMap serviceCallsForCurrentType = allServiceCallTypesMap.get(type);
+        if (serviceCallsForCurrentType == null) {
+            serviceCallsForCurrentType = new QueryDataMap();
+            allServiceCallTypesMap.put(type, serviceCallsForCurrentType);
+        }
+        return serviceCallsForCurrentType;
     }
 
     @Override
@@ -497,7 +574,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
         // ensure visibility of recent configuration updates
         configService.readMemoryBarrier();
-        return startTraceEntryInternal(messageSupplier, null, null, 0, timerName);
+        long startTick = ticker.read();
+        TimerImpl timer = startTimer(timerName, startTick);
+        if (transaction.allowAnotherEntry()) {
+            return traceEntryComponent.pushEntry(startTick, messageSupplier, timer, null, null, 0);
+        } else {
+            return new DummyTraceEntryOrQuery(timer, null, startTick, messageSupplier, null, 0);
+        }
     }
 
     @Override
@@ -510,93 +593,202 @@ public class ThreadContextImpl implements ThreadContextPlus {
             logger.error("startTraceEntry(): argument 'timerName' must be non-null");
             return NopTraceEntry.INSTANCE;
         }
-        return startTraceEntryInternal(messageSupplier, null, null, 0, timerName);
-    }
-
-    @Override
-    public QueryEntry startQueryEntry(String queryType, String queryText,
-            MessageSupplier messageSupplier, TimerName timerName) {
-        if (queryType == null) {
-            logger.error("startQuery(): argument 'queryType' must be non-null");
-            return NopQueryEntry.INSTANCE;
+        long startTick = ticker.read();
+        TimerImpl timer = startTimer(timerName, startTick);
+        if (transaction.allowAnotherEntry()) {
+            return traceEntryComponent.pushEntry(startTick, messageSupplier, timer, null, null, 0);
+        } else {
+            return new DummyTraceEntryOrQuery(timer, null, startTick, messageSupplier, null, 0);
         }
-        if (queryText == null) {
-            logger.error("startQuery(): argument 'queryText' must be non-null");
-            return NopQueryEntry.INSTANCE;
-        }
-        if (messageSupplier == null) {
-            logger.error("startQuery(): argument 'messageSupplier' must be non-null");
-            return NopQueryEntry.INSTANCE;
-        }
-        if (timerName == null) {
-            logger.error("startQuery(): argument 'timerName' must be non-null");
-            return NopQueryEntry.INSTANCE;
-        }
-        return startTraceEntryInternal(messageSupplier, queryType, queryText, 1, timerName);
-    }
-
-    @Override
-    public AsyncQueryEntry startAsyncQueryEntry(String queryType, String queryText,
-            MessageSupplier messageSupplier, TimerName syncTimerName, TimerName asyncTimerName) {
-        if (queryType == null) {
-            logger.error("startQuery(): argument 'queryType' must be non-null");
-            return NopAsyncQueryEntry.INSTANCE;
-        }
-        if (queryText == null) {
-            logger.error("startQuery(): argument 'queryText' must be non-null");
-            return NopAsyncQueryEntry.INSTANCE;
-        }
-        if (messageSupplier == null) {
-            logger.error("startQuery(): argument 'messageSupplier' must be non-null");
-            return NopAsyncQueryEntry.INSTANCE;
-        }
-        if (syncTimerName == null) {
-            logger.error("startQuery(): argument 'syncTimerName' must be non-null");
-            return NopAsyncQueryEntry.INSTANCE;
-        }
-        if (asyncTimerName == null) {
-            logger.error("startQuery(): argument 'asyncTimerName' must be non-null");
-            return NopAsyncQueryEntry.INSTANCE;
-        }
-        return startAsyncTraceEntry(messageSupplier, syncTimerName, asyncTimerName, queryType,
-                queryText, 1);
-    }
-
-    @Override
-    public QueryEntry startQueryEntry(String queryType, String queryText, long queryExecutionCount,
-            MessageSupplier messageSupplier, TimerName timerName) {
-        if (queryType == null) {
-            logger.error("startQuery(): argument 'queryType' must be non-null");
-            return NopQueryEntry.INSTANCE;
-        }
-        if (queryText == null) {
-            logger.error("startQuery(): argument 'queryText' must be non-null");
-            return NopQueryEntry.INSTANCE;
-        }
-        if (messageSupplier == null) {
-            logger.error("startQuery(): argument 'messageSupplier' must be non-null");
-            return NopQueryEntry.INSTANCE;
-        }
-        if (timerName == null) {
-            logger.error("startQuery(): argument 'timerName' must be non-null");
-            return NopQueryEntry.INSTANCE;
-        }
-        return startTraceEntryInternal(messageSupplier, queryType, queryText, queryExecutionCount,
-                timerName);
     }
 
     @Override
     public AsyncTraceEntry startAsyncTraceEntry(MessageSupplier messageSupplier,
             TimerName syncTimerName, TimerName asyncTimerName) {
         if (syncTimerName == null) {
-            logger.error("startQuery(): argument 'syncTimerName' must be non-null");
+            logger.error("startAsyncTraceEntry(): argument 'syncTimerName' must be non-null");
+            return NopAsyncTraceEntry.INSTANCE;
+        }
+        if (asyncTimerName == null) {
+            logger.error("startAsyncTraceEntry(): argument 'asyncTimerName' must be non-null");
+            return NopAsyncTraceEntry.INSTANCE;
+        }
+        long startTick = ticker.read();
+        TimerImpl syncTimer = startTimer(syncTimerName, startTick);
+        AsyncTimerImpl asyncTimer = startAsyncTimer(asyncTimerName, startTick);
+        if (transaction.allowAnotherEntry()) {
+            return startAsyncTraceEntry(startTick, messageSupplier, syncTimer, asyncTimer);
+        } else {
+            return new DummyTraceEntryOrQuery(syncTimer, asyncTimer, startTick, messageSupplier,
+                    null, 0);
+        }
+    }
+
+    @Override
+    public QueryEntry startQueryEntry(String queryType, String queryText,
+            MessageSupplier messageSupplier, TimerName timerName) {
+        if (queryType == null) {
+            logger.error("startQueryEntry(): argument 'queryType' must be non-null");
+            return NopQueryEntry.INSTANCE;
+        }
+        if (queryText == null) {
+            logger.error("startQueryEntry(): argument 'queryText' must be non-null");
+            return NopQueryEntry.INSTANCE;
+        }
+        if (messageSupplier == null) {
+            logger.error("startQueryEntry(): argument 'messageSupplier' must be non-null");
+            return NopQueryEntry.INSTANCE;
+        }
+        if (timerName == null) {
+            logger.error("startQueryEntry(): argument 'timerName' must be non-null");
+            return NopQueryEntry.INSTANCE;
+        }
+        long startTick = ticker.read();
+        TimerImpl timer = startTimer(timerName, startTick);
+        QueryData queryData = getOrCreateQueryDataIfPossible(queryType, queryText);
+        if (transaction.allowAnotherEntry()) {
+            return traceEntryComponent.pushEntry(startTick, messageSupplier, timer, null, queryData,
+                    1);
+        } else {
+            return new DummyTraceEntryOrQuery(timer, null, startTick, messageSupplier, queryData,
+                    1);
+        }
+    }
+
+    @Override
+    public QueryEntry startQueryEntry(String queryType, String queryText, long queryExecutionCount,
+            MessageSupplier messageSupplier, TimerName timerName) {
+        if (queryType == null) {
+            logger.error("startQueryEntry(): argument 'queryType' must be non-null");
+            return NopQueryEntry.INSTANCE;
+        }
+        if (queryText == null) {
+            logger.error("startQueryEntry(): argument 'queryText' must be non-null");
+            return NopQueryEntry.INSTANCE;
+        }
+        if (messageSupplier == null) {
+            logger.error("startQueryEntry(): argument 'messageSupplier' must be non-null");
+            return NopQueryEntry.INSTANCE;
+        }
+        if (timerName == null) {
+            logger.error("startQueryEntry(): argument 'timerName' must be non-null");
+            return NopQueryEntry.INSTANCE;
+        }
+        long startTick = ticker.read();
+        TimerImpl timer = startTimer(timerName, startTick);
+        QueryData queryData = getOrCreateQueryDataIfPossible(queryType, queryText);
+        if (transaction.allowAnotherEntry()) {
+            return traceEntryComponent.pushEntry(startTick, messageSupplier, timer, null,
+                    queryData, queryExecutionCount);
+        } else {
+            return new DummyTraceEntryOrQuery(timer, null, startTick, messageSupplier, queryData,
+                    queryExecutionCount);
+        }
+    }
+
+    @Override
+    public AsyncQueryEntry startAsyncQueryEntry(String queryType, String queryText,
+            MessageSupplier messageSupplier, TimerName syncTimerName, TimerName asyncTimerName) {
+        if (queryType == null) {
+            logger.error("startAsyncQueryEntry(): argument 'queryType' must be non-null");
+            return NopAsyncQueryEntry.INSTANCE;
+        }
+        if (queryText == null) {
+            logger.error("startAsyncQueryEntry(): argument 'queryText' must be non-null");
+            return NopAsyncQueryEntry.INSTANCE;
+        }
+        if (messageSupplier == null) {
+            logger.error("startAsyncQueryEntry(): argument 'messageSupplier' must be non-null");
+            return NopAsyncQueryEntry.INSTANCE;
+        }
+        if (syncTimerName == null) {
+            logger.error("startAsyncQueryEntry(): argument 'syncTimerName' must be non-null");
             return NopAsyncQueryEntry.INSTANCE;
         }
         if (asyncTimerName == null) {
-            logger.error("startQuery(): argument 'asyncTimerName' must be non-null");
+            logger.error("startAsyncQueryEntry(): argument 'asyncTimerName' must be non-null");
             return NopAsyncQueryEntry.INSTANCE;
         }
-        return startAsyncTraceEntry(messageSupplier, syncTimerName, asyncTimerName, null, null, 0);
+        long startTick = ticker.read();
+        TimerImpl syncTimer = startTimer(syncTimerName, startTick);
+        AsyncTimerImpl asyncTimer = startAsyncTimer(asyncTimerName, startTick);
+        QueryData queryData = getOrCreateQueryDataIfPossible(queryType, queryText);
+        if (transaction.allowAnotherEntry()) {
+            return startAsyncQueryEntry(startTick, messageSupplier, syncTimer, asyncTimer,
+                    queryData, 1);
+        } else {
+            return new DummyTraceEntryOrQuery(syncTimer, asyncTimer, startTick, messageSupplier,
+                    queryData, 1);
+        }
+    }
+
+    @Override
+    public TraceEntry startServiceCallEntry(String type, String text,
+            MessageSupplier messageSupplier, TimerName timerName) {
+        if (type == null) {
+            logger.error("startServiceCallEntry(): argument 'type' must be non-null");
+            return NopTraceEntry.INSTANCE;
+        }
+        if (text == null) {
+            logger.error("startServiceCallEntry(): argument 'text' must be non-null");
+            return NopTraceEntry.INSTANCE;
+        }
+        if (messageSupplier == null) {
+            logger.error("startServiceCallEntry(): argument 'messageSupplier' must be non-null");
+            return NopTraceEntry.INSTANCE;
+        }
+        if (timerName == null) {
+            logger.error("startServiceCallEntry(): argument 'timerName' must be non-null");
+            return NopTraceEntry.INSTANCE;
+        }
+        long startTick = ticker.read();
+        TimerImpl timer = startTimer(timerName, startTick);
+        QueryData queryData = getOrCreateServiceCallDataIfPossible(type, text);
+        if (transaction.allowAnotherEntry()) {
+            return traceEntryComponent.pushEntry(startTick, messageSupplier, timer, null, queryData,
+                    1);
+        } else {
+            return new DummyTraceEntryOrQuery(timer, null, startTick, messageSupplier, queryData,
+                    1);
+        }
+    }
+
+    @Override
+    public AsyncTraceEntry startAsyncServiceCallEntry(String type, String text,
+            MessageSupplier messageSupplier, TimerName syncTimerName, TimerName asyncTimerName) {
+        if (type == null) {
+            logger.error("startAsyncServiceCallEntry(): argument 'type' must be non-null");
+            return NopAsyncTraceEntry.INSTANCE;
+        }
+        if (text == null) {
+            logger.error("startAsyncServiceCallEntry(): argument 'text' must be non-null");
+            return NopAsyncTraceEntry.INSTANCE;
+        }
+        if (messageSupplier == null) {
+            logger.error(
+                    "startAsyncServiceCallEntry(): argument 'messageSupplier' must be non-null");
+            return NopAsyncTraceEntry.INSTANCE;
+        }
+        if (syncTimerName == null) {
+            logger.error("startAsyncServiceCallEntry(): argument 'syncTimerName' must be non-null");
+            return NopAsyncTraceEntry.INSTANCE;
+        }
+        if (asyncTimerName == null) {
+            logger.error(
+                    "startAsyncServiceCallEntry(): argument 'asyncTimerName' must be non-null");
+            return NopAsyncTraceEntry.INSTANCE;
+        }
+        long startTick = ticker.read();
+        TimerImpl syncTimer = startTimer(syncTimerName, startTick);
+        AsyncTimerImpl asyncTimer = startAsyncTimer(asyncTimerName, startTick);
+        QueryData queryData = getOrCreateServiceCallDataIfPossible(type, text);
+        if (transaction.allowAnotherEntry()) {
+            return startAsyncServiceCallEntry(startTick, messageSupplier, syncTimer, asyncTimer,
+                    queryData);
+        } else {
+            return new DummyTraceEntryOrQuery(syncTimer, asyncTimer, startTick, messageSupplier,
+                    queryData, 1);
+        }
     }
 
     @Override
@@ -697,19 +889,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
         return true;
     }
 
-    QueryEntry startTraceEntryInternal(MessageSupplier messageSupplier, @Nullable String queryType,
-            @Nullable String queryText, long queryExecutionCount, TimerName timerName) {
-        long startTick = ticker.read();
-        if (transaction.allowAnotherEntry()) {
-            TimerImpl timer = startTimer(timerName, startTick);
-            return pushEntry(startTick, messageSupplier, queryType, queryText, queryExecutionCount,
-                    timer);
-        }
-        // split out to separate method so as not to affect inlining budget of common path
-        return startDummyTraceEntry(timerName, messageSupplier, queryType, queryText,
-                queryExecutionCount, startTick);
-    }
-
     void endCheckAuxThreadContexts() {
         if (auxThreadContexts == null) {
             return;
@@ -737,21 +916,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
     }
 
-    private AsyncQueryEntry startAsyncTraceEntry(MessageSupplier messageSupplier,
-            TimerName syncTimerName, TimerName asyncTimerName, @Nullable String queryType,
-            @Nullable String queryText, long queryExecutionCount) {
-        long startTick = ticker.read();
-        if (transaction.allowAnotherEntry()) {
-            TimerImpl syncTimer = startTimer(syncTimerName, startTick);
-            AsyncTimerImpl asyncTimer = startAsyncTimer(asyncTimerName, startTick);
-            return startAsyncEntry(startTick, messageSupplier, syncTimer, asyncTimer, queryType,
-                    queryText, queryExecutionCount);
-        }
-        // split out to separate method so as not to affect inlining budget of common path
-        return startDummyAsyncTraceEntry(messageSupplier, syncTimerName, asyncTimerName, queryType,
-                queryText, queryExecutionCount, startTick);
-    }
-
     private void addErrorEntryInternal(@Nullable String message, @Nullable Throwable t) {
         // use higher entry limit when adding errors, but still need some kind of cap
         if (transaction.allowAnotherErrorEntry()) {
@@ -770,33 +934,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 entry.setStackTrace(ImmutableList.copyOf(stackTrace).subList(4, stackTrace.length));
             }
         }
-    }
-
-    private QueryEntry startDummyTraceEntry(TimerName timerName, MessageSupplier messageSupplier,
-            @Nullable String queryType, @Nullable String queryText, long queryExecutionCount,
-            long startTick) {
-        // the entry limit has been exceeded for this trace
-        QueryData queryData = null;
-        if (queryType != null && queryText != null) {
-            queryData = getOrCreateQueryDataIfPossible(queryType, queryText);
-        }
-        TimerImpl timer = startTimer(timerName, startTick);
-        return new DummyTraceEntryOrQuery(timer, null, startTick, messageSupplier, queryData,
-                queryExecutionCount);
-    }
-
-    private AsyncQueryEntry startDummyAsyncTraceEntry(MessageSupplier messageSupplier,
-            TimerName syncTimerName, TimerName asyncTimerName, @Nullable String queryType,
-            @Nullable String queryText, long queryExecutionCount, long startTick) {
-        // the entry limit has been exceeded for this trace
-        QueryData queryData = null;
-        if (queryType != null && queryText != null) {
-            queryData = getOrCreateQueryDataIfPossible(queryType, queryText);
-        }
-        TimerImpl syncTimer = startTimer(syncTimerName, startTick);
-        TimerImpl asyncTimer = startTimer(asyncTimerName, startTick);
-        return new DummyTraceEntryOrQuery(syncTimer, asyncTimer, startTick, messageSupplier,
-                queryData, queryExecutionCount);
     }
 
     private TimerImpl startTimer(TimerName timerName, long startTick) {
@@ -841,7 +978,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private class DummyTraceEntryOrQuery extends QueryEntryBase implements AsyncQueryEntry, Timer {
 
         private final TimerImpl syncTimer;
-        private final @Nullable TimerImpl asyncTimer;
+        private final @Nullable AsyncTimerImpl asyncTimer;
         private final long startTick;
         private final MessageSupplier messageSupplier;
 
@@ -850,7 +987,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         // only used by transaction thread
         private @MonotonicNonNull TimerImpl extendedTimer;
 
-        public DummyTraceEntryOrQuery(TimerImpl syncTimer, @Nullable TimerImpl asyncTimer,
+        public DummyTraceEntryOrQuery(TimerImpl syncTimer, @Nullable AsyncTimerImpl asyncTimer,
                 long startTick, MessageSupplier messageSupplier, @Nullable QueryData queryData,
                 long queryExecutionCount) {
             super(queryData);

@@ -113,12 +113,12 @@ public class AggregateDaoTest {
                 .to(100000)
                 .rollupLevel(0)
                 .build();
-        TransactionSummaryCollector mergedTransactionSummaries = new TransactionSummaryCollector();
+        TransactionSummaryCollector collector = new TransactionSummaryCollector();
         List<OverviewAggregate> overallAggregates = aggregateDao.readOverviewAggregates(query);
-        aggregateDao.mergeInTransactionSummaries(mergedTransactionSummaries, query2,
+        aggregateDao.mergeInTransactionSummaries(collector, query2,
                 SummarySortOrder.TOTAL_TIME, 10);
         Result<TransactionSummary> queryResult =
-                mergedTransactionSummaries.getResult(SummarySortOrder.TOTAL_TIME, 10);
+                collector.getResult(SummarySortOrder.TOTAL_TIME, 10);
         // then
         assertThat(overallAggregates).hasSize(2);
         assertThat(queryResult.records()).hasSize(3);

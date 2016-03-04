@@ -48,6 +48,9 @@ public interface ThreadContext {
      */
     TraceEntry startTraceEntry(MessageSupplier messageSupplier, TimerName timerName);
 
+    AsyncTraceEntry startAsyncTraceEntry(MessageSupplier messageSupplier, TimerName syncTimerName,
+            TimerName asyncTimerName);
+
     /**
      * {@link QueryEntry} is a specialized type of {@link TraceEntry} that is aggregated by its
      * query text.
@@ -61,8 +64,11 @@ public interface ThreadContext {
     AsyncQueryEntry startAsyncQueryEntry(String queryType, String queryText,
             MessageSupplier messageSupplier, TimerName syncTimerName, TimerName asyncTimerName);
 
-    AsyncTraceEntry startAsyncTraceEntry(MessageSupplier messageSupplier, TimerName syncTimerName,
-            TimerName asyncTimerName);
+    TraceEntry startServiceCallEntry(String type, String text, MessageSupplier messageSupplier,
+            TimerName timerName);
+
+    AsyncTraceEntry startAsyncServiceCallEntry(String type, String text,
+            MessageSupplier messageSupplier, TimerName syncTimerName, TimerName asyncTimerName);
 
     /**
      * Starts a timer for the specified timer name. If a timer is already running for the specified

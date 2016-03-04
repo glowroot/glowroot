@@ -17,6 +17,7 @@ package org.glowroot.storage.config;
 
 public class ConfigDefaults {
 
-    public static final int MAX_AGGREGATE_TRANSACTIONS_PER_TRANSACTION_TYPE = 500;
-    public static final int MAX_AGGREGATE_QUERIES_PER_QUERY_TYPE = 500;
+    public static final int MAX_AGGREGATE_TRANSACTIONS_PER_TYPE = 500;
+    public static final int MAX_AGGREGATE_QUERIES_PER_TYPE = 500;
+    public static final int MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE = 500;
 }

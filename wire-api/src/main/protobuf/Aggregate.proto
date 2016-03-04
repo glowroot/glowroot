@@ -32,9 +32,10 @@ message Aggregate {
   ThreadStats aux_thread_stats = 8;
   Histogram duration_nanos_histogram = 9; // histogram values are in nanoseconds with microsecond
                                           // precision
-  Profile main_thread_profile = 10;
-  Profile aux_thread_profile = 11;
-  repeated QueriesByType queries_by_type = 12;
+  repeated QueriesByType queries_by_type = 10;
+  repeated ServiceCallsByType service_calls_by_type = 11;
+  Profile main_thread_profile = 12;
+  Profile aux_thread_profile = 13;
 
   message OptionalDouble {
     double value = 1;
@@ -75,5 +76,17 @@ message Aggregate {
     double total_duration_nanos = 2;
     int64 execution_count = 3;
     OptionalInt64 total_rows = 4;
+  }
+
+  message ServiceCallsByType {
+    // e.g. "HTTP"
+    string type = 1;
+    repeated ServiceCall service_call = 2;
+  }
+
+  message ServiceCall {
+    string text = 1;
+    double total_duration_nanos = 2;
+    int64 execution_count = 3;
   }
 }

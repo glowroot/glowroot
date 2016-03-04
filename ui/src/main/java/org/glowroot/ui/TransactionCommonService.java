@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.QueryCollector;
+import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.storage.config.ConfigDefaults;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.OverallQuery;
@@ -140,6 +141,18 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
+    List<Aggregate.QueriesByType> getMergedQueries(TransactionQuery query) throws Exception {
+        return getMergedQueries(query, getMaxAggregateQueriesPerType(query.agentRollup()));
+    }
+
+    // query.from() is non-inclusive
+    List<Aggregate.ServiceCallsByType> getMergedServiceCalls(TransactionQuery query)
+            throws Exception {
+        return getMergedServiceCalls(query,
+                getMaxAggregateServiceCallsPerType(query.agentRollup()));
+    }
+
+    // query.from() is non-inclusive
     MutableProfile getMergedProfile(TransactionQuery query, boolean auxiliary,
             List<String> includes, List<String> excludes, double truncateBranchPercentage)
                     throws Exception {
@@ -167,11 +180,6 @@ class TransactionCommonService {
             }
         }
         return false;
-    }
-
-    // query.from() is non-inclusive
-    List<Aggregate.QueriesByType> getMergedQueries(TransactionQuery query) throws Exception {
-        return getMergedQueries(query, getMaxAggregateQueriesPerQueryType(query.agentRollup()));
     }
 
     private OverallSummary getMergedOverallSummary(OverallQuery query) throws Exception {
@@ -206,7 +214,7 @@ class TransactionCommonService {
     private Result<TransactionSummary> getMergedTransactionSummaries(OverallQuery query,
             SummarySortOrder sortOrder, int limit) throws Exception {
         long revisedFrom = query.from();
-        TransactionSummaryCollector mergedTransactionSummaries = new TransactionSummaryCollector();
+        TransactionSummaryCollector collector = new TransactionSummaryCollector();
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             OverallQuery revisedQuery = ImmutableOverallQuery.builder()
                     .copyFrom(query)
@@ -214,59 +222,15 @@ class TransactionCommonService {
                     .to(query.to())
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeInTransactionSummaries(mergedTransactionSummaries,
+            aggregateRepository.mergeInTransactionSummaries(collector,
                     revisedQuery, sortOrder, limit);
-            long lastRolledUpTime = mergedTransactionSummaries.getLastCaptureTime();
+            long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > query.to()) {
                 break;
             }
         }
-        return mergedTransactionSummaries.getResult(sortOrder, limit);
-    }
-
-    private MutableProfile getMergedProfile(TransactionQuery query, boolean auxiliary)
-            throws Exception {
-        long revisedFrom = query.from();
-        ProfileCollector mergedProfile = new ProfileCollector();
-        for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
-            TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
-                    .copyFrom(query)
-                    .from(revisedFrom)
-                    .rollupLevel(rollupLevel)
-                    .build();
-            if (auxiliary) {
-                aggregateRepository.mergeInAuxThreadProfiles(mergedProfile, revisedQuery);
-            } else {
-                aggregateRepository.mergeInMainThreadProfiles(mergedProfile, revisedQuery);
-            }
-            long lastRolledUpTime = mergedProfile.getLastCaptureTime();
-            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
-            if (revisedFrom > query.to()) {
-                break;
-            }
-        }
-        return mergedProfile.getProfile();
-    }
-
-    private List<Aggregate.QueriesByType> getMergedQueries(TransactionQuery query,
-            int maxAggregateQueriesPerQueryType) throws Exception {
-        long revisedFrom = query.from();
-        QueryCollector mergedQueries = new QueryCollector(maxAggregateQueriesPerQueryType, 0);
-        for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
-            TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
-                    .copyFrom(query)
-                    .from(revisedFrom)
-                    .rollupLevel(rollupLevel)
-                    .build();
-            aggregateRepository.mergeInQueries(mergedQueries, revisedQuery);
-            long lastRolledUpTime = mergedQueries.getLastCaptureTime();
-            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
-            if (revisedFrom > query.to()) {
-                break;
-            }
-        }
-        return mergedQueries.toProto();
+        return collector.getResult(sortOrder, limit);
     }
 
     private List<OverviewAggregate> rollUpOverviewAggregates(
@@ -275,7 +239,7 @@ class TransactionCommonService {
         long fixedIntervalMillis =
                 configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
         List<OverviewAggregate> rolledUpOverviewAggregates = Lists.newArrayList();
-        MutableAggregate currMergedAggregate = new MutableAggregate(0);
+        MutableAggregate currMergedAggregate = new MutableAggregate(0, 0);
         long currRollupTime = Long.MIN_VALUE;
         long maxCaptureTime = Long.MIN_VALUE;
         for (OverviewAggregate nonRolledUpOverviewAggregate : orderedNonRolledUpOverviewAggregates) {
@@ -284,7 +248,7 @@ class TransactionCommonService {
             if (rollupTime != currRollupTime && !currMergedAggregate.isEmpty()) {
                 rolledUpOverviewAggregates
                         .add(currMergedAggregate.toOverviewAggregate(currRollupTime));
-                currMergedAggregate = new MutableAggregate(0);
+                currMergedAggregate = new MutableAggregate(0, 0);
             }
             currRollupTime = rollupTime;
             currMergedAggregate
@@ -314,7 +278,7 @@ class TransactionCommonService {
         long fixedIntervalMillis =
                 configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
         List<PercentileAggregate> rolledUpPercentileAggregates = Lists.newArrayList();
-        MutableAggregate currMergedAggregate = new MutableAggregate(0);
+        MutableAggregate currMergedAggregate = new MutableAggregate(0, 0);
         long currRollupTime = Long.MIN_VALUE;
         long maxCaptureTime = Long.MIN_VALUE;
         for (PercentileAggregate nonRolledUpPercentileAggregate : orderedNonRolledUpPercentileAggregates) {
@@ -323,14 +287,15 @@ class TransactionCommonService {
             if (rollupTime != currRollupTime && !currMergedAggregate.isEmpty()) {
                 rolledUpPercentileAggregates
                         .add(currMergedAggregate.toPercentileAggregate(currRollupTime));
-                currMergedAggregate = new MutableAggregate(0);
+                currMergedAggregate = new MutableAggregate(0, 0);
             }
             currRollupTime = rollupTime;
             currMergedAggregate
                     .addTotalDurationNanos(nonRolledUpPercentileAggregate.totalDurationNanos());
             currMergedAggregate
                     .addTransactionCount(nonRolledUpPercentileAggregate.transactionCount());
-            currMergedAggregate.mergeDurationNanosHistogram(nonRolledUpPercentileAggregate.durationNanosHistogram());
+            currMergedAggregate.mergeDurationNanosHistogram(
+                    nonRolledUpPercentileAggregate.durationNanosHistogram());
         }
         if (!currMergedAggregate.isEmpty()) {
             // roll up final one
@@ -368,12 +333,86 @@ class TransactionCommonService {
         return rolledUpThroughputAggregates;
     }
 
-    private int getMaxAggregateQueriesPerQueryType(String agentRollup) throws IOException {
+    private List<Aggregate.QueriesByType> getMergedQueries(TransactionQuery query,
+            int maxAggregateQueriesPerType) throws Exception {
+        long revisedFrom = query.from();
+        QueryCollector queryCollector = new QueryCollector(maxAggregateQueriesPerType, 0);
+        for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
+            TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
+                    .copyFrom(query)
+                    .from(revisedFrom)
+                    .rollupLevel(rollupLevel)
+                    .build();
+            aggregateRepository.mergeInQueries(queryCollector, revisedQuery);
+            long lastRolledUpTime = queryCollector.getLastCaptureTime();
+            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
+            if (revisedFrom > query.to()) {
+                break;
+            }
+        }
+        return queryCollector.toProto();
+    }
+
+    private List<Aggregate.ServiceCallsByType> getMergedServiceCalls(TransactionQuery query,
+            int maxAggregateServiceCallsPerType) throws Exception {
+        long revisedFrom = query.from();
+        ServiceCallCollector serviceCallCollector =
+                new ServiceCallCollector(maxAggregateServiceCallsPerType, 0);
+        for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
+            TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
+                    .copyFrom(query)
+                    .from(revisedFrom)
+                    .rollupLevel(rollupLevel)
+                    .build();
+            aggregateRepository.mergeInServiceCalls(serviceCallCollector, revisedQuery);
+            long lastRolledUpTime = serviceCallCollector.getLastCaptureTime();
+            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
+            if (revisedFrom > query.to()) {
+                break;
+            }
+        }
+        return serviceCallCollector.toProto();
+    }
+
+    private MutableProfile getMergedProfile(TransactionQuery query, boolean auxiliary)
+            throws Exception {
+        long revisedFrom = query.from();
+        ProfileCollector collector = new ProfileCollector();
+        for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
+            TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
+                    .copyFrom(query)
+                    .from(revisedFrom)
+                    .rollupLevel(rollupLevel)
+                    .build();
+            if (auxiliary) {
+                aggregateRepository.mergeInAuxThreadProfiles(collector, revisedQuery);
+            } else {
+                aggregateRepository.mergeInMainThreadProfiles(collector, revisedQuery);
+            }
+            long lastRolledUpTime = collector.getLastCaptureTime();
+            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
+            if (revisedFrom > query.to()) {
+                break;
+            }
+        }
+        return collector.getProfile();
+    }
+
+    private int getMaxAggregateQueriesPerType(String agentRollup) throws IOException {
         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(agentRollup);
-        if (advancedConfig != null && advancedConfig.hasMaxAggregateQueriesPerQueryType()) {
-            return advancedConfig.getMaxAggregateQueriesPerQueryType().getValue();
+        if (advancedConfig != null && advancedConfig.hasMaxAggregateQueriesPerType()) {
+            return advancedConfig.getMaxAggregateQueriesPerType().getValue();
         } else {
-            return ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_QUERY_TYPE;
+            return ConfigDefaults.MAX_AGGREGATE_QUERIES_PER_TYPE;
+        }
+    }
+
+    private int getMaxAggregateServiceCallsPerType(String agentRollup) throws IOException {
+        AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(agentRollup);
+        if (advancedConfig != null && advancedConfig.hasMaxAggregateServiceCallsPerType()) {
+            return advancedConfig.getMaxAggregateServiceCallsPerType().getValue();
+        } else {
+            return ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
         }
     }
 }

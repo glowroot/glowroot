@@ -224,8 +224,10 @@ public class ConfigIT extends WebDriverIT {
         // when
         page.getImmediatePartialStoreThresholdTextField().clear();
         page.getImmediatePartialStoreThresholdTextField().sendKeys("1234");
-        page.getMaxAggregateQueriesPerQueryTypeTextField().clear();
-        page.getMaxAggregateQueriesPerQueryTypeTextField().sendKeys("789");
+        page.getMaxAggregateQueriesPerTypeTextField().clear();
+        page.getMaxAggregateQueriesPerTypeTextField().sendKeys("789");
+        page.getMaxAggregateServiceCallsPerTypeTextField().clear();
+        page.getMaxAggregateServiceCallsPerTypeTextField().sendKeys("987");
         page.getMaxTraceEntriesPerTransactionTextField().clear();
         page.getMaxTraceEntriesPerTransactionTextField().sendKeys("2345");
         page.getMaxStackTraceSamplesPerTransactionTextField().clear();
@@ -240,8 +242,10 @@ public class ConfigIT extends WebDriverIT {
         configSidebar.getAdvancedLink().click();
         assertThat(page.getImmediatePartialStoreThresholdTextField().getAttribute("value"))
                 .isEqualTo("1234");
-        assertThat(page.getMaxAggregateQueriesPerQueryTypeTextField().getAttribute("value"))
+        assertThat(page.getMaxAggregateQueriesPerTypeTextField().getAttribute("value"))
                 .isEqualTo("789");
+        assertThat(page.getMaxAggregateServiceCallsPerTypeTextField().getAttribute("value"))
+                .isEqualTo("987");
         assertThat(page.getMaxTraceEntriesPerTransactionTextField().getAttribute("value"))
                 .isEqualTo("2345");
         assertThat(page.getMaxStackTraceSamplesPerTransactionTextField().getAttribute("value"))

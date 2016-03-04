@@ -178,39 +178,6 @@ class TransactionJsonService {
         return sb.toString();
     }
 
-    @GET("/backend/transaction/profile")
-    String getProfile(String queryString) throws Exception {
-        TransactionProfileRequest request =
-                QueryStrings.decode(queryString, TransactionProfileRequest.class);
-        TransactionQuery query = toQuery(request);
-        MutableProfile profile =
-                transactionCommonService.getMergedProfile(query, request.auxiliary(),
-                        request.include(), request.exclude(), request.truncateBranchPercentage());
-        boolean hasUnfilteredAuxThreadProfile;
-        if (request.auxiliary()) {
-            hasUnfilteredAuxThreadProfile = profile.getUnfilteredSampleCount() > 0;
-        } else {
-            hasUnfilteredAuxThreadProfile = transactionCommonService.hasAuxThreadProfile(query);
-        }
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeBooleanField("hasUnfilteredAuxThreadProfile", hasUnfilteredAuxThreadProfile);
-        if (profile.getUnfilteredSampleCount() == 0) {
-            if (request.auxiliary() && aggregateRepository.shouldHaveAuxThreadProfile(query)) {
-                jg.writeBooleanField("overwritten", true);
-            } else if (!request.auxiliary()
-                    && aggregateRepository.shouldHaveMainThreadProfile(query)) {
-                jg.writeBooleanField("overwritten", true);
-            }
-        }
-        jg.writeFieldName("profile");
-        profile.writeJson(jg);
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
-    }
-
     @GET("/backend/transaction/queries")
     String getQueries(String queryString) throws Exception {
         TransactionDataRequest request =
@@ -244,6 +211,74 @@ class TransactionJsonService {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeObject(queryList);
+        jg.close();
+        return sb.toString();
+    }
+
+    @GET("/backend/transaction/service-calls")
+    String getServiceCalls(String queryString) throws Exception {
+        TransactionDataRequest request =
+                QueryStrings.decode(queryString, TransactionDataRequest.class);
+        TransactionQuery query = toQuery(request);
+        List<Aggregate.ServiceCallsByType> queries =
+                transactionCommonService.getMergedServiceCalls(query);
+        List<ServiceCall> serviceCallList = Lists.newArrayList();
+        for (Aggregate.ServiceCallsByType queriesByType : queries) {
+            for (Aggregate.ServiceCall aggServiceCall : queriesByType.getServiceCallList()) {
+                serviceCallList.add(ImmutableServiceCall.builder()
+                        .type(queriesByType.getType())
+                        .text(aggServiceCall.getText())
+                        .totalDurationNanos(aggServiceCall.getTotalDurationNanos())
+                        .executionCount(aggServiceCall.getExecutionCount())
+                        .build());
+            }
+        }
+        Collections.sort(serviceCallList, new Comparator<ServiceCall>() {
+            @Override
+            public int compare(ServiceCall left, ServiceCall right) {
+                // sort descending
+                return Doubles.compare(right.totalDurationNanos(), left.totalDurationNanos());
+            }
+        });
+        if (serviceCallList.isEmpty() && aggregateRepository.shouldHaveServiceCalls(query)) {
+            return "{\"overwritten\":true}";
+        }
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeObject(serviceCallList);
+        jg.close();
+        return sb.toString();
+    }
+
+    @GET("/backend/transaction/profile")
+    String getProfile(String queryString) throws Exception {
+        TransactionProfileRequest request =
+                QueryStrings.decode(queryString, TransactionProfileRequest.class);
+        TransactionQuery query = toQuery(request);
+        MutableProfile profile =
+                transactionCommonService.getMergedProfile(query, request.auxiliary(),
+                        request.include(), request.exclude(), request.truncateBranchPercentage());
+        boolean hasUnfilteredAuxThreadProfile;
+        if (request.auxiliary()) {
+            hasUnfilteredAuxThreadProfile = profile.getUnfilteredSampleCount() > 0;
+        } else {
+            hasUnfilteredAuxThreadProfile = transactionCommonService.hasAuxThreadProfile(query);
+        }
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeBooleanField("hasUnfilteredAuxThreadProfile", hasUnfilteredAuxThreadProfile);
+        if (profile.getUnfilteredSampleCount() == 0) {
+            if (request.auxiliary() && aggregateRepository.shouldHaveAuxThreadProfile(query)) {
+                jg.writeBooleanField("overwritten", true);
+            } else if (!request.auxiliary()
+                    && aggregateRepository.shouldHaveMainThreadProfile(query)) {
+                jg.writeBooleanField("overwritten", true);
+            }
+        }
+        jg.writeFieldName("profile");
+        profile.writeJson(jg);
+        jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
@@ -670,6 +705,14 @@ class TransactionJsonService {
         long executionCount();
         @Nullable
         Long totalRows();
+    }
+
+    @Value.Immutable
+    interface ServiceCall {
+        String type();
+        String text();
+        double totalDurationNanos();
+        long executionCount();
     }
 
     @Value.Immutable

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,8 +68,7 @@ class ErrorCommonService {
     Result<TransactionErrorSummary> readTransactionErrorSummaries(OverallQuery query,
             ErrorSummarySortOrder sortOrder, int limit) throws Exception {
         long revisedFrom = query.from();
-        TransactionErrorSummaryCollector mergedTransactionErrorSummaries =
-                new TransactionErrorSummaryCollector();
+        TransactionErrorSummaryCollector collector = new TransactionErrorSummaryCollector();
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             OverallQuery revisedQuery = ImmutableOverallQuery.builder()
                     .copyFrom(query)
@@ -77,14 +76,14 @@ class ErrorCommonService {
                     .to(query.to())
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeInTransactionErrorSummaries(mergedTransactionErrorSummaries,
+            aggregateRepository.mergeInTransactionErrorSummaries(collector,
                     revisedQuery, sortOrder, limit);
-            long lastRolledUpTime = mergedTransactionErrorSummaries.getLastCaptureTime();
+            long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > query.to()) {
                 break;
             }
         }
-        return mergedTransactionErrorSummaries.getResult(sortOrder, limit);
+        return collector.getResult(sortOrder, limit);
     }
 }

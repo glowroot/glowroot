@@ -21,6 +21,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.model.CommonTimerImpl;
@@ -33,6 +34,7 @@ import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.QueryCollector;
+import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -54,18 +56,20 @@ class AggregateCollector {
     // histogram values are in nanoseconds, but with microsecond precision to reduce the number of
     // buckets (and memory) required
     private final LazyHistogram durationNanosHistogram = new LazyHistogram();
-    // TODO lazy instantiate mutable profiles to reduce memory footprint (same as MutableAggregate)
-    private final MutableProfile mainThreadProfile = new MutableProfile();
-    private final MutableProfile auxThreadProfile = new MutableProfile();
-    private final QueryCollector queries;
+    // lazy instantiated to reduce memory footprint
+    private @MonotonicNonNull QueryCollector queries;
+    private @MonotonicNonNull ServiceCallCollector serviceCalls;
+    private @MonotonicNonNull MutableProfile mainThreadProfile;
+    private @MonotonicNonNull MutableProfile auxThreadProfile;
 
-    AggregateCollector(@Nullable String transactionName, int maxAggregateQueriesPerQueryType) {
-        int hardLimitMultiplierWhileBuilding = transactionName == null
-                ? AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER
-                : AdvancedConfig.TRANSACTION_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER;
-        queries = new QueryCollector(maxAggregateQueriesPerQueryType,
-                hardLimitMultiplierWhileBuilding);
+    private final int maxAggregateQueriesPerType;
+    private final int maxAggregateServiceCallsPerType;
+
+    AggregateCollector(@Nullable String transactionName, int maxAggregateQueriesPerType,
+            int maxAggregateServiceCallsPerType) {
         this.transactionName = transactionName;
+        this.maxAggregateQueriesPerType = maxAggregateQueriesPerType;
+        this.maxAggregateServiceCallsPerType = maxAggregateServiceCallsPerType;
     }
 
     void add(Transaction transaction) {
@@ -100,15 +104,39 @@ class AggregateCollector {
     }
 
     void mergeMainThreadProfile(Profile toBeMergedProfile) {
+        if (mainThreadProfile == null) {
+            mainThreadProfile = new MutableProfile();
+        }
         toBeMergedProfile.mergeIntoProfile(mainThreadProfile);
     }
 
     void mergeAuxThreadProfile(Profile toBeMergedProfile) {
+        if (auxThreadProfile == null) {
+            auxThreadProfile = new MutableProfile();
+        }
         toBeMergedProfile.mergeIntoProfile(auxThreadProfile);
     }
 
     QueryCollector getQueryCollector() {
+        if (queries == null) {
+            int queriesHardLimitMultiplierWhileBuilding = transactionName == null
+                    ? AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER
+                    : AdvancedConfig.TRANSACTION_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER;
+            queries = new QueryCollector(maxAggregateQueriesPerType,
+                    queriesHardLimitMultiplierWhileBuilding);
+        }
         return queries;
+    }
+
+    ServiceCallCollector getServiceCallCollector() {
+        if (serviceCalls == null) {
+            int serviceCallsHardLimitMultiplierWhileBuilding = transactionName == null
+                    ? AdvancedConfig.OVERALL_AGGREGATE_SERVICE_CALLS_HARD_LIMIT_MULTIPLIER
+                    : AdvancedConfig.TRANSACTION_AGGREGATE_SERVICE_CALLS_HARD_LIMIT_MULTIPLIER;
+            serviceCalls = new ServiceCallCollector(maxAggregateServiceCallsPerType,
+                    serviceCallsHardLimitMultiplierWhileBuilding);
+        }
+        return serviceCalls;
     }
 
     Aggregate build(ScratchBuffer scratchBuffer) throws IOException {
@@ -126,14 +154,19 @@ class AggregateCollector {
         if (!auxThreadStats.isNA()) {
             builder.setAuxThreadStats(auxThreadStats.toProto());
         }
-        if (mainThreadProfile.getSampleCount() > 0) {
+        if (queries != null) {
+            builder.addAllQueriesByType(queries.toProto());
+        }
+        if (serviceCalls != null) {
+            builder.addAllServiceCallsByType(serviceCalls.toProto());
+        }
+        if (mainThreadProfile != null) {
             builder.setMainThreadProfile(mainThreadProfile.toProto());
         }
-        if (auxThreadProfile.getSampleCount() > 0) {
+        if (auxThreadProfile != null) {
             builder.setAuxThreadProfile(auxThreadProfile.toProto());
         }
-        return builder.addAllQueriesByType(queries.toProto())
-                .build();
+        return builder.build();
     }
 
     private static void mergeRootTimer(CommonTimerImpl toBeMergedRootTimer,

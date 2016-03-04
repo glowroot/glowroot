@@ -67,8 +67,9 @@ public class Aggregator {
         activeIntervalCollector =
                 new AggregateIntervalCollector(clock.currentTimeMillis(), aggregateIntervalMillis,
                         configService.getAdvancedConfig()
-                                .maxAggregateTransactionsPerTransactionType(),
-                        configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
+                                .maxAggregateTransactionsPerType(),
+                        configService.getAdvancedConfig().maxAggregateQueriesPerType(),
+                        configService.getAdvancedConfig().maxAggregateServiceCallsPerType());
         // dedicated thread to aggregating transaction data
         processingThread = new Thread(new TransactionProcessor());
         processingThread.setDaemon(true);
@@ -175,8 +176,9 @@ public class Aggregator {
                 activeIntervalCollector = new AggregateIntervalCollector(
                         pendingTransaction.captureTime, aggregateIntervalMillis,
                         configService.getAdvancedConfig()
-                                .maxAggregateTransactionsPerTransactionType(),
-                        configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
+                                .maxAggregateTransactionsPerType(),
+                        configService.getAdvancedConfig().maxAggregateQueriesPerType(),
+                        configService.getAdvancedConfig().maxAggregateServiceCallsPerType());
             }
             // the synchronized block is to ensure visibility of updates to this particular
             // activeIntervalCollector
@@ -208,8 +210,9 @@ public class Aggregator {
                 activeIntervalCollector = new AggregateIntervalCollector(currentTime,
                         aggregateIntervalMillis,
                         configService.getAdvancedConfig()
-                                .maxAggregateTransactionsPerTransactionType(),
-                        configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
+                                .maxAggregateTransactionsPerType(),
+                        configService.getAdvancedConfig().maxAggregateQueriesPerType(),
+                        configService.getAdvancedConfig().maxAggregateServiceCallsPerType());
             }
         }
     }

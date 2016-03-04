@@ -21,6 +21,7 @@ import org.glowroot.agent.fat.storage.util.CappedDatabaseStats;
 public class RollupCappedDatabaseStats implements RollupCappedDatabaseStatsMXBean {
 
     static final String AGGREGATE_QUERIES = "aggregate queries";
+    static final String AGGREGATE_SERVICE_CALLS = "aggregate service calls";
     static final String AGGREGATE_PROFILES = "aggregate profiles";
 
     private final CappedDatabase cappedDatabase;
@@ -32,6 +33,11 @@ public class RollupCappedDatabaseStats implements RollupCappedDatabaseStatsMXBea
     @Override
     public CappedDatabaseStats getAggregateQueries() {
         return cappedDatabase.getStats(AGGREGATE_QUERIES);
+    }
+
+    @Override
+    public CappedDatabaseStats getAggregateServiceCalls() {
+        return cappedDatabase.getStats(AGGREGATE_SERVICE_CALLS);
     }
 
     @Override

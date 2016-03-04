@@ -32,11 +32,12 @@ message AgentConfig {
     bool weaving_timer = 1;
     // optionals used below due to non-zero default value
     OptionalInt32 immediate_partial_store_threshold_seconds = 2;
-    OptionalInt32 max_aggregate_transactions_per_transaction_type = 3;
-    OptionalInt32 max_aggregate_queries_per_query_type = 4;
-    OptionalInt32 max_trace_entries_per_transaction = 5;
-    OptionalInt32 max_stack_trace_samples_per_transaction = 6;
-    OptionalInt32 mbean_gauge_not_found_delay_seconds = 7;
+    OptionalInt32 max_aggregate_transactions_per_type = 3;
+    OptionalInt32 max_aggregate_queries_per_type = 4;
+    OptionalInt32 max_aggregate_service_calls_per_type = 5;
+    OptionalInt32 max_trace_entries_per_transaction = 6;
+    OptionalInt32 max_stack_trace_samples_per_transaction = 7;
+    OptionalInt32 mbean_gauge_not_found_delay_seconds = 8;
   }
 
   message PluginConfig {

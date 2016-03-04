@@ -19,9 +19,9 @@ import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.MessageSupplier;
-import org.glowroot.agent.plugin.api.QueryEntry;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
@@ -50,7 +50,7 @@ public class ApacheHttpClient3xAspect {
     public static class ExecuteMethodAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteMethodAdvice.class);
         @OnBefore
-        public static @Nullable QueryEntry onBefore(ThreadContext context,
+        public static @Nullable TraceEntry onBefore(ThreadContext context,
                 @SuppressWarnings("unused") @BindParameter @Nullable Object hostConfiguration,
                 @BindParameter @Nullable HttpMethod methodObj) {
             if (methodObj == null) {
@@ -69,20 +69,20 @@ public class ApacheHttpClient3xAspect {
             } else {
                 uri = uriObj.toString();
             }
-            return context.startQueryEntry("HTTP", method + Uris.stripQueryString(uri),
+            return context.startServiceCallEntry("HTTP", method + Uris.stripQueryString(uri),
                     MessageSupplier.from("http client request: {}{}", method, uri),
                     timerName);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable QueryEntry queryEntry) {
-            if (queryEntry != null) {
-                queryEntry.end();
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.end();
             }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable throwable,
-                @BindTraveler QueryEntry queryEntry) {
-            queryEntry.endWithError(throwable);
+                @BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithError(throwable);
         }
     }
 }
