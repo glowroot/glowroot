@@ -427,7 +427,7 @@ glowroot.directive('gtSelectpicker', [
 glowroot.directive('gtTimerDisplay', function() {
   return {
     scope: {
-      heading: '=',
+      heading: '@',
       flattenedTimers: '=',
       treeTimers: '=',
       transactionCount: '='

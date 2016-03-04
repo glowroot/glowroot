@@ -112,7 +112,7 @@
          style="position: relative; padding-top: 30px; margin-left: 40px;">
       <div ng-if="mainThreadFlattenedTimers.length">
         <div gt-timer-display
-             heading="'Breakdown' + (auxThreadFlattenedTimers.length ? ' (Main Thread):' : ':')"
+             heading="Breakdown{{auxThreadFlattenedTimers.length ? ' (Main Thread)' : ''}}:"
              flattened-timers="mainThreadFlattenedTimers"
              tree-timers="mainThreadTreeTimers"
              transaction-count="mergedAggregate.transactionCount">
@@ -121,7 +121,7 @@
 
       <div ng-if="auxThreadFlattenedTimers.length" style="margin-top: 10px;">
         <div gt-timer-display
-             heading="'Breakdown' + (mainThreadFlattenedTimers.length ? ' (Auxiliary Threads):' : ':')"
+             heading="Breakdown{{mainThreadFlattenedTimers.length ? ' (Auxiliary Thread)' : ''}}:"
              flattened-timers="auxThreadFlattenedTimers"
              tree-timers="auxThreadTreeTimers"
              transaction-count="mergedAggregate.transactionCount">
@@ -130,7 +130,7 @@
 
       <div ng-if="asyncFlattenedTimers.length" style="margin-top: 10px;">
         <div gt-timer-display
-             heading="'Breakdown (Async Timers):"
+             heading="Breakdown (Async Timers):"
              flattened-timers="asyncFlattenedTimers"
              tree-timers="asyncTreeTimers"
              transaction-count="mergedAggregate.transactionCount">
