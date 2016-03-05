@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,13 @@
 package org.glowroot.ui;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.List;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 import io.netty.channel.ChannelFuture;
@@ -46,10 +49,25 @@ class GlowrootLogHttpService implements UnauthenticatedHttpService {
     @Override
     public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
             throws Exception {
-
-        File glowrootLogFile = new File(logDir, "glowroot.log");
-        CharSource glowrootLogCharSource = Files.asCharSource(glowrootLogFile, Charsets.UTF_8);
-
+        String[] list = logDir.list();
+        if (list == null) {
+            throw new IllegalStateException(
+                    "Could not list directory: " + logDir.getAbsolutePath());
+        }
+        List<String> filenames = Lists.newArrayList();
+        for (String filename : list) {
+            if (filename.matches("glowroot.*\\.log")) {
+                filenames.add(filename);
+            }
+        }
+        Collections.sort(filenames);
+        List<CharSource> charSources = Lists.newArrayList();
+        for (String filename : filenames) {
+            File file = new File(logDir, filename);
+            if (file.isFile()) {
+                charSources.add(Files.asCharSource(file, Charsets.UTF_8));
+            }
+        }
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
@@ -60,7 +78,7 @@ class GlowrootLogHttpService implements UnauthenticatedHttpService {
         HttpServices.preventCaching(response);
         ctx.write(response);
         ChannelFuture future =
-                ctx.write(ChunkedInputs.from(ChunkSource.from(glowrootLogCharSource)));
+                ctx.write(ChunkedInputs.from(ChunkSource.from(CharSource.concat(charSources))));
         HttpServices.addErrorListener(future);
         if (!keepAlive) {
             HttpServices.addCloseListener(future);
