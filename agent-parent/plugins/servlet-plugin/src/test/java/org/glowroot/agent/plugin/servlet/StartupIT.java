@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,14 @@ package org.glowroot.agent.plugin.servlet;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletConfig;
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
@@ -99,6 +102,18 @@ public class StartupIT {
                 .isEqualTo("filter init: " + TestFilterInit.class.getName());
     }
 
+    @Test
+    public void testContainerInitializer() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(TestServletContainerInitializer.class);
+        // then
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(1);
+        assertThat(entries.get(0).getMessage()).isEqualTo(
+                "container initializer: " + TestServletContainerInitializer.class.getName());
+    }
+
     public static class TestServletContextListener
             implements AppUnderTest, TransactionMarker, ServletContextListener {
         @Override
@@ -150,5 +165,19 @@ public class StartupIT {
                 throws IOException, ServletException {}
         @Override
         public void destroy() {}
+    }
+
+    public static class TestServletContainerInitializer
+            implements AppUnderTest, TransactionMarker, ServletContainerInitializer {
+        @Override
+        public void executeApp() {
+            transactionMarker();
+        }
+        @Override
+        public void transactionMarker() {
+            onStartup(null, null);
+        }
+        @Override
+        public void onStartup(Set<Class<?>> c, ServletContext ctx) {}
     }
 }

@@ -73,6 +73,17 @@
       "traceEntryMessageTemplate": "filter init: {{this.class.name}}"
     },
     {
+      "className": "javax.servlet.ServletContainerInitializer",
+      "methodName": "onStartup",
+      "methodParameterTypes": [
+        "java.util.Set",
+        "javax.servlet.ServletContext"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "container initializer",
+      "traceEntryMessageTemplate": "container initializer: {{this.class.name}}"
+    },
+    {
       "className": "io.undertow.servlet.api.DeploymentManager",
       "methodName": "start",
       "methodParameterTypes": [
