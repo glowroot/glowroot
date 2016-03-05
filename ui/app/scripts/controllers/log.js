@@ -24,7 +24,7 @@ glowroot.controller('LogCtrl', [
 
     $scope.exportAsText = function () {
       var textWindow = window.open();
-      $(textWindow.document.body).html($scope.log.replace(/\n/g, '<br>').replace(/ /g, '&nbsp;'));
+      $(textWindow.document.body).html('<pre style="white-space: pre-wrap;">' + $scope.log + '</pre>');
     };
 
     $scope.refresh = function (deferred) {
