@@ -74,14 +74,13 @@ class HttpSessions {
 
     private static void captureAllSessionAttributes(HttpSession session,
             Map<String, String> captureMap) {
-        Enumeration<?> e = session.getAttributeNames();
+        Enumeration<? extends /*@Nullable*/Object> e = session.getAttributeNames();
         if (e == null) {
             return;
         }
         while (e.hasMoreElements()) {
             String attributeName = (String) e.nextElement();
             if (attributeName == null) {
-                // null check to be safe in case this is a very strange servlet container
                 continue;
             }
             String valueString;

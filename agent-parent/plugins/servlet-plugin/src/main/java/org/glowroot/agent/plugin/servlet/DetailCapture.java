@@ -21,6 +21,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
@@ -44,8 +45,37 @@ class DetailCapture {
 
     private DetailCapture() {}
 
+    static ImmutableMap<String, Object> captureRequestParameters(
+            Map</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/[]> requestParameters) {
+        ImmutableList<Pattern> capturePatterns = ServletPluginProperties.captureRequestParameters();
+        ImmutableList<Pattern> maskPatterns = ServletPluginProperties.maskRequestParameters();
+        ImmutableMap.Builder<String, Object> map = ImmutableMap.builder();
+        for (Entry</*@Nullable*/ String, /*@Nullable*/ String /*@Nullable*/[]> entry : requestParameters
+                .entrySet()) {
+            String name = entry.getKey();
+            if (name == null) {
+                continue;
+            }
+            // converted to lower case for case-insensitive matching (patterns are lower case)
+            String keyLowerCase = name.toLowerCase(Locale.ENGLISH);
+            if (!matchesOneOf(keyLowerCase, capturePatterns)) {
+                continue;
+            }
+            if (matchesOneOf(keyLowerCase, maskPatterns)) {
+                map.put(name, "****");
+                continue;
+            }
+            @Nullable
+            String[] values = entry.getValue();
+            if (values != null) {
+                set(map, name, values);
+            }
+        }
+        return map.build();
+    }
+
     static ImmutableMap<String, Object> captureRequestParameters(HttpServletRequest request) {
-        Enumeration<?> e = request.getParameterNames();
+        Enumeration<? extends /*@Nullable*/Object> e = request.getParameterNames();
         if (e == null) {
             return ImmutableMap.of();
         }
@@ -55,7 +85,6 @@ class DetailCapture {
         while (e.hasMoreElements()) {
             Object nameObj = e.nextElement();
             if (nameObj == null) {
-                // null check just to be safe in case this is a very strange servlet container
                 continue;
             }
             if (!(nameObj instanceof String)) {
@@ -73,22 +102,29 @@ class DetailCapture {
             }
             @Nullable
             String[] values = request.getParameterValues(name);
-            if (values == null) {
-                continue;
-            }
-            if (values.length == 1) {
-                String value = values[0];
-                if (value != null) {
-                    map.put(name, value);
-                }
-            } else {
-                List</*@Nullable*/ String> list =
-                        new ArrayList</*@Nullable*/ String>(values.length);
-                Collections.addAll(list, values);
-                map.put(name, list);
+            if (values != null) {
+                set(map, name, values);
             }
         }
         return map.build();
+    }
+
+    private static void set(ImmutableMap.Builder<String, Object> map, String name,
+            @Nullable String[] values) {
+        if (values == null) {
+            return;
+        }
+        if (values.length == 1) {
+            String value = values[0];
+            if (value != null) {
+                map.put(name, value);
+            }
+        } else {
+            List</*@Nullable*/ String> list =
+                    new ArrayList</*@Nullable*/ String>(values.length);
+            Collections.addAll(list, values);
+            map.put(name, list);
+        }
     }
 
     static ImmutableMap<String, Object> captureRequestHeaders(HttpServletRequest request) {
@@ -97,14 +133,13 @@ class DetailCapture {
             return ImmutableMap.of();
         }
         Map<String, Object> requestHeaders = Maps.newHashMap();
-        Enumeration<String> headerNames = request.getHeaderNames();
+        Enumeration</*@Nullable*/ String> headerNames = request.getHeaderNames();
         if (headerNames == null) {
             return ImmutableMap.of();
         }
-        for (Enumeration<String> e = headerNames; e.hasMoreElements();) {
+        for (Enumeration</*@Nullable*/ String> e = headerNames; e.hasMoreElements();) {
             String name = e.nextElement();
             if (name == null) {
-                // null check just to be safe in case this is a very strange servlet container
                 continue;
             }
             // converted to lower case for case-insensitive matching (patterns are lower case)
@@ -112,7 +147,7 @@ class DetailCapture {
             if (!matchesOneOf(keyLowerCase, capturePatterns)) {
                 continue;
             }
-            Enumeration<String> values = request.getHeaders(name);
+            Enumeration</*@Nullable*/ String> values = request.getHeaders(name);
             if (values != null) {
                 captureRequestHeader(name, values, requestHeaders);
             }
@@ -129,7 +164,7 @@ class DetailCapture {
         return false;
     }
 
-    private static void captureRequestHeader(String name, Enumeration<String> values,
+    private static void captureRequestHeader(String name, Enumeration</*@Nullable*/ String> values,
             Map<String, Object> requestHeaders) {
         if (!values.hasMoreElements()) {
             requestHeaders.put(name, "");

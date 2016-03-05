@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -110,6 +111,18 @@ public class RequestParameterIT {
     }
 
     @Test
+    public void testExtraBadRequestParameterMap() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(GetExtraBadParameterMap.class);
+        // then
+        Map<String, Object> requestParameters =
+                ResponseHeaderIT.getDetailMap(trace, "Request parameters");
+        assertThat(requestParameters).hasSize(1);
+        assertThat(requestParameters.get("n")).isEqualTo("x");
+    }
+
+    @Test
     public void testOutsideServlet() throws Exception {
         // given
         // when
@@ -140,7 +153,7 @@ public class RequestParameterIT {
         }
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-            request.getParameterMap();
+            request.getParameterValues("z");
         }
     }
 
@@ -154,7 +167,22 @@ public class RequestParameterIT {
         }
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-            request.getParameterMap();
+            request.getParameterValues("z");
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class GetExtraBadParameterMap extends TestServlet {
+        @Override
+        public void executeApp() throws Exception {
+            MockHttpServletRequest request =
+                    new ExtraBadMockHttpServletRequest("GET", "/testservlet");
+            MockHttpServletResponse response = new PatchedMockHttpServletResponse();
+            service((ServletRequest) request, (ServletResponse) response);
+        }
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            request.getParameterValues("z");
         }
     }
 
@@ -177,6 +205,27 @@ public class RequestParameterIT {
         }
 
         @Override
+        public Map<String, String[]> getParameterMap() {
+            Map<String, String[]> parameterMap = Maps.newHashMap();
+            parameterMap.put(null, new String[] {"v"});
+            parameterMap.put("m", null);
+            parameterMap.put("n", new String[] {null, "x"});
+            return parameterMap;
+        }
+    }
+
+    public static class ExtraBadMockHttpServletRequest extends MockHttpServletRequest {
+
+        public ExtraBadMockHttpServletRequest(String method, String requestURI) {
+            super(method, requestURI);
+        }
+
+        @Override
+        public Map<String, String[]> getParameterMap() {
+            throw new NullPointerException();
+        }
+
+        @Override
         public Enumeration<String> getParameterNames() {
             return Collections.enumeration(Lists.newArrayList(null, "m", "n"));
         }
@@ -189,7 +238,7 @@ public class RequestParameterIT {
             if (name.equals("n")) {
                 return new String[] {null, "x"};
             }
-            throw new AssertionError();
+            return new String[0];
         }
     }
 }
