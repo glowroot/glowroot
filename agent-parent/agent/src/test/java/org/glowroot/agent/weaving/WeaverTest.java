@@ -37,7 +37,7 @@ import org.glowroot.agent.weaving.AbstractNotMisc.ExtendsAbstractNotMisc;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.agent.weaving.SomeAspect.BasicAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BasicAnnotationBasedAdvice;
-import org.glowroot.agent.weaving.SomeAspect.BasicLowPriorityAdvice;
+import org.glowroot.agent.weaving.SomeAspect.BasicHighOrderAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BasicMiscAllConstructorAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BasicMiscConstructorAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BasicWithInnerClassAdvice;
@@ -838,7 +838,7 @@ public class WeaverTest {
         advisors.add(new AdviceBuilder(BasicAdvice.class).build());
         advisors.add(new AdviceBuilder(BindThrowableAdvice.class).build());
         advisors.add(new AdviceBuilder(ThrowInOnBeforeAdvice.class).build());
-        advisors.add(new AdviceBuilder(BasicLowPriorityAdvice.class).build());
+        advisors.add(new AdviceBuilder(BasicHighOrderAdvice.class).build());
         Supplier<List<Advice>> advisorsSupplier =
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
         AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisorsSupplier,

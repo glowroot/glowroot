@@ -105,7 +105,7 @@ public abstract class Advice {
     private static class AdviceOrdering extends Ordering<Advice> {
         @Override
         public int compare(Advice left, Advice right) {
-            int compare = Ints.compare(left.pointcut().priority(), right.pointcut().priority());
+            int compare = Ints.compare(left.pointcut().order(), right.pointcut().order());
             if (compare != 0) {
                 return compare;
             }

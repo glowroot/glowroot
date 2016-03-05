@@ -26,10 +26,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class AdviceOrderingTest {
 
     private final Pointcut pointcutPriority1 =
-            OnlyForThePriority1.class.getAnnotation(Pointcut.class);
+            OnlyForTheOrder1.class.getAnnotation(Pointcut.class);
 
     private final Pointcut pointcutPriority2 =
-            OnlyForThePriority2.class.getAnnotation(Pointcut.class);
+            OnlyForTheOrder2.class.getAnnotation(Pointcut.class);
 
     private final Pointcut pointcutTimerNameA =
             OnlyForTheTimerNameA.class.getAnnotation(Pointcut.class);
@@ -117,12 +117,12 @@ public class AdviceOrderingTest {
     }
 
     @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {}, timerName = "b",
-            priority = 1)
-    private static class OnlyForThePriority1 {}
+            order = 1)
+    private static class OnlyForTheOrder1 {}
 
     @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {}, timerName = "a",
-            priority = 2)
-    private static class OnlyForThePriority2 {}
+            order = 2)
+    private static class OnlyForTheOrder2 {}
 
     @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {}, timerName = "a")
     private static class OnlyForTheTimerNameA {}

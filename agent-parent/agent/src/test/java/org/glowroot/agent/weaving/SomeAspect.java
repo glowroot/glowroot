@@ -584,7 +584,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.weaving.Misc", methodName = "execute1",
-            methodParameterTypes = {}, priority = 1)
+            methodParameterTypes = {}, order = 1)
     public static class ThrowInOnBeforeAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -610,8 +610,8 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.weaving.Misc", methodName = "execute1",
-            methodParameterTypes = {}, priority = 1000)
-    public static class BasicLowPriorityAdvice {
+            methodParameterTypes = {}, order = 1000)
+    public static class BasicHighOrderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
             SomeAspectThreadLocals.enabledCount.increment();
