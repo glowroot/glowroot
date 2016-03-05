@@ -66,4 +66,5 @@ public @interface Pointcut {
     // * A's @OnAfter will be called after B's @OnAfter
     int order() default 0;
     String timerName() default "";
+    String supersedes() default "";
 }

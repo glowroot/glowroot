@@ -70,7 +70,7 @@ public class ResultSetFutureAspect {
     // this is the main thread waiting on async result
     @Pointcut(className = "com.datastax.driver.core.ResultSetFuture",
             methodDeclaringClassName = "java.util.concurrent.Future", methodName = "get",
-            methodParameterTypes = {".."})
+            methodParameterTypes = {".."}, supersedes = "wait on future")
     public static class FutureGetAdvice {
         @OnBefore
         public static @Nullable Timer onBefore(@BindReceiver ResultSetFutureMixin resultSetFuture) {

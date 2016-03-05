@@ -127,6 +127,7 @@ class ClassAnalyzer {
         methodAdvisors = Maps.newHashMap();
         for (ThinMethod thinMethod : thinClass.methods()) {
             List<Advice> advisors = analyzeMethod(thinMethod);
+            removeSuperseded(advisors);
             if (!advisors.isEmpty()) {
                 methodAdvisors.put(thinMethod.name() + thinMethod.desc(), advisors);
             }
@@ -208,6 +209,23 @@ class ClassAnalyzer {
         builder.addAllDeclaredOnlyAdvisors(declaredOnlyMatchingAdvisors);
         analyzedClassBuilder.addAnalyzedMethods(builder.build());
         return matchingAdvisors;
+    }
+
+    private void removeSuperseded(List<Advice> advisors) {
+        Set<String> superseded = Sets.newHashSet();
+        for (Advice advice : advisors) {
+            String supersedes = advice.pointcut().supersedes();
+            if (!supersedes.isEmpty()) {
+                superseded.add(supersedes);
+            }
+        }
+        Iterator<Advice> i = advisors.iterator();
+        while (i.hasNext()) {
+            String timerName = i.next().pointcut().timerName();
+            if (superseded.contains(timerName)) {
+                i.remove();
+            }
+        }
     }
 
     // returns mutable list if non-empty
