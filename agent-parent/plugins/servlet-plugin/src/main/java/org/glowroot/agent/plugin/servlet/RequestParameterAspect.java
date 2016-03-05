@@ -15,10 +15,8 @@
  */
 package org.glowroot.agent.plugin.servlet;
 
-import java.util.Map;
-
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
-import org.glowroot.agent.plugin.api.weaving.OnAfter;
+import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.servlet.ServletAspect.HttpServletRequest;
 
@@ -27,8 +25,8 @@ public class RequestParameterAspect {
     @Pointcut(className = "javax.servlet.ServletRequest", methodName = "getParameter*",
             methodParameterTypes = {".."}, nestingGroup = "servlet-inner-call")
     public static class GetParameterAdvice {
-        @OnAfter
-        public static void onAfter(@BindReceiver Object req) {
+        @OnReturn
+        public static void onReturn(@BindReceiver Object req) {
             if (!(req instanceof HttpServletRequest)) {
                 return;
             }
@@ -40,13 +38,9 @@ public class RequestParameterAspect {
             if (messageSupplier == null || messageSupplier.isRequestParametersCaptured()) {
                 return;
             }
-            // the request is being traced and the parameter map hasn't been captured yet
-            Map<String, String[]> parameterMap = request.getParameterMap();
-            if (parameterMap == null) {
-                return;
-            }
-            messageSupplier.setCaptureRequestParameters(
-                    DetailCapture.captureRequestParameters(parameterMap));
+            // the request is being traced and the parameters haven't been captured yet
+            messageSupplier
+                    .setCaptureRequestParameters(DetailCapture.captureRequestParameters(request));
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.plugin.servlet;
 
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +25,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -104,7 +106,7 @@ public class RequestParameterIT {
         Map<String, Object> requestParameters =
                 ResponseHeaderIT.getDetailMap(trace, "Request parameters");
         assertThat(requestParameters).hasSize(1);
-        assertThat(requestParameters.get("k")).isEqualTo("");
+        assertThat(requestParameters.get("n")).isEqualTo("x");
     }
 
     @Test
@@ -175,11 +177,19 @@ public class RequestParameterIT {
         }
 
         @Override
-        public Map<String, String[]> getParameterMap() {
-            Map<String, String[]> parameterMap = Maps.newHashMap();
-            parameterMap.put(null, new String[] {"v"});
-            parameterMap.put("k", null);
-            return parameterMap;
+        public Enumeration<String> getParameterNames() {
+            return Collections.enumeration(Lists.newArrayList(null, "m", "n"));
+        }
+
+        @Override
+        public String[] getParameterValues(String name) {
+            if (name.equals("m")) {
+                return null;
+            }
+            if (name.equals("n")) {
+                return new String[] {null, "x"};
+            }
+            throw new AssertionError();
         }
     }
 }

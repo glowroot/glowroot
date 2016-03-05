@@ -28,8 +28,8 @@ import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 
 /**
  * The detail map can contain only {@link String}, {@link Number}, {@link Boolean} and null values.
- * It can also contain nested lists of {@link String}, {@link Number} and {@link Boolean} values (in
- * particular, lists elements cannot be null or other lists or maps). And it can contain any level
+ * It can also contain nested lists of {@link String}, {@link Number}, {@link Boolean} and null
+ * values (in particular, lists elements cannot other lists or maps). And it can contain any level
  * of nested maps whose keys are {@link String} and whose values are one of the above types
  * (including lists). The detail map cannot have null keys.
  * 

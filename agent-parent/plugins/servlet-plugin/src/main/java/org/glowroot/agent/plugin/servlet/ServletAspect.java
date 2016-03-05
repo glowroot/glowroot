@@ -17,7 +17,6 @@ package org.glowroot.agent.plugin.servlet;
 
 import java.security.Principal;
 import java.util.Enumeration;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -82,8 +81,18 @@ public class ServletAspect {
         @Nullable
         String getHeader(String name);
 
+        // not using getParameterMap() because at least one web container (ATG 9.4) has a bad
+        // implementation of getParameterMap(), specifically atg.taglib.dspjsp.RequestWrapper
+        // delegates other getParameter*() methods to its delegate, but it fails to delegate
+        // getParameterMap(), which then falls through to super class
+        // atg.servlet.MutableHttpServletRequest and generates a NullPointerException since the
+        // super class was not set up expecting the call
+
         @Nullable
-        Map<String, String[]> getParameterMap();
+        Enumeration<?> getParameterNames();
+
+        @Nullable
+        String /*@Nullable*/[] getParameterValues(String name);
     }
 
     @Shim("javax.servlet.http.HttpSession")

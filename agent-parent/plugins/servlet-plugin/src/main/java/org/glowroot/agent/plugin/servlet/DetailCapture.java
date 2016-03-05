@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,15 @@
  */
 package org.glowroot.agent.plugin.servlet;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.regex.Pattern;
+
+import javax.annotation.Nullable;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -41,17 +44,24 @@ class DetailCapture {
 
     private DetailCapture() {}
 
-    static ImmutableMap<String, Object> captureRequestParameters(
-            Map<String, String[]> requestParameters) {
+    static ImmutableMap<String, Object> captureRequestParameters(HttpServletRequest request) {
+        Enumeration<?> e = request.getParameterNames();
+        if (e == null) {
+            return ImmutableMap.of();
+        }
         ImmutableList<Pattern> capturePatterns = ServletPluginProperties.captureRequestParameters();
         ImmutableList<Pattern> maskPatterns = ServletPluginProperties.maskRequestParameters();
         ImmutableMap.Builder<String, Object> map = ImmutableMap.builder();
-        for (Entry<String, String[]> entry : requestParameters.entrySet()) {
-            String name = entry.getKey();
-            if (name == null) {
+        while (e.hasMoreElements()) {
+            Object nameObj = e.nextElement();
+            if (nameObj == null) {
                 // null check just to be safe in case this is a very strange servlet container
                 continue;
             }
+            if (!(nameObj instanceof String)) {
+                continue;
+            }
+            String name = (String) nameObj;
             // converted to lower case for case-insensitive matching (patterns are lower case)
             String keyLowerCase = name.toLowerCase(Locale.ENGLISH);
             if (!matchesOneOf(keyLowerCase, capturePatterns)) {
@@ -61,14 +71,21 @@ class DetailCapture {
                 map.put(name, "****");
                 continue;
             }
-            String[] values = entry.getValue();
+            @Nullable
+            String[] values = request.getParameterValues(name);
             if (values == null) {
-                // just to be safe since ImmutableMap won't accept nulls
-                map.put(name, "");
-            } else if (values.length == 1) {
-                map.put(name, values[0]);
+                continue;
+            }
+            if (values.length == 1) {
+                String value = values[0];
+                if (value != null) {
+                    map.put(name, value);
+                }
             } else {
-                map.put(name, ImmutableList.copyOf(values));
+                List</*@Nullable*/ String> list =
+                        new ArrayList</*@Nullable*/ String>(values.length);
+                Collections.addAll(list, values);
+                map.put(name, list);
             }
         }
         return map.build();
