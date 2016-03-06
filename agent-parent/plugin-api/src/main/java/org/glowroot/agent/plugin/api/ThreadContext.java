@@ -85,6 +85,10 @@ public interface ThreadContext {
      */
     AuxThreadContext createAuxThreadContext();
 
+    void setTransactionAsync();
+
+    void completeAsyncTransaction();
+
     /**
      * Set the transaction type that is used for aggregation.
      * 

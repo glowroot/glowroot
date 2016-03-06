@@ -24,8 +24,6 @@ import javax.servlet.http.HttpServlet;
 
 import com.ning.http.client.AsyncHttpClient;
 import org.apache.catalina.Context;
-import org.apache.catalina.deploy.FilterDef;
-import org.apache.catalina.deploy.FilterMap;
 import org.apache.catalina.loader.WebappLoader;
 import org.apache.catalina.startup.Tomcat;
 import org.apache.naming.resources.VirtualDirContext;
@@ -94,16 +92,6 @@ public class AnnotatedServletIT {
             VirtualDirContext resources = new VirtualDirContext();
             resources.setExtraResourcePaths("/WEB-INF/classes=target/test-classes");
             context.setResources(resources);
-
-            FilterDef filterDef = new FilterDef();
-            filterDef.setFilterName("transaction-marker");
-            filterDef.setFilter(new TransactionMarkingFilter());
-            context.addFilterDef(filterDef);
-
-            FilterMap filterMap = new FilterMap();
-            filterMap.setFilterName("transaction-marker");
-            filterMap.addURLPattern("/*");
-            context.addFilterMap(filterMap);
 
             tomcat.start();
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();

@@ -265,9 +265,9 @@ class TraceCommonService {
         if (partial) {
             jg.writeBooleanField("partial", partial);
         }
-        boolean slow = header.getSlow();
-        if (slow) {
-            jg.writeBooleanField("slow", slow);
+        boolean async = header.getAsync();
+        if (async) {
+            jg.writeBooleanField("async", async);
         }
         jg.writeNumberField("startTime", header.getStartTime());
         jg.writeNumberField("captureTime", header.getCaptureTime());
@@ -288,13 +288,11 @@ class TraceCommonService {
             }
             jg.writeEndObject();
         }
-
         List<Trace.DetailEntry> detailEntries = header.getDetailEntryList();
         if (!detailEntries.isEmpty()) {
             jg.writeFieldName("detail");
             writeDetailEntries(detailEntries, jg);
         }
-
         if (header.hasError()) {
             jg.writeFieldName("error");
             writeError(header.getError(), jg);

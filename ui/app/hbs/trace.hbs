@@ -1,8 +1,3 @@
-{{#if error}}
-  <div>
-    <strong style="font-size: 16px;">ERROR</strong>
-  </div>
-{{/if}}
 {{#if active}}
   <div>
     <strong style="font-size: 16px;">ACTIVE</strong>
@@ -13,6 +8,16 @@
       <strong style="font-size: 16px;">PARTIAL</strong>
     </div>
   {{/if}}
+{{/if}}
+{{#if error}}
+  <div>
+    <strong style="font-size: 16px;">ERROR</strong>
+  </div>
+{{/if}}
+{{#if async}}
+  <div>
+    <strong style="font-size: 16px;">ASYNC</strong>
+  </div>
 {{/if}}
 <div class="gt-break-word gt-second-line-indent">
   <strong style="font-size: 16px;">{{headline}}</strong>

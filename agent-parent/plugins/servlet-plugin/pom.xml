@@ -99,6 +99,13 @@
       <version>8.1.19.v20160209</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <!-- executor plugin is included to test async servlets -->
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-executor-plugin</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

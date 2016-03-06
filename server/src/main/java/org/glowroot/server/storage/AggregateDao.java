@@ -103,6 +103,7 @@ public class AggregateDao implements AggregateRepository {
             .partialName("overview")
             .addColumns(ImmutableColumn.of("total_duration_nanos", "double"))
             .addColumns(ImmutableColumn.of("transaction_count", "bigint"))
+            .addColumns(ImmutableColumn.of("async_transactions", "boolean"))
             .addColumns(ImmutableColumn.of("main_thread_root_timers", "blob"))
             .addColumns(ImmutableColumn.of("aux_thread_root_timers", "blob"))
             .addColumns(ImmutableColumn.of("async_root_timers", "blob"))
@@ -417,6 +418,7 @@ public class AggregateDao implements AggregateRepository {
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
             double totalDurationNanos = row.getDouble(i++);
             long transactionCount = row.getLong(i++);
+            boolean asyncTransactions = row.getBool(i++);
             List<Aggregate.Timer> mainThreadRootTimers =
                     Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
             List<Aggregate.Timer> auxThreadRootTimers =
@@ -427,6 +429,7 @@ public class AggregateDao implements AggregateRepository {
                     .captureTime(captureTime)
                     .totalDurationNanos(totalDurationNanos)
                     .transactionCount(transactionCount)
+                    .asyncTransactions(asyncTransactions)
                     .addAllMainThreadRootTimers(mainThreadRootTimers)
                     .addAllAuxThreadRootTimers(auxThreadRootTimers)
                     .addAllAsyncRootTimers(asyncRootTimers);
@@ -731,6 +734,7 @@ public class AggregateDao implements AggregateRepository {
         }
         double totalDurationNanos = 0;
         long transactionCount = 0;
+        boolean asyncTransactions = false;
         List<MutableTimer> mainThreadRootTimers = Lists.newArrayList();
         List<MutableTimer> auxThreadRootTimers = Lists.newArrayList();
         List<MutableTimer> asyncRootTimers = Lists.newArrayList();
@@ -740,6 +744,9 @@ public class AggregateDao implements AggregateRepository {
             int i = 0;
             totalDurationNanos += row.getDouble(i++);
             transactionCount += row.getLong(i++);
+            if (row.getBool(i++)) {
+                asyncTransactions = true;
+            }
             List<Aggregate.Timer> toBeMergedMainThreadRootTimers =
                     Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
             MutableAggregate.mergeRootTimers(toBeMergedMainThreadRootTimers, mainThreadRootTimers);
@@ -775,6 +782,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setTimestamp(i++, new Date(query.to()));
         boundStatement.setDouble(i++, totalDurationNanos);
         boundStatement.setLong(i++, transactionCount);
+        boundStatement.setBool(i++, asyncTransactions);
         boundStatement.setBytes(i++,
                 Messages.toByteBuffer(MutableAggregate.toProto(mainThreadRootTimers)));
         boundStatement.setBytes(i++,
@@ -1174,6 +1182,7 @@ public class AggregateDao implements AggregateRepository {
         int i = startIndex;
         boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
         boundStatement.setLong(i++, aggregate.getTransactionCount());
+        boundStatement.setBool(i++, aggregate.getAsyncTransactions());
         List<Timer> mainThreadRootTimers = aggregate.getMainThreadRootTimerList();
         if (!mainThreadRootTimers.isEmpty()) {
             boundStatement.setBytes(i++, Messages.toByteBuffer(mainThreadRootTimers));

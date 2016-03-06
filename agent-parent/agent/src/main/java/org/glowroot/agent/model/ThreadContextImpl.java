@@ -81,7 +81,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private final @Nullable TraceEntryImpl parentThreadContextTailEntry;
 
     private final TimerImpl rootTimer;
-    // currentTimer doesn't need to be thread safe as it is only accessed by transaction thread
+    // only accessed by the thread context's thread
     private @Nullable TimerImpl currentTimer;
 
     private int currentNestingGroupId;
@@ -94,10 +94,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
     // FIXME impose simple max on number of auxiliary thread contexts (AdvancedConfig)
     private volatile @MonotonicNonNull List<ThreadContextImpl> auxThreadContexts = null;
 
+    // only accessed by the thread context's thread
+    private boolean completeAsyncTransaction;
+
     // linked lists of QueryData instances for safe concurrent access
     private @MonotonicNonNull QueryData headQueryData;
     private @MonotonicNonNull QueryData headServiceCallData;
-    // these maps are only accessed by the transaction thread
+    // these maps are only accessed by the thread context's thread
     private @MonotonicNonNull QueryDataMap queriesForFirstType;
     private @MonotonicNonNull Map<String, QueryDataMap> allQueryTypesMap;
     private @MonotonicNonNull QueryDataMap serviceCallsForFirstType;
@@ -138,10 +141,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.configService = configService;
         this.ticker = ticker;
         this.threadContextHolder = threadContextHolder;
-    }
-
-    public boolean isAuxiliary() {
-        return auxiliary;
     }
 
     public Transaction getTransaction() {
@@ -487,8 +486,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
         // memory barrier read ensures timely visibility of detach()
         transaction.memoryBarrierReadWrite();
         if (traceEntryComponent.isCompleted()) {
-            if (!auxiliary) {
-                transaction.end(endTick);
+            if (!auxiliary || completeAsyncTransaction) {
+                transaction.end(endTick, completeAsyncTransaction);
             }
             if (threadStatsComponent != null) {
                 threadStatsComponent.onComplete();
@@ -805,18 +804,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public void addErrorEntry(Throwable t) {
-        addErrorEntryInternal(null, t);
+    public void setTransactionAsync() {
+        transaction.setAsync();
     }
 
     @Override
-    public void addErrorEntry(@Nullable String message) {
-        addErrorEntryInternal(message, null);
-    }
-
-    @Override
-    public void addErrorEntry(@Nullable String message, Throwable t) {
-        addErrorEntryInternal(message, t);
+    public void completeAsyncTransaction() {
+        completeAsyncTransaction = true;
     }
 
     @Override
@@ -833,24 +827,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
             return;
         }
         transaction.setTransactionName(transactionName, priority);
-    }
-
-    @Override
-    public void setTransactionError(Throwable t) {
-        transaction.setError(null, t);
-    }
-
-    @Override
-    public void setTransactionError(@Nullable String message) {
-        if (Strings.isNullOrEmpty(message)) {
-            return;
-        }
-        transaction.setError(message, null);
-    }
-
-    @Override
-    public void setTransactionError(@Nullable String message, Throwable t) {
-        transaction.setError(message, t);
     }
 
     @Override
@@ -883,6 +859,39 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
         int thresholdMillis = Ints.saturatedCast(unit.toMillis(threshold));
         transaction.setSlowThresholdMillis(thresholdMillis, priority);
+    }
+
+    @Override
+    public void setTransactionError(Throwable t) {
+        transaction.setError(null, t);
+    }
+
+    @Override
+    public void setTransactionError(@Nullable String message) {
+        if (Strings.isNullOrEmpty(message)) {
+            return;
+        }
+        transaction.setError(message, null);
+    }
+
+    @Override
+    public void setTransactionError(@Nullable String message, Throwable t) {
+        transaction.setError(message, t);
+    }
+
+    @Override
+    public void addErrorEntry(Throwable t) {
+        addErrorEntryInternal(null, t);
+    }
+
+    @Override
+    public void addErrorEntry(@Nullable String message) {
+        addErrorEntryInternal(message, null);
+    }
+
+    @Override
+    public void addErrorEntry(@Nullable String message, Throwable t) {
+        addErrorEntryInternal(message, t);
     }
 
     public boolean isInTransaction() {

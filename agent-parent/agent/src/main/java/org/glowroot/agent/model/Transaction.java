@@ -77,6 +77,8 @@ public class Transaction {
     private final long startTime;
     private final long startTick;
 
+    private volatile boolean async;
+
     private volatile String transactionType;
     private volatile int transactionTypePriority = Integer.MIN_VALUE;
 
@@ -257,9 +259,8 @@ public class Transaction {
         return mainThreadContext.getRootEntry().getErrorMessage();
     }
 
-    public boolean isAsynchronous() {
-        // TODO
-        return false;
+    public boolean isAsync() {
+        return async;
     }
 
     public TimerImpl getMainThreadRootTimer() {
@@ -386,6 +387,10 @@ public class Transaction {
 
     public List<ThreadContextImpl> getAuxThreadContexts() {
         return mainThreadContext.getAuxThreadContexts();
+    }
+
+    public void setAsync() {
+        this.async = true;
     }
 
     public void setTransactionType(String transactionType, int priority) {
@@ -520,7 +525,10 @@ public class Transaction {
         profile.addStackTrace(threadInfo, limit);
     }
 
-    void end(long endTick) {
+    void end(long endTick, boolean completeAsyncTransaction) {
+        if (async && !completeAsyncTransaction) {
+            return;
+        }
         completed = true;
         this.endTick = endTick;
         mainThreadContext.endCheckAuxThreadContexts();

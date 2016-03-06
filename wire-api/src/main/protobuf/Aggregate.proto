@@ -24,18 +24,19 @@ message Aggregate {
   double total_duration_nanos = 1;
   int64 transaction_count = 2;
   int64 error_count = 3;
-  repeated Timer main_thread_root_timer = 4;
-  repeated Timer aux_thread_root_timer = 5;
-  repeated Timer async_root_timer = 6; // children are also async, so sum of time in children can
+  bool async_transactions = 4; // true if there was at least one async transaction in aggregate
+  repeated Timer main_thread_root_timer = 5;
+  repeated Timer aux_thread_root_timer = 6;
+  repeated Timer async_root_timer = 7; // children are also async, so sum of time in children can
                                        // be greater than time in parent
-  ThreadStats main_thread_stats = 7;
-  ThreadStats aux_thread_stats = 8;
-  Histogram duration_nanos_histogram = 9; // histogram values are in nanoseconds with microsecond
-                                          // precision
-  repeated QueriesByType queries_by_type = 10;
-  repeated ServiceCallsByType service_calls_by_type = 11;
-  Profile main_thread_profile = 12;
-  Profile aux_thread_profile = 13;
+  ThreadStats main_thread_stats = 8;
+  ThreadStats aux_thread_stats = 9;
+  Histogram duration_nanos_histogram = 10; // histogram values are in nanoseconds with microsecond
+                                           // precision
+  repeated QueriesByType queries_by_type = 11;
+  repeated ServiceCallsByType service_calls_by_type = 12;
+  Profile main_thread_profile = 13;
+  Profile aux_thread_profile = 14;
 
   message OptionalDouble {
     double value = 1;

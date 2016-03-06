@@ -149,6 +149,7 @@ public interface AggregateRepository {
         // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
         double totalDurationNanos();
         long transactionCount();
+        boolean asyncTransactions();
         List<Aggregate.Timer> mainThreadRootTimers();
         List<Aggregate.Timer> auxThreadRootTimers();
         List<Aggregate.Timer> asyncRootTimers();

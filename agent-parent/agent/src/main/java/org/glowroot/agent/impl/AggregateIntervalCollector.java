@@ -170,12 +170,7 @@ public class AggregateIntervalCollector {
             synchronized (aggregateCollector) {
                 aggregateCollector.add(transaction);
                 TimerImpl mainThreadRootTimer = transaction.getMainThreadRootTimer();
-                if (transaction.isAsynchronous()) {
-                    // the main thread is treated as just another auxiliary thread
-                    aggregateCollector.mergeAuxThreadRootTimer(mainThreadRootTimer);
-                } else {
-                    aggregateCollector.mergeMainThreadRootTimer(mainThreadRootTimer);
-                }
+                aggregateCollector.mergeMainThreadRootTimer(mainThreadRootTimer);
                 for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
                     aggregateCollector.mergeAuxThreadRootTimer(auxThreadContext.getRootTimer());
                 }
@@ -186,12 +181,7 @@ public class AggregateIntervalCollector {
                 transaction.mergeServiceCallsInto(aggregateCollector.getServiceCallCollector());
                 Profile mainThreadProfile = transaction.getMainThreadProfile();
                 if (mainThreadProfile != null) {
-                    if (transaction.isAsynchronous()) {
-                        // the main thread is treated as just another auxiliary thread
-                        aggregateCollector.mergeAuxThreadProfile(mainThreadProfile);
-                    } else {
-                        aggregateCollector.mergeMainThreadProfile(mainThreadProfile);
-                    }
+                    aggregateCollector.mergeMainThreadProfile(mainThreadProfile);
                 }
                 Profile auxThreadProfile = transaction.getAuxThreadProfile();
                 if (auxThreadProfile != null) {

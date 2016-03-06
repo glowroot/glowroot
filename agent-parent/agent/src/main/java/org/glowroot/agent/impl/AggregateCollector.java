@@ -48,6 +48,7 @@ class AggregateCollector {
     private long totalDurationNanos;
     private long transactionCount;
     private long errorCount;
+    private boolean asyncTransactions;
     private final List<MutableTimer> mainThreadRootTimers = Lists.newArrayList();
     private final List<MutableTimer> auxThreadRootTimers = Lists.newArrayList();
     private final List<MutableTimer> asyncRootTimers = Lists.newArrayList();
@@ -79,12 +80,10 @@ class AggregateCollector {
         if (transaction.getErrorMessage() != null) {
             errorCount++;
         }
-        if (transaction.isAsynchronous()) {
-            // the main thread is treated as just another auxiliary thread
-            this.auxThreadStats.addThreadStats(transaction.getMainThreadStats());
-        } else {
-            this.mainThreadStats.addThreadStats(transaction.getMainThreadStats());
+        if (transaction.isAsync()) {
+            asyncTransactions = true;
         }
+        this.mainThreadStats.addThreadStats(transaction.getMainThreadStats());
         for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
             this.auxThreadStats.addThreadStats(auxThreadContext.getThreadStats());
         }
@@ -144,6 +143,7 @@ class AggregateCollector {
                 .setTotalDurationNanos(totalDurationNanos)
                 .setTransactionCount(transactionCount)
                 .setErrorCount(errorCount)
+                .setAsyncTransactions(asyncTransactions)
                 .addAllMainThreadRootTimer(getRootTimersProtobuf(mainThreadRootTimers))
                 .addAllAuxThreadRootTimer(getRootTimersProtobuf(auxThreadRootTimers))
                 .addAllAsyncRootTimer(getRootTimersProtobuf(asyncRootTimers))

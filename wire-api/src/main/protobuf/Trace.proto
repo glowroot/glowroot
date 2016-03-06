@@ -18,8 +18,9 @@ message Trace {
   Profile aux_thread_profile = 5;
 
   message Header {
-    bool partial = 2;
-    bool slow = 3;
+    bool partial = 1;
+    bool slow = 2;
+    bool async = 3;
     int64 start_time = 4;
     int64 capture_time = 5;
     int64 duration_nanos = 6;

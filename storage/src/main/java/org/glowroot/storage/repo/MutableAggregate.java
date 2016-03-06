@@ -41,6 +41,7 @@ public class MutableAggregate {
     private double totalDurationNanos;
     private long transactionCount;
     private long errorCount;
+    private boolean asyncTransactions;
     private final List<MutableTimer> mainThreadRootTimers = Lists.newArrayList();
     private final List<MutableTimer> auxThreadRootTimers = Lists.newArrayList();
     private final List<MutableTimer> asyncRootTimers = Lists.newArrayList();
@@ -79,6 +80,12 @@ public class MutableAggregate {
         this.errorCount += errorCount;
     }
 
+    public void addAsyncTransactions(boolean asyncTransactions) {
+        if (asyncTransactions) {
+            this.asyncTransactions = true;
+        }
+    }
+
     public void mergeMainThreadRootTimers(List<Aggregate.Timer> toBeMergedRootTimers) {
         mergeRootTimers(toBeMergedRootTimers, mainThreadRootTimers);
     }
@@ -109,6 +116,7 @@ public class MutableAggregate {
                 .setTotalDurationNanos(totalDurationNanos)
                 .setTransactionCount(transactionCount)
                 .setErrorCount(errorCount)
+                .setAsyncTransactions(asyncTransactions)
                 .addAllMainThreadRootTimer(toProto(mainThreadRootTimers))
                 .addAllAuxThreadRootTimer(toProto(auxThreadRootTimers))
                 .addAllAsyncRootTimer(toProto(asyncRootTimers))
@@ -139,6 +147,7 @@ public class MutableAggregate {
                 .captureTime(captureTime)
                 .totalDurationNanos(totalDurationNanos)
                 .transactionCount(transactionCount)
+                .asyncTransactions(asyncTransactions)
                 .mainThreadRootTimers(toProto(mainThreadRootTimers))
                 .auxThreadRootTimers(toProto(auxThreadRootTimers))
                 .asyncRootTimers(toProto(asyncRootTimers));

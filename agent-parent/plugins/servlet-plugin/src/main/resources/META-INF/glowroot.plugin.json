@@ -106,6 +106,7 @@
   ],
   "aspects": [
     "org.glowroot.agent.plugin.servlet.ServletAspect",
+    "org.glowroot.agent.plugin.servlet.AsyncServletAspect",
     "org.glowroot.agent.plugin.servlet.RequestParameterAspect",
     "org.glowroot.agent.plugin.servlet.ResponseHeaderAspect",
     "org.glowroot.agent.plugin.servlet.SessionAspect",

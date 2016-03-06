@@ -117,6 +117,22 @@ public class ExecutorAspect {
         }
     }
 
+    @Pointcut(className = "javax.servlet.AsyncContext", methodName = "start",
+            methodParameterTypes = {"java.lang.Runnable"})
+    public static class StartAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindParameter Runnable runnable) {
+            // this class may have been loaded before class file transformer was added to jvm
+            return runnable instanceof RunnableCallableMixin;
+        }
+        @OnBefore
+        public static void onBefore(ThreadContext context, @BindParameter Object runnable) {
+            RunnableCallableMixin runnableMixin = (RunnableCallableMixin) runnable;
+            AuxThreadContext asyncContext = context.createAuxThreadContext();
+            runnableMixin.glowroot$setAuxAsyncContext(asyncContext);
+        }
+    }
+
     @Pointcut(className = "java.util.concurrent.FutureTask", methodName = "<init>",
             methodParameterTypes = {"java.util.concurrent.Callable"})
     public static class FutureTaskInitWithCallableAdvice {

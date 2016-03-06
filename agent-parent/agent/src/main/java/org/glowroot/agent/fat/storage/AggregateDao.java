@@ -87,6 +87,7 @@ public class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("total_duration_nanos", ColumnType.DOUBLE),
                     ImmutableColumn.of("transaction_count", ColumnType.BIGINT),
                     ImmutableColumn.of("error_count", ColumnType.BIGINT),
+                    ImmutableColumn.of("async_transactions", ColumnType.BOOLEAN),
                     ImmutableColumn.of("queries_capped_id", ColumnType.BIGINT),
                     ImmutableColumn.of("service_calls_capped_id", ColumnType.BIGINT),
                     ImmutableColumn.of("main_thread_profile_capped_id", ColumnType.BIGINT),
@@ -106,6 +107,7 @@ public class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("total_duration_nanos", ColumnType.DOUBLE),
                     ImmutableColumn.of("transaction_count", ColumnType.BIGINT),
                     ImmutableColumn.of("error_count", ColumnType.BIGINT),
+                    ImmutableColumn.of("async_transactions", ColumnType.BOOLEAN),
                     ImmutableColumn.of("queries_capped_id", ColumnType.BIGINT),
                     ImmutableColumn.of("service_calls_capped_id", ColumnType.BIGINT),
                     ImmutableColumn.of("main_thread_profile_capped_id", ColumnType.BIGINT),
@@ -392,6 +394,7 @@ public class AggregateDao implements AggregateRepository {
         double totalDurationNanos = resultSet.getDouble(i++);
         long transactionCount = resultSet.getLong(i++);
         long errorCount = resultSet.getLong(i++);
+        boolean asyncTransactions = resultSet.getBoolean(i++);
         Long queriesCappedId = RowMappers.getLong(resultSet, i++);
         Long serviceCallsCappedId = RowMappers.getLong(resultSet, i++);
         Long mainThreadProfileCappedId = RowMappers.getLong(resultSet, i++);
@@ -406,6 +409,7 @@ public class AggregateDao implements AggregateRepository {
         mergedAggregate.addTotalDurationNanos(totalDurationNanos);
         mergedAggregate.addTransactionCount(transactionCount);
         mergedAggregate.addErrorCount(errorCount);
+        mergedAggregate.addAsyncTransactions(asyncTransactions);
         if (mainThreadRootTimers != null) {
             mergedAggregate.mergeMainThreadRootTimers(
                     readMessages(mainThreadRootTimers, Aggregate.Timer.parser()));
@@ -633,11 +637,11 @@ public class AggregateDao implements AggregateRepository {
                 sb.append(" transaction_name,");
             }
             sb.append(" capture_time, total_duration_nanos, transaction_count, error_count,"
-                    + " queries_capped_id, service_calls_capped_id, main_thread_profile_capped_id,"
-                    + " async_thread_profile_capped_id, main_thread_root_timers,"
-                    + " aux_thread_root_timers, async_root_timers, main_thread_stats,"
-                    + " aux_thread_stats, duration_nanos_histogram) values"
-                    + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?");
+                    + " async_transactions, queries_capped_id, service_calls_capped_id,"
+                    + " main_thread_profile_capped_id, async_thread_profile_capped_id,"
+                    + " main_thread_root_timers, aux_thread_root_timers, async_root_timers,"
+                    + " main_thread_stats, aux_thread_stats, duration_nanos_histogram) values"
+                    + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?");
             if (transactionName != null) {
                 sb.append(", ?");
             }
@@ -657,6 +661,7 @@ public class AggregateDao implements AggregateRepository {
             preparedStatement.setDouble(i++, aggregate.getTotalDurationNanos());
             preparedStatement.setLong(i++, aggregate.getTransactionCount());
             preparedStatement.setLong(i++, aggregate.getErrorCount());
+            preparedStatement.setBoolean(i++, aggregate.getAsyncTransactions());
             RowMappers.setLong(preparedStatement, i++, queriesCappedId);
             RowMappers.setLong(preparedStatement, i++, serviceCallsCappedId);
             RowMappers.setLong(preparedStatement, i++, mainThreadProfileCappedId);
@@ -930,8 +935,8 @@ public class AggregateDao implements AggregateRepository {
             String tableName = getTableName(query);
             String transactionNameCriteria = getTransactionNameCriteria(query);
             return "select capture_time, total_duration_nanos, transaction_count,"
-                    + " main_thread_root_timers, aux_thread_root_timers, async_root_timers,"
-                    + " main_thread_stats, aux_thread_stats from " + tableName
+                    + " async_transactions, main_thread_root_timers, aux_thread_root_timers,"
+                    + " async_root_timers, main_thread_stats, aux_thread_stats from " + tableName
                     + " where transaction_type = ?" + transactionNameCriteria
                     + " and capture_time >= ? and capture_time <= ? order by capture_time";
         }
@@ -947,7 +952,8 @@ public class AggregateDao implements AggregateRepository {
             ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
                     .captureTime(resultSet.getLong(i++))
                     .totalDurationNanos(resultSet.getDouble(i++))
-                    .transactionCount(resultSet.getLong(i++));
+                    .transactionCount(resultSet.getLong(i++))
+                    .asyncTransactions(resultSet.getBoolean(i++));
             byte[] mainThreadRootTimers = resultSet.getBytes(i++);
             if (mainThreadRootTimers != null) {
                 builder.mainThreadRootTimers(
@@ -1062,12 +1068,12 @@ public class AggregateDao implements AggregateRepository {
         @Override
         public @Untainted String getSql() {
             return "select transaction_type, total_duration_nanos, transaction_count, error_count,"
-                    + " queries_capped_id, service_calls_capped_id, main_thread_profile_capped_id,"
-                    + " async_thread_profile_capped_id, main_thread_root_timers,"
-                    + " aux_thread_root_timers, async_root_timers, main_thread_stats,"
-                    + " aux_thread_stats, duration_nanos_histogram from aggregate_tt_rollup_"
-                    + castUntainted(fromRollupLevel) + " where capture_time > ?"
-                    + " and capture_time <= ? order by transaction_type";
+                    + " async_transactions, queries_capped_id, service_calls_capped_id,"
+                    + " main_thread_profile_capped_id, async_thread_profile_capped_id,"
+                    + " main_thread_root_timers, aux_thread_root_timers, async_root_timers,"
+                    + " main_thread_stats, aux_thread_stats, duration_nanos_histogram"
+                    + " from aggregate_tt_rollup_" + castUntainted(fromRollupLevel)
+                    + " where capture_time > ? and capture_time <= ? order by transaction_type";
         }
 
         @Override
@@ -1128,13 +1134,13 @@ public class AggregateDao implements AggregateRepository {
         @Override
         public @Untainted String getSql() {
             return "select transaction_type, transaction_name, total_duration_nanos,"
-                    + " transaction_count, error_count, queries_capped_id, service_calls_capped_id,"
-                    + " main_thread_profile_capped_id, async_thread_profile_capped_id,"
-                    + " main_thread_root_timers, aux_thread_root_timers, async_root_timers,"
-                    + " main_thread_stats, aux_thread_stats, duration_nanos_histogram"
-                    + " from aggregate_tn_rollup_" + castUntainted(fromRollupLevel)
-                    + " where capture_time > ? and capture_time <= ? order by transaction_type,"
-                    + " transaction_name";
+                    + " transaction_count, error_count, async_transactions, queries_capped_id,"
+                    + " service_calls_capped_id, main_thread_profile_capped_id,"
+                    + " async_thread_profile_capped_id, main_thread_root_timers,"
+                    + " aux_thread_root_timers, async_root_timers, main_thread_stats,"
+                    + " aux_thread_stats, duration_nanos_histogram from aggregate_tn_rollup_"
+                    + castUntainted(fromRollupLevel) + " where capture_time > ?"
+                    + " and capture_time <= ? order by transaction_type, transaction_name";
         }
 
         @Override

@@ -23,7 +23,6 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import org.glowroot.common.util.NotAvailableAware;
@@ -106,6 +105,7 @@ public class TraceCreator {
         Trace.Header.Builder builder = Trace.Header.newBuilder();
         builder.setPartial(partial);
         builder.setSlow(slow);
+        builder.setAsync(transaction.isAsync());
         ErrorMessage errorMessage = transaction.getErrorMessage();
         builder.setStartTime(transaction.getStartTime());
         builder.setCaptureTime(captureTime);
@@ -135,37 +135,22 @@ public class TraceCreator {
         for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
             auxThreadRootTimers.add(auxThreadContext.getRootTimer());
         }
-        if (transaction.isAsynchronous()) {
-            // the main thread is treated as just another auxiliary thread
-            builder.addAllAuxThreadRootTimer(mergeRootTimers(
-                    Iterables.concat(ImmutableList.of(mainThreadRootTimer), auxThreadRootTimers)));
-        } else {
-            builder.setMainThreadRootTimer(mainThreadRootTimer.toProto());
-            builder.addAllAuxThreadRootTimer(mergeRootTimers(auxThreadRootTimers));
-        }
+        builder.setMainThreadRootTimer(mainThreadRootTimer.toProto());
+        builder.addAllAuxThreadRootTimer(mergeRootTimers(auxThreadRootTimers));
         builder.addAllAsyncRootTimer(mergeRootTimers(transaction.getAsyncRootTimers()));
         ThreadStats mainThreadStats = transaction.getMainThreadStats();
         List<ThreadStats> auxThreadStats = Lists.newArrayList();
         for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
             auxThreadStats.add(auxThreadContext.getThreadStats());
         }
-        if (transaction.isAsynchronous()) {
-            // the main thread is treated as just another auxiliary thread
-            auxThreadStats.add(mainThreadStats);
-            Trace.ThreadStats auxThreadStatsProto = mergeThreadStats(auxThreadStats);
-            if (auxThreadStatsProto != null) {
-                builder.setAuxThreadStats(auxThreadStatsProto);
-            }
-        } else {
-            Trace.ThreadStats mainThreadStatsProto =
-                    mergeThreadStats(ImmutableList.of(mainThreadStats));
-            if (mainThreadStatsProto != null) {
-                builder.setMainThreadStats(mainThreadStatsProto);
-            }
-            Trace.ThreadStats auxThreadStatsProto = mergeThreadStats(auxThreadStats);
-            if (auxThreadStatsProto != null) {
-                builder.setAuxThreadStats(auxThreadStatsProto);
-            }
+        Trace.ThreadStats mainThreadStatsProto =
+                mergeThreadStats(ImmutableList.of(mainThreadStats));
+        if (mainThreadStatsProto != null) {
+            builder.setMainThreadStats(mainThreadStatsProto);
+        }
+        Trace.ThreadStats auxThreadStatsProto = mergeThreadStats(auxThreadStats);
+        if (auxThreadStatsProto != null) {
+            builder.setAuxThreadStats(auxThreadStatsProto);
         }
         builder.setEntryCount(entryCount);
         builder.setEntryLimitExceeded(transaction.isEntryLimitExceeded());
