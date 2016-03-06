@@ -67,7 +67,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class JavaagentContainer implements Container {
 
-    private static final boolean XDEBUG = Boolean.getBoolean("glowroot.test.xdbug");
+    private static final boolean XDEBUG = Boolean.getBoolean("glowroot.test.xdebug");
 
     private static final Logger logger = LoggerFactory.getLogger(JavaagentContainer.class);
 
@@ -373,6 +373,10 @@ public class JavaagentContainer implements Container {
                     || name.matches("freemarker-.*\\.jar")
                     || name.matches("spring-.*\\.jar")
                     || name.matches("jersey-.*\\.jar")
+                    || name.matches("grails-.*\\.jar")
+                    || name.matches("reactor-.*\\.jar")
+                    || name.matches("sitemesh-.*\\.jar")
+                    || name.matches("groovy-.*\\.jar")
                     || name.matches("hibernate-.*\\.jar")
                     || name.matches("cxf-.*\\.jar")) {
                 // TODO ideally all test dependencies would be in system classpath, but not sure how

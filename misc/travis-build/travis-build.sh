@@ -3,7 +3,9 @@
 # java.security.egd is needed for low-entropy docker containers
 # /dev/./urandom (as opposed to simply /dev/urandom) is needed prior to Java 8
 # (see https://docs.oracle.com/javase/8/docs/technotes/guides/security/enhancements-8.html)
-surefire_jvm_args="-Xmx512m -Djava.security.egd=file:/dev/./urandom"
+#
+# MaxPermSize bump is needed for running grails plugin tests
+surefire_jvm_args="-Xmx512m -XX:MaxPermSize=128m -Djava.security.egd=file:/dev/./urandom"
 
 case "$1" in
 
