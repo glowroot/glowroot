@@ -107,7 +107,7 @@ HandlebarsRendering = (function () {
       }
       if (timer.childTimers) {
         $.each(timer.childTimers, function (index, nestedTimer) {
-          traverse(nestedTimer, parentTimerNames.concat(timer));
+          traverse(nestedTimer, parentTimerNames.concat(timer.name));
         });
       }
     }
