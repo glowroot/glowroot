@@ -196,12 +196,7 @@ public class AdviceBuilder {
             builder.travelerType(onBeforeAdvice.getReturnType());
         }
         checkForBindThreadContext(parameters);
-        for (AdviceParameter parameter : parameters) {
-            if (parameter.kind() == ParameterKind.OPTIONAL_THREAD_CONTEXT) {
-                builder.hasBindOptionalThreadContext(true);
-                break;
-            }
-        }
+        checkForBindOptionalThreadContext(parameters);
         hasOnBeforeAdvice = true;
     }
 
@@ -220,6 +215,7 @@ public class AdviceBuilder {
         builder.onReturnAdvice(Method.getMethod(method));
         builder.addAllOnReturnParameters(parameters);
         checkForBindThreadContext(parameters);
+        checkForBindOptionalThreadContext(parameters);
         hasOnReturnAdvice = true;
     }
 
@@ -239,6 +235,7 @@ public class AdviceBuilder {
         builder.onThrowAdvice(asmMethod);
         builder.addAllOnThrowParameters(parameters);
         checkForBindThreadContext(parameters);
+        checkForBindOptionalThreadContext(parameters);
         hasOnThrowAdvice = true;
     }
 
@@ -254,6 +251,7 @@ public class AdviceBuilder {
                 method.getParameterTypes(), onAfterBindAnnotationTypes, OnAfter.class);
         builder.addAllOnAfterParameters(parameters);
         checkForBindThreadContext(parameters);
+        checkForBindOptionalThreadContext(parameters);
         hasOnAfterAdvice = true;
     }
 
@@ -262,6 +260,15 @@ public class AdviceBuilder {
             if (parameter.kind() == ParameterKind.THREAD_CONTEXT) {
                 builder.hasBindThreadContext(true);
                 return;
+            }
+        }
+    }
+
+    private void checkForBindOptionalThreadContext(List<AdviceParameter> parameters) {
+        for (AdviceParameter parameter : parameters) {
+            if (parameter.kind() == ParameterKind.OPTIONAL_THREAD_CONTEXT) {
+                builder.hasBindOptionalThreadContext(true);
+                break;
             }
         }
     }
