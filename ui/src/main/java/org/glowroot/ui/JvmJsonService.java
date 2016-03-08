@@ -218,10 +218,10 @@ class JvmJsonService {
     }
 
     @POST("/backend/jvm/gc")
-    void performGC(String queryString) throws Exception {
+    void performGC(String content) throws Exception {
         checkNotNull(liveJvmService);
-        String agentId = getAgentId(queryString);
-        liveJvmService.gc(agentId);
+        GcRequest request = mapper.readValue(content, ImmutableGcRequest.class);
+        liveJvmService.gc(request.agentId());
     }
 
     @GET("/backend/jvm/mbean-tree")
@@ -397,21 +397,26 @@ class JvmJsonService {
     }
 
     @Value.Immutable
-    interface MBeanAttributeMapRequest {
-        String agentId();
-        String objectName();
-    }
-
-    @Value.Immutable
     interface HeapDumpRequest {
         String agentId();
         String directory();
     }
 
     @Value.Immutable
+    interface GcRequest {
+        String agentId();
+    }
+
+    @Value.Immutable
     interface MBeanTreeRequest {
         String agentId();
         List<String> expanded();
+    }
+
+    @Value.Immutable
+    interface MBeanAttributeMapRequest {
+        String agentId();
+        String objectName();
     }
 
     interface MBeanTreeNode {

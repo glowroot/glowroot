@@ -38,5 +38,15 @@ glowroot.controller('JvmGcCtrl', [
           })
           .error(httpErrors.handler($scope, deferred));
     };
+
+    $http.get('backend/jvm/agent-connected?agent-id=' + encodeURIComponent($scope.agentId))
+        .success(function (data) {
+          $scope.loaded = true;
+          $scope.agentNotConnected = !data;
+          if ($scope.agentNotConnected) {
+            return;
+          }
+        })
+        .error(httpErrors.handler($scope));
   }
 ]);
