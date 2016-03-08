@@ -217,7 +217,7 @@ class JvmJsonService {
         return sw.toString();
     }
 
-    @POST("/backend/jvm/perform-gc")
+    @POST("/backend/jvm/gc")
     void performGC(String queryString) throws Exception {
         checkNotNull(liveJvmService);
         String agentId = getAgentId(queryString);

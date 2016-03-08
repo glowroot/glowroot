@@ -337,6 +337,11 @@ glowroot.config([
       templateUrl: 'views/jvm/thread-dump.html',
       controller: 'JvmThreadDumpCtrl'
     });
+    $stateProvider.state('jvm.gc', {
+      url: '/gc?agent-id&agent-rollup',
+      templateUrl: 'views/jvm/gc.html',
+      controller: 'JvmGcCtrl'
+    });
     $stateProvider.state('jvm.heapDump', {
       url: '/heap-dump?agent-id&agent-rollup',
       templateUrl: 'views/jvm/heap-dump.html',
