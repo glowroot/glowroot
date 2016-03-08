@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -577,7 +578,7 @@ public class TraceDao implements TraceRepository {
 
     @Override
     public ErrorMessageResult readErrorMessages(TraceQuery query, ErrorMessageFilter filter,
-            long resolutionMillis, long liveCaptureTime, int limit) throws Exception {
+            long resolutionMillis, int limit) throws Exception {
         BoundStatement boundStatement;
         String transactionName = query.transactionName();
         if (transactionName == null) {
@@ -601,6 +602,9 @@ public class TraceDao implements TraceRepository {
         for (Row row : results) {
             long captureTime = checkNotNull(row.getTimestamp(0)).getTime();
             String errorMessage = checkNotNull(row.getString(1));
+            if (!matches(filter, errorMessage)) {
+                continue;
+            }
             captureTime =
                     (long) Math.ceil(captureTime / (double) resolutionMillis) * resolutionMillis;
             pointCounts.computeIfAbsent(captureTime, k -> new MutableLong()).increment();
@@ -714,8 +718,8 @@ public class TraceDao implements TraceRepository {
         return Trace.Header.parseFrom(ByteString.copyFrom(bytes));
     }
 
-    private Result<TracePoint> processPoints(ResultSet results, TracePointFilter filter, int limit,
-            boolean errorPoints) throws IOException {
+    private static Result<TracePoint> processPoints(ResultSet results, TracePointFilter filter,
+            int limit, boolean errorPoints) throws IOException {
         List<TracePoint> tracePoints = Lists.newArrayList();
         for (Row row : results) {
             int i = 0;
@@ -772,6 +776,21 @@ public class TraceDao implements TraceRepository {
         } else {
             return new Result<>(tracePoints, false);
         }
+    }
+
+    private static boolean matches(ErrorMessageFilter filter, String errorMessage) {
+        String upper = errorMessage.toUpperCase(Locale.ENGLISH);
+        for (String include : filter.includes()) {
+            if (!upper.contains(include.toUpperCase(Locale.ENGLISH))) {
+                return false;
+            }
+        }
+        for (String exclude : filter.excludes()) {
+            if (upper.contains(exclude.toUpperCase(Locale.ENGLISH))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Value.Immutable

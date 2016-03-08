@@ -103,21 +103,14 @@ glowroot.controller('ErrorMessagesCtrl', [
     }
 
     $scope.tracesQueryString = function (errorMessage) {
-      var query = {};
-      if (!$scope.layout.fat) {
-        query['agent-rollup'] = $scope.agentRollup;
-      }
-      query['transaction-type'] = $scope.transactionType;
-      query['transaction-name'] = $scope.transactionName;
-      query.from = $scope.range.chartFrom;
-      query.to = $scope.range.chartTo;
+      var query = $scope.buildQueryObject();
       if (errorMessage.message.length <= 1000) {
-        query.errorComparator = 'equals';
-        query.error = errorMessage.message;
+        query.errorMessageComparator = 'equals';
+        query.errorMessage = errorMessage.message;
       } else {
-        query.errorComparator = 'begins';
+        query.errorMessageComparator = 'begins';
         // this keeps url length under control
-        query.error = errorMessage.message.substring(0, 1000);
+        query.errorMessage = errorMessage.message.substring(0, 1000);
       }
       return queryStrings.encodeObject(query);
     };

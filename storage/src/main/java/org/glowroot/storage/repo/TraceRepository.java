@@ -47,7 +47,7 @@ public interface TraceRepository {
     long readErrorCount(TraceQuery query) throws Exception;
 
     ErrorMessageResult readErrorMessages(TraceQuery query, ErrorMessageFilter filter,
-            long resolutionMillis, long liveCaptureTime, int limit) throws Exception;
+            long resolutionMillis, int limit) throws Exception;
 
     @Nullable
     HeaderPlus readHeaderPlus(String agentId, String traceId) throws Exception;

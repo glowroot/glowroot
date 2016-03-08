@@ -485,7 +485,7 @@ glowroot.controller('TracesCtrl', [
       }
       if (appliedFilter.errorMessage) {
         query['error-message-comparator'] = appliedFilter.errorMessageComparator;
-        query.errorMessage = appliedFilter.errorMessage;
+        query['error-message'] = appliedFilter.errorMessage;
       }
       if (appliedFilter.user) {
         query['user-comparator'] = appliedFilter.userComparator;

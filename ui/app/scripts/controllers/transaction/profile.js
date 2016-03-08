@@ -63,20 +63,8 @@ glowroot.controller('TransactionProfileCtrl', [
     };
 
     $scope.flameGraphHref = function () {
-      var query = {};
-      if (!$scope.layout.fat) {
-        query['agent-rollup'] = $scope.agentRollup;
-      }
-      query['transaction-type'] = $scope.transactionType;
-      query['transaction-name'] = $scope.transactionName;
-      if ($scope.range.last) {
-        if ($scope.range.last !== 4 * 60 * 60 * 1000) {
-          query.last = $scope.range.last;
-        }
-      } else {
-        query.from = $scope.range.chartFrom;
-        query.to = $scope.range.chartTo;
-      }
+      var query = $scope.buildQueryObject();
+      delete query['summary-sort-order'];
       if ($scope.filter) {
         query.filter = $scope.filter;
       }

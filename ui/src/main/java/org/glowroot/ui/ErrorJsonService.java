@@ -44,6 +44,7 @@ import org.glowroot.storage.repo.ImmutableTraceQuery;
 import org.glowroot.storage.repo.ImmutableTransactionQuery;
 import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.TraceRepository;
+import org.glowroot.storage.repo.TraceRepository.ErrorMessageCount;
 import org.glowroot.storage.repo.TraceRepository.ErrorMessageFilter;
 import org.glowroot.storage.repo.TraceRepository.ErrorMessagePoint;
 import org.glowroot.storage.repo.TraceRepository.ErrorMessageResult;
@@ -99,14 +100,7 @@ class ErrorJsonService {
                 .addAllIncludes(request.include())
                 .addAllExcludes(request.exclude())
                 .build();
-        // need live capture time to match up between unfilteredErrorPoints and traceErrorPoints
-        // so that transactionCountMap.get(traceErrorPoint.captureTime()) will work
         long liveCaptureTime = clock.currentTimeMillis();
-        long resolutionMillis =
-                rollupLevelService.getDataPointIntervalMillis(query.from(), query.to());
-        ErrorMessageResult result = traceRepository.readErrorMessages(query, filter,
-                resolutionMillis, liveCaptureTime, request.errorMessageLimit());
-
         List<ThroughputAggregate> throughputAggregates =
                 transactionCommonService.getThroughputAggregates(transactionQuery);
         DataSeries dataSeries = new DataSeries(null);
@@ -116,23 +110,42 @@ class ErrorJsonService {
             transactionCountMap.put(unfilteredErrorPoint.captureTime(),
                     unfilteredErrorPoint.transactionCount());
         }
-        List<ErrorPoint> errorPoints = Lists.newArrayList();
-        for (ErrorMessagePoint traceErrorPoint : result.points()) {
-            Long transactionCount = transactionCountMap.get(traceErrorPoint.captureTime());
-            if (transactionCount != null) {
-                errorPoints.add(ImmutableErrorPoint.of(traceErrorPoint.captureTime(),
-                        traceErrorPoint.errorCount(), transactionCount));
+        List<ErrorMessageCount> records = Lists.newArrayList();
+        boolean moreAvailable = false;
+        if (!throughputAggregates.isEmpty()) {
+            long maxCaptureTime =
+                    throughputAggregates.get(throughputAggregates.size() - 1).captureTime();
+            long resolutionMillis =
+                    rollupLevelService.getDataPointIntervalMillis(query.from(), query.to());
+            ErrorMessageResult result = traceRepository.readErrorMessages(
+                    ImmutableTraceQuery.builder().copyFrom(query).to(maxCaptureTime).build(),
+                    filter, resolutionMillis, request.errorMessageLimit());
+            List<ErrorPoint> errorPoints = Lists.newArrayList();
+            for (ErrorMessagePoint traceErrorPoint : result.points()) {
+                long captureTime = traceErrorPoint.captureTime();
+                if (captureTime > maxCaptureTime) {
+                    // traceRepository.readErrorMessages() returns capture time on resolutionMillis,
+                    // while throughputAggregates may return last capture time at a finer rollup
+                    // level
+                    captureTime = maxCaptureTime;
+                }
+                Long transactionCount = transactionCountMap.get(captureTime);
+                if (transactionCount != null) {
+                    errorPoints.add(ImmutableErrorPoint.of(captureTime,
+                            traceErrorPoint.errorCount(), transactionCount));
+                }
             }
+            populateDataSeries(query, errorPoints, dataSeries, dataSeriesExtra, liveCaptureTime);
+            records = result.counts().records();
+            moreAvailable = result.counts().moreAvailable();
         }
-        populateDataSeries(query, errorPoints, dataSeries, dataSeriesExtra, liveCaptureTime);
-
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeObjectField("dataSeries", dataSeries);
         jg.writeObjectField("dataSeriesExtra", dataSeriesExtra);
-        jg.writeObjectField("errorMessages", result.counts().records());
-        jg.writeBooleanField("moreErrorMessagesAvailable", result.counts().moreAvailable());
+        jg.writeObjectField("errorMessages", records);
+        jg.writeBooleanField("moreErrorMessagesAvailable", moreAvailable);
         jg.writeEndObject();
         jg.close();
         return sb.toString();

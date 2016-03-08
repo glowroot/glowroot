@@ -201,9 +201,9 @@ public class TraceDao implements TraceRepository {
 
     @Override
     public ErrorMessageResult readErrorMessages(TraceQuery query, ErrorMessageFilter filter,
-            long resolutionMillis, long liveCaptureTime, int limit) throws Exception {
-        List<ErrorMessagePoint> points = dataSource
-                .query(new ErrorPointQuery(query, filter, resolutionMillis, liveCaptureTime));
+            long resolutionMillis, int limit) throws Exception {
+        List<ErrorMessagePoint> points =
+                dataSource.query(new ErrorPointQuery(query, filter, resolutionMillis));
         List<ErrorMessageCount> counts =
                 dataSource.query(new ErrorMessageCountQuery(query, filter, limit + 1));
         // one extra record over the limit is fetched above to identify if the limit was hit
@@ -503,14 +503,12 @@ public class TraceDao implements TraceRepository {
         private final TraceQuery query;
         private final ErrorMessageFilter filter;
         private final long resolutionMillis;
-        private final long liveCaptureTime;
 
-        private ErrorPointQuery(TraceQuery query, ErrorMessageFilter filter, long resolutionMillis,
-                long liveCaptureTime) {
+        private ErrorPointQuery(TraceQuery query, ErrorMessageFilter filter,
+                long resolutionMillis) {
             this.query = query;
             this.filter = filter;
             this.resolutionMillis = resolutionMillis;
-            this.liveCaptureTime = liveCaptureTime;
         }
 
         @Override
@@ -534,7 +532,7 @@ public class TraceDao implements TraceRepository {
 
         @Override
         public ErrorMessagePoint mapRow(ResultSet resultSet) throws SQLException {
-            long captureTime = Math.min(resultSet.getLong(1), liveCaptureTime);
+            long captureTime = resultSet.getLong(1);
             long errorCount = resultSet.getLong(2);
             return ImmutableErrorMessagePoint.of(captureTime, errorCount);
         }
