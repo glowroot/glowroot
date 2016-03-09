@@ -46,16 +46,16 @@ public class ExecutorAspect {
     @Mixin({"java.lang.Runnable", "java.util.concurrent.Callable"})
     public abstract static class RunnableImpl implements RunnableCallableMixin {
 
-        private volatile @Nullable AuxThreadContext glowroot$auxThreadContext;
+        private volatile @Nullable AuxThreadContext glowroot$auxContext;
 
         @Override
         public @Nullable AuxThreadContext glowroot$getAuxThreadContext() {
-            return glowroot$auxThreadContext;
+            return glowroot$auxContext;
         }
 
         @Override
-        public void glowroot$setAuxAsyncContext(@Nullable AuxThreadContext auxThreadContext) {
-            this.glowroot$auxThreadContext = auxThreadContext;
+        public void glowroot$setAuxContext(@Nullable AuxThreadContext auxContext) {
+            this.glowroot$auxContext = auxContext;
         }
     }
 
@@ -85,7 +85,7 @@ public class ExecutorAspect {
         @Nullable
         AuxThreadContext glowroot$getAuxThreadContext();
 
-        void glowroot$setAuxAsyncContext(@Nullable AuxThreadContext auxThreadContext);
+        void glowroot$setAuxContext(@Nullable AuxThreadContext auxContext);
     }
 
     // the method names are verbose to avoid conflict since they will become methods in all classes
@@ -112,8 +112,8 @@ public class ExecutorAspect {
         @OnBefore
         public static void onBefore(ThreadContext context, @BindParameter Object runnableCallable) {
             RunnableCallableMixin runnableCallableMixin = (RunnableCallableMixin) runnableCallable;
-            AuxThreadContext asyncContext = context.createAuxThreadContext();
-            runnableCallableMixin.glowroot$setAuxAsyncContext(asyncContext);
+            AuxThreadContext auxContext = context.createAuxThreadContext();
+            runnableCallableMixin.glowroot$setAuxContext(auxContext);
         }
     }
 
@@ -128,8 +128,8 @@ public class ExecutorAspect {
         @OnBefore
         public static void onBefore(ThreadContext context, @BindParameter Object runnable) {
             RunnableCallableMixin runnableMixin = (RunnableCallableMixin) runnable;
-            AuxThreadContext asyncContext = context.createAuxThreadContext();
-            runnableMixin.glowroot$setAuxAsyncContext(asyncContext);
+            AuxThreadContext auxContext = context.createAuxThreadContext();
+            runnableMixin.glowroot$setAuxContext(auxContext);
         }
     }
 
@@ -173,11 +173,11 @@ public class ExecutorAspect {
         @OnBefore
         public static void onBefore(ThreadContext context, @BindParameter Object runnableCallable) {
             FutureTaskMixin futureTaskMixin = (FutureTaskMixin) runnableCallable;
-            AuxThreadContext asyncContext = context.createAuxThreadContext();
+            AuxThreadContext auxContext = context.createAuxThreadContext();
             RunnableCallableMixin innerRunnableCallable =
                     futureTaskMixin.glowroot$getInnerRunnableCallable();
             if (innerRunnableCallable != null) {
-                innerRunnableCallable.glowroot$setAuxAsyncContext(asyncContext);
+                innerRunnableCallable.glowroot$setAuxContext(auxContext);
             }
         }
     }
@@ -216,11 +216,11 @@ public class ExecutorAspect {
                 return null;
             }
             RunnableCallableMixin runnableMixin = (RunnableCallableMixin) runnable;
-            AuxThreadContext asyncContext = runnableMixin.glowroot$getAuxThreadContext();
-            if (asyncContext == null) {
+            AuxThreadContext auxContext = runnableMixin.glowroot$getAuxThreadContext();
+            if (auxContext == null) {
                 return null;
             }
-            return asyncContext.start();
+            return auxContext.start();
         }
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
@@ -242,7 +242,7 @@ public class ExecutorAspect {
                 return;
             }
             RunnableCallableMixin runnableMixin = (RunnableCallableMixin) runnable;
-            runnableMixin.glowroot$setAuxAsyncContext(null);
+            runnableMixin.glowroot$setAuxContext(null);
         }
     }
 
@@ -256,11 +256,11 @@ public class ExecutorAspect {
                 return null;
             }
             RunnableCallableMixin callableMixin = (RunnableCallableMixin) callable;
-            AuxThreadContext asyncContext = callableMixin.glowroot$getAuxThreadContext();
-            if (asyncContext == null) {
+            AuxThreadContext auxContext = callableMixin.glowroot$getAuxThreadContext();
+            if (auxContext == null) {
                 return null;
             }
-            return asyncContext.start();
+            return auxContext.start();
         }
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
@@ -282,7 +282,7 @@ public class ExecutorAspect {
                 return;
             }
             RunnableCallableMixin runnableMixin = (RunnableCallableMixin) runnable;
-            runnableMixin.glowroot$setAuxAsyncContext(null);
+            runnableMixin.glowroot$setAuxContext(null);
         }
     }
 }
