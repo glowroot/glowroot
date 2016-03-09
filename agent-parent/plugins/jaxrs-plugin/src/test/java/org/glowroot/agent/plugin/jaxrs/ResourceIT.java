@@ -19,16 +19,22 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Response;
 
 import com.ning.http.client.AsyncHttpClient;
 import org.apache.catalina.Context;
 import org.apache.catalina.loader.WebappLoader;
 import org.apache.catalina.startup.Tomcat;
+import org.glowroot.agent.it.harness.TransactionMarker;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -47,7 +53,7 @@ public class ResourceIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.create();
+        container = Containers.createJavaagent();
     }
 
     @AfterClass
@@ -162,6 +168,25 @@ public class ResourceIT {
                 + " org.glowroot.agent.plugin.jaxrs.ResourceIT$HelloResource.echo()");
     }
 
+    @Test
+    public void shouldTransformTransactionToAsyncTransaction() throws Exception {
+        // when
+        Trace trace = container.execute(WithNormalServletMappingCallSuspended.class);
+        // then
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /suspended/*");
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(3);
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+                + " org.glowroot.agent.plugin.jaxrs.ResourceIT$SuspendedResource.log()");
+
+        entry = entries.get(1);
+        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+
+        entry = entries.get(2);
+        assertThat(entry.getMessage()).isEqualTo("jaxrs async response");
+    }
+
     public static class WithNormalServletMapping extends InvokeJaxrsResourceInTomcat {
         @Override
         public void executeApp() throws Exception {
@@ -205,7 +230,25 @@ public class ResourceIT {
         }
     }
 
-    private static abstract class InvokeJaxrsResourceInTomcat implements AppUnderTest {
+    public static class WithNormalServletMappingCallSuspended extends InvokeJaxrsResourceInTomcat {
+
+        @Override
+        public void transactionMarker() throws Exception {
+            executeApp("webapp4", "/suspended/1");
+        }
+
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp4", "/suspended/1");
+        }
+    }
+
+    private static abstract class InvokeJaxrsResourceInTomcat implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void transactionMarker() throws Exception {
+
+        }
 
         public void executeApp(String webapp, String url) throws Exception {
             int port = getAvailablePort();
@@ -223,6 +266,7 @@ public class ResourceIT {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
             asyncHttpClient.prepareGet("http://localhost:" + port + url).execute().get();
             asyncHttpClient.close();
+
             tomcat.stop();
             tomcat.destroy();
         }
@@ -248,6 +292,32 @@ public class ResourceIT {
         @GET
         public Response echo() {
             return Response.status(200).build();
+        }
+    }
+
+    @Path("suspended")
+    public static class SuspendedResource {
+
+        private final ExecutorService executor = Executors.newCachedThreadPool();
+
+        @GET
+        @Path("{param}")
+        public void log(@PathParam("param") final String msg, @Suspended final AsyncResponse asyncResponse) {
+
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    asyncResponse.resume(Response.status(200).entity(msg).build());
+                }
+            });
+
+            executor.shutdown();
+
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                // ignore
+            }
         }
     }
 }
