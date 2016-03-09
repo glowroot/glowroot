@@ -106,6 +106,11 @@ public class ResourceAspect {
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context,
                 @BindMethodMeta ResourceMethodMeta resourceMethodMeta) {
+
+            if (resourceMethodMeta.isAsync()) {
+                context.setTransactionAsync();
+            }
+
             if (useAltTransactionNaming.value()) {
                 context.setTransactionName(resourceMethodMeta.getAltTransactionName(),
                         Priority.CORE_PLUGIN);
@@ -143,6 +148,26 @@ public class ResourceAspect {
                     return servletPath + resourcePath;
                 }
             }
+        }
+    }
+
+    @Pointcut(className = "javax.ws.rs.container.AsyncResponse", methodName = "resume",
+            methodParameterTypes = {".."}, timerName = "jaxrs async response")
+    public static class AsyncResponseAdvice {
+        private static final TimerName timerName = Agent.getTimerName(AsyncResponseAdvice.class);
+        @OnBefore
+        public static TraceEntry onBefore(ThreadContext context) {
+            return context.startTraceEntry(MessageSupplier.from("jaxrs async response"), timerName);
+        }
+        @OnReturn
+        public static void onReturn(ThreadContext context, @BindTraveler TraceEntry traceEntry) {
+            traceEntry.end();
+            context.completeAsyncTransaction();
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable throwable,
+                @BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithError(throwable);
         }
     }
 

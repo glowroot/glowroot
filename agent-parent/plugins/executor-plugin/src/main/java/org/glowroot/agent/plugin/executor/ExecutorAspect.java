@@ -165,19 +165,28 @@ public class ExecutorAspect {
     @Pointcut(className = "java.util.concurrent.Executor", methodName = "execute",
             methodParameterTypes = {"java.lang.Runnable"}, nestingGroup = "executor")
     public static class ExecuteAdvice {
+
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object runnableCallable) {
-            // only capture execute if called on FutureTask
-            return runnableCallable instanceof FutureTaskMixin;
+            // this class may have been loaded before class file transformer was added to jvm
+            return runnableCallable instanceof RunnableCallableMixin;
         }
+
         @OnBefore
         public static void onBefore(ThreadContext context, @BindParameter Object runnableCallable) {
-            FutureTaskMixin futureTaskMixin = (FutureTaskMixin) runnableCallable;
-            AuxThreadContext auxContext = context.createAuxThreadContext();
-            RunnableCallableMixin innerRunnableCallable =
-                    futureTaskMixin.glowroot$getInnerRunnableCallable();
-            if (innerRunnableCallable != null) {
-                innerRunnableCallable.glowroot$setAuxContext(auxContext);
+            if (runnableCallable instanceof FutureTaskMixin) {
+                FutureTaskMixin futureTaskMixin = (FutureTaskMixin) runnableCallable;
+                AuxThreadContext auxContext = context.createAuxThreadContext();
+                RunnableCallableMixin innerRunnableCallable =
+                        futureTaskMixin.glowroot$getInnerRunnableCallable();
+                if (innerRunnableCallable != null) {
+                    innerRunnableCallable.glowroot$setAuxContext(auxContext);
+                }
+            } else if (context.isTransactionAsync()) {
+                RunnableCallableMixin runnableCallableMixin =
+                        (RunnableCallableMixin) runnableCallable;
+                AuxThreadContext asyncContext = context.createAuxThreadContext();
+                runnableCallableMixin.glowroot$setAuxContext(asyncContext);
             }
         }
     }

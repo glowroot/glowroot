@@ -15,6 +15,9 @@
  */
 package org.glowroot.agent.plugin.jaxrs;
 
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
+
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,4 +41,14 @@ public class ResourceMethodMetaTest {
         assertThat(ResourceMethodMeta.combine("/abc", "")).isEqualTo("/abc");
         assertThat(ResourceMethodMeta.combine("", "/xyz")).isEqualTo("/xyz");
     }
+
+    @Test
+    public void shouldReturnAsync() throws NoSuchMethodException {
+        ResourceMethodMeta meta = new ResourceMethodMeta(ResourceMethodMetaTest.class
+                .getMethod("methodContainingSuspended", AsyncResponse.class));
+        assertThat(meta.isAsync()).isTrue();
+    }
+
+    public void methodContainingSuspended(
+            @SuppressWarnings("unused") @Suspended AsyncResponse response) {}
 }

@@ -15,9 +15,6 @@
  */
 package org.glowroot.agent.plugin.jaxrs;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.util.List;
 
 import javax.ws.rs.GET;
@@ -25,16 +22,11 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
 
-import com.ning.http.client.AsyncHttpClient;
-import org.apache.catalina.Context;
-import org.apache.catalina.loader.WebappLoader;
-import org.apache.catalina.startup.Tomcat;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -202,36 +194,6 @@ public class ResourceIT {
         @Override
         public void executeApp() throws Exception {
             executeApp("webapp3", "/");
-        }
-    }
-
-    private static abstract class InvokeJaxrsResourceInTomcat implements AppUnderTest {
-
-        public void executeApp(String webapp, String url) throws Exception {
-            int port = getAvailablePort();
-            Tomcat tomcat = new Tomcat();
-            tomcat.setBaseDir("target/tomcat");
-            tomcat.setPort(port);
-            Context context = tomcat.addWebapp("",
-                    new File("src/test/resources/" + webapp).getAbsolutePath());
-
-            WebappLoader webappLoader =
-                    new WebappLoader(InvokeJaxrsResourceInTomcat.class.getClassLoader());
-            context.setLoader(webappLoader);
-
-            tomcat.start();
-            AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://localhost:" + port + url).execute().get();
-            asyncHttpClient.close();
-            tomcat.stop();
-            tomcat.destroy();
-        }
-
-        private static int getAvailablePort() throws IOException {
-            ServerSocket serverSocket = new ServerSocket(0);
-            int port = serverSocket.getLocalPort();
-            serverSocket.close();
-            return port;
         }
     }
 

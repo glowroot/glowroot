@@ -6,6 +6,7 @@
   <filter>
     <filter-name>transaction-marker</filter-name>
     <filter-class>org.glowroot.agent.plugin.jaxrs.TransactionMarkingFilter</filter-class>
+    <async-supported>true</async-supported>
   </filter>
   <filter-mapping>
     <filter-name>transaction-marker</filter-name>
@@ -19,6 +20,7 @@
       <param-name>jersey.config.server.provider.packages</param-name>
       <param-value>org.glowroot.agent.plugin.jaxrs</param-value>
     </init-param>
+    <async-supported>true</async-supported>
   </servlet>
   <servlet-mapping>
     <servlet-name>jersey</servlet-name>

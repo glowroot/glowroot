@@ -35,6 +35,8 @@ public class ResourceMethodMeta {
 
     private final String altTransactionName;
 
+    private final boolean async;
+
     public ResourceMethodMeta(Method method) {
         Class<?> resourceClass = method.getDeclaringClass();
         resourceClassName = resourceClass.getName();
@@ -43,6 +45,7 @@ public class ResourceMethodMeta {
         String methodPath = getPath(method);
         path = combine(classPath, methodPath);
         altTransactionName = resourceClass.getSimpleName() + "#" + methodName;
+        async = containsSuspended(method.getParameterAnnotations());
     }
 
     String getResourceClassName() {
@@ -59,6 +62,10 @@ public class ResourceMethodMeta {
 
     String getAltTransactionName() {
         return altTransactionName;
+    }
+
+    boolean isAsync() {
+        return async;
     }
 
     private static @Nullable String getPath(AnnotatedElement annotatedElement) {
@@ -106,5 +113,17 @@ public class ResourceMethodMeta {
 
     private static String replacePathSegmentsWithAsterisk(String path) {
         return path.replaceAll("\\{[^}]*\\}", "*");
+    }
+
+    private static boolean containsSuspended(Annotation[][] parameterAnnotations) {
+        for (Annotation[] annotationsForOneParameter : parameterAnnotations) {
+            for (Annotation annotation : annotationsForOneParameter) {
+                if (annotation.annotationType().getName()
+                        .equals("javax.ws.rs.container.Suspended")) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

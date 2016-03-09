@@ -87,6 +87,8 @@ public interface ThreadContext {
 
     void setTransactionAsync();
 
+    boolean isTransactionAsync();
+
     void completeAsyncTransaction();
 
     /**
