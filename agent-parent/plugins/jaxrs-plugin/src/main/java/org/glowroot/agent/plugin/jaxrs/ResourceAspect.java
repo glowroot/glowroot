@@ -17,23 +17,10 @@ package org.glowroot.agent.plugin.jaxrs;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.MessageSupplier;
-import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.*;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
-import org.glowroot.agent.plugin.api.TimerName;
-import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
-import org.glowroot.agent.plugin.api.weaving.BindMethodMeta;
-import org.glowroot.agent.plugin.api.weaving.BindParameter;
-import org.glowroot.agent.plugin.api.weaving.BindThrowable;
-import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.OnAfter;
-import org.glowroot.agent.plugin.api.weaving.OnBefore;
-import org.glowroot.agent.plugin.api.weaving.OnReturn;
-import org.glowroot.agent.plugin.api.weaving.OnThrow;
-import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.api.weaving.Shim;
+import org.glowroot.agent.plugin.api.weaving.*;
 
 // TODO optimize away servletPath thread local, e.g. store servlet path in thread context via
 // servlet plugin and retrieve here
@@ -106,6 +93,11 @@ public class ResourceAspect {
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context,
                 @BindMethodMeta ResourceMethodMeta resourceMethodMeta) {
+
+            if (resourceMethodMeta.isAsynchronous()) {
+                context.setTransactionAsync();
+            }
+
             if (useAltTransactionNaming.value()) {
                 context.setTransactionName(resourceMethodMeta.getAltTransactionName(),
                         Priority.CORE_PLUGIN);
@@ -120,7 +112,7 @@ public class ResourceAspect {
                     timerName);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+        public static void onReturn(ThreadContext context, @BindTraveler TraceEntry traceEntry) {
             traceEntry.end();
         }
         @OnThrow
@@ -146,8 +138,128 @@ public class ResourceAspect {
         }
     }
 
+    @Pointcut(className = "javax.ws.rs.container.AsyncResponse",
+            methodName = "resume",
+            methodParameterTypes = {".."}, timerName = "jaxrs async response")
+    public static class AsyncResponseAdvice {
+        private static final TimerName timerName = Agent.getTimerName(AsyncResponseAdvice.class);
+        @OnBefore
+        public static TraceEntry onBefore(ThreadContext context) {
+            return context.startTraceEntry(MessageSupplier.from("jaxrs async response"), timerName);
+        }
+
+        @OnAfter
+        public static void onAfter(ThreadContext context, @BindTraveler TraceEntry traceEntry) {
+            context.completeAsyncTransaction();
+            traceEntry.end();
+        }
+
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable throwable,
+                                   @BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithError(throwable);
+        }
+
+    }
+
     private static class RequestInfo {
         private @Nullable String method;
         private @Nullable String servletPath;
     }
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Put this here for test purposes. Should be removed, and there should be a test that covers two plugins.
+    // the method names are verbose to avoid conflict since they will become methods in all classes
+    // that extend java.lang.Runnable and/or java.util.concurrent.Callable
+    public interface RunnableCallableMixin {
+
+        @Nullable
+        AuxThreadContext glowroot$getAuxThreadContext();
+
+        void glowroot$setAuxAsyncContext(@Nullable AuxThreadContext auxThreadContext);
+    }
+
+    // the field and method names are verbose to avoid conflict since they will become fields
+    // and methods in all classes that extend java.lang.Runnable and/or
+    // java.util.concurrent.Callable
+    @Mixin({"java.lang.Runnable", "java.util.concurrent.Callable"})
+    public abstract static class RunnableImpl implements RunnableCallableMixin {
+
+        private volatile @Nullable AuxThreadContext glowroot$auxThreadContext;
+
+        @Override
+        public @Nullable AuxThreadContext glowroot$getAuxThreadContext() {
+            return glowroot$auxThreadContext;
+        }
+
+        @Override
+        public void glowroot$setAuxAsyncContext(@Nullable AuxThreadContext auxThreadContext) {
+            this.glowroot$auxThreadContext = auxThreadContext;
+        }
+    }
+
+
+    @Pointcut(className = "java.util.concurrent.Executor", methodName = "execute",
+            methodParameterTypes = {"java.lang.Runnable"}, nestingGroup = "executor")
+    public static class ExecuteAdvice {
+
+        @IsEnabled
+        public static boolean isEnabled(@BindParameter Object runnableCallable) {
+            // this class may have been loaded before class file transformer was added to jvm
+            return runnableCallable instanceof RunnableCallableMixin;
+        }
+
+        @OnBefore
+        public static void onBefore(ThreadContext context, @BindParameter Object runnableCallable) {
+            if (context.isTransactionAsync()) {
+                RunnableCallableMixin runnableCallableMixin = (RunnableCallableMixin) runnableCallable;
+                AuxThreadContext asyncContext = context.createAuxThreadContext();
+                runnableCallableMixin.glowroot$setAuxAsyncContext(asyncContext);
+            }
+        }
+    }
+
+    @Pointcut(className = "java.lang.Runnable", methodName = "run", methodParameterTypes = {})
+    public static class RunnableAdvice {
+        @OnBefore
+        public static @Nullable TraceEntry onBefore(@BindReceiver Runnable runnable) {
+            if (!(runnable instanceof RunnableCallableMixin)) {
+                // this class was loaded before class file transformer was added to jvm
+                return null;
+            }
+            RunnableCallableMixin runnableMixin = (RunnableCallableMixin) runnable;
+            AuxThreadContext asyncContext = runnableMixin.glowroot$getAuxThreadContext();
+            if (asyncContext == null) {
+                return null;
+            }
+            return asyncContext.start();
+        }
+        @OnReturn
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.end();
+            }
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t,
+                                   @BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.endWithError(t);
+            }
+        }
+        @OnAfter
+        public static void onAfter(@BindReceiver Runnable runnable) {
+            if (!(runnable instanceof RunnableCallableMixin)) {
+                // this class was loaded before class file transformer was added to jvm
+                return;
+            }
+            RunnableCallableMixin runnableMixin = (RunnableCallableMixin) runnable;
+            runnableMixin.glowroot$setAuxAsyncContext(null);
+        }
+    }
+
+
+
 }

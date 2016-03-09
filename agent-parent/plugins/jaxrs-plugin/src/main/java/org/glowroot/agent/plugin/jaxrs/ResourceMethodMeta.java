@@ -35,6 +35,8 @@ public class ResourceMethodMeta {
 
     private final String altTransactionName;
 
+    private final boolean asynchronous;
+
     public ResourceMethodMeta(Method method) {
         Class<?> resourceClass = method.getDeclaringClass();
         resourceClassName = resourceClass.getName();
@@ -43,6 +45,7 @@ public class ResourceMethodMeta {
         String methodPath = getPath(method);
         path = combine(classPath, methodPath);
         altTransactionName = resourceClass.getSimpleName() + "#" + methodName;
+        asynchronous = containsSuspended(method.getParameterAnnotations());
     }
 
     String getResourceClassName() {
@@ -61,7 +64,13 @@ public class ResourceMethodMeta {
         return altTransactionName;
     }
 
-    private static @Nullable String getPath(AnnotatedElement annotatedElement) {
+    boolean isAsynchronous() {
+        return asynchronous;
+    }
+
+    private static
+    @Nullable
+    String getPath(AnnotatedElement annotatedElement) {
         try {
             for (Annotation annotation : annotatedElement.getDeclaredAnnotations()) {
                 Class<?> annotationClass = annotation.annotationType();
@@ -75,8 +84,10 @@ public class ResourceMethodMeta {
         return null;
     }
 
-    private static @Nullable String getPathAttribute(Class<?> pathClass, Object path,
-            String attributeName) throws Exception {
+    private static
+    @Nullable
+    String getPathAttribute(Class<?> pathClass, Object path,
+                            String attributeName) throws Exception {
         Method method = pathClass.getMethod(attributeName);
         return (String) method.invoke(path);
     }
@@ -106,5 +117,16 @@ public class ResourceMethodMeta {
 
     private static String replacePathSegmentsWithAsterisk(String path) {
         return path.replaceAll("\\{[^}]*\\}", "*");
+    }
+
+    private static boolean containsSuspended(Annotation[][] parameterAnnotations) {
+        for (int i = 0; i < parameterAnnotations.length; i++) {
+            for (int j = 0; j < parameterAnnotations[i].length; j++) {
+                if (parameterAnnotations[i][j].annotationType().getName().equals("javax.ws.rs.container.Suspended")) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
