@@ -165,22 +165,23 @@ public class ExecutorAspect {
     @Pointcut(className = "java.util.concurrent.Executor", methodName = "execute",
             methodParameterTypes = {"java.lang.Runnable"}, nestingGroup = "executor")
     public static class ExecuteAdvice {
+
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object runnableCallable) {
-            // only capture execute if called on FutureTask
-            return runnableCallable instanceof FutureTaskMixin;
+            // this class may have been loaded before class file transformer was added to jvm
+            return runnableCallable instanceof RunnableCallableMixin;
         }
+
         @OnBefore
         public static void onBefore(ThreadContext context, @BindParameter Object runnableCallable) {
-            FutureTaskMixin futureTaskMixin = (FutureTaskMixin) runnableCallable;
-            AuxThreadContext asyncContext = context.createAuxThreadContext();
-            RunnableCallableMixin innerRunnableCallable =
-                    futureTaskMixin.glowroot$getInnerRunnableCallable();
-            if (innerRunnableCallable != null) {
-                innerRunnableCallable.glowroot$setAuxAsyncContext(asyncContext);
+            if (context.isTransactionAsync()) {
+                RunnableCallableMixin runnableCallableMixin = (RunnableCallableMixin) runnableCallable;
+                AuxThreadContext asyncContext = context.createAuxThreadContext();
+                runnableCallableMixin.glowroot$setAuxAsyncContext(asyncContext);
             }
         }
     }
+
 
     // this method uses submit() and returns Future, but none of the callers use/wait on the Future
     @Pointcut(className = "net.sf.ehcache.store.disk.DiskStorageFactory", methodName = "schedule",
