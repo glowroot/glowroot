@@ -304,10 +304,17 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void insertInstrumentationConfig(String agentId,
-            AgentConfig.InstrumentationConfig instrumentationConfig) throws IOException {
+            AgentConfig.InstrumentationConfig instrumentationConfig) throws Exception {
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
                     Lists.newArrayList(configService.getInstrumentationConfigs());
+            // check for duplicate
+            String version = Versions.getVersion(instrumentationConfig);
+            for (InstrumentationConfig loopConfig : configs) {
+                if (Versions.getVersion(loopConfig.toProto()).equals(version)) {
+                    throw new IllegalStateException("This exact instrumentation already exists");
+                }
+            }
             configs.add(InstrumentationConfig.create(instrumentationConfig));
             configService.updateInstrumentationConfigs(configs);
         }
@@ -337,21 +344,42 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteInstrumentationConfig(String agentId, String version) throws Exception {
+    public void deleteInstrumentationConfigs(String agentId, List<String> versions)
+            throws Exception {
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
                     Lists.newArrayList(configService.getInstrumentationConfigs());
-            boolean found = false;
+            List<String> remainingVersions = Lists.newArrayList(versions);
             for (ListIterator<InstrumentationConfig> i = configs.listIterator(); i.hasNext();) {
                 String currVersion = Versions.getVersion(i.next().toProto());
-                if (version.equals(currVersion)) {
+                if (remainingVersions.contains(currVersion)) {
                     i.remove();
-                    found = true;
-                    break;
+                    remainingVersions.remove(currVersion);
                 }
             }
-            if (!found) {
+            if (!remainingVersions.isEmpty()) {
                 throw new OptimisticLockException();
+            }
+            configService.updateInstrumentationConfigs(configs);
+        }
+    }
+
+    @Override
+    public void insertInstrumentationConfigs(String agentId,
+            List<AgentConfig.InstrumentationConfig> instrumentationConfigs) throws Exception {
+        synchronized (writeLock) {
+            List<InstrumentationConfig> configs =
+                    Lists.newArrayList(configService.getInstrumentationConfigs());
+            for (AgentConfig.InstrumentationConfig instrumentationConfig : instrumentationConfigs) {
+                // check for duplicate
+                String version = Versions.getVersion(instrumentationConfig);
+                for (InstrumentationConfig loopConfig : configs) {
+                    if (Versions.getVersion(loopConfig.toProto()).equals(version)) {
+                        throw new IllegalStateException(
+                                "This exact instrumentation already exists");
+                    }
+                }
+                configs.add(InstrumentationConfig.create(instrumentationConfig));
             }
             configService.updateInstrumentationConfigs(configs);
         }
@@ -450,6 +478,13 @@ class ConfigRepositoryImpl implements ConfigRepository {
     public void insertAlertConfig(String agentId, AlertConfig alertConfig) throws Exception {
         synchronized (writeLock) {
             List<AlertConfig> configs = Lists.newArrayList(alertConfigs);
+            // check for duplicate
+            String version = alertConfig.version();
+            for (AlertConfig loopConfig : configs) {
+                if (loopConfig.version().equals(version)) {
+                    throw new IllegalStateException("This exact alert already exists");
+                }
+            }
             configs.add(alertConfig);
             configService.updateOtherConfig(ALERTS_KEY, configs);
             this.alertConfigs = ImmutableList.copyOf(configs);

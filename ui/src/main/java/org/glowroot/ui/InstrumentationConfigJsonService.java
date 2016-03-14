@@ -175,9 +175,21 @@ class InstrumentationConfigJsonService {
 
     @POST("/backend/config/instrumentation/remove")
     void removeInstrumentationConfig(String content) throws Exception {
-        InstrumentationConfigRequest request =
-                mapper.readValue(content, ImmutableInstrumentationConfigRequest.class);
-        configRepository.deleteInstrumentationConfig(request.agentId(), request.version().get());
+        InstrumentationDeleteRequest request =
+                mapper.readValue(content, ImmutableInstrumentationDeleteRequest.class);
+        configRepository.deleteInstrumentationConfigs(request.agentId(), request.versions());
+    }
+
+    @POST("/backend/config/instrumentation/import")
+    void importInstrumentationConfig(String content) throws Exception {
+        InstrumentationImportRequest request =
+                mapper.readValue(content, ImmutableInstrumentationImportRequest.class);
+        String agentId = request.agentId();
+        List<InstrumentationConfig> configs = Lists.newArrayList();
+        for (InstrumentationConfigDto configDto : request.configs()) {
+            configs.add(configDto.convert());
+        }
+        configRepository.insertInstrumentationConfigs(agentId, configs);
     }
 
     private String getInstrumentationConfigInternal(String agentId, String version)
@@ -275,7 +287,19 @@ class InstrumentationConfigJsonService {
 
     @Value.Immutable
     interface InstrumentationErrorResponse {
-        abstract ImmutableList<String> errors();
+        ImmutableList<String> errors();
+    }
+
+    @Value.Immutable
+    interface InstrumentationImportRequest {
+        String agentId();
+        ImmutableList<ImmutableInstrumentationConfigDto> configs();
+    }
+
+    @Value.Immutable
+    interface InstrumentationDeleteRequest {
+        String agentId();
+        List<String> versions();
     }
 
     @Value.Immutable

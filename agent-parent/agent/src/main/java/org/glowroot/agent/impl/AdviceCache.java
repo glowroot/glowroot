@@ -186,7 +186,7 @@ public class AdviceCache {
     public boolean isOutOfSync(List<InstrumentationConfig> reweavableConfigs) {
         Set<String> versions = Sets.newHashSet();
         for (InstrumentationConfig reweavableConfig : reweavableConfigs) {
-            versions.add(Versions.getJsonVersion(reweavableConfig));
+            versions.add(Versions.getVersion(reweavableConfig.toProto()));
         }
         return !versions.equals(this.reweavableConfigVersions);
     }
@@ -232,7 +232,7 @@ public class AdviceCache {
             List<InstrumentationConfig> reweavableConfigs) {
         Set<String> versions = Sets.newHashSet();
         for (InstrumentationConfig reweavableConfig : reweavableConfigs) {
-            versions.add(Versions.getJsonVersion(reweavableConfig));
+            versions.add(Versions.getVersion(reweavableConfig.toProto()));
         }
         return ImmutableSet.copyOf(versions);
     }

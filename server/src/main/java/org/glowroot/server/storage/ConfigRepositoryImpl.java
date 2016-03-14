@@ -543,7 +543,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (agentConfig == null) {
                 throw new IllegalStateException("Agent config not found");
             }
-            checkInstrumentationDoesNotExist(instrumentationConfig, agentConfig);
+            checkInstrumentationDoesNotExist(instrumentationConfig,
+                    agentConfig.getInstrumentationConfigList());
             AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
                     .addInstrumentationConfig(instrumentationConfig)
                     .build();
@@ -586,7 +587,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteInstrumentationConfig(String agentId, String version) throws Exception {
+    public void deleteInstrumentationConfigs(String agentId, List<String> versions)
+            throws Exception {
         synchronized (agentConfigLocks.getUnchecked(agentId)) {
             AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
             if (agentConfig == null) {
@@ -595,20 +597,46 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             List<InstrumentationConfig> existingInstrumentationConfigs =
                     Lists.newArrayList(agentConfig.getInstrumentationConfigList());
             ListIterator<InstrumentationConfig> i = existingInstrumentationConfigs.listIterator();
-            boolean found = false;
+            List<String> remainingVersions = Lists.newArrayList(versions);
             while (i.hasNext()) {
-                if (Versions.getVersion(i.next()).equals(version)) {
+                String currVersion = Versions.getVersion(i.next());
+                if (remainingVersions.contains(currVersion)) {
                     i.remove();
-                    found = true;
+                    remainingVersions.remove(currVersion);
                     break;
                 }
             }
-            if (!found) {
+            if (!remainingVersions.isEmpty()) {
                 throw new OptimisticLockException();
             }
             AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
                     .clearInstrumentationConfig()
                     .addAllInstrumentationConfig(existingInstrumentationConfigs)
+                    .build();
+            agentDao.storeAgentConfig(agentId, updatedAgentConfig);
+            // updating the agent is inside above synchronized block to ensure ordering of updates
+            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+        }
+    }
+
+    @Override
+    public void insertInstrumentationConfigs(String agentId,
+            List<InstrumentationConfig> configs) throws Exception {
+        synchronized (agentConfigLocks.getUnchecked(agentId)) {
+            AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
+            if (agentConfig == null) {
+                throw new IllegalStateException("Agent config not found");
+            }
+            AgentConfig.Builder builder = AgentConfig.newBuilder(agentConfig);
+            List<InstrumentationConfig> instrumentationConfigs =
+                    agentConfig.getInstrumentationConfigList();
+            for (InstrumentationConfig config : configs) {
+                checkInstrumentationDoesNotExist(config, instrumentationConfigs);
+                instrumentationConfigs.add(config);
+            }
+            AgentConfig updatedAgentConfig = builder
+                    .clearInstrumentationConfig()
+                    .addAllInstrumentationConfig(instrumentationConfigs)
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
@@ -680,20 +708,19 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     private void checkInstrumentationDoesNotExist(InstrumentationConfig instrumentationConfig,
-            AgentConfig agentConfig) {
+            List<InstrumentationConfig> instrumentationConfigs) {
         String version = Versions.getVersion(instrumentationConfig);
-        for (InstrumentationConfig existingInstrumentationConfig : agentConfig
-                .getInstrumentationConfigList()) {
-            if (Versions.getVersion(existingInstrumentationConfig).equals(version)) {
+        for (InstrumentationConfig config : instrumentationConfigs) {
+            if (Versions.getVersion(config).equals(version)) {
                 throw new IllegalStateException("This exact instrumentation already exists");
             }
         }
     }
 
     private void checkAlertDoesNotExist(AlertConfig alertConfig, List<AlertConfig> agentConfigs) {
-        String version = Versions.getJsonVersion(alertConfig);
+        String version = alertConfig.version();
         for (AlertConfig existingAlertConfig : agentConfigs) {
-            if (Versions.getJsonVersion(existingAlertConfig).equals(version)) {
+            if (existingAlertConfig.version().equals(version)) {
                 throw new IllegalStateException("This exact alert already exists");
             }
         }

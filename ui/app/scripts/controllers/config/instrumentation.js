@@ -26,7 +26,8 @@ glowroot.controller('ConfigInstrumentationCtrl', [
   'httpErrors',
   'queryStrings',
   'modals',
-  function ($scope, $location, $http, $rootScope, $timeout, confirmIfHasChanges, httpErrors, queryStrings, modals) {
+  'instrumentationExport',
+  function ($scope, $location, $http, $rootScope, $timeout, confirmIfHasChanges, httpErrors, queryStrings, modals, instrumentationExport) {
 
     var version = $location.search().v;
 
@@ -235,9 +236,9 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       if ($scope.agentNotConnected) {
         $scope.methodSignatures = [{
           name: methodName,
-              parameterTypes: ['..'],
-            returnType: '',
-            modifiers: []
+          parameterTypes: ['..'],
+          returnType: '',
+          modifiers: []
         }];
       } else {
         $scope.methodSignatures = [];
@@ -310,7 +311,9 @@ glowroot.controller('ConfigInstrumentationCtrl', [
     $scope.delete = function (deferred) {
       var postData = {
         agentId: $scope.agentId,
-        version: $scope.config.version
+        versions: [
+          $scope.config.version
+        ]
       };
       $http.post('backend/config/instrumentation/remove', postData)
           .success(function () {
@@ -325,60 +328,9 @@ glowroot.controller('ConfigInstrumentationCtrl', [
     };
 
     $scope.exportToJson = function () {
-      var data = angular.copy($scope.config);
-      delete data.version;
-      if (!data.classAnnotation) {
-        delete data.classAnnotation;
-      }
-      if (!data.methodDeclaringClassName) {
-        delete data.methodDeclaringClassName;
-      }
-      if (!data.methodAnnotation) {
-        delete data.methodAnnotation;
-      }
-      if (!data.methodReturnType) {
-        delete data.methodReturnType;
-      }
-      if (!data.methodModifiers.length) {
-        delete data.methodModifiers;
-      }
-      if (!data.nestingGroup) {
-        delete data.nestingGroup;
-      }
-      if (!data.timerName) {
-        delete data.timerName;
-      }
-      if (!data.traceEntryMessageTemplate) {
-        delete data.traceEntryMessageTemplate;
-      }
-      if (!data.traceEntryStackThresholdMillis) {
-        delete data.traceEntryStackThresholdMillis;
-      }
-      if (!data.traceEntryCaptureSelfNested) {
-        delete data.traceEntryCaptureSelfNested;
-      }
-      if (!data.transactionType) {
-        delete data.transactionType;
-      }
-      if (!data.transactionNameTemplate) {
-        delete data.transactionNameTemplate;
-      }
-      if (!data.transactionSlowThresholdMillis) {
-        delete data.transactionSlowThresholdMillis;
-      }
-      if (!data.transactionUserTemplate) {
-        delete data.transactionUserTemplate;
-      }
-      if (!data.transactionAttributeTemplates || !Object.keys(data.transactionAttributeTemplates).length) {
-        delete data.transactionAttributeTemplates;
-      }
-      if (!data.enabledProperty) {
-        delete data.enabledProperty;
-      }
-      if (!data.traceEntryEnabledProperty) {
-        delete data.traceEntryEnabledProperty;
-      }
-      $scope.jsonExport = JSON.stringify(data, null, 2);
+      var config = angular.copy($scope.config);
+      instrumentationExport.clean(config);
+      $scope.jsonExport = JSON.stringify(config, null, 2);
 
       gtClipboard('#jsonExportModal .fa-clipboard', function () {
         return document.getElementById('jsonExport');

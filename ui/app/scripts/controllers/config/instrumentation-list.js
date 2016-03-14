@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, $ */
+/* global glowroot, angular, gtClipboard, $ */
 
 glowroot.controller('ConfigInstrumentationListCtrl', [
   '$scope',
@@ -26,7 +26,8 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
   'queryStrings',
   'httpErrors',
   'modals',
-  function ($scope, $location, $http, $timeout, $q, locationChanges, queryStrings, httpErrors, modals) {
+  'instrumentationExport',
+  function ($scope, $location, $http, $timeout, $q, locationChanges, queryStrings, httpErrors, modals, instrumentationExport) {
 
     if ($scope.hideMainContent()) {
       return;
@@ -74,6 +75,12 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
             // use object so dirty flag can be updated by child controllers
             $scope.dirty = data.jvmOutOfSync;
             $scope.jvmRetransformClassesSupported = data.jvmRetransformClassesSupported;
+            var configs = angular.copy($scope.configs);
+            angular.forEach(configs, function (config) {
+              instrumentationExport.clean(config);
+            });
+            $scope.jsonExport = JSON.stringify(configs, null, 2);
+            dealWithModals();
             if (deferred) {
               deferred.resolve();
             } else {
@@ -88,55 +95,84 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
       $location.search('import', true);
     };
 
+    $scope.displayExportModal = function () {
+      $location.search('export', true);
+    };
+
+    $scope.deleteAll = function (deferred) {
+      var postData = {
+        agentId: $scope.agentId,
+        versions: []
+      };
+      angular.forEach($scope.configs, function (config) {
+        postData.versions.push(config.version);
+      });
+      $http.post('backend/config/instrumentation/remove', postData)
+          .success(function () {
+            deferred.resolve('Deleted');
+            $scope.configs = [];
+          })
+          .error(httpErrors.handler($scope, deferred));
+    };
+
     $scope.$watch('jsonToImport', function () {
       $scope.importErrorMessage = '';
     });
 
     $scope.importFromJson = function () {
       $scope.importErrorMessage = '';
-      var postData = {
-        agentId: $scope.agentId,
-        classAnnotation: '',
-        methodDeclaringClassName: '',
-        methodAnnotation: '',
-        methodReturnType: '',
-        nestingGroup: '',
-        priority: 0,
-        transactionType: '',
-        transactionNameTemplate: '',
-        transactionUserTemplate: '',
-        traceEntryCaptureSelfNested: false,
-        enabledProperty: '',
-        traceEntryEnabledProperty: ''
-      };
+      var configs;
       try {
-        angular.extend(postData, angular.fromJson($scope.jsonToImport));
+        configs = angular.fromJson($scope.jsonToImport);
       } catch (e) {
         $scope.importErrorMessage = 'Invalid json';
         return;
       }
+      if (!angular.isArray(configs)) {
+        configs = [configs];
+      }
       var initialErrors = [];
-      if (postData.className === undefined) {
-        initialErrors.push('Missing className');
-      }
-      if (postData.methodName === undefined) {
-        initialErrors.push('Missing methodName');
-      }
-      if (postData.captureKind === undefined) {
-        initialErrors.push('Missing captureKind');
-      }
+      var postData = {
+        agentId: $scope.agentId,
+        configs: []
+      };
+      angular.forEach(configs, function (config) {
+        if (config.className === undefined) {
+          initialErrors.push('Missing className');
+        }
+        if (config.methodName === undefined) {
+          initialErrors.push('Missing methodName');
+        }
+        if (config.captureKind === undefined) {
+          initialErrors.push('Missing captureKind');
+        }
+        if (initialErrors.length) {
+          return;
+        }
+        var base = {
+          classAnnotation: '',
+          methodDeclaringClassName: '',
+          methodAnnotation: '',
+          methodReturnType: '',
+          nestingGroup: '',
+          priority: 0,
+          transactionType: '',
+          transactionNameTemplate: '',
+          transactionUserTemplate: '',
+          traceEntryCaptureSelfNested: false,
+          enabledProperty: '',
+          traceEntryEnabledProperty: ''
+        };
+        angular.extend(base, config);
+        postData.configs.push(base);
+      });
       if (initialErrors.length) {
         $scope.importErrorMessage = initialErrors.join(', ');
         return;
       }
       $scope.importing = true;
-      $http.post('backend/config/instrumentation/add', postData)
+      $http.post('backend/config/instrumentation/import', postData)
           .success(function (data) {
-            if (data.errors) {
-              $scope.importing = false;
-              $scope.importErrorMessage = data.errors.join(', ');
-              return;
-            }
             var deferred = $q.defer();
             deferred.promise.finally(function () {
               // leave spinner going until subsequent refresh is complete
@@ -147,8 +183,6 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
           })
           .error(function (data, status) {
             $scope.importing = false;
-            // validation errors are handled in success, this is unexpected error, display stack trace on main page
-            $('#importModal').modal('hide');
             httpErrors.handler($scope)(data, status);
           });
     };
@@ -170,13 +204,10 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    refresh();
-
-    locationChanges.on($scope, function () {
+    function dealWithModals() {
       if ($location.search().import) {
         $scope.jsonToImport = '';
         $scope.importErrorMessage = '';
-        $scope.importing = false;
         $('#importModal').data('location-query', 'import');
         modals.display('#importModal', true);
         $timeout(function () {
@@ -185,6 +216,25 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
       } else {
         $('#importModal').modal('hide');
       }
+      if ($location.search().export) {
+        gtClipboard('#exportModal .fa-clipboard', function () {
+          return document.getElementById('jsonExport');
+        }, function () {
+          return $scope.jsonExport;
+        });
+        $('#exportModal').data('location-query', 'export');
+        modals.display('#exportModal', true);
+      } else {
+        $('#exportModal').modal('hide');
+      }
+    }
+
+    locationChanges.on($scope, function () {
+      if (!$scope.loaded) {
+        refresh();
+        return;
+      }
+      dealWithModals();
     });
   }
 ]);

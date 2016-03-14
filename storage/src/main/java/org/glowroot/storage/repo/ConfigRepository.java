@@ -103,7 +103,10 @@ public interface ConfigRepository {
     void updateInstrumentationConfig(String agentId, InstrumentationConfig instrumentationConfig,
             String priorVersion) throws Exception;
 
-    void deleteInstrumentationConfig(String agentId, String version) throws Exception;
+    void deleteInstrumentationConfigs(String agentId, List<String> versions) throws Exception;
+
+    void insertInstrumentationConfigs(String agentId,
+            List<InstrumentationConfig> instrumentationConfigs) throws Exception;
 
     void insertGaugeConfig(String agentId, GaugeConfig gaugeConfig) throws Exception;
 
