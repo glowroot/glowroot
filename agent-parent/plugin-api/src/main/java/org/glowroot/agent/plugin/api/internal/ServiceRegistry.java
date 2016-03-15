@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.plugin.api.internal;
 
-import org.glowroot.agent.plugin.api.AdvancedService;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 
@@ -24,6 +23,4 @@ public interface ServiceRegistry {
     TimerName getTimerName(Class<?> adviceClass);
 
     ConfigService getConfigService(String pluginId);
-
-    AdvancedService getAdvancedService();
 }

@@ -23,7 +23,6 @@ import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.plugin.api.config.ConfigService;
-import org.glowroot.agent.plugin.api.internal.NopAdvancedService;
 import org.glowroot.agent.plugin.api.internal.NopConfigService;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimerName;
 import org.glowroot.agent.plugin.api.internal.ServiceRegistry;
@@ -86,21 +85,6 @@ public class Agent {
 
     public static Logger getLogger(Class<?> clazz) {
         return new LoggerImpl(LoggerFactory.getLogger(clazz));
-    }
-
-    /**
-     * Returns the {@code AdvancedService} instance.
-     * 
-     * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
-     * looking it up every time it is needed (which is often).
-     */
-    public static AdvancedService getAdvancedService() {
-        ServiceRegistry serviceRegistry = getServiceRegistry();
-        if (serviceRegistry == null) {
-            return NopAdvancedService.INSTANCE;
-        } else {
-            return serviceRegistry.getAdvancedService();
-        }
     }
 
     private static @Nullable ServiceRegistry getServiceRegistry() {

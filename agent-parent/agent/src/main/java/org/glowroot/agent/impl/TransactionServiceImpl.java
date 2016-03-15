@@ -28,7 +28,6 @@ import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.TraceEntryImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.model.Transaction.CompletionCallback;
-import org.glowroot.agent.plugin.api.AdvancedService;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
@@ -39,9 +38,7 @@ import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
-import static org.glowroot.agent.fat.storage.util.Checkers.castInitialized;
-
-public class TransactionServiceImpl implements AdvancedService, ConfigListener {
+public class TransactionServiceImpl implements ConfigListener {
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionServiceImpl.class);
 
@@ -72,6 +69,7 @@ public class TransactionServiceImpl implements AdvancedService, ConfigListener {
                 new TransactionServiceImpl(transactionRegistry, transactionCollector, configService,
                         timerNameCache, threadAllocatedBytes, userProfileScheduler, ticker, clock);
         configService.addConfigListener(transactionServiceImpl);
+        TransactionServiceHolder.transactionService = transactionServiceImpl;
         return transactionServiceImpl;
     }
 
@@ -87,7 +85,6 @@ public class TransactionServiceImpl implements AdvancedService, ConfigListener {
         this.userProfileScheduler = userProfileScheduler;
         this.clock = clock;
         this.ticker = ticker;
-        TransactionServiceHolder.transactionService = castInitialized(this);
     }
 
     // this is used by OptionalThreadContextImpl
@@ -114,11 +111,6 @@ public class TransactionServiceImpl implements AdvancedService, ConfigListener {
         configService.readMemoryBarrier();
         return startTransactionInternal(transactionType, transactionName, messageSupplier,
                 timerName, threadContextHolder);
-    }
-
-    @Override
-    public boolean isInTransaction() {
-        return transactionRegistry.getCurrentTransaction() != null;
     }
 
     private TraceEntry startTransactionInternal(String transactionType, String transactionName,

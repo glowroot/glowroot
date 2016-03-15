@@ -165,9 +165,9 @@ public class AgentModule {
         UserProfileScheduler userProfileScheduler =
                 new UserProfileScheduler(scheduledExecutor, configService, random);
         GlowrootService glowrootService = new GlowrootServiceImpl(transactionRegistry);
-        TransactionServiceImpl transactionService = TransactionServiceImpl.create(
-                transactionRegistry, transactionCollector, configService, timerNameCache,
-                threadAllocatedBytes.getService(), userProfileScheduler, ticker, clock);
+        TransactionServiceImpl.create(transactionRegistry, transactionCollector, configService,
+                timerNameCache, threadAllocatedBytes.getService(), userProfileScheduler, ticker,
+                clock);
         ConfigServiceFactory configServiceFactory = new ConfigServiceFactory() {
             @Override
             public org.glowroot.agent.plugin.api.config.ConfigService create(String pluginId) {
@@ -177,8 +177,7 @@ public class AgentModule {
                         pluginId);
             }
         };
-        ServiceRegistryImpl.init(glowrootService, timerNameCache, transactionService,
-                configServiceFactory);
+        ServiceRegistryImpl.init(glowrootService, timerNameCache, configServiceFactory);
 
         lazyPlatformMBeanServer = new LazyPlatformMBeanServer();
         gaugeCollector = new GaugeCollector(configService, collector, lazyPlatformMBeanServer,

@@ -23,7 +23,6 @@ import com.google.common.cache.LoadingCache;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.agent.api.internal.GlowrootService;
-import org.glowroot.agent.plugin.api.AdvancedService;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.internal.ServiceRegistry;
@@ -34,15 +33,13 @@ public class ServiceRegistryImpl implements ServiceRegistry {
 
     private final GlowrootService glowrootService;
     private final TimerNameCache timerNameCache;
-    private final AdvancedService advancedService;
 
     private final LoadingCache<String, ConfigService> configServices;
 
     private ServiceRegistryImpl(GlowrootService glowrootService, TimerNameCache timerNameCache,
-            AdvancedService advancedService, final ConfigServiceFactory configServiceFactory) {
+            final ConfigServiceFactory configServiceFactory) {
         this.glowrootService = glowrootService;
         this.timerNameCache = timerNameCache;
-        this.advancedService = advancedService;
         configServices = CacheBuilder.newBuilder().build(new CacheLoader<String, ConfigService>() {
             @Override
             public ConfigService load(String pluginId) {
@@ -61,11 +58,6 @@ public class ServiceRegistryImpl implements ServiceRegistry {
         return configServices.getUnchecked(pluginId);
     }
 
-    @Override
-    public AdvancedService getAdvancedService() {
-        return advancedService;
-    }
-
     // called via reflection from org.glowroot.agent.plugin.api.Agent
     // also called via reflection from generated pointcut config advice
     public static @Nullable ServiceRegistry getInstance() {
@@ -79,10 +71,8 @@ public class ServiceRegistryImpl implements ServiceRegistry {
     }
 
     public static void init(GlowrootService glowrootService, TimerNameCache timerNameCache,
-            AdvancedService advancedService, ConfigServiceFactory configServiceFactory)
-                    throws Exception {
-        INSTANCE = new ServiceRegistryImpl(glowrootService, timerNameCache, advancedService,
-                configServiceFactory);
+            ConfigServiceFactory configServiceFactory) throws Exception {
+        INSTANCE = new ServiceRegistryImpl(glowrootService, timerNameCache, configServiceFactory);
     }
 
     public interface ConfigServiceFactory {
