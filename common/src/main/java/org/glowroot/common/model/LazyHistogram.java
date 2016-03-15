@@ -114,6 +114,10 @@ public class LazyHistogram {
             if (!sorted) {
                 sortValues();
             }
+            if (percentile == 0) {
+                // support "0th" percentile to mean the smallest tracked percentile
+                return values[0];
+            }
             return values[(int) Math.ceil(size * percentile / 100) - 1];
         }
         return histogram.getValueAtPercentile(percentile);

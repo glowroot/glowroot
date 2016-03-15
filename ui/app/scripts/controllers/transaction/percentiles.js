@@ -91,9 +91,14 @@ glowroot.controller('TransactionPercentilesCtrl', [
       var priorAppliedPercentiles = appliedPercentiles;
       if ($location.search().percentile) {
         appliedPercentiles = [];
-        angular.forEach($location.search().percentile, function (percentile) {
+        var percentile = $location.search().percentile;
+        if (angular.isArray(percentile)) {
+          angular.forEach(percentile, function (p) {
+            appliedPercentiles.push(Number(p));
+          });
+        } else {
           appliedPercentiles.push(Number(percentile));
-        });
+        }
         sortNumbers(appliedPercentiles);
       } else {
         appliedPercentiles = $scope.layout.defaultPercentiles;

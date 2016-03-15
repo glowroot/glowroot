@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015 the original author or authors.
+  Copyright 2015-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -132,7 +132,8 @@
          style="width: 500px;">
       <div class="modal-content">
         <div ng-form
-             gt-form-with-primary-button>
+             gt-form-with-primary-button
+             name="formCtrl">
           <div class="modal-header">
             <button type="button"
                     class="close"
@@ -167,7 +168,12 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" ng-click="applyCustomPercentiles()">Apply</button>
+            <button type="button"
+                    class="btn btn-primary"
+                    ng-disabled="formCtrl.$invalid"
+                    ng-click="applyCustomPercentiles()">
+              Apply
+            </button>
           </div>
         </div>
       </div>
