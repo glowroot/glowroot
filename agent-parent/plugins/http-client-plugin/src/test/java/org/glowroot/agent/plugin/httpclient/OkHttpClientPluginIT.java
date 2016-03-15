@@ -15,12 +15,16 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.Response;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -28,6 +32,7 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
+import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,6 +74,38 @@ public class OkHttpClientPluginIT {
                 .matches("http client request: POST http://localhost:\\d+/hello2");
     }
 
+    @Test
+    public void shouldCaptureAsyncHttpGet() throws Exception {
+        Trace trace = container.execute(ExecuteAsyncHttpGet.class);
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(3);
+        assertThat(entries.get(0).getDepth()).isEqualTo(0);
+        assertThat(entries.get(0).getMessage())
+                .matches("http client request: GET http://localhost:\\d+/hello1/");
+        assertThat(entries.get(1).getDepth()).isEqualTo(0);
+        assertThat(entries.get(1).getMessage()).matches("auxiliary thread");
+        assertThat(entries.get(2).getDepth()).isEqualTo(1);
+        assertThat(entries.get(2).getMessage()).matches("trace marker / CreateTraceEntry");
+        assertThat(trace.getHeader().getAsyncRootTimer(0).getName())
+                .isEqualTo("http client request");
+    }
+
+    @Test
+    public void shouldCaptureAsyncHttpPost() throws Exception {
+        Trace trace = container.execute(ExecuteAsyncHttpPost.class);
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(3);
+        assertThat(entries.get(0).getDepth()).isEqualTo(0);
+        assertThat(entries.get(0).getMessage())
+                .matches("http client request: POST http://localhost:\\d+/hello2");
+        assertThat(entries.get(1).getDepth()).isEqualTo(0);
+        assertThat(entries.get(1).getMessage()).matches("auxiliary thread");
+        assertThat(entries.get(2).getDepth()).isEqualTo(1);
+        assertThat(entries.get(2).getMessage()).matches("trace marker / CreateTraceEntry");
+        assertThat(trace.getHeader().getAsyncRootTimer(0).getName())
+                .isEqualTo("http client request");
+    }
+
     public static class ExecuteHttpGet extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
@@ -91,6 +128,72 @@ public class OkHttpClientPluginIT {
                     .post(body)
                     .build();
             client.newCall(request).execute();
+        }
+    }
+
+    public static class ExecuteAsyncHttpGet extends ExecuteHttpBase {
+        @Override
+        public void transactionMarker() throws Exception {
+            OkHttpClient client = new OkHttpClient();
+            Request request = new Request.Builder()
+                    .url("http://localhost:" + getPort() + "/hello1/")
+                    .build();
+            final AtomicBoolean complete = new AtomicBoolean();
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onResponse(Response response) {
+                    new CreateTraceEntry().transactionMarker();
+                    complete.set(true);
+                }
+                @Override
+                public void onFailure(Request request, IOException e) {
+                    new CreateTraceEntry().transactionMarker();
+                    complete.set(true);
+                }
+            });
+            while (!complete.get()) {
+                Thread.sleep(10);
+            }
+        }
+    }
+
+    public static class ExecuteAsyncHttpPost extends ExecuteHttpBase {
+        @Override
+        public void transactionMarker() throws Exception {
+            MediaType mediaType = MediaType.parse("text/plain; charset=utf-8");
+            OkHttpClient client = new OkHttpClient();
+            RequestBody body = RequestBody.create(mediaType, "hello");
+            Request request = new Request.Builder()
+                    .url("http://localhost:" + getPort() + "/hello2")
+                    .post(body)
+                    .build();
+            final AtomicBoolean complete = new AtomicBoolean();
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onResponse(Response response) {
+                    new CreateTraceEntry().transactionMarker();
+                    complete.set(true);
+                }
+                @Override
+                public void onFailure(Request request, IOException e) {
+                    new CreateTraceEntry().transactionMarker();
+                    complete.set(true);
+                }
+            });
+            while (!complete.get()) {
+                Thread.sleep(10);
+            }
+        }
+    }
+
+    private static class CreateTraceEntry implements TransactionMarker {
+
+        @Override
+        public void transactionMarker() {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+            }
         }
     }
 }
