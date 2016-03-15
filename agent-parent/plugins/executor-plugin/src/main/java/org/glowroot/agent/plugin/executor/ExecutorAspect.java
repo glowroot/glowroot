@@ -49,7 +49,7 @@ public class ExecutorAspect {
         private volatile @Nullable AuxThreadContext glowroot$auxContext;
 
         @Override
-        public @Nullable AuxThreadContext glowroot$getAuxThreadContext() {
+        public @Nullable AuxThreadContext glowroot$getAuxContext() {
             return glowroot$auxContext;
         }
 
@@ -83,7 +83,7 @@ public class ExecutorAspect {
     public interface RunnableCallableMixin {
 
         @Nullable
-        AuxThreadContext glowroot$getAuxThreadContext();
+        AuxThreadContext glowroot$getAuxContext();
 
         void glowroot$setAuxContext(@Nullable AuxThreadContext auxContext);
     }
@@ -225,11 +225,12 @@ public class ExecutorAspect {
                 return null;
             }
             RunnableCallableMixin runnableMixin = (RunnableCallableMixin) runnable;
-            AuxThreadContext auxContext = runnableMixin.glowroot$getAuxThreadContext();
-            if (auxContext == null) {
-                return null;
+            AuxThreadContext auxContext = runnableMixin.glowroot$getAuxContext();
+            if (auxContext != null) {
+                runnableMixin.glowroot$setAuxContext(null);
+                return auxContext.start();
             }
-            return auxContext.start();
+            return null;
         }
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
@@ -244,15 +245,6 @@ public class ExecutorAspect {
                 traceEntry.endWithError(t);
             }
         }
-        @OnAfter
-        public static void onAfter(@BindReceiver Runnable runnable) {
-            if (!(runnable instanceof RunnableCallableMixin)) {
-                // this class was loaded before class file transformer was added to jvm
-                return;
-            }
-            RunnableCallableMixin runnableMixin = (RunnableCallableMixin) runnable;
-            runnableMixin.glowroot$setAuxContext(null);
-        }
     }
 
     @Pointcut(className = "java.util.concurrent.Callable", methodName = "call",
@@ -265,11 +257,12 @@ public class ExecutorAspect {
                 return null;
             }
             RunnableCallableMixin callableMixin = (RunnableCallableMixin) callable;
-            AuxThreadContext auxContext = callableMixin.glowroot$getAuxThreadContext();
-            if (auxContext == null) {
-                return null;
+            AuxThreadContext auxContext = callableMixin.glowroot$getAuxContext();
+            if (auxContext != null) {
+                callableMixin.glowroot$setAuxContext(null);
+                return auxContext.start();
             }
-            return auxContext.start();
+            return null;
         }
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
@@ -283,15 +276,6 @@ public class ExecutorAspect {
             if (traceEntry != null) {
                 traceEntry.endWithError(t);
             }
-        }
-        @OnAfter
-        public static void onAfter(@BindReceiver Runnable runnable) {
-            if (!(runnable instanceof RunnableCallableMixin)) {
-                // this class was loaded before class file transformer was added to jvm
-                return;
-            }
-            RunnableCallableMixin runnableMixin = (RunnableCallableMixin) runnable;
-            runnableMixin.glowroot$setAuxContext(null);
         }
     }
 }
