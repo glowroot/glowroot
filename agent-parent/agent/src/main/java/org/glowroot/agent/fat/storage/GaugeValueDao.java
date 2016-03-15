@@ -19,12 +19,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLongArray;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.primitives.Longs;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
@@ -125,7 +128,19 @@ public class GaugeValueDao implements GaugeValueRepository {
         if (gaugeValues.isEmpty()) {
             return;
         }
-        dataSource.batchUpdate(new GaugeValuesBinder(gaugeValues));
+        Map<GaugeValue, Long> gaugeValueIdMap = Maps.newLinkedHashMap();
+        for (GaugeValue gaugeValue : gaugeValues) {
+            long gaugeId = gaugeMetaDao.updateLastCaptureTime(gaugeValue.getGaugeName(),
+                    gaugeValue.getCaptureTime());
+            if (gaugeId == -1) {
+                // data source is closing and a new gauge id was needed, but could not insert it
+                // --or-- race condition with GaugeMetaDao.deleteAll() in which case return is good
+                // option also
+                return;
+            }
+            gaugeValueIdMap.put(gaugeValue, gaugeId);
+        }
+        dataSource.batchUpdate(new GaugeValuesBinder(gaugeValueIdMap));
         synchronized (rollupLock) {
             // clock can never go backwards and future gauge captures will wait until this method
             // completes since ScheduledExecutorService.scheduleAtFixedRate() guarantees that future
@@ -199,10 +214,10 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     private class GaugeValuesBinder implements JdbcUpdate {
 
-        private final List<GaugeValue> gaugeValues;
+        private final Map<GaugeValue, Long> gaugeValueIdMap;
 
-        private GaugeValuesBinder(List<GaugeValue> gaugeValues) {
-            this.gaugeValues = gaugeValues;
+        private GaugeValuesBinder(Map<GaugeValue, Long> gaugeValueIdMap) {
+            this.gaugeValueIdMap = gaugeValueIdMap;
         }
 
         @Override
@@ -213,18 +228,9 @@ public class GaugeValueDao implements GaugeValueRepository {
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws SQLException {
-            for (GaugeValue gaugeValue : gaugeValues) {
-                long gaugeId = gaugeMetaDao.updateLastCaptureTime(gaugeValue.getGaugeName(),
-                        gaugeValue.getCaptureTime());
-                if (gaugeId == -1) {
-                    // data source is closing and a new gauge id was needed, but could not
-                    // insert it, but this bind is already inside of the data source lock so any
-                    // inserts here will succeed, thus the return
-                    //
-                    // --or-- race condition with GaugeMetaDao.deleteAll() in which case return
-                    // is the best option also
-                    return;
-                }
+            for (Entry<GaugeValue, Long> entry : gaugeValueIdMap.entrySet()) {
+                GaugeValue gaugeValue = entry.getKey();
+                long gaugeId = entry.getValue();
                 preparedStatement.setLong(1, gaugeId);
                 preparedStatement.setLong(2, gaugeValue.getCaptureTime());
                 preparedStatement.setDouble(3, gaugeValue.getValue());
