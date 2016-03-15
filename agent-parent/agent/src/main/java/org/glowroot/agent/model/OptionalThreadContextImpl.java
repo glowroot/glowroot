@@ -84,11 +84,11 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public AsyncTraceEntry startAsyncTraceEntry(MessageSupplier messageSupplier,
-            TimerName syncTimerName, TimerName asyncTimerName) {
+            TimerName timerName) {
         if (threadContext == null) {
             return NopAsyncQueryEntry.INSTANCE;
         }
-        return threadContext.startAsyncTraceEntry(messageSupplier, syncTimerName, asyncTimerName);
+        return threadContext.startAsyncTraceEntry(messageSupplier, timerName);
     }
 
     @Override
@@ -112,12 +112,11 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public AsyncQueryEntry startAsyncQueryEntry(String queryType, String queryText,
-            MessageSupplier messageSupplier, TimerName syncTimerName, TimerName asyncTimerName) {
+            MessageSupplier messageSupplier, TimerName timerName) {
         if (threadContext == null) {
             return NopAsyncQueryEntry.INSTANCE;
         }
-        return threadContext.startAsyncQueryEntry(queryType, queryText, messageSupplier,
-                syncTimerName, asyncTimerName);
+        return threadContext.startAsyncQueryEntry(queryType, queryText, messageSupplier, timerName);
     }
 
     @Override
@@ -133,13 +132,11 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public AsyncTraceEntry startAsyncServiceCallEntry(String type, String text,
-            MessageSupplier messageSupplier, TimerName syncTimerName, TimerName asyncTimerName) {
+            MessageSupplier messageSupplier, TimerName timerName) {
         if (threadContext == null) {
             return NopAsyncTraceEntry.INSTANCE;
         }
-        return threadContext.startAsyncServiceCallEntry(type, text,
-                messageSupplier,
-                syncTimerName, asyncTimerName);
+        return threadContext.startAsyncServiceCallEntry(type, text, messageSupplier, timerName);
     }
 
     @Override

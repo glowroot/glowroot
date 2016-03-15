@@ -162,8 +162,7 @@ public class OkHttpClientAspect {
                 url = urlObj.toString();
             }
             return context.startAsyncServiceCallEntry("HTTP", method + Uris.stripQueryString(url),
-                    MessageSupplier.from("http client request: {}{}", method, url), timerName,
-                    timerName);
+                    MessageSupplier.from("http client request: {}{}", method, url), timerName);
         }
         @OnReturn
         public static void onReturn(ThreadContext context,

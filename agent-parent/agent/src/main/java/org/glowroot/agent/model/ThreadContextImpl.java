@@ -603,18 +603,14 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public AsyncTraceEntry startAsyncTraceEntry(MessageSupplier messageSupplier,
-            TimerName syncTimerName, TimerName asyncTimerName) {
-        if (syncTimerName == null) {
-            logger.error("startAsyncTraceEntry(): argument 'syncTimerName' must be non-null");
-            return NopAsyncTraceEntry.INSTANCE;
-        }
-        if (asyncTimerName == null) {
-            logger.error("startAsyncTraceEntry(): argument 'asyncTimerName' must be non-null");
+            TimerName timerName) {
+        if (timerName == null) {
+            logger.error("startAsyncTraceEntry(): argument 'timerName' must be non-null");
             return NopAsyncTraceEntry.INSTANCE;
         }
         long startTick = ticker.read();
-        TimerImpl syncTimer = startTimer(syncTimerName, startTick);
-        AsyncTimerImpl asyncTimer = startAsyncTimer(asyncTimerName, startTick);
+        TimerImpl syncTimer = startTimer(timerName, startTick);
+        AsyncTimerImpl asyncTimer = startAsyncTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
             return startAsyncTraceEntry(startTick, messageSupplier, syncTimer, asyncTimer);
         } else {
@@ -687,7 +683,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public AsyncQueryEntry startAsyncQueryEntry(String queryType, String queryText,
-            MessageSupplier messageSupplier, TimerName syncTimerName, TimerName asyncTimerName) {
+            MessageSupplier messageSupplier, TimerName timerName) {
         if (queryType == null) {
             logger.error("startAsyncQueryEntry(): argument 'queryType' must be non-null");
             return NopAsyncQueryEntry.INSTANCE;
@@ -700,17 +696,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
             logger.error("startAsyncQueryEntry(): argument 'messageSupplier' must be non-null");
             return NopAsyncQueryEntry.INSTANCE;
         }
-        if (syncTimerName == null) {
-            logger.error("startAsyncQueryEntry(): argument 'syncTimerName' must be non-null");
-            return NopAsyncQueryEntry.INSTANCE;
-        }
-        if (asyncTimerName == null) {
-            logger.error("startAsyncQueryEntry(): argument 'asyncTimerName' must be non-null");
+        if (timerName == null) {
+            logger.error("startAsyncQueryEntry(): argument 'timerName' must be non-null");
             return NopAsyncQueryEntry.INSTANCE;
         }
         long startTick = ticker.read();
-        TimerImpl syncTimer = startTimer(syncTimerName, startTick);
-        AsyncTimerImpl asyncTimer = startAsyncTimer(asyncTimerName, startTick);
+        TimerImpl syncTimer = startTimer(timerName, startTick);
+        AsyncTimerImpl asyncTimer = startAsyncTimer(timerName, startTick);
         QueryData queryData = getOrCreateQueryDataIfPossible(queryType, queryText);
         if (transaction.allowAnotherEntry()) {
             return startAsyncQueryEntry(startTick, messageSupplier, syncTimer, asyncTimer,
@@ -754,7 +746,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public AsyncTraceEntry startAsyncServiceCallEntry(String type, String text,
-            MessageSupplier messageSupplier, TimerName syncTimerName, TimerName asyncTimerName) {
+            MessageSupplier messageSupplier, TimerName timerName) {
         if (type == null) {
             logger.error("startAsyncServiceCallEntry(): argument 'type' must be non-null");
             return NopAsyncTraceEntry.INSTANCE;
@@ -768,18 +760,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
                     "startAsyncServiceCallEntry(): argument 'messageSupplier' must be non-null");
             return NopAsyncTraceEntry.INSTANCE;
         }
-        if (syncTimerName == null) {
-            logger.error("startAsyncServiceCallEntry(): argument 'syncTimerName' must be non-null");
-            return NopAsyncTraceEntry.INSTANCE;
-        }
-        if (asyncTimerName == null) {
-            logger.error(
-                    "startAsyncServiceCallEntry(): argument 'asyncTimerName' must be non-null");
+        if (timerName == null) {
+            logger.error("startAsyncServiceCallEntry(): argument 'timerName' must be non-null");
             return NopAsyncTraceEntry.INSTANCE;
         }
         long startTick = ticker.read();
-        TimerImpl syncTimer = startTimer(syncTimerName, startTick);
-        AsyncTimerImpl asyncTimer = startAsyncTimer(asyncTimerName, startTick);
+        TimerImpl syncTimer = startTimer(timerName, startTick);
+        AsyncTimerImpl asyncTimer = startAsyncTimer(timerName, startTick);
         QueryData queryData = getOrCreateServiceCallDataIfPossible(type, text);
         if (transaction.allowAnotherEntry()) {
             return startAsyncServiceCallEntry(startTick, messageSupplier, syncTimer, asyncTimer,

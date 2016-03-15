@@ -140,7 +140,7 @@ public class SessionAspect {
                 return null;
             }
             return context.startAsyncQueryEntry(QUERY_TYPE, queryEntryInfo.queryText,
-                    queryEntryInfo.messageSupplier, timerName, timerName);
+                    queryEntryInfo.messageSupplier, timerName);
         }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable ResultSetFutureMixin future,

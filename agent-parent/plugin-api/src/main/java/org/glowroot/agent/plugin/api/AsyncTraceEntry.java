@@ -16,8 +16,8 @@
 package org.glowroot.agent.plugin.api;
 
 /**
- * See {@link ThreadContext#startAsyncTraceEntry(MessageSupplier, TimerName, TimerName)} for how to
- * create and use {@code TraceEntry} instances.
+ * See {@link ThreadContext#startAsyncTraceEntry(MessageSupplier, TimerName)} for how to create and
+ * use {@code TraceEntry} instances.
  */
 public interface AsyncTraceEntry extends TraceEntry {
 
