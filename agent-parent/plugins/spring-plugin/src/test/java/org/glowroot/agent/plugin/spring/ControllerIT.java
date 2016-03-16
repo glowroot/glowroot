@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
@@ -84,6 +85,20 @@ public class ControllerIT {
         Trace.Entry entry = entries.get(0);
         assertThat(entry.getMessage()).isEqualTo("spring controller:"
                 + " org.glowroot.agent.plugin.spring.ControllerIT$RootController.echo()");
+    }
+
+    @Test
+    public void shouldCaptureTransactionNameWithNormalServletMappingHittingRest() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(WithNormalServletMappingHittingRest.class);
+        // then
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/rest");
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(2);
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+                + " org.glowroot.agent.plugin.spring.ControllerIT$TestRestController.rest()");
     }
 
     @Test
@@ -201,6 +216,14 @@ public class ControllerIT {
         }
     }
 
+    public static class WithNormalServletMappingHittingRest
+            extends InvokeSpringControllerInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp1", "/rest");
+        }
+    }
+
     private static abstract class InvokeSpringControllerInTomcat implements AppUnderTest {
 
         public void executeApp(String webapp, String url) throws Exception {
@@ -242,6 +265,14 @@ public class ControllerIT {
     public static class TestController {
         @RequestMapping("echo/{id}")
         public @ResponseBody String echo() {
+            return "";
+        }
+    }
+
+    @RestController
+    public static class TestRestController {
+        @RequestMapping("rest")
+        public String rest() {
             return "";
         }
     }

@@ -19,6 +19,8 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
@@ -50,7 +52,8 @@ abstract class AdviceMatcher {
 
     boolean isMethodLevelMatch(String methodName, List<String> methodAnnotations,
             List<Type> parameterTypes, Type returnType, int modifiers) {
-        if (!isMethodNameMatch(methodName) || !isMethodAnnotationMatch(methodAnnotations)
+        if (!isMethodNameMatch(methodName) || !isAnnotationMatch(methodAnnotations,
+                advice().pointcutMethodAnnotationPattern(), advice().pointcut().methodAnnotation())
                 || !isMethodParameterTypesMatch(parameterTypes)) {
             return false;
         }
@@ -70,22 +73,6 @@ abstract class AdviceMatcher {
         }
         String pointcutMethodName = advice().pointcut().methodName();
         return pointcutMethodName.isEmpty() || pointcutMethodName.equals(methodName);
-    }
-
-    private boolean isMethodAnnotationMatch(List<String> methodAnnotations) {
-        Pattern pointcutMethodAnnotationPattern = advice().pointcutMethodAnnotationPattern();
-        if (pointcutMethodAnnotationPattern != null) {
-            for (String methodAnnotation : methodAnnotations) {
-                methodAnnotation = methodAnnotation.replace('/', '.').substring(1,
-                        methodAnnotation.length() - 1);
-                if (pointcutMethodAnnotationPattern.matcher(methodAnnotation).matches()) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        String pointcutMethodAnnotation = advice().pointcut().methodAnnotation();
-        return isAnnotationMatch(methodAnnotations, pointcutMethodAnnotation);
     }
 
     private boolean isMethodParameterTypesMatch(List<Type> parameterTypes) {
@@ -150,8 +137,8 @@ abstract class AdviceMatcher {
 
     private static boolean isDeclaringClassMatch(String className, List<String> classAnnotations,
             Advice advice) {
-        String pointcutClassAnnotation = advice.pointcut().classAnnotation();
-        if (!isAnnotationMatch(classAnnotations, pointcutClassAnnotation)) {
+        if (!isAnnotationMatch(classAnnotations, advice.pointcutClassNameAnnotationPattern(),
+                advice.pointcut().classAnnotation())) {
             return false;
         }
         Pattern methodDeclaringClassNamePattern = advice.pointcutMethodDeclaringClassNamePattern();
@@ -162,9 +149,17 @@ abstract class AdviceMatcher {
         return methodDeclaringClassName.isEmpty() || methodDeclaringClassName.equals(className);
     }
 
-    private static boolean isAnnotationMatch(List<String> annotations, String annotation) {
-        // FIXME
-        return annotation.isEmpty()
-                || annotations.contains('L' + annotation.replace('.', '/') + ';');
+    private static boolean isAnnotationMatch(List<String> annotations, @Nullable Pattern pattern,
+            String strictMatch) {
+        for (String annotation : annotations) {
+            annotation = annotation.replace('/', '.').substring(1, annotation.length() - 1);
+            if (pattern != null && pattern.matcher(annotation).matches()) {
+                return true;
+            }
+            if (annotation.equals(strictMatch)) {
+                return true;
+            }
+        }
+        return strictMatch.isEmpty();
     }
 }

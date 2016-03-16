@@ -41,6 +41,7 @@ public abstract class Advice {
     abstract Type adviceType();
     abstract String pointcutClassName();
     abstract @Nullable Pattern pointcutClassNamePattern();
+    abstract @Nullable Pattern pointcutClassNameAnnotationPattern();
     abstract String pointcutMethodDeclaringClassName();
     abstract @Nullable Pattern pointcutMethodDeclaringClassNamePattern();
     abstract @Nullable Pattern pointcutMethodNamePattern();

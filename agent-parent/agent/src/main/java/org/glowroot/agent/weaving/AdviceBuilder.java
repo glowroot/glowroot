@@ -138,6 +138,7 @@ public class AdviceBuilder {
         String pointcutClassName = pointcut.className();
         builder.pointcutClassName(pointcutClassName);
         builder.pointcutClassNamePattern(buildPattern(pointcutClassName));
+        builder.pointcutClassNameAnnotationPattern(buildPattern(pointcut.classAnnotation()));
         if (pointcut.methodDeclaringClassName().equals("")) {
             builder.pointcutMethodDeclaringClassName(pointcutClassName);
             builder.pointcutMethodDeclaringClassNamePattern(buildPattern(pointcutClassName));
@@ -340,7 +341,7 @@ public class AdviceBuilder {
     private static @Nullable Class<? extends Annotation> getValidBindAnnotationType(
             Annotation[] parameterAnnotations,
             List<Class<? extends Annotation>> validBindAnnotationTypes)
-                    throws AdviceConstructionException {
+            throws AdviceConstructionException {
 
         Class<? extends Annotation> foundBindAnnotationType = null;
         for (Annotation annotation : parameterAnnotations) {
@@ -359,7 +360,7 @@ public class AdviceBuilder {
 
     private static AdviceParameter getAdviceParameter(
             Class<? extends Annotation> validBindAnnotationType, Class<?> parameterType)
-                    throws AdviceConstructionException {
+            throws AdviceConstructionException {
 
         checkState(
                 validBindAnnotationType != BindMethodName.class
