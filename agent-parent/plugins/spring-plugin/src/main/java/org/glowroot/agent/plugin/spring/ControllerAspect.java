@@ -90,7 +90,7 @@ public class ControllerAspect {
         }
     }
 
-    @Pointcut(classAnnotation = "org.springframework.stereotype.Controller",
+    @Pointcut(classAnnotation = "org.springframework.stereotype.Controller|org.springframework.web.bind.annotation.RestController",
             methodAnnotation = "org.springframework.web.bind.annotation.RequestMapping",
             methodParameterTypes = {".."}, timerName = "spring controller")
     public static class ControllerAdvice {
