@@ -32,7 +32,7 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.TransactionMarker;
+import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -85,7 +85,7 @@ public class OkHttpClientPluginIT {
         assertThat(entries.get(1).getDepth()).isEqualTo(0);
         assertThat(entries.get(1).getMessage()).matches("auxiliary thread");
         assertThat(entries.get(2).getDepth()).isEqualTo(1);
-        assertThat(entries.get(2).getMessage()).matches("trace marker / CreateTraceEntry");
+        assertThat(entries.get(2).getMessage()).matches("trace entry marker / CreateTraceEntry");
         assertThat(trace.getHeader().getAsyncRootTimer(0).getName())
                 .isEqualTo("http client request");
     }
@@ -101,7 +101,7 @@ public class OkHttpClientPluginIT {
         assertThat(entries.get(1).getDepth()).isEqualTo(0);
         assertThat(entries.get(1).getMessage()).matches("auxiliary thread");
         assertThat(entries.get(2).getDepth()).isEqualTo(1);
-        assertThat(entries.get(2).getMessage()).matches("trace marker / CreateTraceEntry");
+        assertThat(entries.get(2).getMessage()).matches("trace entry marker / CreateTraceEntry");
         assertThat(trace.getHeader().getAsyncRootTimer(0).getName())
                 .isEqualTo("http client request");
     }
@@ -142,12 +142,12 @@ public class OkHttpClientPluginIT {
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onResponse(Response response) {
-                    new CreateTraceEntry().transactionMarker();
+                    new CreateTraceEntry().traceEntryMarker();
                     complete.set(true);
                 }
                 @Override
                 public void onFailure(Request request, IOException e) {
-                    new CreateTraceEntry().transactionMarker();
+                    new CreateTraceEntry().traceEntryMarker();
                     complete.set(true);
                 }
             });
@@ -171,12 +171,12 @@ public class OkHttpClientPluginIT {
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onResponse(Response response) {
-                    new CreateTraceEntry().transactionMarker();
+                    new CreateTraceEntry().traceEntryMarker();
                     complete.set(true);
                 }
                 @Override
                 public void onFailure(Request request, IOException e) {
-                    new CreateTraceEntry().transactionMarker();
+                    new CreateTraceEntry().traceEntryMarker();
                     complete.set(true);
                 }
             });
@@ -186,10 +186,10 @@ public class OkHttpClientPluginIT {
         }
     }
 
-    private static class CreateTraceEntry implements TransactionMarker {
+    private static class CreateTraceEntry implements TraceEntryMarker {
 
         @Override
-        public void transactionMarker() {
+        public void traceEntryMarker() {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {

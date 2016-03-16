@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
+import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
@@ -136,13 +137,13 @@ public class ExecutorIT {
         assertThat(entry1.getMessage()).isEqualTo("auxiliary thread");
         Trace.Entry entry2 = trace.getEntry(1);
         assertThat(entry2.getDepth()).isEqualTo(1);
-        assertThat(entry2.getMessage()).isEqualTo("trace marker / CreateTraceEntry");
+        assertThat(entry2.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
         Trace.Entry entry3 = trace.getEntry(2);
         assertThat(entry3.getDepth()).isEqualTo(1);
         assertThat(entry3.getMessage()).isEqualTo("auxiliary thread");
         Trace.Entry entry4 = trace.getEntry(3);
         assertThat(entry4.getDepth()).isEqualTo(2);
-        assertThat(entry4.getMessage()).isEqualTo("trace marker / CreateTraceEntry");
+        assertThat(entry4.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     private static void checkTrace(Trace trace) {
@@ -162,7 +163,7 @@ public class ExecutorIT {
                 .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(250));
         assertThat(header.getAuxThreadRootTimer(0).getChildTimerCount()).isEqualTo(1);
         assertThat(header.getAuxThreadRootTimer(0).getChildTimer(0).getName())
-                .isEqualTo("mock trace marker");
+                .isEqualTo("mock trace entry marker");
         assertThat(trace.hasMainThreadProfile()).isTrue();
         assertThat(header.getMainThreadProfileSampleCount()).isGreaterThanOrEqualTo(1);
         assertThat(trace.hasAuxThreadProfile()).isTrue();
@@ -174,19 +175,19 @@ public class ExecutorIT {
         assertThat(entry1.getMessage()).isEqualTo("auxiliary thread");
         Trace.Entry entry2 = entries.get(1);
         assertThat(entry2.getDepth()).isEqualTo(1);
-        assertThat(entry2.getMessage()).isEqualTo("trace marker / CreateTraceEntry");
+        assertThat(entry2.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
         Trace.Entry entry3 = entries.get(2);
         assertThat(entry3.getDepth()).isEqualTo(0);
         assertThat(entry3.getMessage()).isEqualTo("auxiliary thread");
         Trace.Entry entry4 = entries.get(3);
         assertThat(entry4.getDepth()).isEqualTo(1);
-        assertThat(entry4.getMessage()).isEqualTo("trace marker / CreateTraceEntry");
+        assertThat(entry4.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
         Trace.Entry entry5 = entries.get(4);
         assertThat(entry5.getDepth()).isEqualTo(0);
         assertThat(entry5.getMessage()).isEqualTo("auxiliary thread");
         Trace.Entry entry6 = entries.get(5);
         assertThat(entry6.getDepth()).isEqualTo(1);
-        assertThat(entry6.getMessage()).isEqualTo("trace marker / CreateTraceEntry");
+        assertThat(entry6.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     public static class DoSomeCallableWork implements AppUnderTest, TransactionMarker {
@@ -202,21 +203,21 @@ public class ExecutorIT {
             Future<Void> future1 = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().transactionMarker();
+                    new CreateTraceEntry().traceEntryMarker();
                     return null;
                 }
             });
             Future<Void> future2 = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().transactionMarker();
+                    new CreateTraceEntry().traceEntryMarker();
                     return null;
                 }
             });
             Future<Void> future3 = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() {
-                    new CreateTraceEntry().transactionMarker();
+                    new CreateTraceEntry().traceEntryMarker();
                     return null;
                 }
             });
@@ -325,12 +326,12 @@ public class ExecutorIT {
             Future<Void> future = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
-                    new CreateTraceEntry().transactionMarker();
+                    new CreateTraceEntry().traceEntryMarker();
                     Thread.sleep(1000);
                     Future<Void> future = executor.submit(new Callable<Void>() {
                         @Override
                         public Void call() {
-                            new CreateTraceEntry().transactionMarker();
+                            new CreateTraceEntry().traceEntryMarker();
                             return null;
                         }
                     });
@@ -348,21 +349,21 @@ public class ExecutorIT {
 
         @Override
         public Void call() {
-            new CreateTraceEntry().transactionMarker();
+            new CreateTraceEntry().traceEntryMarker();
             return null;
         }
 
         @Override
         public void run() {
-            new CreateTraceEntry().transactionMarker();
+            new CreateTraceEntry().traceEntryMarker();
             complete.set(true);
         }
     }
 
-    private static class CreateTraceEntry implements TransactionMarker {
+    private static class CreateTraceEntry implements TraceEntryMarker {
 
         @Override
-        public void transactionMarker() {
+        public void traceEntryMarker() {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {

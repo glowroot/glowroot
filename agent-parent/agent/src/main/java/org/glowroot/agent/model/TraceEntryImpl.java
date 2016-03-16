@@ -346,4 +346,16 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
         checkNotNull(syncTimer);
         return syncTimer.extend();
     }
+
+    // this is used for debugging, in particular in TraceEntryComponent.popEntryBailout()
+    @Override
+    public String toString() {
+        if (messageSupplier != null) {
+            return ((ReadableMessage) messageSupplier.get()).getText();
+        }
+        if (errorMessage != null) {
+            return errorMessage.message();
+        }
+        return super.toString();
+    }
 }

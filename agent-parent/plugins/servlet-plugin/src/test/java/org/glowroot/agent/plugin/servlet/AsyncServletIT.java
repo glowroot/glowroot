@@ -41,7 +41,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.TransactionMarker;
+import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,12 +73,14 @@ public class AsyncServletIT {
         Trace trace = container.execute(InvokeAsync.class);
         // then
         Trace.Header header = trace.getHeader();
+        assertThat(header.getAsync()).isTrue();
         assertThat(header.getHeadline()).isEqualTo("/async");
         assertThat(header.getTransactionName()).isEqualTo("/async");
-        assertThat(header.getEntryCount()).isEqualTo(2);
+        assertThat(header.getEntryCount()).isEqualTo(3);
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries.get(0).getMessage()).isEqualTo("auxiliary thread");
-        assertThat(entries.get(1).getMessage()).isEqualTo("trace marker / TraceEntryMarker");
+        assertThat(entries.get(0).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entries.get(1).getMessage()).isEqualTo("auxiliary thread");
+        assertThat(entries.get(2).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
@@ -88,12 +90,14 @@ public class AsyncServletIT {
         Trace trace = container.execute(InvokeAsync2.class);
         // then
         Trace.Header header = trace.getHeader();
+        assertThat(header.getAsync()).isTrue();
         assertThat(header.getHeadline()).isEqualTo("/async2");
         assertThat(header.getTransactionName()).isEqualTo("/async2");
-        assertThat(header.getEntryCount()).isEqualTo(2);
+        assertThat(header.getEntryCount()).isEqualTo(3);
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries.get(0).getMessage()).isEqualTo("auxiliary thread");
-        assertThat(entries.get(1).getMessage()).isEqualTo("trace marker / TraceEntryMarker");
+        assertThat(entries.get(0).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entries.get(1).getMessage()).isEqualTo("auxiliary thread");
+        assertThat(entries.get(2).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     public static class InvokeAsync extends InvokeServletInTomcat {
@@ -173,13 +177,14 @@ public class AsyncServletIT {
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            new CreateTraceEntry().traceEntryMarker();
             final AsyncContext asyncContext = request.startAsync();
             asyncContext.start(new Runnable() {
                 @Override
                 public void run() {
                     try {
                         Thread.sleep(200);
-                        new TraceEntryMarker().transactionMarker();
+                        new CreateTraceEntry().traceEntryMarker();
                         asyncContext.getResponse().getWriter().println("async response");
                         asyncContext.complete();
                     } catch (Exception e) {
@@ -203,13 +208,14 @@ public class AsyncServletIT {
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            new CreateTraceEntry().traceEntryMarker();
             final AsyncContext asyncContext = request.startAsync(request, response);
             asyncContext.start(new Runnable() {
                 @Override
                 public void run() {
                     try {
                         Thread.sleep(200);
-                        new TraceEntryMarker().transactionMarker();
+                        new CreateTraceEntry().traceEntryMarker();
                         asyncContext.getResponse().getWriter().println("async response");
                         asyncContext.complete();
                     } catch (Exception e) {
@@ -220,8 +226,8 @@ public class AsyncServletIT {
         }
     }
 
-    private static class TraceEntryMarker implements TransactionMarker {
+    private static class CreateTraceEntry implements TraceEntryMarker {
         @Override
-        public void transactionMarker() {}
+        public void traceEntryMarker() {}
     }
 }

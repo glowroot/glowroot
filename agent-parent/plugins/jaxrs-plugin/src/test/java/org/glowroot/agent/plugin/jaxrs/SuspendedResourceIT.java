@@ -33,6 +33,7 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
+import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,7 +66,7 @@ public class SuspendedResourceIT {
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /suspended/*");
         assertThat(trace.getHeader().getAsync()).isTrue();
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(3);
+        assertThat(entries).hasSize(4);
         Trace.Entry entry = entries.get(0);
         assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.agent.plugin.jaxrs.SuspendedResourceIT$SuspendedResource.log()");
@@ -74,6 +75,9 @@ public class SuspendedResourceIT {
         assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
 
         entry = entries.get(2);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        entry = entries.get(3);
         assertThat(entry.getMessage()).isEqualTo("jaxrs async response");
     }
 
@@ -97,6 +101,7 @@ public class SuspendedResourceIT {
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
+                    new CreateTraceEntry().traceEntryMarker();
                     asyncResponse.resume(Response.status(200).entity(msg).build());
                 }
             });
@@ -107,6 +112,17 @@ public class SuspendedResourceIT {
                 Thread.sleep(200);
             } catch (InterruptedException e) {
                 // ignore
+            }
+        }
+    }
+
+    private static class CreateTraceEntry implements TraceEntryMarker {
+
+        @Override
+        public void traceEntryMarker() {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
             }
         }
     }

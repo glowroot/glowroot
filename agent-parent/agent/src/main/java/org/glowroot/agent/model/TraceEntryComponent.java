@@ -138,7 +138,8 @@ class TraceEntryComponent {
 
     // split typically unused path into separate method to not affect inlining budget
     private void popEntryBailout(TraceEntryImpl entry) {
-        logger.error("found entry {} at top of stack when expecting entry {}", activeEntry, entry);
+        logger.error("found entry {} at top of stack when expecting entry {}", activeEntry, entry,
+                new Exception("location stack trace"));
         if (entry == rootEntry) {
             activeEntry = null;
             return;
