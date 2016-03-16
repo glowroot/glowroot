@@ -41,7 +41,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
-import org.objectweb.asm.commons.RemappingMethodAdapter;
+import org.objectweb.asm.commons.MethodRemapper;
 import org.objectweb.asm.commons.SimpleRemapper;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -474,8 +474,7 @@ class WeavingClassVisitor extends ClassVisitor {
             String[] exceptions = Iterables.toArray(mn.exceptions, String.class);
             MethodVisitor mv =
                     cw.visitMethod(mn.access, mn.name, mn.desc, mn.signature, exceptions);
-            mn.accept(new RemappingMethodAdapter(mn.access, mn.desc, mv,
-                    new SimpleRemapper(cn.name, type.getInternalName())));
+            mn.accept(new MethodRemapper(mv, new SimpleRemapper(cn.name, type.getInternalName())));
         }
     }
 

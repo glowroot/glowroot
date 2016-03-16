@@ -391,15 +391,15 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.TypePath");
         types.add("org.objectweb.asm.TypeReference");
         types.add("org.objectweb.asm.commons.AdviceAdapter");
+        types.add("org.objectweb.asm.commons.AnnotationRemapper");
         types.add("org.objectweb.asm.commons.GeneratorAdapter");
         types.add("org.objectweb.asm.commons.JSRInlinerAdapter");
         types.add("org.objectweb.asm.commons.JSRInlinerAdapter$Instantiation");
         types.add("org.objectweb.asm.commons.LocalVariablesSorter");
         types.add("org.objectweb.asm.commons.Method");
+        types.add("org.objectweb.asm.commons.MethodRemapper");
         types.add("org.objectweb.asm.commons.Remapper");
-        types.add("org.objectweb.asm.commons.RemappingAnnotationAdapter");
-        types.add("org.objectweb.asm.commons.RemappingMethodAdapter");
-        types.add("org.objectweb.asm.commons.RemappingSignatureAdapter");
+        types.add("org.objectweb.asm.commons.SignatureRemapper");
         types.add("org.objectweb.asm.commons.SimpleRemapper");
         types.add("org.objectweb.asm.signature.SignatureReader");
         types.add("org.objectweb.asm.signature.SignatureVisitor");

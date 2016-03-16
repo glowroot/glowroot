@@ -75,7 +75,7 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jul-to-slf4j</artifactId>
-      <version>1.7.16</version>
+      <version>1.7.19</version>
     </dependency>
     <dependency>
       <groupId>org.codehaus.janino</groupId>

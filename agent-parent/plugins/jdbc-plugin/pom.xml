@@ -85,7 +85,7 @@
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-jdbc</artifactId>
       <!-- tomcat 8 requires JDK 7+ -->
-      <version>7.0.67</version>
+      <version>7.0.68</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

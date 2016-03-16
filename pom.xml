@@ -76,13 +76,13 @@
   </scm>
 
   <properties>
-    <grpc.version>0.13.1</grpc.version>
+    <grpc.version>0.13.2</grpc.version>
     <protobuf.version>3.0.0-beta-2</protobuf.version>
     <netty.version>4.1.0.CR3</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.5</jackson.version>
-    <logback.version>1.1.5</logback.version>
-    <immutables.version>2.1.11</immutables.version>
+    <logback.version>1.1.6</logback.version>
+    <immutables.version>2.1.14</immutables.version>
     <javax.mail.version>1.5.5</javax.mail.version>
     <jmh.version>1.11.3</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -170,7 +170,7 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.16</version>
+        <version>1.7.19</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
@@ -352,7 +352,7 @@
           recent jdk -->
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <version>1.14</version>
+        <version>1.15</version>
         <configuration>
           <signature>
             <groupId>org.codehaus.mojo.signature</groupId>
@@ -372,7 +372,7 @@
       <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
-        <version>1.6.5</version>
+        <version>1.6.7</version>
         <extensions>true</extensions>
         <configuration>
           <serverId>ossrh</serverId>

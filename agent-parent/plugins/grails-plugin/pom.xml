@@ -67,14 +67,21 @@
     <dependency>
       <groupId>org.grails</groupId>
       <artifactId>grails-dependencies</artifactId>
-      <version>3.1.2</version>
+      <version>3.1.4</version>
       <scope>test</scope>
       <type>pom</type>
     </dependency>
     <dependency>
       <groupId>org.grails</groupId>
       <artifactId>grails-web-boot</artifactId>
-      <version>3.1.2</version>
+      <version>3.1.4</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>org.aspectj</groupId>
+      <artifactId>aspectjweaver</artifactId>
+      <version>1.8.8</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
