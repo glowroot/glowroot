@@ -97,8 +97,12 @@ public class JsfRenderIT {
         @Override
         protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://localhost:" + port + "/hello.xhtml").execute().get();
+            int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + "/hello.xhtml")
+                    .execute().get().getStatusCode();
             asyncHttpClient.close();
+            if (statusCode != 200) {
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
         }
     }
 
@@ -120,12 +124,18 @@ public class JsfRenderIT {
             String viewState = matcher.group(1).replace(":", "%3A");
             String postBody =
                     "j_idt4=j_idt4&j_idt4%3Aj_idt5=Hello&javax.faces.ViewState=" + viewState;
-            asyncHttpClient
+            int statusCode = asyncHttpClient
                     .preparePost(
                             "http://localhost:" + port + "/hello.xhtml;jsessionid=" + jsessionId)
                     .setHeader("Content-Type", "application/x-www-form-urlencoded")
-                    .setBody(postBody).execute().get();
+                    .setBody(postBody)
+                    .execute()
+                    .get()
+                    .getStatusCode();
             asyncHttpClient.close();
+            if (statusCode != 200) {
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
             // sleep a bit to make sure the "last trace" is not the first http request from above
             Thread.sleep(200);
         }

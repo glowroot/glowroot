@@ -100,8 +100,12 @@ public class AsyncServletIT {
         @Override
         protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://localhost:" + port + "/async").execute().get();
+            int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + "/async")
+                    .execute().get().getStatusCode();
             asyncHttpClient.close();
+            if (statusCode != 200) {
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
         }
     }
 
@@ -109,8 +113,12 @@ public class AsyncServletIT {
         @Override
         protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://localhost:" + port + "/async2").execute().get();
+            int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + "/async2")
+                    .execute().get().getStatusCode();
             asyncHttpClient.close();
+            if (statusCode != 200) {
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
         }
     }
 

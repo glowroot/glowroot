@@ -19,8 +19,11 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 
+import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import com.ning.http.client.AsyncHttpClient;
 import org.apache.catalina.Context;
@@ -95,8 +98,12 @@ public class AnnotatedServletIT {
 
             tomcat.start();
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://localhost:" + port + "/hello/5").execute().get();
+            int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + "/hello/5")
+                    .execute().get().getStatusCode();
             asyncHttpClient.close();
+            if (statusCode != 200) {
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
             tomcat.stop();
             tomcat.destroy();
         }
@@ -111,5 +118,11 @@ public class AnnotatedServletIT {
 
     @WebServlet("/hello/*")
     @SuppressWarnings("serial")
-    public static class AnnotatedServlet extends HttpServlet {}
+    public static class AnnotatedServlet extends HttpServlet {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException {
+            response.getWriter().print("hello");
+        }
+    }
 }

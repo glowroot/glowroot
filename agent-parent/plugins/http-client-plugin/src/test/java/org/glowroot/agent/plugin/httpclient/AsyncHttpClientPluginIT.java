@@ -90,9 +90,13 @@ public class AsyncHttpClientPluginIT {
         @Override
         public void transactionMarker() throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://localhost:" + getPort() + "/hello1/").execute()
-                    .get();
+            int statusCode =
+                    asyncHttpClient.prepareGet("http://localhost:" + getPort() + "/hello1/")
+                            .execute().get().getStatusCode();
             asyncHttpClient.close();
+            if (statusCode != 200) {
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
         }
     }
 
@@ -100,9 +104,13 @@ public class AsyncHttpClientPluginIT {
         @Override
         public void transactionMarker() throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.preparePost("http://localhost:" + getPort() + "/hello2").execute()
-                    .get();
+            int statusCode =
+                    asyncHttpClient.preparePost("http://localhost:" + getPort() + "/hello2")
+                            .execute().get().getStatusCode();
             asyncHttpClient.close();
+            if (statusCode != 200) {
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
         }
     }
 }

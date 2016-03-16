@@ -80,8 +80,12 @@ public class JettyHandlerIT {
             server.start();
             int port = server.getConnectors()[0].getLocalPort();
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://localhost:" + port + "/hello").execute().get();
+            int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + "/hello")
+                    .execute().get().getStatusCode();
             asyncHttpClient.close();
+            if (statusCode != 200) {
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
             server.stop();
         }
     }

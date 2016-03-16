@@ -63,10 +63,10 @@ public class BasicSmokeIT extends WebDriverIT {
                         + "\"profilingIntervalMillis\":10,\"captureThreadStats\":false,"
                         + "\"version\":\"" + version + "\"}")
                 .build();
-        int status = asyncHttpClient.executeRequest(request).get().getStatusCode();
+        int statusCode = asyncHttpClient.executeRequest(request).get().getStatusCode();
         asyncHttpClient.close();
-        if (status != 200) {
-            throw new AssertionError("Unexpected status: " + status);
+        if (statusCode != 200) {
+            throw new AssertionError("Unexpected status code: " + statusCode);
         }
         Executors.newSingleThreadExecutor().execute(new Runnable() {
             @Override

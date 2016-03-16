@@ -42,8 +42,12 @@ abstract class InvokeJaxrsResourceInTomcat implements AppUnderTest {
 
         tomcat.start();
         AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-        asyncHttpClient.prepareGet("http://localhost:" + port + url).execute().get();
+        int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + url).execute()
+                .get().getStatusCode();
         asyncHttpClient.close();
+        if (statusCode != 200) {
+            throw new IllegalStateException("Unexpected status code: " + statusCode);
+        }
 
         tomcat.stop();
         tomcat.destroy();

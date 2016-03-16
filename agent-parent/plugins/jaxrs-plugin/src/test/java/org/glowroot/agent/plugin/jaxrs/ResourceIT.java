@@ -199,6 +199,7 @@ public class ResourceIT {
 
     @Path("hello")
     public static class HelloResource {
+        @GET
         @Path("{param}")
         public Response echo(@PathParam("param") String msg) {
             return Response.status(200).entity(msg).build();

@@ -130,9 +130,13 @@ public class GrailsIT {
         @Override
         protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://localhost:" + port + "/hello/abc/xyz").execute()
-                    .get();
+            int statusCode =
+                    asyncHttpClient.prepareGet("http://localhost:" + port + "/hello/abc/xyz")
+                            .execute().get().getStatusCode();
             asyncHttpClient.close();
+            if (statusCode != 200) {
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
         }
     }
 
@@ -141,8 +145,12 @@ public class GrailsIT {
         @Override
         protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://localhost:" + port + "/hello").execute().get();
+            int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + "/hello")
+                    .execute().get().getStatusCode();
             asyncHttpClient.close();
+            if (statusCode != 200) {
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
         }
     }
 
