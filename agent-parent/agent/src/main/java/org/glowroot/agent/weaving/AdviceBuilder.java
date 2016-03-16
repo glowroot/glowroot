@@ -148,6 +148,7 @@ public class AdviceBuilder {
         }
         builder.pointcutMethodNamePattern(buildPattern(pointcut.methodName()));
         builder.pointcutMethodAnnotationPattern(buildPattern(pointcut.methodAnnotation()));
+        builder.pointcutClassNameAnnotationPattern(buildPattern(pointcut.classAnnotation()));
 
         // hasBindThreadContext will be overridden below if needed
         builder.hasBindThreadContext(false);
