@@ -111,6 +111,10 @@ public class ServletAspect {
             nestingGroup = "outer-servlet-or-filter", timerName = "http request")
     public static class ServiceAdvice {
         private static final TimerName timerName = Agent.getTimerName(ServiceAdvice.class);
+        @IsEnabled
+        public static boolean isEnabled() {
+            return currServletMessageSupplier.get() == null;
+        }
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
                 @BindParameter @Nullable Object req) {

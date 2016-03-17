@@ -15,9 +15,6 @@
  */
 package org.glowroot.agent.plugin.servlet;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,16 +26,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.ning.http.client.AsyncHttpClient;
-import org.apache.catalina.Context;
-import org.apache.catalina.loader.WebappLoader;
-import org.apache.catalina.startup.Tomcat;
-import org.apache.naming.resources.VirtualDirContext;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
@@ -123,44 +115,6 @@ public class AsyncServletIT {
             if (statusCode != 200) {
                 throw new IllegalStateException("Unexpected status code: " + statusCode);
             }
-        }
-    }
-
-    public abstract static class InvokeServletInTomcat implements AppUnderTest {
-
-        @Override
-        public void executeApp() throws Exception {
-            int port = getAvailablePort();
-            Tomcat tomcat = new Tomcat();
-            tomcat.setBaseDir("target/tomcat");
-            tomcat.setPort(port);
-            Context context =
-                    tomcat.addWebapp("", new File("src/test/resources").getAbsolutePath());
-
-            WebappLoader webappLoader =
-                    new WebappLoader(InvokeServletInTomcat.class.getClassLoader());
-            context.setLoader(webappLoader);
-
-            // this is needed in order for Tomcat to find annotated servlet
-            VirtualDirContext resources = new VirtualDirContext();
-            resources.setExtraResourcePaths("/WEB-INF/classes=target/test-classes");
-            context.setResources(resources);
-
-            tomcat.start();
-
-            doTest(port);
-
-            tomcat.stop();
-            tomcat.destroy();
-        }
-
-        protected abstract void doTest(int port) throws Exception;
-
-        private static int getAvailablePort() throws IOException {
-            ServerSocket serverSocket = new ServerSocket(0);
-            int port = serverSocket.getLocalPort();
-            serverSocket.close();
-            return port;
         }
     }
 

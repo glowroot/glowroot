@@ -15,9 +15,7 @@
  */
 package org.glowroot.agent.plugin.servlet;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.ServerSocket;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -26,16 +24,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.ning.http.client.AsyncHttpClient;
-import org.apache.catalina.Context;
-import org.apache.catalina.loader.WebappLoader;
-import org.apache.catalina.startup.Tomcat;
-import org.apache.naming.resources.VirtualDirContext;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -65,7 +58,7 @@ public class AnnotatedServletIT {
     public void testServlet() throws Exception {
         // given
         // when
-        Trace trace = container.execute(InvokeServletInTomcat.class);
+        Trace trace = container.execute(InvokeServlet.class);
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("/hello/5");
@@ -76,27 +69,9 @@ public class AnnotatedServletIT {
         assertThat(header.getTransactionName()).isEqualTo("/hello/5");
     }
 
-    public static class InvokeServletInTomcat implements AppUnderTest {
-
+    public static class InvokeServlet extends InvokeServletInTomcat {
         @Override
-        public void executeApp() throws Exception {
-            int port = getAvailablePort();
-            Tomcat tomcat = new Tomcat();
-            tomcat.setBaseDir("target/tomcat");
-            tomcat.setPort(port);
-            Context context =
-                    tomcat.addWebapp("", new File("src/test/resources").getAbsolutePath());
-
-            WebappLoader webappLoader =
-                    new WebappLoader(InvokeServletInTomcat.class.getClassLoader());
-            context.setLoader(webappLoader);
-
-            // this is needed in order for Tomcat to find annotated servlet
-            VirtualDirContext resources = new VirtualDirContext();
-            resources.setExtraResourcePaths("/WEB-INF/classes=target/test-classes");
-            context.setResources(resources);
-
-            tomcat.start();
+        protected void doTest(int port) throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
             int statusCode = asyncHttpClient.prepareGet("http://localhost:" + port + "/hello/5")
                     .execute().get().getStatusCode();
@@ -104,15 +79,6 @@ public class AnnotatedServletIT {
             if (statusCode != 200) {
                 throw new IllegalStateException("Unexpected status code: " + statusCode);
             }
-            tomcat.stop();
-            tomcat.destroy();
-        }
-
-        private static int getAvailablePort() throws IOException {
-            ServerSocket serverSocket = new ServerSocket(0);
-            int port = serverSocket.getLocalPort();
-            serverSocket.close();
-            return port;
         }
     }
 

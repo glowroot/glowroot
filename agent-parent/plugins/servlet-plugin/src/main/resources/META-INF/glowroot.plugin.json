@@ -109,6 +109,7 @@
     "org.glowroot.agent.plugin.servlet.AsyncServletAspect",
     "org.glowroot.agent.plugin.servlet.RequestParameterAspect",
     "org.glowroot.agent.plugin.servlet.ResponseHeaderAspect",
+    "org.glowroot.agent.plugin.servlet.RequestDispatcherAspect",
     "org.glowroot.agent.plugin.servlet.SessionAspect",
     "org.glowroot.agent.plugin.servlet.CatalinaAppStartupAspect"
   ]
