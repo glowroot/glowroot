@@ -6,6 +6,7 @@
     "org.glowroot.agent.plugin.httpclient.ApacheHttpClientAspect",
     "org.glowroot.agent.plugin.httpclient.AsyncHttpClientAspect",
     "org.glowroot.agent.plugin.httpclient.OkHttpClientAspect",
-    "org.glowroot.agent.plugin.httpclient.SoapOutInterceptorAspect"
+    "org.glowroot.agent.plugin.httpclient.SoapOutInterceptorAspect",
+    "org.glowroot.agent.plugin.httpclient.RestTemplateAspect"
   ]
 }
