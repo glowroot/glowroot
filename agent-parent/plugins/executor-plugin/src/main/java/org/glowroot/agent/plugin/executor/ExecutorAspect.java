@@ -59,6 +59,9 @@ public class ExecutorAspect {
         }
     }
 
+    @Mixin("org.apache.tomcat.util.net.JIoEndpoint$SocketProcessor")
+    public static class SuppressedRunnableImpl implements SuppressedRunnableMixin {}
+
     // the field and method names are verbose to avoid conflict since they will become fields
     // and methods in all classes that extend java.util.concurrent.FutureTask
     @Mixin({"java.util.concurrent.FutureTask"})
@@ -99,10 +102,14 @@ public class ExecutorAspect {
                 @Nullable RunnableCallableMixin runnableCallableMixin);
     }
 
+    // the method names are verbose to avoid conflict since they will become methods in all classes
+    // that extend java.lang.Runnable and/or java.util.concurrent.Callable
+    public interface SuppressedRunnableMixin {}
+
     // ignore self nested is important for cases with wrapping ExecutorServices so that the outer
     // Runnable/Callable is the one used
     @Pointcut(className = "java.util.concurrent.ExecutorService", methodName = "submit",
-            methodParameterTypes = {".."}, nestingGroup = "executor")
+            methodParameterTypes = {".."}, nestingGroup = "executor-submit")
     public static class SubmitAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object runnableCallable) {
@@ -116,6 +123,13 @@ public class ExecutorAspect {
             runnableCallableMixin.glowroot$setAuxContext(auxContext);
         }
     }
+
+    // TODO revisit this
+    // this method uses submit() and returns Future, but none of the callers use/wait on the Future
+    @Pointcut(className = "net.sf.ehcache.store.disk.DiskStorageFactory", methodName = "schedule",
+            methodParameterTypes = {"java.util.concurrent.Callable"},
+            nestingGroup = "executor-submit")
+    public static class EhcacheDiskStorageScheduleAdvice {}
 
     @Pointcut(className = "javax.servlet.AsyncContext", methodName = "start",
             methodParameterTypes = {"java.lang.Runnable"})
@@ -162,39 +176,26 @@ public class ExecutorAspect {
         }
     }
 
+    // no nesting group
     @Pointcut(className = "java.util.concurrent.Executor", methodName = "execute",
-            methodParameterTypes = {"java.lang.Runnable"}, nestingGroup = "executor")
+            methodParameterTypes = {"java.lang.Runnable"})
     public static class ExecuteAdvice {
 
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object runnableCallable) {
             // this class may have been loaded before class file transformer was added to jvm
-            return runnableCallable instanceof RunnableCallableMixin;
+            return runnableCallable instanceof RunnableCallableMixin
+                    && !(runnableCallable instanceof SuppressedRunnableMixin);
         }
 
         @OnBefore
         public static void onBefore(ThreadContext context, @BindParameter Object runnableCallable) {
-            if (runnableCallable instanceof FutureTaskMixin) {
-                FutureTaskMixin futureTaskMixin = (FutureTaskMixin) runnableCallable;
-                AuxThreadContext auxContext = context.createAuxThreadContext();
-                RunnableCallableMixin innerRunnableCallable =
-                        futureTaskMixin.glowroot$getInnerRunnableCallable();
-                if (innerRunnableCallable != null) {
-                    innerRunnableCallable.glowroot$setAuxContext(auxContext);
-                }
-            } else if (context.isTransactionAsync()) {
-                RunnableCallableMixin runnableCallableMixin =
-                        (RunnableCallableMixin) runnableCallable;
-                AuxThreadContext asyncContext = context.createAuxThreadContext();
-                runnableCallableMixin.glowroot$setAuxContext(asyncContext);
-            }
+            RunnableCallableMixin runnableCallableMixin =
+                    (RunnableCallableMixin) runnableCallable;
+            AuxThreadContext auxContext = context.createAuxThreadContext();
+            runnableCallableMixin.glowroot$setAuxContext(auxContext);
         }
     }
-
-    // this method uses submit() and returns Future, but none of the callers use/wait on the Future
-    @Pointcut(className = "net.sf.ehcache.store.disk.DiskStorageFactory", methodName = "schedule",
-            methodParameterTypes = {"java.util.concurrent.Callable"}, nestingGroup = "executor")
-    public static class EhcacheDiskStorageScheduleAdvice {}
 
     @Pointcut(className = "java.util.concurrent.Future", methodName = "get",
             methodParameterTypes = {".."}, timerName = "wait on future")

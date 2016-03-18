@@ -17,6 +17,7 @@ package org.glowroot.agent.plugin.servlet;
 
 import java.util.Map;
 
+import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
@@ -29,7 +30,7 @@ public class RequestParameterAspect {
             methodParameterTypes = {".."}, nestingGroup = "servlet-inner-call")
     public static class GetParameterAdvice {
         @OnReturn
-        public static void onReturn(@BindReceiver Object req,
+        public static void onReturn(ThreadContext context, @BindReceiver Object req,
                 @BindClassMeta RequestClassMeta requestClassMeta) {
             if (!(req instanceof HttpServletRequest)) {
                 return;
@@ -38,7 +39,8 @@ public class RequestParameterAspect {
             // only now is it safe to get parameters (if parameters are retrieved before this, it
             // could prevent a servlet from choosing to read the underlying stream instead of using
             // the getParameter* methods) see SRV.3.1.1 "When Parameters Are Available"
-            ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
+            ServletMessageSupplier messageSupplier =
+                    (ServletMessageSupplier) context.getServletMessageSupplier();
             if (messageSupplier == null || messageSupplier.isRequestParametersCaptured()) {
                 return;
             }

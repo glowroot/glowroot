@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.annotation.Nullable;
 
@@ -32,6 +34,8 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
 
+// this class is thread safe since it is part of the thread safe ServletMessageSupplier (see comment
+// in ServletMessageSupplier for details why)
 class ResponseHeaderComponent {
 
     private static final Logger logger = Agent.getLogger(ServletMessageSupplier.class);
@@ -47,8 +51,7 @@ class ResponseHeaderComponent {
     }
 
     // map key is uppercase for case-insensitivity
-    // implementation is LinkedHashMap to preserve insertion order
-    private @MonotonicNonNull Map<String, ResponseHeader> responseHeaders;
+    private @MonotonicNonNull ConcurrentMap<String, ResponseHeader> responseHeaders;
 
     synchronized Map<String, Object> getMapOfStrings() {
         if (responseHeaders == null) {
@@ -76,7 +79,7 @@ class ResponseHeaderComponent {
 
     synchronized void setHeader(String name, Object value) {
         if (responseHeaders == null) {
-            responseHeaders = Maps.newLinkedHashMap();
+            responseHeaders = Maps.newConcurrentMap();
         }
         String nameUpper = name.toUpperCase(Locale.ENGLISH);
         ResponseHeader responseHeader = responseHeaders.get(nameUpper);
@@ -89,7 +92,7 @@ class ResponseHeaderComponent {
 
     synchronized void addHeader(String name, Object value) {
         if (responseHeaders == null) {
-            responseHeaders = Maps.newLinkedHashMap();
+            responseHeaders = Maps.newConcurrentMap();
         }
         String nameUpper = name.toUpperCase(Locale.ENGLISH);
         ResponseHeader responseHeader = responseHeaders.get(nameUpper);
@@ -117,26 +120,35 @@ class ResponseHeaderComponent {
         }
     }
 
+    // this class is thread safe since it is part of the thread safe ServletMessageSupplier (see
+    // comment in ServletMessageSupplier for details why)
     private static class ResponseHeader {
+
         private final String name;
         private volatile Object value;
-        private volatile @MonotonicNonNull List<Object> values;
+        private volatile @MonotonicNonNull CopyOnWriteArrayList<Object> values;
+
         private ResponseHeader(String name, Object value) {
             this.name = name;
             this.value = value;
         }
+
         private String getName() {
             return name;
         }
+
         private Object getValue() {
             return value;
         }
+
         private @Nullable List<Object> getValues() {
             return values;
         }
-        public void setValue(Object value) {
+
+        private void setValue(Object value) {
             this.value = value;
         }
+
         private void addValue(Object newValue) {
             if (values == null) {
                 values = Lists.newCopyOnWriteArrayList();

@@ -146,6 +146,11 @@ public class NopTransactionService {
         public TraceEntry start() {
             return NopTraceEntry.INSTANCE;
         }
+
+        @Override
+        public TraceEntry startAndMarkAsyncTransactionComplete() {
+            return NopTraceEntry.INSTANCE;
+        }
     }
 
     public static class NopTimer implements Timer {

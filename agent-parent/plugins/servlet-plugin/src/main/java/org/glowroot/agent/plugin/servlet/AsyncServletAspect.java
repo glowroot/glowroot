@@ -15,11 +15,32 @@
  */
 package org.glowroot.agent.plugin.servlet;
 
+import javax.annotation.Nullable;
+
 import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.weaving.BindReceiver;
+import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
+import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class AsyncServletAspect {
+
+    static final String GLOWROOT_AUX_CONTEXT_REQUEST_ATTRIBUTE = "glowroot$auxContext";
+
+    @Shim("javax.servlet.AsyncContext")
+    public interface AsyncContext {
+
+        @Shim("javax.servlet.ServletRequest getRequest()")
+        @Nullable
+        ServletRequest glowrootShimGetRequest();
+    }
+
+    @Shim("javax.servlet.ServletRequest")
+    public interface ServletRequest {
+
+        void setAttribute(String name, Object o);
+    }
 
     @Pointcut(className = "javax.servlet.ServletRequest", methodName = "startAsync",
             methodParameterTypes = {}, nestingGroup = "servlet-start-async")
@@ -47,6 +68,21 @@ public class AsyncServletAspect {
         @OnReturn
         public static void onReturn(ThreadContext context) {
             context.completeAsyncTransaction();
+        }
+    }
+
+    @Pointcut(className = "javax.servlet.AsyncContext", methodName = "dispatch",
+            methodParameterTypes = {".."}, nestingGroup = "servlet-dispatch")
+    public static class DispatchAdvice {
+        @OnBefore
+        public static void onBefore(ThreadContext context,
+                @BindReceiver AsyncContext asyncContext) {
+            ServletRequest request = asyncContext.glowrootShimGetRequest();
+            if (request == null) {
+                return;
+            }
+            request.setAttribute(GLOWROOT_AUX_CONTEXT_REQUEST_ATTRIBUTE,
+                    context.createAuxThreadContext());
         }
     }
 }

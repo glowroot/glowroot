@@ -255,6 +255,21 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
+    public @Nullable MessageSupplier getServletMessageSupplier() {
+        if (threadContext != null) {
+            return threadContext.getServletMessageSupplier();
+        }
+        return null;
+    }
+
+    @Override
+    public void setServletMessageSupplier(@Nullable MessageSupplier messageSupplier) {
+        if (threadContext != null) {
+            threadContext.setServletMessageSupplier(messageSupplier);
+        }
+    }
+
+    @Override
     public int getCurrentNestingGroupId() {
         if (threadContext == null) {
             return 0;

@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
+import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
@@ -40,11 +41,12 @@ public class ResponseHeaderAspect {
             return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
-        public static void onAfter(@BindParameter int value) {
+        public static void onAfter(ThreadContext context, @BindParameter int value) {
             if (!captureResponseHeader("Content-Length")) {
                 return;
             }
-            ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
+            ServletMessageSupplier messageSupplier =
+                    (ServletMessageSupplier) context.getServletMessageSupplier();
             if (messageSupplier != null) {
                 messageSupplier.setResponseIntHeader("Content-Length", value);
             }
@@ -60,11 +62,12 @@ public class ResponseHeaderAspect {
             return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
-        public static void onAfter(@BindParameter long value) {
+        public static void onAfter(ThreadContext context, @BindParameter long value) {
             if (!captureResponseHeader("Content-Length")) {
                 return;
             }
-            ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
+            ServletMessageSupplier messageSupplier =
+                    (ServletMessageSupplier) context.getServletMessageSupplier();
             if (messageSupplier != null) {
                 messageSupplier.setResponseLongHeader("Content-Length", value);
             }
@@ -80,7 +83,7 @@ public class ResponseHeaderAspect {
             return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
-        public static void onAfter(@BindReceiver Object response,
+        public static void onAfter(ThreadContext context, @BindReceiver Object response,
                 @BindParameter @Nullable String value,
                 @BindClassMeta ResponseInvoker responseInvoker) {
             if (value == null) {
@@ -90,7 +93,8 @@ public class ResponseHeaderAspect {
             if (!captureResponseHeader("Content-Type")) {
                 return;
             }
-            ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
+            ServletMessageSupplier messageSupplier =
+                    (ServletMessageSupplier) context.getServletMessageSupplier();
             if (messageSupplier != null) {
                 if (responseInvoker.hasGetContentTypeMethod()) {
                     String contentType = responseInvoker.getContentType(response);
@@ -111,12 +115,13 @@ public class ResponseHeaderAspect {
             return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
-        public static void onAfter(@BindReceiver Object response,
+        public static void onAfter(ThreadContext context, @BindReceiver Object response,
                 @BindClassMeta ResponseInvoker responseInvoker) {
             if (!captureResponseHeader("Content-Type")) {
                 return;
             }
-            ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
+            ServletMessageSupplier messageSupplier =
+                    (ServletMessageSupplier) context.getServletMessageSupplier();
             if (messageSupplier != null && responseInvoker.hasGetContentTypeMethod()) {
                 String contentType = responseInvoker.getContentType(response);
                 messageSupplier.setResponseHeader("Content-Type", contentType);
@@ -133,7 +138,7 @@ public class ResponseHeaderAspect {
             return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
-        public static void onAfter(@BindReceiver Object response,
+        public static void onAfter(ThreadContext context, @BindReceiver Object response,
                 @BindParameter @Nullable Locale locale,
                 @BindClassMeta ResponseInvoker responseInvoker) {
             if (locale == null) {
@@ -145,7 +150,8 @@ public class ResponseHeaderAspect {
             if (!captureContentLanguage && !captureContentType) {
                 return;
             }
-            ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
+            ServletMessageSupplier messageSupplier =
+                    (ServletMessageSupplier) context.getServletMessageSupplier();
             if (messageSupplier != null) {
                 if (captureContentLanguage) {
                     messageSupplier.setResponseHeader("Content-Language", locale.toString());
@@ -168,7 +174,7 @@ public class ResponseHeaderAspect {
             return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
-        public static void onAfter(@BindParameter @Nullable String name,
+        public static void onAfter(ThreadContext context, @BindParameter @Nullable String name,
                 @BindParameter @Nullable String value) {
             if (name == null || value == null) {
                 // seems nothing sensible to do here other than ignore
@@ -177,7 +183,8 @@ public class ResponseHeaderAspect {
             if (!captureResponseHeader(name)) {
                 return;
             }
-            ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
+            ServletMessageSupplier messageSupplier =
+                    (ServletMessageSupplier) context.getServletMessageSupplier();
             if (messageSupplier != null) {
                 messageSupplier.setResponseHeader(name, value);
             }
@@ -194,7 +201,7 @@ public class ResponseHeaderAspect {
             return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
-        public static void onAfter(@BindParameter @Nullable String name,
+        public static void onAfter(ThreadContext context, @BindParameter @Nullable String name,
                 @BindParameter long value) {
             if (name == null) {
                 // seems nothing sensible to do here other than ignore
@@ -203,7 +210,8 @@ public class ResponseHeaderAspect {
             if (!captureResponseHeader(name)) {
                 return;
             }
-            ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
+            ServletMessageSupplier messageSupplier =
+                    (ServletMessageSupplier) context.getServletMessageSupplier();
             if (messageSupplier != null) {
                 messageSupplier.setResponseDateHeader(name, value);
             }
@@ -219,7 +227,8 @@ public class ResponseHeaderAspect {
             return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
-        public static void onAfter(@BindParameter @Nullable String name, @BindParameter int value) {
+        public static void onAfter(ThreadContext context, @BindParameter @Nullable String name,
+                @BindParameter int value) {
             if (name == null) {
                 // seems nothing sensible to do here other than ignore
                 return;
@@ -227,7 +236,8 @@ public class ResponseHeaderAspect {
             if (!captureResponseHeader(name)) {
                 return;
             }
-            ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
+            ServletMessageSupplier messageSupplier =
+                    (ServletMessageSupplier) context.getServletMessageSupplier();
             if (messageSupplier != null) {
                 messageSupplier.setResponseIntHeader(name, value);
             }
@@ -244,7 +254,7 @@ public class ResponseHeaderAspect {
             return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
-        public static void onAfter(@BindParameter @Nullable String name,
+        public static void onAfter(ThreadContext context, @BindParameter @Nullable String name,
                 @BindParameter @Nullable String value) {
             if (name == null || value == null) {
                 // seems nothing sensible to do here other than ignore
@@ -253,7 +263,8 @@ public class ResponseHeaderAspect {
             if (!captureResponseHeader(name)) {
                 return;
             }
-            ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
+            ServletMessageSupplier messageSupplier =
+                    (ServletMessageSupplier) context.getServletMessageSupplier();
             if (messageSupplier != null) {
                 messageSupplier.addResponseHeader(name, value);
             }
@@ -270,7 +281,7 @@ public class ResponseHeaderAspect {
             return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
-        public static void onAfter(@BindParameter @Nullable String name,
+        public static void onAfter(ThreadContext context, @BindParameter @Nullable String name,
                 @BindParameter long value) {
             if (name == null) {
                 // seems nothing sensible to do here other than ignore
@@ -279,7 +290,8 @@ public class ResponseHeaderAspect {
             if (!captureResponseHeader(name)) {
                 return;
             }
-            ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
+            ServletMessageSupplier messageSupplier =
+                    (ServletMessageSupplier) context.getServletMessageSupplier();
             if (messageSupplier != null) {
                 messageSupplier.addResponseDateHeader(name, value);
             }
@@ -295,7 +307,8 @@ public class ResponseHeaderAspect {
             return ServletPluginProperties.captureResponseHeadersNonEmpty();
         }
         @OnAfter
-        public static void onAfter(@BindParameter @Nullable String name, @BindParameter int value) {
+        public static void onAfter(ThreadContext context, @BindParameter @Nullable String name,
+                @BindParameter int value) {
             if (name == null) {
                 // seems nothing sensible to do here other than ignore
                 return;
@@ -303,7 +316,8 @@ public class ResponseHeaderAspect {
             if (!captureResponseHeader(name)) {
                 return;
             }
-            ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
+            ServletMessageSupplier messageSupplier =
+                    (ServletMessageSupplier) context.getServletMessageSupplier();
             if (messageSupplier != null) {
                 messageSupplier.addResponseIntHeader(name, value);
             }

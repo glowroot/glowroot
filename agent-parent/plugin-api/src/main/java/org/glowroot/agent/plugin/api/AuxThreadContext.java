@@ -18,4 +18,6 @@ package org.glowroot.agent.plugin.api;
 public interface AuxThreadContext {
 
     TraceEntry start();
+
+    TraceEntry startAndMarkAsyncTransactionComplete();
 }

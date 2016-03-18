@@ -25,6 +25,8 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.AuxThreadContext;
+import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.OptionalThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
@@ -47,9 +49,6 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 //
 // this plugin is careful not to rely on request or session objects being thread-safe
 public class ServletAspect {
-
-    private static final FastThreadLocal</*@Nullable*/ ServletMessageSupplier> currServletMessageSupplier =
-            new FastThreadLocal</*@Nullable*/ ServletMessageSupplier>();
 
     // the life of this thread local is tied to the life of the topLevel thread local
     // it is only created if the topLevel thread local exists, and it is cleared when topLevel
@@ -90,6 +89,13 @@ public class ServletAspect {
 
         @Nullable
         String /*@Nullable*/[] getParameterValues(String name);
+
+        void setAttribute(String name, Object o);
+
+        @Nullable
+        Object getAttribute(String name);
+
+        void removeAttribute(String name);
     }
 
     @Shim("javax.servlet.http.HttpSession")
@@ -111,18 +117,25 @@ public class ServletAspect {
             nestingGroup = "outer-servlet-or-filter", timerName = "http request")
     public static class ServiceAdvice {
         private static final TimerName timerName = Agent.getTimerName(ServiceAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return currServletMessageSupplier.get() == null;
-        }
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
                 @BindParameter @Nullable Object req) {
+            if (context.getServletMessageSupplier() != null) {
+                return null;
+            }
             if (req == null || !(req instanceof HttpServletRequest)) {
                 // seems nothing sensible to do here other than ignore
                 return null;
             }
             HttpServletRequest request = (HttpServletRequest) req;
+            AuxThreadContext auxContextObj = (AuxThreadContext) request
+                    .getAttribute(AsyncServletAspect.GLOWROOT_AUX_CONTEXT_REQUEST_ATTRIBUTE);
+            if (auxContextObj != null) {
+                request.removeAttribute(
+                        AsyncServletAspect.GLOWROOT_AUX_CONTEXT_REQUEST_ATTRIBUTE);
+                AuxThreadContext auxContext = auxContextObj;
+                return auxContext.startAndMarkAsyncTransactionComplete();
+            }
             // request parameter map is collected in GetParameterAdvice
             // session info is collected here if the request already has a session
             ServletMessageSupplier messageSupplier;
@@ -143,7 +156,6 @@ public class ServletAspect {
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
                         requestQueryString, requestHeaders, sessionAttributes);
             }
-            currServletMessageSupplier.set(messageSupplier);
             String user = null;
             if (session != null) {
                 String sessionUserAttributePath =
@@ -156,6 +168,7 @@ public class ServletAspect {
             }
             TraceEntry traceEntry =
                     context.startTransaction("Servlet", requestUri, messageSupplier, timerName);
+            context.setServletMessageSupplier(messageSupplier);
             // Glowroot-Transaction-Name header is useful for automated tests which want to send a
             // more specific name for the transaction
             String transactionNameOverride = request.getHeader("Glowroot-Transaction-Name");
@@ -168,7 +181,8 @@ public class ServletAspect {
             return traceEntry;
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+        public static void onReturn(OptionalThreadContext context,
+                @BindTraveler @Nullable TraceEntry traceEntry) {
             if (traceEntry == null) {
                 return;
             }
@@ -180,10 +194,10 @@ public class ServletAspect {
             } else {
                 traceEntry.end();
             }
-            currServletMessageSupplier.set(null);
+            context.setServletMessageSupplier(null);
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t,
+        public static void onThrow(@BindThrowable Throwable t, OptionalThreadContext context,
                 @BindTraveler @Nullable TraceEntry traceEntry) {
             if (traceEntry == null) {
                 return;
@@ -191,7 +205,7 @@ public class ServletAspect {
             // ignoring potential sendError since this seems worse
             sendError.set(null);
             traceEntry.endWithError(t);
-            currServletMessageSupplier.set(null);
+            context.setServletMessageSupplier(null);
         }
     }
 
@@ -206,13 +220,14 @@ public class ServletAspect {
             return ServiceAdvice.onBefore(context, request);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
-            ServiceAdvice.onReturn(traceEntry);
+        public static void onReturn(OptionalThreadContext context,
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            ServiceAdvice.onReturn(context, traceEntry);
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t,
+        public static void onThrow(@BindThrowable Throwable t, OptionalThreadContext context,
                 @BindTraveler @Nullable TraceEntry traceEntry) {
-            ServiceAdvice.onThrow(t, traceEntry);
+            ServiceAdvice.onThrow(t, context, traceEntry);
         }
     }
 
@@ -230,13 +245,14 @@ public class ServletAspect {
             return ServiceAdvice.onBefore(context, request);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
-            ServiceAdvice.onReturn(traceEntry);
+        public static void onReturn(OptionalThreadContext context,
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            ServiceAdvice.onReturn(context, traceEntry);
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t,
+        public static void onThrow(@BindThrowable Throwable t, OptionalThreadContext context,
                 @BindTraveler @Nullable TraceEntry traceEntry) {
-            ServiceAdvice.onThrow(t, traceEntry);
+            ServiceAdvice.onThrow(t, context, traceEntry);
         }
     }
 
@@ -298,9 +314,9 @@ public class ServletAspect {
                 context.setTransactionUser(session.getId(), Priority.CORE_PLUGIN);
             }
             if (ServletPluginProperties.captureSessionAttributeNamesContainsId()) {
-                ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
-                if (messageSupplier != null) {
-                    messageSupplier.putSessionAttributeChangedValue(
+                MessageSupplier messageSupplier = context.getServletMessageSupplier();
+                if (messageSupplier instanceof ServletMessageSupplier) {
+                    ((ServletMessageSupplier) messageSupplier).putSessionAttributeChangedValue(
                             ServletPluginProperties.HTTP_SESSION_ID_ATTR, session.getId());
                 }
             }
@@ -315,9 +331,5 @@ public class ServletAspect {
                 ThreadContext context) {
             GetSessionAdvice.onReturn(session, context);
         }
-    }
-
-    static @Nullable ServletMessageSupplier getServletMessageSupplier() {
-        return currServletMessageSupplier.get();
     }
 }

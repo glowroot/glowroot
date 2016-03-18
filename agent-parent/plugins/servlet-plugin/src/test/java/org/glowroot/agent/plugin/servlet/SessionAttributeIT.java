@@ -429,15 +429,15 @@ public class SessionAttributeIT {
         assertThat(getUpdatedSessionAttributes(trace).get("::id")).isEqualTo("abcdef");
     }
 
-    private static @Nullable Map<String, String> getSessionAttributes(Trace trace) {
+    static @Nullable Map<String, String> getSessionAttributes(Trace trace) {
         return getDetailMap(trace, "Session attributes");
     }
 
-    private static @Nullable Map<String, String> getInitialSessionAttributes(Trace trace) {
+    static @Nullable Map<String, String> getInitialSessionAttributes(Trace trace) {
         return getDetailMap(trace, "Session attributes (at beginning of this request)");
     }
 
-    private static @Nullable Map<String, String> getUpdatedSessionAttributes(Trace trace) {
+    static @Nullable Map<String, String> getUpdatedSessionAttributes(Trace trace) {
         return getDetailMap(trace, "Session attributes (updated during this request)");
     }
 

@@ -15,12 +15,15 @@
  */
 package org.glowroot.agent.impl;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.TraceEntryImpl;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
+import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTraceEntry;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
@@ -34,15 +37,18 @@ public class AuxThreadContextImpl implements AuxThreadContext {
     private final ThreadContextImpl parentThreadContext;
     private final TraceEntryImpl parentTraceEntry;
     private final TraceEntryImpl parentThreadContextTailEntry;
+    private final @Nullable MessageSupplier servletMessageSupplier;
     private final TransactionRegistry transactionRegistry;
     private final TransactionServiceImpl transactionService;
 
     public AuxThreadContextImpl(ThreadContextImpl parentThreadContext,
             TraceEntryImpl parentTraceEntry, TraceEntryImpl parentThreadContextTailEntry,
+            @Nullable MessageSupplier servletMessageSupplier,
             TransactionRegistry transactionRegistry, TransactionServiceImpl transactionService) {
         this.parentThreadContext = parentThreadContext;
         this.parentTraceEntry = parentTraceEntry;
         this.parentThreadContextTailEntry = parentThreadContextTailEntry;
+        this.servletMessageSupplier = servletMessageSupplier;
         this.transactionRegistry = transactionRegistry;
         this.transactionService = transactionService;
         if (logger.isDebugEnabled()) {
@@ -54,19 +60,35 @@ public class AuxThreadContextImpl implements AuxThreadContext {
 
     @Override
     public TraceEntry start() {
+        return start(false);
+    }
+
+    @Override
+    public TraceEntry startAndMarkAsyncTransactionComplete() {
+        return start(true);
+    }
+
+    private TraceEntry start(boolean completeAsyncTransaction) {
         Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder =
                 transactionRegistry.getCurrentThreadContextHolder();
-        if (threadContextHolder.get() != null) {
+        ThreadContextImpl context = threadContextHolder.get();
+        if (context != null) {
+            if (completeAsyncTransaction) {
+                context.completeAsyncTransaction();
+            }
             return NopTraceEntry.INSTANCE;
         }
-        ThreadContextImpl context =
-                transactionService.startAuxThreadContextInternal(parentThreadContext,
-                        parentTraceEntry, parentThreadContextTailEntry, threadContextHolder);
+        context = transactionService.startAuxThreadContextInternal(parentThreadContext,
+                parentTraceEntry, parentThreadContextTailEntry, servletMessageSupplier,
+                threadContextHolder);
         if (logger.isDebugEnabled()) {
             logger.debug("start AUX thread context: {}, thread context: {},"
                     + " parent thread context: {}, thread name: {}", hashCode(), context.hashCode(),
                     parentThreadContext.hashCode(), Thread.currentThread().getName(),
                     new Exception());
+        }
+        if (completeAsyncTransaction) {
+            context.completeAsyncTransaction();
         }
         return context.getRootEntry();
     }

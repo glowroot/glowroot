@@ -291,6 +291,17 @@ public interface ThreadContext {
      */
     void addErrorEntry(@Nullable String message, Throwable t);
 
+    /**
+     * Special purpose method.
+     */
+    @Nullable
+    MessageSupplier getServletMessageSupplier();
+
+    /**
+     * Special purpose method.
+     */
+    void setServletMessageSupplier(@Nullable MessageSupplier messageSupplier);
+
     interface Priority {
         int CORE_PLUGIN = -100;
         int USER_PLUGIN = 100;

@@ -118,13 +118,16 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     private final Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder;
 
+    private @Nullable MessageSupplier servletMessageSupplier;
+
     ThreadContextImpl(Transaction transaction, @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextTailEntry, MessageSupplier messageSupplier,
             TimerName rootTimerName, long startTick, boolean captureThreadStats,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes, boolean auxiliary,
             TransactionRegistry transactionRegistry, TransactionServiceImpl transactionService,
             ConfigService configService, Ticker ticker,
-            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
+            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder,
+            @Nullable MessageSupplier servletMessageSupplier) {
         this.transaction = transaction;
         this.parentTraceEntry = parentTraceEntry;
         rootTimer = TimerImpl.createRootTimer(castInitialized(this), (TimerNameImpl) rootTimerName);
@@ -141,6 +144,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.configService = configService;
         this.ticker = ticker;
         this.threadContextHolder = threadContextHolder;
+        this.servletMessageSupplier = servletMessageSupplier;
     }
 
     public Transaction getTransaction() {
@@ -310,12 +314,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
     public ThreadContextImpl startAuxThreadContext(TraceEntryImpl parentTraceEntry,
             TraceEntryImpl parentThreadContextTailEntry, TimerName auxTimerName, long startTick,
             Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder,
+            @Nullable MessageSupplier servletMessageSupplier,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes) {
         ThreadContextImpl auxThreadContext = new ThreadContextImpl(transaction, parentTraceEntry,
                 parentThreadContextTailEntry, AuxThreadRootMessageSupplier.INSTANCE, auxTimerName,
                 startTick, threadStatsComponent != null, threadAllocatedBytes, true,
                 transactionRegistry, transactionService, configService, ticker,
-                threadContextHolder);
+                threadContextHolder, servletMessageSupplier);
         if (auxThreadContexts == null) {
             // double-checked locking works here because auxThreadContexts is volatile
             //
@@ -474,7 +479,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             return NopAuxThreadContext.INSTANCE;
         }
         return new AuxThreadContextImpl(this, activeEntry, traceEntryComponent.getTailEntry(),
-                transactionRegistry, transactionService);
+                servletMessageSupplier, transactionRegistry, transactionService);
     }
 
     // typically pop() methods don't require the objects to pop, but for safety, the entry to pop is
@@ -886,8 +891,14 @@ public class ThreadContextImpl implements ThreadContextPlus {
         addErrorEntryInternal(message, t);
     }
 
-    public boolean isInTransaction() {
-        return true;
+    @Override
+    public @Nullable MessageSupplier getServletMessageSupplier() {
+        return servletMessageSupplier;
+    }
+
+    @Override
+    public void setServletMessageSupplier(@Nullable MessageSupplier messageSupplier) {
+        this.servletMessageSupplier = messageSupplier;
     }
 
     void endCheckAuxThreadContexts() {

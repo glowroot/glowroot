@@ -174,7 +174,7 @@ public class Transaction {
         mainThreadContext = new ThreadContextImpl(castInitialized(this), null, null,
                 messageSupplier, timerName, startTick, captureThreadStats, threadAllocatedBytes,
                 false, transactionRegistry, transactionService, configService, ticker,
-                threadContextHolder);
+                threadContextHolder, null);
     }
 
     long getStartTime() {

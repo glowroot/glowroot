@@ -30,27 +30,9 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 
-// similar thread safety issues as {@link JdbcMessageSupplier}, see documentation in that class for
-// more info
-//
-// this trace entry gets to piggyback on the happens-before relationships created by putting other
-// trace entries into the concurrent queue which ensures that session state is visible at least up
-// to the start of the most recent trace entry
+// this class is thread-safe (unlike other MessageSuppliers) since it gets passed around to
+// auxiliary thread contexts for handling async servlets
 class ServletMessageSupplier extends MessageSupplier {
-
-    // it would be convenient to just store the request object here
-    // but it appears that tomcat (at least, maybe others) clears out those
-    // objects after the response is complete so that it can reuse the
-    // request object for future requests
-    // since the data is stored in a separate thread to avoid slowing up the user's
-    // request, the request object could have been cleared before the request data
-    // is stored, so instead the request parts that are needed must be cached
-    //
-    // another problem with storing the request object here is that it may not be thread safe
-    //
-    // the http session object also cannot be stored here because it may be marked
-    // expired when the session attributes are stored, so instead
-    // (references to) the session attributes must be stored here
 
     private final String requestMethod;
     private final String requestUri;
