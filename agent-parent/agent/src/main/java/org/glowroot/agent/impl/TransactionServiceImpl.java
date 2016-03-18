@@ -129,7 +129,7 @@ public class TransactionServiceImpl implements ConfigListener {
         return transaction.getMainThreadContext().getRootEntry();
     }
 
-    TraceEntry startAuxThreadContextInternal(ThreadContextImpl parentThreadContext,
+    ThreadContextImpl startAuxThreadContextInternal(ThreadContextImpl parentThreadContext,
             TraceEntryImpl parentTraceEntry, TraceEntryImpl parentThreadContextTailEntry,
             Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
         long startTick = ticker.read();

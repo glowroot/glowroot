@@ -307,7 +307,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.currentNestingGroupId = nestingGroupId;
     }
 
-    public TraceEntryImpl startAuxThreadContext(TraceEntryImpl parentTraceEntry,
+    public ThreadContextImpl startAuxThreadContext(TraceEntryImpl parentTraceEntry,
             TraceEntryImpl parentThreadContextTailEntry, TimerName auxTimerName, long startTick,
             Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes) {
@@ -332,7 +332,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         synchronized (threadContextHolder) {
             threadContextHolder.set(auxThreadContext);
         }
-        return auxThreadContext.getRootEntry();
+        return auxThreadContext;
     }
 
     public void mergeQueriesInto(QueryCollector queries) {

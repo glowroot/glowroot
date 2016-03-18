@@ -15,6 +15,9 @@
  */
 package org.glowroot.agent.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.TraceEntryImpl;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
@@ -22,7 +25,11 @@ import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTraceEntry;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 
+import static org.glowroot.agent.fat.storage.util.Checkers.castInitialized;
+
 public class AuxThreadContextImpl implements AuxThreadContext {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuxThreadContextImpl.class);
 
     private final ThreadContextImpl parentThreadContext;
     private final TraceEntryImpl parentTraceEntry;
@@ -38,6 +45,11 @@ public class AuxThreadContextImpl implements AuxThreadContext {
         this.parentThreadContextTailEntry = parentThreadContextTailEntry;
         this.transactionRegistry = transactionRegistry;
         this.transactionService = transactionService;
+        if (logger.isDebugEnabled()) {
+            logger.debug("new AUX thread context: {}, parent thread context: {}, thread name: {}",
+                    castInitialized(this).hashCode(), parentThreadContext.hashCode(),
+                    Thread.currentThread().getName(), new Exception());
+        }
     }
 
     @Override
@@ -47,7 +59,15 @@ public class AuxThreadContextImpl implements AuxThreadContext {
         if (threadContextHolder.get() != null) {
             return NopTraceEntry.INSTANCE;
         }
-        return transactionService.startAuxThreadContextInternal(parentThreadContext,
-                parentTraceEntry, parentThreadContextTailEntry, threadContextHolder);
+        ThreadContextImpl context =
+                transactionService.startAuxThreadContextInternal(parentThreadContext,
+                        parentTraceEntry, parentThreadContextTailEntry, threadContextHolder);
+        if (logger.isDebugEnabled()) {
+            logger.debug("start AUX thread context: {}, thread context: {},"
+                    + " parent thread context: {}, thread name: {}", hashCode(), context.hashCode(),
+                    parentThreadContext.hashCode(), Thread.currentThread().getName(),
+                    new Exception());
+        }
+        return context.getRootEntry();
     }
 }
