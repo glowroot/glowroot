@@ -106,15 +106,17 @@ public class ExecutorAspect {
     // that extend java.lang.Runnable and/or java.util.concurrent.Callable
     public interface SuppressedRunnableMixin {}
 
-    // ignore self nested is important for cases with wrapping ExecutorServices so that the outer
-    // Runnable/Callable is the one used
-    @Pointcut(className = "java.util.concurrent.ExecutorService", methodName = "submit",
-            methodParameterTypes = {".."}, nestingGroup = "executor-submit")
+    // no nesting group in order to capture sometimes wrapped runnable passed to delegate executor
+    @Pointcut(className = "java.util.concurrent.Executor|java.util.concurrent.ExecutorService"
+            + "|org.springframework.core.task.AsyncTaskExecutor"
+            + "|org.springframework.core.task.AsyncListenableTaskExecutor",
+            methodName = "execute|submit|submitListenable", methodParameterTypes = {".."})
     public static class SubmitAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object runnableCallable) {
             // this class may have been loaded before class file transformer was added to jvm
-            return runnableCallable instanceof RunnableCallableMixin;
+            return runnableCallable instanceof RunnableCallableMixin
+                    && !(runnableCallable instanceof SuppressedRunnableMixin);
         }
         @OnBefore
         public static void onBefore(ThreadContext context, @BindParameter Object runnableCallable) {
@@ -173,27 +175,6 @@ public class ExecutorAspect {
         public static void onBefore(@BindReceiver Object futureTask,
                 @BindParameter Object runnableCallable) {
             FutureTaskInitWithCallableAdvice.onBefore(futureTask, runnableCallable);
-        }
-    }
-
-    // no nesting group
-    @Pointcut(className = "java.util.concurrent.Executor", methodName = "execute",
-            methodParameterTypes = {"java.lang.Runnable"})
-    public static class ExecuteAdvice {
-
-        @IsEnabled
-        public static boolean isEnabled(@BindParameter Object runnableCallable) {
-            // this class may have been loaded before class file transformer was added to jvm
-            return runnableCallable instanceof RunnableCallableMixin
-                    && !(runnableCallable instanceof SuppressedRunnableMixin);
-        }
-
-        @OnBefore
-        public static void onBefore(ThreadContext context, @BindParameter Object runnableCallable) {
-            RunnableCallableMixin runnableCallableMixin =
-                    (RunnableCallableMixin) runnableCallable;
-            AuxThreadContext auxContext = context.createAuxThreadContext();
-            runnableCallableMixin.glowroot$setAuxContext(auxContext);
         }
     }
 
