@@ -15,15 +15,8 @@
  */
 package org.glowroot.agent.plugin.spring;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.util.List;
 
-import com.ning.http.client.AsyncHttpClient;
-import org.apache.catalina.Context;
-import org.apache.catalina.loader.WebappLoader;
-import org.apache.catalina.startup.Tomcat;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -33,7 +26,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -95,7 +87,7 @@ public class ControllerIT {
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/rest");
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
+        assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
         assertThat(entry.getMessage()).isEqualTo("spring controller:"
                 + " org.glowroot.agent.plugin.spring.ControllerIT$TestRestController.rest()");
@@ -221,42 +213,6 @@ public class ControllerIT {
         @Override
         public void executeApp() throws Exception {
             executeApp("webapp1", "/rest");
-        }
-    }
-
-    private static abstract class InvokeSpringControllerInTomcat implements AppUnderTest {
-
-        public void executeApp(String webapp, String url) throws Exception {
-            int port = getAvailablePort();
-            Tomcat tomcat = new Tomcat();
-            tomcat.setBaseDir("target/tomcat");
-            tomcat.setPort(port);
-            Context context = tomcat.addWebapp("",
-                    new File("src/test/resources/" + webapp).getAbsolutePath());
-
-            WebappLoader webappLoader =
-                    new WebappLoader(InvokeSpringControllerInTomcat.class.getClassLoader());
-            context.setLoader(webappLoader);
-
-            tomcat.start();
-            AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.prepareGet("http://localhost:" + port + url).execute().get();
-            asyncHttpClient.close();
-            // spring still does a bit of work after the response is concluded,
-            // see org.springframework.web.servlet.FrameworkServlet.publishRequestHandledEvent(),
-            // so give a bit of time here, otherwise end up with sporadic test failures due to
-            // ERROR logged by org.apache.catalina.loader.WebappClassLoaderBase, e.g.
-            // "The web application [] is still processing a request that has yet to finish"
-            Thread.sleep(200);
-            tomcat.stop();
-            tomcat.destroy();
-        }
-
-        private static int getAvailablePort() throws IOException {
-            ServerSocket serverSocket = new ServerSocket(0);
-            int port = serverSocket.getLocalPort();
-            serverSocket.close();
-            return port;
         }
     }
 
