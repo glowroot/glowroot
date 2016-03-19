@@ -156,6 +156,10 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
 
     @Override
     public void end() {
+        if (initialComplete) {
+            // this guards against end*() being called multiple times on async trace entries
+            return;
+        }
         long endTick = ticker.read();
         endInternal(endTick, null);
     }
@@ -165,6 +169,10 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
         if (threshold < 0) {
             logger.error("endWithStackTrace(): argument 'threshold' must be non-negative");
             end();
+            return;
+        }
+        if (initialComplete) {
+            // this guards against end*() being called multiple times on async trace entries
             return;
         }
         if (isAsync()) {
@@ -191,16 +199,28 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
 
     @Override
     public void endWithError(Throwable t) {
+        if (initialComplete) {
+            // this guards against end*() being called multiple times on async trace entries
+            return;
+        }
         endWithErrorInternal(null, t);
     }
 
     @Override
     public void endWithError(@Nullable String message) {
+        if (initialComplete) {
+            // this guards against end*() being called multiple times on async trace entries
+            return;
+        }
         endWithErrorInternal(message, null);
     }
 
     @Override
     public void endWithError(@Nullable String message, Throwable t) {
+        if (initialComplete) {
+            // this guards against end*() being called multiple times on async trace entries
+            return;
+        }
         endWithErrorInternal(message, t);
     }
 
