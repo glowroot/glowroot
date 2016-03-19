@@ -49,8 +49,7 @@ public class OkHttpClientAspect {
     }
 
     // the field and method names are verbose to avoid conflict since they will become fields
-    // and methods in all classes that extend java.lang.Runnable and/or
-    // java.util.concurrent.Callable
+    // and methods in all classes that extend com.squareup.okhttp.Callback
     @Mixin("com.squareup.okhttp.Callback")
     public abstract static class CallbackImpl implements CallbackMixin {
 
@@ -79,7 +78,7 @@ public class OkHttpClientAspect {
     }
 
     // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend java.lang.Runnable and/or java.util.concurrent.Callable
+    // that extend com.squareup.okhttp.Callback
     public interface CallbackMixin {
 
         @Nullable
