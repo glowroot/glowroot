@@ -117,13 +117,7 @@ public class SuspendedResourceIT {
     }
 
     private static class CreateTraceEntry implements TraceEntryMarker {
-
         @Override
-        public void traceEntryMarker() {
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-            }
-        }
+        public void traceEntryMarker() {}
     }
 }

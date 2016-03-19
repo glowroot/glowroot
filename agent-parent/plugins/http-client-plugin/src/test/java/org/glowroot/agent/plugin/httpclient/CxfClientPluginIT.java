@@ -45,7 +45,7 @@ public class CxfClientPluginIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.createJavaagent();
+        container = Containers.create();
     }
 
     @AfterClass

@@ -17,7 +17,7 @@ package org.glowroot.agent.plugin.httpclient;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CountDownLatch;
 
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.MediaType;
@@ -138,22 +138,20 @@ public class OkHttpClientPluginIT {
             Request request = new Request.Builder()
                     .url("http://localhost:" + getPort() + "/hello1/")
                     .build();
-            final AtomicBoolean complete = new AtomicBoolean();
+            final CountDownLatch latch = new CountDownLatch(1);
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onResponse(Response response) {
                     new CreateTraceEntry().traceEntryMarker();
-                    complete.set(true);
+                    latch.countDown();
                 }
                 @Override
                 public void onFailure(Request request, IOException e) {
                     new CreateTraceEntry().traceEntryMarker();
-                    complete.set(true);
+                    latch.countDown();
                 }
             });
-            while (!complete.get()) {
-                Thread.sleep(10);
-            }
+            latch.await();
         }
     }
 
@@ -167,33 +165,25 @@ public class OkHttpClientPluginIT {
                     .url("http://localhost:" + getPort() + "/hello2")
                     .post(body)
                     .build();
-            final AtomicBoolean complete = new AtomicBoolean();
+            final CountDownLatch latch = new CountDownLatch(1);
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onResponse(Response response) {
                     new CreateTraceEntry().traceEntryMarker();
-                    complete.set(true);
+                    latch.countDown();
                 }
                 @Override
                 public void onFailure(Request request, IOException e) {
                     new CreateTraceEntry().traceEntryMarker();
-                    complete.set(true);
+                    latch.countDown();
                 }
             });
-            while (!complete.get()) {
-                Thread.sleep(10);
-            }
+            latch.await();
         }
     }
 
     private static class CreateTraceEntry implements TraceEntryMarker {
-
         @Override
-        public void traceEntryMarker() {
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-            }
-        }
+        public void traceEntryMarker() {}
     }
 }
