@@ -15,8 +15,8 @@
  */
 package org.glowroot.agent.plugin.hibernate;
 
+import org.hibernate.MappingException;
 import org.hibernate.SessionFactory;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 
 class HibernateUtil {
@@ -24,13 +24,26 @@ class HibernateUtil {
     private static SessionFactory sessionFactory;
 
     static {
-        Configuration configuration = new Configuration().configure();
-        StandardServiceRegistryBuilder ssrb =
-                new StandardServiceRegistryBuilder().applySettings(configuration.getProperties());
-        sessionFactory = configuration.buildSessionFactory(ssrb.build());
+        try {
+            sessionFactory = createSessionFactory();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     static SessionFactory getSessionFactory() {
         return sessionFactory;
+    }
+
+    private static SessionFactory createSessionFactory() throws Exception {
+        Configuration configuration;
+        try {
+            configuration = new Configuration().configure();
+        } catch (MappingException e) {
+            // hibernate prior to 3.6.0
+            Class<?> cfgClass = Class.forName("org.hibernate.cfg.AnnotationConfiguration");
+            configuration = ((Configuration) cfgClass.newInstance()).configure();
+        }
+        return configuration.buildSessionFactory();
     }
 }

@@ -29,4 +29,6 @@
   </root>
   <!-- this is needed to suppress a harmless error messages -->
   <logger name="org.hibernate.tool.hbm2ddl.SchemaExport" level="off"></logger>
+  <!-- this is needed to suppress a harmless warning messages in hibernate 5.x -->
+  <logger name="org.hibernate.tool.schema.internal.ExceptionHandlerLoggedImpl" level="error" />
 </configuration>

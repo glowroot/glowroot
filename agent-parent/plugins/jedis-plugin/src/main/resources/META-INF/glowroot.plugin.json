@@ -6,7 +6,7 @@
       "className": "redis.clients.jedis.Connection",
       "methodName": "sendCommand",
       "methodParameterTypes": [
-        "redis.clients.jedis.Protocol$Command",
+        "*",
         ".."
       ],
       "nestingGroup": "jedis",

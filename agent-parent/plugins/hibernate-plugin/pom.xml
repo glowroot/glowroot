@@ -17,7 +17,8 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <hibernate.version>4.3.11.Final</hibernate.version>
+    <hibernate.version>5.1.0.Final</hibernate.version>
+    <hibernate.annotations.version>3.5.6-Final</hibernate.annotations.version>
   </properties>
 
   <dependencies>
@@ -50,6 +51,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>javax.transaction</groupId>
+      <artifactId>jta</artifactId>
+      <version>1.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.hsqldb</groupId>
       <artifactId>hsqldb</artifactId>
       <scope>test</scope>
@@ -71,4 +78,52 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>hibernate-3.3.0.ga</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.hibernate</groupId>
+          <artifactId>hibernate-commons-annotations</artifactId>
+          <version>3.3.0.ga</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>hibernate-3.x</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.hibernate</groupId>
+          <artifactId>hibernate-annotations</artifactId>
+          <version>${hibernate.annotations.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>javassist</groupId>
+          <artifactId>javassist</artifactId>
+          <version>3.12.1.GA</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.hibernate.javax.persistence</groupId>
+          <artifactId>hibernate-jpa-2.0-api</artifactId>
+          <version>1.0.1.Final</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>hibernate-3.6.x</id>
+      <dependencies>
+        <dependency>
+          <groupId>javassist</groupId>
+          <artifactId>javassist</artifactId>
+          <version>3.12.1.GA</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

@@ -37,6 +37,7 @@
   <modules>
     <module>misc/license-resource-bundle</module>
     <module>misc/checker-qual-jdk6</module>
+    <module>misc/multi-lib-version-tester</module>
     <module>common</module>
     <module>wire-api</module>
     <module>storage</module>

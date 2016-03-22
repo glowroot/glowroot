@@ -118,4 +118,41 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>spring-3.x</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <testExcludes>
+                <!-- async controllers are new in spring 3.2 -->
+                <exclude>org/glowroot/agent/plugin/spring/AsyncControllerIT.java</exclude>
+                <!-- @RestController is new in spring 4.0 -->
+                <exclude>org/glowroot/agent/plugin/spring/RestControllerIT.java</exclude>
+              </testExcludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>spring-3.2.x</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <testExcludes>
+                <!-- @RestController is new in spring 4.0 -->
+                <exclude>org/glowroot/agent/plugin/spring/RestControllerIT.java</exclude>
+              </testExcludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

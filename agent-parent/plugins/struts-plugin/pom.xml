@@ -77,6 +77,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- this is needed for older versions of struts -->
+      <groupId>javassist</groupId>
+      <artifactId>javassist</artifactId>
+      <version>3.12.1.GA</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>

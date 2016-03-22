@@ -77,7 +77,7 @@
     <dependency>
       <groupId>com.ning</groupId>
       <artifactId>async-http-client</artifactId>
-      <version>${asynchttpclient.version}</version><!--$NO-MVN-MAN-VER$-->
+      <version>${asynchttpclient.version}</version> <!-- $NO-MVN-MAN-VER$ -->
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -157,4 +157,47 @@
       </plugins>
     </pluginManagement>
   </build>
+
+  <profiles>
+    <profile>
+      <id>apache-httpclient-pre-4.2</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <testExcludes>
+                <exclude>
+                  org/glowroot/agent/plugin/httpclient/ApacheHttpAsyncClientPluginIT.java
+                </exclude>
+              </testExcludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>cxf-2.x</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-web</artifactId>
+          <version>2.0.8</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <testExcludes>
+                <exclude>org/glowroot/agent/plugin/httpclient/RestTemplatePluginIT.java</exclude>
+              </testExcludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

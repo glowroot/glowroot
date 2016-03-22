@@ -368,7 +368,9 @@ public class JavaagentContainer implements Container {
                 paths.add(path);
             } else if (name.matches("tomcat-.*\\.jar") || name.matches("jsf-.*\\.jar")
                     || name.matches("struts2?-core-.*\\.jar")
+                    || name.matches("commons-beanutils-.*\\.jar") // needed for older struts version
                     || name.matches("commons-chain-.*\\.jar")
+                    || name.matches("commons-digester-.*\\.jar") // needed for older struts version
                     || name.matches("xwork-core-.*\\.jar")
                     || name.matches("freemarker-.*\\.jar")
                     || name.matches("spring-.*\\.jar")
@@ -378,7 +380,13 @@ public class JavaagentContainer implements Container {
                     || name.matches("sitemesh-.*\\.jar")
                     || name.matches("groovy-.*\\.jar")
                     || name.matches("hibernate-.*\\.jar")
-                    || name.matches("cxf-.*\\.jar")) {
+                    || name.matches("cxf-.*\\.jar")
+                    || name.matches("httpclient-.*\\.jar")
+                    || name.matches("commons-httpclient-.*\\.jar")
+                    || name.matches("httpasyncclient-.*\\.jar")
+                    || name.matches("commons-logging-.*\\.jar")
+                    || name.matches("quartz-.*\\.jar")
+                    || name.matches("jetty-.*\\.jar")) {
                 // TODO ideally all test dependencies would be in system classpath, but not sure how
                 // to differentiate here, so just hard-coding test dependencies as necessary for now
                 paths.add(path);

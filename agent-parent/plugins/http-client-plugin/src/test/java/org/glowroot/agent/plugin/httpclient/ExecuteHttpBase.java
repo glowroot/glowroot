@@ -91,6 +91,7 @@ public abstract class ExecuteHttpBase implements AppUnderTest, TransactionMarker
             FullHttpResponse response =
                     new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.OK);
             response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+            response.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.TEXT_PLAIN);
             ChannelFuture f = ctx.write(response);
             f.addListener(ChannelFutureListener.CLOSE);
             request.release();

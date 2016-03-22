@@ -29,8 +29,7 @@ public class OkHttpClientCallInvoker {
     private final @Nullable Field originalRequestField;
 
     public OkHttpClientCallInvoker(Class<?> clazz) {
-        Class<?> callClass = getCallClass(clazz);
-        originalRequestField = Invokers.getDeclaredField(callClass, "originalRequest");
+        originalRequestField = getRequestField(clazz);
     }
 
     @Nullable
@@ -39,6 +38,33 @@ public class OkHttpClientCallInvoker {
             return null;
         }
         return Invokers.get(originalRequestField, call);
+    }
+
+    private static @Nullable Field getRequestField(Class<?> clazz) {
+        Class<?> callClass = getCallClass(clazz);
+        if (callClass == null) {
+            return null;
+        }
+        try {
+            Field field = clazz.getDeclaredField("originalRequest");
+            field.setAccessible(true);
+            return field;
+        } catch (NoSuchFieldException e) {
+            // okhttp version prior to 2.2.0
+            Field field;
+            try {
+                field = clazz.getDeclaredField("request");
+                field.setAccessible(true);
+                return field;
+            } catch (Exception f) {
+                // log outer exception at warn level, inner exception at debug level
+                logger.warn(e.getMessage(), e);
+                logger.debug(f.getMessage(), f);
+            }
+        } catch (Exception e) {
+            logger.warn(e.getMessage(), e);
+        }
+        return null;
     }
 
     private static @Nullable Class<?> getCallClass(Class<?> clazz) {

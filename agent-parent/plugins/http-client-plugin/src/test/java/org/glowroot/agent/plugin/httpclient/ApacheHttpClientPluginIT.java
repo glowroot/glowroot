@@ -18,10 +18,9 @@ package org.glowroot.agent.plugin.httpclient;
 import java.util.List;
 
 import org.apache.http.HttpHost;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -88,45 +87,52 @@ public class ApacheHttpClientPluginIT {
                 .matches("http client request: POST http://localhost:\\d+/hello4");
     }
 
+    private static HttpClient createHttpClient() throws Exception {
+        try {
+            return (HttpClient) Class.forName("org.apache.http.impl.client.HttpClients")
+                    .getMethod("createDefault").invoke(null);
+        } catch (ClassNotFoundException e) {
+            // httpclient prior to 4.3.0
+            return (HttpClient) Class.forName("org.apache.http.impl.client.DefaultHttpClient")
+                    .newInstance();
+        }
+    }
+
     public static class ExecuteHttpGet extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
-            CloseableHttpClient httpClient = HttpClients.createDefault();
+            HttpClient httpClient = createHttpClient();
             HttpGet httpGet = new HttpGet("http://localhost:" + getPort() + "/hello1");
             httpClient.execute(httpGet);
-            httpClient.close();
         }
     }
 
     public static class ExecuteHttpGetUsingHttpHostArg extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
-            CloseableHttpClient httpClient = HttpClients.createDefault();
+            HttpClient httpClient = createHttpClient();
             HttpHost httpHost = new HttpHost("localhost", getPort());
             HttpGet httpGet = new HttpGet("/hello2");
             httpClient.execute(httpHost, httpGet);
-            httpClient.close();
         }
     }
 
     public static class ExecuteHttpPost extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
-            CloseableHttpClient httpClient = HttpClients.createDefault();
+            HttpClient httpClient = createHttpClient();
             HttpPost httpPost = new HttpPost("http://localhost:" + getPort() + "/hello3");
             httpClient.execute(httpPost);
-            httpClient.close();
         }
     }
 
     public static class ExecuteHttpPostUsingHttpHostArg extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
-            CloseableHttpClient httpClient = HttpClients.createDefault();
+            HttpClient httpClient = createHttpClient();
             HttpHost httpHost = new HttpHost("localhost", getPort());
             HttpPost httpPost = new HttpPost("/hello4");
             httpClient.execute(httpHost, httpPost);
-            httpClient.close();
         }
     }
 }
