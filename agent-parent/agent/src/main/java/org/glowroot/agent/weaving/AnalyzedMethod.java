@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,13 +34,11 @@ abstract class AnalyzedMethod {
     abstract String returnType();
     abstract int modifiers();
 
-    // signature, exceptions and advisors are needed for public methods in case they end up
-    // fulfilling an interface in a subclass
-
     // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
     abstract @Nullable String signature();
     // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
     abstract ImmutableList<String> exceptions();
+
     abstract ImmutableList<Advice> advisors();
     // this is for advisors which match using @Pointcut methodDeclaringClassName but do not match
     // using @Pointcut className
@@ -56,6 +54,8 @@ abstract class AnalyzedMethod {
         return Type.getMethodDescriptor(getType(returnType()), types);
     }
 
+    // TODO there is a bit more to overriding, see
+    // https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-5.html#jvms-5.4.5
     boolean isOverriddenBy(String methodName, List<Type> parameterTypes) {
         if (Modifier.isPrivate(modifiers())) {
             return false;

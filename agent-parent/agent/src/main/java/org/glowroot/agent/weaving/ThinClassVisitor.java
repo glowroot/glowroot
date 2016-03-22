@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
 import static org.objectweb.asm.Opcodes.ASM5;
 
 class ThinClassVisitor extends ClassVisitor {
@@ -85,7 +86,8 @@ class ThinClassVisitor extends ClassVisitor {
         String superName();
         List<String> interfaces();
         List<String> annotations();
-        List<ThinMethod> methods();
+        List<ThinMethod> nonBridgeMethods();
+        List<ThinMethod> bridgeMethods();
     }
 
     @Value.Immutable
@@ -116,7 +118,12 @@ class ThinClassVisitor extends ClassVisitor {
 
         @Override
         public void visitEnd() {
-            thinClassBuilder.addMethods(thinMethodBuilder.build());
+            ThinMethod thinMethod = thinMethodBuilder.build();
+            if ((thinMethod.access() & ACC_BRIDGE) != 0) {
+                thinClassBuilder.addBridgeMethods(thinMethod);
+            } else {
+                thinClassBuilder.addNonBridgeMethods(thinMethod);
+            }
         }
     }
 }

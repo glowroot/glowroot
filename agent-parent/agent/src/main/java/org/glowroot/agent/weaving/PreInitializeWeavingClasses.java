@@ -300,6 +300,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$ClassMetaHolder");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$MethodMetaHolder");
+        types.add("org.glowroot.agent.weaving.BridgeMethodClassVisitor");
+        types.add("org.glowroot.agent.weaving.BridgeMethodClassVisitor$BridgeMethodVisitor");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer$AnalyzedMethodKey");
         types.add("org.glowroot.agent.weaving.ClassLoaders");
@@ -471,6 +473,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.AnalyzedMethod$1");
         types.add("org.glowroot.agent.weaving.AnalyzedMethodKey$1");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$1");
+        types.add("org.glowroot.agent.weaving.BridgeMethodClassVisitor$1");
         types.add("org.glowroot.agent.weaving.FelixOsgiHackClassVisitor$1");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedClass$1");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedMethod$1");

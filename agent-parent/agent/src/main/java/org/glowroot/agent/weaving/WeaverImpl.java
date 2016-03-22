@@ -98,7 +98,7 @@ public class WeaverImpl implements Weaver {
             maybeFelixBytes = cw.toByteArray();
         }
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
-                mixinTypes, loader, analyzedWorld, codeSource);
+                mixinTypes, loader, analyzedWorld, codeSource, classBytes);
         if (classAnalyzer.isShortCircuitBeforeAnalyzeMethods()) {
             analyzedWorld.add(classAnalyzer.getAnalyzedClass(), loader);
             return maybeFelixBytes;

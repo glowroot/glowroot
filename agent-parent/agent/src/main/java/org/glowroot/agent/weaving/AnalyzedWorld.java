@@ -35,6 +35,7 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.common.primitives.Bytes;
 import org.immutables.value.Value;
@@ -332,7 +333,7 @@ public class AnalyzedWorld {
         ThinClassVisitor accv = new ThinClassVisitor();
         new ClassReader(bytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
-                mixinTypes, loader, this, null);
+                mixinTypes, loader, this, null, bytes);
         if (classAnalyzer.isShortCircuitBeforeAnalyzeMethods()) {
             return classAnalyzer.getAnalyzedClass();
         }
@@ -385,21 +386,16 @@ public class AnalyzedWorld {
         if (analyzedClass.isInterface()) {
             return analyzedClass;
         }
-        for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
-            if (!analyzedMethod.advisors().isEmpty()) {
-                logger.warn(
-                        "{} was not woven with requested advice (it was first encountered during"
-                                + " the weaving of one of its {} and the resource {}.class could"
-                                + " not be found in class loader {}, so {} had to be explicitly"
-                                + " loaded using Class.forName() in the middle of weaving the {},"
-                                + " which means it was not woven itself since weaving is not"
-                                + " re-entrant)",
-                        clazz.getName(),
-                        analyzedClass.isInterface() ? "implementations" : "subclasses",
-                        ClassNames.toInternalName(clazz.getName()), loader, clazz.getName(),
-                        analyzedClass.isInterface() ? "implementation" : "subclass");
-                break;
-            }
+        if (!analyzedClass.analyzedMethods().isEmpty()) {
+            logger.warn(
+                    "{} was not woven with requested advice (it was first encountered during the"
+                            + " weaving of one of its {} and the resource {}.class could not be"
+                            + " found in class loader {}, so {} had to be explicitly loaded using"
+                            + " Class.forName() in the middle of weaving the {}, which means it was"
+                            + " not woven itself since weaving is not re-entrant)",
+                    clazz.getName(), analyzedClass.isInterface() ? "implementations" : "subclasses",
+                    ClassNames.toInternalName(clazz.getName()), loader, clazz.getName(),
+                    analyzedClass.isInterface() ? "implementation" : "subclass");
         }
         return analyzedClass;
     }
@@ -444,6 +440,30 @@ public class AnalyzedWorld {
         }
         List<AdviceMatcher> adviceMatchers =
                 AdviceMatcher.getAdviceMatchers(clazz.getName(), classAnnotations, advisors);
+        Map<Method, List<Advice>> bridgeTargetAdvisors = Maps.newHashMap();
+        for (Method method : clazz.getDeclaredMethods()) {
+            if (!method.isBridge()) {
+                continue;
+            }
+            List<String> methodAnnotations = Lists.newArrayList();
+            for (Annotation annotation : method.getAnnotations()) {
+                methodAnnotations.add(annotation.annotationType().getName());
+            }
+            List<Type> parameterTypes = Lists.newArrayList();
+            for (Class<?> parameterType : method.getParameterTypes()) {
+                parameterTypes.add(Type.getType(parameterType));
+            }
+            Type returnType = Type.getType(method.getReturnType());
+            List<Advice> matchingAdvisors =
+                    getMatchingAdvisors(method.getModifiers(), method.getName(), methodAnnotations,
+                            parameterTypes, returnType, adviceMatchers);
+            if (!matchingAdvisors.isEmpty()) {
+                Method targetMethod = getTargetMethod(method, clazz);
+                if (targetMethod != null) {
+                    bridgeTargetAdvisors.put(targetMethod, matchingAdvisors);
+                }
+            }
+        }
         for (Method method : clazz.getDeclaredMethods()) {
             if (method.isSynthetic()) {
                 // don't add synthetic methods to the analyzed model
@@ -461,6 +481,11 @@ public class AnalyzedWorld {
             List<Advice> matchingAdvisors =
                     getMatchingAdvisors(method.getModifiers(), method.getName(), methodAnnotations,
                             parameterTypes, returnType, adviceMatchers);
+            List<Advice> extraAdvisors = bridgeTargetAdvisors.get(method);
+            if (extraAdvisors != null) {
+                matchingAdvisors.addAll(extraAdvisors);
+            }
+            ClassAnalyzer.sortAdvisors(matchingAdvisors);
             if (!matchingAdvisors.isEmpty()) {
                 ImmutableAnalyzedMethod.Builder methodBuilder = ImmutableAnalyzedMethod.builder();
                 methodBuilder.name(method.getName());
@@ -469,6 +494,7 @@ public class AnalyzedWorld {
                 }
                 methodBuilder.returnType(returnType.getClassName());
                 methodBuilder.modifiers(method.getModifiers());
+                // FIXME re-build signature and set in AnalyzedMethod.signature()
                 for (Class<?> exceptionType : method.getExceptionTypes()) {
                     methodBuilder.addExceptions(exceptionType.getName());
                 }
@@ -479,6 +505,34 @@ public class AnalyzedWorld {
         return classBuilder.build();
     }
 
+    private static @Nullable Method getTargetMethod(Method bridgeMethod, Class<?> clazz) {
+        List<Method> possibleTargetMethods = getPossibleTargetMethods(bridgeMethod, clazz);
+        if (possibleTargetMethods.isEmpty()) {
+            logger.warn("could not find any target for bridge method: {}", bridgeMethod);
+        }
+        if (possibleTargetMethods.size() == 1) {
+            return possibleTargetMethods.get(0);
+        }
+        // FIXME what now, look at generic signatures?
+        logger.warn("found more than one possible target for bridge method: {}", bridgeMethod);
+        return null;
+    }
+
+    private static List<Method> getPossibleTargetMethods(Method bridgeMethod, Class<?> clazz) {
+        List<Method> possibleTargetMethods = Lists.newArrayList();
+        for (Method method : clazz.getDeclaredMethods()) {
+            if (!method.getName().equals(bridgeMethod.getName())) {
+                continue;
+            }
+            if (method.getParameterTypes().length != bridgeMethod.getParameterTypes().length) {
+                continue;
+            }
+            possibleTargetMethods.add(method);
+        }
+        return possibleTargetMethods;
+    }
+
+    // important that this returns a mutable list
     private static List<Advice> getMatchingAdvisors(int access, String name,
             List<String> methodAnnotations, List<Type> parameterTypes, Type returnType,
             List<AdviceMatcher> adviceMatchers) {

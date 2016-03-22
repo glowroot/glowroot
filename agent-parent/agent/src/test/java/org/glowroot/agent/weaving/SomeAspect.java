@@ -127,6 +127,32 @@ public class SomeAspect {
         }
     }
 
+    @Pointcut(className = "org.glowroot.agent.weaving.GenericMisc", methodName = "execute*",
+            methodParameterTypes = {".."})
+    public static class GenericMiscAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            SomeAspectThreadLocals.enabledCount.increment();
+            return SomeAspectThreadLocals.enabled.get();
+        }
+        @OnBefore
+        public static void onBefore() {
+            SomeAspectThreadLocals.onBeforeCount.increment();
+        }
+        @OnReturn
+        public static void onReturn() {
+            SomeAspectThreadLocals.onReturnCount.increment();
+        }
+        @OnThrow
+        public static void onThrow() {
+            SomeAspectThreadLocals.onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            SomeAspectThreadLocals.onAfterCount.increment();
+        }
+    }
+
     @Pointcut(className = "org.glowroot.agent.weaving.BasicMisc", methodName = "<init>",
             methodParameterTypes = {})
     public static class BasicMiscConstructorAdvice {

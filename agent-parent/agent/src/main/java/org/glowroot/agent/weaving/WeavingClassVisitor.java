@@ -43,6 +43,8 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.MethodRemapper;
 import org.objectweb.asm.commons.SimpleRemapper;
+import org.objectweb.asm.signature.SignatureReader;
+import org.objectweb.asm.signature.SignatureVisitor;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -143,6 +145,9 @@ class WeavingClassVisitor extends ClassVisitor {
         checkNotNull(type); // type is non null if there is something to weave
         if (isAbstractOrNativeOrSynthetic(access)) {
             // don't try to weave abstract, native and synthetic methods
+            // no need to weave bridge methods (which are also marked synthetic) since they forward
+            // to non-bridged method which receives same advice (see ClassAnalyzer
+            // bridgeTargetAdvisors)
             return cw.visitMethod(access, name, desc, signature, exceptions);
         }
         if (isInitWithMixins(name)) {
@@ -555,5 +560,36 @@ class WeavingClassVisitor extends ClassVisitor {
         ImmutableList<Type> methodParameterTypes();
         int uniqueNum();
         ImmutableSet<Type> methodMetaTypes();
+    }
+
+    public static void main(String[] args) {
+        String signature = "(TT;TT;)V";
+        SignatureReader r = new SignatureReader(signature);
+        r.accept(new MethodSignatureVisitor());
+
+    }
+
+    private static class MethodSignatureVisitor extends SignatureVisitor {
+
+        private MethodSignatureVisitor() {
+            super(ASM5);
+        }
+
+        @Override
+        public SignatureVisitor visitParameterType() {
+            return new ParamSignatureVisitor();
+        }
+    }
+
+    private static class ParamSignatureVisitor extends SignatureVisitor {
+
+        private ParamSignatureVisitor() {
+            super(ASM5);
+        }
+
+        @Override
+        public SignatureVisitor visitParameterType() {
+            return this;
+        }
     }
 }

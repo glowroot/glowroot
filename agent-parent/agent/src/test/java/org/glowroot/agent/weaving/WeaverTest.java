@@ -65,6 +65,7 @@ import org.glowroot.agent.weaving.SomeAspect.ChangeReturnAdvice;
 import org.glowroot.agent.weaving.SomeAspect.CircularClassDependencyAdvice;
 import org.glowroot.agent.weaving.SomeAspect.ClassNamePatternAdvice;
 import org.glowroot.agent.weaving.SomeAspect.FinalMethodAdvice;
+import org.glowroot.agent.weaving.SomeAspect.GenericMiscAdvice;
 import org.glowroot.agent.weaving.SomeAspect.HasString;
 import org.glowroot.agent.weaving.SomeAspect.HasStringClassMixin;
 import org.glowroot.agent.weaving.SomeAspect.HasStringInterfaceMixin;
@@ -1064,6 +1065,44 @@ public class WeaverTest {
     // ===================== constructor =====================
 
     @Test
+    public void shouldHandleGenericOverride1() throws Exception {
+        // given
+        @SuppressWarnings("unchecked")
+        GenericMisc<String> test =
+                newWovenObject(GenericMiscImpl.class, GenericMisc.class, GenericMiscAdvice.class);
+        // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
+        SomeAspectThreadLocals.resetThreadLocals();
+        // when
+        test.execute1("");
+        // then
+        assertThat(SomeAspectThreadLocals.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldHandleGenericOverride2() throws Exception {
+        // given
+        @SuppressWarnings("unchecked")
+        GenericMisc<String> test =
+                newWovenObject(GenericMiscImpl.class, GenericMisc.class, GenericMiscAdvice.class);
+        // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
+        SomeAspectThreadLocals.resetThreadLocals();
+        // when
+        test.execute2("");
+        // then
+        assertThat(SomeAspectThreadLocals.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
+    // ===================== constructor =====================
+
+    @Test
     public void shouldHandleConstructorPointcut() throws Exception {
         // given
         Misc test = newWovenObject(BasicMisc.class, Misc.class, BasicMiscConstructorAdvice.class);
@@ -1477,7 +1516,7 @@ public class WeaverTest {
 
     public static <S, T extends S> S newWovenObject(LazyDefinedClass toBeDefinedImplClass,
             Class<S> bridgeClass, Class<?> adviceOrShimOrMixinClass, Class<?>... extraBridgeClasses)
-                    throws Exception {
+            throws Exception {
         // SomeAspectThreadLocals is passed as bridgeable so that the static thread locals will be
         // accessible for test verification
         List<Class<?>> bridgeClasses = Lists.newArrayList();

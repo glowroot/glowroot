@@ -18,6 +18,7 @@ package org.glowroot.agent.weaving;
 import java.lang.reflect.Modifier;
 import java.security.CodeSource;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +35,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.weaving.AnalyzedWorld.ParseContext;
 import org.glowroot.agent.weaving.ThinClassVisitor.ThinClass;
@@ -44,6 +49,8 @@ import org.glowroot.agent.weaving.ThinClassVisitor.ThinMethod;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 class ClassAnalyzer {
+
+    private static final Logger logger = LoggerFactory.getLogger(ClassAnalyzer.class);
 
     private final ThinClass thinClass;
     private final String className;
@@ -58,12 +65,17 @@ class ClassAnalyzer {
 
     private final boolean shortCircuitBeforeAnalyzeMethods;
 
+    private final byte[] classBytes;
+
     private @MonotonicNonNull Map<String, List<Advice>> methodAdvisors;
     private @MonotonicNonNull List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice;
 
+    // this is used to propagate bridge method advice to its target
+    private @MonotonicNonNull Map<ThinMethod, List<Advice>> bridgeTargetAdvisors;
+
     ClassAnalyzer(ThinClass thinClass, List<Advice> advisors, List<ShimType> shimTypes,
             List<MixinType> mixinTypes, @Nullable ClassLoader loader, AnalyzedWorld analyzedWorld,
-            @Nullable CodeSource codeSource) {
+            @Nullable CodeSource codeSource, byte[] classBytes) {
         this.thinClass = thinClass;
         ImmutableList<String> interfaceNames = ClassNames.fromInternalNames(thinClass.interfaces());
         className = ClassNames.fromInternalName(thinClass.name());
@@ -117,6 +129,7 @@ class ClassAnalyzer {
             superClassNames.add(analyzedClass.name());
         }
         this.superClassNames = ImmutableSet.copyOf(superClassNames);
+        this.classBytes = classBytes;
     }
 
     boolean isShortCircuitBeforeAnalyzeMethods() {
@@ -125,11 +138,24 @@ class ClassAnalyzer {
 
     void analyzeMethods() {
         methodAdvisors = Maps.newHashMap();
-        for (ThinMethod thinMethod : thinClass.methods()) {
-            List<Advice> advisors = analyzeMethod(thinMethod);
+        bridgeTargetAdvisors = Maps.newHashMap();
+        for (ThinMethod bridgeMethod : thinClass.bridgeMethods()) {
+            List<Advice> advisors = analyzeMethod(bridgeMethod);
             removeSuperseded(advisors);
             if (!advisors.isEmpty()) {
-                methodAdvisors.put(thinMethod.name() + thinMethod.desc(), advisors);
+                // don't add advisors to bridge method
+                // instead propagate bridge method advice to its target
+                ThinMethod targetMethod = getTargetMethod(bridgeMethod);
+                if (targetMethod != null) {
+                    bridgeTargetAdvisors.put(targetMethod, advisors);
+                }
+            }
+        }
+        for (ThinMethod nonBridgeMethod : thinClass.nonBridgeMethods()) {
+            List<Advice> advisors = analyzeMethod(nonBridgeMethod);
+            removeSuperseded(advisors);
+            if (!advisors.isEmpty()) {
+                methodAdvisors.put(nonBridgeMethod.name() + nonBridgeMethod.desc(), advisors);
             }
         }
         AnalyzedClass mostlyAnalyzedClass = analyzedClassBuilder.build();
@@ -175,12 +201,13 @@ class ClassAnalyzer {
         return checkNotNull(methodsThatOnlyNowFulfillAdvice);
     }
 
+    @RequiresNonNull("bridgeTargetAdvisors")
     private List<Advice> analyzeMethod(ThinMethod thinMethod) {
         List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(thinMethod.desc()));
         Type returnType = Type.getReturnType(thinMethod.desc());
         List<String> methodAnnotations = thinMethod.annotations();
-        List<Advice> matchingAdvisors = getMatchingAdvisors(thinMethod.name(), methodAnnotations,
-                parameterTypes, returnType, thinMethod.access());
+        List<Advice> matchingAdvisors = getMatchingAdvisors(thinMethod, methodAnnotations,
+                parameterTypes, returnType);
         if (matchingAdvisors.isEmpty()) {
             return ImmutableList.of();
         }
@@ -229,26 +256,75 @@ class ClassAnalyzer {
     }
 
     // returns mutable list if non-empty
-    private List<Advice> getMatchingAdvisors(String methodName, List<String> methodAnnotations,
-            List<Type> parameterTypes, Type returnType, int modifiers) {
+    @RequiresNonNull("bridgeTargetAdvisors")
+    private List<Advice> getMatchingAdvisors(ThinMethod thinMethod, List<String> methodAnnotations,
+            List<Type> parameterTypes, Type returnType) {
         Set<Advice> matchingAdvisors = Sets.newHashSet();
         for (AdviceMatcher adviceMatcher : adviceMatchers) {
-            if (adviceMatcher.isMethodLevelMatch(methodName, methodAnnotations, parameterTypes,
-                    returnType, modifiers)) {
+            if (adviceMatcher.isMethodLevelMatch(thinMethod.name(), methodAnnotations,
+                    parameterTypes, returnType, thinMethod.access())) {
                 matchingAdvisors.add(adviceMatcher.advice());
             }
         }
         // look at super types
         for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
             for (AnalyzedMethod analyzedMethod : superAnalyzedClass.analyzedMethods()) {
-                if (analyzedMethod.isOverriddenBy(methodName, parameterTypes)) {
+                if (analyzedMethod.isOverriddenBy(thinMethod.name(), parameterTypes)) {
                     matchingAdvisors.addAll(analyzedMethod.advisors());
                     matchingAdvisors.addAll(analyzedMethod.declaredOnlyAdvisors());
                 }
             }
         }
-        // sort since the order affects advice and timer nesting
+        List<Advice> extraAdvisors = bridgeTargetAdvisors.get(thinMethod);
+        if (extraAdvisors != null) {
+            matchingAdvisors.addAll(extraAdvisors);
+        }
+        // sort since the order affects advice nesting
         return sortAdvisors(matchingAdvisors);
+    }
+
+    private @Nullable ThinMethod getTargetMethod(ThinMethod bridgeMethod) {
+        List<ThinMethod> possibleTargetMethods = getPossibleTargetMethods(bridgeMethod);
+        if (possibleTargetMethods.isEmpty()) {
+            // probably a visibility bridge for public method in package-private super class
+            return null;
+        }
+        if (possibleTargetMethods.size() == 1) {
+            return possibleTargetMethods.get(0);
+        }
+        // more than one match, need to drop down to bytecode
+        BridgeMethodClassVisitor bmcv = new BridgeMethodClassVisitor();
+        new ClassReader(classBytes).accept(bmcv, ClassReader.SKIP_FRAMES);
+        Map<String, String> bridgeMethodMap = bmcv.getBridgeTargetMethods();
+        String targetMethod = bridgeMethodMap.get(bridgeMethod.name() + bridgeMethod.desc());
+        if (targetMethod == null) {
+            // probably a visibility bridge for public method in package-private super class
+            return null;
+        }
+        for (ThinMethod possibleTargetMethod : possibleTargetMethods) {
+            if (targetMethod.equals(possibleTargetMethod.name() + possibleTargetMethod.desc())) {
+                return possibleTargetMethod;
+            }
+        }
+        logger.warn("could not find match for bridge method: {}", bridgeMethod);
+        return null;
+    }
+
+    private List<ThinMethod> getPossibleTargetMethods(ThinMethod bridgeMethod) {
+        List<ThinMethod> possibleTargetMethods = Lists.newArrayList();
+        for (ThinMethod possibleTargetMethod : thinClass.nonBridgeMethods()) {
+            if (!possibleTargetMethod.name().equals(bridgeMethod.name())) {
+                continue;
+            }
+            Type[] bridgeMethodParamTypes = Type.getArgumentTypes(bridgeMethod.desc());
+            Type[] possibleTargetMethodParamTypes =
+                    Type.getArgumentTypes(possibleTargetMethod.desc());
+            if (possibleTargetMethodParamTypes.length != bridgeMethodParamTypes.length) {
+                continue;
+            }
+            possibleTargetMethods.add(possibleTargetMethod);
+        }
+        return possibleTargetMethods;
     }
 
     private List<AnalyzedMethod> getMethodsThatOnlyNowFulfillAdvice(AnalyzedClass analyzedClass) {
@@ -390,8 +466,7 @@ class ClassAnalyzer {
         return false;
     }
 
-    // returns mutable list if non-empty
-    private static List<Advice> sortAdvisors(Set<Advice> matchingAdvisors) {
+    static List<Advice> sortAdvisors(Collection<Advice> matchingAdvisors) {
         switch (matchingAdvisors.size()) {
             case 0:
                 return ImmutableList.of();
