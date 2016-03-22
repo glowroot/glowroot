@@ -1062,7 +1062,7 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(0);
     }
 
-    // ===================== constructor =====================
+    // ===================== bridge methods =====================
 
     @Test
     public void shouldHandleGenericOverride1() throws Exception {
@@ -1098,6 +1098,24 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
         assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldHandleConfusingVisibilityBridge() throws Exception {
+        // given
+        @SuppressWarnings("unchecked")
+        GenericMisc<String> test = newWovenObject(GenericAbstractMiscImpl.class, GenericMisc.class,
+                GenericMiscAdvice.class);
+        // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
+        SomeAspectThreadLocals.resetThreadLocals();
+        // when
+        test.execute2(5);
+        // then
+        assertThat(SomeAspectThreadLocals.enabledCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(0);
     }
 
     // ===================== constructor =====================

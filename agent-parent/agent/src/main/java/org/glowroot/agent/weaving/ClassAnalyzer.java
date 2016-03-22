@@ -289,9 +289,6 @@ class ClassAnalyzer {
             // probably a visibility bridge for public method in package-private super class
             return null;
         }
-        if (possibleTargetMethods.size() == 1) {
-            return possibleTargetMethods.get(0);
-        }
         // more than one match, need to drop down to bytecode
         BridgeMethodClassVisitor bmcv = new BridgeMethodClassVisitor();
         new ClassReader(classBytes).accept(bmcv, ClassReader.SKIP_FRAMES);

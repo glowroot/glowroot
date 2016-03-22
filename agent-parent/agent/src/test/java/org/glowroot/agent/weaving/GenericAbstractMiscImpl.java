@@ -15,11 +15,10 @@
  */
 package org.glowroot.agent.weaving;
 
-public interface GenericMisc<T> {
+public class GenericAbstractMiscImpl extends GenericAbstractMisc<String> {
 
-    public void execute1(T obj);
+    // visibility bridges will be generated here for super.execute1() and super.execute2()
 
-    public void execute2(T obj);
-
-    public void execute2(Number obj);
+    @Override
+    public void execute2(Number obj) {}
 }

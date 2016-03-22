@@ -15,11 +15,11 @@
  */
 package org.glowroot.agent.weaving;
 
-public interface GenericMisc<T> {
+abstract class GenericAbstractMisc<T> implements GenericMisc<T> {
 
-    public void execute1(T obj);
+    @Override
+    public void execute1(T obj) {}
 
-    public void execute2(T obj);
-
-    public void execute2(Number obj);
+    @Override
+    public void execute2(T obj) {}
 }

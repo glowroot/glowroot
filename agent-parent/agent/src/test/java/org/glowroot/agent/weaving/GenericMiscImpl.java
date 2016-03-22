@@ -23,5 +23,6 @@ public class GenericMiscImpl implements GenericMisc<String> {
     @Override
     public void execute2(String obj) {}
 
-    public void execute2(@SuppressWarnings("unused") Number obj) {}
+    @Override
+    public void execute2(Number obj) {}
 }
