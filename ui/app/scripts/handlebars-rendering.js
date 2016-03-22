@@ -432,20 +432,26 @@ HandlebarsRendering = (function () {
   });
 
   $(document).on('click', '.gt-trace-entry-toggle', function () {
-    var traceEntryIndex = $(this).data('index');
-    function hideTraceEntries(childEntries) {
+    function toggleChildren(parentTraceEntry, collapse) {
       var i;
-      for (i = 0; i < childEntries.length; i++) {
-        var entry = childEntries[i];
-        $('#gtTraceEntry' + entry.index).toggle();
-        if (entry.childEntries) {
-          hideTraceEntries(entry.childEntries);
+      for (i = 0; i < parentTraceEntry.childEntries.length; i++) {
+        var entry = parentTraceEntry.childEntries[i];
+        if (collapse) {
+          $('#gtTraceEntry' + entry.index).hide();
+        } else {
+          $('#gtTraceEntry' + entry.index).show();
+        }
+        if (entry.childEntries && !entry.collapsed) {
+          toggleChildren(entry, collapse);
         }
       }
     }
-    hideTraceEntries(flattenedTraceEntries[traceEntryIndex].childEntries);
+    var traceEntryIndex = $(this).data('index');
+    var traceEntry = flattenedTraceEntries[traceEntryIndex];
+    traceEntry.collapsed = !traceEntry.collapsed;
+    toggleChildren(traceEntry, traceEntry.collapsed);
     var $i = $(this).find('i');
-    if ($i.hasClass('fa-minus-square-o')) {
+    if (traceEntry.collapsed) {
       $i.removeClass('fa-minus-square-o');
       $i.addClass('fa-plus-square-o');
     } else {
@@ -561,6 +567,7 @@ HandlebarsRendering = (function () {
       var traceEntry;
       for (i = 0; i < traceEntries.length; i++) {
         traceEntry = traceEntries[i];
+        traceEntry.collapsed = false;
         traceEntry.depth = depth;
         flattenedTraceEntries.push(traceEntry);
         traceEntry.index = traceEntryIndex++;
