@@ -66,7 +66,7 @@ public abstract class AdvancedConfig {
     // used to limit memory requirement, also used to help limit trace capture size
     @Value.Default
     public int maxTraceEntriesPerTransaction() {
-        return 2000;
+        return 5000;
     }
 
     // used to limit memory requirement, also used to help limit trace capture size
