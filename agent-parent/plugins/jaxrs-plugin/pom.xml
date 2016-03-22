@@ -15,6 +15,11 @@
   <name>Glowroot Agent JAX-RS Plugin</name>
   <description>Glowroot Agent JAX-RS Plugin</description>
 
+  <properties>
+    <!-- instrumented libraries -->
+    <jersey.version>2.22.2</jersey.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
@@ -67,13 +72,13 @@
     <dependency>
       <groupId>org.glassfish.jersey.containers</groupId>
       <artifactId>jersey-container-servlet</artifactId>
-      <version>2.22.2</version>
+      <version>${jersey.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.glassfish.jersey.core</groupId>
       <artifactId>jersey-server</artifactId>
-      <version>2.22.2</version>
+      <version>${jersey.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

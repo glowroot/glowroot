@@ -15,6 +15,11 @@
   <name>Glowroot Agent Hibernate Plugin</name>
   <description>Glowroot Agent Hibernate Plugin</description>
 
+  <properties>
+    <!-- instrumented libraries -->
+    <hibernate.version>4.3.11.Final</hibernate.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -35,13 +40,13 @@
     <dependency>
       <groupId>org.hibernate</groupId>
       <artifactId>hibernate-core</artifactId>
-      <version>4.3.11.Final</version>
+      <version>${hibernate.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.hibernate</groupId>
       <artifactId>hibernate-c3p0</artifactId>
-      <version>4.3.11.Final</version>
+      <version>${hibernate.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

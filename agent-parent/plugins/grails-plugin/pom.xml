@@ -15,6 +15,11 @@
   <name>Glowroot Agent Grails Plugin</name>
   <description>Glowroot Agent Grails Plugin</description>
 
+  <properties>
+    <!-- instrumented libraries -->
+    <grails.version>3.1.4</grails.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
@@ -67,14 +72,14 @@
     <dependency>
       <groupId>org.grails</groupId>
       <artifactId>grails-dependencies</artifactId>
-      <version>3.1.4</version>
+      <version>${grails.version}</version>
       <scope>test</scope>
       <type>pom</type>
     </dependency>
     <dependency>
       <groupId>org.grails</groupId>
       <artifactId>grails-web-boot</artifactId>
-      <version>3.1.4</version>
+      <version>${grails.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

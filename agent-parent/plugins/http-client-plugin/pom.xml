@@ -15,6 +15,18 @@
   <name>Glowroot Agent Http Client Plugin</name>
   <description>Glowroot Agent Http Client Plugin</description>
 
+  <properties>
+    <!-- instrumented libraries -->
+    <apache.httpclient.version>4.5.2</apache.httpclient.version>
+    <apache.httpasyncclient.version>4.1.1</apache.httpasyncclient.version>
+    <apache.httpclient3x.version>3.1</apache.httpclient3x.version>
+    <!-- async-http-client 1.9.0 requires JDK 7+ -->
+    <asynchttpclient.version>1.8.16</asynchttpclient.version>
+    <okhttpclient.version>2.7.5</okhttpclient.version>
+    <cxf.version>3.1.5</cxf.version>
+    <spring.version>4.2.5.RELEASE</spring.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
@@ -47,60 +59,61 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>4.5.2</version>
+      <version>${apache.httpclient.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpasyncclient</artifactId>
-      <version>4.1.1</version>
+      <version>${apache.httpasyncclient.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>commons-httpclient</groupId>
       <artifactId>commons-httpclient</artifactId>
-      <version>3.1</version>
+      <version>${apache.httpclient3x.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.ning</groupId>
       <artifactId>async-http-client</artifactId>
+      <version>${asynchttpclient.version}</version><!--$NO-MVN-MAN-VER$-->
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.squareup.okhttp</groupId>
       <artifactId>okhttp</artifactId>
-      <version>2.7.5</version>
+      <version>${okhttpclient.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.cxf</groupId>
       <artifactId>cxf-rt-bindings-soap</artifactId>
-      <version>3.1.5</version>
+      <version>${cxf.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.cxf</groupId>
       <artifactId>cxf-rt-frontend-jaxws</artifactId>
-      <version>3.1.5</version>
+      <version>${cxf.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.cxf</groupId>
       <artifactId>cxf-rt-transports-http</artifactId>
-      <version>3.1.5</version>
+      <version>${cxf.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.cxf</groupId>
       <artifactId>cxf-rt-transports-http-jetty</artifactId>
-      <version>3.1.5</version>
+      <version>${cxf.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <version>4.2.5.RELEASE</version>
+      <version>${spring.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

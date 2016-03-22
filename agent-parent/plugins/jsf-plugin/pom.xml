@@ -15,6 +15,11 @@
   <name>Glowroot Agent JSF Plugin</name>
   <description>Glowroot Agent JSF Plugin</description>
 
+  <properties>
+    <!-- instrumented libraries -->
+    <faces.version>2.2.13</faces.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -55,13 +60,13 @@
     <dependency>
       <groupId>com.sun.faces</groupId>
       <artifactId>jsf-api</artifactId>
-      <version>2.2.13</version>
+      <version>${faces.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.sun.faces</groupId>
       <artifactId>jsf-impl</artifactId>
-      <version>2.2.13</version>
+      <version>${faces.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
