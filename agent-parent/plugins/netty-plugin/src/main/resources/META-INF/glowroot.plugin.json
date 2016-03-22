@@ -1,0 +1,7 @@
+{
+  "name": "Netty Plugin",
+  "id": "netty",
+  "aspects": [
+    "org.glowroot.agent.plugin.netty.NettyChannelAndCodecAspect"
+  ]
+}
