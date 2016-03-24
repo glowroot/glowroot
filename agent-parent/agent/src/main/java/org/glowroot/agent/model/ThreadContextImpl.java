@@ -120,6 +120,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     private @Nullable MessageSupplier servletMessageSupplier;
 
+    // this is not used much, so overhead of Long seems good tradeoff for avoiding extra field
+    private volatile @MonotonicNonNull Long detachedTime;
+
     ThreadContextImpl(Transaction transaction, @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextTailEntry, MessageSupplier messageSupplier,
             TimerName rootTimerName, long startTick, boolean captureThreadStats,
@@ -170,6 +173,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
         List<Trace.Entry> entries = Lists.newArrayList();
         addProtobufChildEntries(getRootEntry(), parentChildMap, transaction.getStartTick(),
                 captureTick, 0, entries);
+        if (detachedTime != null) {
+            entries.add(Trace.Entry.newBuilder()
+                    .setStartOffsetNanos(detachedTime)
+                    .setMessage(
+                            "this auxiliary thread was still running when the transaction ended")
+                    .build());
+        }
         return entries;
     }
 
@@ -525,6 +535,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         // context holder has been cleared (at least after the thread completes its next trace entry
         // or profile sample, which both perform memory barrier reads)
         transaction.memoryBarrierWrite();
+        detachedTime = ticker.read();
     }
 
     private QueryDataMap getOrCreateQueriesForType(String queryType) {
