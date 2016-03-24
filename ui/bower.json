@@ -14,7 +14,7 @@
     "handlebars": "4.0.5",
     "jquery": "2.2.1",
     "moment": "2.12.0",
-    "sequeljs": "trask/sequeljs#glowroot-0.8",
+    "sequeljs": "trask/sequeljs#66ba47556cb7eec089a828d61aa93adc41dcc59c",
     "spinjs": "2.3.2",
     "zeroclipboard": "2.1.6"
   }
