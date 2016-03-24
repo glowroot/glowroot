@@ -160,6 +160,23 @@
 
   <profiles>
     <profile>
+      <id>java7</id>
+      <activation>
+        <jdk>1.7</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <!-- this is needed when building with java 7 -->
+              <argLine>-XX:MaxPermSize=128m</argLine>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
       <id>apache-httpclient-pre-4.2</id>
       <build>
         <plugins>
@@ -184,6 +201,18 @@
           <artifactId>spring-web</artifactId>
           <version>2.0.8</version>
           <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.cxf</groupId>
+          <artifactId>cxf-rt-transports-http-jetty</artifactId>
+          <version>${cxf.version}</version>
+          <scope>test</scope>
+          <exclusions>
+            <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+            </exclusion>
+          </exclusions>
         </dependency>
       </dependencies>
       <build>

@@ -330,7 +330,6 @@ public class Log4jIT {
         }
         @Override
         public void transactionMarker() {
-            logger.trace("abc");
             logger.debug("bcd");
             logger.info("cde");
             logger.warn("def");
@@ -347,7 +346,6 @@ public class Log4jIT {
         }
         @Override
         public void transactionMarker() {
-            logger.trace("abc_", new IllegalStateException("123"));
             logger.debug("bcd_", new IllegalStateException("234"));
             logger.info("cde_", new IllegalStateException("345"));
             logger.warn("def_", new IllegalStateException("456"));
@@ -364,7 +362,6 @@ public class Log4jIT {
         }
         @Override
         public void transactionMarker() {
-            logger.trace("abc_", null);
             logger.debug("bcd_", null);
             logger.info("cde_", null);
             logger.warn("def_", null);
@@ -389,7 +386,6 @@ public class Log4jIT {
                     throw e;
                 }
             }
-            logger.log(Level.TRACE, "abc__");
             logger.log(Level.DEBUG, "bcd__");
             logger.log(Level.INFO, "cde__");
             logger.log(Level.WARN, "def__");
@@ -416,7 +412,6 @@ public class Log4jIT {
                     throw e;
                 }
             }
-            logger.log(Level.TRACE, "abc___", new IllegalStateException("123_"));
             logger.log(Level.DEBUG, "bcd___", new IllegalStateException("234_"));
             logger.log(Level.INFO, "cde___", new IllegalStateException("345_"));
             logger.log(Level.WARN, "def___", new IllegalStateException("456_"));
@@ -435,7 +430,6 @@ public class Log4jIT {
         }
         @Override
         public void transactionMarker() {
-            logger.log(Level.TRACE, "abc___null", null);
             logger.log(Level.DEBUG, "bcd___null", null);
             logger.log(Level.INFO, "cde___null", null);
             logger.log(Level.WARN, "def___null", null);
@@ -460,7 +454,6 @@ public class Log4jIT {
                     throw e;
                 }
             }
-            logger.l7dlog(Level.TRACE, "abc____", new IllegalStateException("123__"));
             logger.l7dlog(Level.DEBUG, "bcd____", new IllegalStateException("234__"));
             logger.l7dlog(Level.INFO, "cde____", new IllegalStateException("345__"));
             logger.l7dlog(Level.WARN, "def____", new IllegalStateException("456__"));
@@ -479,7 +472,6 @@ public class Log4jIT {
         }
         @Override
         public void transactionMarker() {
-            logger.l7dlog(Level.TRACE, "abc____null", null);
             logger.l7dlog(Level.DEBUG, "bcd____null", null);
             logger.l7dlog(Level.INFO, "cde____null", null);
             logger.l7dlog(Level.WARN, "def____null", null);
@@ -507,8 +499,6 @@ public class Log4jIT {
                     throw e;
                 }
             }
-            logger.l7dlog(Level.TRACE, "abc____", new Object[] {"a", "b", "c"},
-                    new IllegalStateException("123__"));
             logger.l7dlog(Level.DEBUG, "bcd____", new Object[] {"b", "c", "d"},
                     new IllegalStateException("234__"));
             logger.l7dlog(Level.INFO, "cde____", new Object[] {"c", "d", "e"},
@@ -541,8 +531,6 @@ public class Log4jIT {
                     throw e;
                 }
             }
-            logger.l7dlog(Level.TRACE, "abc____", new Object[] {},
-                    new IllegalStateException("123__"));
             logger.l7dlog(Level.DEBUG, "bcd____", new Object[] {},
                     new IllegalStateException("234__"));
             logger.l7dlog(Level.INFO, "cde____", new Object[] {},
@@ -566,7 +554,6 @@ public class Log4jIT {
         }
         @Override
         public void transactionMarker() {
-            logger.l7dlog(Level.TRACE, "abc____null", new Object[] {"a_", "b_", "c_"}, null);
             logger.l7dlog(Level.DEBUG, "bcd____null", new Object[] {"b_", "c_", "d_"}, null);
             logger.l7dlog(Level.INFO, "cde____null", new Object[] {"c_", "d_", "e_"}, null);
             logger.l7dlog(Level.WARN, "def____null", new Object[] {"d_", "e_", "f_"}, null);

@@ -204,7 +204,7 @@ public class HttpClient {
             runTest(test);
         }
         for (int i = 0; i <= 5; i++) {
-            updateLibVersion("spring.version", "4.1." + i + ".RELEASE");
+            updateLibVersion("spring.version", "4.2." + i + ".RELEASE");
             runTest(test);
         }
     }

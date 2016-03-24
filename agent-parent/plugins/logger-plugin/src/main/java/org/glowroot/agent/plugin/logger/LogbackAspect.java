@@ -17,16 +17,13 @@ package org.glowroot.agent.plugin.logger;
 
 import javax.annotation.Nullable;
 
-import org.slf4j.helpers.FormattingTuple;
-import org.slf4j.helpers.MessageFormatter;
-
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
+import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
-import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
@@ -37,7 +34,7 @@ public class LogbackAspect {
 
     private static final String TIMER_NAME = "logging";
 
-    // constants from from ch.qos.logback.classic.Level
+    // constants from ch.qos.logback.classic.Level
     private static final int OFF_INT = Integer.MAX_VALUE;
     private static final int ERROR_INT = 40000;
     private static final int WARN_INT = 30000;
@@ -46,9 +43,22 @@ public class LogbackAspect {
     private static final int TRACE_INT = 5000;
     private static final int ALL_INT = Integer.MIN_VALUE;
 
-    @Shim("org.slf4j.Logger")
-    public interface Logger {
-        String getName();
+    @Shim("ch.qos.logback.classic.spi.ILoggingEvent")
+    public interface ILoggingEvent {
+        @Shim("ch.qos.logback.classic.Level getLevel()")
+        @Nullable
+        Level glowrootGetLevel();
+        @Nullable
+        String getMessage();
+        @Nullable
+        Object /*@Nullable*/ [] getArgumentArray();
+        @Nullable
+        String getFormattedMessage();
+        @Nullable
+        String getLoggerName();
+        @Shim("ch.qos.logback.classic.spi.IThrowableProxy getThrowableProxy()")
+        @Nullable
+        Object getThrowableProxy();
     }
 
     @Shim("ch.qos.logback.classic.Level")
@@ -56,32 +66,40 @@ public class LogbackAspect {
         int toInt();
     }
 
-    @Pointcut(className = "ch.qos.logback.classic.Logger",
-            methodName = "buildLoggingEventAndAppend",
-            methodParameterTypes = {"java.lang.String", "org.slf4j.Marker",
-                    "ch.qos.logback.classic.Level", "java.lang.String", "java.lang.Object[]",
-                    "java.lang.Throwable"},
+    @Shim("ch.qos.logback.classic.spi.ThrowableProxy")
+    public interface ThrowableProxy {
+        @Nullable
+        Throwable getThrowable();
+    }
+
+    @Pointcut(className = "ch.qos.logback.classic.Logger", methodName = "callAppenders",
+            methodParameterTypes = {"ch.qos.logback.classic.spi.ILoggingEvent"},
             nestingGroup = "logging", timerName = TIMER_NAME)
-    public static class LogNoArgAdvice {
-        private static final TimerName timerName = Agent.getTimerName(LogNoArgAdvice.class);
+    public static class CallAppendersAdvice {
+        private static final TimerName timerName = Agent.getTimerName(CallAppendersAdvice.class);
         @OnBefore
-        @SuppressWarnings("unused")
-        public static LogAdviceTraveler onBefore(ThreadContext context, @BindReceiver Logger logger,
-                @BindParameter @Nullable String fqcn, @BindParameter @Nullable Object marker,
-                @BindParameter @Nullable Level level, @BindParameter @Nullable String message,
-                @BindParameter @Nullable Object/*@Nullable*/[] params,
-                @BindParameter @Nullable Throwable throwable) {
-            FormattingTuple formattingTuple = MessageFormatter.arrayFormat(message, params);
-            Throwable t = throwable == null ? formattingTuple.getThrowable() : throwable;
-            String formattedMessage = nullToEmpty(formattingTuple.getMessage());
+        public static @Nullable LogAdviceTraveler onBefore(ThreadContext context,
+                @BindParameter @Nullable ILoggingEvent loggingEvent) {
+            if (loggingEvent == null) {
+                return null;
+            }
+            String formattedMessage = nullToEmpty(loggingEvent.getFormattedMessage());
+            Level level = loggingEvent.glowrootGetLevel();
             int lvl = level == null ? 0 : level.toInt();
+            Object throwableProxy = loggingEvent.getThrowableProxy();
+            Throwable t = null;
+            if (throwableProxy instanceof ThrowableProxy) {
+                // there is only one other subclass of ch.qos.logback.classic.spi.IThrowableProxy
+                // and it is only used for logging exceptions over the wire
+                t = ((ThrowableProxy) throwableProxy).getThrowable();
+            }
             if (LoggerPlugin.markTraceAsError(lvl >= ERROR_INT, lvl >= WARN_INT, t != null)) {
                 context.setTransactionError(formattedMessage);
             }
             TraceEntry traceEntry;
             if (lvl <= DEBUG_INT) {
                 // include short logger name for debug or lower
-                String loggerName = LoggerPlugin.getShortName(logger.getName());
+                String loggerName = LoggerPlugin.getShortName(loggingEvent.getLoggerName());
                 traceEntry = context.startTraceEntry(MessageSupplier.from("log {}: {} - {}",
                         getLevelStr(lvl), loggerName, formattedMessage), timerName);
             } else {
@@ -92,7 +110,59 @@ public class LogbackAspect {
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
+        public static void onAfter(@BindTraveler @Nullable LogAdviceTraveler traveler) {
+            if (traveler == null) {
+                return;
+            }
+            Throwable t = traveler.throwable;
+            if (t != null) {
+                // intentionally not passing message since it is already the trace entry message
+                traveler.traceEntry.endWithError(t);
+            } else if (traveler.level >= WARN_INT) {
+                traveler.traceEntry.endWithError(traveler.formattedMessage);
+            } else {
+                traveler.traceEntry.end();
+            }
+        }
+    }
+
+    // this is for logback 0.9.15 and prior
+    @Pointcut(className = "ch.qos.logback.classic.Logger", methodName = "callAppenders",
+            methodParameterTypes = {"ch.qos.logback.classic.spi.LoggingEvent"},
+            nestingGroup = "logging", timerName = TIMER_NAME)
+    public static class CallAppenders0xAdvice {
+        private static final TimerName timerName = Agent.getTimerName(CallAppenders0xAdvice.class);
+        @OnBefore
+        public static @Nullable LogAdviceTraveler onBefore(ThreadContext context,
+                @BindParameter @Nullable Object loggingEvent,
+                @BindClassMeta LoggingEventInvoker invoker) {
+            if (loggingEvent == null) {
+                return null;
+            }
+            String formattedMessage = invoker.getFormattedMessage(loggingEvent);
+            int lvl = invoker.getLevel(loggingEvent);
+            Throwable t = invoker.getThrowable(loggingEvent);
+            if (LoggerPlugin.markTraceAsError(lvl >= ERROR_INT, lvl >= WARN_INT, t != null)) {
+                context.setTransactionError(formattedMessage);
+            }
+            TraceEntry traceEntry;
+            if (lvl <= DEBUG_INT) {
+                // include short logger name for debug or lower
+                String loggerName = LoggerPlugin.getShortName(invoker.getLoggerName(loggingEvent));
+                traceEntry = context.startTraceEntry(MessageSupplier.from("log {}: {} - {}",
+                        getLevelStr(lvl), loggerName, formattedMessage), timerName);
+            } else {
+                traceEntry = context.startTraceEntry(
+                        MessageSupplier.from("log {}: {}", getLevelStr(lvl), formattedMessage),
+                        timerName);
+            }
+            return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
+        }
+        @OnAfter
+        public static void onAfter(@BindTraveler @Nullable LogAdviceTraveler traveler) {
+            if (traveler == null) {
+                return;
+            }
             Throwable t = traveler.throwable;
             if (t != null) {
                 // intentionally not passing message since it is already the trace entry message

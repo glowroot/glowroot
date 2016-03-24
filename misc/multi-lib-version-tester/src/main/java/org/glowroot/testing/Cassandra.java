@@ -15,29 +15,25 @@
  */
 package org.glowroot.testing;
 
-public class Quartz {
+public class Cassandra {
 
-    private static String MODULE_PATH = "agent-parent/plugins/quartz-plugin";
+    private static String MODULE_PATH = "agent-parent/plugins/cassandra-plugin";
 
     public static void main(String[] args) throws Exception {
-        run("1.7.2", "quartz-old");
-        run("1.7.3", "quartz-old");
-        for (int i = 0; i <= 6; i++) {
-            run("1.8." + i, "quartz-old");
+        for (int i = 0; i <= 12; i++) {
+            run("2.0." + i);
         }
-        run("2.0.0");
-        run("2.0.1");
-        run("2.0.2");
-        for (int i = 0; i <= 7; i++) {
+        run("2.0.9.1");
+        run("2.0.9.2");
+        for (int i = 0; i <= 9; i++) {
             run("2.1." + i);
         }
-        run("2.2.0");
-        run("2.2.1");
-        run("2.2.2");
+        run("2.1.7.1");
+        run("3.0.0");
     }
 
-    private static void run(String version, String... profiles) throws Exception {
-        Util.updateLibVersion(MODULE_PATH, "quartz.version", version);
-        Util.runTests(MODULE_PATH, profiles);
+    private static void run(String version) throws Exception {
+        Util.updateLibVersion(MODULE_PATH, "cassandra.version", version);
+        Util.runTests(MODULE_PATH);
     }
 }

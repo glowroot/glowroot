@@ -15,13 +15,21 @@
  */
 package org.glowroot.agent.it.harness.impl;
 
-import org.slf4j.bridge.SLF4JBridgeHandler;
-
 public class InitLogging {
 
     static {
-        SLF4JBridgeHandler.removeHandlersForRootLogger();
-        SLF4JBridgeHandler.install();
+        try {
+            Class.forName("org.slf4j.bridge.SLF4JBridgeHandler")
+                    .getMethod("removeHandlersForRootLogger").invoke(null);
+            Class.forName("org.slf4j.bridge.SLF4JBridgeHandler")
+                    .getMethod("install").invoke(null);
+        } catch (ClassNotFoundException e) {
+            // this is needed when running logger plugin tests against old logback versions
+        } catch (NoSuchMethodException e) {
+            // this is needed when running logger plugin tests against old logback versions
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private InitLogging() {}

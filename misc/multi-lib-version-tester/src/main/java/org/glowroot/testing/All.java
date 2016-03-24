@@ -18,12 +18,14 @@ package org.glowroot.testing;
 public class All {
 
     public static void main(String[] args) throws Exception {
+        Cassandra.main(args);
         Grails.main(args);
         HttpClient.main(args);
         Hibernate.main(args);
         JAXRS.main(args);
         Jedis.main(args);
         JSF.main(args);
+        Logger.main(args);
         Quartz.main(args);
         Spring.main(args);
         Struts.main(args);

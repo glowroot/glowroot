@@ -344,10 +344,16 @@ public class JavaagentContainer implements Container {
         List<String> bootPaths = Lists.newArrayList();
         List<String> paths = Lists.newArrayList();
         List<String> maybeShadedInsideAgentJars = Lists.newArrayList();
+        List<String> maybeBootstrapJar = Lists.newArrayList();
         File javaagentJarFile = null;
         for (String path : Splitter.on(File.pathSeparatorChar).split(classpath)) {
             File file = new File(path);
             String name = file.getName();
+            boolean agentClasses = false;
+            if (name.equals("classes") && !file.getAbsolutePath().endsWith(File.separator
+                    + "it-harness" + File.separator + "target" + File.separator + "classes")) {
+                agentClasses = true;
+            }
             if (name.matches("glowroot-agent-[0-9.]+(-SNAPSHOT)?.jar")) {
                 javaagentJarFile = file;
             } else if (name.matches("glowroot-common-[0-9.]+(-SNAPSHOT)?.jar")
@@ -359,42 +365,47 @@ public class JavaagentContainer implements Container {
                 // module builds, which causes the glowroot artifacts to be included
                 // when running "mvn clean install" from the project root, see MSHADE-206
                 maybeShadedInsideAgentJars.add(path);
+            } else if (agentClasses) {
+                bootPaths.add(path);
             } else if (name.matches("glowroot-agent-it-harness-[0-9.]+(-SNAPSHOT)?\\.jar")) {
                 paths.add(path);
-            } else if (file.getAbsolutePath().contains(File.separator + "it-harness"
+            } else if (file.getAbsolutePath().endsWith(File.separator + "it-harness"
                     + File.separator + "target" + File.separator + "classes")) {
                 paths.add(path);
-            } else if (file.isDirectory() && name.equals("test-classes")) {
-                paths.add(path);
-            } else if (name.matches("tomcat-.*\\.jar") || name.matches("jsf-.*\\.jar")
-                    || name.matches("struts2?-core-.*\\.jar")
-                    || name.matches("commons-beanutils-.*\\.jar") // needed for older struts version
-                    || name.matches("commons-chain-.*\\.jar")
-                    || name.matches("commons-digester-.*\\.jar") // needed for older struts version
-                    || name.matches("xwork-core-.*\\.jar")
-                    || name.matches("freemarker-.*\\.jar")
-                    || name.matches("spring-.*\\.jar")
-                    || name.matches("jersey-.*\\.jar")
-                    || name.matches("grails-.*\\.jar")
-                    || name.matches("reactor-.*\\.jar")
-                    || name.matches("sitemesh-.*\\.jar")
-                    || name.matches("groovy-.*\\.jar")
-                    || name.matches("hibernate-.*\\.jar")
-                    || name.matches("cxf-.*\\.jar")
-                    || name.matches("httpclient-.*\\.jar")
-                    || name.matches("commons-httpclient-.*\\.jar")
-                    || name.matches("httpasyncclient-.*\\.jar")
-                    || name.matches("commons-logging-.*\\.jar")
-                    || name.matches("quartz-.*\\.jar")
-                    || name.matches("jetty-.*\\.jar")) {
-                // TODO ideally all test dependencies would be in system classpath, but not sure how
-                // to differentiate here, so just hard-coding test dependencies as necessary for now
-                paths.add(path);
-            } else {
+            } else if (name.endsWith(".jar") && file.getAbsolutePath()
+                    .endsWith(File.separator + "target" + File.separator + name)) {
                 bootPaths.add(path);
+            } else if (name.matches("glowroot-.*\\.jar")) {
+                bootPaths.add(path);
+            } else if (name.matches("guava-.*\\.jar")) {
+                // several plugins use guava
+                bootPaths.add(path);
+            } else if (name.matches("asm-.*\\.jar")
+                    || name.matches("commons-compiler-.*\\.jar")
+                    || name.matches("compress-lzf-.*\\.jar")
+                    || name.matches("grpc-.*\\.jar")
+                    || name.matches("guava-.*\\.jar")
+                    || name.matches("h2-.*\\.jar")
+                    || name.matches("HdrHistogram-.*\\.jar")
+                    || name.matches("jackson-.*\\.jar")
+                    || name.matches("janino-.*\\.jar")
+                    || name.matches("jzlib-.*\\.jar")
+                    || name.matches("logback-.*\\.jar")
+                    || name.matches("mailapi-.*\\.jar")
+                    || name.matches("netty-.*\\.jar")
+                    || name.matches("protobuf-java-.*\\.jar")
+                    || name.matches("slf4j-api-.*\\.jar")
+                    || name.matches("smtp-.*\\.jar")
+                    || name.matches("value-.*\\.jar")) {
+                // these are glowroot-agent transitive dependencies
+                maybeBootstrapJar.add(path);
+            } else {
+                paths.add(path);
             }
         }
-        if (!maybeShadedInsideAgentJars.isEmpty() && javaagentJarFile != null) {
+        if (javaagentJarFile == null) {
+            bootPaths.addAll(maybeBootstrapJar);
+        } else {
             JarInputStream jarIn = new JarInputStream(new FileInputStream(javaagentJarFile));
             JarEntry jarEntry;
             boolean shaded = false;
@@ -405,7 +416,10 @@ public class JavaagentContainer implements Container {
                 }
             }
             jarIn.close();
-            if (!shaded) {
+            if (shaded) {
+                paths.addAll(maybeBootstrapJar);
+            } else {
+                bootPaths.addAll(maybeBootstrapJar);
                 bootPaths.addAll(maybeShadedInsideAgentJars);
             }
         }

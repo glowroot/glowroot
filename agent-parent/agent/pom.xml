@@ -470,12 +470,8 @@
                   </excludes>
                 </relocation>
                 <relocation>
-                  <pattern>ch.qos.logback.core</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.qos.logback.core</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>ch.qos.logback.classic</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.qos.logback.classic</shadedPattern>
+                  <pattern>ch.qos.logback</pattern>
+                  <shadedPattern>org.glowroot.agent.shaded.qos.logback</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>org.codehaus.janino</pattern>

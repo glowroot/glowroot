@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ class Sessions {
 
     static Session createSession() throws IOException {
         Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
-        Session session = cluster.newSession();
+        Session session = cluster.connect();
         session.execute("CREATE KEYSPACE IF NOT EXISTS test WITH REPLICATION ="
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
         session.execute("CREATE TABLE IF NOT EXISTS test.users"

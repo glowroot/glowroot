@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,10 @@ public class SharedSetupRunListener extends RunListener {
     private static void startCassandra() throws Exception {
         CassandraWrapper.start();
         // need to trigger and clear known warning message in static initializer
-        Class.forName("com.datastax.driver.core.NettyUtil");
+        try {
+            Class.forName("com.datastax.driver.core.NettyUtil");
+        } catch (ClassNotFoundException e) {
+            // old versions of datastax driver don't have this class
+        }
     }
 }

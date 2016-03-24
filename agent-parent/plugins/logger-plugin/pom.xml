@@ -17,6 +17,8 @@
 
   <properties>
     <!-- instrumented libraries -->
+    <logback.version>1.1.6</logback.version>
+    <slf4j.version>1.7.19</slf4j.version>
     <log4j.version>1.2.17</log4j.version>
     <commons.logging.version>1.2</commons.logging.version>
   </properties>
@@ -26,13 +28,6 @@
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-plugin-api</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <!-- org.slf4j.helpers is shaded below so that the plugin can use these helper classes which
-        are already shaded and embedded inside glowroot-agent -->
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -58,10 +53,38 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback.version}</version> <!-- $NO-MVN-MAN-VER$ -->
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version> <!-- $NO-MVN-MAN-VER$ -->
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
       <version>${log4j.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <!-- these exclusions are needed when testing against log4j 1.2.15 since these artifacts are
+          not in maven central -->
+        <exclusion>
+          <groupId>com.sun.jmx</groupId>
+          <artifactId>jmxri</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun.jdmk</groupId>
+          <artifactId>jmxtools</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.jms</groupId>
+          <artifactId>jms</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>commons-logging</groupId>
@@ -89,46 +112,35 @@
 
   <profiles>
     <profile>
-      <id>shade</id>
-      <activation>
-        <property>
-          <name>!glowroot.shade.skip</name>
-        </property>
-      </activation>
+      <id>logback-old</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.glowroot</groupId>
+          <artifactId>glowroot-agent-it-harness</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+          <exclusions>
+            <exclusion>
+              <groupId>org.slf4j</groupId>
+              <artifactId>jul-to-slf4j</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+      </dependencies>
       <build>
+        <testResources>
+          <testResource>
+            <directory>src/test/resources-logback-old</directory>
+          </testResource>
+        </testResources>
         <plugins>
           <plugin>
-            <artifactId>maven-shade-plugin</artifactId>
+            <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
-              <dependencyReducedPomLocation>
-                ${project.build.directory}/dependency-reduced-pom.xml
-              </dependencyReducedPomLocation>
-              <createSourcesJar>true</createSourcesJar>
-              <shadeSourcesContent>true</shadeSourcesContent>
+              <systemPropertyVariables>
+                <glowroot.test.oldLogback>true</glowroot.test.oldLogback>
+              </systemPropertyVariables>
             </configuration>
-            <executions>
-              <execution>
-                <id>default</id>
-                <goals>
-                  <goal>shade</goal>
-                </goals>
-                <configuration>
-                  <artifactSet>
-                    <includes>
-                      <include>org.glowroot.plugins:logger-plugin</include>
-                    </includes>
-                  </artifactSet>
-                  <relocations>
-                    <relocation>
-                      <!-- don't shade org.slf4j since that will shade @Pointcut typeName fields
-                        causing the weaving to be applied to shaded slf4j instead of unshaded -->
-                      <pattern>org.slf4j.helpers</pattern>
-                      <shadedPattern>org.glowroot.agent.shaded.slf4j.helpers</shadedPattern>
-                    </relocation>
-                  </relocations>
-                </configuration>
-              </execution>
-            </executions>
           </plugin>
         </plugins>
       </build>
