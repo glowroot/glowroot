@@ -84,9 +84,9 @@ public interface ThreadContext {
      */
     AuxThreadContext createAuxThreadContext();
 
-    void setTransactionAsync();
+    void setAsyncTransaction();
 
-    boolean isTransactionAsync();
+    boolean isAsyncTransaction();
 
     void completeAsyncTransaction();
 

@@ -108,7 +108,7 @@ public class ResourceAspect {
                 @BindMethodMeta ResourceMethodMeta resourceMethodMeta) {
 
             if (resourceMethodMeta.isAsync()) {
-                context.setTransactionAsync();
+                context.setAsyncTransaction();
             }
 
             if (useAltTransactionNaming.value()) {

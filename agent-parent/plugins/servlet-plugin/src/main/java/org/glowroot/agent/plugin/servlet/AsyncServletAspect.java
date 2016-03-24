@@ -47,7 +47,7 @@ public class AsyncServletAspect {
     public static class StartAsyncAdvice {
         @OnReturn
         public static void onReturn(ThreadContext context) {
-            context.setTransactionAsync();
+            context.setAsyncTransaction();
         }
     }
 
@@ -58,7 +58,7 @@ public class AsyncServletAspect {
     public static class StartAsyncTwoArgAdvice {
         @OnReturn
         public static void onReturn(ThreadContext context) {
-            context.setTransactionAsync();
+            context.setAsyncTransaction();
         }
     }
 
