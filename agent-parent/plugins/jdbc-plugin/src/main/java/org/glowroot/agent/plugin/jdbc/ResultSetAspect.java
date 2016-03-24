@@ -23,15 +23,12 @@ import javax.annotation.Nullable;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.QueryEntry;
-import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.Timer;
-import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
@@ -44,16 +41,14 @@ public class ResultSetAspect {
     private static final ConfigService configService = Agent.getConfigService("jdbc");
 
     @Pointcut(className = "java.sql.ResultSet", methodName = "next", methodParameterTypes = {},
-            nestingGroup = "jdbc", timerName = "jdbc resultset navigate")
+            nestingGroup = "jdbc")
     public static class NextAdvice {
-        private static final TimerName timerName = Agent.getTimerName(NextAdvice.class);
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetNavigate");
         @OnBefore
-        public static @Nullable Timer onBefore(ThreadContext context,
-                @BindReceiver HasStatementMirror resultSet) {
+        public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
             if (timerEnabled.value()) {
-                return onBeforeCommon(context, resultSet, timerName);
+                return onBeforeCommon(resultSet);
             } else {
                 return null;
             }
@@ -90,16 +85,14 @@ public class ResultSetAspect {
 
     @Pointcut(className = "java.sql.ResultSet",
             methodName = "previous|relative|absolute|first|last", methodParameterTypes = "..",
-            nestingGroup = "jdbc", timerName = "jdbc resultset navigate")
+            nestingGroup = "jdbc")
     public static class NavigateAdvice {
-        private static final TimerName timerName = Agent.getTimerName(NavigateAdvice.class);
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetNavigate");
         @OnBefore
-        public static @Nullable Timer onBefore(ThreadContext context,
-                @BindReceiver HasStatementMirror resultSet) {
+        public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
             if (timerEnabled.value()) {
-                return onBeforeCommon(context, resultSet, timerName);
+                return onBeforeCommon(resultSet);
             } else {
                 return null;
             }
@@ -132,62 +125,56 @@ public class ResultSetAspect {
     }
 
     @Pointcut(className = "java.sql.ResultSet", methodName = "get*",
-            methodParameterTypes = {"int", ".."}, nestingGroup = "jdbc",
-            timerName = "jdbc resultset value")
+            methodParameterTypes = {"int", ".."}, nestingGroup = "jdbc")
     public static class ValueAdvice {
-        private static final TimerName timerName = Agent.getTimerName(ValueAdvice.class);
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetGet");
-        @IsEnabled
-        public static boolean isEnabled() {
-            return timerEnabled.value();
-        }
         @OnBefore
-        public static Timer onBefore(ThreadContext context,
-                @BindReceiver HasStatementMirror resultSet) {
-            return onBeforeCommon(context, resultSet, timerName);
+        public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
+            if (timerEnabled.value()) {
+                return onBeforeCommon(resultSet);
+            } else {
+                return null;
+            }
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Timer timer) {
-            timer.stop();
+        public static void onAfter(@BindTraveler @Nullable Timer timer) {
+            if (timer != null) {
+                timer.stop();
+            }
         }
     }
 
     @Pointcut(className = "java.sql.ResultSet", methodName = "get*",
-            methodParameterTypes = {"java.lang.String", ".."}, nestingGroup = "jdbc",
-            timerName = "jdbc resultset value")
+            methodParameterTypes = {"java.lang.String", ".."}, nestingGroup = "jdbc")
     public static class ValueAdvice2 {
-        private static final TimerName timerName = Agent.getTimerName(ValueAdvice2.class);
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetGet");
-        @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
-            // don't capture if implementation detail of a DatabaseMetaData method
-            return timerEnabled.value() && resultSet.glowroot$hasStatementMirror();
-        }
         @OnBefore
-        public static Timer onBefore(ThreadContext context,
-                @BindReceiver HasStatementMirror resultSet) {
-            return onBeforeCommon(context, resultSet, timerName);
+        public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
+            if (timerEnabled.value()) {
+                return onBeforeCommon(resultSet);
+            } else {
+                return null;
+            }
         }
         @OnAfter
-        public static void onAfter(@BindTraveler Timer timer) {
-            timer.stop();
+        public static void onAfter(@BindTraveler @Nullable Timer timer) {
+            if (timer != null) {
+                timer.stop();
+            }
         }
     }
 
-    private static Timer onBeforeCommon(ThreadContext context, HasStatementMirror resultSet,
-            TimerName timerName) {
+    private static @Nullable Timer onBeforeCommon(HasStatementMirror resultSet) {
         StatementMirror mirror = resultSet.glowroot$getStatementMirror();
         if (mirror == null) {
-            // this shouldn't happen since just checked above in isEnabled(), unless some
-            // bizarre concurrent mis-usage of ResultSet
-            return context.startTimer(timerName);
+            // most likely implementation detail of a DatabaseMetaData method
+            return null;
         }
         QueryEntry lastQueryEntry = mirror.getLastQueryEntry();
         if (lastQueryEntry == null) {
-            // tracing must be disabled (e.g. exceeded trace entry limit)
-            return context.startTimer(timerName);
+            return null;
         }
         return lastQueryEntry.extend();
     }
