@@ -103,6 +103,9 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement deletePartialOverallSlowPoint;
     private final PreparedStatement deletePartialTransactionSlowPoint;
 
+    private final PreparedStatement deletePartialOverallSlowCount;
+    private final PreparedStatement deletePartialTransactionSlowCount;
+
     public TraceDao(Session session, AgentDao agentDao, TransactionTypeDao transactionTypeDao) {
         this.session = session;
         this.agentDao = agentDao;
@@ -281,6 +284,14 @@ public class TraceDao implements TraceRepository {
         deletePartialTransactionSlowPoint = session.prepare("delete from trace_tn_slow_point"
                 + " where agent_rollup = ? and transaction_type = ? and transaction_name = ?"
                 + " and capture_time = ? and agent_id = ? and trace_id = ?");
+
+        deletePartialOverallSlowCount = session.prepare("delete from trace_tt_slow_count"
+                + " where agent_rollup = ? and transaction_type = ? and capture_time = ?"
+                + " and agent_id = ? and trace_id = ?");
+
+        deletePartialTransactionSlowCount = session.prepare("delete from trace_tn_slow_count"
+                + " where agent_rollup = ? and transaction_type = ? and transaction_name = ?"
+                + " and capture_time = ? and agent_id = ? and trace_id = ?");
     }
 
     @Override
@@ -360,9 +371,30 @@ public class TraceDao implements TraceRepository {
                     boundStatement.setString(i++, agentId);
                     boundStatement.setString(i++, trace.getId());
                     session.execute(boundStatement);
+
+                    boundStatement = deletePartialOverallSlowCount.bind();
+                    i = 0;
+                    boundStatement.setString(i++, agentRollup);
+                    boundStatement.setString(i++, priorHeader.getTransactionType());
+                    boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
+                    boundStatement.setString(i++, agentId);
+                    boundStatement.setString(i++, trace.getId());
+                    session.execute(boundStatement);
+
+                    boundStatement = deletePartialTransactionSlowCount.bind();
+                    i = 0;
+                    boundStatement.setString(i++, agentRollup);
+                    boundStatement.setString(i++, priorHeader.getTransactionType());
+                    boundStatement.setString(i++, priorHeader.getTransactionName());
+                    boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
+                    boundStatement.setString(i++, agentId);
+                    boundStatement.setString(i++, trace.getId());
+                    session.execute(boundStatement);
                 }
             }
-            if (header.hasError()) {
+            // seems unnecessary to insert error info for partial traces
+            // and this avoids having to clean up partial trace data when trace is complete
+            if (header.hasError() && !header.getPartial()) {
                 BoundStatement boundStatement = insertOverallErrorMessage.bind();
                 int i = 0;
                 boundStatement.setString(i++, agentRollup);
