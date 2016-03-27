@@ -24,6 +24,7 @@ import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
+import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
@@ -97,16 +98,9 @@ public class LogbackAspect {
                 context.setTransactionError(formattedMessage);
             }
             TraceEntry traceEntry;
-            if (lvl <= DEBUG_INT) {
-                // include short logger name for debug or lower
-                String loggerName = LoggerPlugin.getShortName(loggingEvent.getLoggerName());
-                traceEntry = context.startTraceEntry(MessageSupplier.from("log {}: {} - {}",
-                        getLevelStr(lvl), loggerName, formattedMessage), timerName);
-            } else {
-                traceEntry = context.startTraceEntry(
-                        MessageSupplier.from("log {}: {}", getLevelStr(lvl), formattedMessage),
-                        timerName);
-            }
+            String loggerName = LoggerPlugin.getAbbreviatedLoggerName(loggingEvent.getLoggerName());
+            traceEntry = context.startTraceEntry(MessageSupplier.from("log {}: {} - {}",
+                    getLevelStr(lvl), loggerName, formattedMessage), timerName);
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
         @OnAfter
@@ -134,7 +128,7 @@ public class LogbackAspect {
         private static final TimerName timerName = Agent.getTimerName(CallAppenders0xAdvice.class);
         @OnBefore
         public static @Nullable LogAdviceTraveler onBefore(ThreadContext context,
-                @BindParameter @Nullable Object loggingEvent,
+                @BindReceiver Object logger, @BindParameter @Nullable Object loggingEvent,
                 @BindClassMeta LoggingEventInvoker invoker) {
             if (loggingEvent == null) {
                 return null;
@@ -145,17 +139,10 @@ public class LogbackAspect {
             if (LoggerPlugin.markTraceAsError(lvl >= ERROR_INT, lvl >= WARN_INT, t != null)) {
                 context.setTransactionError(formattedMessage);
             }
-            TraceEntry traceEntry;
-            if (lvl <= DEBUG_INT) {
-                // include short logger name for debug or lower
-                String loggerName = LoggerPlugin.getShortName(invoker.getLoggerName(loggingEvent));
-                traceEntry = context.startTraceEntry(MessageSupplier.from("log {}: {} - {}",
-                        getLevelStr(lvl), loggerName, formattedMessage), timerName);
-            } else {
-                traceEntry = context.startTraceEntry(
-                        MessageSupplier.from("log {}: {}", getLevelStr(lvl), formattedMessage),
-                        timerName);
-            }
+            String loggerName =
+                    LoggerPlugin.getAbbreviatedLoggerName(invoker.getLoggerName(logger));
+            TraceEntry traceEntry = context.startTraceEntry(MessageSupplier.from("log {}: {} - {}",
+                    getLevelStr(lvl), loggerName, formattedMessage), timerName);
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
         @OnAfter

@@ -64,9 +64,12 @@ public class Log4jIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg");
         assertThat(entries).hasSize(3);
-        assertThat(entries.get(0).getMessage()).isEqualTo("log warn: def");
-        assertThat(entries.get(1).getMessage()).isEqualTo("log error: efg");
-        assertThat(entries.get(2).getMessage()).isEqualTo("log fatal: fgh");
+        assertThat(entries.get(0).getMessage())
+                .isEqualTo("log warn: o.g.a.p.logger.Log4jIT$ShouldLog - def");
+        assertThat(entries.get(1).getMessage())
+                .isEqualTo("log error: o.g.a.p.logger.Log4jIT$ShouldLog - efg");
+        assertThat(entries.get(2).getMessage())
+                .isEqualTo("log fatal: o.g.a.p.logger.Log4jIT$ShouldLog - fgh");
     }
 
     @Test
@@ -82,19 +85,22 @@ public class Log4jIT {
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def_");
+        assertThat(warnEntry.getMessage())
+                .isEqualTo("log warn: o.g.a.p.l.Log4jIT$ShouldLogWithThrowable - def_");
         assertThat(warnEntry.getError().getMessage()).isEqualTo("456");
         assertThat(warnEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg_");
+        assertThat(errorEntry.getMessage())
+                .isEqualTo("log error: o.g.a.p.l.Log4jIT$ShouldLogWithThrowable - efg_");
         assertThat(errorEntry.getError().getMessage()).isEqualTo("567");
         assertThat(errorEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
 
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.getMessage()).isEqualTo("log fatal: fgh_");
+        assertThat(fatalEntry.getMessage())
+                .isEqualTo("log fatal: o.g.a.p.l.Log4jIT$ShouldLogWithThrowable - fgh_");
         assertThat(fatalEntry.getError().getMessage()).isEqualTo("678");
         assertThat(fatalEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
@@ -113,13 +119,16 @@ public class Log4jIT {
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def_");
+        assertThat(warnEntry.getMessage())
+                .isEqualTo("log warn: o.g.a.p.l.Log4jIT$ShouldLogWithNullThrowable - def_");
         assertThat(warnEntry.getError().getMessage()).isEqualTo("def_");
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg_");
+        assertThat(errorEntry.getMessage())
+                .isEqualTo("log error: o.g.a.p.l.Log4jIT$ShouldLogWithNullThrowable - efg_");
         assertThat(errorEntry.getError().getMessage()).isEqualTo("efg_");
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.getMessage()).isEqualTo("log fatal: fgh_");
+        assertThat(fatalEntry.getMessage())
+                .isEqualTo("log fatal: o.g.a.p.l.Log4jIT$ShouldLogWithNullThrowable - fgh_");
         assertThat(fatalEntry.getError().getMessage()).isEqualTo("fgh_");
     }
 
@@ -134,9 +143,12 @@ public class Log4jIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg__");
         assertThat(entries).hasSize(3);
-        assertThat(entries.get(0).getMessage()).isEqualTo("log warn: def__");
-        assertThat(entries.get(1).getMessage()).isEqualTo("log error: efg__");
-        assertThat(entries.get(2).getMessage()).isEqualTo("log fatal: fgh__");
+        assertThat(entries.get(0).getMessage())
+                .isEqualTo("log warn: o.g.a.p.l.Log4jIT$ShouldLogWithPriority - def__");
+        assertThat(entries.get(1).getMessage())
+                .isEqualTo("log error: o.g.a.p.l.Log4jIT$ShouldLogWithPriority - efg__");
+        assertThat(entries.get(2).getMessage())
+                .isEqualTo("log fatal: o.g.a.p.l.Log4jIT$ShouldLogWithPriority - fgh__");
     }
 
     @Test
@@ -150,19 +162,22 @@ public class Log4jIT {
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def___");
+        assertThat(warnEntry.getMessage()).isEqualTo(
+                "log warn: o.g.a.p.l.Log4jIT$ShouldLogWithPriorityAndThrowable - def___");
         assertThat(warnEntry.getError().getMessage()).isEqualTo("456_");
         assertThat(warnEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg___");
+        assertThat(errorEntry.getMessage()).isEqualTo(
+                "log error: o.g.a.p.l.Log4jIT$ShouldLogWithPriorityAndThrowable - efg___");
         assertThat(errorEntry.getError().getMessage()).isEqualTo("567_");
         assertThat(errorEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
 
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.getMessage()).isEqualTo("log fatal: fgh___");
+        assertThat(fatalEntry.getMessage()).isEqualTo(
+                "log fatal: o.g.a.p.l.Log4jIT$ShouldLogWithPriorityAndThrowable - fgh___");
         assertThat(fatalEntry.getError().getMessage()).isEqualTo("678_");
         assertThat(fatalEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
@@ -181,13 +196,16 @@ public class Log4jIT {
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def___null");
+        assertThat(warnEntry.getMessage()).isEqualTo(
+                "log warn: o.g.a.p.l.Log4jIT$ShouldLogWithPriorityAndNullThrowable - def___null");
         assertThat(warnEntry.getError().getMessage()).isEqualTo("def___null");
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg___null");
+        assertThat(errorEntry.getMessage()).isEqualTo(
+                "log error: o.g.a.p.l.Log4jIT$ShouldLogWithPriorityAndNullThrowable - efg___null");
         assertThat(errorEntry.getError().getMessage()).isEqualTo("efg___null");
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.getMessage()).isEqualTo("log fatal: fgh___null");
+        assertThat(fatalEntry.getMessage()).isEqualTo(
+                "log fatal: o.g.a.p.l.Log4jIT$ShouldLogWithPriorityAndNullThrowable - fgh___null");
         assertThat(fatalEntry.getError().getMessage()).isEqualTo("fgh___null");
     }
 
@@ -202,19 +220,22 @@ public class Log4jIT {
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def____");
+        assertThat(warnEntry.getMessage())
+                .isEqualTo("log warn: o.g.a.p.l.Log4jIT$ShouldLocalizedLog - def____");
         assertThat(warnEntry.getError().getMessage()).isEqualTo("456__");
         assertThat(warnEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg____");
+        assertThat(errorEntry.getMessage())
+                .isEqualTo("log error: o.g.a.p.l.Log4jIT$ShouldLocalizedLog - efg____");
         assertThat(errorEntry.getError().getMessage()).isEqualTo("567__");
         assertThat(errorEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
 
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.getMessage()).isEqualTo("log fatal: fgh____");
+        assertThat(fatalEntry.getMessage())
+                .isEqualTo("log fatal: o.g.a.p.l.Log4jIT$ShouldLocalizedLog - fgh____");
         assertThat(fatalEntry.getError().getMessage()).isEqualTo("678__");
     }
 
@@ -231,13 +252,16 @@ public class Log4jIT {
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def____null");
+        assertThat(warnEntry.getMessage()).isEqualTo(
+                "log warn: o.g.a.p.l.Log4jIT$ShouldLocalizedLogWithNullThrowable - def____null");
         assertThat(warnEntry.getError().getMessage()).isEqualTo("def____null");
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg____null");
+        assertThat(errorEntry.getMessage()).isEqualTo(
+                "log error: o.g.a.p.l.Log4jIT$ShouldLocalizedLogWithNullThrowable - efg____null");
         assertThat(errorEntry.getError().getMessage()).isEqualTo("efg____null");
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.getMessage()).isEqualTo("log fatal: fgh____null");
+        assertThat(fatalEntry.getMessage()).isEqualTo(
+                "log fatal: o.g.a.p.l.Log4jIT$ShouldLocalizedLogWithNullThrowable - fgh____null");
         assertThat(fatalEntry.getError().getMessage()).isEqualTo("fgh____null");
     }
 
@@ -252,19 +276,22 @@ public class Log4jIT {
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def____");
+        assertThat(warnEntry.getMessage()).isEqualTo(
+                "log warn: o.g.a.p.l.Log4jIT$ShouldLocalizedLogWithParameters - def____");
         assertThat(warnEntry.getError().getMessage()).isEqualTo("456__");
         assertThat(warnEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg____");
+        assertThat(errorEntry.getMessage()).isEqualTo(
+                "log error: o.g.a.p.l.Log4jIT$ShouldLocalizedLogWithParameters - efg____");
         assertThat(errorEntry.getError().getMessage()).isEqualTo("567__");
         assertThat(errorEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
 
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.getMessage()).isEqualTo("log fatal: fgh____");
+        assertThat(fatalEntry.getMessage()).isEqualTo(
+                "log fatal: o.g.a.p.l.Log4jIT$ShouldLocalizedLogWithParameters - fgh____");
         assertThat(fatalEntry.getError().getMessage()).isEqualTo("678__");
         assertThat(fatalEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
@@ -281,19 +308,22 @@ public class Log4jIT {
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def____");
+        assertThat(warnEntry.getMessage()).isEqualTo(
+                "log warn: o.g.a.p.l.Log4jIT$ShouldLocalizedLogWithEmptyParameters - def____");
         assertThat(warnEntry.getError().getMessage()).isEqualTo("456__");
         assertThat(warnEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg____");
+        assertThat(errorEntry.getMessage()).isEqualTo(
+                "log error: o.g.a.p.l.Log4jIT$ShouldLocalizedLogWithEmptyParameters - efg____");
         assertThat(errorEntry.getError().getMessage()).isEqualTo("567__");
         assertThat(errorEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
 
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.getMessage()).isEqualTo("log fatal: fgh____");
+        assertThat(fatalEntry.getMessage()).isEqualTo(
+                "log fatal: o.g.a.p.l.Log4jIT$ShouldLocalizedLogWithEmptyParameters - fgh____");
         assertThat(fatalEntry.getError().getMessage()).isEqualTo("678__");
         assertThat(fatalEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
@@ -312,13 +342,16 @@ public class Log4jIT {
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def____null");
+        assertThat(warnEntry.getMessage()).isEqualTo("log warn: o.g.a.p.l.Log4jIT"
+                + "$ShouldLocalizedLogWithParametersAndNullThrowable - def____null");
         assertThat(warnEntry.getError().getMessage()).isEqualTo("def____null");
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg____null");
+        assertThat(errorEntry.getMessage()).isEqualTo("log error: o.g.a.p.l.Log4jIT"
+                + "$ShouldLocalizedLogWithParametersAndNullThrowable - efg____null");
         assertThat(errorEntry.getError().getMessage()).isEqualTo("efg____null");
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.getMessage()).isEqualTo("log fatal: fgh____null");
+        assertThat(fatalEntry.getMessage()).isEqualTo("log fatal: o.g.a.p.l.Log4jIT"
+                + "$ShouldLocalizedLogWithParametersAndNullThrowable - fgh____null");
         assertThat(fatalEntry.getError().getMessage()).isEqualTo("fgh____null");
     }
 

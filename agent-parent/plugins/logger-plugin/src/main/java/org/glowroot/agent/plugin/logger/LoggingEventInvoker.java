@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.plugin.logger;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import javax.annotation.Nullable;
@@ -27,17 +26,19 @@ public class LoggingEventInvoker {
 
     private static final Logger logger = Agent.getLogger(LoggingEventInvoker.class);
 
+    private final @Nullable Method getLoggerNameMethod;
+
     private final @Nullable Method getFormattedMessageMethod;
     private final @Nullable Method getLevelMethod;
 
     private final @Nullable Method getThrowableProxyMethod;
     private final @Nullable Method getThrowableMethod;
 
-    private final @Nullable Field fqnOfLoggerClassField;
-
     private final @Nullable Method toIntMethod;
 
     public LoggingEventInvoker(Class<?> clazz) {
+        Class<?> loggerClass = getLoggerClass(clazz);
+        getLoggerNameMethod = Invokers.getMethod(loggerClass, "getName");
         Class<?> loggingEventClass = getLoggingEventClass(clazz);
         getFormattedMessageMethod = Invokers.getMethod(loggingEventClass, "getFormattedMessage");
         getLevelMethod = Invokers.getMethod(loggingEventClass, "getLevel");
@@ -73,7 +74,6 @@ public class LoggingEventInvoker {
             getThrowableProxyMethod = localGetThrowableProxyMethod;
             getThrowableMethod = localGetThrowableMethod;
         }
-        fqnOfLoggerClassField = Invokers.getField(loggingEventClass, "fqnOfLoggerClass");
         toIntMethod = Invokers.getMethod(getLevelClass(clazz), "toInt");
     }
 
@@ -99,8 +99,17 @@ public class LoggingEventInvoker {
                 null);
     }
 
-    public String getLoggerName(Object loggingEvent) {
-        return Invokers.get(fqnOfLoggerClassField, loggingEvent, "");
+    public String getLoggerName(Object logger) {
+        return Invokers.invoke(getLoggerNameMethod, logger, "");
+    }
+
+    private static @Nullable Class<?> getLoggerClass(Class<?> clazz) {
+        try {
+            return Class.forName("ch.qos.logback.classic.Logger", false, clazz.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            logger.warn(e.getMessage(), e);
+        }
+        return null;
     }
 
     private static @Nullable Class<?> getLoggingEventClass(Class<?> clazz) {

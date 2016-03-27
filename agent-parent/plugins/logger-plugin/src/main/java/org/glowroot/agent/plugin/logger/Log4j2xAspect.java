@@ -23,6 +23,7 @@ import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
+import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
@@ -43,15 +44,21 @@ public class Log4j2xAspect {
     private static final int TRACE = 600;
     private static final int ALL = Integer.MAX_VALUE;
 
-    @Shim("org.apache.logging.log4j.message.Message")
-    public interface Message {
+    @Shim("org.apache.logging.log4j.Logger")
+    public interface Logger {
         @Nullable
-        String getFormattedMessage();
+        String getName();
     }
 
     @Shim("org.apache.logging.log4j.Level")
     public interface Level {
         int intLevel();
+    }
+
+    @Shim("org.apache.logging.log4j.message.Message")
+    public interface Message {
+        @Nullable
+        String getFormattedMessage();
     }
 
     @Pointcut(className = "org.apache.logging.log4j.spi.ExtendedLogger", methodName = "logMessage",
@@ -63,7 +70,9 @@ public class Log4j2xAspect {
         private static final TimerName timerName = Agent.getTimerName(CallAppendersAdvice.class);
         @OnBefore
         public static @Nullable LogAdviceTraveler onBefore(ThreadContext context,
-                @BindParameter @Nullable String fqcn, @BindParameter @Nullable Level level,
+                @BindReceiver Logger logger,
+                @SuppressWarnings("unused") @BindParameter @Nullable String fqcn,
+                @BindParameter @Nullable Level level,
                 @SuppressWarnings("unused") @BindParameter @Nullable Object marker,
                 @BindParameter @Nullable Message message, @BindParameter @Nullable Throwable t) {
             String formattedMessage =
@@ -72,17 +81,9 @@ public class Log4j2xAspect {
             if (LoggerPlugin.markTraceAsError(lvl <= ERROR, lvl <= WARN, t != null)) {
                 context.setTransactionError(formattedMessage);
             }
-            TraceEntry traceEntry;
-            if (lvl >= DEBUG) {
-                // include short logger name for debug or lower
-                String loggerName = LoggerPlugin.getShortName(fqcn);
-                traceEntry = context.startTraceEntry(MessageSupplier.from("log {}: {} - {}",
-                        getLevelStr(lvl), loggerName, formattedMessage), timerName);
-            } else {
-                traceEntry = context.startTraceEntry(
-                        MessageSupplier.from("log {}: {}", getLevelStr(lvl), formattedMessage),
-                        timerName);
-            }
+            String loggerName = LoggerPlugin.getAbbreviatedLoggerName(logger.getName());
+            TraceEntry traceEntry = context.startTraceEntry(MessageSupplier.from("log {}: {} - {}",
+                    getLevelStr(lvl), loggerName, formattedMessage), timerName);
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
         @OnAfter

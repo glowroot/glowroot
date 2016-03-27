@@ -78,8 +78,10 @@ public class LogbackMarkerIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg");
         assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage()).isEqualTo("log warn: def");
-        assertThat(entries.get(1).getMessage()).isEqualTo("log error: efg");
+        assertThat(entries.get(0).getMessage())
+                .isEqualTo("log warn: o.g.a.p.l.LogbackMarkerIT$ShouldLog - def");
+        assertThat(entries.get(1).getMessage())
+                .isEqualTo("log error: o.g.a.p.l.LogbackMarkerIT$ShouldLog - efg");
     }
 
     @Test
@@ -95,13 +97,15 @@ public class LogbackMarkerIT {
         assertThat(entries).hasSize(2);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def_t");
+        assertThat(warnEntry.getMessage())
+                .isEqualTo("log warn: o.g.a.p.l.LogbackMarkerIT$ShouldLogWithThrowable - def_t");
         assertThat(warnEntry.getError().getMessage()).isEqualTo("456");
         assertThat(warnEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg_t");
+        assertThat(errorEntry.getMessage())
+                .isEqualTo("log error: o.g.a.p.l.LogbackMarkerIT$ShouldLogWithThrowable - efg_t");
         assertThat(errorEntry.getError().getMessage()).isEqualTo("567");
         assertThat(errorEntry.getError().getException().getStackTraceElementList().get(0)
                 .getMethodName()).isEqualTo("transactionMarker");
@@ -120,10 +124,12 @@ public class LogbackMarkerIT {
         assertThat(entries).hasSize(2);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def_tnull");
+        assertThat(warnEntry.getMessage()).isEqualTo(
+                "log warn: o.g.a.p.l.LogbackMarkerIT$ShouldLogWithNullThrowable - def_tnull");
         assertThat(warnEntry.getError().getMessage()).isEqualTo("def_tnull");
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg_tnull");
+        assertThat(errorEntry.getMessage()).isEqualTo(
+                "log error: o.g.a.p.l.LogbackMarkerIT$ShouldLogWithNullThrowable - efg_tnull");
         assertThat(errorEntry.getError().getMessage()).isEqualTo("efg_tnull");
     }
 
@@ -137,9 +143,11 @@ public class LogbackMarkerIT {
         assertThat(entries).hasSize(2);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def_1 d");
+        assertThat(warnEntry.getMessage()).isEqualTo(
+                "log warn: o.g.a.p.l.LogbackMarkerIT$ShouldLogWithOneParameter - def_1 d");
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg_1 e");
+        assertThat(errorEntry.getMessage()).isEqualTo(
+                "log error: o.g.a.p.l.LogbackMarkerIT$ShouldLogWithOneParameter - efg_1 e");
     }
 
     @Test
@@ -155,7 +163,8 @@ public class LogbackMarkerIT {
         assertThat(entries).hasSize(2);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def_1_t d");
+        assertThat(warnEntry.getMessage()).isEqualTo("log warn: o.g.a.p.l.LogbackMarkerIT"
+                + "$ShouldLogWithOneParameterAndThrowable - def_1_t d");
         if (OLD_LOGBACK) {
             assertThat(warnEntry.getError().getMessage()).isEqualTo("def_1_t d");
         } else {
@@ -165,7 +174,8 @@ public class LogbackMarkerIT {
         }
 
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg_1_t e");
+        assertThat(errorEntry.getMessage()).isEqualTo("log error: o.g.a.p.l.LogbackMarkerIT"
+                + "$ShouldLogWithOneParameterAndThrowable - efg_1_t e");
         if (OLD_LOGBACK) {
             assertThat(errorEntry.getError().getMessage()).isEqualTo("efg_1_t e");
         } else {
@@ -185,9 +195,11 @@ public class LogbackMarkerIT {
         assertThat(entries).hasSize(2);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def_2 d e");
+        assertThat(warnEntry.getMessage()).isEqualTo(
+                "log warn: o.g.a.p.l.LogbackMarkerIT$ShouldLogWithTwoParameters - def_2 d e");
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg_2 e f");
+        assertThat(errorEntry.getMessage()).isEqualTo(
+                "log error: o.g.a.p.l.LogbackMarkerIT$ShouldLogWithTwoParameters - efg_2 e f");
     }
 
     @Test
@@ -200,9 +212,11 @@ public class LogbackMarkerIT {
         assertThat(entries).hasSize(2);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def_3 d e f");
+        assertThat(warnEntry.getMessage()).isEqualTo("log warn: o.g.a.p.l.LogbackMarkerIT"
+                + "$ShouldLogWithMoreThanTwoParameters - def_3 d e f");
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg_3 e f g");
+        assertThat(errorEntry.getMessage()).isEqualTo("log error: o.g.a.p.l.LogbackMarkerIT"
+                + "$ShouldLogWithMoreThanTwoParameters - efg_3 e f g");
     }
 
     @Test
@@ -215,7 +229,8 @@ public class LogbackMarkerIT {
         assertThat(entries).hasSize(2);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def_3_t d e f");
+        assertThat(warnEntry.getMessage()).isEqualTo("log warn: o.g.a.p.l.LogbackMarkerIT"
+                + "$ShouldLogWithParametersAndThrowable - def_3_t d e f");
         if (OLD_LOGBACK) {
             assertThat(warnEntry.getError().getMessage()).isEqualTo("def_3_t d e f");
         } else {
@@ -223,9 +238,9 @@ public class LogbackMarkerIT {
             assertThat(warnEntry.getError().getException().getStackTraceElementList().get(0)
                     .getMethodName()).isEqualTo("transactionMarker");
         }
-
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg_3_t e f g");
+        assertThat(errorEntry.getMessage()).isEqualTo("log error: o.g.a.p.l.LogbackMarkerIT"
+                + "$ShouldLogWithParametersAndThrowable - efg_3_t e f g");
         if (OLD_LOGBACK) {
             assertThat(errorEntry.getError().getMessage()).isEqualTo("efg_3_t e f g");
         } else {

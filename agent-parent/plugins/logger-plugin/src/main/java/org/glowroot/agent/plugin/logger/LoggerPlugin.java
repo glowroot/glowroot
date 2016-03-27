@@ -34,6 +34,10 @@ class LoggerPlugin {
     private static final BooleanProperty traceErrorOnErrorWithoutThrowable =
             configService.getBooleanProperty("traceErrorOnErrorWithoutThrowable");
 
+    // TODO expose targetLength as plugin property
+    private static final LoggerNameAbbreviator loggerNameAbbreviator =
+            new LoggerNameAbbreviator(36);
+
     private LoggerPlugin() {}
 
     static boolean markTraceAsError(boolean isErrorOrHigher, boolean isWarnOrHigher,
@@ -49,14 +53,10 @@ class LoggerPlugin {
         return false;
     }
 
-    static String getShortName(@Nullable String loggerName) {
+    static String getAbbreviatedLoggerName(@Nullable String loggerName) {
         if (loggerName == null) {
             return "null";
         }
-        int index = loggerName.lastIndexOf('.');
-        if (index == -1) {
-            return loggerName;
-        }
-        return loggerName.substring(index + 1);
+        return loggerNameAbbreviator.abbreviate(loggerName);
     }
 }

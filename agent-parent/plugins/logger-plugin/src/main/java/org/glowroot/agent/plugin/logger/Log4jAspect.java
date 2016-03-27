@@ -98,16 +98,9 @@ public class Log4jAspect {
             if (LoggerPlugin.markTraceAsError(lvl >= ERROR_INT, lvl >= WARN_INT, t != null)) {
                 context.setTransactionError(messageText);
             }
-            if (lvl <= DEBUG_INT) {
-                // include logger name for debug or lower
-                String loggerName = LoggerPlugin.getShortName(logger.getName());
-                return context.startTraceEntry(MessageSupplier.from("log {}: {} {}",
-                        getLevelStr(lvl), loggerName, messageText), timerName);
-            } else {
-                return context.startTraceEntry(
-                        MessageSupplier.from("log {}: {}", getLevelStr(lvl), messageText),
-                        timerName);
-            }
+            String loggerName = LoggerPlugin.getAbbreviatedLoggerName(logger.getName());
+            return context.startTraceEntry(MessageSupplier.from("log {}: {} - {}", getLevelStr(lvl),
+                    loggerName, messageText), timerName);
         }
         @OnAfter
         @SuppressWarnings("unused")
