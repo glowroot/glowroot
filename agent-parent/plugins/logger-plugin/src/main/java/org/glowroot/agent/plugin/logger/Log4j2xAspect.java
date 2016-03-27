@@ -1,0 +1,147 @@
+/*
+ * Copyright 2014-2016 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.glowroot.agent.plugin.logger;
+
+import javax.annotation.Nullable;
+
+import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.TraceEntry;
+import org.glowroot.agent.plugin.api.weaving.BindParameter;
+import org.glowroot.agent.plugin.api.weaving.BindTraveler;
+import org.glowroot.agent.plugin.api.weaving.OnAfter;
+import org.glowroot.agent.plugin.api.weaving.OnBefore;
+import org.glowroot.agent.plugin.api.weaving.Pointcut;
+import org.glowroot.agent.plugin.api.weaving.Shim;
+
+public class Log4j2xAspect {
+
+    private static final String TIMER_NAME = "logging";
+
+    // constants from org.apache.logging.log4j.spi.StandardLevel
+    private static final int OFF = 0;
+    private static final int FATAL = 100;
+    private static final int ERROR = 200;
+    private static final int WARN = 300;
+    private static final int INFO = 400;
+    private static final int DEBUG = 500;
+    private static final int TRACE = 600;
+    private static final int ALL = Integer.MAX_VALUE;
+
+    @Shim("org.apache.logging.log4j.message.Message")
+    public interface Message {
+        @Nullable
+        String getFormattedMessage();
+    }
+
+    @Shim("org.apache.logging.log4j.Level")
+    public interface Level {
+        int intLevel();
+    }
+
+    @Pointcut(className = "org.apache.logging.log4j.spi.ExtendedLogger", methodName = "logMessage",
+            methodParameterTypes = {"java.lang.String", "org.apache.logging.log4j.Level",
+                    "org.apache.logging.log4j.Marker", "org.apache.logging.log4j.message.Message",
+                    "java.lang.Throwable"},
+            nestingGroup = "logging", timerName = TIMER_NAME)
+    public static class CallAppendersAdvice {
+        private static final TimerName timerName = Agent.getTimerName(CallAppendersAdvice.class);
+        @OnBefore
+        public static @Nullable LogAdviceTraveler onBefore(ThreadContext context,
+                @BindParameter @Nullable String fqcn, @BindParameter @Nullable Level level,
+                @SuppressWarnings("unused") @BindParameter @Nullable Object marker,
+                @BindParameter @Nullable Message message, @BindParameter @Nullable Throwable t) {
+            String formattedMessage =
+                    message == null ? "" : nullToEmpty(message.getFormattedMessage());
+            int lvl = level == null ? 0 : level.intLevel();
+            if (LoggerPlugin.markTraceAsError(lvl <= ERROR, lvl <= WARN, t != null)) {
+                context.setTransactionError(formattedMessage);
+            }
+            TraceEntry traceEntry;
+            if (lvl >= DEBUG) {
+                // include short logger name for debug or lower
+                String loggerName = LoggerPlugin.getShortName(fqcn);
+                traceEntry = context.startTraceEntry(MessageSupplier.from("log {}: {} - {}",
+                        getLevelStr(lvl), loggerName, formattedMessage), timerName);
+            } else {
+                traceEntry = context.startTraceEntry(
+                        MessageSupplier.from("log {}: {}", getLevelStr(lvl), formattedMessage),
+                        timerName);
+            }
+            return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
+        }
+        @OnAfter
+        public static void onAfter(@BindTraveler @Nullable LogAdviceTraveler traveler) {
+            if (traveler == null) {
+                return;
+            }
+            Throwable t = traveler.throwable;
+            if (t != null) {
+                // intentionally not passing message since it is already the trace entry message
+                traveler.traceEntry.endWithError(t);
+            } else if (traveler.level <= WARN) {
+                traveler.traceEntry.endWithError(traveler.formattedMessage);
+            } else {
+                traveler.traceEntry.end();
+            }
+        }
+    }
+
+    private static String nullToEmpty(@Nullable String s) {
+        return s == null ? "" : s;
+    }
+
+    private static String getLevelStr(int lvl) {
+        switch (lvl) {
+            case ALL:
+                return "all";
+            case TRACE:
+                return "trace";
+            case DEBUG:
+                return "debug";
+            case INFO:
+                return "info";
+            case WARN:
+                return "warn";
+            case ERROR:
+                return "error";
+            case FATAL:
+                return "fatal";
+            case OFF:
+                return "off";
+            default:
+                return "unknown (" + lvl + ")";
+        }
+    }
+
+    private static class LogAdviceTraveler {
+
+        private final TraceEntry traceEntry;
+        private final int level;
+        private final String formattedMessage;
+        private final @Nullable Throwable throwable;
+
+        private LogAdviceTraveler(TraceEntry traceEntry, int level, String formattedMessage,
+                @Nullable Throwable throwable) {
+            this.traceEntry = traceEntry;
+            this.level = level;
+            this.formattedMessage = formattedMessage;
+            this.throwable = throwable;
+        }
+    }
+}

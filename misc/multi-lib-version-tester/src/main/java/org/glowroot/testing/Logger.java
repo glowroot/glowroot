@@ -24,6 +24,7 @@ public class Logger {
     public static void main(String[] args) throws Exception {
         logback();
         log4j();
+        log4j2x();
         commonsLogging();
     }
 
@@ -127,6 +128,28 @@ public class Logger {
             updateLibVersion("log4j.version", "1.2." + i);
             runTest(test);
         }
+    }
+
+    private static void log4j2x() throws Exception {
+        final String test = "Log4j2xIT,Log4j2xMarkerIT";
+        updateLibVersion("log4j2x.version", "2.0");
+        runTest(test);
+        updateLibVersion("log4j2x.version", "2.0.1");
+        runTest(test);
+        updateLibVersion("log4j2x.version", "2.0.2");
+        runTest(test);
+        updateLibVersion("log4j2x.version", "2.1");
+        runTest(test);
+        updateLibVersion("log4j2x.version", "2.2");
+        runTest(test);
+        updateLibVersion("log4j2x.version", "2.3");
+        runTest(test);
+        updateLibVersion("log4j2x.version", "2.4");
+        runTest(test);
+        updateLibVersion("log4j2x.version", "2.4.1");
+        runTest(test);
+        updateLibVersion("log4j2x.version", "2.5");
+        runTest(test);
     }
 
     private static void commonsLogging() throws Exception {
