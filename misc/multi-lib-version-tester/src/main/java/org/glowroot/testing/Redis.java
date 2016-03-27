@@ -15,9 +15,9 @@
  */
 package org.glowroot.testing;
 
-public class Jedis {
+public class Redis {
 
-    private static String MODULE_PATH = "agent-parent/plugins/jedis-plugin";
+    private static String MODULE_PATH = "agent-parent/plugins/redis-plugin";
 
     public static void main(String[] args) throws Exception {
         run("2.0.0");

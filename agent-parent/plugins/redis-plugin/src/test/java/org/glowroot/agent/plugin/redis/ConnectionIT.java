@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.jedis;
+package org.glowroot.agent.plugin.redis;
 
 import java.util.List;
 
@@ -59,7 +59,7 @@ public class ConnectionIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).matches("jedis localhost:\\d+ SET");
+        assertThat(entry.getMessage()).matches("redis localhost:\\d+ SET");
     }
 
     @Test
@@ -71,7 +71,7 @@ public class ConnectionIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).matches("jedis localhost:\\d+ GET");
+        assertThat(entry.getMessage()).matches("redis localhost:\\d+ GET");
     }
 
     @Test
@@ -83,7 +83,7 @@ public class ConnectionIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).matches("jedis localhost:\\d+ PING");
+        assertThat(entry.getMessage()).matches("redis localhost:\\d+ PING");
     }
 
     private static abstract class JedisBase implements AppUnderTest, TransactionMarker {

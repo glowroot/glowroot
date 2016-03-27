@@ -23,7 +23,7 @@ public class All {
         HttpClient.main(args);
         Hibernate.main(args);
         JAXRS.main(args);
-        Jedis.main(args);
+        Redis.main(args);
         JSF.main(args);
         Logger.main(args);
         Quartz.main(args);

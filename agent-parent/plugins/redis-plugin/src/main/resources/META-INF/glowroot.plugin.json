@@ -1,6 +1,6 @@
 {
-  "name": "Jedis Plugin",
-  "id": "jedis",
+  "name": "Redis Plugin",
+  "id": "redis",
   "instrumentation": [
     {
       "className": "redis.clients.jedis.Connection",
@@ -9,10 +9,10 @@
         "*",
         ".."
       ],
-      "nestingGroup": "jedis",
+      "nestingGroup": "redis",
       "captureKind": "trace-entry",
-      "timerName": "jedis",
-      "traceEntryMessageTemplate": "jedis {{this.host}}:{{this.port}} {{0}}"
+      "timerName": "redis",
+      "traceEntryMessageTemplate": "redis {{this.host}}:{{this.port}} {{0}}"
     }
   ]
 }

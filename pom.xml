@@ -54,12 +54,12 @@
     <module>agent-parent/plugins/http-client-plugin</module>
     <module>agent-parent/plugins/jaxrs-plugin</module>
     <module>agent-parent/plugins/jdbc-plugin</module>
-    <module>agent-parent/plugins/jedis-plugin</module>
     <module>agent-parent/plugins/jms-plugin</module>
     <module>agent-parent/plugins/jsf-plugin</module>
     <module>agent-parent/plugins/jsp-plugin</module>
     <module>agent-parent/plugins/logger-plugin</module>
     <module>agent-parent/plugins/quartz-plugin</module>
+    <module>agent-parent/plugins/redis-plugin</module>
     <module>agent-parent/plugins/servlet-plugin</module>
     <module>agent-parent/plugins/spring-plugin</module>
     <module>agent-parent/plugins/struts-plugin</module>
