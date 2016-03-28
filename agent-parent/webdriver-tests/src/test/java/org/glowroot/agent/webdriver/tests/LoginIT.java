@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ package org.glowroot.agent.webdriver.tests;
 
 import org.junit.Test;
 
+import org.glowroot.agent.webdriver.tests.config.AccessConfigPage;
 import org.glowroot.agent.webdriver.tests.config.ConfigSidebar;
-import org.glowroot.agent.webdriver.tests.config.UserInterfaceConfigPage;
 
 public class LoginIT extends WebDriverIT {
 
@@ -27,11 +27,11 @@ public class LoginIT extends WebDriverIT {
         App app = new App(driver, "http://localhost:" + getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        UserInterfaceConfigPage page = new UserInterfaceConfigPage(driver);
+        AccessConfigPage page = new AccessConfigPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getUserInterfaceLink().click();
+        configSidebar.getAccessLink().click();
         // TODO sleep until initial state is loaded from backend/config/ui
         Thread.sleep(1000);
         page.getAdminPasswordEnabledCheckBox().click();
@@ -54,7 +54,7 @@ public class LoginIT extends WebDriverIT {
 
         // need to take password off before @After otherwise config reset code fails with 401
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getUserInterfaceLink().click();
+        configSidebar.getAccessLink().click();
         // TODO sleep until initial state is loaded from backend/config/ui
         Thread.sleep(1000);
         page.getAdminPasswordEnabledCheckBox().click();

@@ -39,16 +39,15 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
+import org.glowroot.storage.config.AccessConfig;
+import org.glowroot.storage.config.AccessConfig.AnonymousAccess;
+import org.glowroot.storage.config.ImmutableAccessConfig;
 import org.glowroot.storage.config.ImmutableSmtpConfig;
 import org.glowroot.storage.config.ImmutableStorageConfig;
-import org.glowroot.storage.config.ImmutableUserInterfaceConfig;
 import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.config.StorageConfig;
-import org.glowroot.storage.config.UserInterfaceConfig;
-import org.glowroot.storage.config.UserInterfaceConfig.AnonymousAccess;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.storage.repo.RepoAdmin;
@@ -60,6 +59,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedCon
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
@@ -79,18 +79,15 @@ class ConfigJsonService {
     private final RepoAdmin repoAdmin;
     private final HttpSessionManager httpSessionManager;
     private final MailService mailService;
-    private final @Nullable LiveWeavingService liveWeavingService;
 
     private volatile @MonotonicNonNull HttpServer httpServer;
 
     ConfigJsonService(ConfigRepository configRepository, RepoAdmin repoAdmin,
-            HttpSessionManager httpSessionManager, MailService mailService,
-            @Nullable LiveWeavingService liveWeavingService) {
+            HttpSessionManager httpSessionManager, MailService mailService) {
         this.configRepository = configRepository;
         this.repoAdmin = repoAdmin;
         this.httpSessionManager = httpSessionManager;
         this.mailService = mailService;
-        this.liveWeavingService = liveWeavingService;
     }
 
     void setHttpServer(HttpServer httpServer) {
@@ -101,18 +98,6 @@ class ConfigJsonService {
     String getTransactionConfig(String queryString) throws Exception {
         String agentId = getAgentId(queryString);
         return getTransactionConfigInternal(agentId);
-    }
-
-    @GET("/backend/config/user-recording")
-    String getUserRecordingConfig(String queryString) throws Exception {
-        String agentId = getAgentId(queryString);
-        return getUserRecordingConfigInternal(agentId);
-    }
-
-    @GET("/backend/config/advanced")
-    String getAdvancedConfig(String queryString) throws Exception {
-        String agentId = getAgentId(queryString);
-        return getAdvancedConfigInternal(agentId);
     }
 
     @GET("/backend/config/plugins")
@@ -136,19 +121,29 @@ class ConfigJsonService {
         }
     }
 
-    private String getPluginConfigInternal(String agentId, String pluginId) throws IOException {
-        PluginConfig config = configRepository.getPluginConfig(agentId, pluginId);
-        if (config == null) {
-            throw new IllegalArgumentException("Plugin id not found: " + pluginId);
-        }
-        return mapper.writeValueAsString(PluginConfigDto.create(config));
+    @GET("/backend/config/user-recording")
+    String getUserRecordingConfig(String queryString) throws Exception {
+        String agentId = getAgentId(queryString);
+        return getUserRecordingConfigInternal(agentId);
+    }
+
+    @GET("/backend/config/advanced")
+    String getAdvancedConfig(String queryString) throws Exception {
+        String agentId = getAgentId(queryString);
+        return getAdvancedConfigInternal(agentId);
     }
 
     @GET("/backend/config/ui")
-    String getUserInterfaceConfig() throws Exception {
+    String getUiConfig(String queryString) throws Exception {
+        String agentId = getAgentId(queryString);
+        return getUiConfigInternal(agentId);
+    }
+
+    @GET("/backend/config/access")
+    String getAccessConfig() throws Exception {
         // this code cannot be reached when httpServer is null
         checkNotNull(httpServer);
-        return getUserInterface(false);
+        return getAccess(false);
     }
 
     @GET("/backend/config/storage")
@@ -179,6 +174,19 @@ class ConfigJsonService {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getTransactionConfigInternal(agentId);
+    }
+
+    @POST("/backend/config/ui")
+    String updateUiConfig(String content) throws Exception {
+        UiConfigDto configDto = mapper.readValue(content, ImmutableUiConfigDto.class);
+        String agentId = configDto.agentId().get();
+        try {
+            configRepository.updateUiConfig(agentId, configDto.convert(),
+                    configDto.version());
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getUiConfigInternal(agentId);
     }
 
     @POST("/backend/config/user-recording")
@@ -227,26 +235,25 @@ class ConfigJsonService {
         return getPluginConfigInternal(agentId, pluginId);
     }
 
-    @POST("/backend/config/ui")
-    Object updateUserInterfaceConfig(String content) throws Exception {
+    @POST("/backend/config/access")
+    Object updateAccessConfig(String content) throws Exception {
         // this code cannot be reached when httpServer is null
         checkNotNull(httpServer);
-        UserInterfaceConfigDto configDto =
-                mapper.readValue(content, ImmutableUserInterfaceConfigDto.class);
+        AccessConfigDto configDto = mapper.readValue(content, ImmutableAccessConfigDto.class);
         configDto.validate();
-        UserInterfaceConfig priorConfig = configRepository.getUserInterfaceConfig();
-        UserInterfaceConfig config;
+        AccessConfig priorConfig = configRepository.getAccessConfig();
+        AccessConfig config;
         try {
             config = configDto.convert(priorConfig);
         } catch (CurrentPasswordIncorrectException e) {
             return "{\"currentPasswordIncorrect\":true}";
         }
         try {
-            configRepository.updateUserInterfaceConfig(config, configDto.version());
+            configRepository.updateAccessConfig(config, configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return onSuccessfulUserInterfaceUpdate(priorConfig, config);
+        return onSuccessfulAccessUpdate(priorConfig, config);
     }
 
     @POST("/backend/config/storage")
@@ -285,26 +292,46 @@ class ConfigJsonService {
     private String getTransactionConfigInternal(String agentId) throws IOException {
         TransactionConfig config = configRepository.getTransactionConfig(agentId);
         if (config == null) {
-            return "{\"empty\": true}";
+            return "{}";
         }
         return mapper.writeValueAsString(TransactionConfigDto.create(config));
     }
 
+    private String getUiConfigInternal(String agentId) throws Exception {
+        UiConfig config = configRepository.getUiConfig(agentId);
+        if (config == null) {
+            return "{}";
+        }
+        return mapper.writeValueAsString(UiConfigDto.create(config));
+    }
+
     private String getUserRecordingConfigInternal(String agentId) throws IOException {
         UserRecordingConfig config = configRepository.getUserRecordingConfig(agentId);
+        if (config == null) {
+            return "{}";
+        }
         return mapper.writeValueAsString(UserRecordingConfigDto.create(config));
     }
 
     private String getAdvancedConfigInternal(String agentId) throws IOException {
-        checkNotNull(liveWeavingService);
         AdvancedConfig config = configRepository.getAdvancedConfig(agentId);
-        checkNotNull(config);
+        if (config == null) {
+            return "{}";
+        }
         return mapper.writeValueAsString(AdvancedConfigDto.create(config));
     }
 
+    private String getPluginConfigInternal(String agentId, String pluginId) throws IOException {
+        PluginConfig config = configRepository.getPluginConfig(agentId, pluginId);
+        if (config == null) {
+            throw new IllegalArgumentException("Plugin id not found: " + pluginId);
+        }
+        return mapper.writeValueAsString(PluginConfigDto.create(config));
+    }
+
     @RequiresNonNull("httpServer")
-    private Object onSuccessfulUserInterfaceUpdate(UserInterfaceConfig priorConfig,
-            UserInterfaceConfig config) throws Exception {
+    private Object onSuccessfulAccessUpdate(AccessConfig priorConfig, AccessConfig config)
+            throws Exception {
         boolean portChangedSucceeded = false;
         boolean portChangedFailed = false;
         if (priorConfig.port() != config.port()) {
@@ -316,7 +343,7 @@ class ConfigJsonService {
                 portChangedFailed = true;
             }
         }
-        String responseText = getUserInterface(portChangedFailed);
+        String responseText = getAccess(portChangedFailed);
         ByteBuf responseContent = Unpooled.copiedBuffer(responseText, Charsets.ISO_8859_1);
         FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, responseContent);
         if (portChangedSucceeded) {
@@ -333,12 +360,9 @@ class ConfigJsonService {
     }
 
     @RequiresNonNull("httpServer")
-    private String getUserInterface(boolean portChangeFailed) throws Exception {
-        UserInterfaceConfig config = configRepository.getUserInterfaceConfig();
-        UserInterfaceConfigDto configDto = ImmutableUserInterfaceConfigDto.builder()
-                .defaultDisplayedTransactionType(config.defaultDisplayedTransactionType())
-                .defaultDisplayedPercentiles(Ordering.natural()
-                        .immutableSortedCopy(config.defaultDisplayedPercentiles()))
+    private String getAccess(boolean portChangeFailed) throws Exception {
+        AccessConfig config = configRepository.getAccessConfig();
+        AccessConfigDto configDto = ImmutableAccessConfigDto.builder()
                 .port(config.port())
                 .adminPasswordEnabled(config.adminPasswordEnabled())
                 .readOnlyPasswordEnabled(config.readOnlyPasswordEnabled())
@@ -346,7 +370,7 @@ class ConfigJsonService {
                 .sessionTimeoutMinutes(config.sessionTimeoutMinutes())
                 .version(config.version())
                 .build();
-        return mapper.writeValueAsString(ImmutableUserInterfaceConfigResponse.builder()
+        return mapper.writeValueAsString(ImmutableAccessConfigResponse.builder()
                 .config(configDto)
                 .activePort(httpServer.getPort())
                 .portChangeFailed(portChangeFailed)
@@ -407,8 +431,8 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    interface UserInterfaceConfigResponse {
-        UserInterfaceConfigDto config();
+    interface AccessConfigResponse {
+        AccessConfigDto config();
         int activePort();
         boolean portChangeFailed();
     }
@@ -488,55 +512,6 @@ class ConfigJsonService {
                 builder.profilingIntervalMillis(config.getProfilingIntervalMillis().getValue());
             }
             return builder.version(Versions.getVersion(config))
-                    .build();
-        }
-    }
-
-    @Value.Immutable
-    abstract static class AdvancedConfigDto {
-
-        abstract Optional<String> agentId(); // only used in request
-        abstract boolean weavingTimer();
-        abstract int immediatePartialStoreThresholdSeconds();
-        abstract int maxAggregateTransactionsPerType();
-        abstract int maxAggregateQueriesPerType();
-        abstract int maxAggregateServiceCallsPerType();
-        abstract int maxTraceEntriesPerTransaction();
-        abstract int maxStackTraceSamplesPerTransaction();
-        abstract int mbeanGaugeNotFoundDelaySeconds();
-        abstract String version();
-
-        private AdvancedConfig convert() {
-            return AdvancedConfig.newBuilder()
-                    .setWeavingTimer(weavingTimer())
-                    .setImmediatePartialStoreThresholdSeconds(
-                            of(immediatePartialStoreThresholdSeconds()))
-                    .setMaxAggregateTransactionsPerType(of(maxAggregateTransactionsPerType()))
-                    .setMaxAggregateQueriesPerType(of(maxAggregateQueriesPerType()))
-                    .setMaxAggregateServiceCallsPerType(of(maxAggregateServiceCallsPerType()))
-                    .setMaxTraceEntriesPerTransaction(of(maxTraceEntriesPerTransaction()))
-                    .setMaxStackTraceSamplesPerTransaction(of(maxStackTraceSamplesPerTransaction()))
-                    .setMbeanGaugeNotFoundDelaySeconds(of(mbeanGaugeNotFoundDelaySeconds()))
-                    .build();
-        }
-
-        private static AdvancedConfigDto create(AdvancedConfig config) {
-            return ImmutableAdvancedConfigDto.builder()
-                    .weavingTimer(config.getWeavingTimer())
-                    .immediatePartialStoreThresholdSeconds(
-                            config.getImmediatePartialStoreThresholdSeconds().getValue())
-                    .maxAggregateTransactionsPerType(
-                            config.getMaxAggregateTransactionsPerType().getValue())
-                    .maxAggregateQueriesPerType(config.getMaxAggregateQueriesPerType().getValue())
-                    .maxAggregateServiceCallsPerType(
-                            config.getMaxAggregateServiceCallsPerType().getValue())
-                    .maxTraceEntriesPerTransaction(
-                            config.getMaxTraceEntriesPerTransaction().getValue())
-                    .maxStackTraceSamplesPerTransaction(
-                            config.getMaxStackTraceSamplesPerTransaction().getValue())
-                    .mbeanGaugeNotFoundDelaySeconds(
-                            config.getMbeanGaugeNotFoundDelaySeconds().getValue())
-                    .version(Versions.getVersion(config))
                     .build();
         }
     }
@@ -657,10 +632,83 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    abstract static class UserInterfaceConfigDto {
+    abstract static class AdvancedConfigDto {
 
+        abstract Optional<String> agentId(); // only used in request
+        abstract boolean weavingTimer();
+        abstract int immediatePartialStoreThresholdSeconds();
+        abstract int maxAggregateTransactionsPerType();
+        abstract int maxAggregateQueriesPerType();
+        abstract int maxAggregateServiceCallsPerType();
+        abstract int maxTraceEntriesPerTransaction();
+        abstract int maxStackTraceSamplesPerTransaction();
+        abstract int mbeanGaugeNotFoundDelaySeconds();
+        abstract String version();
+
+        private AdvancedConfig convert() {
+            return AdvancedConfig.newBuilder()
+                    .setWeavingTimer(weavingTimer())
+                    .setImmediatePartialStoreThresholdSeconds(
+                            of(immediatePartialStoreThresholdSeconds()))
+                    .setMaxAggregateTransactionsPerType(of(maxAggregateTransactionsPerType()))
+                    .setMaxAggregateQueriesPerType(of(maxAggregateQueriesPerType()))
+                    .setMaxAggregateServiceCallsPerType(of(maxAggregateServiceCallsPerType()))
+                    .setMaxTraceEntriesPerTransaction(of(maxTraceEntriesPerTransaction()))
+                    .setMaxStackTraceSamplesPerTransaction(of(maxStackTraceSamplesPerTransaction()))
+                    .setMbeanGaugeNotFoundDelaySeconds(of(mbeanGaugeNotFoundDelaySeconds()))
+                    .build();
+        }
+
+        private static AdvancedConfigDto create(AdvancedConfig config) {
+            return ImmutableAdvancedConfigDto.builder()
+                    .weavingTimer(config.getWeavingTimer())
+                    .immediatePartialStoreThresholdSeconds(
+                            config.getImmediatePartialStoreThresholdSeconds().getValue())
+                    .maxAggregateTransactionsPerType(
+                            config.getMaxAggregateTransactionsPerType().getValue())
+                    .maxAggregateQueriesPerType(config.getMaxAggregateQueriesPerType().getValue())
+                    .maxAggregateServiceCallsPerType(
+                            config.getMaxAggregateServiceCallsPerType().getValue())
+                    .maxTraceEntriesPerTransaction(
+                            config.getMaxTraceEntriesPerTransaction().getValue())
+                    .maxStackTraceSamplesPerTransaction(
+                            config.getMaxStackTraceSamplesPerTransaction().getValue())
+                    .mbeanGaugeNotFoundDelaySeconds(
+                            config.getMbeanGaugeNotFoundDelaySeconds().getValue())
+                    .version(Versions.getVersion(config))
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class UiConfigDto {
+
+        abstract Optional<String> agentId(); // only used in request
         abstract String defaultDisplayedTransactionType();
         abstract ImmutableList<Double> defaultDisplayedPercentiles();
+        abstract String version();
+
+        private UiConfig convert() throws Exception {
+            return UiConfig.newBuilder()
+                    .setDefaultDisplayedTransactionType(defaultDisplayedTransactionType())
+                    .addAllDefaultDisplayedPercentile(
+                            Ordering.natural().immutableSortedCopy(defaultDisplayedPercentiles()))
+                    .build();
+        }
+
+        private static UiConfigDto create(UiConfig config) {
+            return ImmutableUiConfigDto.builder()
+                    .defaultDisplayedTransactionType(config.getDefaultDisplayedTransactionType())
+                    .defaultDisplayedPercentiles(Ordering.natural()
+                            .immutableSortedCopy(config.getDefaultDisplayedPercentileList()))
+                    .version(Versions.getVersion(config))
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class AccessConfigDto {
+
         abstract int port();
         abstract boolean adminPasswordEnabled();
         abstract boolean readOnlyPasswordEnabled();
@@ -705,10 +753,8 @@ class ConfigJsonService {
             }
         }
 
-        private UserInterfaceConfig convert(UserInterfaceConfig priorConfig) throws Exception {
-            ImmutableUserInterfaceConfig.Builder builder = ImmutableUserInterfaceConfig.builder()
-                    .defaultDisplayedTransactionType(defaultDisplayedTransactionType())
-                    .defaultDisplayedPercentiles(defaultDisplayedPercentiles())
+        private AccessConfig convert(AccessConfig priorConfig) throws Exception {
+            ImmutableAccessConfig.Builder builder = ImmutableAccessConfig.builder()
                     .port(port())
                     .sessionTimeoutMinutes(sessionTimeoutMinutes());
             if (currentAdminPassword().length() > 0 || newAdminPassword().length() > 0) {

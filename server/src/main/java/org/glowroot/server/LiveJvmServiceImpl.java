@@ -21,7 +21,7 @@ import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpKind;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 

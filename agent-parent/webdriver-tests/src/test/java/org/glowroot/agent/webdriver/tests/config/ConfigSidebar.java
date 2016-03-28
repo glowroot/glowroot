@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,6 @@ public class ConfigSidebar {
         this.driver = driver;
     }
 
-    public WebElement getInstrumentationLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Instrumentation"));
-    }
-
     public WebElement getGaugesLink() {
         return Utils.withWait(driver, getSidebar(), linkText("Gauges"));
     }
@@ -43,16 +39,28 @@ public class ConfigSidebar {
         return Utils.withWait(driver, getSidebar(), linkText("Alerts"));
     }
 
+    public WebElement getUiLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("UI"));
+    }
+
+    public WebElement getInstrumentationLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Instrumentation"));
+    }
+
     public WebElement getAdvancedLink() {
         return Utils.withWait(driver, getSidebar(), linkText("Advanced"));
     }
 
-    public WebElement getUserInterfaceLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Glowroot UI"));
+    public WebElement getAccessLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Access"));
     }
 
     public WebElement getStorageLink() {
         return Utils.withWait(driver, getSidebar(), linkText("Storage"));
+    }
+
+    public WebElement getSmtpLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("SMTP"));
     }
 
     private WebElement getSidebar() {

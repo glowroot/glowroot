@@ -28,11 +28,6 @@ public interface ConfigService {
 
     void updateUserRecordingConfig(UserRecordingConfig config) throws Exception;
 
-    void updateAdvancedConfig(AdvancedConfig config) throws Exception;
-
-    // returns the number of classes updated during re-weaving
-    int updateInstrumentationConfigs(List<InstrumentationConfig> configs) throws Exception;
-
     // convenience methods wrapping updatePluginConfig()
     void setPluginProperty(String pluginId, String propertyName, boolean propertyValue)
             throws Exception;
@@ -44,4 +39,9 @@ public interface ConfigService {
     // convenience methods wrapping updatePluginConfig()
     void setPluginProperty(String pluginId, String propertyName, String propertyValue)
             throws Exception;
+
+    // returns the number of classes updated during re-weaving
+    int updateInstrumentationConfigs(List<InstrumentationConfig> configs) throws Exception;
+
+    void updateAdvancedConfig(AdvancedConfig config) throws Exception;
 }

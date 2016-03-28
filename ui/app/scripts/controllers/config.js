@@ -63,11 +63,6 @@ glowroot.controller('ConfigCtrl', [
       return $location.path().substring(1);
     };
 
-    $scope.isAlerts = function () {
-      return $location.path() === '/config/alert-list' || $location.path() === '/config/alert'
-          || $location.path() === '/config/smtp';
-    };
-
     $scope.$on('$stateChangeSuccess', function () {
       // don't let the active sidebar selection get out of sync (which can happen after using the back button)
       if (document.activeElement) {
@@ -83,7 +78,7 @@ glowroot.controller('ConfigCtrl', [
     };
 
     function onLocationChangeSuccess() {
-      if (($location.path() === '/config/ui' || $location.path() === '/config/smtp') && !$scope.layout.fat) {
+      if (($location.path() === '/config/access' || $location.path() === '/config/smtp') && !$scope.layout.fat) {
         $scope.$parent.activeNavbarItem = 'serverConfig';
       } else {
         $scope.$parent.activeNavbarItem = 'agentConfig';

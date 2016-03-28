@@ -32,14 +32,16 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
-import org.glowroot.storage.config.UserInterfaceConfig;
-import org.glowroot.storage.config.UserInterfaceConfig.AnonymousAccess;
+import org.glowroot.storage.config.AccessConfig;
+import org.glowroot.storage.config.AccessConfig.AnonymousAccess;
 import org.glowroot.storage.repo.AgentRepository;
 import org.glowroot.storage.repo.AgentRepository.AgentRollup;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
 import org.glowroot.storage.repo.TransactionTypeRepository;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 class LayoutService {
@@ -76,7 +78,7 @@ class LayoutService {
     }
 
     String getNeedsAuthenticationLayout() throws Exception {
-        UserInterfaceConfig userInterfaceConfig = configRepository.getUserInterfaceConfig();
+        AccessConfig userInterfaceConfig = configRepository.getAccessConfig();
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
@@ -94,10 +96,7 @@ class LayoutService {
         for (long hours : configRepository.getStorageConfig().rollupExpirationHours()) {
             rollupExpirationMillis.add(HOURS.toMillis(hours));
         }
-        UserInterfaceConfig userInterfaceConfig = configRepository.getUserInterfaceConfig();
-
-        String defaultDisplayedTransactionType =
-                userInterfaceConfig.defaultDisplayedTransactionType();
+        AccessConfig accessConfig = configRepository.getAccessConfig();
 
         // linked hash map to preserve ordering
         Map<String, AgentRollupLayout> agentRollups = Maps.newLinkedHashMap();
@@ -105,38 +104,57 @@ class LayoutService {
                 transactionTypeRepository.readTransactionTypes();
         if (fat) {
             // a couple of special cases for fat agent
+            UiConfig uiConfig = checkNotNull(configRepository.getUiConfig(AGENT_ID));
+            String defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
             Set<String> transactionTypes = Sets.newHashSet();
             List<String> storedTransactionTypes = transactionTypesMap.get(AGENT_ID);
             if (storedTransactionTypes != null) {
                 transactionTypes.addAll(storedTransactionTypes);
             }
             transactionTypes.add(defaultDisplayedTransactionType);
+
             agentRollups.put(AGENT_ID, ImmutableAgentRollupLayout.builder()
                     .leaf(true)
                     .addAllTransactionTypes(transactionTypes)
+                    .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
+                    .defaultDisplayedPercentiles(uiConfig.getDefaultDisplayedPercentileList())
                     .build());
         } else {
             for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
+                UiConfig uiConfig = configRepository.getUiConfig(agentRollup.name());
+                String defaultDisplayedTransactionType;
+                List<Double> defaultDisplayedPercentiles;
+                if (uiConfig == null) {
+                    // TODO these defaults should be shared with UiConfig defaults
+                    defaultDisplayedTransactionType = "Servlet";
+                    defaultDisplayedPercentiles = ImmutableList.of(50.0, 95.0, 99.0);
+                } else {
+                    defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
+                    defaultDisplayedPercentiles = uiConfig.getDefaultDisplayedPercentileList();
+                }
+                Set<String> transactionTypes = Sets.newHashSet();
                 ImmutableAgentRollupLayout.Builder builder = ImmutableAgentRollupLayout.builder()
                         .leaf(agentRollup.leaf());
-                List<String> transactionTypes = transactionTypesMap.get(agentRollup.name());
-                if (transactionTypes != null) {
-                    builder.addAllTransactionTypes(transactionTypes);
+                List<String> storedTransactionTypes = transactionTypesMap.get(agentRollup.name());
+                if (storedTransactionTypes != null) {
+                    transactionTypes.addAll(storedTransactionTypes);
                 }
+                transactionTypes.add(defaultDisplayedTransactionType);
+                builder.addAllTransactionTypes(transactionTypes);
+                builder.defaultDisplayedTransactionType(defaultDisplayedTransactionType);
+                builder.defaultDisplayedPercentiles(defaultDisplayedPercentiles);
                 agentRollups.put(agentRollup.name(), builder.build());
             }
         }
         return ImmutableLayout.builder()
                 .fat(fat)
                 .footerMessage("Glowroot version " + version)
-                .adminPasswordEnabled(userInterfaceConfig.adminPasswordEnabled())
-                .readOnlyPasswordEnabled(userInterfaceConfig.readOnlyPasswordEnabled())
-                .anonymousAccess(userInterfaceConfig.anonymousAccess())
+                .adminPasswordEnabled(accessConfig.adminPasswordEnabled())
+                .readOnlyPasswordEnabled(accessConfig.readOnlyPasswordEnabled())
+                .anonymousAccess(accessConfig.anonymousAccess())
                 .addAllRollupConfigs(configRepository.getRollupConfigs())
                 .addAllRollupExpirationMillis(rollupExpirationMillis)
                 .gaugeCollectionIntervalMillis(configRepository.getGaugeCollectionIntervalMillis())
-                .defaultTransactionType(defaultDisplayedTransactionType)
-                .addAllDefaultPercentiles(userInterfaceConfig.defaultDisplayedPercentiles())
                 .agentRollups(agentRollups)
                 .build();
     }
@@ -152,9 +170,6 @@ class LayoutService {
         abstract ImmutableList<RollupConfig> rollupConfigs();
         abstract ImmutableList<Long> rollupExpirationMillis();
         abstract long gaugeCollectionIntervalMillis();
-
-        abstract String defaultTransactionType();
-        abstract ImmutableList<Double> defaultPercentiles();
         abstract ImmutableMap<String, AgentRollupLayout> agentRollups();
 
         @Value.Derived
@@ -167,5 +182,7 @@ class LayoutService {
     interface AgentRollupLayout {
         boolean leaf();
         List<String> transactionTypes();
+        String defaultDisplayedTransactionType();
+        List<Double> defaultDisplayedPercentiles();
     }
 }

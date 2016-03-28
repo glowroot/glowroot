@@ -25,21 +25,22 @@ import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
-import org.glowroot.storage.config.AlertConfig;
+import org.glowroot.storage.config.AccessConfig;
 import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.config.StorageConfig;
-import org.glowroot.storage.config.UserInterfaceConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 
 public interface ConfigRepository {
 
-    String UI_KEY = "ui";
+    String ACCESS_KEY = "access";
     String STORAGE_KEY = "storage";
     String SMTP_KEY = "smtp";
 
@@ -50,22 +51,32 @@ public interface ConfigRepository {
     long ROLLUP_2_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.2.intervalMillis", 30 * 60 * 1000); // 30 minutes
 
+    @Nullable
     TransactionConfig getTransactionConfig(String agentId) throws IOException;
 
+    @Nullable
+    UiConfig getUiConfig(String agentId) throws IOException;
+
+    @Nullable
     UserRecordingConfig getUserRecordingConfig(String agentId) throws IOException;
 
     @Nullable
     AdvancedConfig getAdvancedConfig(String agentId) throws IOException;
 
-    List<PluginConfig> getPluginConfigs(String agentId) throws IOException;
-
-    @Nullable
-    PluginConfig getPluginConfig(String agentId, String pluginId) throws IOException;
-
     List<GaugeConfig> getGaugeConfigs(String agentId) throws IOException;
 
     @Nullable
     GaugeConfig getGaugeConfig(String agentId, String version) throws IOException;
+
+    List<AlertConfig> getAlertConfigs(String agentId) throws IOException;
+
+    @Nullable
+    AlertConfig getAlertConfig(String agentId, String version) throws IOException;
+
+    List<PluginConfig> getPluginConfigs(String agentId) throws IOException;
+
+    @Nullable
+    PluginConfig getPluginConfig(String agentId, String pluginId) throws IOException;
 
     List<InstrumentationConfig> getInstrumentationConfigs(String agentId) throws IOException;
 
@@ -73,25 +84,30 @@ public interface ConfigRepository {
     InstrumentationConfig getInstrumentationConfig(String agentId, String version)
             throws IOException;
 
-    UserInterfaceConfig getUserInterfaceConfig() throws Exception;
+    AccessConfig getAccessConfig();
 
-    StorageConfig getStorageConfig() throws Exception;
+    StorageConfig getStorageConfig();
 
-    SmtpConfig getSmtpConfig() throws Exception;
-
-    List<AlertConfig> getAlertConfigs(String agentId) throws Exception;
-
-    @Nullable
-    AlertConfig getAlertConfig(String agentId, String version) throws Exception;
+    SmtpConfig getSmtpConfig();
 
     void updateTransactionConfig(String agentId, TransactionConfig transactionConfig,
             String priorVersion) throws Exception;
 
-    void updateUserRecordingConfig(String agentId, UserRecordingConfig userRecordingConfig,
-            String priorVersion) throws Exception;
+    void insertGaugeConfig(String agentId, GaugeConfig gaugeConfig) throws Exception;
 
-    void updateAdvancedConfig(String agentId, AdvancedConfig advancedConfig, String priorVersion)
+    void updateGaugeConfig(String agentId, GaugeConfig gaugeConfig, String priorVersion)
             throws Exception;
+
+    void deleteGaugeConfig(String agentId, String version) throws Exception;
+
+    void insertAlertConfig(String agentId, AlertConfig alertConfig) throws Exception;
+
+    void updateAlertConfig(String agentId, AlertConfig alertConfig, String priorVersion)
+            throws Exception;
+
+    void deleteAlertConfig(String agentId, String version) throws Exception;
+
+    void updateUiConfig(String agentId, UiConfig uiConfig, String priorVersion) throws Exception;
 
     // only name, type and value of properties is used
     void updatePluginConfig(String agentId, String pluginId, List<PluginProperty> properties,
@@ -108,26 +124,17 @@ public interface ConfigRepository {
     void insertInstrumentationConfigs(String agentId,
             List<InstrumentationConfig> instrumentationConfigs) throws Exception;
 
-    void insertGaugeConfig(String agentId, GaugeConfig gaugeConfig) throws Exception;
+    void updateUserRecordingConfig(String agentId, UserRecordingConfig userRecordingConfig,
+            String priorVersion) throws Exception;
 
-    void updateGaugeConfig(String agentId, GaugeConfig gaugeConfig, String priorVersion)
+    void updateAdvancedConfig(String agentId, AdvancedConfig advancedConfig, String priorVersion)
             throws Exception;
 
-    void deleteGaugeConfig(String agentId, String version) throws Exception;
-
-    void updateUserInterfaceConfig(UserInterfaceConfig userInterfaceConfig, String priorVersion)
-            throws Exception;
+    void updateAccessConfig(AccessConfig accessConfig, String priorVersion) throws Exception;
 
     void updateStorageConfig(StorageConfig storageConfig, String priorVersion) throws Exception;
 
     void updateSmtpConfig(SmtpConfig smtpConfig, String priorVersion) throws Exception;
-
-    void insertAlertConfig(String agentId, AlertConfig alertConfig) throws Exception;
-
-    void updateAlertConfig(String agentId, AlertConfig alertConfig, String priorVersion)
-            throws Exception;
-
-    void deleteAlertConfig(String agentId, String version) throws Exception;
 
     long getGaugeCollectionIntervalMillis();
 

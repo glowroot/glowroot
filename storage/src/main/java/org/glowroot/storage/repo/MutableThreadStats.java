@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.UsedByJsonSerialization;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble;
+import org.glowroot.wire.api.model.Proto.OptionalDouble;
 
 public class MutableThreadStats {
 

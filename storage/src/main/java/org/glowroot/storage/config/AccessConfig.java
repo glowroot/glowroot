@@ -18,28 +18,16 @@ package org.glowroot.storage.config;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Versions;
 
 @Value.Immutable
-public abstract class UserInterfaceConfig {
+public abstract class AccessConfig {
 
     @Value.Default
     public int port() {
         return 4000;
-    }
-
-    @Value.Default
-    public String defaultDisplayedTransactionType() {
-        return "Servlet";
-    }
-
-    @Value.Default
-    @SuppressWarnings("immutables")
-    public ImmutableList<Double> defaultDisplayedPercentiles() {
-        return ImmutableList.of(50.0, 95.0, 99.0);
     }
 
     @Value.Default

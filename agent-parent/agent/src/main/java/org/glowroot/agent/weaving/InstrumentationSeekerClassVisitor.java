@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ImmutableInstrumentationConfig;
 import org.glowroot.agent.config.InstrumentationConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CaptureKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ASM5;

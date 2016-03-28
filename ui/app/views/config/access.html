@@ -15,7 +15,7 @@
 -->
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h2>Glowroot UI</h2>
+    <h2>Access</h2>
   </div>
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
@@ -24,34 +24,6 @@
          gt-form-autofocus-on-first-input
          class="form-horizontal"
          name="formCtrl">
-      <div gt-form-group
-           gt-label="Default displayed transaction type"
-           gt-model="config.defaultDisplayedTransactionType"
-           gt-number="true"
-           gt-required="loaded"
-           gt-width="20em"
-           gt-col-class1="col-lg-4"
-           gt-col-class2="col-lg-8">
-        <div class="help-block">
-          The default transaction type displayed on the transactions and errors page.
-        </div>
-      </div>
-      <div gt-form-group
-           gt-label="Default displayed percentiles"
-           gt-model="page.defaultDisplayedPercentiles"
-           gt-pattern="pattern.percentileList"
-           gt-required="loaded"
-           gt-width="20em"
-           gt-col-class1="col-lg-4"
-           gt-col-class2="col-lg-8">
-        <div class="help-block">
-          The default percentiles displayed on the transaction percentiles tab.
-          <a href="http://hdrhistogram.github.io/HdrHistogram/">HdrHistogram</a> is used to bucket and store the
-          full range of values so that any percentile value can be reported with at most 1% error,
-          e.g. if the 99.9<sup>th</sup> percentile is reported as 1400 milliseconds, then that would be at most
-          14 milliseconds from the true 99.9<sup>th</sup> percentile value.
-        </div>
-      </div>
       <div gt-form-group
            gt-label="Port"
            gt-model="config.port"

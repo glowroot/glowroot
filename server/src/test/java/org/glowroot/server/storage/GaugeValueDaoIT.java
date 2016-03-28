@@ -24,11 +24,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.server.storage.AlertConfigDao;
-import org.glowroot.server.storage.ServerConfigDao;
-import org.glowroot.server.storage.ConfigRepositoryImpl;
-import org.glowroot.server.storage.GaugeValueDao;
-import org.glowroot.server.storage.AgentDao;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
@@ -50,9 +45,7 @@ public class GaugeValueDaoIT {
 
         AgentDao agentDao = new AgentDao(session);
         ServerConfigDao serverConfigDao = new ServerConfigDao(session);
-        AlertConfigDao alertConfigDao = new AlertConfigDao(session);
-        ConfigRepository configRepository =
-                new ConfigRepositoryImpl(agentDao, serverConfigDao, alertConfigDao);
+        ConfigRepository configRepository = new ConfigRepositoryImpl(agentDao, serverConfigDao);
         gaugeValueDao = new GaugeValueDao(session, agentDao, configRepository);
     }
 

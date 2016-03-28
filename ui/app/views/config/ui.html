@@ -1,0 +1,68 @@
+<!--
+  Copyright 2013-2016 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h2>UI</h2>
+  </div>
+  <div class="panel-body">
+    <div ng-hide="hideMainContent()">
+      <div ng-include src="'template/gt-loading-overlay.html'"></div>
+      <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+      <div ng-form
+           gt-form-autofocus-on-first-input
+           class="form-horizontal"
+           name="formCtrl">
+        <div gt-form-group
+             gt-label="Default displayed transaction type"
+             gt-model="config.defaultDisplayedTransactionType"
+             gt-number="true"
+             gt-required="loaded"
+             gt-width="20em"
+             gt-col-class1="col-lg-4"
+             gt-col-class2="col-lg-8">
+          <div class="help-block">
+            The default transaction type displayed on the transactions and errors page.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Default displayed percentiles"
+             gt-model="page.defaultDisplayedPercentiles"
+             gt-pattern="pattern.percentileList"
+             gt-required="loaded"
+             gt-width="20em"
+             gt-col-class1="col-lg-4"
+             gt-col-class2="col-lg-8">
+          <div class="help-block">
+            The default percentiles displayed on the transaction percentiles tab.
+            <a href="http://hdrhistogram.github.io/HdrHistogram/">HdrHistogram</a> is used to bucket and store the
+            full range of values so that any percentile value can be reported with at most 1% error,
+            e.g. if the 99.9<sup>th</sup> percentile is reported as 1400 milliseconds, then that would be at most
+            14 milliseconds from the true 99.9<sup>th</sup> percentile value.
+          </div>
+        </div>
+        <div class="form-group gt-form-buttons">
+          <div class="col-lg-offset-4 col-lg-8">
+            <div gt-button
+                 gt-label="Save changes"
+                 gt-click="save(deferred)"
+                 gt-disabled="formCtrl.$invalid">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

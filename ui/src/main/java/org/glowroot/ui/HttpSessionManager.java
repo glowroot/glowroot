@@ -41,7 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.Clock;
-import org.glowroot.storage.config.UserInterfaceConfig.AnonymousAccess;
+import org.glowroot.storage.config.AccessConfig.AnonymousAccess;
 import org.glowroot.storage.repo.ConfigRepository;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -73,9 +73,9 @@ class HttpSessionManager {
         String password = request.content().toString(Charsets.ISO_8859_1);
         String existingPasswordHash;
         if (admin) {
-            existingPasswordHash = configRepository.getUserInterfaceConfig().adminPasswordHash();
+            existingPasswordHash = configRepository.getAccessConfig().adminPasswordHash();
         } else {
-            existingPasswordHash = configRepository.getUserInterfaceConfig().readOnlyPasswordHash();
+            existingPasswordHash = configRepository.getAccessConfig().readOnlyPasswordHash();
         }
         try {
             success = validatePassword(password, existingPasswordHash);
@@ -95,7 +95,7 @@ class HttpSessionManager {
     }
 
     boolean hasReadAccess(HttpRequest request) throws Exception {
-        if (configRepository.getUserInterfaceConfig().anonymousAccess() != AnonymousAccess.NONE) {
+        if (configRepository.getAccessConfig().anonymousAccess() != AnonymousAccess.NONE) {
             return true;
         }
         String sessionId = getSessionId(request);
@@ -112,7 +112,7 @@ class HttpSessionManager {
     }
 
     boolean hasAdminAccess(HttpRequest request) throws Exception {
-        if (configRepository.getUserInterfaceConfig().anonymousAccess() == AnonymousAccess.ADMIN) {
+        if (configRepository.getAccessConfig().anonymousAccess() == AnonymousAccess.ADMIN) {
             // anonymous is ok
             return true;
         }
@@ -211,7 +211,7 @@ class HttpSessionManager {
     private void updateSessionExpiration(String sessionId, boolean admin) throws Exception {
         Map<String, Long> sessionExpirations =
                 admin ? adminSessionExpirations : readOnlySessionExpirations;
-        int timeoutMinutes = configRepository.getUserInterfaceConfig().sessionTimeoutMinutes();
+        int timeoutMinutes = configRepository.getAccessConfig().sessionTimeoutMinutes();
         if (timeoutMinutes == 0) {
             sessionExpirations.put(sessionId, Long.MAX_VALUE);
         } else {

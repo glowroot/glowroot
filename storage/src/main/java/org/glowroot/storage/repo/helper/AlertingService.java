@@ -33,8 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.model.LazyHistogram;
-import org.glowroot.storage.config.AlertConfig;
-import org.glowroot.storage.config.AlertConfig.AlertKind;
+import org.glowroot.common.util.Versions;
 import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.repo.AgentRepository;
 import org.glowroot.storage.repo.AgentRepository.AgentRollup;
@@ -48,6 +47,8 @@ import org.glowroot.storage.repo.TriggeredAlertRepository;
 import org.glowroot.storage.repo.Utils;
 import org.glowroot.storage.util.Encryption;
 import org.glowroot.storage.util.MailService;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -83,7 +84,7 @@ public class AlertingService {
             for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
                 for (AlertConfig alertConfig : configRepository
                         .getAlertConfigs(agentRollup.name())) {
-                    if (alertConfig.kind() != AlertKind.TRANSACTION) {
+                    if (alertConfig.getKind() != AlertKind.TRANSACTION) {
                         continue;
                     }
                     checkTransactionAlert(agentRollup.name(), alertConfig, endTime);
@@ -99,7 +100,7 @@ public class AlertingService {
             for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
                 for (AlertConfig alertConfig : configRepository
                         .getAlertConfigs(agentRollup.name())) {
-                    if (alertConfig.kind() != AlertKind.GAUGE) {
+                    if (alertConfig.getKind() != AlertKind.GAUGE) {
                         continue;
                     }
                     checkGaugeAlert(agentRollup.name(), alertConfig, endTime);
@@ -113,26 +114,26 @@ public class AlertingService {
     private void checkTransactionAlert(String agentRollup, AlertConfig alertConfig, long endTime)
             throws Exception {
         // validate config
-        Double percentile = alertConfig.transactionPercentile();
-        if (percentile == null) {
+        if (!alertConfig.hasTransactionPercentile()) {
             // AlertConfig has nice toString() from immutables
             logger.warn("alert config missing transactionPercentile: {}", alertConfig);
             return;
         }
-        Integer thresholdMillis = alertConfig.transactionThresholdMillis();
-        if (thresholdMillis == null) {
+        double percentile = alertConfig.getTransactionPercentile().getValue();
+        if (!alertConfig.hasTransactionThresholdMillis()) {
             // AlertConfig has nice toString() from immutables
             logger.warn("alert config missing transactionThresholdMillis: {}", alertConfig);
             return;
         }
-        Integer minTransactionCount = alertConfig.minTransactionCount();
-        if (minTransactionCount == null) {
+        int thresholdMillis = alertConfig.getTransactionThresholdMillis().getValue();
+        if (!alertConfig.hasMinTransactionCount()) {
             // AlertConfig has nice toString() from immutables
             logger.warn("alert config missing minTransactionCount: {}", alertConfig);
             return;
         }
+        int minTransactionCount = alertConfig.getMinTransactionCount().getValue();
 
-        long startTime = endTime - SECONDS.toMillis(alertConfig.timePeriodSeconds());
+        long startTime = endTime - SECONDS.toMillis(alertConfig.getTimePeriodSeconds());
         // don't want to include the aggregate at startTime, so add 1
         startTime++;
         int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
@@ -140,7 +141,7 @@ public class AlertingService {
                 aggregateRepository.readPercentileAggregates(
                         ImmutableTransactionQuery.builder()
                                 .agentRollup(agentRollup)
-                                .transactionType(alertConfig.transactionType())
+                                .transactionType(alertConfig.getTransactionType())
                                 .from(startTime)
                                 .to(endTime)
                                 .rollupLevel(rollupLevel)
@@ -155,16 +156,16 @@ public class AlertingService {
             // don't clear existing triggered alert
             return;
         }
-        boolean previouslyTriggered =
-                triggeredAlertRepository.exists(agentRollup, alertConfig.version());
+        String version = Versions.getVersion(alertConfig);
+        boolean previouslyTriggered = triggeredAlertRepository.exists(agentRollup, version);
         long valueAtPercentile = durationNanosHistogram.getValueAtPercentile(percentile);
         boolean currentlyTriggered = valueAtPercentile >= MILLISECONDS.toNanos(thresholdMillis);
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertRepository.delete(agentRollup, alertConfig.version());
+            triggeredAlertRepository.delete(agentRollup, version);
             sendTransactionAlert(agentRollup, alertConfig, percentile, valueAtPercentile,
                     transactionCount, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertRepository.insert(agentRollup, alertConfig.version());
+            triggeredAlertRepository.insert(agentRollup, version);
             sendTransactionAlert(agentRollup, alertConfig, percentile, valueAtPercentile,
                     transactionCount, false);
         }
@@ -172,18 +173,18 @@ public class AlertingService {
 
     private void checkGaugeAlert(String agentRollup, AlertConfig alertConfig, long endTime)
             throws Exception {
-        Double threshold = alertConfig.gaugeThreshold();
-        if (threshold == null) {
+        if (!alertConfig.hasGaugeThreshold()) {
             // AlertConfig has nice toString() from immutables
             logger.warn("alert config missing gaugeThreshold: {}", alertConfig);
             return;
         }
-        long startTime = endTime - SECONDS.toMillis(alertConfig.timePeriodSeconds());
+        double threshold = alertConfig.getGaugeThreshold().getValue();
+        long startTime = endTime - SECONDS.toMillis(alertConfig.getTimePeriodSeconds());
         // don't want to include the aggregate at startTime, so add 1
         startTime++;
         int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
         List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollup,
-                alertConfig.gaugeName(), startTime, endTime, rollupLevel);
+                alertConfig.getGaugeName(), startTime, endTime, rollupLevel);
         double totalWeightedValue = 0;
         long totalWeight = 0;
         for (GaugeValue gaugeValue : gaugeValues) {
@@ -191,41 +192,41 @@ public class AlertingService {
             totalWeight += gaugeValue.getWeight();
         }
         double average = totalWeightedValue / totalWeight;
-        boolean previouslyTriggered =
-                triggeredAlertRepository.exists(agentRollup, alertConfig.version());
+        String version = Versions.getVersion(alertConfig);
+        boolean previouslyTriggered = triggeredAlertRepository.exists(agentRollup, version);
         boolean currentlyTriggered = average >= threshold;
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertRepository.delete(agentRollup, alertConfig.version());
+            triggeredAlertRepository.delete(agentRollup, version);
             sendGaugeAlert(agentRollup, alertConfig, average, true);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertRepository.insert(agentRollup, alertConfig.version());
+            triggeredAlertRepository.insert(agentRollup, version);
             sendGaugeAlert(agentRollup, alertConfig, average, false);
         }
     }
 
     private void sendTransactionAlert(String agentRollup, AlertConfig alertConfig,
             double percentile, long valueAtPercentile, long transactionCount, boolean ok)
-                    throws Exception {
+            throws Exception {
         String subject = "Glowroot alert";
         if (!agentRollup.equals("")) {
             subject += " - " + agentRollup;
         }
-        subject += " - " + alertConfig.transactionType();
+        subject += " - " + alertConfig.getTransactionType();
         if (ok) {
             subject += " - OK";
         }
         StringBuilder sb = new StringBuilder();
         sb.append(Utils.getPercentileWithSuffix(percentile));
         sb.append(" percentile over the last ");
-        sb.append(alertConfig.timePeriodSeconds() / 60);
+        sb.append(alertConfig.getTimePeriodSeconds() / 60);
         sb.append(" minutes was ");
         sb.append(Math.round(valueAtPercentile / 1000000.0));
         sb.append(" milliseconds.\n\nTotal transaction count over the last ");
-        sb.append(alertConfig.timePeriodSeconds() / 60);
+        sb.append(alertConfig.getTimePeriodSeconds() / 60);
         sb.append(" minutes was ");
         sb.append(transactionCount);
         sb.append(".");
-        sendAlert(alertConfig.emailAddresses(), subject, sb.toString());
+        sendAlert(alertConfig.getEmailAddressList(), subject, sb.toString());
     }
 
     private void sendGaugeAlert(String agentRollup, AlertConfig alertConfig, double average,
@@ -234,14 +235,14 @@ public class AlertingService {
         if (!agentRollup.equals("")) {
             subject += " - " + agentRollup;
         }
-        Gauge gauge = Gauges.getGauge(alertConfig.gaugeName());
+        Gauge gauge = Gauges.getGauge(alertConfig.getGaugeName());
         subject += " - " + gauge.display();
         if (ok) {
             subject += " - OK";
         }
         StringBuilder sb = new StringBuilder();
         sb.append("Average over the last ");
-        sb.append(alertConfig.timePeriodSeconds() / 60);
+        sb.append(alertConfig.getTimePeriodSeconds() / 60);
         sb.append(" minutes was ");
         sb.append(average);
         String unit = gauge.unit();
@@ -250,7 +251,7 @@ public class AlertingService {
             sb.append(unit);
         }
         sb.append(".\n\n");
-        sendAlert(alertConfig.emailAddresses(), subject, sb.toString());
+        sendAlert(alertConfig.getEmailAddressList(), subject, sb.toString());
     }
 
     private void sendAlert(List<String> emailAddresses, String subject, String messageText)

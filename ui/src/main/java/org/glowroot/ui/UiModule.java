@@ -91,7 +91,7 @@ public class UiModule {
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
                 transactionCommonService, traceRepository, rollupLevelService, clock);
         ConfigJsonService configJsonService = new ConfigJsonService(configRepository, repoAdmin,
-                httpSessionManager, new MailService(), liveWeavingService);
+                httpSessionManager, new MailService());
         GaugeValueJsonService gaugeValueJsonService = new GaugeValueJsonService(
                 gaugeValueRepository, rollupLevelService, configRepository);
         AlertConfigJsonService alertJsonService = new AlertConfigJsonService(configRepository);
@@ -117,7 +117,7 @@ public class UiModule {
         jsonServices.add(alertJsonService);
         jsonServices.add(adminJsonService);
 
-        int port = configRepository.getUserInterfaceConfig().port();
+        int port = configRepository.getAccessConfig().port();
         LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, httpSessionManager,
                 indexHtmlHttpService, layoutHttpService, layoutService, traceDetailHttpService,
                 traceExportHttpService, glowrootLogHttpService, jsonServices, numWorkerThreads);

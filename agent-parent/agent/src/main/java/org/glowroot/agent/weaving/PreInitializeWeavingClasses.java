@@ -363,8 +363,10 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.WeavingTimerService");
         types.add("org.glowroot.agent.weaving.WeavingTimerService$WeavingTimer");
         types.add("org.glowroot.common.util.Patterns");
-        types.add("org.glowroot.wire.api.model.AgentConfigOuterClass$AgentConfig$CaptureKind");
-        types.add("org.glowroot.wire.api.model.AgentConfigOuterClass$AgentConfig$CaptureKind$1");
+        types.add("org.glowroot.wire.api.model.AgentConfigOuterClass$AgentConfig"
+                + "$InstrumentationConfig$CaptureKind");
+        types.add("org.glowroot.wire.api.model.AgentConfigOuterClass$AgentConfig"
+                + "$InstrumentationConfig$CaptureKind$1");
         return types;
     }
 

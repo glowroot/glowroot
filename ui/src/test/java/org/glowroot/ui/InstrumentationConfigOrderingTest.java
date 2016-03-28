@@ -19,8 +19,8 @@ import com.google.common.collect.Ordering;
 import org.junit.Test;
 
 import org.glowroot.ui.InstrumentationConfigJsonService.InstrumentationConfigOrdering;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CaptureKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,7 +152,7 @@ public class WebDriverSetup {
         int uiPort = getAvailablePort();
         File baseDir = Files.createTempDir();
         File configFile = new File(baseDir, "config.json");
-        Files.write("{\"ui\":{\"port\":" + uiPort + "}}", configFile, Charsets.UTF_8);
+        Files.write("{\"access\":{\"port\":" + uiPort + "}}", configFile, Charsets.UTF_8);
         Container container;
         if (Containers.useJavaagent()) {
             container = new JavaagentContainer(baseDir, true, false,

@@ -38,7 +38,7 @@ import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble;
+import org.glowroot.wire.api.model.Proto.OptionalDouble;
 
 // must be used under an appropriate lock
 @Styles.Private

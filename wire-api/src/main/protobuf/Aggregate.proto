@@ -38,10 +38,6 @@ message Aggregate {
   Profile main_thread_profile = 13;
   Profile aux_thread_profile = 14;
 
-  message OptionalDouble {
-    double value = 1;
-  }
-
   message Histogram {
     // for smaller numbers of transactions, the individual raw values are stored directly
     // these values are ordered for fast percentile calculation on retrieval

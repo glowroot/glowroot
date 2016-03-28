@@ -68,9 +68,7 @@ public class AggregateDaoIT {
         AgentDao agentDao = new AgentDao(session);
         TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session);
         ServerConfigDao serverConfigDao = new ServerConfigDao(session);
-        AlertConfigDao alertConfigDao = new AlertConfigDao(session);
-        ConfigRepository configRepository =
-                new ConfigRepositoryImpl(agentDao, serverConfigDao, alertConfigDao);
+        ConfigRepository configRepository = new ConfigRepositoryImpl(agentDao, serverConfigDao);
         aggregateDao = new AggregateDao(session, agentDao, transactionTypeDao, configRepository);
     }
 

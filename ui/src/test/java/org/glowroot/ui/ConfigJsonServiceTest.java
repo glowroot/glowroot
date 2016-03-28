@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.RepoAdmin;
 import org.glowroot.storage.util.MailService;
@@ -41,8 +40,7 @@ public class ConfigJsonServiceTest {
     public void beforeEachTest() {
         mailService = new MockMailService();
         configJsonService = new ConfigJsonService(mock(ConfigRepository.class),
-                mock(RepoAdmin.class), mock(HttpSessionManager.class), mailService,
-                mock(LiveWeavingService.class));
+                mock(RepoAdmin.class), mock(HttpSessionManager.class), mailService);
     }
 
     @Test

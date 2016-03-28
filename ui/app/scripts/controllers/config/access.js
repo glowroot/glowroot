@@ -16,7 +16,7 @@
 
 /* global glowroot, angular */
 
-glowroot.controller('ConfigUserInterfaceCtrl', [
+glowroot.controller('ConfigAccessCtrl', [
   '$scope',
   '$http',
   '$rootScope',
@@ -26,21 +26,6 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
   'httpErrors',
   function ($scope, $http, $rootScope, $location, $timeout, confirmIfHasChanges, httpErrors) {
     $scope.page = {};
-
-    $scope.$watch('page.defaultDisplayedPercentiles', function (newVal) {
-      if ($scope.config) {
-        var percentiles = [];
-        if (newVal) {
-          angular.forEach(newVal.split(','), function (percentile) {
-            percentile = percentile.trim();
-            if (percentile.length) {
-              percentiles.push(Number(percentile));
-            }
-          });
-        }
-        $scope.config.defaultDisplayedPercentiles = percentiles;
-      }
-    });
 
     $scope.showChangeAdminPassword = function () {
       return $scope.config && $scope.config.adminPasswordEnabled && $scope.originalConfig.adminPasswordEnabled;
@@ -124,9 +109,6 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
       $scope.config = data.config;
       $scope.originalConfig = angular.copy(data.config);
       $scope.activePort = data.activePort;
-      $scope.page = {};
-
-      $scope.page.defaultDisplayedPercentiles = $scope.config.defaultDisplayedPercentiles.join(', ');
     }
 
     $scope.save = function (deferred) {
@@ -183,7 +165,7 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
         changingPort = true;
         previousActivePort = $scope.activePort;
       }
-      $http.post('backend/config/ui', postData)
+      $http.post('backend/config/access', postData)
           .success(function (data) {
             if (data.currentPasswordIncorrect) {
               deferred.reject('Current password is incorrect');
@@ -224,7 +206,7 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/ui')
+    $http.get('backend/config/access')
         .success(onNewData)
         .error(httpErrors.handler($scope));
   }

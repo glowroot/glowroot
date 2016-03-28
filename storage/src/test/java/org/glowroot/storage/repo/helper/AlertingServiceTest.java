@@ -24,9 +24,6 @@ import org.junit.Test;
 
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
-import org.glowroot.storage.config.AlertConfig;
-import org.glowroot.storage.config.AlertConfig.AlertKind;
-import org.glowroot.storage.config.ImmutableAlertConfig;
 import org.glowroot.storage.config.ImmutableSmtpConfig;
 import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.repo.AgentRepository;
@@ -42,7 +39,11 @@ import org.glowroot.storage.repo.TriggeredAlertRepository;
 import org.glowroot.storage.repo.Utils;
 import org.glowroot.storage.util.Encryption;
 import org.glowroot.storage.util.MailService;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.wire.api.model.Proto.OptionalDouble;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -175,15 +176,18 @@ public class AlertingServiceTest {
     }
 
     private void setupForTransaction(long... histogramValues) throws Exception {
-        AlertConfig alertConfig = ImmutableAlertConfig.builder()
-                .kind(AlertKind.TRANSACTION)
-                .transactionType("tt")
-                .transactionPercentile(95.0)
-                .transactionThresholdMillis(1)
-                .timePeriodSeconds(60)
-                .minTransactionCount(0)
-                .gaugeName("")
-                .addEmailAddresses("to@example.org")
+        AlertConfig alertConfig = AlertConfig.newBuilder()
+                .setKind(AlertKind.TRANSACTION)
+                .setTransactionType("tt")
+                .setTransactionPercentile(OptionalDouble.newBuilder()
+                        .setValue(95.0))
+                .setTransactionThresholdMillis(OptionalInt32.newBuilder()
+                        .setValue(1))
+                .setTimePeriodSeconds(60)
+                .setMinTransactionCount(OptionalInt32.newBuilder()
+                        .setValue(0))
+                .setGaugeName("")
+                .addEmailAddress("to@example.org")
                 .build();
         LazyHistogram lazyHistogram = new LazyHistogram();
         for (long histogramValue : histogramValues) {
@@ -209,15 +213,17 @@ public class AlertingServiceTest {
     }
 
     private void setupForGauge(double value) throws Exception {
-        AlertConfig alertConfig = ImmutableAlertConfig.builder()
-                .kind(AlertKind.GAUGE)
-                .gaugeName("java.lang:type=GarbageCollector,name=ConcurrentMarkSweep"
+        AlertConfig alertConfig = AlertConfig.newBuilder()
+                .setKind(AlertKind.GAUGE)
+                .setGaugeName("java.lang:type=GarbageCollector,name=ConcurrentMarkSweep"
                         + ":CollectionTime[counter]")
-                .gaugeThreshold(500.0)
-                .timePeriodSeconds(60)
-                .minTransactionCount(0)
-                .transactionType("")
-                .addEmailAddresses("to@example.org")
+                .setGaugeThreshold(OptionalDouble.newBuilder()
+                        .setValue(500.0))
+                .setTimePeriodSeconds(60)
+                .setMinTransactionCount(OptionalInt32.newBuilder()
+                        .setValue(0))
+                .setTransactionType("")
+                .addEmailAddress("to@example.org")
                 .build();
         GaugeValue gaugeValue = GaugeValue.newBuilder()
                 .setGaugeName("abc")

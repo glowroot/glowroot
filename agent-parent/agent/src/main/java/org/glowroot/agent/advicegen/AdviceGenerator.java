@@ -38,7 +38,7 @@ import org.glowroot.agent.weaving.Advice;
 import org.glowroot.agent.weaving.AdviceBuilder;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.agent.weaving.ImmutableLazyDefinedClass;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CaptureKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;

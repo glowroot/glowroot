@@ -22,11 +22,10 @@ import org.glowroot.agent.webdriver.tests.config.ConfigSidebar;
 import org.glowroot.agent.webdriver.tests.config.SmtpConfigPage;
 import org.glowroot.agent.webdriver.tests.config.StorageConfigPage;
 import org.glowroot.agent.webdriver.tests.config.TransactionConfigPage;
-import org.glowroot.agent.webdriver.tests.config.UserInterfaceConfigPage;
+import org.glowroot.agent.webdriver.tests.config.UiConfigPage;
 import org.glowroot.agent.webdriver.tests.config.UserRecordingConfigPage;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.openqa.selenium.By.xpath;
 
 public class ConfigIT extends WebDriverIT {
 
@@ -59,16 +58,16 @@ public class ConfigIT extends WebDriverIT {
     }
 
     @Test
-    public void shouldUpdateUserInterfaceConfig() throws Exception {
+    public void shouldUpdateUiConfig() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        UserInterfaceConfigPage page = new UserInterfaceConfigPage(driver);
+        UiConfigPage page = new UiConfigPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getUserInterfaceLink().click();
+        configSidebar.getUiLink().click();
 
         // when
         page.getDefaultDisplayedPercentilesTextField().clear();
@@ -80,55 +79,9 @@ public class ConfigIT extends WebDriverIT {
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getUserInterfaceLink().click();
+        configSidebar.getUiLink().click();
         assertThat(page.getDefaultDisplayedPercentilesTextField().getAttribute("value"))
                 .isEqualTo("3, 4, 5, 6");
-    }
-
-    @Test
-    public void shouldUpdateSmtpConfig() throws Exception {
-        // given
-        App app = new App(driver, "http://localhost:" + getUiPort());
-        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
-        ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        SmtpConfigPage page = new SmtpConfigPage(driver);
-
-        app.open();
-        globalNavbar.getConfigurationLink().click();
-        configSidebar.getAlertsLink().click();
-        Utils.withWait(driver, xpath("//a[@href='config/smtp']")).click();
-
-        // when
-        page.getFromEmailAddressTextField().clear();
-        page.getFromEmailAddressTextField().sendKeys("user1234@example.org");
-        page.getFromDisplayNameTextField().clear();
-        page.getFromDisplayNameTextField().sendKeys("User 1234");
-        page.getSmtpHostTextField().clear();
-        page.getSmtpHostTextField().sendKeys("example.org");
-        page.getSmtpPortTextField().clear();
-        page.getSmtpPortTextField().sendKeys("5678");
-        page.getUseSslCheckbox().click();
-        page.getUsernameTextField().clear();
-        page.getUsernameTextField().sendKeys("user1234");
-        page.getPasswordTextField().clear();
-        page.getPasswordTextField().sendKeys("p");
-        page.clickSaveButton();
-        // wait for save to finish
-        Thread.sleep(200);
-
-        // then
-        app.open();
-        globalNavbar.getConfigurationLink().click();
-        configSidebar.getAlertsLink().click();
-        Utils.withWait(driver, xpath("//a[@href='config/smtp']")).click();
-        assertThat(page.getFromEmailAddressTextField().getAttribute("value"))
-                .isEqualTo("user1234@example.org");
-        assertThat(page.getFromDisplayNameTextField().getAttribute("value")).isEqualTo("User 1234");
-        assertThat(page.getSmtpHostTextField().getAttribute("value")).isEqualTo("example.org");
-        assertThat(page.getSmtpPortTextField().getAttribute("value")).isEqualTo("5678");
-        assertThat(page.getUseSslCheckbox().isSelected()).isTrue();
-        assertThat(page.getUsernameTextField().getAttribute("value")).isEqualTo("user1234");
-        assertThat(page.getPasswordTextField().getAttribute("value")).isEqualTo("********");
     }
 
     @Test
@@ -161,6 +114,49 @@ public class ConfigIT extends WebDriverIT {
         driver.navigate().to(userRecordingUrl);
         assertThat(page.getUsersTextField().getAttribute("value")).isEqualTo("abc, xyz");
         assertThat(page.getProfileIntervalTextField().getAttribute("value")).isEqualTo("2345");
+    }
+
+    @Test
+    public void shouldUpdateAdvancedConfig() throws Exception {
+        // given
+        App app = new App(driver, "http://localhost:" + getUiPort());
+        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        AdvancedConfigPage page = new AdvancedConfigPage(driver);
+
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getAdvancedLink().click();
+
+        // when
+        page.getImmediatePartialStoreThresholdTextField().clear();
+        page.getImmediatePartialStoreThresholdTextField().sendKeys("1234");
+        page.getMaxAggregateQueriesPerTypeTextField().clear();
+        page.getMaxAggregateQueriesPerTypeTextField().sendKeys("789");
+        page.getMaxAggregateServiceCallsPerTypeTextField().clear();
+        page.getMaxAggregateServiceCallsPerTypeTextField().sendKeys("987");
+        page.getMaxTraceEntriesPerTransactionTextField().clear();
+        page.getMaxTraceEntriesPerTransactionTextField().sendKeys("2345");
+        page.getMaxStackTraceSamplesPerTransactionTextField().clear();
+        page.getMaxStackTraceSamplesPerTransactionTextField().sendKeys("3456");
+        page.clickSaveButton();
+        // wait for save to finish
+        Thread.sleep(200);
+
+        // then
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getAdvancedLink().click();
+        assertThat(page.getImmediatePartialStoreThresholdTextField().getAttribute("value"))
+                .isEqualTo("1234");
+        assertThat(page.getMaxAggregateQueriesPerTypeTextField().getAttribute("value"))
+                .isEqualTo("789");
+        assertThat(page.getMaxAggregateServiceCallsPerTypeTextField().getAttribute("value"))
+                .isEqualTo("987");
+        assertThat(page.getMaxTraceEntriesPerTransactionTextField().getAttribute("value"))
+                .isEqualTo("2345");
+        assertThat(page.getMaxStackTraceSamplesPerTransactionTextField().getAttribute("value"))
+                .isEqualTo("3456");
     }
 
     @Test
@@ -210,28 +206,31 @@ public class ConfigIT extends WebDriverIT {
     }
 
     @Test
-    public void shouldUpdateAdvancedConfig() throws Exception {
+    public void shouldUpdateSmtpConfig() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        AdvancedConfigPage page = new AdvancedConfigPage(driver);
+        SmtpConfigPage page = new SmtpConfigPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getAdvancedLink().click();
+        configSidebar.getSmtpLink().click();
 
         // when
-        page.getImmediatePartialStoreThresholdTextField().clear();
-        page.getImmediatePartialStoreThresholdTextField().sendKeys("1234");
-        page.getMaxAggregateQueriesPerTypeTextField().clear();
-        page.getMaxAggregateQueriesPerTypeTextField().sendKeys("789");
-        page.getMaxAggregateServiceCallsPerTypeTextField().clear();
-        page.getMaxAggregateServiceCallsPerTypeTextField().sendKeys("987");
-        page.getMaxTraceEntriesPerTransactionTextField().clear();
-        page.getMaxTraceEntriesPerTransactionTextField().sendKeys("2345");
-        page.getMaxStackTraceSamplesPerTransactionTextField().clear();
-        page.getMaxStackTraceSamplesPerTransactionTextField().sendKeys("3456");
+        page.getFromEmailAddressTextField().clear();
+        page.getFromEmailAddressTextField().sendKeys("user1234@example.org");
+        page.getFromDisplayNameTextField().clear();
+        page.getFromDisplayNameTextField().sendKeys("User 1234");
+        page.getSmtpHostTextField().clear();
+        page.getSmtpHostTextField().sendKeys("example.org");
+        page.getSmtpPortTextField().clear();
+        page.getSmtpPortTextField().sendKeys("5678");
+        page.getUseSslCheckbox().click();
+        page.getUsernameTextField().clear();
+        page.getUsernameTextField().sendKeys("user1234");
+        page.getPasswordTextField().clear();
+        page.getPasswordTextField().sendKeys("p");
         page.clickSaveButton();
         // wait for save to finish
         Thread.sleep(200);
@@ -239,17 +238,15 @@ public class ConfigIT extends WebDriverIT {
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getAdvancedLink().click();
-        assertThat(page.getImmediatePartialStoreThresholdTextField().getAttribute("value"))
-                .isEqualTo("1234");
-        assertThat(page.getMaxAggregateQueriesPerTypeTextField().getAttribute("value"))
-                .isEqualTo("789");
-        assertThat(page.getMaxAggregateServiceCallsPerTypeTextField().getAttribute("value"))
-                .isEqualTo("987");
-        assertThat(page.getMaxTraceEntriesPerTransactionTextField().getAttribute("value"))
-                .isEqualTo("2345");
-        assertThat(page.getMaxStackTraceSamplesPerTransactionTextField().getAttribute("value"))
-                .isEqualTo("3456");
+        configSidebar.getSmtpLink().click();
+        assertThat(page.getFromEmailAddressTextField().getAttribute("value"))
+                .isEqualTo("user1234@example.org");
+        assertThat(page.getFromDisplayNameTextField().getAttribute("value")).isEqualTo("User 1234");
+        assertThat(page.getSmtpHostTextField().getAttribute("value")).isEqualTo("example.org");
+        assertThat(page.getSmtpPortTextField().getAttribute("value")).isEqualTo("5678");
+        assertThat(page.getUseSslCheckbox().isSelected()).isTrue();
+        assertThat(page.getUsernameTextField().getAttribute("value")).isEqualTo("user1234");
+        assertThat(page.getPasswordTextField().getAttribute("value")).isEqualTo("********");
     }
 
     // TODO test servlet, jdbc and logger plugin config pages

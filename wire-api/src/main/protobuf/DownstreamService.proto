@@ -127,6 +127,12 @@ message GcResponse {
 message MBeanDumpRequest {
   MBeanDumpKind kind = 1;
   repeated string object_name = 2; // not relevant for ALL_MBEANS_WITH_ATTRS
+
+  enum MBeanDumpKind {
+    ALL_MBEANS_INCLUDE_ATTRIBUTES = 0;
+    ALL_MBEANS_INCLUDE_ATTRIBUTES_FOR_SOME = 1;
+    SOME_MBEANS_INCLUDE_ATTRIBUTES = 2;
+  }
 }
 
 message MBeanDumpResponse {
@@ -286,12 +292,6 @@ message ThreadDump {
 message HeapDumpFileInfo {
   string file_path = 1;
   int64 file_size_bytes = 2;
-}
-
-enum MBeanDumpKind {
-  ALL_MBEANS_INCLUDE_ATTRIBUTES = 0;
-  ALL_MBEANS_INCLUDE_ATTRIBUTES_FOR_SOME = 1;
-  SOME_MBEANS_INCLUDE_ATTRIBUTES = 2;
 }
 
 message MBeanDump {

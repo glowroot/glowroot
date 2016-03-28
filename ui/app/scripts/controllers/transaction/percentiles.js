@@ -41,7 +41,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
     }
 
     $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function () {
-      if (angular.equals(appliedPercentiles, $scope.layout.defaultPercentiles)) {
+      if (angular.equals(appliedPercentiles, $scope.layout.agentRollups[$scope.agentRollup].defaultDisplayedPercentiles)) {
         $location.search('percentile', null);
       } else {
         $location.search('percentile', appliedPercentiles);
@@ -101,7 +101,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
         }
         sortNumbers(appliedPercentiles);
       } else {
-        appliedPercentiles = $scope.layout.defaultPercentiles;
+        appliedPercentiles = $scope.layout.agentRollups[$scope.agentRollup].defaultDisplayedPercentiles;
       }
 
       if (priorAppliedPercentiles !== undefined && !angular.equals(appliedPercentiles, priorAppliedPercentiles)) {

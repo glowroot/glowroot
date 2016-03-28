@@ -39,7 +39,6 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Version;
 import org.glowroot.server.storage.AgentDao;
 import org.glowroot.server.storage.AggregateDao;
-import org.glowroot.server.storage.AlertConfigDao;
 import org.glowroot.server.storage.ConfigRepositoryImpl;
 import org.glowroot.server.storage.GaugeValueDao;
 import org.glowroot.server.storage.ServerConfigDao;
@@ -115,9 +114,8 @@ public class ServerModule {
             TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session);
 
             ServerConfigDao serverConfigDao = new ServerConfigDao(session);
-            AlertConfigDao alertConfigDao = new AlertConfigDao(session);
             ConfigRepositoryImpl configRepository =
-                    new ConfigRepositoryImpl(agentDao, serverConfigDao, alertConfigDao);
+                    new ConfigRepositoryImpl(agentDao, serverConfigDao);
 
             AggregateRepository aggregateRepository =
                     new AggregateDao(session, agentDao, transactionTypeDao, configRepository);

@@ -55,6 +55,10 @@ glowroot.controller('ConfigAlertCtrl', [
     }
 
     $scope.unit = function () {
+      if (!$scope.gauges) {
+        // list of gauges hasn't loaded yet
+        return '';
+      }
       var i;
       for (i = 0; i < $scope.gauges.length; i++) {
         if ($scope.gauges[i].name === $scope.config.gaugeName) {
@@ -86,8 +90,7 @@ glowroot.controller('ConfigAlertCtrl', [
       onNewData({
         kind: 'transaction',
         transactionType: $scope.defaultTransactionType(),
-        minTransactionCount: 1,
-        gaugeName: '',
+        timePeriodSeconds: NaN, // setting to NaN prevents "has changes" dialog on new alert with no changes
         emailAddresses: []
       });
     }
@@ -97,14 +100,14 @@ glowroot.controller('ConfigAlertCtrl', [
         return;
       }
       if (newValue === 'transaction') {
-        $scope.config.gaugeName = '';
+        $scope.config.gaugeName = undefined;
         $scope.config.gaugeThreshold = undefined;
       }
       if (newValue === 'gauge') {
-        $scope.config.transactionType = '';
+        $scope.config.transactionType = undefined;
         $scope.config.transactionPercentile = undefined;
         $scope.config.transactionThresholdMillis = undefined;
-        $scope.config.minTransactionCount = 1;
+        $scope.config.minTransactionCount = undefined;
       }
     });
 

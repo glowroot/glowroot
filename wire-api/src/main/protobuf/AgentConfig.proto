@@ -11,16 +11,24 @@ message AgentConfig {
   string agent_version = 1;
 
   TransactionConfig transaction_config = 2;
-  UserRecordingConfig user_recording_config = 3;
-  AdvancedConfig advanced_config = 4;
-  repeated PluginConfig plugin_config = 5;
-  repeated GaugeConfig gauge_config = 6;
-  repeated InstrumentationConfig instrumentation_config = 7;
+  UiConfig ui_config = 3;
+  UserRecordingConfig user_recording_config = 4;
+  AdvancedConfig advanced_config = 5;
+
+  repeated GaugeConfig gauge_config = 10;
+  repeated AlertConfig alert_config = 11;
+  repeated PluginConfig plugin_config = 12;
+  repeated InstrumentationConfig instrumentation_config = 13;
 
   message TransactionConfig {
     OptionalInt32 slow_threshold_millis = 1; // optional used due to non-zero default value
     OptionalInt32 profiling_interval_millis = 2; // optional used due to non-zero default value
     bool capture_thread_stats = 3;
+  }
+
+  message UiConfig {
+    string default_displayed_transaction_type = 1;
+    repeated double default_displayed_percentile = 2;
   }
 
   message UserRecordingConfig {
@@ -40,38 +48,32 @@ message AgentConfig {
     OptionalInt32 mbean_gauge_not_found_delay_seconds = 8;
   }
 
-  message PluginConfig {
-    string id = 1;
-    string name = 2;
-    repeated PluginProperty property = 3;
-  }
-
-  message PluginProperty {
-    string name = 1;
-    Value value = 2;
-    Value default = 3;
-    string label = 4;
-    string checkbox_label = 5;
-    string description = 6;
-
-    message Value {
-      oneof val {
-        bool bval = 1;
-        bool dval_null = 2; // simple one field OptionalDouble won't work inside "oneof"
-        double dval = 3;
-        string sval = 4;
-      }
-    }
-  }
-
   message GaugeConfig {
     string mbean_object_name = 1;
     repeated MBeanAttribute mbean_attribute = 2;
   }
 
-  message MBeanAttribute {
-    string name = 1;
-    bool counter = 2;
+  message AlertConfig {
+    AlertKind kind = 1;
+    string transaction_type = 2;
+    OptionalDouble transaction_percentile = 3;
+    OptionalInt32 transaction_threshold_millis = 4;
+    OptionalInt32 min_transaction_count = 5;
+    string gauge_name = 6;
+    OptionalDouble gauge_threshold = 7;
+    int32 time_period_seconds = 8;
+    repeated string email_address = 9;
+
+    enum AlertKind {
+      TRANSACTION = 0;
+      GAUGE = 1;
+    }
+  }
+
+  message PluginConfig {
+    string id = 1;
+    string name = 2;
+    repeated PluginProperty property = 3;
   }
 
   message InstrumentationConfig {
@@ -97,18 +99,41 @@ message AgentConfig {
     OptionalInt32 transaction_slow_threshold_millis = 20; // absent means N/A
     string enabled_property = 21;
     string trace_entry_enabled_property = 22;
+
+    enum MethodModifier {
+      PUBLIC = 0;
+      STATIC = 1;
+      NOT_STATIC = 2;
+    }
+
+    enum CaptureKind {
+      TRANSACTION = 0;
+      TRACE_ENTRY = 1;
+      TIMER = 2;
+      OTHER = 3;
+    }
   }
 
-  enum MethodModifier {
-    PUBLIC = 0;
-    STATIC = 1;
-    NOT_STATIC = 2;
+  message MBeanAttribute {
+    string name = 1;
+    bool counter = 2;
   }
 
-  enum CaptureKind {
-    TRANSACTION = 0;
-    TRACE_ENTRY = 1;
-    TIMER = 2;
-    OTHER = 3;
+  message PluginProperty {
+    string name = 1;
+    Value value = 2;
+    Value default = 3;
+    string label = 4;
+    string checkbox_label = 5;
+    string description = 6;
+
+    message Value {
+      oneof val {
+        bool bval = 1;
+        bool dval_null = 2; // simple one field OptionalDouble won't work inside "oneof"
+        double dval = 3;
+        string sval = 4;
+      }
+    }
   }
 }

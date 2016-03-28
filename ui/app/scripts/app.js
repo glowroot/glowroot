@@ -138,14 +138,10 @@ glowroot.run([
       if (!$rootScope.layout) {
         return [];
       }
-      // can't use $rootScope.agentRollup here because this function is called from waitForLayout() function in
-      // routes.js before $rootScope.agentRollup is set (note for testing, this is only a problem when not under grunt
-      // serve)
-      var agentRollup = $location.search()['agent-rollup'] || $location.search()['agent-id'] || '';
       if (!$rootScope.layout.agentRollups) {
         return [];
       }
-      var agentRollupObj = $rootScope.layout.agentRollups[agentRollup];
+      var agentRollupObj = $rootScope.layout.agentRollups[$rootScope.agentRollup];
       if (!agentRollupObj) {
         return [];
       }
@@ -156,17 +152,15 @@ glowroot.run([
       if (!$rootScope.layout) {
         return '';
       }
-      if ($rootScope.layout.fat) {
-        return $rootScope.layout.defaultTransactionType;
-      }
-      var transactionTypes = $rootScope.transactionTypes();
-      if (transactionTypes.indexOf($rootScope.layout.defaultTransactionType) !== -1) {
-        return $rootScope.layout.defaultTransactionType;
-      }
-      if (transactionTypes.length === 0) {
+      // can't use $rootScope.agentRollup here because this function is called from waitForLayout() function in
+      // routes.js before $rootScope.agentRollup is set (note for testing, this is only a problem when not under grunt
+      // serve)
+      var agentRollup = $location.search()['agent-rollup'] || $location.search()['agent-id'] || '';
+      var agentRollupObj = $rootScope.layout.agentRollups[agentRollup];
+      if (!agentRollupObj) {
         return '';
       }
-      return transactionTypes[0];
+      return agentRollupObj.defaultDisplayedTransactionType;
     };
 
     $rootScope.showSignIn = function () {

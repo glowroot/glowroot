@@ -17,32 +17,39 @@ package org.glowroot.ui;
 
 import org.junit.Test;
 
-import org.glowroot.storage.config.AlertConfig;
-import org.glowroot.storage.config.AlertConfig.AlertKind;
-import org.glowroot.storage.config.ImmutableAlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
+import org.glowroot.wire.api.model.Proto.OptionalDouble;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class AlertConfigOrderingTest {
 
-    private final AlertConfig left = ImmutableAlertConfig.builder()
-            .kind(AlertKind.TRANSACTION)
-            .transactionType("tt")
-            .transactionPercentile(50.0)
-            .transactionThresholdMillis(500)
-            .timePeriodSeconds(60)
-            .minTransactionCount(5)
-            .gaugeName("")
+    private final AlertConfig left = AlertConfig.newBuilder()
+            .setKind(AlertKind.TRANSACTION)
+            .setTransactionType("tt")
+            .setTransactionPercentile(OptionalDouble.newBuilder()
+                    .setValue(50.0))
+            .setTransactionThresholdMillis(OptionalInt32.newBuilder()
+                    .setValue(500))
+            .setTimePeriodSeconds(60)
+            .setMinTransactionCount(OptionalInt32.newBuilder()
+                    .setValue(5))
+            .setGaugeName("")
             .build();
 
-    private final AlertConfig right = ImmutableAlertConfig.builder()
-            .kind(AlertKind.TRANSACTION)
-            .transactionType("uu")
-            .transactionPercentile(50.0)
-            .transactionThresholdMillis(500)
-            .timePeriodSeconds(60)
-            .minTransactionCount(5)
-            .gaugeName("")
+    private final AlertConfig right = AlertConfig.newBuilder()
+            .setKind(AlertKind.TRANSACTION)
+            .setTransactionType("uu")
+            .setTransactionPercentile(OptionalDouble.newBuilder()
+                    .setValue(50.0))
+            .setTransactionThresholdMillis(OptionalInt32.newBuilder()
+                    .setValue(500))
+            .setTimePeriodSeconds(60)
+            .setMinTransactionCount(OptionalInt32.newBuilder()
+                    .setValue(5))
+            .setGaugeName("")
             .build();
 
     @Test

@@ -33,15 +33,9 @@
              before it gets pushed down by existing alert sections -->
         <div ng-show="loaded"
              style="margin-top: 30px;">
-          <a href="config/alert{{newQueryString()}}"
-             class="btn btn-primary pull-left">
+          <a class="btn btn-primary"
+             href="config/alert{{newQueryString()}}">
             Add new
-          </a>
-          <a href="config/smtp"
-             class="btn btn-default pull-left"
-             style="margin-left: 8px;"
-             ng-if="layout.fat">
-            Configure SMTP
           </a>
         </div>
       </div>

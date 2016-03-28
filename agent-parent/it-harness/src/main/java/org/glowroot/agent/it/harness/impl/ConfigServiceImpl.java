@@ -51,36 +51,6 @@ class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
-    public void updateUserRecordingConfig(UserRecordingConfig config) throws Exception {
-        AgentConfig agentConfig = server.getAgentConfig();
-        server.updateAgentConfig(AgentConfig.newBuilder(agentConfig)
-                .setUserRecordingConfig(config)
-                .build());
-    }
-
-    @Override
-    public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
-        AgentConfig agentConfig = server.getAgentConfig();
-        server.updateAgentConfig(AgentConfig.newBuilder(agentConfig)
-                .setAdvancedConfig(config)
-                .build());
-    }
-
-    @Override
-    public int updateInstrumentationConfigs(List<InstrumentationConfig> configs) throws Exception {
-        AgentConfig agentConfig = server.getAgentConfig();
-        server.updateAgentConfig(AgentConfig.newBuilder(agentConfig)
-                .clearInstrumentationConfig()
-                .addAllInstrumentationConfig(configs)
-                .build());
-        if (reweavable) {
-            return server.reweave();
-        } else {
-            return 0;
-        }
-    }
-
-    @Override
     public void setPluginProperty(String pluginId, String propertyName, boolean propertyValue)
             throws Exception {
         updatePluginConfig(pluginId, propertyName,
@@ -104,6 +74,36 @@ class ConfigServiceImpl implements ConfigService {
             throws Exception {
         updatePluginConfig(pluginId, propertyName,
                 PluginProperty.Value.newBuilder().setSval(propertyValue).build());
+    }
+
+    @Override
+    public int updateInstrumentationConfigs(List<InstrumentationConfig> configs) throws Exception {
+        AgentConfig agentConfig = server.getAgentConfig();
+        server.updateAgentConfig(AgentConfig.newBuilder(agentConfig)
+                .clearInstrumentationConfig()
+                .addAllInstrumentationConfig(configs)
+                .build());
+        if (reweavable) {
+            return server.reweave();
+        } else {
+            return 0;
+        }
+    }
+
+    @Override
+    public void updateUserRecordingConfig(UserRecordingConfig config) throws Exception {
+        AgentConfig agentConfig = server.getAgentConfig();
+        server.updateAgentConfig(AgentConfig.newBuilder(agentConfig)
+                .setUserRecordingConfig(config)
+                .build());
+    }
+
+    @Override
+    public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
+        AgentConfig agentConfig = server.getAgentConfig();
+        server.updateAgentConfig(AgentConfig.newBuilder(agentConfig)
+                .setAdvancedConfig(config)
+                .build());
     }
 
     void resetConfig() throws InterruptedException {

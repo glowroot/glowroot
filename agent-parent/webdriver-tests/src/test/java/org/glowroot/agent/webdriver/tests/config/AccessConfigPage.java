@@ -23,16 +23,12 @@ import org.glowroot.agent.webdriver.tests.Utils;
 
 import static org.openqa.selenium.By.xpath;
 
-public class UserInterfaceConfigPage {
+public class AccessConfigPage {
 
     private final WebDriver driver;
 
-    public UserInterfaceConfigPage(WebDriver driver) {
+    public AccessConfigPage(WebDriver driver) {
         this.driver = driver;
-    }
-
-    public WebElement getDefaultDisplayedPercentilesTextField() {
-        return withWait(xpath("//div[@gt-label='Default displayed percentiles']//input"));
     }
 
     public WebElement getAdminPasswordEnabledCheckBox() {

@@ -28,8 +28,8 @@ import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.CaptureKind;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MethodModifier;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.MethodModifier;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 @Value.Immutable

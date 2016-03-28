@@ -49,7 +49,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Availability;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpKind;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 
 import static com.google.common.base.Preconditions.checkNotNull;

@@ -68,6 +68,17 @@
            gt-sub-active="currentUrl() === 'config/gauge'">
       </div>
       <div gt-sidebar-item
+           gt-display="Alerts"
+           gt-url="config/alert-list{{agentQueryString()}}"
+           gt-active="currentUrl() === 'config/alert-list'"
+           gt-sub-active="currentUrl() === 'config/alert'">
+      </div>
+      <div gt-sidebar-item
+           gt-display="UI"
+           gt-url="config/ui{{agentQueryString()}}"
+           gt-active="currentUrl() === 'config/ui'">
+      </div>
+      <div gt-sidebar-item
            gt-display="Plugins"
            gt-url="config/plugin-list{{agentQueryString()}}"
            gt-active="currentUrl() === 'config/plugin-list'"
@@ -84,20 +95,14 @@
            gt-url="config/advanced{{agentQueryString()}}"
            gt-active="currentUrl() === 'config/advanced'">
       </div>
-      <div gt-sidebar-item
-           gt-display="Alerts"
-           gt-url="config/alert-list{{agentQueryString()}}"
-           gt-active="currentUrl() === 'config/alert-list'"
-           gt-sub-active="currentUrl() === 'config/alert' || currentUrl() === 'config/smtp'">
-      </div>
     </ul>
   </div>
   <div class="panel panel-default"
        ng-if="activeNavbarItem === 'serverConfig' || layout.fat">
     <ul class="list-group">
       <div gt-sidebar-item
-           gt-display="Glowroot UI"
-           gt-url="config/ui">
+           gt-display="Access"
+           gt-url="config/access">
       </div>
       <div gt-sidebar-item
            gt-display="Storage"
@@ -106,8 +111,7 @@
       </div>
       <div gt-sidebar-item
            gt-display="SMTP"
-           gt-url="config/smtp"
-           ng-if="!layout.fat">
+           gt-url="config/smtp">
       </div>
     </ul>
   </div>

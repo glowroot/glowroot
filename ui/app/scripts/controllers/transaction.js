@@ -80,8 +80,8 @@ glowroot.controller('TransactionCtrl', [
         query['transaction-type'] = '';
       } else if (transactionTypes.indexOf(transactionType) !== -1) {
         query['transaction-type'] = transactionType;
-      } else if (transactionTypes.indexOf($scope.layout.defaultTransactionType) !== -1) {
-        query['transaction-type'] = $scope.layout.defaultTransactionType;
+      } else if (transactionTypes.indexOf($scope.defaultTransactionType()) !== -1) {
+        query['transaction-type'] = $scope.defaultTransactionType();
       } else {
         query['transaction-type'] = transactionTypes[0];
       }

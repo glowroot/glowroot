@@ -380,16 +380,6 @@ glowroot.config([
         }
       }
     });
-    $stateProvider.state('config.instrumentationList', {
-      url: '/instrumentation-list?agent-id',
-      templateUrl: 'views/config/instrumentation-list.html',
-      controller: 'ConfigInstrumentationListCtrl'
-    });
-    $stateProvider.state('config.instrumentation', {
-      url: '/instrumentation?agent-id&v',
-      templateUrl: 'views/config/instrumentation.html',
-      controller: 'ConfigInstrumentationCtrl'
-    });
     $stateProvider.state('config.gaugeList', {
       url: '/gauge-list?agent-id',
       templateUrl: 'views/config/gauge-list.html',
@@ -410,6 +400,11 @@ glowroot.config([
       templateUrl: 'views/config/alert.html',
       controller: 'ConfigAlertCtrl'
     });
+    $stateProvider.state('config.ui', {
+      url: '/ui',
+      templateUrl: 'views/config/ui.html',
+      controller: 'ConfigUiCtrl'
+    });
     $stateProvider.state('config.pluginList', {
       url: '/plugin-list?agent-id',
       templateUrl: 'views/config/plugin-list.html',
@@ -419,6 +414,21 @@ glowroot.config([
       url: '/plugin?agent-id&plugin-id',
       templateUrl: 'views/config/plugin.html',
       controller: 'ConfigPluginCtrl'
+    });
+    $stateProvider.state('config.instrumentationList', {
+      url: '/instrumentation-list?agent-id',
+      templateUrl: 'views/config/instrumentation-list.html',
+      controller: 'ConfigInstrumentationListCtrl'
+    });
+    $stateProvider.state('config.instrumentation', {
+      url: '/instrumentation?agent-id&v',
+      templateUrl: 'views/config/instrumentation.html',
+      controller: 'ConfigInstrumentationCtrl'
+    });
+    $stateProvider.state('config.userRecording', {
+      url: '/user-recording',
+      templateUrl: 'views/config/user-recording.html',
+      controller: 'ConfigUserRecordingCtrl'
     });
     $stateProvider.state('config.advanced', {
       url: '/advanced?agent-id',
@@ -430,25 +440,20 @@ glowroot.config([
         }
       }
     });
-    $stateProvider.state('config.smtp', {
-      url: '/smtp',
-      templateUrl: 'views/config/smtp.html',
-      controller: 'ConfigSmtpCtrl'
-    });
-    $stateProvider.state('config.userRecording', {
-      url: '/user-recording',
-      templateUrl: 'views/config/user-recording.html',
-      controller: 'ConfigUserRecordingCtrl'
-    });
-    $stateProvider.state('config.userInterface', {
-      url: '/ui',
-      templateUrl: 'views/config/user-interface.html',
-      controller: 'ConfigUserInterfaceCtrl'
+    $stateProvider.state('config.access', {
+      url: '/access',
+      templateUrl: 'views/config/access.html',
+      controller: 'ConfigAccessCtrl'
     });
     $stateProvider.state('config.storage', {
       url: '/storage',
       templateUrl: 'views/config/storage.html',
       controller: 'ConfigStorageCtrl'
+    });
+    $stateProvider.state('config.smtp', {
+      url: '/smtp',
+      templateUrl: 'views/config/smtp.html',
+      controller: 'ConfigSmtpCtrl'
     });
     $stateProvider.state('login', {
       url: '/login',

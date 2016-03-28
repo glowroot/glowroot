@@ -31,13 +31,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.storage.config.AlertConfig;
-import org.glowroot.storage.config.AlertConfig.AlertKind;
-import org.glowroot.storage.config.ImmutableAlertConfig;
+import org.glowroot.common.util.Versions;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.DuplicateMBeanObjectNameException;
 import org.glowroot.storage.repo.GaugeValueRepository.Gauge;
 import org.glowroot.storage.repo.helper.Gauges;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
+import org.glowroot.wire.api.model.Proto.OptionalDouble;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 
@@ -51,13 +53,14 @@ class AlertConfigJsonService {
     static final Ordering<AlertConfig> orderingByName = new Ordering<AlertConfig>() {
         @Override
         public int compare(AlertConfig left, AlertConfig right) {
-            if (left.kind() == AlertKind.TRANSACTION && right.kind() == AlertKind.TRANSACTION) {
-                return left.transactionType().compareToIgnoreCase(right.transactionType());
+            if (left.getKind() == AlertKind.TRANSACTION
+                    && right.getKind() == AlertKind.TRANSACTION) {
+                return left.getTransactionType().compareToIgnoreCase(right.getTransactionType());
             }
-            if (left.kind() == AlertKind.GAUGE && right.kind() == AlertKind.GAUGE) {
-                return left.gaugeName().compareToIgnoreCase(right.gaugeName());
+            if (left.getKind() == AlertKind.GAUGE && right.getKind() == AlertKind.GAUGE) {
+                return left.getGaugeName().compareToIgnoreCase(right.getGaugeName());
             }
-            if (left.kind() == AlertKind.TRANSACTION && right.kind() == AlertKind.GAUGE) {
+            if (left.getKind() == AlertKind.TRANSACTION && right.getKind() == AlertKind.GAUGE) {
                 return -1;
             }
             // left is gauge, right is transaction
@@ -134,11 +137,11 @@ class AlertConfigJsonService {
         abstract AlertKind kind();
 
         abstract Optional<String> agentId(); // only used in request
-        abstract String transactionType();
+        abstract @Nullable String transactionType();
         abstract @Nullable Double transactionPercentile();
         abstract @Nullable Integer transactionThresholdMillis();
         abstract @Nullable Integer minTransactionCount();
-        abstract String gaugeName();
+        abstract @Nullable String gaugeName();
         abstract @Nullable Double gaugeThreshold();
         abstract @Nullable String gaugeDisplay(); // only used in response
         abstract @Nullable String gaugeUnit(); // only used in response
@@ -147,37 +150,73 @@ class AlertConfigJsonService {
         abstract Optional<String> version(); // absent for insert operations
 
         private AlertConfig convert() {
-            return ImmutableAlertConfig.builder()
-                    .kind(kind())
-                    .transactionType(transactionType())
-                    .transactionPercentile(transactionPercentile())
-                    .transactionThresholdMillis(transactionThresholdMillis())
-                    .minTransactionCount(minTransactionCount())
-                    .gaugeName(gaugeName())
-                    .gaugeThreshold(gaugeThreshold())
-                    .timePeriodSeconds(timePeriodSeconds())
-                    .addAllEmailAddresses(emailAddresses())
+            AlertConfig.Builder builder = AlertConfig.newBuilder()
+                    .setKind(kind());
+            String transactionType = transactionType();
+            if (transactionType != null) {
+                builder.setTransactionType(transactionType);
+            }
+            Double transactionPercentile = transactionPercentile();
+            if (transactionPercentile != null) {
+                builder.setTransactionPercentile(OptionalDouble.newBuilder()
+                        .setValue(transactionPercentile));
+            }
+            Integer transactionThresholdMillis = transactionThresholdMillis();
+            if (transactionThresholdMillis != null) {
+                builder.setTransactionThresholdMillis(OptionalInt32.newBuilder()
+                        .setValue(transactionThresholdMillis));
+            }
+            Integer minTransactionCount = minTransactionCount();
+            if (minTransactionCount != null) {
+                builder.setMinTransactionCount(OptionalInt32.newBuilder()
+                        .setValue(minTransactionCount));
+            }
+            String gaugeName = gaugeName();
+            if (gaugeName != null) {
+                builder.setGaugeName(gaugeName);
+            }
+            Double gaugeThreshold = gaugeThreshold();
+            if (gaugeThreshold != null) {
+                builder.setGaugeThreshold(OptionalDouble.newBuilder()
+                        .setValue(gaugeThreshold));
+            }
+            return builder.setTimePeriodSeconds(timePeriodSeconds())
+                    .addAllEmailAddress(emailAddresses())
                     .build();
         }
 
         private static AlertConfigDto create(AlertConfig alertConfig) {
             Gauge gauge = null;
-            if (alertConfig.kind() == AlertKind.GAUGE) {
-                gauge = Gauges.getGauge(alertConfig.gaugeName());
+            if (alertConfig.getKind() == AlertKind.GAUGE) {
+                gauge = Gauges.getGauge(alertConfig.getGaugeName());
             }
-            return ImmutableAlertConfigDto.builder()
-                    .kind(alertConfig.kind())
-                    .transactionType(alertConfig.transactionType())
-                    .transactionPercentile(alertConfig.transactionPercentile())
-                    .transactionThresholdMillis(alertConfig.transactionThresholdMillis())
-                    .minTransactionCount(alertConfig.minTransactionCount())
-                    .gaugeName(alertConfig.gaugeName())
-                    .gaugeThreshold(alertConfig.gaugeThreshold())
-                    .gaugeDisplay(gauge == null ? "" : gauge.display())
-                    .gaugeUnit(gauge == null ? "" : gauge.unit())
-                    .timePeriodSeconds(alertConfig.timePeriodSeconds())
-                    .addAllEmailAddresses(alertConfig.emailAddresses())
-                    .version(alertConfig.version())
+            ImmutableAlertConfigDto.Builder builder = ImmutableAlertConfigDto.builder()
+                    .kind(alertConfig.getKind());
+            String transactionType = alertConfig.getTransactionType();
+            if (!transactionType.isEmpty()) {
+                builder.transactionType(transactionType);
+            }
+            if (alertConfig.hasTransactionPercentile()) {
+                builder.transactionPercentile(alertConfig.getTransactionPercentile().getValue());
+            }
+            if (alertConfig.hasTransactionThresholdMillis()) {
+                builder.transactionThresholdMillis(
+                        alertConfig.getTransactionThresholdMillis().getValue());
+            }
+            if (alertConfig.hasMinTransactionCount()) {
+                builder.minTransactionCount(alertConfig.getMinTransactionCount().getValue());
+            }
+            String gaugeName = alertConfig.getGaugeName();
+            if (!gaugeName.isEmpty()) {
+                builder.gaugeName(gaugeName);
+            }
+            if (alertConfig.hasGaugeThreshold()) {
+                builder.gaugeThreshold(alertConfig.getGaugeThreshold().getValue());
+            }
+            return builder.gaugeDisplay(gauge == null ? "" : gauge.display())
+                    .timePeriodSeconds(alertConfig.getTimePeriodSeconds())
+                    .addAllEmailAddresses(alertConfig.getEmailAddressList())
+                    .version(Versions.getVersion(alertConfig))
                     .build();
         }
     }

@@ -24,7 +24,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Joiner;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -41,27 +40,27 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.util.Versions;
 import org.glowroot.server.DownstreamServiceImpl;
-import org.glowroot.storage.config.AlertConfig;
+import org.glowroot.storage.config.AccessConfig;
+import org.glowroot.storage.config.ImmutableAccessConfig;
 import org.glowroot.storage.config.ImmutableSmtpConfig;
 import org.glowroot.storage.config.ImmutableStorageConfig;
-import org.glowroot.storage.config.ImmutableUserInterfaceConfig;
 import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.config.StorageConfig;
-import org.glowroot.storage.config.UserInterfaceConfig;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.util.Encryption;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.Value.ValCase;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 public class ConfigRepositoryImpl implements ConfigRepository {
 
@@ -73,7 +72,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private final AgentDao agentDao;
     private final ServerConfigDao serverConfigDao;
-    private final AlertConfigDao alertConfigDao;
 
     private final ImmutableList<RollupConfig> rollupConfigs;
 
@@ -93,15 +91,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     return new Object();
                 }
             });
-    private final Object userInterfaceConfigLock = new Object();
+    private final Object accessConfigLock = new Object();
     private final Object smtpConfigLock = new Object();
-    private final Object alertConfigLock = new Object();
 
-    public ConfigRepositoryImpl(AgentDao agentDao, ServerConfigDao serverConfigDao,
-            AlertConfigDao alertConfigDao) {
+    public ConfigRepositoryImpl(AgentDao agentDao, ServerConfigDao serverConfigDao) {
         this.agentDao = agentDao;
         this.serverConfigDao = serverConfigDao;
-        this.alertConfigDao = alertConfigDao;
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
         secretFile = new File("secret");
     }
@@ -111,152 +106,29 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public UserInterfaceConfig getUserInterfaceConfig() {
-        UserInterfaceConfig config =
-                serverConfigDao.read(UI_KEY, ImmutableUserInterfaceConfig.class);
-        if (config == null) {
-            return ImmutableUserInterfaceConfig.builder().build();
-        }
-        return config;
-    }
-
-    @Override
-    public SmtpConfig getSmtpConfig() {
-        SmtpConfig config = serverConfigDao.read(SMTP_KEY, ImmutableSmtpConfig.class);
-        if (config == null) {
-            return ImmutableSmtpConfig.builder().build();
-        }
-        return config;
-    }
-
-    @Override
-    public List<AlertConfig> getAlertConfigs(String agentId) throws JsonProcessingException {
-        List<AlertConfig> configs = alertConfigDao.readAlerts(agentId);
-        if (configs == null) {
-            return ImmutableList.of();
-        }
-        return ImmutableList.<AlertConfig>copyOf(configs);
-    }
-
-    @Override
-    public @Nullable AlertConfig getAlertConfig(String agentId, String version)
-            throws JsonProcessingException {
-        for (AlertConfig alertConfig : getAlertConfigs(agentId)) {
-            if (alertConfig.version().equals(version)) {
-                return alertConfig;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public void updateUserInterfaceConfig(UserInterfaceConfig userInterfaceConfig,
-            String priorVersion) throws Exception {
-        synchronized (userInterfaceConfigLock) {
-            if (!getUserInterfaceConfig().version().equals(priorVersion)) {
-                throw new OptimisticLockException();
-            }
-            serverConfigDao.write(UI_KEY, userInterfaceConfig);
-        }
-    }
-
-    @Override
-    public void updateSmtpConfig(SmtpConfig smtpConfig, String priorVersion) throws Exception {
-        synchronized (smtpConfigLock) {
-            if (!getSmtpConfig().version().equals(priorVersion)) {
-                throw new OptimisticLockException();
-            }
-            serverConfigDao.write(SMTP_KEY, smtpConfig);
-        }
-    }
-
-    @Override
-    public void insertAlertConfig(String agentId, AlertConfig alertConfig)
-            throws JsonProcessingException {
-        synchronized (alertConfigLock) {
-            List<AlertConfig> alertConfigs = Lists.newArrayList(getAlertConfigs(agentId));
-            checkAlertDoesNotExist(alertConfig, alertConfigs);
-            alertConfigs.add(alertConfig);
-            alertConfigDao.write(agentId, alertConfigs);
-        }
-    }
-
-    @Override
-    public void updateAlertConfig(String agentId, AlertConfig alertConfig, String priorVersion)
-            throws JsonProcessingException {
-        synchronized (alertConfigLock) {
-            List<AlertConfig> configs = Lists.newArrayList(getAlertConfigs(agentId));
-            boolean found = false;
-            for (ListIterator<AlertConfig> i = configs.listIterator(); i.hasNext();) {
-                if (priorVersion.equals(i.next().version())) {
-                    i.set(alertConfig);
-                    found = true;
-                    break;
-                }
-            }
-            checkState(found, "Alert config not found: %s", priorVersion);
-            alertConfigDao.write(agentId, configs);
-        }
-    }
-
-    @Override
-    public void deleteAlertConfig(String agentId, String version) throws JsonProcessingException {
-        synchronized (alertConfigLock) {
-            List<AlertConfig> configs = Lists.newArrayList(getAlertConfigs(agentId));
-            boolean found = false;
-            for (ListIterator<AlertConfig> i = configs.listIterator(); i.hasNext();) {
-                if (version.equals(i.next().version())) {
-                    i.remove();
-                    found = true;
-                    break;
-                }
-            }
-            checkState(found, "Alert config not found: %s", version);
-            alertConfigDao.write(agentId, configs);
-        }
-    }
-
-    @Override
-    public long getGaugeCollectionIntervalMillis() {
-        return GAUGE_COLLECTION_INTERVAL_MILLIS;
-    }
-
-    @Override
-    public ImmutableList<RollupConfig> getRollupConfigs() {
-        return rollupConfigs;
-    }
-
-    // lazy create secret file only when needed
-    @Override
-    public SecretKey getSecretKey() throws Exception {
-        synchronized (secretFile) {
-            if (secretKey == null) {
-                if (secretFile.exists()) {
-                    secretKey = Encryption.loadKey(secretFile);
-                } else {
-                    secretKey = Encryption.generateNewKey();
-                    Files.write(secretKey.getEncoded(), secretFile);
-                }
-            }
-            return secretKey;
-        }
-    }
-
-    @Override
-    public TransactionConfig getTransactionConfig(String agentId)
+    public @Nullable TransactionConfig getTransactionConfig(String agentId)
             throws InvalidProtocolBufferException {
         AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
         if (agentConfig == null) {
-            throw new IllegalStateException("Agent config not found");
+            return null;
         }
         return agentConfig.getTransactionConfig();
     }
 
     @Override
-    public UserRecordingConfig getUserRecordingConfig(String agentId) throws IOException {
+    public @Nullable UiConfig getUiConfig(String agentId) throws IOException {
         AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
         if (agentConfig == null) {
-            throw new IllegalStateException("Agent config not found");
+            return null;
+        }
+        return agentConfig.getUiConfig();
+    }
+
+    @Override
+    public @Nullable UserRecordingConfig getUserRecordingConfig(String agentId) throws IOException {
+        AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
+        if (agentConfig == null) {
+            return null;
         }
         return agentConfig.getUserRecordingConfig();
     }
@@ -271,32 +143,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<PluginConfig> getPluginConfigs(String agentId)
-            throws InvalidProtocolBufferException {
-        AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
-        if (agentConfig == null) {
-            throw new IllegalStateException("Agent config not found");
-        }
-        return agentConfig.getPluginConfigList();
-    }
-
-    @Override
-    public PluginConfig getPluginConfig(String agentId, String pluginId)
-            throws InvalidProtocolBufferException {
-        for (PluginConfig pluginConfig : getPluginConfigs(agentId)) {
-            if (pluginConfig.getId().equals(pluginId)) {
-                return pluginConfig;
-            }
-        }
-        throw new IllegalStateException("Plugin config not found: " + pluginId);
-    }
-
-    @Override
     public List<GaugeConfig> getGaugeConfigs(String agentId)
             throws InvalidProtocolBufferException {
         AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
         if (agentConfig == null) {
-            throw new IllegalStateException("Agent config not found");
+            return ImmutableList.of();
         }
         return agentConfig.getGaugeConfigList();
     }
@@ -313,11 +164,52 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public List<AlertConfig> getAlertConfigs(String agentId) throws InvalidProtocolBufferException {
+        AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
+        if (agentConfig == null) {
+            return ImmutableList.of();
+        }
+        return agentConfig.getAlertConfigList();
+    }
+
+    @Override
+    public @Nullable AlertConfig getAlertConfig(String agentId, String version)
+            throws InvalidProtocolBufferException {
+        for (AlertConfig alertConfig : getAlertConfigs(agentId)) {
+            if (Versions.getVersion(alertConfig).equals(version)) {
+                return alertConfig;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public List<PluginConfig> getPluginConfigs(String agentId)
+            throws InvalidProtocolBufferException {
+        AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
+        if (agentConfig == null) {
+            return ImmutableList.of();
+        }
+        return agentConfig.getPluginConfigList();
+    }
+
+    @Override
+    public PluginConfig getPluginConfig(String agentId, String pluginId)
+            throws InvalidProtocolBufferException {
+        for (PluginConfig pluginConfig : getPluginConfigs(agentId)) {
+            if (pluginConfig.getId().equals(pluginId)) {
+                return pluginConfig;
+            }
+        }
+        throw new IllegalStateException("Plugin config not found: " + pluginId);
+    }
+
+    @Override
     public List<InstrumentationConfig> getInstrumentationConfigs(String agentId)
             throws InvalidProtocolBufferException {
         AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
         if (agentConfig == null) {
-            throw new IllegalStateException("Agent config not found");
+            return ImmutableList.of();
         }
         return agentConfig.getInstrumentationConfigList();
     }
@@ -325,8 +217,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public InstrumentationConfig getInstrumentationConfig(String agentId, String version)
             throws IOException {
-        for (InstrumentationConfig config : getAgentConfig(agentId)
-                .getInstrumentationConfigList()) {
+        for (InstrumentationConfig config : getInstrumentationConfigs(agentId)) {
             if (Versions.getVersion(config).equals(version)) {
                 return config;
             }
@@ -335,15 +226,27 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public AccessConfig getAccessConfig() {
+        AccessConfig config = serverConfigDao.read(ACCESS_KEY, ImmutableAccessConfig.class);
+        if (config == null) {
+            return ImmutableAccessConfig.builder().build();
+        }
+        return config;
+    }
+
+    @Override
     public StorageConfig getStorageConfig() {
         // this is needed for access to StorageConfig.rollupExpirationHours()
         return ImmutableStorageConfig.builder().build();
     }
 
-    public void updateAgentConfig(String agentId, AgentConfig agentConfig) throws IOException {
-        synchronized (agentConfigLocks.getUnchecked(agentId)) {
-            agentDao.storeAgentConfig(agentId, agentConfig);
+    @Override
+    public SmtpConfig getSmtpConfig() {
+        SmtpConfig config = serverConfigDao.read(SMTP_KEY, ImmutableSmtpConfig.class);
+        if (config == null) {
+            return ImmutableSmtpConfig.builder().build();
         }
+        return config;
     }
 
     @Override
@@ -368,97 +271,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateUserRecordingConfig(String agentId, UserRecordingConfig userRecordingConfig,
-            String priorVersion) throws Exception {
-        synchronized (agentConfigLocks.getUnchecked(agentId)) {
-            AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
-            if (agentConfig == null) {
-                throw new IllegalStateException("Agent config not found");
-            }
-            String existingVersion = Versions.getVersion(agentConfig.getUserRecordingConfig());
-            if (!priorVersion.equals(existingVersion)) {
-                throw new OptimisticLockException();
-            }
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
-                    .setUserRecordingConfig(userRecordingConfig)
-                    .build();
-            agentDao.storeAgentConfig(agentId, updatedAgentConfig);
-            // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
-        }
-    }
-
-    @Override
-    public void updateAdvancedConfig(String agentId, AdvancedConfig advancedConfig,
-            String priorVersion) throws Exception {
-        synchronized (agentConfigLocks.getUnchecked(agentId)) {
-            AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
-            if (agentConfig == null) {
-                throw new IllegalStateException("Agent config not found");
-            }
-            String existingVersion = Versions.getVersion(agentConfig.getAdvancedConfig());
-            if (!priorVersion.equals(existingVersion)) {
-                throw new OptimisticLockException();
-            }
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
-                    .setAdvancedConfig(advancedConfig)
-                    .build();
-            agentDao.storeAgentConfig(agentId, updatedAgentConfig);
-            // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
-        }
-    }
-
-    @Override
-    public void updatePluginConfig(String agentId, String pluginId,
-            List<PluginProperty> properties, String priorVersion) throws Exception {
-        synchronized (agentConfigLocks.getUnchecked(agentId)) {
-            AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
-            if (agentConfig == null) {
-                throw new IllegalStateException("Agent config not found");
-            }
-            List<PluginConfig> pluginConfigs =
-                    Lists.newArrayList(agentConfig.getPluginConfigList());
-            ListIterator<PluginConfig> i = pluginConfigs.listIterator();
-            boolean found = false;
-            while (i.hasNext()) {
-                PluginConfig pluginConfig = i.next();
-                if (pluginConfig.getId().equals(pluginId)) {
-                    String existingVersion = Versions.getVersion(pluginConfig);
-                    if (!priorVersion.equals(existingVersion)) {
-                        throw new OptimisticLockException();
-                    }
-                    i.set(buildPluginConfig(pluginConfig, properties));
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                throw new IllegalStateException("Plugin config not found: " + pluginId);
-            }
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
-                    .clearPluginConfig()
-                    .addAllPluginConfig(pluginConfigs)
-                    .build();
-            agentDao.storeAgentConfig(agentId, updatedAgentConfig);
-            // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
-        }
-    }
-
-    @Override
     public void insertGaugeConfig(String agentId, GaugeConfig gaugeConfig) throws Exception {
         synchronized (agentConfigLocks.getUnchecked(agentId)) {
             AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
             if (agentConfig == null) {
                 throw new IllegalStateException("Agent config not found");
             }
-            // check for duplicate mbeanObjectName
-            for (GaugeConfig loopConfig : agentConfig.getGaugeConfigList()) {
-                if (loopConfig.getMbeanObjectName().equals(gaugeConfig.getMbeanObjectName())) {
-                    throw new DuplicateMBeanObjectNameException();
-                }
-            }
+            checkGaugeDoesNotExist(gaugeConfig, agentConfig.getGaugeConfigList());
             AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
                     .addGaugeConfig(gaugeConfig)
                     .build();
@@ -528,6 +347,144 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
                     .clearGaugeConfig()
                     .addAllGaugeConfig(existingGaugeConfigs)
+                    .build();
+            agentDao.storeAgentConfig(agentId, updatedAgentConfig);
+            // updating the agent is inside above synchronized block to ensure ordering of updates
+            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+        }
+    }
+
+    @Override
+    public void insertAlertConfig(String agentId, AlertConfig alertConfig) throws Exception {
+        synchronized (agentConfigLocks.getUnchecked(agentId)) {
+            AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
+            if (agentConfig == null) {
+                throw new IllegalStateException("Agent config not found");
+            }
+            checkAlertDoesNotExist(alertConfig, agentConfig.getAlertConfigList());
+            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+                    .addAlertConfig(alertConfig)
+                    .build();
+            agentDao.storeAgentConfig(agentId, updatedAgentConfig);
+            // updating the agent is inside above synchronized block to ensure ordering of updates
+            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+        }
+    }
+
+    @Override
+    public void updateAlertConfig(String agentId, AlertConfig alertConfig, String priorVersion)
+            throws Exception {
+        synchronized (agentConfigLocks.getUnchecked(agentId)) {
+            AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
+            if (agentConfig == null) {
+                throw new IllegalStateException("Agent config not found");
+            }
+            List<AlertConfig> existingAlertConfigs =
+                    Lists.newArrayList(agentConfig.getAlertConfigList());
+            ListIterator<AlertConfig> i = existingAlertConfigs.listIterator();
+            boolean found = false;
+            while (i.hasNext()) {
+                if (Versions.getVersion(i.next()).equals(priorVersion)) {
+                    i.set(alertConfig);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new OptimisticLockException();
+            }
+            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+                    .clearAlertConfig()
+                    .addAllAlertConfig(existingAlertConfigs)
+                    .build();
+            agentDao.storeAgentConfig(agentId, updatedAgentConfig);
+            // updating the agent is inside above synchronized block to ensure ordering of updates
+            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+        }
+    }
+
+    @Override
+    public void deleteAlertConfig(String agentId, String version) throws Exception {
+        synchronized (agentConfigLocks.getUnchecked(agentId)) {
+            AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
+            if (agentConfig == null) {
+                throw new IllegalStateException("Agent config not found");
+            }
+            List<AlertConfig> existingAlertConfigs =
+                    Lists.newArrayList(agentConfig.getAlertConfigList());
+            ListIterator<AlertConfig> i = existingAlertConfigs.listIterator();
+            boolean found = false;
+            while (i.hasNext()) {
+                if (Versions.getVersion(i.next()).equals(version)) {
+                    i.remove();
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new OptimisticLockException();
+            }
+            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+                    .clearAlertConfig()
+                    .addAllAlertConfig(existingAlertConfigs)
+                    .build();
+            agentDao.storeAgentConfig(agentId, updatedAgentConfig);
+            // updating the agent is inside above synchronized block to ensure ordering of updates
+            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+        }
+    }
+
+    @Override
+    public void updateUiConfig(String agentId, UiConfig uiConfig, String priorVersion)
+            throws Exception {
+        synchronized (agentConfigLocks.getUnchecked(agentId)) {
+            AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
+            if (agentConfig == null) {
+                throw new IllegalStateException("Agent config not found");
+            }
+            String existingVersion = Versions.getVersion(agentConfig.getUiConfig());
+            if (!priorVersion.equals(existingVersion)) {
+                throw new OptimisticLockException();
+            }
+            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+                    .setUiConfig(uiConfig)
+                    .build();
+            agentDao.storeAgentConfig(agentId, updatedAgentConfig);
+            // updating the agent is inside above synchronized block to ensure ordering of updates
+            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+        }
+    }
+
+    @Override
+    public void updatePluginConfig(String agentId, String pluginId,
+            List<PluginProperty> properties, String priorVersion) throws Exception {
+        synchronized (agentConfigLocks.getUnchecked(agentId)) {
+            AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
+            if (agentConfig == null) {
+                throw new IllegalStateException("Agent config not found");
+            }
+            List<PluginConfig> pluginConfigs =
+                    Lists.newArrayList(agentConfig.getPluginConfigList());
+            ListIterator<PluginConfig> i = pluginConfigs.listIterator();
+            boolean found = false;
+            while (i.hasNext()) {
+                PluginConfig pluginConfig = i.next();
+                if (pluginConfig.getId().equals(pluginId)) {
+                    String existingVersion = Versions.getVersion(pluginConfig);
+                    if (!priorVersion.equals(existingVersion)) {
+                        throw new OptimisticLockException();
+                    }
+                    i.set(buildPluginConfig(pluginConfig, properties));
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new IllegalStateException("Plugin config not found: " + pluginId);
+            }
+            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+                    .clearPluginConfig()
+                    .addAllPluginConfig(pluginConfigs)
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
@@ -645,18 +602,103 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public void updateUserRecordingConfig(String agentId, UserRecordingConfig userRecordingConfig,
+            String priorVersion) throws Exception {
+        synchronized (agentConfigLocks.getUnchecked(agentId)) {
+            AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
+            if (agentConfig == null) {
+                throw new IllegalStateException("Agent config not found");
+            }
+            String existingVersion = Versions.getVersion(agentConfig.getUserRecordingConfig());
+            if (!priorVersion.equals(existingVersion)) {
+                throw new OptimisticLockException();
+            }
+            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+                    .setUserRecordingConfig(userRecordingConfig)
+                    .build();
+            agentDao.storeAgentConfig(agentId, updatedAgentConfig);
+            // updating the agent is inside above synchronized block to ensure ordering of updates
+            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+        }
+    }
+
+    @Override
+    public void updateAdvancedConfig(String agentId, AdvancedConfig advancedConfig,
+            String priorVersion) throws Exception {
+        synchronized (agentConfigLocks.getUnchecked(agentId)) {
+            AgentConfig agentConfig = agentDao.readAgentConfig(agentId);
+            if (agentConfig == null) {
+                throw new IllegalStateException("Agent config not found");
+            }
+            String existingVersion = Versions.getVersion(agentConfig.getAdvancedConfig());
+            if (!priorVersion.equals(existingVersion)) {
+                throw new OptimisticLockException();
+            }
+            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+                    .setAdvancedConfig(advancedConfig)
+                    .build();
+            agentDao.storeAgentConfig(agentId, updatedAgentConfig);
+            // updating the agent is inside above synchronized block to ensure ordering of updates
+            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+        }
+    }
+
+    @Override
+    public void updateAccessConfig(AccessConfig userInterfaceConfig,
+            String priorVersion) throws Exception {
+        synchronized (accessConfigLock) {
+            if (!getAccessConfig().version().equals(priorVersion)) {
+                throw new OptimisticLockException();
+            }
+            serverConfigDao.write(ACCESS_KEY, userInterfaceConfig);
+        }
+    }
+
+    @Override
     public void updateStorageConfig(StorageConfig storageConfig, String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
-    public AgentConfig getAgentConfig(String agentId) throws IOException {
-        return AgentConfig.newBuilder()
-                .setTransactionConfig(getTransactionConfig(agentId))
-                .setUserRecordingConfig(getUserRecordingConfig(agentId))
-                .setAdvancedConfig(checkNotNull(getAdvancedConfig(agentId)))
-                .addAllGaugeConfig(getGaugeConfigs(agentId))
-                .addAllInstrumentationConfig(getInstrumentationConfigs(agentId))
-                .build();
+    @Override
+    public void updateSmtpConfig(SmtpConfig smtpConfig, String priorVersion) throws Exception {
+        synchronized (smtpConfigLock) {
+            if (!getSmtpConfig().version().equals(priorVersion)) {
+                throw new OptimisticLockException();
+            }
+            serverConfigDao.write(SMTP_KEY, smtpConfig);
+        }
+    }
+
+    @Override
+    public long getGaugeCollectionIntervalMillis() {
+        return GAUGE_COLLECTION_INTERVAL_MILLIS;
+    }
+
+    @Override
+    public ImmutableList<RollupConfig> getRollupConfigs() {
+        return rollupConfigs;
+    }
+
+    // lazy create secret file only when needed
+    @Override
+    public SecretKey getSecretKey() throws Exception {
+        synchronized (secretFile) {
+            if (secretKey == null) {
+                if (secretFile.exists()) {
+                    secretKey = Encryption.loadKey(secretFile);
+                } else {
+                    secretKey = Encryption.generateNewKey();
+                    Files.write(secretKey.getEncoded(), secretFile);
+                }
+            }
+            return secretKey;
+        }
+    }
+
+    public void updateAgentConfig(String agentId, AgentConfig agentConfig) throws IOException {
+        synchronized (agentConfigLocks.getUnchecked(agentId)) {
+            agentDao.storeAgentConfig(agentId, agentConfig);
+        }
     }
 
     private void sendUpdatedAgentConfig(String agentId, AgentConfig agentConfig) throws Exception {
@@ -707,21 +749,32 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         return left.getValCase() == right.getValCase();
     }
 
+    private void checkGaugeDoesNotExist(GaugeConfig instrumentationConfig,
+            List<GaugeConfig> instrumentationConfigs) {
+        String version = Versions.getVersion(instrumentationConfig);
+        for (GaugeConfig config : instrumentationConfigs) {
+            if (Versions.getVersion(config).equals(version)) {
+                throw new IllegalStateException("This exact gauge already exists");
+            }
+        }
+    }
+
+    private void checkAlertDoesNotExist(AlertConfig instrumentationConfig,
+            List<AlertConfig> instrumentationConfigs) {
+        String version = Versions.getVersion(instrumentationConfig);
+        for (AlertConfig config : instrumentationConfigs) {
+            if (Versions.getVersion(config).equals(version)) {
+                throw new IllegalStateException("This exact alert already exists");
+            }
+        }
+    }
+
     private void checkInstrumentationDoesNotExist(InstrumentationConfig instrumentationConfig,
             List<InstrumentationConfig> instrumentationConfigs) {
         String version = Versions.getVersion(instrumentationConfig);
         for (InstrumentationConfig config : instrumentationConfigs) {
             if (Versions.getVersion(config).equals(version)) {
                 throw new IllegalStateException("This exact instrumentation already exists");
-            }
-        }
-    }
-
-    private void checkAlertDoesNotExist(AlertConfig alertConfig, List<AlertConfig> agentConfigs) {
-        String version = alertConfig.version();
-        for (AlertConfig existingAlertConfig : agentConfigs) {
-            if (existingAlertConfig.version().equals(version)) {
-                throw new IllegalStateException("This exact alert already exists");
             }
         }
     }
