@@ -69,7 +69,7 @@ class RedisMockServer implements Runnable {
         }
     }
 
-    private static class CallResponseProxy implements Runnable {
+    private class CallResponseProxy implements Runnable {
 
         private Socket socket;
 
@@ -82,7 +82,9 @@ class RedisMockServer implements Runnable {
             try {
                 runInternal();
             } catch (IOException e) {
-                logger.error(e.getMessage(), e);
+                if (!stop) {
+                    logger.error(e.getMessage(), e);
+                }
             }
         }
 
@@ -98,7 +100,7 @@ class RedisMockServer implements Runnable {
             }
         }
 
-        private static String getResponse(String command) {
+        private String getResponse(String command) {
             if (command.equals("*1 $4 PING ")) {
                 return "+PONG\r\n";
             } else if (command.equals("*2 $3 GET $3 key ")) {
