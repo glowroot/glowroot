@@ -58,6 +58,7 @@
     <module>agent-parent/plugins/jsf-plugin</module>
     <module>agent-parent/plugins/jsp-plugin</module>
     <module>agent-parent/plugins/logger-plugin</module>
+    <module>agent-parent/plugins/play-plugin</module>
     <module>agent-parent/plugins/quartz-plugin</module>
     <module>agent-parent/plugins/redis-plugin</module>
     <module>agent-parent/plugins/servlet-plugin</module>
