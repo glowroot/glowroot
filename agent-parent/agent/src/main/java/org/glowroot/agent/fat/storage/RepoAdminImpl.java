@@ -46,11 +46,11 @@ class RepoAdminImpl implements RepoAdmin {
     public void resizeIfNecessary() throws Exception {
         // resize() doesn't do anything if the new and old value are the same
         for (int i = 0; i < rollupCappedDatabases.size(); i++) {
-            rollupCappedDatabases.get(i)
-                    .resize(configRepository.getStorageConfig().rollupCappedDatabaseSizesMb().get(i)
+            rollupCappedDatabases.get(i).resize(
+                    configRepository.getFatStorageConfig().rollupCappedDatabaseSizesMb().get(i)
                             * 1024);
         }
         traceCappedDatabase
-                .resize(configRepository.getStorageConfig().traceCappedDatabaseSizeMb() * 1024);
+                .resize(configRepository.getFatStorageConfig().traceCappedDatabaseSizeMb() * 1024);
     }
 }

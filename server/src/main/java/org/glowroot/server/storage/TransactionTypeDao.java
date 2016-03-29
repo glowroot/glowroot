@@ -26,26 +26,31 @@ import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Ints;
 
+import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.TransactionTypeRepository;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.HOURS;
 
 public class TransactionTypeDao implements TransactionTypeRepository {
 
     private final Session session;
+    private final ConfigRepository configRepository;
 
     private final PreparedStatement insertPS;
 
-    public TransactionTypeDao(Session session) {
+    public TransactionTypeDao(Session session, ConfigRepository configRepository) {
         this.session = session;
+        this.configRepository = configRepository;
 
         session.execute("create table if not exists transaction_type (one int,"
                 + " agent_rollup varchar, transaction_type varchar, primary key"
                 + " (one, agent_rollup, transaction_type))");
 
         insertPS = session.prepare("insert into transaction_type (one, agent_rollup,"
-                + " transaction_type) values (1, ?, ?)");
+                + " transaction_type) values (1, ?, ?) using ttl ?");
     }
 
     @Override
@@ -83,8 +88,18 @@ public class TransactionTypeDao implements TransactionTypeRepository {
 
     void updateLastCaptureTime(String agentRollup, String transactionType) {
         BoundStatement boundStatement = insertPS.bind();
-        boundStatement.setString(0, agentRollup);
-        boundStatement.setString(1, transactionType);
+        int i = 0;
+        boundStatement.setString(i++, agentRollup);
+        boundStatement.setString(i++, transactionType);
+        boundStatement.setInt(i++, getMaxTTL());
         session.execute(boundStatement);
+    }
+
+    private int getMaxTTL() {
+        long maxTTL = 0;
+        for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
+            maxTTL = Math.max(maxTTL, HOURS.toSeconds(expirationHours));
+        }
+        return Ints.saturatedCast(maxTTL);
     }
 }

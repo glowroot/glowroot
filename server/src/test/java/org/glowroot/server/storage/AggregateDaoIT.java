@@ -66,9 +66,11 @@ public class AggregateDaoIT {
         session.execute("use glowroot");
 
         AgentDao agentDao = new AgentDao(session);
-        TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session);
         ServerConfigDao serverConfigDao = new ServerConfigDao(session);
-        ConfigRepository configRepository = new ConfigRepositoryImpl(agentDao, serverConfigDao);
+        ConfigRepository configRepository = new ConfigRepositoryImpl(serverConfigDao, agentDao);
+        agentDao.setConfigRepository(configRepository);
+        serverConfigDao.setConfigRepository(configRepository);
+        TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session, configRepository);
         aggregateDao = new AggregateDao(session, agentDao, transactionTypeDao, configRepository);
     }
 

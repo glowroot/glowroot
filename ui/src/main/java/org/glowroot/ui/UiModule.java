@@ -90,8 +90,8 @@ public class UiModule {
         ErrorCommonService errorCommonService = new ErrorCommonService(aggregateRepository);
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
                 transactionCommonService, traceRepository, rollupLevelService, clock);
-        ConfigJsonService configJsonService = new ConfigJsonService(configRepository, repoAdmin,
-                httpSessionManager, new MailService());
+        ConfigJsonService configJsonService = new ConfigJsonService(fat, configRepository,
+                repoAdmin, httpSessionManager, new MailService());
         GaugeValueJsonService gaugeValueJsonService = new GaugeValueJsonService(
                 gaugeValueRepository, rollupLevelService, configRepository);
         AlertConfigJsonService alertJsonService = new AlertConfigJsonService(configRepository);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 package org.glowroot.storage.repo.helper;
 
 import java.util.List;
-
-import com.google.common.collect.ImmutableList;
 
 import org.glowroot.common.util.Clock;
 import org.glowroot.storage.repo.ConfigRepository;
@@ -38,7 +36,7 @@ public class RollupLevelService {
     public int getRollupLevelForView(long captureTimeFrom, long captureTimeTo) throws Exception {
         long millis = captureTimeTo - captureTimeFrom;
         long timeAgoMillis = clock.currentTimeMillis() - captureTimeFrom;
-        ImmutableList<Integer> rollupExpirationHours =
+        List<Integer> rollupExpirationHours =
                 configRepository.getStorageConfig().rollupExpirationHours();
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         for (int i = 0; i < rollupConfigs.size() - 1; i++) {
@@ -55,7 +53,7 @@ public class RollupLevelService {
             throws Exception {
         long millis = captureTimeTo - captureTimeFrom;
         long timeAgoMillis = clock.currentTimeMillis() - captureTimeFrom;
-        ImmutableList<Integer> rollupExpirationHours =
+        List<Integer> rollupExpirationHours =
                 configRepository.getStorageConfig().rollupExpirationHours();
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         // gauge point rollup level 0 shares rollup level 1's expiration
@@ -76,7 +74,7 @@ public class RollupLevelService {
             throws Exception {
         long millis = captureTimeTo - captureTimeFrom;
         long timeAgoMillis = clock.currentTimeMillis() - captureTimeFrom;
-        ImmutableList<Integer> rollupExpirationHours =
+        List<Integer> rollupExpirationHours =
                 configRepository.getStorageConfig().rollupExpirationHours();
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         for (int i = 0; i < rollupConfigs.size() - 1; i++) {

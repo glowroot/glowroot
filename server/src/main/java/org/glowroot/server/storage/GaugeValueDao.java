@@ -32,6 +32,7 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.primitives.Ints;
 
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.storage.repo.AgentRepository.AgentRollup;
@@ -42,7 +43,7 @@ import org.glowroot.storage.repo.helper.Gauges;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.glowroot.server.util.Checkers.castUntainted;
+import static java.util.concurrent.TimeUnit.HOURS;
 
 public class GaugeValueDao implements GaugeValueRepository {
 
@@ -55,7 +56,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     private final ImmutableList<PreparedStatement> readValuePS;
     private final ImmutableList<PreparedStatement> readValueForRollupPS;
 
-    private final ImmutableList<PreparedStatement> insertNamePS;
+    private final PreparedStatement insertNamePS;
 
     private final List<PreparedStatement> insertNeedsRollup;
     private final List<PreparedStatement> readNeedsRollup;
@@ -75,34 +76,29 @@ public class GaugeValueDao implements GaugeValueRepository {
         List<PreparedStatement> readValueForRollupPS = Lists.newArrayList();
         for (int i = 0; i <= count; i++) {
             // name already has "[counter]" suffix when it is a counter
-            session.execute("create table if not exists gauge_value_rollup_" + castUntainted(i)
+            session.execute("create table if not exists gauge_value_rollup_" + i
                     + " (agent_rollup varchar, gauge_name varchar, capture_time timestamp,"
                     + " value double, weight bigint, primary key ((agent_rollup, gauge_name),"
                     + " capture_time))");
-            insertValuePS.add(session.prepare("insert into gauge_value_rollup_" + castUntainted(i)
+            insertValuePS.add(session.prepare("insert into gauge_value_rollup_" + i
                     + " (agent_rollup, gauge_name, capture_time, value, weight)"
-                    + " values (?, ?, ?, ?, ?)"));
+                    + " values (?, ?, ?, ?, ?) using ttl ?"));
             readValuePS.add(session.prepare("select capture_time, value, weight from"
-                    + " gauge_value_rollup_" + castUntainted(i) + " where agent_rollup = ?"
-                    + " and gauge_name = ? and capture_time >= ? and capture_time <= ?"));
+                    + " gauge_value_rollup_" + i + " where agent_rollup = ? and gauge_name = ?"
+                    + " and capture_time >= ? and capture_time <= ?"));
             readValueForRollupPS.add(session.prepare("select value, weight from gauge_value_rollup_"
-                    + castUntainted(i) + " where agent_rollup = ? and gauge_name = ?"
-                    + " and capture_time > ? and capture_time <= ?"));
+                    + i + " where agent_rollup = ? and gauge_name = ? and capture_time > ?"
+                    + " and capture_time <= ?"));
         }
         this.insertValuePS = ImmutableList.copyOf(insertValuePS);
         this.readValuePS = ImmutableList.copyOf(readValuePS);
         this.readValueForRollupPS = ImmutableList.copyOf(readValueForRollupPS);
 
-        // TTL on gauge_name table needs to be max(TTL) of gauge_value_rollup_*
         session.execute("create table if not exists gauge_name (agent_rollup varchar,"
                 + " gauge_name varchar, primary key (agent_rollup, gauge_name))");
 
-        List<PreparedStatement> insertNamePS = Lists.newArrayList();
-        for (int i = 0; i < 1; i++) {
-            insertNamePS.add(session
-                    .prepare("insert into gauge_name (agent_rollup, gauge_name) values (?, ?)"));
-        }
-        this.insertNamePS = ImmutableList.copyOf(insertNamePS);
+        this.insertNamePS = session.prepare("insert into gauge_name (agent_rollup, gauge_name)"
+                + " values (?, ?) using ttl ?");
 
         List<PreparedStatement> insertNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
@@ -135,16 +131,20 @@ public class GaugeValueDao implements GaugeValueRepository {
         BatchStatement batchStatement = new BatchStatement();
         for (GaugeValue gaugeValue : gaugeValues) {
             BoundStatement boundStatement = insertValuePS.get(0).bind();
-            boundStatement.setString(0, agentId);
-            boundStatement.setString(1, gaugeValue.getGaugeName());
-            boundStatement.setTimestamp(2, new Date(gaugeValue.getCaptureTime()));
-            boundStatement.setDouble(3, gaugeValue.getValue());
-            boundStatement.setLong(4, gaugeValue.getWeight());
+            int i = 0;
+            boundStatement.setString(i++, agentId);
+            boundStatement.setString(i++, gaugeValue.getGaugeName());
+            boundStatement.setTimestamp(i++, new Date(gaugeValue.getCaptureTime()));
+            boundStatement.setDouble(i++, gaugeValue.getValue());
+            boundStatement.setLong(i++, gaugeValue.getWeight());
+            boundStatement.setInt(i++, getTTL(0));
             batchStatement.add(boundStatement);
 
-            boundStatement = insertNamePS.get(0).bind();
-            boundStatement.setString(0, agentId);
-            boundStatement.setString(1, gaugeValue.getGaugeName());
+            boundStatement = insertNamePS.bind();
+            i = 0;
+            boundStatement.setString(i++, agentId);
+            boundStatement.setString(i++, gaugeValue.getGaugeName());
+            boundStatement.setInt(i++, getMaxTTL());
             batchStatement.add(boundStatement);
         }
         session.execute(batchStatement);
@@ -281,21 +281,41 @@ public class GaugeValueDao implements GaugeValueRepository {
             totalWeight += weight;
         }
         boundStatement = insertValuePS.get(rollupLevel).bind();
-        boundStatement.setString(0, agentRollup);
-        boundStatement.setString(1, gaugeName);
-        boundStatement.setTimestamp(2, new Date(to));
-        boundStatement.setDouble(3, totalWeightedValue / totalWeight);
-        boundStatement.setLong(4, totalWeight);
+        int i = 0;
+        boundStatement.setString(i++, agentRollup);
+        boundStatement.setString(i++, gaugeName);
+        boundStatement.setTimestamp(i++, new Date(to));
+        boundStatement.setDouble(i++, totalWeightedValue / totalWeight);
+        boundStatement.setLong(i++, totalWeight);
+        boundStatement.setInt(i++, getTTL(rollupLevel));
         session.execute(boundStatement);
+    }
+
+    private int getTTL(int rollupLevel) {
+        if (rollupLevel == 0) {
+            return Ints.saturatedCast(HOURS
+                    .toSeconds(configRepository.getStorageConfig().rollupExpirationHours().get(0)));
+        } else {
+            return Ints.saturatedCast(HOURS.toSeconds(configRepository.getStorageConfig()
+                    .rollupExpirationHours().get(rollupLevel - 1)));
+        }
+    }
+
+    private int getMaxTTL() {
+        long maxTTL = 0;
+        for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
+            maxTTL = Math.max(maxTTL, HOURS.toSeconds(expirationHours));
+        }
+        return Ints.saturatedCast(maxTTL);
     }
 
     @OnlyUsedByTests
     void truncateAll() {
         for (int i = 0; i <= configRepository.getRollupConfigs().size(); i++) {
-            session.execute("truncate gauge_value_rollup_" + castUntainted(i));
+            session.execute("truncate gauge_value_rollup_" + i);
         }
         for (int i = 1; i <= configRepository.getRollupConfigs().size(); i++) {
-            session.execute("truncate gauge_needs_rollup_" + castUntainted(i));
+            session.execute("truncate gauge_needs_rollup_" + i);
         }
         session.execute("truncate gauge_name");
     }

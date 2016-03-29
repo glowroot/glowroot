@@ -41,9 +41,11 @@ import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.util.Versions;
 import org.glowroot.server.DownstreamServiceImpl;
 import org.glowroot.storage.config.AccessConfig;
+import org.glowroot.storage.config.FatStorageConfig;
 import org.glowroot.storage.config.ImmutableAccessConfig;
+import org.glowroot.storage.config.ImmutableServerStorageConfig;
 import org.glowroot.storage.config.ImmutableSmtpConfig;
-import org.glowroot.storage.config.ImmutableStorageConfig;
+import org.glowroot.storage.config.ServerStorageConfig;
 import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.config.StorageConfig;
 import org.glowroot.storage.repo.ConfigRepository;
@@ -70,8 +72,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigRepositoryImpl.class);
 
-    private final AgentDao agentDao;
     private final ServerConfigDao serverConfigDao;
+    private final AgentDao agentDao;
 
     private final ImmutableList<RollupConfig> rollupConfigs;
 
@@ -92,11 +94,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 }
             });
     private final Object accessConfigLock = new Object();
+    private final Object storageConfigLock = new Object();
     private final Object smtpConfigLock = new Object();
 
-    public ConfigRepositoryImpl(AgentDao agentDao, ServerConfigDao serverConfigDao) {
-        this.agentDao = agentDao;
+    public ConfigRepositoryImpl(ServerConfigDao serverConfigDao, AgentDao agentDao) {
         this.serverConfigDao = serverConfigDao;
+        this.agentDao = agentDao;
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
         secretFile = new File("secret");
     }
@@ -235,9 +238,18 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public StorageConfig getStorageConfig() {
-        // this is needed for access to StorageConfig.rollupExpirationHours()
-        return ImmutableStorageConfig.builder().build();
+    public ServerStorageConfig getServerStorageConfig() {
+        ServerStorageConfig config =
+                serverConfigDao.read(STORAGE_KEY, ImmutableServerStorageConfig.class);
+        if (config == null) {
+            return ImmutableServerStorageConfig.builder().build();
+        }
+        return config;
+    }
+
+    @Override
+    public FatStorageConfig getFatStorageConfig() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -655,7 +667,18 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateStorageConfig(StorageConfig storageConfig, String priorVersion) {
+    public void updateServerStorageConfig(ServerStorageConfig storageConfig, String priorVersion)
+            throws Exception {
+        synchronized (storageConfigLock) {
+            if (!getServerStorageConfig().version().equals(priorVersion)) {
+                throw new OptimisticLockException();
+            }
+            serverConfigDao.write(STORAGE_KEY, storageConfig);
+        }
+    }
+
+    @Override
+    public void updateFatStorageConfig(FatStorageConfig storageConfig, String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
@@ -667,6 +690,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
             serverConfigDao.write(SMTP_KEY, smtpConfig);
         }
+    }
+
+    @Override
+    public StorageConfig getStorageConfig() {
+        return getServerStorageConfig();
     }
 
     @Override

@@ -78,7 +78,8 @@ glowroot.controller('ConfigCtrl', [
     };
 
     function onLocationChangeSuccess() {
-      if (($location.path() === '/config/access' || $location.path() === '/config/smtp') && !$scope.layout.fat) {
+      if (($location.path() === '/config/access' || $location.path() === '/config/storage' || $location.path() === '/config/smtp')
+          && !$scope.layout.fat) {
         $scope.$parent.activeNavbarItem = 'serverConfig';
       } else {
         $scope.$parent.activeNavbarItem = 'agentConfig';

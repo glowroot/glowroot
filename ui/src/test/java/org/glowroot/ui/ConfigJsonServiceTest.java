@@ -39,7 +39,7 @@ public class ConfigJsonServiceTest {
     @Before
     public void beforeEachTest() {
         mailService = new MockMailService();
-        configJsonService = new ConfigJsonService(mock(ConfigRepository.class),
+        configJsonService = new ConfigJsonService(false, mock(ConfigRepository.class),
                 mock(RepoAdmin.class), mock(HttpSessionManager.class), mailService);
     }
 

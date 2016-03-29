@@ -26,10 +26,16 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.primitives.Ints;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.storage.repo.ConfigRepository;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.HOURS;
 
 public class ServerConfigDao {
 
@@ -42,20 +48,27 @@ public class ServerConfigDao {
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
+    private volatile @MonotonicNonNull ConfigRepository configRepository;
+
     public ServerConfigDao(Session session) {
         this.session = session;
-
         session.execute("create table if not exists server_config (key varchar, value varchar,"
                 + " primary key (key))");
-
-        insertPS = session.prepare("insert into server_config (key, value) values (?, ?)");
+        insertPS =
+                session.prepare("insert into server_config (key, value) values (?, ?) using ttl ?");
         readPS = session.prepare("select value from server_config where key = ?");
+    }
+
+    public void setConfigRepository(ConfigRepository configRepository) {
+        this.configRepository = configRepository;
     }
 
     void write(String key, Object config) throws JsonProcessingException {
         BoundStatement boundStatement = insertPS.bind();
-        boundStatement.setString(0, key);
-        boundStatement.setString(1, mapper.writeValueAsString(config));
+        int i = 0;
+        boundStatement.setString(i++, key);
+        boundStatement.setString(i++, mapper.writeValueAsString(config));
+        boundStatement.setInt(i++, getMaxTTL());
         session.execute(boundStatement);
     }
 
@@ -78,5 +91,14 @@ public class ServerConfigDao {
             logger.error("error parsing config node '{}': ", key, e);
             return null;
         }
+    }
+
+    private int getMaxTTL() {
+        checkNotNull(configRepository);
+        long maxTTL = 0;
+        for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
+            maxTTL = Math.max(maxTTL, HOURS.toSeconds(expirationHours));
+        }
+        return Ints.saturatedCast(maxTTL);
     }
 }

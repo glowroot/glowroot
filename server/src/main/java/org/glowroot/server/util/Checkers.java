@@ -23,9 +23,4 @@ public class Checkers {
     public static <T> /*@Initialized*/ T castInitialized(/*@UnderInitialization*/ T obj) {
         return obj;
     }
-
-    @SuppressWarnings("return.type.incompatible")
-    public static <T> /*@Untainted*/ T castUntainted(T obj) {
-        return obj;
-    }
 }

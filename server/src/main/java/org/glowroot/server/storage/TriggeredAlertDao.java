@@ -19,26 +19,32 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
+import com.google.common.primitives.Ints;
 
+import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.TriggeredAlertRepository;
+
+import static java.util.concurrent.TimeUnit.HOURS;
 
 public class TriggeredAlertDao implements TriggeredAlertRepository {
 
     private final Session session;
+    private final ConfigRepository configRepository;
 
     private final PreparedStatement insertPS;
     private final PreparedStatement existsPS;
     private final PreparedStatement deletePS;
 
-    public TriggeredAlertDao(Session session) {
+    public TriggeredAlertDao(Session session, ConfigRepository configRepository) {
         this.session = session;
+        this.configRepository = configRepository;
 
         session.execute("create table if not exists triggered_alert (agent_rollup varchar,"
                 + " alert_config_version varchar, primary key (agent_rollup,"
                 + " alert_config_version))");
 
         insertPS = session.prepare("insert into triggered_alert (agent_rollup,"
-                + " alert_config_version) values (?, ?)");
+                + " alert_config_version) values (?, ?) using ttl ?");
 
         existsPS = session.prepare("select agent_rollup from triggered_alert where agent_rollup = ?"
                 + " and alert_config_version = ?");
@@ -67,8 +73,18 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
     @Override
     public void insert(String agentRollup, String version) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
-        boundStatement.setString(0, agentRollup);
-        boundStatement.setString(1, version);
+        int i = 0;
+        boundStatement.setString(i++, agentRollup);
+        boundStatement.setString(i++, version);
+        boundStatement.setInt(i++, getMaxTTL());
         session.execute(boundStatement);
+    }
+
+    private int getMaxTTL() {
+        long maxTTL = 0;
+        for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
+            maxTTL = Math.max(maxTTL, HOURS.toSeconds(expirationHours));
+        }
+        return Ints.saturatedCast(maxTTL);
     }
 }

@@ -45,7 +45,9 @@ public class GaugeValueDaoIT {
 
         AgentDao agentDao = new AgentDao(session);
         ServerConfigDao serverConfigDao = new ServerConfigDao(session);
-        ConfigRepository configRepository = new ConfigRepositoryImpl(agentDao, serverConfigDao);
+        ConfigRepository configRepository = new ConfigRepositoryImpl(serverConfigDao, agentDao);
+        agentDao.setConfigRepository(configRepository);
+        serverConfigDao.setConfigRepository(configRepository);
         gaugeValueDao = new GaugeValueDao(session, agentDao, configRepository);
     }
 

@@ -43,11 +43,13 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
 import org.glowroot.storage.config.AccessConfig;
 import org.glowroot.storage.config.AccessConfig.AnonymousAccess;
+import org.glowroot.storage.config.FatStorageConfig;
 import org.glowroot.storage.config.ImmutableAccessConfig;
+import org.glowroot.storage.config.ImmutableFatStorageConfig;
+import org.glowroot.storage.config.ImmutableServerStorageConfig;
 import org.glowroot.storage.config.ImmutableSmtpConfig;
-import org.glowroot.storage.config.ImmutableStorageConfig;
+import org.glowroot.storage.config.ServerStorageConfig;
 import org.glowroot.storage.config.SmtpConfig;
-import org.glowroot.storage.config.StorageConfig;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.storage.repo.RepoAdmin;
@@ -75,6 +77,7 @@ class ConfigJsonService {
     private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
+    private final boolean fat;
     private final ConfigRepository configRepository;
     private final RepoAdmin repoAdmin;
     private final HttpSessionManager httpSessionManager;
@@ -82,8 +85,9 @@ class ConfigJsonService {
 
     private volatile @MonotonicNonNull HttpServer httpServer;
 
-    ConfigJsonService(ConfigRepository configRepository, RepoAdmin repoAdmin,
+    ConfigJsonService(boolean fat, ConfigRepository configRepository, RepoAdmin repoAdmin,
             HttpSessionManager httpSessionManager, MailService mailService) {
+        this.fat = fat;
         this.configRepository = configRepository;
         this.repoAdmin = repoAdmin;
         this.httpSessionManager = httpSessionManager;
@@ -148,8 +152,13 @@ class ConfigJsonService {
 
     @GET("/backend/config/storage")
     String getStorageConfig() throws Exception {
-        StorageConfig config = configRepository.getStorageConfig();
-        return mapper.writeValueAsString(StorageConfigDto.create(config));
+        if (fat) {
+            FatStorageConfig config = configRepository.getFatStorageConfig();
+            return mapper.writeValueAsString(FatStorageConfigDto.create(config));
+        } else {
+            ServerStorageConfig config = configRepository.getServerStorageConfig();
+            return mapper.writeValueAsString(ServerStorageConfigDto.create(config));
+        }
     }
 
     @GET("/backend/config/smtp")
@@ -258,13 +267,26 @@ class ConfigJsonService {
 
     @POST("/backend/config/storage")
     String updateStorageConfig(String content) throws Exception {
-        StorageConfigDto configDto = mapper.readValue(content, ImmutableStorageConfigDto.class);
-        try {
-            configRepository.updateStorageConfig(configDto.convert(), configDto.version());
-        } catch (OptimisticLockException e) {
-            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        if (fat) {
+            FatStorageConfigDto configDto =
+                    mapper.readValue(content, ImmutableFatStorageConfigDto.class);
+            try {
+                configRepository.updateFatStorageConfig(configDto.convert(), configDto.version());
+            } catch (OptimisticLockException e) {
+                throw new JsonServiceException(PRECONDITION_FAILED, e);
+            }
+            repoAdmin.resizeIfNecessary();
+        } else {
+            ServerStorageConfigDto configDto =
+                    mapper.readValue(content, ImmutableServerStorageConfigDto.class);
+            try {
+                configRepository.updateServerStorageConfig(configDto.convert(),
+                        configDto.version());
+            } catch (OptimisticLockException e) {
+                throw new JsonServiceException(PRECONDITION_FAILED, e);
+            }
+            repoAdmin.resizeIfNecessary();
         }
-        repoAdmin.resizeIfNecessary();
         return getStorageConfig();
     }
 
@@ -788,7 +810,7 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    abstract static class StorageConfigDto {
+    abstract static class FatStorageConfigDto {
 
         abstract ImmutableList<Integer> rollupExpirationHours();
         abstract int traceExpirationHours();
@@ -796,8 +818,8 @@ class ConfigJsonService {
         abstract int traceCappedDatabaseSizeMb();
         abstract String version();
 
-        private StorageConfig convert() {
-            return ImmutableStorageConfig.builder()
+        private FatStorageConfig convert() {
+            return ImmutableFatStorageConfig.builder()
                     .rollupExpirationHours(rollupExpirationHours())
                     .traceExpirationHours(traceExpirationHours())
                     .rollupCappedDatabaseSizesMb(rollupCappedDatabaseSizesMb())
@@ -805,12 +827,35 @@ class ConfigJsonService {
                     .build();
         }
 
-        private static StorageConfigDto create(StorageConfig config) {
-            return ImmutableStorageConfigDto.builder()
+        private static FatStorageConfigDto create(FatStorageConfig config) {
+            return ImmutableFatStorageConfigDto.builder()
                     .addAllRollupExpirationHours(config.rollupExpirationHours())
                     .traceExpirationHours(config.traceExpirationHours())
                     .addAllRollupCappedDatabaseSizesMb(config.rollupCappedDatabaseSizesMb())
                     .traceCappedDatabaseSizeMb(config.traceCappedDatabaseSizeMb())
+                    .version(config.version())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class ServerStorageConfigDto {
+
+        abstract ImmutableList<Integer> rollupExpirationHours();
+        abstract int traceExpirationHours();
+        abstract String version();
+
+        private ServerStorageConfig convert() {
+            return ImmutableServerStorageConfig.builder()
+                    .rollupExpirationHours(rollupExpirationHours())
+                    .traceExpirationHours(traceExpirationHours())
+                    .build();
+        }
+
+        private static ServerStorageConfigDto create(ServerStorageConfig config) {
+            return ImmutableServerStorageConfigDto.builder()
+                    .addAllRollupExpirationHours(config.rollupExpirationHours())
+                    .traceExpirationHours(config.traceExpirationHours())
                     .version(config.version())
                     .build();
         }

@@ -15,59 +15,15 @@
  */
 package org.glowroot.storage.config;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.common.collect.ImmutableList;
-import org.immutables.value.Value;
 
-import org.glowroot.common.util.Versions;
-
-@Value.Immutable
-// ignore these old properties as part of upgrade from 0.8.3 to 0.8.4
-@JsonIgnoreProperties({"aggregateExpirationHours", "gaugeExpirationHours"})
-public abstract class StorageConfig {
-
-    // 2 days, 2 weeks, 2 months
-    private static final ImmutableList<Integer> DEFAULT_ROLLUP_EXPIRATION_HOURS =
-            ImmutableList.of(24 * 2, 24 * 7 * 2, 24 * 30 * 2);
-
-    private static final ImmutableList<Integer> DEFAULT_CAPPED_DATABASE_SIZES_MB =
-            ImmutableList.of(500, 500, 500);
+public interface StorageConfig {
 
     // TODO revisit this comment
     //
     // currently aggregate expiration should be at least as big as trace expiration
     // errors/messages page depends on this for calculating error percentage when using the filter
-    @Value.Default
-    @SuppressWarnings("immutables")
-    public ImmutableList<Integer> rollupExpirationHours() {
-        return DEFAULT_ROLLUP_EXPIRATION_HOURS;
-    }
+    ImmutableList<Integer> rollupExpirationHours();
 
-    @Value.Default
-    public int traceExpirationHours() {
-        return 24 * 7;
-    }
-
-    @Value.Default
-    @SuppressWarnings("immutables")
-    public ImmutableList<Integer> rollupCappedDatabaseSizesMb() {
-        return DEFAULT_CAPPED_DATABASE_SIZES_MB;
-    }
-
-    @Value.Default
-    public int traceCappedDatabaseSizeMb() {
-        return 500;
-    }
-
-    @Value.Derived
-    @JsonIgnore
-    public String version() {
-        return Versions.getJsonVersion(this);
-    }
-
-    public boolean hasListIssues() {
-        return rollupExpirationHours().size() != DEFAULT_ROLLUP_EXPIRATION_HOURS.size()
-                || rollupCappedDatabaseSizesMb().size() != DEFAULT_CAPPED_DATABASE_SIZES_MB.size();
-    }
+    int traceExpirationHours();
 }

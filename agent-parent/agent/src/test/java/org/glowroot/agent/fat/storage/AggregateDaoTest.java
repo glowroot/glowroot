@@ -28,7 +28,6 @@ import org.junit.Test;
 import org.glowroot.agent.fat.storage.util.CappedDatabase;
 import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.common.util.Styles;
-import org.glowroot.storage.config.ImmutableStorageConfig;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.OverallQuery;
 import org.glowroot.storage.repo.AggregateRepository.OverviewAggregate;
@@ -73,10 +72,6 @@ public class AggregateDaoTest {
         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
         cappedDatabase = new CappedDatabase(cappedFile, 1000000, Ticker.systemTicker());
         ConfigRepository configRepository = mock(ConfigRepository.class);
-        when(configRepository.getStorageConfig()).thenReturn(ImmutableStorageConfig.builder()
-                .rollupExpirationHours(
-                        ImmutableList.of(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE))
-                .build());
         when(configRepository.getAdvancedConfig(AGENT_ID))
                 .thenReturn(AdvancedConfig.getDefaultInstance());
         ImmutableList<RollupConfig> rollupConfigs = ImmutableList.<RollupConfig>of(

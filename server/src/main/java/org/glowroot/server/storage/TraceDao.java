@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.primitives.Ints;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.immutables.value.Value;
@@ -48,6 +49,7 @@ import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.util.Styles;
 import org.glowroot.server.util.Messages;
+import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ImmutableErrorMessageCount;
 import org.glowroot.storage.repo.ImmutableErrorMessagePoint;
 import org.glowroot.storage.repo.ImmutableErrorMessageResult;
@@ -59,10 +61,13 @@ import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.HOURS;
 
 public class TraceDao implements TraceRepository {
 
     private final Session session;
+    private final ConfigRepository configRepository;
+
     private final AgentDao agentDao;
     private final TransactionTypeDao transactionTypeDao;
 
@@ -106,8 +111,10 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement deletePartialOverallSlowCount;
     private final PreparedStatement deletePartialTransactionSlowCount;
 
-    public TraceDao(Session session, AgentDao agentDao, TransactionTypeDao transactionTypeDao) {
+    public TraceDao(Session session, ConfigRepository configRepository, AgentDao agentDao,
+            TransactionTypeDao transactionTypeDao) {
         this.session = session;
+        this.configRepository = configRepository;
         this.agentDao = agentDao;
         this.transactionTypeDao = transactionTypeDao;
 
@@ -190,58 +197,61 @@ public class TraceDao implements TraceRepository {
 
         insertOverallSlowPoint = session.prepare("insert into trace_tt_slow_point (agent_rollup,"
                 + " transaction_type, capture_time, agent_id, trace_id, duration_nanos, error,"
-                + " user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                + " user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertTransactionSlowPoint = session.prepare("insert into trace_tn_slow_point"
                 + " (agent_rollup, transaction_type, transaction_name, capture_time, agent_id,"
                 + " trace_id, duration_nanos, error, user, attributes) values"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertOverallSlowCount = session.prepare("insert into trace_tt_slow_count (agent_rollup,"
-                + " transaction_type, capture_time, agent_id, trace_id) values (?, ?, ?, ?, ?)");
+                + " transaction_type, capture_time, agent_id, trace_id) values (?, ?, ?, ?, ?)"
+                + " using ttl ?");
 
         insertTransactionSlowCount = session.prepare("insert into trace_tn_slow_count"
                 + " (agent_rollup, transaction_type, transaction_name, capture_time, agent_id,"
-                + " trace_id) values (?, ?, ?, ?, ?, ?)");
+                + " trace_id) values (?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertOverallErrorPoint = session.prepare("insert into trace_tt_error_point (agent_rollup,"
                 + " transaction_type, capture_time, agent_id, trace_id, duration_nanos,"
-                + " error_message, user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                + " error_message, user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                + " using ttl ?");
 
         insertTransactionErrorPoint = session.prepare("insert into trace_tn_error_point"
                 + " (agent_rollup, transaction_type, transaction_name, capture_time, agent_id,"
                 + " trace_id, duration_nanos, error_message, user, attributes) values"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertOverallErrorCount = session.prepare("insert into trace_tt_error_count (agent_rollup,"
-                + " transaction_type, capture_time, agent_id, trace_id) values (?, ?, ?, ?, ?)");
+                + " transaction_type, capture_time, agent_id, trace_id) values (?, ?, ?, ?, ?)"
+                + " using ttl ?");
 
         insertTransactionErrorCount = session.prepare("insert into trace_tn_error_count"
                 + " (agent_rollup, transaction_type, transaction_name, capture_time, agent_id,"
-                + " trace_id) values (?, ?, ?, ?, ?, ?)");
+                + " trace_id) values (?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertOverallErrorMessage = session.prepare("insert into trace_tt_error_message"
                 + " (agent_rollup, transaction_type, capture_time, agent_id, trace_id,"
-                + " error_message) values (?, ?, ?, ?, ?, ?)");
+                + " error_message) values (?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertTransactionErrorMessage = session.prepare("insert into trace_tn_error_message"
                 + " (agent_rollup, transaction_type, transaction_name, capture_time, agent_id,"
-                + " trace_id, error_message) values (?, ?, ?, ?, ?, ?, ?)");
+                + " trace_id, error_message) values (?, ?, ?, ?, ?, ?, ?) using ttl ?");
 
-        insertHeader = session
-                .prepare("insert into trace_header (agent_id, trace_id, header) values (?, ?, ?)");
+        insertHeader = session.prepare("insert into trace_header (agent_id, trace_id, header)"
+                + " values (?, ?, ?) using ttl ?");
 
-        insertEntries = session.prepare(
-                "insert into trace_entries (agent_id, trace_id, entries_) values (?, ?, ?)");
+        insertEntries = session.prepare("insert into trace_entries (agent_id, trace_id, entries_)"
+                + " values (?, ?, ?) using ttl ?");
 
         insertMainThreadProfile = session.prepare("insert into trace_main_thread_profile"
-                + " (agent_id, trace_id, profile) values (?, ?, ?)");
+                + " (agent_id, trace_id, profile) values (?, ?, ?) using ttl ?");
 
         insertAuxThreadProfile = session.prepare("insert into trace_aux_thread_profile"
-                + " (agent_id, trace_id, profile) values (?, ?, ?)");
+                + " (agent_id, trace_id, profile) values (?, ?, ?) using ttl ?");
 
         insertAttributeName = session.prepare("insert into trace_attribute_name (agent_rollup,"
-                + " transaction_type, attribute_name) values (?, ?, ?)");
+                + " transaction_type, attribute_name) values (?, ?, ?) using ttl ?");
 
         readOverallSlowPoint = session.prepare("select agent_id, trace_id, capture_time,"
                 + " duration_nanos, error, headline, user, attributes from trace_tt_slow_point"
@@ -317,6 +327,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setBool(i++, header.hasError());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
                 boundStatement.setBytes(i++, Messages.toByteBuffer(header.getAttributeList()));
+                boundStatement.setInt(i++, getTTL());
                 session.execute(boundStatement);
 
                 boundStatement = insertTransactionSlowPoint.bind();
@@ -331,6 +342,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setBool(i++, header.hasError());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
                 boundStatement.setBytes(i++, Messages.toByteBuffer(header.getAttributeList()));
+                boundStatement.setInt(i++, getTTL());
                 session.execute(boundStatement);
 
                 boundStatement = insertOverallSlowCount.bind();
@@ -340,6 +352,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
                 boundStatement.setString(i++, agentId);
                 boundStatement.setString(i++, trace.getId());
+                boundStatement.setInt(i++, getTTL());
                 session.execute(boundStatement);
 
                 boundStatement = insertTransactionSlowCount.bind();
@@ -350,6 +363,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
                 boundStatement.setString(i++, agentId);
                 boundStatement.setString(i++, trace.getId());
+                boundStatement.setInt(i++, getTTL());
                 session.execute(boundStatement);
 
                 if (priorHeader != null) {
@@ -360,6 +374,7 @@ public class TraceDao implements TraceRepository {
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
                     boundStatement.setString(i++, agentId);
                     boundStatement.setString(i++, trace.getId());
+                    boundStatement.setInt(i++, getTTL());
                     session.execute(boundStatement);
 
                     boundStatement = deletePartialTransactionSlowPoint.bind();
@@ -370,6 +385,7 @@ public class TraceDao implements TraceRepository {
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
                     boundStatement.setString(i++, agentId);
                     boundStatement.setString(i++, trace.getId());
+                    boundStatement.setInt(i++, getTTL());
                     session.execute(boundStatement);
 
                     boundStatement = deletePartialOverallSlowCount.bind();
@@ -379,6 +395,7 @@ public class TraceDao implements TraceRepository {
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
                     boundStatement.setString(i++, agentId);
                     boundStatement.setString(i++, trace.getId());
+                    boundStatement.setInt(i++, getTTL());
                     session.execute(boundStatement);
 
                     boundStatement = deletePartialTransactionSlowCount.bind();
@@ -389,6 +406,7 @@ public class TraceDao implements TraceRepository {
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
                     boundStatement.setString(i++, agentId);
                     boundStatement.setString(i++, trace.getId());
+                    boundStatement.setInt(i++, getTTL());
                     session.execute(boundStatement);
                 }
             }
@@ -403,6 +421,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, agentId);
                 boundStatement.setString(i++, trace.getId());
                 boundStatement.setString(i++, header.getError().getMessage());
+                boundStatement.setInt(i++, getTTL());
                 session.execute(boundStatement);
 
                 boundStatement = insertTransactionErrorMessage.bind();
@@ -414,6 +433,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, agentId);
                 boundStatement.setString(i++, trace.getId());
                 boundStatement.setString(i++, header.getError().getMessage());
+                boundStatement.setInt(i++, getTTL());
                 session.execute(boundStatement);
 
                 boundStatement = insertOverallErrorPoint.bind();
@@ -427,6 +447,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, header.getError().getMessage());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
                 boundStatement.setBytes(i++, Messages.toByteBuffer(header.getAttributeList()));
+                boundStatement.setInt(i++, getTTL());
                 session.execute(boundStatement);
 
                 boundStatement = insertTransactionErrorPoint.bind();
@@ -441,6 +462,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, header.getError().getMessage());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
                 boundStatement.setBytes(i++, Messages.toByteBuffer(header.getAttributeList()));
+                boundStatement.setInt(i++, getTTL());
                 session.execute(boundStatement);
 
                 boundStatement = insertOverallErrorCount.bind();
@@ -450,6 +472,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
                 boundStatement.setString(i++, agentId);
                 boundStatement.setString(i++, trace.getId());
+                boundStatement.setInt(i++, getTTL());
                 session.execute(boundStatement);
 
                 boundStatement = insertTransactionErrorCount.bind();
@@ -460,47 +483,60 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
                 boundStatement.setString(i++, agentId);
                 boundStatement.setString(i++, trace.getId());
+                boundStatement.setInt(i++, getTTL());
                 session.execute(boundStatement);
             }
             agentDao.updateLastCaptureTime(agentRollup, agentRollup.equals(agentId));
             transactionTypeDao.updateLastCaptureTime(agentRollup, header.getTransactionType());
             for (Trace.Attribute attributeName : header.getAttributeList()) {
                 BoundStatement boundStatement = insertAttributeName.bind();
-                boundStatement.setString(0, agentRollup);
-                boundStatement.setString(1, header.getTransactionType());
-                boundStatement.setString(2, attributeName.getName());
+                int i = 0;
+                boundStatement.setString(i++, agentRollup);
+                boundStatement.setString(i++, header.getTransactionType());
+                boundStatement.setString(i++, attributeName.getName());
+                boundStatement.setInt(i++, getTTL());
                 session.execute(boundStatement);
             }
         }
 
         BoundStatement boundStatement = insertHeader.bind();
-        boundStatement.setString(0, agentId);
-        boundStatement.setString(1, trace.getId());
-        boundStatement.setBytes(2, ByteBuffer.wrap(trace.getHeader().toByteArray()));
+        int i = 0;
+        boundStatement.setString(i++, agentId);
+        boundStatement.setString(i++, trace.getId());
+        boundStatement.setBytes(i++, ByteBuffer.wrap(trace.getHeader().toByteArray()));
+        boundStatement.setInt(i++, getTTL());
         session.execute(boundStatement);
 
         List<Trace.Entry> entries = trace.getEntryList();
         if (!entries.isEmpty()) {
             boundStatement = insertEntries.bind();
-            boundStatement.setString(0, agentId);
-            boundStatement.setString(1, trace.getId());
-            boundStatement.setBytes(2, Messages.toByteBuffer(entries));
+            i = 0;
+            boundStatement.setString(i++, agentId);
+            boundStatement.setString(i++, trace.getId());
+            boundStatement.setBytes(i++, Messages.toByteBuffer(entries));
+            boundStatement.setInt(i++, getTTL());
             session.execute(boundStatement);
         }
 
         if (trace.hasMainThreadProfile()) {
             boundStatement = insertMainThreadProfile.bind();
-            boundStatement.setString(0, agentId);
-            boundStatement.setString(1, trace.getId());
-            boundStatement.setBytes(2, ByteBuffer.wrap(trace.getMainThreadProfile().toByteArray()));
+            i = 0;
+            boundStatement.setString(i++, agentId);
+            boundStatement.setString(i++, trace.getId());
+            boundStatement.setBytes(i++,
+                    ByteBuffer.wrap(trace.getMainThreadProfile().toByteArray()));
+            boundStatement.setInt(i++, getTTL());
             session.execute(boundStatement);
         }
 
         if (trace.hasAuxThreadProfile()) {
             boundStatement = insertAuxThreadProfile.bind();
-            boundStatement.setString(0, agentId);
-            boundStatement.setString(1, trace.getId());
-            boundStatement.setBytes(2, ByteBuffer.wrap(trace.getAuxThreadProfile().toByteArray()));
+            i = 0;
+            boundStatement.setString(i++, agentId);
+            boundStatement.setString(i++, trace.getId());
+            boundStatement.setBytes(i++,
+                    ByteBuffer.wrap(trace.getAuxThreadProfile().toByteArray()));
+            boundStatement.setInt(i++, getTTL());
             session.execute(boundStatement);
         }
     }
@@ -748,6 +784,11 @@ public class TraceDao implements TraceRepository {
         }
         ByteBuffer bytes = checkNotNull(row.getBytes(0));
         return Trace.Header.parseFrom(ByteString.copyFrom(bytes));
+    }
+
+    private int getTTL() {
+        return Ints.saturatedCast(
+                HOURS.toSeconds(configRepository.getStorageConfig().traceExpirationHours()));
     }
 
     private static Result<TracePoint> processPoints(ResultSet results, TracePointFilter filter,

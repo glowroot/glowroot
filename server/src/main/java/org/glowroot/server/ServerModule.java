@@ -45,10 +45,7 @@ import org.glowroot.server.storage.ServerConfigDao;
 import org.glowroot.server.storage.TraceDao;
 import org.glowroot.server.storage.TransactionTypeDao;
 import org.glowroot.server.storage.TriggeredAlertDao;
-import org.glowroot.storage.repo.AggregateRepository;
-import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.RepoAdmin;
-import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.storage.util.MailService;
@@ -110,26 +107,28 @@ public class ServerModule {
                     + " with replication = {'class': 'SimpleStrategy', 'replication_factor': 1}");
             session.execute("use " + serverConfig.cassandraKeyspace());
 
-            AgentDao agentDao = new AgentDao(session);
-            TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session);
-
             ServerConfigDao serverConfigDao = new ServerConfigDao(session);
+            AgentDao agentDao = new AgentDao(session);
             ConfigRepositoryImpl configRepository =
-                    new ConfigRepositoryImpl(agentDao, serverConfigDao);
+                    new ConfigRepositoryImpl(serverConfigDao, agentDao);
+            serverConfigDao.setConfigRepository(configRepository);
+            agentDao.setConfigRepository(configRepository);
 
-            AggregateRepository aggregateRepository =
+            TransactionTypeDao transactionTypeDao =
+                    new TransactionTypeDao(session, configRepository);
+            AggregateDao aggregateDao =
                     new AggregateDao(session, agentDao, transactionTypeDao, configRepository);
-            TraceRepository traceRepository = new TraceDao(session, agentDao, transactionTypeDao);
-            GaugeValueRepository gaugeValueRepository =
-                    new GaugeValueDao(session, agentDao, configRepository);
-            TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session);
+            TraceDao traceDao =
+                    new TraceDao(session, configRepository, agentDao, transactionTypeDao);
+            GaugeValueDao gaugeValueDao = new GaugeValueDao(session, agentDao, configRepository);
+            TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session, configRepository);
             RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
             AlertingService alertingService = new AlertingService(configRepository, agentDao,
-                    triggeredAlertDao, aggregateRepository, gaugeValueRepository,
-                    rollupLevelService, new MailService());
+                    triggeredAlertDao, aggregateDao, gaugeValueDao, rollupLevelService,
+                    new MailService());
 
-            server = new GrpcServer(serverConfig.grpcPort(), agentDao, aggregateRepository,
-                    gaugeValueRepository, traceRepository, alertingService);
+            server = new GrpcServer(serverConfig.grpcPort(), agentDao, aggregateDao,
+                    gaugeValueDao, traceDao, alertingService);
             configRepository.setDownstreamService(server.getDownstreamService());
 
             uiModule = new CreateUiModuleBuilder()
@@ -140,9 +139,9 @@ public class ServerModule {
                     .configRepository(configRepository)
                     .agentRepository(agentDao)
                     .transactionTypeRepository(transactionTypeDao)
-                    .traceRepository(traceRepository)
-                    .aggregateRepository(aggregateRepository)
-                    .gaugeValueRepository(gaugeValueRepository)
+                    .traceRepository(traceDao)
+                    .aggregateRepository(aggregateDao)
+                    .gaugeValueRepository(gaugeValueDao)
                     .repoAdmin(new NopRepoAdmin())
                     .rollupLevelService(rollupLevelService)
                     .liveTraceRepository(new LiveTraceRepositoryImpl(server.getDownstreamService()))

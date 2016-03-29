@@ -45,9 +45,11 @@ import org.glowroot.agent.config.UiConfig;
 import org.glowroot.agent.config.UserRecordingConfig;
 import org.glowroot.common.util.Versions;
 import org.glowroot.storage.config.AccessConfig;
+import org.glowroot.storage.config.FatStorageConfig;
 import org.glowroot.storage.config.ImmutableAccessConfig;
+import org.glowroot.storage.config.ImmutableFatStorageConfig;
 import org.glowroot.storage.config.ImmutableSmtpConfig;
-import org.glowroot.storage.config.ImmutableStorageConfig;
+import org.glowroot.storage.config.ServerStorageConfig;
 import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.config.StorageConfig;
 import org.glowroot.storage.repo.ConfigRepository;
@@ -70,7 +72,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     private final ImmutableList<RollupConfig> rollupConfigs;
 
     private volatile AccessConfig accessConfig;
-    private volatile StorageConfig storageConfig;
+    private volatile FatStorageConfig storageConfig;
     private volatile SmtpConfig smtpConfig;
 
     // volatile not needed as access is guarded by secretFile
@@ -104,10 +106,10 @@ class ConfigRepositoryImpl implements ConfigRepository {
         } else {
             this.accessConfig = accessConfig;
         }
-        StorageConfig storageConfig =
-                configService.getOtherConfig(STORAGE_KEY, ImmutableStorageConfig.class);
+        FatStorageConfig storageConfig =
+                configService.getOtherConfig(STORAGE_KEY, ImmutableFatStorageConfig.class);
         if (storageConfig == null) {
-            this.storageConfig = ImmutableStorageConfig.builder().build();
+            this.storageConfig = ImmutableFatStorageConfig.builder().build();
         } else if (storageConfig.hasListIssues()) {
             this.storageConfig = withCorrectedLists(storageConfig);
         } else {
@@ -227,8 +229,13 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public StorageConfig getStorageConfig() {
+    public FatStorageConfig getFatStorageConfig() {
         return storageConfig;
+    }
+
+    @Override
+    public ServerStorageConfig getServerStorageConfig() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -406,15 +413,6 @@ class ConfigRepositoryImpl implements ConfigRepository {
         }
     }
 
-    private PluginDescriptor getPluginDescriptor(String pluginId) {
-        for (PluginDescriptor pluginDescriptor : pluginCache.pluginDescriptors()) {
-            if (pluginDescriptor.id().equals(pluginId)) {
-                return pluginDescriptor;
-            }
-        }
-        throw new IllegalStateException("Could not find plugin descriptor: " + pluginId);
-    }
-
     @Override
     public void insertInstrumentationConfig(String agentId,
             AgentConfig.InstrumentationConfig instrumentationConfig) throws Exception {
@@ -532,7 +530,12 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateStorageConfig(StorageConfig updatedConfig, String priorVersion)
+    public void updateServerStorageConfig(ServerStorageConfig updatedConfig, String priorVersion) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void updateFatStorageConfig(FatStorageConfig updatedConfig, String priorVersion)
             throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(storageConfig.version(), priorVersion);
@@ -548,6 +551,11 @@ class ConfigRepositoryImpl implements ConfigRepository {
             configService.updateOtherConfig(SMTP_KEY, updatedConfig);
             smtpConfig = updatedConfig;
         }
+    }
+
+    @Override
+    public StorageConfig getStorageConfig() {
+        return getFatStorageConfig();
     }
 
     @Override
@@ -576,6 +584,15 @@ class ConfigRepositoryImpl implements ConfigRepository {
         }
     }
 
+    private PluginDescriptor getPluginDescriptor(String pluginId) {
+        for (PluginDescriptor pluginDescriptor : pluginCache.pluginDescriptors()) {
+            if (pluginDescriptor.id().equals(pluginId)) {
+                return pluginDescriptor;
+            }
+        }
+        throw new IllegalStateException("Could not find plugin descriptor: " + pluginId);
+    }
+
     private void checkVersionsEqual(String version, String priorVersion)
             throws OptimisticLockException {
         if (!version.equals(priorVersion)) {
@@ -592,14 +609,14 @@ class ConfigRepositoryImpl implements ConfigRepository {
         configService.updateOtherConfigs(configs);
     }
 
-    private static StorageConfig withCorrectedLists(StorageConfig storageConfig) {
-        StorageConfig defaultConfig = ImmutableStorageConfig.builder().build();
+    private static FatStorageConfig withCorrectedLists(FatStorageConfig storageConfig) {
+        FatStorageConfig defaultConfig = ImmutableFatStorageConfig.builder().build();
         ImmutableList<Integer> rollupExpirationHours =
                 fix(storageConfig.rollupExpirationHours(), defaultConfig.rollupExpirationHours());
         ImmutableList<Integer> rollupCappedDatabaseSizesMb =
                 fix(storageConfig.rollupCappedDatabaseSizesMb(),
                         defaultConfig.rollupCappedDatabaseSizesMb());
-        return ImmutableStorageConfig.builder()
+        return ImmutableFatStorageConfig.builder()
                 .copyFrom(storageConfig)
                 .rollupExpirationHours(rollupExpirationHours)
                 .rollupCappedDatabaseSizesMb(rollupCappedDatabaseSizesMb)

@@ -39,7 +39,7 @@ import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.agent.fat.storage.util.H2DatabaseStats;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.storage.config.StorageConfig;
+import org.glowroot.storage.config.FatStorageConfig;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
@@ -84,7 +84,7 @@ public class SimpleRepoModule {
         }
         this.dataSource = dataSource;
         this.configRepository = configRepository;
-        StorageConfig storageConfig = configRepository.getStorageConfig();
+        FatStorageConfig storageConfig = configRepository.getFatStorageConfig();
         List<CappedDatabase> rollupCappedDatabases = Lists.newArrayList();
         for (int i = 0; i < storageConfig.rollupCappedDatabaseSizesMb().size(); i++) {
             File file = new File(dataDir, "rollup-" + i + "-detail.capped.db");

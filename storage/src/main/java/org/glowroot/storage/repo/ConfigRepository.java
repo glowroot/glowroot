@@ -26,6 +26,8 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
 import org.glowroot.storage.config.AccessConfig;
+import org.glowroot.storage.config.FatStorageConfig;
+import org.glowroot.storage.config.ServerStorageConfig;
 import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.config.StorageConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
@@ -86,7 +88,9 @@ public interface ConfigRepository {
 
     AccessConfig getAccessConfig();
 
-    StorageConfig getStorageConfig();
+    FatStorageConfig getFatStorageConfig();
+
+    ServerStorageConfig getServerStorageConfig();
 
     SmtpConfig getSmtpConfig();
 
@@ -132,9 +136,15 @@ public interface ConfigRepository {
 
     void updateAccessConfig(AccessConfig accessConfig, String priorVersion) throws Exception;
 
-    void updateStorageConfig(StorageConfig storageConfig, String priorVersion) throws Exception;
+    void updateServerStorageConfig(ServerStorageConfig storageConfig, String priorVersion)
+            throws Exception;
+
+    void updateFatStorageConfig(FatStorageConfig storageConfig, String priorVersion)
+            throws Exception;
 
     void updateSmtpConfig(SmtpConfig smtpConfig, String priorVersion) throws Exception;
+
+    StorageConfig getStorageConfig();
 
     long getGaugeCollectionIntervalMillis();
 

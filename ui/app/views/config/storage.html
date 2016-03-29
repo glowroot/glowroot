@@ -25,7 +25,7 @@
     <div ng-form
          class="form-horizontal"
          name="formCtrl">
-      <fieldset>
+      <fieldset ng-if="layout.fat">
         <legend>data.h2.db</legend>
         <div gt-form-group
              gt-label="Response time and JVM gauge tabs (1&nbsp;minute&nbsp;interval&nbsp;data)"
@@ -58,7 +58,7 @@
           </div>
         </div>
         <div gt-form-group
-             gt-label="Response time and JVM gauge tabs (30&nbsp;&nbsp;interval&nbsp;data)"
+             gt-label="Response time and JVM gauge tabs (30&nbsp;minute&nbsp;interval&nbsp;data)"
              gt-model="page.rollupExpirationDays[2]"
              gt-number="true"
              gt-pattern="pattern.integer"
@@ -87,7 +87,7 @@
           </div>
         </div>
       </fieldset>
-      <fieldset>
+      <fieldset ng-if="layout.fat">
         <legend>*.capped.db</legend>
         <div gt-form-group
              gt-label="Queries, service calls and continuous profiling tab data (1&nbsp;minute&nbsp;interval&nbsp;data)"
@@ -152,6 +152,69 @@
           </div>
         </div>
       </fieldset>
+      <div ng-if="!layout.fat">
+        <div gt-form-group
+             gt-label="1&nbsp;minute&nbsp;interval&nbsp;data"
+             gt-model="page.rollupExpirationDays[0]"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-width="7em"
+             gt-addon="days"
+             gt-col-class1="col-lg-4"
+             gt-col-class2="col-lg-8">
+          <div class="help-block">
+            This setting defines how long to retain all 1 minute interval data. This includes response time data,
+            query data, service call data, profile data, gauge data and error summary data.
+            (this setting also applies to 5 second gauge data)
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="5&nbsp;minute&nbsp;interval&nbsp;data"
+             gt-model="page.rollupExpirationDays[1]"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-width="7em"
+             gt-addon="days"
+             gt-col-class1="col-lg-4"
+             gt-col-class2="col-lg-8">
+          <div class="help-block">
+            This setting defines how long to retain all 5 minute interval data. This includes response time data,
+            query data, service call data, profile data, gauge data and error summary data.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="30&nbsp;minute&nbsp;interval&nbsp;data"
+             gt-model="page.rollupExpirationDays[2]"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-width="7em"
+             gt-addon="days"
+             gt-col-class1="col-lg-4"
+             gt-col-class2="col-lg-8">
+          <div class="help-block">
+            This setting defines how long to retain all 30 minute interval data. This includes response time data,
+            query data, service call data, profile data, gauge data and error summary data.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Trace data"
+             gt-model="page.traceExpirationDays"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-width="7em"
+             gt-addon="days"
+             gt-col-class1="col-lg-4"
+             gt-col-class2="col-lg-8">
+          <div class="help-block">
+            This setting defines how long to retain all trace data. This includes individual traces and error message
+            data.
+          </div>
+        </div>
+      </div>
       <div class="form-group gt-form-buttons">
         <div class="col-lg-offset-4 col-lg-8">
           <div gt-button-group>
@@ -181,6 +244,12 @@
                  ng-show="layout.fat"
                  class="pull-left">
             </div>
+          </div>
+          <div class="help-block" ng-if="!layout.fat">
+            Updated expiration settings only apply to data collected from this point forward. Existing data is still
+            tagged with the expiration settings in effect at the time the data was captured since using
+            <a href="https://docs.datastax.com/en/cql/3.1/cql/cql_using/use_expire_c.html">Cassandra TTL</a>
+            to implement expiration.
           </div>
         </div>
       </div>
