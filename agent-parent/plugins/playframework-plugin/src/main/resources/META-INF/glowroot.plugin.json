@@ -1,0 +1,20 @@
+{
+  "name": "Playframework Plugin",
+  "id": "playframework",
+  "instrumentation": [
+    {
+      "className": "play.mvc.Controller",
+      "methodName": "renderTemplate",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.util.Map"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "playframework",
+      "traceEntryMessageTemplate": "view {{0}}"
+    }
+  ],
+  "aspects": [
+    "org.glowroot.agent.plugin.playframework.PlayframeworkAspect"
+  ]
+}
