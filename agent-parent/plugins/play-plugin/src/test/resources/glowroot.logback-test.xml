@@ -27,4 +27,6 @@
   <root level="warn">
     <appender-ref ref="FILE" />
   </root>
+  <!-- this is needed to suppress a harmless warning messages -->
+  <logger name="org.codehaus.groovy.runtime.m12n.MetaInfExtensionModule" level="error" />
 </configuration>

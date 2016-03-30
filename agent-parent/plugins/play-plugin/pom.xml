@@ -17,7 +17,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <play.version>1.2.7.2</play.version>
+    <play.version>1.4.2</play.version>
   </properties>
 
   <dependencies>
@@ -50,8 +50,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.ning</groupId>
-      <artifactId>async-http-client</artifactId>
+      <!-- using apache httpclient instead of asynchttpclient to avoid netty conflicts with
+        different play versions -->
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.5.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -64,20 +67,18 @@
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-log4j12</artifactId>
         </exclusion>
+        <exclusion>
+          <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+          <groupId>com.ning</groupId>
+          <artifactId>async-http-client</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
-      <groupId>javassist</groupId>
-      <artifactId>javassist</artifactId>
-      <version>3.12.0.GA</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
-      <version>1.3.176</version>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.10</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -96,5 +97,22 @@
         </executions>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>default-testCompile</id>
+              <configuration>
+                <!-- java 7 is needed for running play during tests -->
+                <source>1.7</source>
+                <target>1.7</target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 </project>

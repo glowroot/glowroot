@@ -17,10 +17,13 @@ package org.glowroot.agent.plugin.play;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.net.ServerSocket;
 import java.util.List;
 
-import com.ning.http.client.AsyncHttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -97,11 +100,9 @@ public class PlayIT {
 
         @Override
         public void executeApp() throws Exception {
-            AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            int statusCode = asyncHttpClient
-                    .prepareGet("http://localhost:" + PlayWrapper.port + "/")
-                    .execute().get().getStatusCode();
-            asyncHttpClient.close();
+            CloseableHttpClient httpClient = HttpClients.createDefault();
+            HttpGet httpGet = new HttpGet("http://localhost:" + PlayWrapper.port + "/");
+            int statusCode = httpClient.execute(httpGet).getStatusLine().getStatusCode();
             if (statusCode != 200) {
                 throw new IllegalStateException("Unexpected status code: " + statusCode);
             }
@@ -112,11 +113,10 @@ public class PlayIT {
 
         @Override
         public void executeApp() throws Exception {
-            AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            int statusCode = asyncHttpClient
-                    .prepareGet("http://localhost:" + PlayWrapper.port + "/application/index")
-                    .execute().get().getStatusCode();
-            asyncHttpClient.close();
+            CloseableHttpClient httpClient = HttpClients.createDefault();
+            HttpGet httpGet =
+                    new HttpGet("http://localhost:" + PlayWrapper.port + "/application/index");
+            int statusCode = httpClient.execute(httpGet).getStatusLine().getStatusCode();
             if (statusCode != 200) {
                 throw new IllegalStateException("Unexpected status code: " + statusCode);
             }
@@ -127,11 +127,10 @@ public class PlayIT {
 
         @Override
         public void executeApp() throws Exception {
-            AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            int statusCode = asyncHttpClient
-                    .prepareGet("http://localhost:" + PlayWrapper.port + "/application/calculate")
-                    .execute().get().getStatusCode();
-            asyncHttpClient.close();
+            CloseableHttpClient httpClient = HttpClients.createDefault();
+            HttpGet httpGet =
+                    new HttpGet("http://localhost:" + PlayWrapper.port + "/application/calculate");
+            int statusCode = httpClient.execute(httpGet).getStatusLine().getStatusCode();
             if (statusCode != 200) {
                 throw new IllegalStateException("Unexpected status code: " + statusCode);
             }
@@ -149,8 +148,20 @@ public class PlayIT {
                 throw new IllegalStateException(e);
             }
             Play.init(new File("target/test-classes/application"), "test");
-            new Server(new String[] {"--http.port=" + port});
             Play.configuration.setProperty("http.port", Integer.toString(port));
+            try {
+                Constructor<Server> constructor = Server.class.getConstructor(String[].class);
+                constructor.newInstance(new Object[] {new String[0]});
+            } catch (Exception e) {
+                try {
+                    // play 1.1
+                    Server.class.newInstance();
+                } catch (Exception f) {
+                    f.printStackTrace();
+                    // re-throw original exception
+                    throw new IllegalStateException(e);
+                }
+            }
             Play.start();
         }
 
