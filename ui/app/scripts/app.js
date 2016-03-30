@@ -152,6 +152,10 @@ glowroot.run([
       if (!$rootScope.layout) {
         return '';
       }
+      if (!$rootScope.layout.agentRollups) {
+        // login page, not yet authenticated
+        return '';
+      }
       // can't use $rootScope.agentRollup here because this function is called from waitForLayout() function in
       // routes.js before $rootScope.agentRollup is set (note for testing, this is only a problem when not under grunt
       // serve)
