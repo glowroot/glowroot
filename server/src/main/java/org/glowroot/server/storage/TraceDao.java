@@ -374,7 +374,6 @@ public class TraceDao implements TraceRepository {
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
                     boundStatement.setString(i++, agentId);
                     boundStatement.setString(i++, trace.getId());
-                    boundStatement.setInt(i++, getTTL());
                     session.execute(boundStatement);
 
                     boundStatement = deletePartialTransactionSlowPoint.bind();
@@ -385,7 +384,6 @@ public class TraceDao implements TraceRepository {
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
                     boundStatement.setString(i++, agentId);
                     boundStatement.setString(i++, trace.getId());
-                    boundStatement.setInt(i++, getTTL());
                     session.execute(boundStatement);
 
                     boundStatement = deletePartialOverallSlowCount.bind();
@@ -395,7 +393,6 @@ public class TraceDao implements TraceRepository {
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
                     boundStatement.setString(i++, agentId);
                     boundStatement.setString(i++, trace.getId());
-                    boundStatement.setInt(i++, getTTL());
                     session.execute(boundStatement);
 
                     boundStatement = deletePartialTransactionSlowCount.bind();
@@ -406,7 +403,6 @@ public class TraceDao implements TraceRepository {
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
                     boundStatement.setString(i++, agentId);
                     boundStatement.setString(i++, trace.getId());
-                    boundStatement.setInt(i++, getTTL());
                     session.execute(boundStatement);
                 }
             }
