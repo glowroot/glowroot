@@ -113,7 +113,8 @@ public class GrpcServer {
             try {
                 aggregateRepository.store(request.getAgentId(), request.getCaptureTime(),
                         request.getAggregatesByTypeList());
-                alertingService.checkTransactionAlerts(request.getCaptureTime());
+                alertingService.checkTransactionAlerts(request.getAgentId(),
+                        request.getCaptureTime());
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
                 responseObserver.onError(t);
@@ -132,7 +133,7 @@ public class GrpcServer {
                 for (GaugeValue gaugeValue : request.getGaugeValuesList()) {
                     maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
                 }
-                alertingService.checkGaugeAlerts(maxCaptureTime);
+                alertingService.checkGaugeAlerts(request.getAgentId(), maxCaptureTime);
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
                 responseObserver.onError(t);

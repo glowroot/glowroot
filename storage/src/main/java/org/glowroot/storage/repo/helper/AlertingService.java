@@ -35,8 +35,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.util.Versions;
 import org.glowroot.storage.config.SmtpConfig;
-import org.glowroot.storage.repo.AgentRepository;
-import org.glowroot.storage.repo.AgentRepository.AgentRollup;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.AggregateRepository.PercentileAggregate;
 import org.glowroot.storage.repo.ConfigRepository;
@@ -45,6 +43,7 @@ import org.glowroot.storage.repo.GaugeValueRepository.Gauge;
 import org.glowroot.storage.repo.ImmutableTransactionQuery;
 import org.glowroot.storage.repo.TriggeredAlertRepository;
 import org.glowroot.storage.repo.Utils;
+import org.glowroot.storage.util.AgentRollups;
 import org.glowroot.storage.util.Encryption;
 import org.glowroot.storage.util.MailService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -59,19 +58,17 @@ public class AlertingService {
     private static final Logger logger = LoggerFactory.getLogger(AlertingService.class);
 
     private final ConfigRepository configRepository;
-    private final AgentRepository agentRepository;
     private final TriggeredAlertRepository triggeredAlertRepository;
     private final AggregateRepository aggregateRepository;
     private final GaugeValueRepository gaugeValueRepository;
     private final RollupLevelService rollupLevelService;
     private final MailService mailService;
 
-    public AlertingService(ConfigRepository configRepository, AgentRepository agentRepository,
+    public AlertingService(ConfigRepository configRepository,
             TriggeredAlertRepository triggeredAlertRepository,
             AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
             RollupLevelService rollupLevelService, MailService mailService) {
         this.configRepository = configRepository;
-        this.agentRepository = agentRepository;
         this.triggeredAlertRepository = triggeredAlertRepository;
         this.aggregateRepository = aggregateRepository;
         this.gaugeValueRepository = gaugeValueRepository;
@@ -79,15 +76,14 @@ public class AlertingService {
         this.mailService = mailService;
     }
 
-    public void checkTransactionAlerts(long endTime) throws Exception {
+    public void checkTransactionAlerts(String agentId, long endTime) throws Exception {
         try {
-            for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
-                for (AlertConfig alertConfig : configRepository
-                        .getAlertConfigs(agentRollup.name())) {
+            for (String agentRollup : AgentRollups.getAgentRollups(agentId)) {
+                for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollup)) {
                     if (alertConfig.getKind() != AlertKind.TRANSACTION) {
                         continue;
                     }
-                    checkTransactionAlert(agentRollup.name(), alertConfig, endTime);
+                    checkTransactionAlert(agentRollup, alertConfig, endTime);
                 }
             }
         } catch (Exception e) {
@@ -95,15 +91,14 @@ public class AlertingService {
         }
     }
 
-    public void checkGaugeAlerts(long endTime) throws Exception {
+    public void checkGaugeAlerts(String agentId, long endTime) throws Exception {
         try {
-            for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
-                for (AlertConfig alertConfig : configRepository
-                        .getAlertConfigs(agentRollup.name())) {
+            for (String agentRollup : AgentRollups.getAgentRollups(agentId)) {
+                for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollup)) {
                     if (alertConfig.getKind() != AlertKind.GAUGE) {
                         continue;
                     }
-                    checkGaugeAlert(agentRollup.name(), alertConfig, endTime);
+                    checkGaugeAlert(agentRollup, alertConfig, endTime);
                 }
             }
         } catch (Exception e) {

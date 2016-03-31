@@ -24,6 +24,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.storage.config.ImmutableServerStorageConfig;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
@@ -72,14 +73,13 @@ public class GaugeValueDaoIT {
         assertThat(gaugeValues.get(1).getValue()).isEqualTo(500);
         assertThat(gaugeValues.get(1).getWeight()).isEqualTo(1);
 
-        // check that rolled-up data does not exist before rollup
-        gaugeValues = gaugeValueDao.readGaugeValues("one", "the gauge:attr1", 0, 300000, 1);
-        assertThat(gaugeValues).isEmpty();
-
         // rollup
-        gaugeValueDao.rollup(300001);
-        gaugeValueDao.rollup(300001);
-        gaugeValueDao.rollup(300001);
+        List<Integer> rollupExpirationHours = Lists.newArrayList(
+                ImmutableServerStorageConfig.builder().build().rollupExpirationHours());
+        rollupExpirationHours.add(0, rollupExpirationHours.get(0));
+        gaugeValueDao.rollup("one", rollupExpirationHours);
+        gaugeValueDao.rollup("one", rollupExpirationHours);
+        gaugeValueDao.rollup("one", rollupExpirationHours);
 
         // check rolled-up data after rollup
         gaugeValues = gaugeValueDao.readGaugeValues("one", "the gauge:attr1", 0, 300000, 1);

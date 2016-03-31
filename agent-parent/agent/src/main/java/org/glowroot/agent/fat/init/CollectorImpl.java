@@ -61,12 +61,17 @@ class CollectorImpl implements Collector {
     public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType)
             throws Exception {
         aggregateRepository.store(AGENT_ID, captureTime, aggregatesByType);
-        alertingService.checkTransactionAlerts(captureTime);
+        alertingService.checkTransactionAlerts(AGENT_ID, captureTime);
     }
 
     @Override
     public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
         gaugeValueRepository.store(AGENT_ID, gaugeValues);
+        long maxCaptureTime = 0;
+        for (GaugeValue gaugeValue : gaugeValues) {
+            maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
+        }
+        alertingService.checkGaugeAlerts(AGENT_ID, maxCaptureTime);
     }
 
     @Override
