@@ -43,6 +43,7 @@ import org.glowroot.server.DownstreamServiceImpl;
 import org.glowroot.storage.config.AccessConfig;
 import org.glowroot.storage.config.FatStorageConfig;
 import org.glowroot.storage.config.ImmutableAccessConfig;
+import org.glowroot.storage.config.ImmutableFatStorageConfig;
 import org.glowroot.storage.config.ImmutableServerStorageConfig;
 import org.glowroot.storage.config.ImmutableSmtpConfig;
 import org.glowroot.storage.config.ServerStorageConfig;
@@ -243,6 +244,9 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 serverConfigDao.read(STORAGE_KEY, ImmutableServerStorageConfig.class);
         if (config == null) {
             return ImmutableServerStorageConfig.builder().build();
+        }
+        if (config.hasListIssues()) {
+            return withCorrectedLists(config);
         }
         return config;
     }
@@ -805,5 +809,27 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 throw new IllegalStateException("This exact instrumentation already exists");
             }
         }
+    }
+
+    private static ServerStorageConfig withCorrectedLists(ServerStorageConfig storageConfig) {
+        FatStorageConfig defaultConfig = ImmutableFatStorageConfig.builder().build();
+        ImmutableList<Integer> rollupExpirationHours =
+                fix(storageConfig.rollupExpirationHours(), defaultConfig.rollupExpirationHours());
+        return ImmutableServerStorageConfig.builder()
+                .copyFrom(storageConfig)
+                .rollupExpirationHours(rollupExpirationHours)
+                .build();
+    }
+
+    private static ImmutableList<Integer> fix(ImmutableList<Integer> thisList,
+            List<Integer> defaultList) {
+        if (thisList.size() >= defaultList.size()) {
+            return thisList.subList(0, defaultList.size());
+        }
+        List<Integer> correctedList = Lists.newArrayList(thisList);
+        for (int i = thisList.size(); i < defaultList.size(); i++) {
+            correctedList.add(defaultList.get(i));
+        }
+        return ImmutableList.copyOf(correctedList);
     }
 }

@@ -52,6 +52,8 @@ public interface ConfigRepository {
             Long.getLong("glowroot.internal.rollup.1.intervalMillis", 5 * 60 * 1000); // 5 minutes
     long ROLLUP_2_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.2.intervalMillis", 30 * 60 * 1000); // 30 minutes
+    long ROLLUP_3_INTERVAL_MILLIS =
+            Long.getLong("glowroot.internal.rollup.3.intervalMillis", 4 * 3600 * 1000); // 4 hours
 
     @Nullable
     TransactionConfig getTransactionConfig(String agentId) throws IOException;
@@ -179,7 +181,11 @@ public interface ConfigRepository {
                     // default rollup level #2 fixed interval is 30 minutes,
                     // making default view threshold 8 hour
                     ImmutableRollupConfig.of(ROLLUP_2_INTERVAL_MILLIS,
-                            ROLLUP_2_INTERVAL_MILLIS * 16));
+                            ROLLUP_2_INTERVAL_MILLIS * 16),
+                    // default rollup level #3 fixed interval is 4 hours,
+                    // making default view threshold 3 days
+                    ImmutableRollupConfig.of(ROLLUP_3_INTERVAL_MILLIS,
+                            ROLLUP_3_INTERVAL_MILLIS * 18));
         }
     }
 
