@@ -257,8 +257,10 @@ public class ConfigService {
     }
 
     public void updatePluginConfigs(List<PluginConfig> updatedConfigs) throws IOException {
-        configFile.write("plugins", updatedConfigs, mapper);
-        pluginConfigs = ImmutableList.copyOf(updatedConfigs);
+        ImmutableList<PluginConfig> sortedConfigs =
+                new PluginConfigOrdering().immutableSortedCopy(updatedConfigs);
+        configFile.write("plugins", sortedConfigs, mapper);
+        pluginConfigs = sortedConfigs;
         notifyAllPluginConfigListeners();
     }
 
@@ -449,6 +451,13 @@ public class ConfigService {
     private static class PluginDescriptorOrdering extends Ordering<PluginDescriptor> {
         @Override
         public int compare(PluginDescriptor left, PluginDescriptor right) {
+            return left.id().compareToIgnoreCase(right.id());
+        }
+    }
+
+    private static class PluginConfigOrdering extends Ordering<PluginConfig> {
+        @Override
+        public int compare(PluginConfig left, PluginConfig right) {
             return left.id().compareToIgnoreCase(right.id());
         }
     }

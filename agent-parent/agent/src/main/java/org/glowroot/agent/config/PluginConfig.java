@@ -137,7 +137,7 @@ public abstract class PluginConfig {
             List<PluginProperty> props) {
         ImmutablePluginConfig.Builder builder = ImmutablePluginConfig.builder()
                 .pluginDescriptor(pluginDescriptor);
-        Map<String, PropertyValue> properties = Maps.newHashMap();
+        Map<String, PropertyValue> properties = Maps.newLinkedHashMap();
         for (PropertyDescriptor propertyDescriptor : pluginDescriptor.properties()) {
             properties.put(propertyDescriptor.name(),
                     propertyDescriptor.getValidatedNonNullDefaultValue());
