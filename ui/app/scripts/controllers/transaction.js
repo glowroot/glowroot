@@ -75,17 +75,11 @@ glowroot.controller('TransactionCtrl', [
           query['agent-rollup'] = agentRollup;
         }
       }
-      var transactionTypes = agentRollupObj.transactionTypes;
-      if (transactionTypes.length === 0) {
-        query['transaction-type'] = '';
-      } else if (transactionTypes.indexOf(transactionType) !== -1) {
+      if (transactionType) {
         query['transaction-type'] = transactionType;
-      } else if (transactionTypes.indexOf($scope.defaultTransactionType()) !== -1) {
-        query['transaction-type'] = $scope.defaultTransactionType();
       } else {
-        query['transaction-type'] = transactionTypes[0];
+        query['transaction-type'] = agentRollupObj.defaultDisplayedTransactionType;
       }
-
       if ($scope.range.last) {
         if ($scope.range.last !== 4 * 60 * 60 * 1000) {
           query.last = $scope.range.last;
