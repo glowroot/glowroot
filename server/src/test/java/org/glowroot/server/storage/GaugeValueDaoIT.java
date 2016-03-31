@@ -63,6 +63,7 @@ public class GaugeValueDaoIT {
         gaugeValueDao.truncateAll();
         gaugeValueDao.store("one", createData(60013));
         gaugeValueDao.store("one", createData(65009));
+        gaugeValueDao.store("one", createData(360000));
 
         // check non-rolled up data
         List<GaugeValue> gaugeValues =

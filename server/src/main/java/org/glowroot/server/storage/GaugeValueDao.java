@@ -15,6 +15,7 @@
  */
 package org.glowroot.server.storage;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -244,18 +245,34 @@ public class GaugeValueDao implements GaugeValueRepository {
         BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind();
         boundStatement.setString(0, agentRollup);
         ResultSet results = session.execute(boundStatement);
+        Map<String, List<Row>> rowMap = Maps.newHashMap();
         for (Row row : results) {
-            long captureTime = checkNotNull(row.getTimestamp(0)).getTime();
             String gaugeName = checkNotNull(row.getString(1));
-            UUID lastUpdate = row.getUUID(2);
-            rollupOne(rollupLevel, agentRollup, gaugeName, captureTime - rollupIntervalMillis,
-                    captureTime, ttls);
-            boundStatement = deleteNeedsRollup.get(rollupLevel - 1).bind();
-            boundStatement.setString(0, agentRollup);
-            boundStatement.setTimestamp(1, new Date(captureTime));
-            boundStatement.setString(2, gaugeName);
-            boundStatement.setUUID(3, lastUpdate);
-            session.execute(boundStatement);
+            rowMap.computeIfAbsent(gaugeName, k -> new ArrayList<>()).add(row);
+        }
+        for (Entry<String, List<Row>> entry : rowMap.entrySet()) {
+            String gaugeName = entry.getKey();
+            List<Row> rows = entry.getValue();
+            for (int i = 0; i < rows.size(); i++) {
+                if (i == rows.size() - 1) {
+                    // don't roll up the most recent one since it is likely still being added,
+                    // this is mostly to avoid rolling up this data twice, but also currently the UI
+                    // assumes when it finds a 1-min rollup it doesn't check for non-rolled up
+                    // 5-second gauge values
+                    break;
+                }
+                Row row = rows.get(i);
+                long captureTime = checkNotNull(row.getTimestamp(0)).getTime();
+                UUID lastUpdate = row.getUUID(2);
+                rollupOne(rollupLevel, agentRollup, gaugeName, captureTime - rollupIntervalMillis,
+                        captureTime, ttls);
+                boundStatement = deleteNeedsRollup.get(rollupLevel - 1).bind();
+                boundStatement.setString(0, agentRollup);
+                boundStatement.setTimestamp(1, new Date(captureTime));
+                boundStatement.setString(2, gaugeName);
+                boundStatement.setUUID(3, lastUpdate);
+                session.execute(boundStatement);
+            }
         }
     }
 

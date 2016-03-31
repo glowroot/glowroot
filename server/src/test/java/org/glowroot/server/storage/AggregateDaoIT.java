@@ -25,6 +25,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.common.model.QueryCollector;
+import org.glowroot.storage.config.ImmutableServerStorageConfig;
 import org.glowroot.storage.repo.AggregateRepository.ErrorSummarySortOrder;
 import org.glowroot.storage.repo.AggregateRepository.OverallErrorSummary;
 import org.glowroot.storage.repo.AggregateRepository.OverallQuery;
@@ -85,6 +86,7 @@ public class AggregateDaoIT {
         aggregateDao.truncateAll();
         aggregateDao.store("one", 60000, createData());
         aggregateDao.store("one", 120000, createData());
+        aggregateDao.store("one", 360000, createData());
 
         // check non-rolled up data
         OverallQuery overallQuery = ImmutableOverallQuery.builder()
@@ -165,7 +167,15 @@ public class AggregateDaoIT {
         assertThat(queriesByType.get(0).getQuery(0).getTotalRows().getValue()).isEqualTo(10);
         assertThat(queriesByType.get(0).getQuery(0).getExecutionCount()).isEqualTo(4);
 
-        // check that rolled-up data does not exist before rollup
+        // rollup
+        List<Integer> rollupExpirationHours =
+                ImmutableServerStorageConfig.builder().build().rollupExpirationHours();
+        aggregateDao.rollup("one", rollupExpirationHours);
+        aggregateDao.rollup("one", rollupExpirationHours);
+        aggregateDao.rollup("one", rollupExpirationHours);
+        aggregateDao.rollup("one", rollupExpirationHours);
+
+        // check rolled-up data after rollup
         overallQuery = ImmutableOverallQuery.builder()
                 .copyFrom(overallQuery)
                 .rollupLevel(1)
@@ -174,47 +184,7 @@ public class AggregateDaoIT {
                 .copyFrom(transactionQuery)
                 .rollupLevel(1)
                 .build();
-        overallSummary = aggregateDao.readOverallSummary(overallQuery);
-        assertThat(overallSummary.totalDurationNanos()).isEqualTo(0);
-        assertThat(overallSummary.transactionCount()).isEqualTo(0);
 
-        summaryCollector = new TransactionSummaryCollector();
-        aggregateDao.mergeInTransactionSummaries(summaryCollector, overallQuery,
-                sortOrder, 10);
-        result = summaryCollector.getResult(sortOrder, 10);
-        assertThat(result.records()).isEmpty();
-
-        overallErrorSummary = aggregateDao.readOverallErrorSummary(overallQuery);
-        assertThat(overallErrorSummary.errorCount()).isEqualTo(0);
-        assertThat(overallErrorSummary.transactionCount()).isEqualTo(0);
-
-        errorSummaryCollector = new TransactionErrorSummaryCollector();
-        aggregateDao.mergeInTransactionErrorSummaries(errorSummaryCollector, overallQuery,
-                errorSortOrder, 10);
-        errorSummaryResult = errorSummaryCollector.getResult(errorSortOrder, 10);
-        assertThat(errorSummaryResult.records()).isEmpty();
-
-        overviewAggregates = aggregateDao.readOverviewAggregates(transactionQuery);
-        assertThat(overviewAggregates).isEmpty();
-
-        percentileAggregates = aggregateDao.readPercentileAggregates(transactionQuery);
-        assertThat(percentileAggregates).isEmpty();
-
-        throughputAggregates = aggregateDao.readThroughputAggregates(transactionQuery);
-        assertThat(throughputAggregates).isEmpty();
-
-        queryCollector = new QueryCollector(1000, 0);
-        aggregateDao.mergeInQueries(queryCollector, transactionQuery);
-        queriesByType = queryCollector.toProto();
-        assertThat(queriesByType).isEmpty();
-
-        // rollup
-        aggregateDao.rollup(300001);
-        aggregateDao.rollup(300001);
-        aggregateDao.rollup(300001);
-        aggregateDao.rollup(300001);
-
-        // check rolled-up data after rollup
         overallSummary = aggregateDao.readOverallSummary(overallQuery);
         assertThat(overallSummary.totalDurationNanos()).isEqualTo(3579 * 2);
         assertThat(overallSummary.transactionCount()).isEqualTo(6);
