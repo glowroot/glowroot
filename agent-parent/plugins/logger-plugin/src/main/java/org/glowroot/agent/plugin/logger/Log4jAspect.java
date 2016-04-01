@@ -96,7 +96,7 @@ public class Log4jAspect {
             String messageText = String.valueOf(message);
             int lvl = level == null ? 0 : level.toInt();
             if (LoggerPlugin.markTraceAsError(lvl >= ERROR_INT, lvl >= WARN_INT, t != null)) {
-                context.setTransactionError(messageText);
+                context.setTransactionError(messageText, t);
             }
             String loggerName = LoggerPlugin.getAbbreviatedLoggerName(logger.getName());
             return context.startTraceEntry(MessageSupplier.from("log {}: {} - {}", getLevelStr(lvl),

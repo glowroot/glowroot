@@ -227,7 +227,7 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public void setTransactionError(@Nullable String message, Throwable t) {
+    public void setTransactionError(@Nullable String message, @Nullable Throwable t) {
         if (threadContext != null) {
             threadContext.setTransactionError(message, t);
         }

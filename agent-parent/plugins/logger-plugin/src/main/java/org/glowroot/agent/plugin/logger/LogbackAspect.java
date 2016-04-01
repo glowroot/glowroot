@@ -95,7 +95,7 @@ public class LogbackAspect {
                 t = ((ThrowableProxy) throwableProxy).getThrowable();
             }
             if (LoggerPlugin.markTraceAsError(lvl >= ERROR_INT, lvl >= WARN_INT, t != null)) {
-                context.setTransactionError(formattedMessage);
+                context.setTransactionError(formattedMessage, t);
             }
             TraceEntry traceEntry;
             String loggerName = LoggerPlugin.getAbbreviatedLoggerName(loggingEvent.getLoggerName());
@@ -137,7 +137,7 @@ public class LogbackAspect {
             int lvl = invoker.getLevel(loggingEvent);
             Throwable t = invoker.getThrowable(loggingEvent);
             if (LoggerPlugin.markTraceAsError(lvl >= ERROR_INT, lvl >= WARN_INT, t != null)) {
-                context.setTransactionError(formattedMessage);
+                context.setTransactionError(formattedMessage, t);
             }
             String loggerName =
                     LoggerPlugin.getAbbreviatedLoggerName(invoker.getLoggerName(logger));

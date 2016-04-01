@@ -79,7 +79,7 @@ public class Log4j2xAspect {
                     message == null ? "" : nullToEmpty(message.getFormattedMessage());
             int lvl = level == null ? 0 : level.intLevel();
             if (LoggerPlugin.markTraceAsError(lvl <= ERROR, lvl <= WARN, t != null)) {
-                context.setTransactionError(formattedMessage);
+                context.setTransactionError(formattedMessage, t);
             }
             String loggerName = LoggerPlugin.getAbbreviatedLoggerName(logger.getName());
             TraceEntry traceEntry = context.startTraceEntry(MessageSupplier.from("log {}: {} - {}",

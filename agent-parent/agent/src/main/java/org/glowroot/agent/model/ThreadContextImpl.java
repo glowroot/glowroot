@@ -883,7 +883,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public void setTransactionError(@Nullable String message, Throwable t) {
+    public void setTransactionError(@Nullable String message, @Nullable Throwable t) {
         transaction.setError(message, t);
     }
 

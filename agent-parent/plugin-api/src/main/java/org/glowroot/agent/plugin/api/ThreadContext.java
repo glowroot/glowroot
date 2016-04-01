@@ -238,7 +238,7 @@ public interface ThreadContext {
      * 
      * If there is no current transaction then this method does nothing.
      */
-    void setTransactionError(@Nullable String message, Throwable t);
+    void setTransactionError(@Nullable String message, @Nullable Throwable t);
 
     /**
      * Adds a trace entry with the specified error message and total time of zero. It does not set
