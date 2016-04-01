@@ -253,6 +253,8 @@ glowroot.factory('charts', [
       $scope.suppressChartSpinner = false;
       $http.get(url + queryStrings.encodeObject(query))
           .success(function (data) {
+            // clear http error, especially useful for auto refresh on live data to clear a sporadic error from earlier
+            $scope.httpError = undefined;
             if (showChartSpinner) {
               $scope.showChartSpinner--;
             }
@@ -298,7 +300,9 @@ glowroot.factory('charts', [
             updateLegend(chartState, $scope);
           })
           .error(function (data, status) {
-            $scope.showChartSpinner--;
+            if (showChartSpinner) {
+              $scope.showChartSpinner--;
+            }
             httpErrors.handler($scope)(data, status);
           });
     }

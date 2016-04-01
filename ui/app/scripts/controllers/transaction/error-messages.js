@@ -69,6 +69,8 @@ glowroot.controller('ErrorMessagesCtrl', [
       $scope.suppressChartSpinner = false;
       $http.get('backend/error/messages' + queryStrings.encodeObject(query))
           .success(function (data) {
+            // clear http error, especially useful for auto refresh on live data to clear a sporadic error from earlier
+            $scope.httpError = undefined;
             if (showChartSpinner) {
               $scope.showChartSpinner--;
             }
@@ -97,7 +99,9 @@ glowroot.controller('ErrorMessagesCtrl', [
             }
           })
           .error(function (data, status) {
-            $scope.showChartSpinner--;
+            if (showChartSpinner) {
+              $scope.showChartSpinner--;
+            }
             httpErrors.handler($scope, deferred)(data, status);
           });
     }

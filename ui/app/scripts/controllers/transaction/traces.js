@@ -121,6 +121,8 @@ glowroot.controller('TracesCtrl', [
               tryHighlight(data.activePoints, plot.getData()[2]);
             }
 
+            // clear http error, especially useful for auto refresh on live data to clear a sporadic error from earlier
+            $scope.httpError = undefined;
             if (showChartSpinner) {
               $scope.showChartSpinner--;
             }
@@ -155,7 +157,9 @@ glowroot.controller('TracesCtrl', [
             }
           })
           .error(function (data, status) {
-            $scope.showChartSpinner--;
+            if (showChartSpinner) {
+              $scope.showChartSpinner--;
+            }
             httpErrors.handler($scope, deferred)(data, status);
           });
     }
