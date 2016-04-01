@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.collect.Lists;
@@ -223,7 +224,7 @@ public class AgentDao implements AgentRepository {
         session.execute(boundStatement);
     }
 
-    void updateLastCaptureTime(String agentRollup, boolean leaf) {
+    ResultSetFuture updateLastCaptureTime(String agentRollup, boolean leaf) {
         BoundStatement boundStatement = insertRollupPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentRollup);
@@ -234,7 +235,7 @@ public class AgentDao implements AgentRepository {
         i = 0;
         boundStatement.setString(i++, agentRollup);
         boundStatement.setInt(i++, getMaxTTL());
-        session.execute(boundStatement);
+        return session.executeAsync(boundStatement);
     }
 
     private int getMaxTTL() {

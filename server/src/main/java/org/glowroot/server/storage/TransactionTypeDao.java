@@ -21,6 +21,7 @@ import java.util.Map;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableList;
@@ -86,13 +87,13 @@ public class TransactionTypeDao implements TransactionTypeRepository {
         throw new UnsupportedOperationException();
     }
 
-    void updateLastCaptureTime(String agentRollup, String transactionType) {
+    ResultSetFuture updateLastCaptureTime(String agentRollup, String transactionType) {
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentRollup);
         boundStatement.setString(i++, transactionType);
         boundStatement.setInt(i++, getMaxTTL());
-        session.execute(boundStatement);
+        return session.executeAsync(boundStatement);
     }
 
     private int getMaxTTL() {

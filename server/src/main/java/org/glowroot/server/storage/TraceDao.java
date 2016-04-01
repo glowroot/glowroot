@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Strings;
@@ -39,6 +40,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
+import com.google.common.util.concurrent.Futures;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.immutables.value.Value;
@@ -305,7 +307,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public void collect(String agentId, Trace trace) throws IOException {
+    public void collect(String agentId, Trace trace) throws Exception {
 
         Trace.Header priorHeader = readHeader(agentId, trace.getId());
 
@@ -314,6 +316,7 @@ public class TraceDao implements TraceRepository {
         // unlike aggregates and gauge values, traces can get written to server rollups immediately
         List<String> agentRollups = AgentRollups.getAgentRollups(agentId);
 
+        List<ResultSetFuture> futures = Lists.newArrayList();
         for (String agentRollup : agentRollups) {
             if (header.getSlow()) {
                 BoundStatement boundStatement = insertOverallSlowPoint.bind();
@@ -328,7 +331,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
                 boundStatement.setBytes(i++, Messages.toByteBuffer(header.getAttributeList()));
                 boundStatement.setInt(i++, getTTL());
-                session.execute(boundStatement);
+                futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertTransactionSlowPoint.bind();
                 i = 0;
@@ -343,7 +346,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
                 boundStatement.setBytes(i++, Messages.toByteBuffer(header.getAttributeList()));
                 boundStatement.setInt(i++, getTTL());
-                session.execute(boundStatement);
+                futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertOverallSlowCount.bind();
                 i = 0;
@@ -353,7 +356,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, agentId);
                 boundStatement.setString(i++, trace.getId());
                 boundStatement.setInt(i++, getTTL());
-                session.execute(boundStatement);
+                futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertTransactionSlowCount.bind();
                 i = 0;
@@ -364,7 +367,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, agentId);
                 boundStatement.setString(i++, trace.getId());
                 boundStatement.setInt(i++, getTTL());
-                session.execute(boundStatement);
+                futures.add(session.executeAsync(boundStatement));
 
                 if (priorHeader != null) {
                     boundStatement = deletePartialOverallSlowPoint.bind();
@@ -374,7 +377,7 @@ public class TraceDao implements TraceRepository {
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
                     boundStatement.setString(i++, agentId);
                     boundStatement.setString(i++, trace.getId());
-                    session.execute(boundStatement);
+                    futures.add(session.executeAsync(boundStatement));
 
                     boundStatement = deletePartialTransactionSlowPoint.bind();
                     i = 0;
@@ -384,7 +387,7 @@ public class TraceDao implements TraceRepository {
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
                     boundStatement.setString(i++, agentId);
                     boundStatement.setString(i++, trace.getId());
-                    session.execute(boundStatement);
+                    futures.add(session.executeAsync(boundStatement));
 
                     boundStatement = deletePartialOverallSlowCount.bind();
                     i = 0;
@@ -393,7 +396,7 @@ public class TraceDao implements TraceRepository {
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
                     boundStatement.setString(i++, agentId);
                     boundStatement.setString(i++, trace.getId());
-                    session.execute(boundStatement);
+                    futures.add(session.executeAsync(boundStatement));
 
                     boundStatement = deletePartialTransactionSlowCount.bind();
                     i = 0;
@@ -403,7 +406,7 @@ public class TraceDao implements TraceRepository {
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
                     boundStatement.setString(i++, agentId);
                     boundStatement.setString(i++, trace.getId());
-                    session.execute(boundStatement);
+                    futures.add(session.executeAsync(boundStatement));
                 }
             }
             // seems unnecessary to insert error info for partial traces
@@ -418,7 +421,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, trace.getId());
                 boundStatement.setString(i++, header.getError().getMessage());
                 boundStatement.setInt(i++, getTTL());
-                session.execute(boundStatement);
+                futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertTransactionErrorMessage.bind();
                 i = 0;
@@ -430,7 +433,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, trace.getId());
                 boundStatement.setString(i++, header.getError().getMessage());
                 boundStatement.setInt(i++, getTTL());
-                session.execute(boundStatement);
+                futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertOverallErrorPoint.bind();
                 i = 0;
@@ -444,7 +447,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
                 boundStatement.setBytes(i++, Messages.toByteBuffer(header.getAttributeList()));
                 boundStatement.setInt(i++, getTTL());
-                session.execute(boundStatement);
+                futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertTransactionErrorPoint.bind();
                 i = 0;
@@ -459,7 +462,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
                 boundStatement.setBytes(i++, Messages.toByteBuffer(header.getAttributeList()));
                 boundStatement.setInt(i++, getTTL());
-                session.execute(boundStatement);
+                futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertOverallErrorCount.bind();
                 i = 0;
@@ -469,7 +472,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, agentId);
                 boundStatement.setString(i++, trace.getId());
                 boundStatement.setInt(i++, getTTL());
-                session.execute(boundStatement);
+                futures.add(session.executeAsync(boundStatement));
 
                 boundStatement = insertTransactionErrorCount.bind();
                 i = 0;
@@ -480,10 +483,11 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, agentId);
                 boundStatement.setString(i++, trace.getId());
                 boundStatement.setInt(i++, getTTL());
-                session.execute(boundStatement);
+                futures.add(session.executeAsync(boundStatement));
             }
-            agentDao.updateLastCaptureTime(agentRollup, agentRollup.equals(agentId));
-            transactionTypeDao.updateLastCaptureTime(agentRollup, header.getTransactionType());
+            futures.add(agentDao.updateLastCaptureTime(agentRollup, agentRollup.equals(agentId)));
+            futures.add(transactionTypeDao.updateLastCaptureTime(agentRollup,
+                    header.getTransactionType()));
             for (Trace.Attribute attributeName : header.getAttributeList()) {
                 BoundStatement boundStatement = insertAttributeName.bind();
                 int i = 0;
@@ -491,7 +495,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, header.getTransactionType());
                 boundStatement.setString(i++, attributeName.getName());
                 boundStatement.setInt(i++, getTTL());
-                session.execute(boundStatement);
+                futures.add(session.executeAsync(boundStatement));
             }
         }
 
@@ -501,7 +505,7 @@ public class TraceDao implements TraceRepository {
         boundStatement.setString(i++, trace.getId());
         boundStatement.setBytes(i++, ByteBuffer.wrap(trace.getHeader().toByteArray()));
         boundStatement.setInt(i++, getTTL());
-        session.execute(boundStatement);
+        futures.add(session.executeAsync(boundStatement));
 
         List<Trace.Entry> entries = trace.getEntryList();
         if (!entries.isEmpty()) {
@@ -511,7 +515,7 @@ public class TraceDao implements TraceRepository {
             boundStatement.setString(i++, trace.getId());
             boundStatement.setBytes(i++, Messages.toByteBuffer(entries));
             boundStatement.setInt(i++, getTTL());
-            session.execute(boundStatement);
+            futures.add(session.executeAsync(boundStatement));
         }
 
         if (trace.hasMainThreadProfile()) {
@@ -522,7 +526,7 @@ public class TraceDao implements TraceRepository {
             boundStatement.setBytes(i++,
                     ByteBuffer.wrap(trace.getMainThreadProfile().toByteArray()));
             boundStatement.setInt(i++, getTTL());
-            session.execute(boundStatement);
+            futures.add(session.executeAsync(boundStatement));
         }
 
         if (trace.hasAuxThreadProfile()) {
@@ -533,8 +537,9 @@ public class TraceDao implements TraceRepository {
             boundStatement.setBytes(i++,
                     ByteBuffer.wrap(trace.getAuxThreadProfile().toByteArray()));
             boundStatement.setInt(i++, getTTL());
-            session.execute(boundStatement);
+            futures.add(session.executeAsync(boundStatement));
         }
+        Futures.allAsList(futures).get();
     }
 
     @Override

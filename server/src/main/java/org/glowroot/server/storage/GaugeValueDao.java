@@ -15,17 +15,16 @@
  */
 package org.glowroot.server.storage;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 
-import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
@@ -36,6 +35,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.RateLimiter;
 
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -139,7 +139,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
         List<Integer> ttls = getTTLs();
         int maxTTL = ttls.stream().max(Integer::compareTo).get();
-        BatchStatement batchStatement = new BatchStatement();
+        List<ResultSetFuture> futures = Lists.newArrayList();
         for (GaugeValue gaugeValue : gaugeValues) {
             BoundStatement boundStatement = insertValuePS.get(0).bind();
             int i = 0;
@@ -149,16 +149,15 @@ public class GaugeValueDao implements GaugeValueRepository {
             boundStatement.setDouble(i++, gaugeValue.getValue());
             boundStatement.setLong(i++, gaugeValue.getWeight());
             boundStatement.setInt(i++, ttls.get(0));
-            batchStatement.add(boundStatement);
+            futures.add(session.executeAsync(boundStatement));
 
             boundStatement = insertNamePS.bind();
             i = 0;
             boundStatement.setString(i++, agentId);
             boundStatement.setString(i++, gaugeValue.getGaugeName());
             boundStatement.setInt(i++, maxTTL);
-            batchStatement.add(boundStatement);
+            futures.add(session.executeAsync(boundStatement));
         }
-        session.execute(batchStatement);
         Map<String, Long> maxCaptureTimes = Maps.newHashMap();
         for (GaugeValue gaugeValue : gaugeValues) {
             Long maxCaptureTime = maxCaptureTimes.get(gaugeValue.getGaugeName());
@@ -169,7 +168,6 @@ public class GaugeValueDao implements GaugeValueRepository {
                         Math.max(maxCaptureTime, gaugeValue.getCaptureTime()));
             }
         }
-        batchStatement = new BatchStatement();
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         for (Entry<String, Long> entry : maxCaptureTimes.entrySet()) {
             String gaugeName = entry.getKey();
@@ -183,11 +181,11 @@ public class GaugeValueDao implements GaugeValueRepository {
                 boundStatement.setTimestamp(1, new Date(rollupCaptureTime));
                 boundStatement.setString(2, gaugeName);
                 boundStatement.setUUID(3, UUIDs.timeBased());
-                batchStatement.add(boundStatement);
+                futures.add(session.executeAsync(boundStatement));
             }
         }
-        session.execute(batchStatement);
-        agentDao.updateLastCaptureTime(agentId, true);
+        futures.add(agentDao.updateLastCaptureTime(agentId, true));
+        Futures.allAsList(futures).get();
         for (String agentRollup : AgentRollups.getAgentRollups(agentId)) {
             if (rollupRateLimiters.get(agentRollup).tryAcquire()) {
                 rollup(agentRollup, ttls);
@@ -248,8 +246,10 @@ public class GaugeValueDao implements GaugeValueRepository {
         Map<String, List<Row>> rowMap = Maps.newHashMap();
         for (Row row : results) {
             String gaugeName = checkNotNull(row.getString(1));
-            rowMap.computeIfAbsent(gaugeName, k -> new ArrayList<>()).add(row);
+            // explicit type <Row> needed below for checker framework
+            rowMap.computeIfAbsent(gaugeName, k -> Lists.<Row>newArrayList()).add(row);
         }
+        List<ResultSetFuture> deleteNeedsRollupFutures = Lists.newArrayList();
         for (Entry<String, List<Row>> entry : rowMap.entrySet()) {
             String gaugeName = entry.getKey();
             List<Row> rows = entry.getValue();
@@ -271,9 +271,10 @@ public class GaugeValueDao implements GaugeValueRepository {
                 boundStatement.setTimestamp(1, new Date(captureTime));
                 boundStatement.setString(2, gaugeName);
                 boundStatement.setUUID(3, lastUpdate);
-                session.execute(boundStatement);
+                deleteNeedsRollupFutures.add(session.executeAsync(boundStatement));
             }
         }
+        Futures.allAsList(deleteNeedsRollupFutures).get();
     }
 
     // from is non-inclusive
