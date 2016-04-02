@@ -44,7 +44,7 @@ public class ExecutorAspect {
     // the field and method names are verbose to avoid conflict since they will become fields
     // and methods in all classes that extend Runnable, Callable and/or ForkJoinTask
     @Mixin({"java.lang.Runnable", "java.util.concurrent.Callable",
-            "java.util.concurrent.ForkJoinTask"})
+            "java.util.concurrent.ForkJoinTask", "akka.jsr166y.ForkJoinTask"})
     public abstract static class RunnableEtcImpl implements RunnableEtcMixin {
 
         private volatile @Nullable AuxThreadContext glowroot$auxContext;
@@ -80,7 +80,8 @@ public class ExecutorAspect {
     // no nesting group in order to capture sometimes wrapped runnable passed to delegate executor
     @Pointcut(className = "java.util.concurrent.Executor|java.util.concurrent.ExecutorService"
             + "|java.util.concurrent.ForkJoinPool|org.springframework.core.task.AsyncTaskExecutor"
-            + "|org.springframework.core.task.AsyncListenableTaskExecutor",
+            + "|org.springframework.core.task.AsyncListenableTaskExecutor"
+            + "|akka.jsr166y.ForkJoinPool",
             methodName = "execute|submit|invoke|submitListenable", methodParameterTypes = {".."})
     public static class ExecuteAdvice {
         @IsEnabled
@@ -98,7 +99,8 @@ public class ExecutorAspect {
     }
 
     // no nesting group in order to capture sometimes wrapped runnable passed to delegate executor
-    @Pointcut(className = "java.util.concurrent.ExecutorService|java.util.concurrent.ForkJoinPool",
+    @Pointcut(className = "java.util.concurrent.ExecutorService|java.util.concurrent.ForkJoinPool"
+            + "|akka.jsr166y.ForkJoinPool",
             methodName = "invokeAll|invokeAny", methodParameterTypes = {"java.util.Collection"})
     public static class InvokeAnyAllAdvice {
         @OnBefore
@@ -282,8 +284,8 @@ public class ExecutorAspect {
         }
     }
 
-    @Pointcut(className = "java.util.concurrent.ForkJoinTask", methodName = "exec",
-            methodParameterTypes = {})
+    @Pointcut(className = "java.util.concurrent.ForkJoinTask|akka.jsr166y.ForkJoinTask",
+            methodName = "exec", methodParameterTypes = {})
     public static class ExecAdvice {
         @OnBefore
         public static @Nullable TraceEntry onBefore(@BindReceiver Object task) {
@@ -313,4 +315,32 @@ public class ExecutorAspect {
             }
         }
     }
+
+    // ========== debug ==========
+
+    // KEEP THIS CODE IT IS VERY USEFUL
+
+    // @Pointcut(className = "/(?!org.glowroot).*/", methodName = "<init>",
+    // methodParameterTypes = {".."})
+    // public static class RunnableInitAdvice {
+    //
+    // @OnAfter
+    // public static void onAfter(OptionalThreadContext context, @BindReceiver Object obj) {
+    // if (obj instanceof Runnable) {
+    // new Exception("Init " + Thread.currentThread().getName() + " " + obj.hashCode()
+    // + " " + context.getClass().getName()).printStackTrace();
+    // }
+    // }
+    // }
+    //
+    // @Pointcut(className = "java.lang.Runnable", methodName = "run", methodParameterTypes = {},
+    // order = 1)
+    // public static class RunnableRunAdvice {
+    //
+    // @OnBefore
+    // public static void onBefore(OptionalThreadContext context, @BindReceiver Runnable obj) {
+    // new Exception("Run " + Thread.currentThread().getName() + " " + obj.hashCode() + " "
+    // + context.getClass().getName()).printStackTrace();
+    // }
+    // }
 }

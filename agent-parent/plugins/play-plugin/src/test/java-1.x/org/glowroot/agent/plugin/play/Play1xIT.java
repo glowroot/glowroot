@@ -38,7 +38,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class PlayIT {
+public class Play1xIT {
 
     private static Container container;
 
@@ -63,7 +63,7 @@ public class PlayIT {
         // when
         Trace trace = container.execute(GetIndex.class);
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("Application.index");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("Application#index");
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -76,7 +76,7 @@ public class PlayIT {
         // when
         Trace trace = container.execute(GetApplicationIndex.class);
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("Application.index");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("Application#index");
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -89,7 +89,7 @@ public class PlayIT {
         // when
         Trace trace = container.execute(GetApplicationCalculate.class);
         // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("Application.calculate");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("Application#calculate");
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);

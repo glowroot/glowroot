@@ -39,6 +39,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 class Util {
 
+    private static final String BASE_DIR = System.getProperty("base.dir", ".");
+    private static final String MVN = System.getProperty("mvn", "mvn");
+
     private static PrintWriter report;
 
     static {
@@ -53,7 +56,7 @@ class Util {
 
     static void updateLibVersion(String modulePath, String property, String version)
             throws IOException {
-        File pomFile = new File(modulePath + "/pom.xml");
+        File pomFile = new File(BASE_DIR + "/" + modulePath + "/pom.xml");
         String pom = Files.toString(pomFile, Charsets.UTF_8);
         pom = pom.replaceFirst("<" + property + ">.*",
                 "<" + property + ">" + version + "</" + property + ">");
@@ -70,7 +73,7 @@ class Util {
     static void runTest(String modulePath, @Nullable String test, String... profiles)
             throws Exception {
         List<String> command = Lists.newArrayList();
-        command.add("mvn");
+        command.add(MVN);
         if (profiles.length > 0) {
             command.add("-P");
             command.add(Joiner.on(',').join(profiles));
@@ -81,6 +84,7 @@ class Util {
             command.add("-Dit.test=" + test);
         }
         command.add("-Dglowroot.it.harness=javaagent");
+        command.add("-Dglowroot.test.fileLoggingOnly=false");
         command.add("-Denforcer.skip");
         String sourceOfRandomness = System.getProperty("java.security.egd");
         if (sourceOfRandomness != null) {
@@ -90,9 +94,10 @@ class Util {
         command.add("verify");
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
+        processBuilder.directory(new File(BASE_DIR));
         processBuilder.environment().put("JAVA_HOME", System.getProperty("java.home"));
-        Process process = processBuilder.start();
         System.out.println("\n\n" + Joiner.on(' ').join(command) + "\n\n");
+        Process process = processBuilder.start();
         InputStream in = checkNotNull(process.getInputStream());
         ConsoleOutputPipe consoleOutputPipe = new ConsoleOutputPipe(in, System.out);
         ExecutorService consolePipeExecutorService = Executors.newSingleThreadExecutor();

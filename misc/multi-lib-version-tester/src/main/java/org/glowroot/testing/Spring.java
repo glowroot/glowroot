@@ -17,7 +17,17 @@ package org.glowroot.testing;
 
 public class Spring {
 
+    private static final String JAVA_7_HOME;
+
     private static final String MODULE_PATH = "agent-parent/plugins/spring-plugin";
+
+    static {
+        String value = System.getProperty("java7.home");
+        if (value == null) {
+            throw new IllegalStateException("Must provide -Djava7.home=...");
+        }
+        JAVA_7_HOME = value;
+    }
 
     public static void main(String[] args) throws Exception {
         for (int i = 0; i <= 7; i++) {
@@ -26,7 +36,19 @@ public class Spring {
         for (int i = 0; i <= 4; i++) {
             run("3.1." + i + ".RELEASE", "spring-3.x");
         }
-        for (int i = 0; i <= 16; i++) {
+        String javaHome = System.getProperty("java.home");
+        try {
+            System.setProperty("java.home", JAVA_7_HOME);
+            // 3.2.0 and 3.2.1 fail badly under Java 8
+            // due to https://jira.spring.io/browse/SPR-10292
+            // which was actually fixed in 3.2.2 by
+            // https://github.com/spring-projects/spring-framework/commit/6d77f1cf3b3f060ead70d49079bc87d75e0b105c
+            run("3.2.0.RELEASE", "spring-3.2.x");
+            run("3.2.1.RELEASE", "spring-3.2.x");
+        } finally {
+            System.setProperty("java.home", javaHome);
+        }
+        for (int i = 2; i <= 16; i++) {
             run("3.2." + i + ".RELEASE", "spring-3.2.x");
         }
         for (int i = 0; i <= 9; i++) {

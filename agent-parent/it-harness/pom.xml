@@ -207,4 +207,80 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>shade</id>
+      <activation>
+        <property>
+          <name>!glowroot.shade.skip</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-shade-plugin</artifactId>
+            <configuration>
+              <dependencyReducedPomLocation>
+                ${project.build.directory}/dependency-reduced-pom.xml
+              </dependencyReducedPomLocation>
+              <createSourcesJar>true</createSourcesJar>
+              <shadeSourcesContent>true</shadeSourcesContent>
+              <artifactSet>
+                <includes>
+                  <include>org.glowroot:glowroot-agent-it-harness</include>
+                  <!-- includes removes the artifacts from dependency reduced pom, while filters
+                    below keep them from being bundled which is not needed since they already exist
+                    in shaded agent -->
+                  <include>org.glowroot:glowroot-wire-api</include>
+                  <include>org.glowroot:glowroot-common</include>
+                  <include>io.netty:*</include>
+                  <include>io.grpc:*</include>
+                </includes>
+              </artifactSet>
+              <filters>
+                <filter>
+                  <artifact>io.netty:*</artifact>
+                  <excludes>
+                    <exclude>**</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <artifact>io.grpc:*</artifact>
+                  <excludes>
+                    <exclude>**</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <relocations>
+                <relocation>
+                  <pattern>io.netty</pattern>
+                  <shadedPattern>org.glowroot.agent.shaded.netty</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>io.grpc</pattern>
+                  <shadedPattern>org.glowroot.agent.shaded.grpc</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.google.protobuf</pattern>
+                  <shadedPattern>org.glowroot.agent.shaded.google.protobuf</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.fasterxml.jackson</pattern>
+                  <shadedPattern>org.glowroot.agent.shaded.fasterxml.jackson</shadedPattern>
+                </relocation>
+              </relocations>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>shade</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

@@ -1,0 +1,9 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+GET     /                           controllers.HomeController.index
+GET     /message                    controllers.AsyncController.message
+GET     /stream                     controllers.StreamController.stream
+GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
+GET     /bad                        controllers.BadController.bad

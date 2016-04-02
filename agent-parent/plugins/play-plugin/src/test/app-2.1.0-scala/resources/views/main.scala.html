@@ -1,0 +1,21 @@
+@*
+ * This template is called from the `index` template. This template
+ * handles the rendering of the page header and body tags. It takes
+ * two arguments, a `String` for the title of the page and an `Html`
+ * object to insert into the body of the page.
+ *@
+@(title: String)(content: Html)
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        @* Here's where we render the page title `String`. *@
+        <title>@title</title>
+        <script src="@routes.Assets.at("scripts/empty.js")" type="text/javascript"></script>
+    </head>
+    <body>
+        @* And here's where we render the `Html` object containing
+         * the page content. *@
+        @content
+    </body>
+</html>

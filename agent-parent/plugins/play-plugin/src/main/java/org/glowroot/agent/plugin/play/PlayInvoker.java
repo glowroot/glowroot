@@ -16,21 +16,30 @@
 package org.glowroot.agent.plugin.play;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
+import org.glowroot.agent.plugin.play.PlayAspect.HandlerDef;
 
 public class PlayInvoker {
 
     private static final Logger logger = Agent.getLogger(PlayInvoker.class);
 
+    private final @Nullable Method pathMethod;
     private final @Nullable Field actionField;
 
     public PlayInvoker(Class<?> clazz) {
+        Class<?> handlerDefClass = getHandlerDefClass(clazz);
+        pathMethod = Invokers.getMethod(handlerDefClass, "path");
         Class<?> requestClass = getRequestClass(clazz);
         actionField = Invokers.getDeclaredField(requestClass, "action");
+    }
+
+    public @Nullable String path(HandlerDef handlerDef) {
+        return Invokers.invoke(pathMethod, handlerDef);
     }
 
     @Nullable
@@ -38,11 +47,20 @@ public class PlayInvoker {
         return (String) Invokers.get(actionField, request);
     }
 
+    private static @Nullable Class<?> getHandlerDefClass(Class<?> clazz) {
+        try {
+            return Class.forName("play.core.Router$HandlerDef", false, clazz.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            logger.debug(e.getMessage(), e);
+        }
+        return null;
+    }
+
     private static @Nullable Class<?> getRequestClass(Class<?> clazz) {
         try {
             return Class.forName("play.mvc.Http$Request", false, clazz.getClassLoader());
         } catch (ClassNotFoundException e) {
-            logger.warn(e.getMessage(), e);
+            logger.debug(e.getMessage(), e);
         }
         return null;
     }

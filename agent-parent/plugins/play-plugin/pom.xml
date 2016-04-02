@@ -15,11 +15,6 @@
   <name>Glowroot Agent Play Plugin</name>
   <description>Glowroot Agent Play Plugin</description>
 
-  <properties>
-    <!-- instrumented libraries -->
-    <play.version>1.4.2</play.version>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
@@ -58,27 +53,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.google.code.maven-play-plugin.org.playframework</groupId>
-      <artifactId>play</artifactId>
-      <version>${play.version}</version>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-log4j12</artifactId>
-        </exclusion>
-        <exclusion>
-          <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
-          <groupId>com.ning</groupId>
-          <artifactId>async-http-client</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
-      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
-      <groupId>commons-codec</groupId>
-      <artifactId>commons-codec</artifactId>
-      <version>1.10</version>
+      <groupId>org.codehaus.janino</groupId>
+      <artifactId>janino</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -97,22 +78,221 @@
         </executions>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>default-testCompile</id>
-              <configuration>
-                <!-- java 7 is needed for running play during tests -->
-                <source>1.7</source>
-                <target>1.7</target>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
+
+  <profiles>
+    <profile>
+      <id>play-2.x</id>
+      <properties>
+        <play.version>2.5.1</play.version>
+        <scala.major.version>2.11</scala.major.version>
+        <scala.version>2.11.8</scala.version>
+        <java.version>1.8</java.version>
+        <netty.version>4.0.34.Final</netty.version>
+        <jackson.version>2.7.1</jackson.version>
+        <test.app.version>2.5.x</test.app.version>
+        <test.app.language>scala</test.app.language>
+      </properties>
+      <dependencies>
+        <dependency>
+          <!-- executor plugin is included to test async responses -->
+          <groupId>org.glowroot</groupId>
+          <artifactId>glowroot-agent-executor-plugin</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <!-- logger plugin is included to test 500 responses -->
+          <groupId>org.glowroot</groupId>
+          <artifactId>glowroot-agent-logger-plugin</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <repositories>
+        <repository>
+          <!-- this is needed for play 2.3.8 and prior -->
+          <id>typesafe</id>
+          <url>https://repo.typesafe.com/typesafe/releases</url>
+        </repository>
+      </repositories>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>generate-test-sources</phase>
+                <goals>
+                  <goal>add-test-source</goal>
+                  <goal>add-test-resource</goal>
+                </goals>
+                <configuration>
+                  <sources>
+                    <source>src/test/app-${test.app.version}-${test.app.language}/java</source>
+                    <source>src/test/java-2.x</source>
+                  </sources>
+                  <resources>
+                    <resource>
+                      <directory>
+                        src/test/app-${test.app.version}-${test.app.language}/resources
+                      </directory>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>net.alchim31.maven</groupId>
+            <artifactId>scala-maven-plugin</artifactId>
+            <version>3.2.2</version>
+            <configuration>
+              <scalaVersion>${scala.version}</scalaVersion>
+              <testSourceDir>
+                src/test/app-${test.app.version}-${test.app.language}/scala
+              </testSourceDir>
+            </configuration>
+            <executions>
+              <execution>
+                <phase>process-test-resources</phase>
+                <goals>
+                  <goal>testCompile</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>default-testCompile</id>
+                <configuration>
+                  <source>${java.version}</source>
+                  <target>${java.version}</target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>play-2.2.x</id>
+      <dependencies>
+        <dependency>
+          <groupId>com.typesafe.play</groupId>
+          <artifactId>play-java_${scala.major.version}</artifactId>
+          <version>${play.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>com.typesafe.play</groupId>
+          <artifactId>play-test_${scala.major.version}</artifactId>
+          <version>${play.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>play-2.1.x</id>
+      <dependencies>
+        <dependency>
+          <groupId>play</groupId>
+          <artifactId>play-java_${scala.major.version}</artifactId>
+          <version>${play.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>play</groupId>
+          <artifactId>play-test_${scala.major.version}</artifactId>
+          <version>${play.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>play-2.0.x</id>
+      <dependencies>
+        <dependency>
+          <groupId>play</groupId>
+          <artifactId>play_2.9.1</artifactId>
+          <version>${play.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>play</groupId>
+          <artifactId>play-test_2.9.1</artifactId>
+          <version>${play.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>com.github.scala-incubator.io</groupId>
+          <artifactId>scala-io-core_2.9.1</artifactId>
+          <version>0.2.0</version>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <systemPropertyVariables>
+                <glowroot.test.play20x>true</glowroot.test.play20x>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>play-1.x</id>
+      <properties>
+        <!-- instrumented libraries -->
+        <play.version>1.4.2</play.version>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>com.google.code.maven-play-plugin.org.playframework</groupId>
+          <artifactId>play</artifactId>
+          <version>${play.version}</version>
+          <scope>test</scope>
+          <exclusions>
+            <exclusion>
+              <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-log4j12</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>generate-test-sources</phase>
+                <goals>
+                  <goal>add-test-source</goal>
+                  <goal>add-test-resource</goal>
+                </goals>
+                <configuration>
+                  <sources>
+                    <source>src/test/java-1.x</source>
+                  </sources>
+                  <resources>
+                    <resource>
+                      <directory>src/test/resources-1.x</directory>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

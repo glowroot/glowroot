@@ -16,6 +16,7 @@
 package org.glowroot.agent.plugin.play;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import javax.annotation.Nullable;
 
@@ -28,6 +29,18 @@ public class Invokers {
 
     private Invokers() {}
 
+    static @Nullable Method getMethod(@Nullable Class<?> clazz, String methodName) {
+        if (clazz == null) {
+            return null;
+        }
+        try {
+            return clazz.getMethod(methodName);
+        } catch (Exception e) {
+            logger.debug(e.getMessage(), e);
+            return null;
+        }
+    }
+
     static @Nullable Field getDeclaredField(@Nullable Class<?> clazz, String fieldName) {
         if (clazz == null) {
             return null;
@@ -37,7 +50,21 @@ public class Invokers {
             field.setAccessible(true);
             return field;
         } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
+            logger.debug(e.getMessage(), e);
+            return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> /*@Nullable*/ T invoke(@Nullable Method method, Object obj) {
+        if (method == null) {
+            return null;
+        }
+        try {
+            return (T) method.invoke(obj);
+        } catch (Throwable t) {
+            logger.warn("error calling {}.{}()", method.getDeclaringClass().getName(),
+                    method.getName(), t);
             return null;
         }
     }
