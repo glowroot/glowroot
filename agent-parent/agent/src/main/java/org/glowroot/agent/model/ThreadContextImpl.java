@@ -191,6 +191,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
         Collection<TraceEntryImpl> childEntries = parentChildMap.get(entry);
         for (TraceEntryImpl childEntry : childEntries) {
+            if (childEntry.getStartTick() > captureTick) {
+                continue;
+            }
             entries.add(childEntry.toProto(depth, transactionStartTick, captureTick));
             addProtobufChildEntries(childEntry, parentChildMap, transactionStartTick,
                     captureTick, depth + 1, entries);
@@ -321,11 +324,16 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.currentNestingGroupId = nestingGroupId;
     }
 
-    public ThreadContextImpl startAuxThreadContext(TraceEntryImpl parentTraceEntry,
+    public @Nullable ThreadContextImpl startAuxThreadContext(TraceEntryImpl parentTraceEntry,
             TraceEntryImpl parentThreadContextTailEntry, TimerName auxTimerName, long startTick,
             Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder,
             @Nullable MessageSupplier servletMessageSupplier,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes) {
+        if (transaction.isCompleted()) {
+            // this is just optimization, the important check is below after adding to
+            // auxThreadContexts
+            return null;
+        }
         ThreadContextImpl auxThreadContext = new ThreadContextImpl(transaction, parentTraceEntry,
                 parentThreadContextTailEntry, AuxThreadRootMessageSupplier.INSTANCE, auxTimerName,
                 startTick, threadStatsComponent != null, threadAllocatedBytes, true,
@@ -343,7 +351,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
             }
         }
         auxThreadContexts.add(auxThreadContext);
-        // see counterpart to this synchronization (and explanation) in ThreadContextImpl.detach()
+        if (transaction.isCompleted()) {
+            // need to check after adding to auxThreadContexts to avoid race condition
+            // where this thread context could be included in the transaction's trace entries
+            auxThreadContexts.remove(auxThreadContext);
+            return null;
+        }
+        // see counterpart to this synchronization (and explanation) in detach()
         synchronized (threadContextHolder) {
             threadContextHolder.set(auxThreadContext);
         }
@@ -525,7 +539,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     void detach() {
         // this synchronization protects against clobbering valid thread context in race condition
         // where thread context ends naturally and thread re-starts a new thread context quickly
-        // see counterpart to this synchronized block in Transaction.startAuxThreadContext()
+        // see counterpart to this synchronized block in startAuxThreadContext()
         synchronized (threadContextHolder) {
             if (threadContextHolder.get() == this) {
                 threadContextHolder.set(null);
@@ -924,7 +938,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
             if (logger.isDebugEnabled()) {
                 ThreadInfo threadInfo = ManagementFactory.getThreadMXBean()
                         .getThreadInfo(auxThreadContext.getThreadId(), Integer.MAX_VALUE);
-                if (!auxThreadContext.isCompleted() && threadInfo != null) {
+                if (logger.isDebugEnabled() && !auxThreadContext.isCompleted()
+                        && threadInfo != null) {
                     // still not complete and got a valid stack trace from auxiliary thread
                     StringBuilder sb = new StringBuilder();
                     for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {

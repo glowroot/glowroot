@@ -62,7 +62,7 @@ public class TraceCreator {
 
     public static Trace.Header createCompletedTraceHeader(Transaction transaction)
             throws IOException {
-        int entryCount = transaction.getEntriesProtobuf(Long.MAX_VALUE).size();
+        int entryCount = transaction.getEntriesProtobuf(transaction.getEndTick()).size();
         long mainProfileSampleCount =
                 getProfileSampleCount(transaction.getMainThreadProfileProtobuf());
         long auxProfileSampleCount =

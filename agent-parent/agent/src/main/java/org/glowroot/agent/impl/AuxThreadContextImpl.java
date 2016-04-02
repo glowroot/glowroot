@@ -30,6 +30,10 @@ import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 
 import static org.glowroot.agent.fat.storage.util.Checkers.castInitialized;
 
+// TODO this has ability to retain a transaction beyond its completion
+// but don't use WeakReference because it needs to be able to retain transaction in async case
+// (at least until transaction completion)
+// so ideally clear references here at transaction completion
 public class AuxThreadContextImpl implements AuxThreadContext {
 
     private static final Logger logger = LoggerFactory.getLogger(AuxThreadContextImpl.class);
@@ -81,6 +85,10 @@ public class AuxThreadContextImpl implements AuxThreadContext {
         context = transactionService.startAuxThreadContextInternal(parentThreadContext,
                 parentTraceEntry, parentThreadContextTailEntry, servletMessageSupplier,
                 threadContextHolder);
+        if (context == null) {
+            // transaction is already complete
+            return NopTraceEntry.INSTANCE;
+        }
         if (logger.isDebugEnabled()) {
             logger.debug("start AUX thread context: {}, thread context: {},"
                     + " parent thread context: {}, thread name: {}", hashCode(), context.hashCode(),

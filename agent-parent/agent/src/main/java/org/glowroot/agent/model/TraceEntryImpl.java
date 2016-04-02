@@ -109,7 +109,8 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
             active = false;
         } else {
             // total time is calculated relative to revised start tick
-            durationNanos = captureTick - revisedStartTick;
+            // max with zero to prevent negative value which is possible here under race condition
+            durationNanos = Math.max(captureTick - revisedStartTick, 0);
             active = true;
         }
         MessageSupplier messageSupplier = getMessageSupplier();

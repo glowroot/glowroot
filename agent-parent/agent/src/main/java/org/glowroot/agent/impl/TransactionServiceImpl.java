@@ -129,6 +129,7 @@ public class TransactionServiceImpl implements ConfigListener {
         return transaction.getMainThreadContext().getRootEntry();
     }
 
+    @Nullable
     ThreadContextImpl startAuxThreadContextInternal(ThreadContextImpl parentThreadContext,
             TraceEntryImpl parentTraceEntry, TraceEntryImpl parentThreadContextTailEntry,
             @Nullable MessageSupplier servletMessageSupplier,
