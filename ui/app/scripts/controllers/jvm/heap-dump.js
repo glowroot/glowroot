@@ -28,10 +28,13 @@ glowroot.controller('JvmHeapDumpCtrl', [
       return;
     }
 
+    // initialize page binding object
+    $scope.page = {};
+
     $scope.checkDiskSpace = function (deferred) {
       var postData = {
         agentId: $scope.agentId,
-        directory: $scope.directory
+        directory: $scope.page.directory
       };
       $scope.availableDiskSpaceBytes = undefined;
       $scope.heapDumpResponse = false;
@@ -50,7 +53,7 @@ glowroot.controller('JvmHeapDumpCtrl', [
     $scope.heapDump = function (deferred) {
       var postData = {
         agentId: $scope.agentId,
-        directory: $scope.directory
+        directory: $scope.page.directory
       };
       $scope.availableDiskSpaceBytes = undefined;
       $scope.heapDumpResponse = false;
@@ -73,7 +76,7 @@ glowroot.controller('JvmHeapDumpCtrl', [
           if ($scope.agentNotConnected) {
             return;
           }
-          $scope.directory = data.directory;
+          $scope.page.directory = data.directory;
         })
         .error(httpErrors.handler($scope));
   }
