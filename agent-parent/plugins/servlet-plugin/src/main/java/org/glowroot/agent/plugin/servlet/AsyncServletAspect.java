@@ -33,7 +33,7 @@ public class AsyncServletAspect {
 
         @Shim("javax.servlet.ServletRequest getRequest()")
         @Nullable
-        ServletRequest glowrootShimGetRequest();
+        ServletRequest glowroot$getRequest();
     }
 
     @Shim("javax.servlet.ServletRequest")
@@ -77,7 +77,7 @@ public class AsyncServletAspect {
         @OnBefore
         public static void onBefore(ThreadContext context,
                 @BindReceiver AsyncContext asyncContext) {
-            ServletRequest request = asyncContext.glowrootShimGetRequest();
+            ServletRequest request = asyncContext.glowroot$getRequest();
             if (request == null) {
                 return;
             }

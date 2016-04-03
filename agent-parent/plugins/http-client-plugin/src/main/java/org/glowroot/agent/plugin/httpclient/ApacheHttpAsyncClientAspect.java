@@ -166,7 +166,7 @@ public class ApacheHttpAsyncClientAspect {
             if (request == null) {
                 return null;
             }
-            RequestLine requestLine = request.getRequestLine();
+            RequestLine requestLine = request.glowroot$getRequestLine();
             if (requestLine == null) {
                 return null;
             }

@@ -53,7 +53,7 @@ public class ApacheHttpClientAspect {
     public interface HttpRequest {
         @Shim("org.apache.http.RequestLine getRequestLine()")
         @Nullable
-        RequestLine getRequestLine();
+        RequestLine glowroot$getRequestLine();
     }
 
     @Shim("org.apache.http.RequestLine")
@@ -120,7 +120,7 @@ public class ApacheHttpClientAspect {
             if (request == null) {
                 return null;
             }
-            RequestLine requestLine = request.getRequestLine();
+            RequestLine requestLine = request.glowroot$getRequestLine();
             if (requestLine == null) {
                 return null;
             }

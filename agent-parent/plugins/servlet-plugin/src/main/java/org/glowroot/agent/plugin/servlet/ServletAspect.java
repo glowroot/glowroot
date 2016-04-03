@@ -61,7 +61,7 @@ public class ServletAspect {
 
         @Shim("javax.servlet.http.HttpSession getSession(boolean)")
         @Nullable
-        HttpSession glowrootShimGetSession(boolean create);
+        HttpSession glowroot$getSession(boolean create);
 
         @Nullable
         String getRequestURI();
@@ -139,7 +139,7 @@ public class ServletAspect {
             // request parameter map is collected in GetParameterAdvice
             // session info is collected here if the request already has a session
             ServletMessageSupplier messageSupplier;
-            HttpSession session = request.glowrootShimGetSession(false);
+            HttpSession session = request.glowroot$getSession(false);
             String requestUri = Strings.nullToEmpty(request.getRequestURI());
             // don't convert null to empty, since null means no query string, while empty means
             // url ended with ? but nothing after that

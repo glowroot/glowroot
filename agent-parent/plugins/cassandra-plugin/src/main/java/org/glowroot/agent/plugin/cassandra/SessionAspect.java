@@ -76,7 +76,7 @@ public class SessionAspect {
 
         @Shim("com.datastax.driver.core.PreparedStatement preparedStatement()")
         @Nullable
-        PreparedStatement preparedStatement();
+        PreparedStatement glowroot$preparedStatement();
     }
 
     @Shim("com.datastax.driver.core.BatchStatement")
@@ -179,7 +179,7 @@ public class SessionAspect {
             queryText = nullToEmpty(((RegularStatement) arg).getQueryString());
             messageSupplier = new QueryMessageSupplier(queryText);
         } else if (arg instanceof BoundStatement) {
-            PreparedStatement preparedStatement = ((BoundStatement) arg).preparedStatement();
+            PreparedStatement preparedStatement = ((BoundStatement) arg).glowroot$preparedStatement();
             queryText = preparedStatement == null ? ""
                     : nullToEmpty(preparedStatement.getQueryString());
             messageSupplier = new QueryMessageSupplier(queryText);

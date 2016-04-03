@@ -52,7 +52,7 @@ public class Log4jAspect {
         String getName();
         @Shim("org.apache.log4j.Category getParent()")
         @Nullable
-        Logger glowrootShimGetParent();
+        Logger glowroot$getParent();
         @Nullable
         Enumeration<?> getAllAppenders();
     }
@@ -82,7 +82,7 @@ public class Log4jAspect {
                     // has at least one appender
                     return true;
                 }
-                curr = curr.glowrootShimGetParent();
+                curr = curr.glowroot$getParent();
                 if (curr == null) {
                     return false;
                 }

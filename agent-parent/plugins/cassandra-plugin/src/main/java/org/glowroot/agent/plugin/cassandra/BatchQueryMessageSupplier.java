@@ -87,7 +87,7 @@ class BatchQueryMessageSupplier extends MessageSupplier {
             String qs = ((RegularStatement) statement).getQueryString();
             return nullToEmpty(qs);
         } else if (statement instanceof BoundStatement) {
-            PreparedStatement preparedStatement = ((BoundStatement) statement).preparedStatement();
+            PreparedStatement preparedStatement = ((BoundStatement) statement).glowroot$preparedStatement();
             String qs = preparedStatement == null ? "" : preparedStatement.getQueryString();
             return nullToEmpty(qs);
         } else if (statement instanceof BatchStatement) {

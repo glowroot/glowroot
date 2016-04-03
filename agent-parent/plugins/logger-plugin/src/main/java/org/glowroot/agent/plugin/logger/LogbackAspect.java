@@ -48,7 +48,7 @@ public class LogbackAspect {
     public interface ILoggingEvent {
         @Shim("ch.qos.logback.classic.Level getLevel()")
         @Nullable
-        Level glowrootGetLevel();
+        Level glowroot$getLevel();
         @Nullable
         String getMessage();
         @Nullable
@@ -59,7 +59,7 @@ public class LogbackAspect {
         String getLoggerName();
         @Shim("ch.qos.logback.classic.spi.IThrowableProxy getThrowableProxy()")
         @Nullable
-        Object getThrowableProxy();
+        Object glowroot$getThrowableProxy();
     }
 
     @Shim("ch.qos.logback.classic.Level")
@@ -85,9 +85,9 @@ public class LogbackAspect {
                 return null;
             }
             String formattedMessage = nullToEmpty(loggingEvent.getFormattedMessage());
-            Level level = loggingEvent.glowrootGetLevel();
+            Level level = loggingEvent.glowroot$getLevel();
             int lvl = level == null ? 0 : level.toInt();
-            Object throwableProxy = loggingEvent.getThrowableProxy();
+            Object throwableProxy = loggingEvent.glowroot$getThrowableProxy();
             Throwable t = null;
             if (throwableProxy instanceof ThrowableProxy) {
                 // there is only one other subclass of ch.qos.logback.classic.spi.IThrowableProxy

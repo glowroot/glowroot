@@ -39,7 +39,7 @@ public class ApacheHttpClient3xAspect {
         String getName();
         @Shim("org.apache.commons.httpclient.URI getURI()")
         @Nullable
-        Object getURI();
+        Object glowroot$getURI();
     }
 
     @Pointcut(className = "org.apache.commons.httpclient.HttpClient", methodName = "executeMethod",
@@ -62,7 +62,7 @@ public class ApacheHttpClient3xAspect {
             } else {
                 method += " ";
             }
-            Object uriObj = methodObj.getURI();
+            Object uriObj = methodObj.glowroot$getURI();
             String uri;
             if (uriObj == null) {
                 uri = "";
