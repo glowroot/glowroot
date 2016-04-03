@@ -16,8 +16,15 @@
 package org.glowroot.agent.plugin.httpclient;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import com.ning.http.client.AsyncHandler;
 import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.HttpResponseBodyPart;
+import com.ning.http.client.HttpResponseHeaders;
+import com.ning.http.client.HttpResponseStatus;
+import com.ning.http.client.Response;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -29,6 +36,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+// TODO test against AsyncHttpClient providers jdk and grizzly (in addition to the default netty)
 public class AsyncHttpClientPluginIT {
 
     private static Container container;
@@ -86,6 +94,25 @@ public class AsyncHttpClientPluginIT {
                 .matches("http client request: POST http://localhost:\\d+/hello2");
     }
 
+    @Test
+    public void shouldCaptureHttpGetWithAsyncHandler() throws Exception {
+        Trace trace = container.execute(ExecuteHttpGetWithAsyncHandler.class);
+        Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
+        assertThat(rootTimer.getChildTimerCount()).isEqualTo(1);
+        assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("http client request");
+        assertThat(rootTimer.getChildTimer(0).getCount()).isEqualTo(1);
+        assertThat(trace.getHeader().getAuxThreadRootTimerCount()).isZero();
+        assertThat(trace.getHeader().getAsyncRootTimerCount()).isEqualTo(1);
+        Trace.Timer asyncRootTimer = trace.getHeader().getAsyncRootTimer(0);
+        assertThat(asyncRootTimer.getChildTimerCount()).isZero();
+        assertThat(asyncRootTimer.getName()).isEqualTo("http client request");
+        assertThat(asyncRootTimer.getCount()).isEqualTo(1);
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries).hasSize(1);
+        assertThat(entries.get(0).getMessage())
+                .matches("http client request: GET http://localhost:\\d+/hello3/");
+    }
+
     public static class ExecuteHttpGet extends ExecuteHttpBase {
         @Override
         public void transactionMarker() throws Exception {
@@ -109,6 +136,43 @@ public class AsyncHttpClientPluginIT {
                             .execute().get().getStatusCode();
             asyncHttpClient.close();
             if (statusCode != 200) {
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
+        }
+    }
+
+    public static class ExecuteHttpGetWithAsyncHandler extends ExecuteHttpBase {
+        @Override
+        public void transactionMarker() throws Exception {
+            AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+            final CountDownLatch latch = new CountDownLatch(1);
+            final AtomicInteger statusCode = new AtomicInteger();
+            asyncHttpClient.prepareGet("http://localhost:" + getPort() + "/hello3/")
+                    .execute(new AsyncHandler<Response>() {
+                        @Override
+                        public STATE onBodyPartReceived(HttpResponseBodyPart part) {
+                            return null;
+                        }
+                        @Override
+                        public Response onCompleted() throws Exception {
+                            latch.countDown();
+                            return null;
+                        }
+                        @Override
+                        public STATE onHeadersReceived(HttpResponseHeaders headers) {
+                            return null;
+                        }
+                        @Override
+                        public STATE onStatusReceived(HttpResponseStatus status) {
+                            statusCode.set(status.getStatusCode());
+                            return null;
+                        }
+                        @Override
+                        public void onThrowable(Throwable t) {}
+                    });
+            latch.await();
+            asyncHttpClient.close();
+            if (statusCode.get() != 200) {
                 throw new IllegalStateException("Unexpected status code: " + statusCode);
             }
         }

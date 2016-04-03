@@ -20,8 +20,7 @@
     <apache.httpclient.version>4.5.2</apache.httpclient.version>
     <apache.httpasyncclient.version>4.1.1</apache.httpasyncclient.version>
     <apache.httpclient3x.version>3.1</apache.httpclient3x.version>
-    <!-- async-http-client 1.9.0 requires JDK 7+ -->
-    <asynchttpclient.version>1.8.16</asynchttpclient.version>
+    <asynchttpclient.version>1.9.36</asynchttpclient.version>
     <okhttpclient.version>2.7.5</okhttpclient.version>
     <cxf.version>3.1.5</cxf.version>
     <spring.version>4.2.5.RELEASE</spring.version>
@@ -147,7 +146,7 @@
             <execution>
               <id>default-testCompile</id>
               <configuration>
-                <!-- java 7 is needed for running okhttp during tests -->
+                <!-- java 7 is needed for running asynchttpclient and okhttp during tests -->
                 <source>1.7</source>
                 <target>1.7</target>
               </configuration>
@@ -209,8 +208,8 @@
           <scope>test</scope>
           <exclusions>
             <exclusion>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-jdk14</artifactId>
+              <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-jdk14</artifactId>
             </exclusion>
           </exclusions>
         </dependency>
