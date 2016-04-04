@@ -163,14 +163,6 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public boolean isAsyncTransaction() {
-        if (threadContext != null) {
-            return threadContext.isAsyncTransaction();
-        }
-        return false;
-    }
-
-    @Override
     public void completeAsyncTransaction() {
         if (threadContext != null) {
             threadContext.completeAsyncTransaction();

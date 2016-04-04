@@ -826,11 +826,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public boolean isAsyncTransaction() {
-        return transaction.isAsync();
-    }
-
-    @Override
     public void completeAsyncTransaction() {
         completeAsyncTransaction = true;
     }
