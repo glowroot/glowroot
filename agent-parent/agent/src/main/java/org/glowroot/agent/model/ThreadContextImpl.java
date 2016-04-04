@@ -922,18 +922,12 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     void endCheckAuxThreadContexts() {
-        if (auxThreadContexts == null) {
-            return;
-        }
-        for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
-            if (auxThreadContext.isCompleted()) {
-                continue;
-            }
-            auxThreadContext.detach();
+        if (!isCompleted()) {
+            detach();
             if (logger.isDebugEnabled()) {
                 ThreadInfo threadInfo = ManagementFactory.getThreadMXBean()
-                        .getThreadInfo(auxThreadContext.getThreadId(), Integer.MAX_VALUE);
-                if (logger.isDebugEnabled() && !auxThreadContext.isCompleted()
+                        .getThreadInfo(getThreadId(), Integer.MAX_VALUE);
+                if (logger.isDebugEnabled() && !isCompleted()
                         && threadInfo != null) {
                     // still not complete and got a valid stack trace from auxiliary thread
                     StringBuilder sb = new StringBuilder();
@@ -945,6 +939,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
                     logger.debug("auxiliary thread extended beyond the transaction which started it"
                             + "\n{}", sb);
                 }
+            }
+        }
+        if (auxThreadContexts != null) {
+            for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
+                auxThreadContext.endCheckAuxThreadContexts();
             }
         }
     }
