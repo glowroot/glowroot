@@ -17,6 +17,7 @@ package org.glowroot.agent.plugin.executor;
 
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -37,6 +38,7 @@ import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ExecutorIT {
@@ -61,7 +63,7 @@ public class ExecutorIT {
     }
 
     @Test
-    public void shouldCaptureCallable() throws Exception {
+    public void shouldCaptureExecute() throws Exception {
         // given
         container.getConfigService().updateTransactionConfig(
                 TransactionConfig.newBuilder()
@@ -69,13 +71,13 @@ public class ExecutorIT {
                         .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
                         .build());
         // when
-        Trace trace = container.execute(DoSomeCallableWork.class);
+        Trace trace = container.execute(DoExecuteRunnable.class);
         // then
-        checkTrace(trace);
+        checkTrace(trace, false);
     }
 
     @Test
-    public void shouldCaptureRunnableAndCallable() throws Exception {
+    public void shouldCaptureSubmitCallable() throws Exception {
         // given
         container.getConfigService().updateTransactionConfig(
                 TransactionConfig.newBuilder()
@@ -83,9 +85,23 @@ public class ExecutorIT {
                         .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
                         .build());
         // when
-        Trace trace = container.execute(DoSomeRunnableAndCallableWork.class);
+        Trace trace = container.execute(DoSubmitCallable.class);
         // then
-        checkTrace(trace);
+        checkTrace(trace, true);
+    }
+
+    @Test
+    public void shouldCaptureSubmitRunnableAndCallable() throws Exception {
+        // given
+        container.getConfigService().updateTransactionConfig(
+                TransactionConfig.newBuilder()
+                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
+                        .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
+                        .build());
+        // when
+        Trace trace = container.execute(DoSubmitRunnableAndCallable.class);
+        // then
+        checkTrace(trace, true);
     }
 
     @Test
@@ -97,7 +113,7 @@ public class ExecutorIT {
                         .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
                         .build());
         // when
-        Trace trace = container.execute(DoSomeSimpleRunnableWork.class);
+        Trace trace = container.execute(DoSimpleSubmitRunnableWork.class);
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getAuxThreadRootTimerCount()).isEqualTo(1);
@@ -146,15 +162,17 @@ public class ExecutorIT {
         assertThat(entry4.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
-    private static void checkTrace(Trace trace) {
+    private static void checkTrace(Trace trace, boolean withFuture) {
         Trace.Header header = trace.getHeader();
-        assertThat(header.getMainThreadRootTimer().getChildTimerCount()).isEqualTo(1);
-        assertThat(header.getMainThreadRootTimer().getChildTimer(0).getName())
-                .isEqualTo("wait on future");
-        assertThat(header.getMainThreadRootTimer().getChildTimer(0).getCount())
-                .isGreaterThanOrEqualTo(1);
-        assertThat(header.getMainThreadRootTimer().getChildTimer(0).getCount())
-                .isLessThanOrEqualTo(3);
+        if (withFuture) {
+            assertThat(header.getMainThreadRootTimer().getChildTimerCount()).isEqualTo(1);
+            assertThat(header.getMainThreadRootTimer().getChildTimer(0).getName())
+                    .isEqualTo("wait on future");
+            assertThat(header.getMainThreadRootTimer().getChildTimer(0).getCount())
+                    .isGreaterThanOrEqualTo(1);
+            assertThat(header.getMainThreadRootTimer().getChildTimer(0).getCount())
+                    .isLessThanOrEqualTo(3);
+        }
         assertThat(header.getAuxThreadRootTimerCount()).isEqualTo(1);
         assertThat(header.getAsyncRootTimerCount()).isZero();
         assertThat(header.getAuxThreadRootTimer(0).getName()).isEqualTo("auxiliary thread");
@@ -190,7 +208,46 @@ public class ExecutorIT {
         assertThat(entry6.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
-    public static class DoSomeCallableWork implements AppUnderTest, TransactionMarker {
+    public static class DoExecuteRunnable implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            ExecutorService executor = Executors.newCachedThreadPool();
+            final CountDownLatch latch = new CountDownLatch(3);
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                }
+            });
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                }
+            });
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                }
+            });
+            latch.await();
+            executor.shutdown();
+            executor.awaitTermination(10, SECONDS);
+            Thread.sleep(1000);
+        }
+    }
+
+    public static class DoSubmitCallable implements AppUnderTest, TransactionMarker {
 
         @Override
         public void executeApp() throws Exception {
@@ -227,7 +284,7 @@ public class ExecutorIT {
         }
     }
 
-    public static class DoSomeRunnableAndCallableWork implements AppUnderTest, TransactionMarker {
+    public static class DoSubmitRunnableAndCallable implements AppUnderTest, TransactionMarker {
 
         @Override
         public void executeApp() throws Exception {
@@ -246,7 +303,7 @@ public class ExecutorIT {
         }
     }
 
-    public static class DoSomeSimpleRunnableWork implements AppUnderTest, TransactionMarker {
+    public static class DoSimpleSubmitRunnableWork implements AppUnderTest, TransactionMarker {
 
         @Override
         public void executeApp() throws Exception {
