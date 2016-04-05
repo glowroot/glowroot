@@ -56,16 +56,16 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     public byte /*@Nullable*/[] transform(@Nullable ClassLoader loader, @Nullable String className,
             @Nullable Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
             byte[] bytes) {
-        if (className == null) {
-            // internal subclasses of MethodHandle are passed in with null className
-            // (see integration test MethodHandleWeavingTest for more detail)
-            return null;
-        }
+        // internal subclasses of MethodHandle are passed in with null className
+        // (see integration test MethodHandleWeavingTest for more detail)
+        // also, more importantly, Java 8 lambdas are passed in with null className, which need to
+        // be woven by executor plugin
+        String nonNullClassName = className == null ? "unnamed" : className;
         try {
-            return transformInternal(loader, className, protectionDomain, bytes);
+            return transformInternal(loader, nonNullClassName, protectionDomain, bytes);
         } catch (Throwable t) {
             // see method-level comment
-            logger.error("error weaving {}: {}", className, t.getMessage(), t);
+            logger.error("error weaving {}: {}", nonNullClassName, t.getMessage(), t);
             return null;
         }
     }
