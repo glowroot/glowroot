@@ -23,6 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -162,6 +163,62 @@ public class ExecutorIT {
         assertThat(entry4.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
+    @Test
+    public void shouldCaptureInvokeAll() throws Exception {
+        // given
+        container.getConfigService().updateTransactionConfig(
+                TransactionConfig.newBuilder()
+                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
+                        .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
+                        .build());
+        // when
+        Trace trace = container.execute(DoInvokeAll.class);
+        // then
+        checkTrace(trace, true);
+    }
+
+    @Test
+    public void shouldCaptureInvokeAllWithTimeout() throws Exception {
+        // given
+        container.getConfigService().updateTransactionConfig(
+                TransactionConfig.newBuilder()
+                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
+                        .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
+                        .build());
+        // when
+        Trace trace = container.execute(DoInvokeAllWithTimeout.class);
+        // then
+        checkTrace(trace, true);
+    }
+
+    @Test
+    public void shouldCaptureInvokeAny() throws Exception {
+        // given
+        container.getConfigService().updateTransactionConfig(
+                TransactionConfig.newBuilder()
+                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
+                        .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
+                        .build());
+        // when
+        Trace trace = container.execute(DoInvokeAny.class);
+        // then
+        checkTrace(trace, false);
+    }
+
+    @Test
+    public void shouldCaptureInvokeAnyWithTimeout() throws Exception {
+        // given
+        container.getConfigService().updateTransactionConfig(
+                TransactionConfig.newBuilder()
+                        .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(0))
+                        .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(20).build())
+                        .build());
+        // when
+        Trace trace = container.execute(DoInvokeAnyWithTimeout.class);
+        // then
+        checkTrace(trace, false);
+    }
+
     private static void checkTrace(Trace trace, boolean withFuture) {
         Trace.Header header = trace.getHeader();
         if (withFuture) {
@@ -208,6 +265,10 @@ public class ExecutorIT {
         assertThat(entry6.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
+    private static ExecutorService createExecutorService() {
+        return Executors.newCachedThreadPool();
+    }
+
     public static class DoExecuteRunnable implements AppUnderTest, TransactionMarker {
 
         @Override
@@ -217,7 +278,7 @@ public class ExecutorIT {
 
         @Override
         public void transactionMarker() throws Exception {
-            ExecutorService executor = Executors.newCachedThreadPool();
+            ExecutorService executor = createExecutorService();
             final CountDownLatch latch = new CountDownLatch(3);
             executor.execute(new Runnable() {
                 @Override
@@ -243,7 +304,6 @@ public class ExecutorIT {
             latch.await();
             executor.shutdown();
             executor.awaitTermination(10, SECONDS);
-            Thread.sleep(1000);
         }
     }
 
@@ -256,7 +316,7 @@ public class ExecutorIT {
 
         @Override
         public void transactionMarker() throws Exception {
-            ExecutorService executor = Executors.newCachedThreadPool();
+            ExecutorService executor = createExecutorService();
             Future<Void> future1 = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() {
@@ -293,7 +353,7 @@ public class ExecutorIT {
 
         @Override
         public void transactionMarker() throws Exception {
-            ExecutorService executor = Executors.newCachedThreadPool();
+            ExecutorService executor = createExecutorService();
             Future<Void> future1 = executor.submit((Callable<Void>) new RunnableAndCallableWork());
             Future<Void> future2 = executor.submit((Callable<Void>) new RunnableAndCallableWork());
             Future<Void> future3 = executor.submit((Callable<Void>) new RunnableAndCallableWork());
@@ -312,7 +372,7 @@ public class ExecutorIT {
 
         @Override
         public void transactionMarker() throws Exception {
-            ExecutorService executor = Executors.newCachedThreadPool();
+            ExecutorService executor = createExecutorService();
             Future<?> future1 = executor.submit(new Runnable() {
                 @Override
                 public void run() {
@@ -356,7 +416,7 @@ public class ExecutorIT {
 
         @Override
         public void transactionMarker() throws Exception {
-            ExecutorService executor = Executors.newCachedThreadPool();
+            ExecutorService executor = createExecutorService();
             Future<Void> future = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
@@ -379,12 +439,11 @@ public class ExecutorIT {
 
         @Override
         public void transactionMarker() throws Exception {
-            final ExecutorService executor = Executors.newCachedThreadPool();
+            final ExecutorService executor = createExecutorService();
             Future<Void> future = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
                     new CreateTraceEntry().traceEntryMarker();
-                    Thread.sleep(1000);
                     Future<Void> future = executor.submit(new Callable<Void>() {
                         @Override
                         public Void call() {
@@ -397,6 +456,154 @@ public class ExecutorIT {
                 }
             });
             future.get();
+        }
+    }
+
+    public static class DoInvokeAll implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
+            List<Callable<Void>> callables = Lists.newArrayList();
+            callables.add(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    return null;
+                }
+            });
+            callables.add(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    return null;
+                }
+            });
+            callables.add(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    return null;
+                }
+            });
+            for (Future<Void> future : executor.invokeAll(callables)) {
+                future.get();
+            }
+        }
+    }
+
+    public static class DoInvokeAllWithTimeout implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
+            List<Callable<Void>> callables = Lists.newArrayList();
+            callables.add(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    return null;
+                }
+            });
+            callables.add(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    return null;
+                }
+            });
+            callables.add(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    return null;
+                }
+            });
+            for (Future<Void> future : executor.invokeAll(callables, 10, SECONDS)) {
+                future.get();
+            }
+        }
+    }
+
+    public static class DoInvokeAny implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
+            List<Callable<Void>> callables = Lists.newArrayList();
+            callables.add(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    return null;
+                }
+            });
+            callables.add(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    return null;
+                }
+            });
+            callables.add(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    return null;
+                }
+            });
+            executor.invokeAny(callables);
+        }
+    }
+
+    public static class DoInvokeAnyWithTimeout implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
+            List<Callable<Void>> callables = Lists.newArrayList();
+            callables.add(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    return null;
+                }
+            });
+            callables.add(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    return null;
+                }
+            });
+            callables.add(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    return null;
+                }
+            });
+            executor.invokeAll(callables, 10, SECONDS);
         }
     }
 

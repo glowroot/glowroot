@@ -15,12 +15,14 @@
  */
 package org.glowroot.agent.plugin.executor;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.Future;
 
+import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -145,6 +147,22 @@ public class ForkJoinPoolIT {
         Trace trace = container.execute(DoPoolInvokeForkJoinTask.class);
         // then
         assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldCaptureInvokeAll() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(DoPoolInvokeAll.class);
+        // then
+        assertThat(trace.getHeader().getEntryCount()).isBetween(4, 6);
+        int count = 0;
+        for (Trace.Entry entry : trace.getEntryList()) {
+            if (entry.getMessage().equals("trace entry marker / CreateTraceEntry")) {
+                count++;
+            }
+        }
+        assertThat(count).isEqualTo(3);
     }
 
     public static class DoPoolSubmitCallable implements AppUnderTest, TransactionMarker {
@@ -304,6 +322,26 @@ public class ForkJoinPoolIT {
             ForkJoinPool pool = new ForkJoinPool();
             SimpleTask simpleTask = new SimpleTask();
             pool.invoke(simpleTask);
+        }
+    }
+
+    public static class DoPoolInvokeAll implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            ForkJoinPool pool = new ForkJoinPool();
+            List<Callable<Void>> callables = Lists.newArrayList();
+            callables.add(new SimpleCallable());
+            callables.add(new SimpleCallable());
+            callables.add(new SimpleCallable());
+            for (Future<Void> future : pool.invokeAll(callables)) {
+                future.get();
+            }
         }
     }
 

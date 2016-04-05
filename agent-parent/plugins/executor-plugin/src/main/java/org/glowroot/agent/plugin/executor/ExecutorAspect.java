@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.plugin.executor;
 
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
@@ -93,6 +94,27 @@ public class ExecutorAspect {
             RunnableEtcMixin runnableCallableMixin = (RunnableEtcMixin) runnableCallable;
             AuxThreadContext auxContext = context.createAuxThreadContext();
             runnableCallableMixin.glowroot$setAuxContext(auxContext);
+        }
+    }
+
+    // no nesting group in order to capture sometimes wrapped runnable passed to delegate executor
+    @Pointcut(className = "java.util.concurrent.ExecutorService|java.util.concurrent.ForkJoinPool",
+            methodName = "invokeAll|invokeAny", methodParameterTypes = {"java.util.Collection"})
+    public static class InvokeAnyAllAdvice {
+        @OnBefore
+        public static void onBefore(ThreadContext context, @BindParameter Collection<?> callables) {
+            if (callables == null) {
+                return;
+            }
+            for (Object callable : callables) {
+                // this class may have been loaded before class file transformer was added to jvm
+                if (callable instanceof RunnableEtcMixin
+                        && !(callable instanceof SuppressedRunnableMixin)) {
+                    RunnableEtcMixin callableMixin = (RunnableEtcMixin) callable;
+                    AuxThreadContext auxContext = context.createAuxThreadContext();
+                    callableMixin.glowroot$setAuxContext(auxContext);
+                }
+            }
         }
     }
 
