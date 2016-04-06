@@ -158,6 +158,24 @@ public class ExecutorAspect {
         }
     }
 
+    // no nesting group in order to capture sometimes wrapped runnable passed to delegate executor
+    @Pointcut(className = "java.util.Timer", methodName = "schedule",
+            methodParameterTypes = {"java.util.TimerTask", ".."})
+    public static class TimerScheduleAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindParameter Object runnableCallable) {
+            // this class may have been loaded before class file transformer was added to jvm
+            return runnableCallable instanceof RunnableEtcMixin
+                    && !(runnableCallable instanceof SuppressedRunnableMixin);
+        }
+        @OnBefore
+        public static void onBefore(ThreadContext context, @BindParameter Object runnableCallable) {
+            RunnableEtcMixin runnableCallableMixin = (RunnableEtcMixin) runnableCallable;
+            AuxThreadContext auxContext = context.createAuxThreadContext();
+            runnableCallableMixin.glowroot$setAuxContext(auxContext);
+        }
+    }
+
     // TODO revisit this
     // this method uses submit() and returns Future, but none of the callers use/wait on the Future
     @Pointcut(className = "net.sf.ehcache.store.disk.DiskStorageFactory", methodName = "schedule",
