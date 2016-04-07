@@ -17,7 +17,7 @@ package org.glowroot.testing;
 
 public class JAXRS {
 
-    private static String MODULE_PATH = "agent-parent/plugins/jaxrs-plugin";
+    private static final String MODULE_PATH = "agent-parent/plugins/jaxrs-plugin";
 
     public static void main(String[] args) throws Exception {
         // run("2.0");

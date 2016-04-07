@@ -17,7 +17,7 @@ package org.glowroot.testing;
 
 public class Cassandra {
 
-    private static String MODULE_PATH = "agent-parent/plugins/cassandra-plugin";
+    private static final String MODULE_PATH = "agent-parent/plugins/cassandra-plugin";
 
     public static void main(String[] args) throws Exception {
         for (int i = 0; i <= 12; i++) {

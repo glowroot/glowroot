@@ -38,13 +38,13 @@ public class Log4jAspect {
     private static final String TIMER_NAME = "logging";
 
     // constants from org.apache.log4j.Priority
-    private final static int OFF_INT = Integer.MAX_VALUE;
-    private final static int FATAL_INT = 50000;
-    private final static int ERROR_INT = 40000;
-    private final static int WARN_INT = 30000;
-    private final static int INFO_INT = 20000;
-    private final static int DEBUG_INT = 10000;
-    private final static int ALL_INT = Integer.MIN_VALUE;
+    private static final int OFF_INT = Integer.MAX_VALUE;
+    private static final int FATAL_INT = 50000;
+    private static final int ERROR_INT = 40000;
+    private static final int WARN_INT = 30000;
+    private static final int INFO_INT = 20000;
+    private static final int DEBUG_INT = 10000;
+    private static final int ALL_INT = Integer.MIN_VALUE;
 
     @Shim("org.apache.log4j.Category")
     public interface Logger {

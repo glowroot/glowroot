@@ -17,7 +17,7 @@ package org.glowroot.testing;
 
 public class Grails {
 
-    private static String MODULE_PATH = "agent-parent/plugins/grails-plugin";
+    private static final String MODULE_PATH = "agent-parent/plugins/grails-plugin";
 
     public static void main(String[] args) throws Exception {
         for (int i = 6; i <= 15; i++) {

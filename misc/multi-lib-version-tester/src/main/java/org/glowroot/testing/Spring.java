@@ -17,7 +17,7 @@ package org.glowroot.testing;
 
 public class Spring {
 
-    private static String MODULE_PATH = "agent-parent/plugins/spring-plugin";
+    private static final String MODULE_PATH = "agent-parent/plugins/spring-plugin";
 
     public static void main(String[] args) throws Exception {
         for (int i = 0; i <= 7; i++) {

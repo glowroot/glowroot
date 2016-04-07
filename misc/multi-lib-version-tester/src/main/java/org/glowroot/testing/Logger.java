@@ -19,7 +19,7 @@ import java.io.IOException;
 
 public class Logger {
 
-    private static String MODULE_PATH = "agent-parent/plugins/logger-plugin";
+    private static final String MODULE_PATH = "agent-parent/plugins/logger-plugin";
 
     public static void main(String[] args) throws Exception {
         logback();

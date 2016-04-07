@@ -17,7 +17,7 @@ package org.glowroot.testing;
 
 public class JSF {
 
-    private static String MODULE_PATH = "agent-parent/plugins/jsf-plugin";
+    private static final String MODULE_PATH = "agent-parent/plugins/jsf-plugin";
 
     public static void main(String[] args) throws Exception {
         for (int i = 0; i <= 11; i++) {

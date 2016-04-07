@@ -19,7 +19,7 @@ import java.io.IOException;
 
 public class HttpClient {
 
-    private static String MODULE_PATH = "agent-parent/plugins/http-client-plugin";
+    private static final String MODULE_PATH = "agent-parent/plugins/http-client-plugin";
 
     public static void main(String[] args) throws Exception {
         apacheHttpClient();
