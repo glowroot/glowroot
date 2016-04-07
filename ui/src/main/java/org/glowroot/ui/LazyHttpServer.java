@@ -90,7 +90,6 @@ class LazyHttpServer {
         httpServices.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/login$"), indexHtmlHttpService);
-        httpServices.put(Pattern.compile("^/log$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/backend/layout$"), layoutHttpService);
         // export service is not bound under /backend since the export url is visible to users
         // as the download url for the export file
@@ -100,7 +99,7 @@ class LazyHttpServer {
                 traceDetailHttpService);
         httpServices.put(Pattern.compile("^/backend/trace/aux-thread-profile$"),
                 traceDetailHttpService);
-        httpServices.put(Pattern.compile("^/backend/log$"), glowrootLogHttpService);
+        httpServices.put(Pattern.compile("^/log$"), glowrootLogHttpService);
         // services
         try {
             return new HttpServer(bindAddress, port, numWorkerThreads, layoutService, httpServices,

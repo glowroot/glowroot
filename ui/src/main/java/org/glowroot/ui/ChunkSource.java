@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ public abstract class ChunkSource {
         private final Iterator<ChunkSource> chunkSources;
         private final Writer writer;
 
-        private @Nullable ChunkCopier currChunkCopier;
+        private volatile @Nullable ChunkCopier currChunkCopier;
 
         private ConcatChunkCopier(Iterable<ChunkSource> chunkSources, Writer writer) {
             this.chunkSources = chunkSources.iterator();
@@ -140,7 +140,7 @@ public abstract class ChunkSource {
         private final String str;
         private final Writer writer;
 
-        private boolean closed;
+        private volatile boolean closed;
 
         private StringChunkCopier(String str, Writer writer) {
             this.str = str;

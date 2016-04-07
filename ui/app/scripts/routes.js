@@ -357,11 +357,6 @@ glowroot.config([
       templateUrl: 'views/jvm/capabilities.html',
       controller: 'JvmCapabilitiesCtrl'
     });
-    $stateProvider.state('log', {
-      url: '/log',
-      templateUrl: 'views/log.html',
-      controller: 'LogCtrl'
-    });
     $stateProvider.state('config', {
       url: '/config',
       templateUrl: 'views/config.html',

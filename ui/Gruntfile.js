@@ -58,8 +58,7 @@ module.exports = function (grunt) {
         {from: '^/error/.*$', to: '/index.html'},
         {from: '^/jvm/.*$', to: '/index.html'},
         {from: '^/config/.*$', to: '/index.html'},
-        {from: '^/login$', to: '/index.html'},
-        {from: '^/log$', to: '/index.html'}
+        {from: '^/login$', to: '/index.html'}
       ],
       livereload: {
         proxies: [
