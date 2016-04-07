@@ -281,7 +281,7 @@ public class AdviceBuilder {
         }
     }
 
-    private static @Nullable Pattern buildPattern(String maybePattern) {
+    static @Nullable Pattern buildPattern(String maybePattern) {
         if (maybePattern.startsWith("/") && maybePattern.endsWith("/")) {
             // full regex power
             return Pattern.compile(maybePattern.substring(1, maybePattern.length() - 1));

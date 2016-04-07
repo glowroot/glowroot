@@ -402,7 +402,9 @@ class ClassAnalyzer {
             List<AnalyzedClass> newInterfaceAnalyzedClasses) {
         Set<ShimType> matchedShimTypes = Sets.newHashSet();
         for (ShimType shimType : shimTypes) {
-            if (shimType.target().equals(className)) {
+            Pattern targetPattern = shimType.targetPattern();
+            if (targetPattern == null && shimType.target().equals(className)
+                    || targetPattern != null && targetPattern.matcher(className).matches()) {
                 matchedShimTypes.add(shimType);
             }
         }
