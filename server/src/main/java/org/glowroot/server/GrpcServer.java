@@ -45,6 +45,9 @@ import org.glowroot.wire.api.model.Proto;
 
 public class GrpcServer {
 
+    private static final int GRPC_MAX_MESSAGE_SIZE_MB =
+            Integer.getInteger("grpc.max.message.size.mb", 100);
+
     private static final Logger logger = LoggerFactory.getLogger(GrpcServer.class);
 
     private final AgentDao agentDao;
@@ -71,6 +74,7 @@ public class GrpcServer {
         server = NettyServerBuilder.forPort(port)
                 .addService(CollectorServiceGrpc.bindService(new CollectorServiceImpl()))
                 .addService(DownstreamServiceGrpc.bindService(downstreamService))
+                .maxMessageSize(1024 * 1024 * GRPC_MAX_MESSAGE_SIZE_MB)
                 .build()
                 .start();
     }
