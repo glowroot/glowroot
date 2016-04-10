@@ -95,7 +95,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <!-- executor plugin is included to test async servlets -->
+      <!-- executor plugin is included to test async responses -->
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-executor-plugin</artifactId>
       <version>${project.version}</version>

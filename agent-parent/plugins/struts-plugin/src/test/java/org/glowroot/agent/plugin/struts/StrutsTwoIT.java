@@ -20,13 +20,6 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.List;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-
 import com.ning.http.client.AsyncHttpClient;
 import org.apache.catalina.Context;
 import org.apache.catalina.loader.WebappLoader;
@@ -39,7 +32,6 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -117,38 +109,5 @@ public class StrutsTwoIT {
             serverSocket.close();
             return port;
         }
-    }
-
-    public static class TransactionMarkingForwardingFilter implements Filter, TransactionMarker {
-
-        private ThreadLocal<ServletRequest> request = new ThreadLocal<ServletRequest>();
-        private ThreadLocal<ServletResponse> response = new ThreadLocal<ServletResponse>();
-        private ThreadLocal<FilterChain> chain = new ThreadLocal<FilterChain>();
-
-        @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-                throws IOException, ServletException {
-            this.request.set(request);
-            this.response.set(response);
-            this.chain.set(chain);
-            try {
-                transactionMarker();
-            } finally {
-                this.request.remove();
-                this.response.remove();
-                this.chain.remove();
-            }
-        }
-
-        @Override
-        public void transactionMarker() throws ServletException, IOException {
-            chain.get().doFilter(request.get(), response.get());
-        }
-
-        @Override
-        public void init(FilterConfig filterConfig) {}
-
-        @Override
-        public void destroy() {}
     }
 }

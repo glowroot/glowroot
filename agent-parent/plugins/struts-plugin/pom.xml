@@ -84,6 +84,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- servlet plugin is included to capture transactions -->
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-servlet-plugin</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>

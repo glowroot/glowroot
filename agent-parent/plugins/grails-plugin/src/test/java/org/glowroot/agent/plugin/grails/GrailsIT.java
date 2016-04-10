@@ -166,10 +166,6 @@ public class GrailsIT {
                     tomcat.addWebapp("", new File("src/test/resources").getAbsolutePath());
 
             WebappLoader webappLoader = new WebappLoader(RenderInTomcat.class.getClassLoader());
-            // delegate is needed under LocalContainer since using extra resource paths below
-            // which causes TransactionMarkingFilter to be loaded by WebappLoader and not by its
-            // parent IsolatedWeavingClassLoader and so it is not woven
-            webappLoader.setDelegate(true);
             context.setLoader(webappLoader);
 
             // this is needed in order for Tomcat to find annotated classes
