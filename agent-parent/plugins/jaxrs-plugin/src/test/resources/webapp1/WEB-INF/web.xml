@@ -3,16 +3,6 @@
   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
   version="3.0">
 
-  <filter>
-    <filter-name>transaction-marker</filter-name>
-    <filter-class>org.glowroot.agent.plugin.jaxrs.TransactionMarkingFilter</filter-class>
-    <async-supported>true</async-supported>
-  </filter>
-  <filter-mapping>
-    <filter-name>transaction-marker</filter-name>
-    <url-pattern>/*</url-pattern>
-  </filter-mapping>
-
   <servlet>
     <servlet-name>jersey</servlet-name>
     <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>

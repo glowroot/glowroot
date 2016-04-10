@@ -66,7 +66,7 @@ public class SuspendedResourceIT {
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /suspended/*");
         assertThat(trace.getHeader().getAsync()).isTrue();
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(4);
+        assertThat(entries).hasSize(3);
         Trace.Entry entry = entries.get(0);
         assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.agent.plugin.jaxrs.SuspendedResourceIT$SuspendedResource.log()");
@@ -76,9 +76,6 @@ public class SuspendedResourceIT {
 
         entry = entries.get(2);
         assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
-
-        entry = entries.get(3);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs async response");
     }
 
     public static class WithNormalServletMappingCallSuspended extends InvokeJaxrsResourceInTomcat {

@@ -82,7 +82,14 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <!-- executor plugin is included to test async servlets -->
+      <!-- servlet plugin is included to capture transactions -->
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-servlet-plugin</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- executor plugin is included to test async responses -->
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-executor-plugin</artifactId>
       <version>${project.version}</version>

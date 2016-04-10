@@ -42,13 +42,6 @@ public class ResourceMethodMetaTest {
         assertThat(ResourceMethodMeta.combine("", "/xyz")).isEqualTo("/xyz");
     }
 
-    @Test
-    public void shouldReturnAsync() throws NoSuchMethodException {
-        ResourceMethodMeta meta = new ResourceMethodMeta(ResourceMethodMetaTest.class
-                .getMethod("methodContainingSuspended", AsyncResponse.class));
-        assertThat(meta.isAsync()).isTrue();
-    }
-
     public void methodContainingSuspended(
             @SuppressWarnings("unused") @Suspended AsyncResponse response) {}
 }
