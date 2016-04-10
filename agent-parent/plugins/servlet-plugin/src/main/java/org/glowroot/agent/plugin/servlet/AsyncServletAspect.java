@@ -43,19 +43,8 @@ public class AsyncServletAspect {
     }
 
     @Pointcut(className = "javax.servlet.ServletRequest", methodName = "startAsync",
-            methodParameterTypes = {}, nestingGroup = "servlet-start-async")
+            methodParameterTypes = {".."})
     public static class StartAsyncAdvice {
-        @OnReturn
-        public static void onReturn(ThreadContext context) {
-            context.setAsyncTransaction();
-        }
-    }
-
-    @Pointcut(className = "javax.servlet.ServletRequest", methodName = "startAsync",
-            methodParameterTypes = {"javax.servlet.ServletRequest",
-                    "javax.servlet.ServletResponse"},
-            nestingGroup = "servlet-start-async")
-    public static class StartAsyncTwoArgAdvice {
         @OnReturn
         public static void onReturn(ThreadContext context) {
             context.setAsyncTransaction();
