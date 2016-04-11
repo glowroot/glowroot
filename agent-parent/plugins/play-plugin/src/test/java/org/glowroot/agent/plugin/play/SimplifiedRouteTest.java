@@ -23,10 +23,11 @@ public class SimplifiedRouteTest {
 
     @Test
     public void test() {
-        assertThat(PlayAspect.simplifiedRoute("")).isEqualTo("");
-        assertThat(PlayAspect.simplifiedRoute("/one/$two<[^/]+>/three")).isEqualTo("/one/*/three");
-        assertThat(PlayAspect.simplifiedRoute("/assets/$file<.+>")).isEqualTo("/assets/**");
-        assertThat(PlayAspect.simplifiedRoute("/custom/$xyz<xyz[^/]+>/three"))
+        assertThat(Play2xAspect.simplifiedRoute("")).isEqualTo("");
+        assertThat(Play2xAspect.simplifiedRoute("/one/$two<[^/]+>/three"))
+                .isEqualTo("/one/*/three");
+        assertThat(Play2xAspect.simplifiedRoute("/assets/$file<.+>")).isEqualTo("/assets/**");
+        assertThat(Play2xAspect.simplifiedRoute("/custom/$xyz<xyz[^/]+>/three"))
                 .isEqualTo("/custom/xyz*/three");
     }
 }

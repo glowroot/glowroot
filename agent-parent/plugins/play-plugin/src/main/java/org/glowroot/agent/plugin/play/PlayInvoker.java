@@ -22,7 +22,7 @@ import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
-import org.glowroot.agent.plugin.play.PlayAspect.HandlerDef;
+import org.glowroot.agent.plugin.play.Play2xAspect.HandlerDef;
 
 public class PlayInvoker {
 

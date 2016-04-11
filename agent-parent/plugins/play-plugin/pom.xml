@@ -95,6 +95,13 @@
       </properties>
       <dependencies>
         <dependency>
+          <!-- netty plugin is required for play 2.x -->
+          <groupId>org.glowroot</groupId>
+          <artifactId>glowroot-agent-netty-plugin</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
           <!-- executor plugin is included to test async responses -->
           <groupId>org.glowroot</groupId>
           <artifactId>glowroot-agent-executor-plugin</artifactId>

@@ -1,0 +1,8 @@
+{
+  "name": "Netty Plugin",
+  "id": "netty",
+  "aspects": [
+    "org.glowroot.agent.plugin.netty.Netty3Aspect",
+    "org.glowroot.agent.plugin.netty.NettyAspect"
+  ]
+}

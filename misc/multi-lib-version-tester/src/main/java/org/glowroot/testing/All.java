@@ -26,6 +26,7 @@ public class All {
         Redis.main(args);
         JSF.main(args);
         Logger.main(args);
+        Netty.main(args);
         Play.main(args);
         Quartz.main(args);
         Spring.main(args);

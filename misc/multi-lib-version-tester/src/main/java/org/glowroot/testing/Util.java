@@ -61,8 +61,7 @@ class Util {
         pom = pom.replaceFirst("<" + property + ">.*",
                 "<" + property + ">" + version + "</" + property + ">");
         Files.write(pom, pomFile, Charsets.UTF_8);
-
-        System.out.println("\n\n" + property + " : " + version + "\n\n");
+        System.out.println(property + " : " + version);
         report.println(property + " : " + version);
     }
 
@@ -107,6 +106,7 @@ class Util {
         if (exit != 0) {
             report.println("FAIL");
         }
+        System.out.println("\n\n");
     }
 
     private static class ConsoleOutputPipe implements Runnable {
