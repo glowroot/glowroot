@@ -61,7 +61,7 @@ public class ExecutorAspect {
     }
 
     @Mixin("org.apache.tomcat.util.net.JIoEndpoint$SocketProcessor")
-    public static class SuppressedRunnableImpl implements SuppressedRunnableMixin {}
+    public static class SuppressedRunnableImpl implements SuppressedRunnableEtcMixin {}
 
     // the method names are verbose to avoid conflict since they will become methods in all classes
     // that extend Runnable, Callable and/or ForkJoinTask
@@ -75,7 +75,7 @@ public class ExecutorAspect {
 
     // the method names are verbose to avoid conflict since they will become methods in all classes
     // that extend java.lang.Runnable and/or java.util.concurrent.Callable
-    public interface SuppressedRunnableMixin {}
+    public interface SuppressedRunnableEtcMixin {}
 
     // no nesting group in order to capture sometimes wrapped runnable passed to delegate executor
     @Pointcut(className = "java.util.concurrent.Executor|java.util.concurrent.ExecutorService"
@@ -85,16 +85,16 @@ public class ExecutorAspect {
             methodName = "execute|submit|invoke|submitListenable", methodParameterTypes = {".."})
     public static class ExecuteAdvice {
         @IsEnabled
-        public static boolean isEnabled(@BindParameter Object runnableCallable) {
+        public static boolean isEnabled(@BindParameter Object runnableEtc) {
             // this class may have been loaded before class file transformer was added to jvm
-            return runnableCallable instanceof RunnableEtcMixin
-                    && !(runnableCallable instanceof SuppressedRunnableMixin);
+            return runnableEtc instanceof RunnableEtcMixin
+                    && !(runnableEtc instanceof SuppressedRunnableEtcMixin);
         }
         @OnBefore
-        public static void onBefore(ThreadContext context, @BindParameter Object runnableCallable) {
-            RunnableEtcMixin runnableCallableMixin = (RunnableEtcMixin) runnableCallable;
+        public static void onBefore(ThreadContext context, @BindParameter Object runnableEtc) {
+            RunnableEtcMixin runnableMixin = (RunnableEtcMixin) runnableEtc;
             AuxThreadContext auxContext = context.createAuxThreadContext();
-            runnableCallableMixin.glowroot$setAuxContext(auxContext);
+            runnableMixin.glowroot$setAuxContext(auxContext);
         }
     }
 
@@ -111,7 +111,7 @@ public class ExecutorAspect {
             for (Object callable : callables) {
                 // this class may have been loaded before class file transformer was added to jvm
                 if (callable instanceof RunnableEtcMixin
-                        && !(callable instanceof SuppressedRunnableMixin)) {
+                        && !(callable instanceof SuppressedRunnableEtcMixin)) {
                     RunnableEtcMixin callableMixin = (RunnableEtcMixin) callable;
                     AuxThreadContext auxContext = context.createAuxThreadContext();
                     callableMixin.glowroot$setAuxContext(auxContext);
@@ -125,16 +125,16 @@ public class ExecutorAspect {
             methodParameterTypes = {".."})
     public static class ScheduleAdvice {
         @IsEnabled
-        public static boolean isEnabled(@BindParameter Object runnableCallable) {
+        public static boolean isEnabled(@BindParameter Object runnableEtc) {
             // this class may have been loaded before class file transformer was added to jvm
-            return runnableCallable instanceof RunnableEtcMixin
-                    && !(runnableCallable instanceof SuppressedRunnableMixin);
+            return runnableEtc instanceof RunnableEtcMixin
+                    && !(runnableEtc instanceof SuppressedRunnableEtcMixin);
         }
         @OnBefore
-        public static void onBefore(ThreadContext context, @BindParameter Object runnableCallable) {
-            RunnableEtcMixin runnableCallableMixin = (RunnableEtcMixin) runnableCallable;
+        public static void onBefore(ThreadContext context, @BindParameter Object runnableEtc) {
+            RunnableEtcMixin runnableEtcMixin = (RunnableEtcMixin) runnableEtc;
             AuxThreadContext auxContext = context.createAuxThreadContext();
-            runnableCallableMixin.glowroot$setAuxContext(auxContext);
+            runnableEtcMixin.glowroot$setAuxContext(auxContext);
         }
     }
 
@@ -145,18 +145,18 @@ public class ExecutorAspect {
     public static class ScheduleOnceAdvice {
         @IsEnabled
         public static boolean isEnabled(@SuppressWarnings("unused") @BindParameter Object duration,
-                @BindParameter Object runnableCallable) {
+                @BindParameter Object runnableEtc) {
             // this class may have been loaded before class file transformer was added to jvm
-            return runnableCallable instanceof RunnableEtcMixin
-                    && !(runnableCallable instanceof SuppressedRunnableMixin);
+            return runnableEtc instanceof RunnableEtcMixin
+                    && !(runnableEtc instanceof SuppressedRunnableEtcMixin);
         }
         @OnBefore
         public static void onBefore(ThreadContext context,
                 @SuppressWarnings("unused") @BindParameter Object duration,
-                @BindParameter Object runnableCallable) {
-            RunnableEtcMixin runnableCallableMixin = (RunnableEtcMixin) runnableCallable;
+                @BindParameter Object runnableEtc) {
+            RunnableEtcMixin runnableEtcMixin = (RunnableEtcMixin) runnableEtc;
             AuxThreadContext auxContext = context.createAuxThreadContext();
-            runnableCallableMixin.glowroot$setAuxContext(auxContext);
+            runnableEtcMixin.glowroot$setAuxContext(auxContext);
         }
     }
 
@@ -165,16 +165,16 @@ public class ExecutorAspect {
             methodParameterTypes = {"java.util.TimerTask", ".."})
     public static class TimerScheduleAdvice {
         @IsEnabled
-        public static boolean isEnabled(@BindParameter Object runnableCallable) {
+        public static boolean isEnabled(@BindParameter Object runnableEtc) {
             // this class may have been loaded before class file transformer was added to jvm
-            return runnableCallable instanceof RunnableEtcMixin
-                    && !(runnableCallable instanceof SuppressedRunnableMixin);
+            return runnableEtc instanceof RunnableEtcMixin
+                    && !(runnableEtc instanceof SuppressedRunnableEtcMixin);
         }
         @OnBefore
-        public static void onBefore(ThreadContext context, @BindParameter Object runnableCallable) {
-            RunnableEtcMixin runnableCallableMixin = (RunnableEtcMixin) runnableCallable;
+        public static void onBefore(ThreadContext context, @BindParameter Object runnableEtc) {
+            RunnableEtcMixin runnableEtcMixin = (RunnableEtcMixin) runnableEtc;
             AuxThreadContext auxContext = context.createAuxThreadContext();
-            runnableCallableMixin.glowroot$setAuxContext(auxContext);
+            runnableEtcMixin.glowroot$setAuxContext(auxContext);
         }
     }
 
