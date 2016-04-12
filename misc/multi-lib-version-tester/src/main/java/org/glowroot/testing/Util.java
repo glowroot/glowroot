@@ -58,7 +58,7 @@ class Util {
             throws IOException {
         File pomFile = new File(BASE_DIR + "/" + modulePath + "/pom.xml");
         String pom = Files.toString(pomFile, Charsets.UTF_8);
-        pom = pom.replaceFirst("<" + property + ">.*",
+        pom = pom.replaceAll("<" + property + ">.*",
                 "<" + property + ">" + version + "</" + property + ">");
         Files.write(pom, pomFile, Charsets.UTF_8);
         System.out.println(property + " : " + version);
