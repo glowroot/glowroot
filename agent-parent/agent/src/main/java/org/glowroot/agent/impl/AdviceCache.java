@@ -79,7 +79,7 @@ public class AdviceCache {
             List<InstrumentationConfig> reweavableConfigs,
             @Nullable Instrumentation instrumentation,
             @Nullable ExtraBootResourceFinder extraBootResourceFinder, File baseDir)
-                    throws Exception {
+            throws Exception {
 
         List<Advice> pluginAdvisors = Lists.newArrayList();
         List<ShimType> shimTypes = Lists.newArrayList();
@@ -197,8 +197,8 @@ public class AdviceCache {
             if (memberClass.isAnnotationPresent(Pointcut.class)) {
                 try {
                     advisors.add(new AdviceBuilder(memberClass).build());
-                } catch (Exception e) {
-                    logger.error("error creating advice: {}", memberClass.getName(), e);
+                } catch (Throwable t) {
+                    logger.error("error creating advice: {}", memberClass.getName(), t);
                 }
             }
         }
