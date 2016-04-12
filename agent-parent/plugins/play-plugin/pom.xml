@@ -102,7 +102,7 @@
           <scope>test</scope>
         </dependency>
         <dependency>
-          <!-- executor plugin is included to test async responses -->
+          <!-- executor plugin is required for play 2.x -->
           <groupId>org.glowroot</groupId>
           <artifactId>glowroot-agent-executor-plugin</artifactId>
           <version>${project.version}</version>
@@ -260,6 +260,20 @@
         <play.version>1.4.2</play.version>
       </properties>
       <dependencies>
+        <dependency>
+          <!-- netty plugin is required for play 1.x dev mode -->
+          <groupId>org.glowroot</groupId>
+          <artifactId>glowroot-agent-netty-plugin</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <!-- executor plugin is required for play 1.x dev mode -->
+          <groupId>org.glowroot</groupId>
+          <artifactId>glowroot-agent-executor-plugin</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+        </dependency>
         <dependency>
           <groupId>com.google.code.maven-play-plugin.org.playframework</groupId>
           <artifactId>play</artifactId>

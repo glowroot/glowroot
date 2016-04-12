@@ -42,9 +42,7 @@ public class Play1xAspect {
 
         @OnBefore
         public static TraceEntry onBefore(OptionalThreadContext context) {
-            // FIXME
-            return context.startTransaction("Play", "TODO",
-                    MessageSupplier.from("play action invoker"), timerName);
+            return context.startTraceEntry(MessageSupplier.from("play action invoker"), timerName);
         }
 
         @OnReturn
