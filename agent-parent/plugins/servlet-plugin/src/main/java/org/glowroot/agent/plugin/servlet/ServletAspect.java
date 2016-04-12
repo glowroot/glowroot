@@ -167,7 +167,7 @@ public class ServletAspect {
                 }
             }
             TraceEntry traceEntry =
-                    context.startTransaction("Servlet", requestUri, messageSupplier, timerName);
+                    context.startTransaction("Web", requestUri, messageSupplier, timerName);
             context.setServletMessageSupplier(messageSupplier);
             // Glowroot-Transaction-Name header is useful for automated tests which want to send a
             // more specific name for the transaction

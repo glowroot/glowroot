@@ -98,19 +98,19 @@ public class BasicSmokeIT extends WebDriverIT {
         Utils.withWait(driver, By.partialLinkText("Response time")).sendKeys(Keys.F5);
 
         Utils.withWait(driver,
-                By.xpath("//a[@gt-display='All Servlet Transactions'][contains(., '%')]"));
+                By.xpath("//a[@gt-display='All Web Transactions'][contains(., '%')]"));
         driver.findElement(By.xpath("//button[@title='By percent of total time']")).click();
         driver.findElement(By.linkText("By average time")).click();
         Utils.withWait(driver,
-                By.xpath("//a[@gt-display='All Servlet Transactions'][contains(., 'ms')]"));
+                By.xpath("//a[@gt-display='All Web Transactions'][contains(., 'ms')]"));
         driver.findElement(By.xpath("//button[@title='By average time']")).click();
         driver.findElement(By.linkText("By throughput (per min)")).click();
         Utils.withWait(driver,
-                By.xpath("//a[@gt-display='All Servlet Transactions'][contains(., '/min')]"));
+                By.xpath("//a[@gt-display='All Web Transactions'][contains(., '/min')]"));
         driver.findElement(By.xpath("//button[@title='By throughput (per min)']")).click();
         driver.findElement(By.linkText("By percent of total time")).click();
         Utils.withWait(driver,
-                By.xpath("//a[@gt-display='All Servlet Transactions'][contains(., '%')]"));
+                By.xpath("//a[@gt-display='All Web Transactions'][contains(., '%')]"));
 
         Utils.withWait(driver, By.partialLinkText("percentiles")).click();
         Utils.withWait(driver, By.partialLinkText("throughput")).click();
@@ -144,15 +144,15 @@ public class BasicSmokeIT extends WebDriverIT {
         globalNavbar.getErrorsLink().click();
 
         Utils.withWait(driver,
-                By.xpath("//a[@gt-display='All Servlet Transactions'][not(contains(., '%'))]"));
+                By.xpath("//a[@gt-display='All Web Transactions'][not(contains(., '%'))]"));
         driver.findElement(By.xpath("//button[@title='By error count']")).click();
         driver.findElement(By.linkText("By error rate")).click();
         Utils.withWait(driver,
-                By.xpath("//a[@gt-display='All Servlet Transactions'][contains(., '%')]"));
+                By.xpath("//a[@gt-display='All Web Transactions'][contains(., '%')]"));
         driver.findElement(By.xpath("//button[@title='By error rate']")).click();
         driver.findElement(By.linkText("By error count")).click();
         Utils.withWait(driver,
-                By.xpath("//a[@gt-display='All Servlet Transactions'][not(contains(., '%'))]"));
+                By.xpath("//a[@gt-display='All Web Transactions'][not(contains(., '%'))]"));
 
         Utils.withWait(driver, By.xpath("//input[@ng-model='filter']")).sendKeys("xyz");
         Utils.withWait(driver, By.xpath("//button[@ng-click='refresh()']")).click();

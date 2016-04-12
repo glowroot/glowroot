@@ -191,7 +191,7 @@ public class NettyAspect {
             message = methodName + " " + uri;
         }
         TraceEntry traceEntry =
-                context.startTransaction("HTTP", path, MessageSupplier.from(message), timerName);
+                context.startTransaction("Web", path, MessageSupplier.from(message), timerName);
         context.setAsyncTransaction();
         return traceEntry;
     }

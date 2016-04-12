@@ -25,7 +25,7 @@ public abstract class UiConfig {
 
     @Value.Default
     public String defaultDisplayedTransactionType() {
-        return "Servlet";
+        return "Web";
     }
 
     @Value.Default

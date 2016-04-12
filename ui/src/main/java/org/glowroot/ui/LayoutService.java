@@ -126,7 +126,7 @@ class LayoutService {
                 List<Double> defaultDisplayedPercentiles;
                 if (uiConfig == null) {
                     // TODO these defaults should be shared with UiConfig defaults
-                    defaultDisplayedTransactionType = "Servlet";
+                    defaultDisplayedTransactionType = "Web";
                     defaultDisplayedPercentiles = ImmutableList.of(50.0, 95.0, 99.0);
                 } else {
                     defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
