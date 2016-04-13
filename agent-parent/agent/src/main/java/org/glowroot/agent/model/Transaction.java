@@ -70,7 +70,7 @@ public class Transaction {
     private static final int ATTRIBUTE_KEYS_INITIAL_CAPACITY = 16;
 
     // this is just to limit memory (and also to limit display size of trace)
-    private static final long ATTRIBUTE_VALUES_PER_KEY_LIMIT = 10000;
+    private static final long ATTRIBUTE_VALUES_PER_KEY_LIMIT = 1000;
 
     private volatile @Nullable UUID uuid;
 
