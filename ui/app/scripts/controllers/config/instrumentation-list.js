@@ -72,7 +72,6 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
           .success(function (data) {
             $scope.loaded = true;
             $scope.configs = data.configs;
-            // use object so dirty flag can be updated by child controllers
             $scope.dirty = data.jvmOutOfSync;
             $scope.jvmRetransformClassesSupported = data.jvmRetransformClassesSupported;
             var configs = angular.copy($scope.configs);
@@ -108,9 +107,13 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
         postData.versions.push(config.version);
       });
       $http.post('backend/config/instrumentation/remove', postData)
-          .success(function () {
-            deferred.resolve('Deleted');
-            $scope.configs = [];
+          .success(function (data) {
+            var wrapped = $q.defer();
+            wrapped.promise.finally(function () {
+              // leave spinner going until subsequent refresh is complete
+              deferred.resolve('Deleted');
+            });
+            refresh(wrapped);
           })
           .error(httpErrors.handler($scope, deferred));
     };
@@ -159,6 +162,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
           transactionType: '',
           transactionNameTemplate: '',
           transactionUserTemplate: '',
+          traceEntryMessageTemplate: '',
           traceEntryCaptureSelfNested: false,
           enabledProperty: '',
           traceEntryEnabledProperty: ''
