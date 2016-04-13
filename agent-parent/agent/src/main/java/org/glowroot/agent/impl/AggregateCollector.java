@@ -30,15 +30,28 @@ import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
+import org.glowroot.common.live.ImmutableOverviewAggregate;
+import org.glowroot.common.live.ImmutablePercentileAggregate;
+import org.glowroot.common.live.ImmutableThroughputAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.common.model.MutableProfile;
+import org.glowroot.common.model.OverallErrorSummaryCollector;
+import org.glowroot.common.model.OverallSummaryCollector;
+import org.glowroot.common.model.ProfileCollector;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.ServiceCallCollector;
+import org.glowroot.common.model.TransactionErrorSummaryCollector;
+import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.Proto.OptionalDouble;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 // must be used under an appropriate lock
 @Styles.Private
@@ -167,6 +180,81 @@ class AggregateCollector {
             builder.setAuxThreadProfile(auxThreadProfile.toProto());
         }
         return builder.build();
+    }
+
+    void mergeInOverallSummary(OverallSummaryCollector collector) {
+        collector.mergeSummary(totalDurationNanos, transactionCount, 0);
+    }
+
+    void mergeInTransactionSummaries(TransactionSummaryCollector collector) {
+        checkNotNull(transactionName);
+        collector.collect(transactionName, totalDurationNanos, transactionCount, 0);
+    }
+
+    void mergeInOverallErrorSummary(OverallErrorSummaryCollector collector) {
+        collector.mergeErrorSummary(errorCount, transactionCount, 0);
+    }
+
+    void mergeInTransactionErrorSummaries(TransactionErrorSummaryCollector collector) {
+        checkNotNull(transactionName);
+        if (errorCount != 0) {
+            collector.collect(transactionName, errorCount, transactionCount, 0);
+        }
+    }
+
+    OverviewAggregate getOverviewAggregate(long captureTime) {
+        ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
+                .captureTime(captureTime)
+                .totalDurationNanos(totalDurationNanos)
+                .transactionCount(transactionCount)
+                .asyncTransactions(asyncTransactions)
+                .mainThreadRootTimers(getRootTimersProtobuf(mainThreadRootTimers))
+                .auxThreadRootTimers(getRootTimersProtobuf(auxThreadRootTimers))
+                .asyncRootTimers(getRootTimersProtobuf(asyncRootTimers));
+        if (!mainThreadStats.isNA()) {
+            builder.mainThreadStats(mainThreadStats.toProto());
+        }
+        if (!auxThreadStats.isNA()) {
+            builder.auxThreadStats(auxThreadStats.toProto());
+        }
+        return builder.build();
+    }
+
+    PercentileAggregate getPercentileAggregate(long captureTime) {
+        return ImmutablePercentileAggregate.builder()
+                .captureTime(captureTime)
+                .totalDurationNanos(totalDurationNanos)
+                .transactionCount(transactionCount)
+                .durationNanosHistogram(durationNanosHistogram.toProto(new ScratchBuffer()))
+                .build();
+    }
+
+    ThroughputAggregate getThroughputAggregate(long captureTime) {
+        return ImmutableThroughputAggregate.of(captureTime, transactionCount);
+    }
+
+    void mergeInQueries(QueryCollector collector) throws IOException {
+        if (queries != null) {
+            collector.mergeQueries(queries.toProto());
+        }
+    }
+
+    void mergeInServiceCalls(ServiceCallCollector collector) throws IOException {
+        if (serviceCalls != null) {
+            collector.mergeServiceCalls(serviceCalls.toProto());
+        }
+    }
+
+    void mergeInMainThreadProfiles(ProfileCollector collector) {
+        if (mainThreadProfile != null) {
+            collector.mergeProfile(mainThreadProfile.toProto());
+        }
+    }
+
+    void mergeInAuxThreadProfiles(ProfileCollector collector) {
+        if (auxThreadProfile != null) {
+            collector.mergeProfile(auxThreadProfile.toProto());
+        }
     }
 
     private static void mergeRootTimer(CommonTimerImpl toBeMergedRootTimer,

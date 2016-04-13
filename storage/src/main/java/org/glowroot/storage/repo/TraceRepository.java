@@ -25,6 +25,7 @@ import org.immutables.value.Value;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
+import org.glowroot.common.model.Result;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;

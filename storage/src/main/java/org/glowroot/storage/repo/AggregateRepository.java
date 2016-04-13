@@ -17,14 +17,20 @@ package org.glowroot.storage.repo;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
-import org.immutables.value.Value;
-
+import org.glowroot.common.live.LiveAggregateRepository.ErrorSummarySortOrder;
+import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
+import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.SummarySortOrder;
+import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
+import org.glowroot.common.model.OverallErrorSummaryCollector;
+import org.glowroot.common.model.OverallSummaryCollector;
+import org.glowroot.common.model.ProfileCollector;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.ServiceCallCollector;
-import org.glowroot.common.util.Styles;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+import org.glowroot.common.model.TransactionErrorSummaryCollector;
+import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 
 public interface AggregateRepository {
@@ -33,7 +39,8 @@ public interface AggregateRepository {
             throws Exception;
 
     // query.from() is non-inclusive
-    OverallSummary readOverallSummary(OverallQuery query) throws Exception;
+    void mergeInOverallSummary(OverallSummaryCollector collector, OverallQuery query)
+            throws Exception;
 
     // query.from() is non-inclusive
     // sortOrder and limit are only used by fat agent H2 repository, while the glowroot server
@@ -43,7 +50,8 @@ public interface AggregateRepository {
             SummarySortOrder sortOrder, int limit) throws Exception;
 
     // query.from() is non-inclusive
-    OverallErrorSummary readOverallErrorSummary(OverallQuery query) throws Exception;
+    void mergeInOverallErrorSummary(OverallErrorSummaryCollector collector, OverallQuery query)
+            throws Exception;
 
     // query.from() is non-inclusive
     // sortOrder and limit are only used by fat agent H2 repository, while the glowroot server
@@ -92,94 +100,4 @@ public interface AggregateRepository {
     boolean shouldHaveAuxThreadProfile(TransactionQuery query) throws Exception;
 
     void deleteAll(String agentRollup) throws Exception;
-
-    @Value.Immutable
-    public interface OverallQuery {
-        String agentRollup();
-        String transactionType();
-        long from();
-        long to();
-        int rollupLevel();
-    }
-
-    @Value.Immutable
-    public interface TransactionQuery {
-        String agentRollup();
-        String transactionType();
-        @Nullable
-        String transactionName();
-        long from();
-        long to();
-        int rollupLevel();
-    }
-
-    @Value.Immutable
-    public interface OverallSummary {
-        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
-        double totalDurationNanos();
-        long transactionCount();
-        long lastCaptureTime();
-    }
-
-    @Value.Immutable
-    public interface TransactionSummary {
-        String transactionName();
-        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
-        double totalDurationNanos();
-        long transactionCount();
-    }
-
-    @Value.Immutable
-    public interface OverallErrorSummary {
-        long errorCount();
-        long transactionCount();
-        long lastCaptureTime();
-    }
-
-    @Value.Immutable
-    public interface TransactionErrorSummary {
-        String transactionName();
-        long errorCount();
-        long transactionCount();
-    }
-
-    @Value.Immutable
-    public interface OverviewAggregate {
-        long captureTime();
-        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
-        double totalDurationNanos();
-        long transactionCount();
-        boolean asyncTransactions();
-        List<Aggregate.Timer> mainThreadRootTimers();
-        List<Aggregate.Timer> auxThreadRootTimers();
-        List<Aggregate.Timer> asyncRootTimers();
-        @Nullable
-        Aggregate.ThreadStats mainThreadStats();
-        @Nullable
-        Aggregate.ThreadStats auxThreadStats();
-    }
-
-    @Value.Immutable
-    public interface PercentileAggregate {
-        long captureTime();
-        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
-        double totalDurationNanos();
-        long transactionCount();
-        Aggregate.Histogram durationNanosHistogram();
-    }
-
-    @Value.Immutable
-    @Styles.AllParameters
-    public interface ThroughputAggregate {
-        long captureTime();
-        long transactionCount();
-    }
-
-    public enum SummarySortOrder {
-        TOTAL_TIME, AVERAGE_TIME, THROUGHPUT
-    }
-
-    public enum ErrorSummarySortOrder {
-        ERROR_COUNT, ERROR_RATE
-    }
 }

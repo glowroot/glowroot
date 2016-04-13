@@ -33,7 +33,18 @@ import org.glowroot.agent.model.Profile;
 import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
+import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
+import org.glowroot.common.model.OverallErrorSummaryCollector;
+import org.glowroot.common.model.OverallSummaryCollector;
+import org.glowroot.common.model.ProfileCollector;
+import org.glowroot.common.model.QueryCollector;
+import org.glowroot.common.model.ServiceCallCollector;
+import org.glowroot.common.model.TransactionErrorSummaryCollector;
+import org.glowroot.common.model.TransactionSummaryCollector;
+import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
@@ -51,15 +62,18 @@ public class AggregateIntervalCollector {
     private final int maxAggregateQueriesPerType;
     private final int maxAggregateServiceCallsPerType;
 
+    private final Clock clock;
+
     AggregateIntervalCollector(long currentTime, long aggregateIntervalMillis,
             int maxAggregateTransactionsPerTransactionType, int maxAggregateQueriesPerType,
-            int maxAggregateServiceCallsPerType) {
+            int maxAggregateServiceCallsPerType, Clock clock) {
         captureTime = (long) Math.ceil(currentTime / (double) aggregateIntervalMillis)
                 * aggregateIntervalMillis;
         this.maxAggregateTransactionsPerTransactionType =
                 maxAggregateTransactionsPerTransactionType;
         this.maxAggregateQueriesPerType = maxAggregateQueriesPerType;
         this.maxAggregateServiceCallsPerType = maxAggregateServiceCallsPerType;
+        this.clock = clock;
     }
 
     public long getCaptureTime() {
@@ -69,6 +83,144 @@ public class AggregateIntervalCollector {
     public void add(Transaction transaction) {
         IntervalTypeCollector typeCollector = getTypeCollector(transaction.getTransactionType());
         typeCollector.add(transaction);
+    }
+
+    public void mergeInOverallSummary(OverallSummaryCollector collector, String transactionType) {
+        IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
+        if (typeCollector == null) {
+            return;
+        }
+        AggregateCollector aggregateCollector = typeCollector.overallAggregateCollector;
+        synchronized (aggregateCollector) {
+            aggregateCollector.mergeInOverallSummary(collector);
+        }
+    }
+
+    public void mergeInTransactionSummaries(TransactionSummaryCollector collector,
+            String transactionType) {
+        IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
+        if (typeCollector == null) {
+            return;
+        }
+        for (AggregateCollector aggregateCollector : typeCollector.transactionAggregateCollectors
+                .values()) {
+            synchronized (aggregateCollector) {
+                aggregateCollector.mergeInTransactionSummaries(collector);
+            }
+        }
+    }
+
+    public void mergeInOverallErrorSummary(OverallErrorSummaryCollector collector,
+            String transactionType) {
+        IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
+        if (typeCollector == null) {
+            return;
+        }
+        AggregateCollector aggregateCollector = typeCollector.overallAggregateCollector;
+        synchronized (aggregateCollector) {
+            aggregateCollector.mergeInOverallErrorSummary(collector);
+        }
+    }
+
+    public void mergeInTransactionErrorSummaries(TransactionErrorSummaryCollector collector,
+            String transactionType) {
+        IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
+        if (typeCollector == null) {
+            return;
+        }
+        for (AggregateCollector aggregateCollector : typeCollector.transactionAggregateCollectors
+                .values()) {
+            synchronized (aggregateCollector) {
+                aggregateCollector.mergeInTransactionErrorSummaries(collector);
+            }
+        }
+    }
+
+    public @Nullable OverviewAggregate getOverviewAggregate(String transactionType,
+            @Nullable String transactionName) {
+        AggregateCollector aggregateCollector =
+                getAggregateCollector(transactionType, transactionName);
+        if (aggregateCollector == null) {
+            return null;
+        }
+        long liveCaptureTime = Math.min(captureTime, clock.currentTimeMillis());
+        synchronized (aggregateCollector) {
+            return aggregateCollector.getOverviewAggregate(liveCaptureTime);
+        }
+    }
+
+    public @Nullable PercentileAggregate getPercentileAggregate(String transactionType,
+            @Nullable String transactionName) {
+        AggregateCollector aggregateCollector =
+                getAggregateCollector(transactionType, transactionName);
+        if (aggregateCollector == null) {
+            return null;
+        }
+        long liveCaptureTime = Math.min(captureTime, clock.currentTimeMillis());
+        synchronized (aggregateCollector) {
+            return aggregateCollector.getPercentileAggregate(liveCaptureTime);
+        }
+    }
+
+    public @Nullable ThroughputAggregate getThroughputAggregate(String transactionType,
+            @Nullable String transactionName) {
+        AggregateCollector aggregateCollector =
+                getAggregateCollector(transactionType, transactionName);
+        if (aggregateCollector == null) {
+            return null;
+        }
+        long liveCaptureTime = Math.min(captureTime, clock.currentTimeMillis());
+        synchronized (aggregateCollector) {
+            return aggregateCollector.getThroughputAggregate(liveCaptureTime);
+        }
+    }
+
+    public void mergeInQueries(QueryCollector collector, String transactionType,
+            @Nullable String transactionName) throws IOException {
+        AggregateCollector aggregateCollector =
+                getAggregateCollector(transactionType, transactionName);
+        if (aggregateCollector == null) {
+            return;
+        }
+        synchronized (aggregateCollector) {
+            aggregateCollector.mergeInQueries(collector);
+        }
+    }
+
+    public void mergeInServiceCalls(ServiceCallCollector collector, String transactionType,
+            @Nullable String transactionName) throws IOException {
+        AggregateCollector aggregateCollector =
+                getAggregateCollector(transactionType, transactionName);
+        if (aggregateCollector == null) {
+            return;
+        }
+        synchronized (aggregateCollector) {
+            aggregateCollector.mergeInServiceCalls(collector);
+        }
+    }
+
+    public void mergeInMainThreadProfiles(ProfileCollector collector, String transactionType,
+            @Nullable String transactionName) {
+        AggregateCollector aggregateCollector =
+                getAggregateCollector(transactionType, transactionName);
+        if (aggregateCollector == null) {
+            return;
+        }
+        synchronized (aggregateCollector) {
+            aggregateCollector.mergeInMainThreadProfiles(collector);
+        }
+    }
+
+    public void mergeInAuxThreadProfiles(ProfileCollector collector, String transactionType,
+            @Nullable String transactionName) {
+        AggregateCollector aggregateCollector =
+                getAggregateCollector(transactionType, transactionName);
+        if (aggregateCollector == null) {
+            return;
+        }
+        synchronized (aggregateCollector) {
+            aggregateCollector.mergeInAuxThreadProfiles(collector);
+        }
     }
 
     void flush(Collector collector) throws Exception {

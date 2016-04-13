@@ -48,11 +48,27 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import org.immutables.value.Value;
 
+import org.glowroot.common.live.ImmutableOverviewAggregate;
+import org.glowroot.common.live.ImmutablePercentileAggregate;
+import org.glowroot.common.live.ImmutableThroughputAggregate;
+import org.glowroot.common.live.ImmutableTransactionQuery;
+import org.glowroot.common.live.LiveAggregateRepository.ErrorSummarySortOrder;
+import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
+import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.SummarySortOrder;
+import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.common.model.MutableProfile;
+import org.glowroot.common.model.OverallErrorSummaryCollector;
+import org.glowroot.common.model.OverallSummaryCollector;
+import org.glowroot.common.model.ProfileCollector;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.ServiceCallCollector;
+import org.glowroot.common.model.TransactionErrorSummaryCollector;
+import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Styles;
 import org.glowroot.server.util.ByteBufferInputStream;
@@ -61,18 +77,9 @@ import org.glowroot.storage.config.ConfigDefaults;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
-import org.glowroot.storage.repo.ImmutableOverallErrorSummary;
-import org.glowroot.storage.repo.ImmutableOverallSummary;
-import org.glowroot.storage.repo.ImmutableOverviewAggregate;
-import org.glowroot.storage.repo.ImmutablePercentileAggregate;
-import org.glowroot.storage.repo.ImmutableThroughputAggregate;
-import org.glowroot.storage.repo.ImmutableTransactionQuery;
 import org.glowroot.storage.repo.MutableAggregate;
 import org.glowroot.storage.repo.MutableThreadStats;
 import org.glowroot.storage.repo.MutableTimer;
-import org.glowroot.storage.repo.ProfileCollector;
-import org.glowroot.storage.repo.TransactionErrorSummaryCollector;
-import org.glowroot.storage.repo.TransactionSummaryCollector;
 import org.glowroot.storage.util.AgentRollups;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -332,23 +339,16 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public OverallSummary readOverallSummary(OverallQuery query) {
+    public void mergeInOverallSummary(OverallSummaryCollector collector, OverallQuery query) {
         // currently have to do aggregation client-site (don't want to require Cassandra 2.2 yet)
         ResultSet results = createBoundStatement(summaryTable, query);
-        long lastCaptureTime = 0;
-        double totalDurationNanos = 0;
-        long transactionCount = 0;
         for (Row row : results) {
             // results are ordered by capture time so Math.max() is not needed here
-            lastCaptureTime = checkNotNull(row.getTimestamp(0)).getTime();
-            totalDurationNanos += row.getDouble(1);
-            transactionCount += row.getLong(2);
+            long captureTime = checkNotNull(row.getTimestamp(0)).getTime();
+            double totalDurationNanos = row.getDouble(1);
+            long transactionCount = row.getLong(2);
+            collector.mergeSummary(totalDurationNanos, transactionCount, captureTime);
         }
-        return ImmutableOverallSummary.builder()
-                .totalDurationNanos(totalDurationNanos)
-                .transactionCount(transactionCount)
-                .lastCaptureTime(lastCaptureTime)
-                .build();
     }
 
     // sortOrder and limit are only used by fat agent H2 repository, while the glowroot server
@@ -376,23 +376,17 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public OverallErrorSummary readOverallErrorSummary(OverallQuery query) {
+    public void mergeInOverallErrorSummary(OverallErrorSummaryCollector collector,
+            OverallQuery query) {
         // currently have to do aggregation client-site (don't want to require Cassandra 2.2 yet)
         ResultSet results = createBoundStatement(errorSummaryTable, query);
-        long lastCaptureTime = 0;
-        long errorCount = 0;
-        long transactionCount = 0;
         for (Row row : results) {
             // results are ordered by capture time so Math.max() is not needed here
-            lastCaptureTime = checkNotNull(row.getTimestamp(0)).getTime();
-            errorCount += row.getLong(1);
-            transactionCount += row.getLong(2);
+            long captureTime = checkNotNull(row.getTimestamp(0)).getTime();
+            long errorCount = row.getLong(1);
+            long transactionCount = row.getLong(2);
+            collector.mergeErrorSummary(errorCount, transactionCount, captureTime);
         }
-        return ImmutableOverallErrorSummary.builder()
-                .errorCount(errorCount)
-                .transactionCount(transactionCount)
-                .lastCaptureTime(lastCaptureTime)
-                .build();
     }
 
     // sortOrder and limit are only used by fat agent H2 repository, while the glowroot server

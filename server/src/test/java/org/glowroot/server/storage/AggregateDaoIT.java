@@ -24,25 +24,27 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.common.live.ImmutableOverallQuery;
+import org.glowroot.common.live.ImmutableTransactionQuery;
+import org.glowroot.common.live.LiveAggregateRepository.ErrorSummarySortOrder;
+import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
+import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
+import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
+import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.SummarySortOrder;
+import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
+import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
+import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
+import org.glowroot.common.model.OverallErrorSummaryCollector;
+import org.glowroot.common.model.OverallSummaryCollector;
 import org.glowroot.common.model.QueryCollector;
+import org.glowroot.common.model.Result;
+import org.glowroot.common.model.TransactionErrorSummaryCollector;
+import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.storage.config.ImmutableServerStorageConfig;
-import org.glowroot.storage.repo.AggregateRepository.ErrorSummarySortOrder;
-import org.glowroot.storage.repo.AggregateRepository.OverallErrorSummary;
-import org.glowroot.storage.repo.AggregateRepository.OverallQuery;
-import org.glowroot.storage.repo.AggregateRepository.OverallSummary;
-import org.glowroot.storage.repo.AggregateRepository.OverviewAggregate;
-import org.glowroot.storage.repo.AggregateRepository.PercentileAggregate;
-import org.glowroot.storage.repo.AggregateRepository.SummarySortOrder;
-import org.glowroot.storage.repo.AggregateRepository.ThroughputAggregate;
-import org.glowroot.storage.repo.AggregateRepository.TransactionErrorSummary;
-import org.glowroot.storage.repo.AggregateRepository.TransactionQuery;
-import org.glowroot.storage.repo.AggregateRepository.TransactionSummary;
 import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.ImmutableOverallQuery;
-import org.glowroot.storage.repo.ImmutableTransactionQuery;
-import org.glowroot.storage.repo.Result;
-import org.glowroot.storage.repo.TransactionErrorSummaryCollector;
-import org.glowroot.storage.repo.TransactionSummaryCollector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.QueriesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.Query;
@@ -104,15 +106,17 @@ public class AggregateDaoIT {
                 .rollupLevel(0)
                 .build();
 
-        OverallSummary overallSummary = aggregateDao.readOverallSummary(overallQuery);
+        OverallSummaryCollector overallSummaryCollector = new OverallSummaryCollector();
+        aggregateDao.mergeInOverallSummary(overallSummaryCollector, overallQuery);
+        OverallSummary overallSummary = overallSummaryCollector.getOverallSummary();
         assertThat(overallSummary.totalDurationNanos()).isEqualTo(3579 * 2);
         assertThat(overallSummary.transactionCount()).isEqualTo(6);
 
-        TransactionSummaryCollector summaryCollector = new TransactionSummaryCollector();
+        TransactionSummaryCollector transactionSummaryCollector = new TransactionSummaryCollector();
         SummarySortOrder sortOrder = SummarySortOrder.TOTAL_TIME;
-        aggregateDao.mergeInTransactionSummaries(summaryCollector, overallQuery,
+        aggregateDao.mergeInTransactionSummaries(transactionSummaryCollector, overallQuery,
                 sortOrder, 10);
-        Result<TransactionSummary> result = summaryCollector.getResult(sortOrder, 10);
+        Result<TransactionSummary> result = transactionSummaryCollector.getResult(sortOrder, 10);
         assertThat(result.records()).hasSize(2);
         assertThat(result.records().get(0).transactionName()).isEqualTo("tn2");
         assertThat(result.records().get(0).totalDurationNanos()).isEqualTo(2345 * 2);
@@ -121,8 +125,11 @@ public class AggregateDaoIT {
         assertThat(result.records().get(1).totalDurationNanos()).isEqualTo(1234 * 2);
         assertThat(result.records().get(1).transactionCount()).isEqualTo(2);
 
+        OverallErrorSummaryCollector overallErrorSummaryCollector =
+                new OverallErrorSummaryCollector();
+        aggregateDao.mergeInOverallErrorSummary(overallErrorSummaryCollector, overallQuery);
         OverallErrorSummary overallErrorSummary =
-                aggregateDao.readOverallErrorSummary(overallQuery);
+                overallErrorSummaryCollector.getOverallErrorSummary();
         assertThat(overallErrorSummary.errorCount()).isEqualTo(2);
         assertThat(overallErrorSummary.transactionCount()).isEqualTo(6);
 
@@ -185,14 +192,16 @@ public class AggregateDaoIT {
                 .rollupLevel(1)
                 .build();
 
-        overallSummary = aggregateDao.readOverallSummary(overallQuery);
+        overallSummaryCollector = new OverallSummaryCollector();
+        aggregateDao.mergeInOverallSummary(overallSummaryCollector, overallQuery);
+        overallSummary = overallSummaryCollector.getOverallSummary();
         assertThat(overallSummary.totalDurationNanos()).isEqualTo(3579 * 2);
         assertThat(overallSummary.transactionCount()).isEqualTo(6);
 
-        summaryCollector = new TransactionSummaryCollector();
-        aggregateDao.mergeInTransactionSummaries(summaryCollector, overallQuery,
+        transactionSummaryCollector = new TransactionSummaryCollector();
+        aggregateDao.mergeInTransactionSummaries(transactionSummaryCollector, overallQuery,
                 sortOrder, 10);
-        result = summaryCollector.getResult(sortOrder, 10);
+        result = transactionSummaryCollector.getResult(sortOrder, 10);
         assertThat(result.records()).hasSize(2);
         assertThat(result.records().get(0).transactionName()).isEqualTo("tn2");
         assertThat(result.records().get(0).totalDurationNanos()).isEqualTo(2345 * 2);
@@ -201,7 +210,9 @@ public class AggregateDaoIT {
         assertThat(result.records().get(1).totalDurationNanos()).isEqualTo(1234 * 2);
         assertThat(result.records().get(1).transactionCount()).isEqualTo(2);
 
-        overallErrorSummary = aggregateDao.readOverallErrorSummary(overallQuery);
+        overallErrorSummaryCollector = new OverallErrorSummaryCollector();
+        aggregateDao.mergeInOverallErrorSummary(overallErrorSummaryCollector, overallQuery);
+        overallErrorSummary = overallErrorSummaryCollector.getOverallErrorSummary();
         assertThat(overallErrorSummary.errorCount()).isEqualTo(2);
         assertThat(overallErrorSummary.transactionCount()).isEqualTo(6);
 

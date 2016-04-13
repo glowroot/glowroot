@@ -29,20 +29,20 @@ import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
+import org.glowroot.common.live.ImmutableOverallQuery;
+import org.glowroot.common.live.ImmutableTransactionQuery;
+import org.glowroot.common.live.LiveAggregateRepository.ErrorSummarySortOrder;
+import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
+import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
+import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
+import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
+import org.glowroot.common.model.Result;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
-import org.glowroot.storage.repo.AggregateRepository;
-import org.glowroot.storage.repo.AggregateRepository.OverallErrorSummary;
-import org.glowroot.storage.repo.AggregateRepository.OverallQuery;
-import org.glowroot.storage.repo.AggregateRepository.ThroughputAggregate;
-import org.glowroot.storage.repo.AggregateRepository.TransactionErrorSummary;
-import org.glowroot.storage.repo.AggregateRepository.TransactionQuery;
 import org.glowroot.storage.repo.ImmutableErrorMessageFilter;
-import org.glowroot.storage.repo.ImmutableOverallQuery;
 import org.glowroot.storage.repo.ImmutableTraceQuery;
-import org.glowroot.storage.repo.ImmutableTransactionQuery;
-import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.TraceRepository.ErrorMessageCount;
 import org.glowroot.storage.repo.TraceRepository.ErrorMessageFilter;
@@ -191,7 +191,7 @@ class ErrorJsonService {
 
     private void populateDataSeries(TraceQuery query, List<ErrorPoint> errorPoints,
             DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra, long liveCaptureTime)
-                    throws Exception {
+            throws Exception {
         DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(liveCaptureTime,
                 rollupLevelService.getDataPointIntervalMillis(query.from(), query.to()));
         ErrorPoint lastErrorPoint = null;
@@ -230,7 +230,7 @@ class ErrorJsonService {
         String transactionType();
         long from();
         long to();
-        AggregateRepository.ErrorSummarySortOrder sortOrder();
+        ErrorSummarySortOrder sortOrder();
         int limit();
     }
 

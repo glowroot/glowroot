@@ -32,15 +32,15 @@ import javax.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.live.ImmutableTransactionQuery;
+import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.util.Versions;
 import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.repo.AggregateRepository;
-import org.glowroot.storage.repo.AggregateRepository.PercentileAggregate;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.GaugeValueRepository.Gauge;
-import org.glowroot.storage.repo.ImmutableTransactionQuery;
 import org.glowroot.storage.repo.TriggeredAlertRepository;
 import org.glowroot.storage.repo.Utils;
 import org.glowroot.storage.util.AgentRollups;

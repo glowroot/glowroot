@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.storage.repo;
+package org.glowroot.common.model;
 
 import java.util.List;
 import java.util.Map;
@@ -25,8 +25,9 @@ import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 
-import org.glowroot.storage.repo.AggregateRepository.ErrorSummarySortOrder;
-import org.glowroot.storage.repo.AggregateRepository.TransactionErrorSummary;
+import org.glowroot.common.live.ImmutableTransactionErrorSummary;
+import org.glowroot.common.live.LiveAggregateRepository.ErrorSummarySortOrder;
+import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
 
 public class TransactionErrorSummaryCollector {
 
@@ -97,7 +98,7 @@ public class TransactionErrorSummaryCollector {
     }
     private static List<TransactionErrorSummary> sortTransactionErrorSummaries(
             Iterable<TransactionErrorSummary> errorSummaries,
-            AggregateRepository.ErrorSummarySortOrder sortOrder) {
+            ErrorSummarySortOrder sortOrder) {
         switch (sortOrder) {
             case ERROR_COUNT:
                 return orderingByErrorCountDesc.immutableSortedCopy(errorSummaries);

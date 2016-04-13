@@ -46,23 +46,30 @@ import org.glowroot.agent.fat.storage.util.RowMappers;
 import org.glowroot.agent.fat.storage.util.Schemas.Column;
 import org.glowroot.agent.fat.storage.util.Schemas.ColumnType;
 import org.glowroot.agent.fat.storage.util.Schemas.Index;
+import org.glowroot.common.live.ImmutableOverviewAggregate;
+import org.glowroot.common.live.ImmutablePercentileAggregate;
+import org.glowroot.common.live.ImmutableThroughputAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.ErrorSummarySortOrder;
+import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
+import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.SummarySortOrder;
+import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
+import org.glowroot.common.model.OverallErrorSummaryCollector;
+import org.glowroot.common.model.OverallSummaryCollector;
+import org.glowroot.common.model.ProfileCollector;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.ServiceCallCollector;
+import org.glowroot.common.model.TransactionErrorSummaryCollector;
+import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.util.Styles;
 import org.glowroot.storage.config.ConfigDefaults;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
-import org.glowroot.storage.repo.ImmutableOverallErrorSummary;
-import org.glowroot.storage.repo.ImmutableOverallSummary;
-import org.glowroot.storage.repo.ImmutableOverviewAggregate;
-import org.glowroot.storage.repo.ImmutablePercentileAggregate;
-import org.glowroot.storage.repo.ImmutableThroughputAggregate;
 import org.glowroot.storage.repo.MutableAggregate;
-import org.glowroot.storage.repo.ProfileCollector;
-import org.glowroot.storage.repo.TransactionErrorSummaryCollector;
-import org.glowroot.storage.repo.TransactionSummaryCollector;
 import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -144,7 +151,7 @@ public class AggregateDao implements AggregateRepository {
 
     AggregateDao(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
             ConfigRepository configRepository, TransactionTypeDao transactionTypeDao)
-                    throws Exception {
+            throws Exception {
         this.dataSource = dataSource;
         this.rollupCappedDatabases = rollupCappedDatabases;
         this.configRepository = configRepository;
@@ -211,8 +218,9 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public OverallSummary readOverallSummary(OverallQuery query) throws Exception {
-        return dataSource.query(new OverallSummaryQuery(query));
+    public void mergeInOverallSummary(OverallSummaryCollector collector,
+            OverallQuery query) throws Exception {
+        dataSource.query(new OverallSummaryQuery(collector, query));
     }
 
     // query.from() is non-inclusive
@@ -225,8 +233,9 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public OverallErrorSummary readOverallErrorSummary(OverallQuery query) throws Exception {
-        return dataSource.query(new OverallErrorSummaryQuery(query));
+    public void mergeInOverallErrorSummary(OverallErrorSummaryCollector collector,
+            OverallQuery query) throws Exception {
+        dataSource.query(new OverallErrorSummaryQuery(collector, query));
     }
 
     // query.from() is non-inclusive
@@ -695,11 +704,13 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private static class OverallSummaryQuery implements JdbcQuery<OverallSummary> {
+    private static class OverallSummaryQuery implements JdbcQuery</*@Nullable*/ Void> {
 
+        private final OverallSummaryCollector collector;
         private final OverallQuery query;
 
-        private OverallSummaryQuery(OverallQuery query) {
+        private OverallSummaryQuery(OverallSummaryCollector collector, OverallQuery query) {
+            this.collector = collector;
             this.query = query;
         }
 
@@ -720,21 +731,21 @@ public class AggregateDao implements AggregateRepository {
         }
 
         @Override
-        public OverallSummary processResultSet(ResultSet resultSet) throws Exception {
+        public @Nullable Void processResultSet(ResultSet resultSet) throws Exception {
             if (!resultSet.next()) {
                 // this is an aggregate query so this should be impossible
                 throw new SQLException("Aggregate query did not return any results");
             }
-            return ImmutableOverallSummary.builder()
-                    .totalDurationNanos(resultSet.getDouble(1))
-                    .transactionCount(resultSet.getLong(2))
-                    .lastCaptureTime(resultSet.getLong(3))
-                    .build();
+            double totalDurationNanos = resultSet.getDouble(1);
+            long transactionCount = resultSet.getLong(2);
+            long captureTime = resultSet.getLong(3);
+            collector.mergeSummary(totalDurationNanos, transactionCount, captureTime);
+            return null;
         }
 
         @Override
-        public OverallSummary valueIfDataSourceClosing() {
-            return ImmutableOverallSummary.builder().build();
+        public @Nullable Void valueIfDataSourceClosing() {
+            return null;
         }
     }
 
@@ -810,11 +821,14 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private static class OverallErrorSummaryQuery implements JdbcQuery<OverallErrorSummary> {
+    private static class OverallErrorSummaryQuery implements JdbcQuery</*@Nullable*/ Void> {
 
+        private final OverallErrorSummaryCollector collector;
         private final OverallQuery query;
 
-        private OverallErrorSummaryQuery(OverallQuery query) {
+        private OverallErrorSummaryQuery(OverallErrorSummaryCollector collector,
+                OverallQuery query) {
+            this.collector = collector;
             this.query = query;
         }
 
@@ -833,21 +847,21 @@ public class AggregateDao implements AggregateRepository {
         }
 
         @Override
-        public OverallErrorSummary processResultSet(ResultSet resultSet) throws Exception {
+        public @Nullable Void processResultSet(ResultSet resultSet) throws Exception {
             if (!resultSet.next()) {
                 // this is an aggregate query so this should be impossible
                 throw new SQLException("Aggregate query did not return any results");
             }
-            return ImmutableOverallErrorSummary.builder()
-                    .errorCount(resultSet.getLong(1))
-                    .transactionCount(resultSet.getLong(2))
-                    .lastCaptureTime(resultSet.getLong(3))
-                    .build();
+            long errorCount = resultSet.getLong(1);
+            long transactionCount = resultSet.getLong(2);
+            long captureTime = resultSet.getLong(3);
+            collector.mergeErrorSummary(errorCount, transactionCount, captureTime);
+            return null;
         }
 
         @Override
-        public OverallErrorSummary valueIfDataSourceClosing() {
-            return ImmutableOverallErrorSummary.builder().build();
+        public @Nullable Void valueIfDataSourceClosing() {
+            return null;
         }
     }
 

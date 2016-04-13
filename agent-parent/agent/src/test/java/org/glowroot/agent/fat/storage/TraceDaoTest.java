@@ -27,9 +27,9 @@ import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.common.live.ImmutableTracePointFilter;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
+import org.glowroot.common.model.Result;
 import org.glowroot.common.live.StringComparator;
 import org.glowroot.storage.repo.ImmutableTraceQuery;
-import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.TraceRepository.TraceQuery;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 

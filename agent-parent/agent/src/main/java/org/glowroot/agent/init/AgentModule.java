@@ -49,6 +49,7 @@ import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionServiceImpl;
 import org.glowroot.agent.impl.UserProfileScheduler;
 import org.glowroot.agent.impl.WeavingTimerServiceImpl;
+import org.glowroot.agent.live.LiveAggregateRepositoryImpl;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
@@ -62,6 +63,7 @@ import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
 import org.glowroot.agent.weaving.WeaverImpl;
 import org.glowroot.agent.weaving.WeavingClassFileTransformer;
 import org.glowroot.agent.weaving.WeavingTimerService;
+import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveWeavingService;
@@ -101,6 +103,7 @@ public class AgentModule {
     private final boolean jvmRetransformClassesSupported;
 
     private final LiveTraceRepository liveTraceRepository;
+    private final LiveAggregateRepository liveAggregateRepository;
     private final LiveWeavingService liveWeavingService;
     private final LiveJvmService liveJvmService;
 
@@ -197,6 +200,7 @@ public class AgentModule {
 
         liveTraceRepository = new LiveTraceRepositoryImpl(transactionRegistry, transactionCollector,
                 clock, ticker);
+        liveAggregateRepository = new LiveAggregateRepositoryImpl(aggregator);
         liveWeavingService = new LiveWeavingServiceImpl(analyzedWorld, instrumentation,
                 configService, adviceCache, jvmRetransformClassesSupported);
         liveJvmService = new LiveJvmServiceImpl(lazyPlatformMBeanServer, transactionRegistry,
@@ -228,6 +232,10 @@ public class AgentModule {
 
     public LiveTraceRepository getLiveTraceRepository() {
         return liveTraceRepository;
+    }
+
+    public LiveAggregateRepository getLiveAggregateRepository() {
+        return liveAggregateRepository;
     }
 
     public LiveWeavingService getLiveWeavingService() {

@@ -69,7 +69,7 @@ public class Aggregator {
                         configService.getAdvancedConfig()
                                 .maxAggregateTransactionsPerType(),
                         configService.getAdvancedConfig().maxAggregateQueriesPerType(),
-                        configService.getAdvancedConfig().maxAggregateServiceCallsPerType());
+                        configService.getAdvancedConfig().maxAggregateServiceCallsPerType(), clock);
         // dedicated thread to aggregating transaction data
         processingThread = new Thread(new TransactionProcessor());
         processingThread.setDaemon(true);
@@ -89,8 +89,6 @@ public class Aggregator {
         }
         return intervalCollectors;
     }
-
-    int y;
 
     long add(Transaction transaction) {
         // this synchronized block is to ensure traces are placed into processing queue in the
@@ -178,7 +176,7 @@ public class Aggregator {
                         configService.getAdvancedConfig()
                                 .maxAggregateTransactionsPerType(),
                         configService.getAdvancedConfig().maxAggregateQueriesPerType(),
-                        configService.getAdvancedConfig().maxAggregateServiceCallsPerType());
+                        configService.getAdvancedConfig().maxAggregateServiceCallsPerType(), clock);
             }
             // the synchronized block is to ensure visibility of updates to this particular
             // activeIntervalCollector
@@ -212,7 +210,7 @@ public class Aggregator {
                         configService.getAdvancedConfig()
                                 .maxAggregateTransactionsPerType(),
                         configService.getAdvancedConfig().maxAggregateQueriesPerType(),
-                        configService.getAdvancedConfig().maxAggregateServiceCallsPerType());
+                        configService.getAdvancedConfig().maxAggregateServiceCallsPerType(), clock);
             }
         }
     }

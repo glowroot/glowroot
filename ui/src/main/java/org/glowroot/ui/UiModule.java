@@ -24,6 +24,7 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import org.immutables.builder.Builder;
 
+import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveWeavingService;
@@ -59,6 +60,7 @@ public class UiModule {
             RepoAdmin repoAdmin,
             RollupLevelService rollupLevelService,
             LiveTraceRepository liveTraceRepository,
+            LiveAggregateRepository liveAggregateRepository,
             @Nullable LiveWeavingService liveWeavingService,
             String bindAddress,
             int numWorkerThreads,
@@ -72,8 +74,8 @@ public class UiModule {
                 new IndexHtmlHttpService(httpSessionManager, layoutService);
         LayoutHttpService layoutHttpService =
                 new LayoutHttpService(httpSessionManager, layoutService);
-        TransactionCommonService transactionCommonService =
-                new TransactionCommonService(aggregateRepository, configRepository);
+        TransactionCommonService transactionCommonService = new TransactionCommonService(
+                aggregateRepository, liveAggregateRepository, configRepository, clock);
         TraceCommonService traceCommonService =
                 new TraceCommonService(traceRepository, liveTraceRepository);
         TransactionJsonService transactionJsonService =
@@ -87,7 +89,8 @@ public class UiModule {
         TraceExportHttpService traceExportHttpService =
                 new TraceExportHttpService(traceCommonService, version);
         GlowrootLogHttpService glowrootLogHttpService = new GlowrootLogHttpService(logDir);
-        ErrorCommonService errorCommonService = new ErrorCommonService(aggregateRepository);
+        ErrorCommonService errorCommonService =
+                new ErrorCommonService(aggregateRepository, liveAggregateRepository);
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
                 transactionCommonService, traceRepository, rollupLevelService, clock);
         ConfigJsonService configJsonService = new ConfigJsonService(fat, configRepository,

@@ -18,7 +18,7 @@ package org.glowroot.agent.fat.storage;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
-import org.glowroot.storage.repo.Result;
+import org.glowroot.common.model.Result;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

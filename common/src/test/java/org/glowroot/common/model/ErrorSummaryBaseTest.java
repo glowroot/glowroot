@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.storage.repo;
+package org.glowroot.common.model;
 
 import java.util.List;
 
 import com.google.common.collect.Lists;
 import org.junit.Test;
 
-import org.glowroot.storage.repo.AggregateRepository.TransactionErrorSummary;
+import org.glowroot.common.live.ImmutableTransactionErrorSummary;
+import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
+import org.glowroot.common.model.TransactionErrorSummaryCollector;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

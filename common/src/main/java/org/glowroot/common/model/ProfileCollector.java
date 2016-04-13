@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.storage.repo;
+package org.glowroot.common.model;
 
-import org.glowroot.common.model.MutableProfile;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
 public class ProfileCollector {

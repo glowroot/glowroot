@@ -34,11 +34,11 @@ import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveTraceRepository.TraceKind;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
+import org.glowroot.common.model.Result;
 import org.glowroot.common.live.StringComparator;
 import org.glowroot.common.util.Clock;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ImmutableTraceQuery;
-import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.TraceRepository.TraceQuery;
 

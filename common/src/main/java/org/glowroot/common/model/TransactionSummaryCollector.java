@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.storage.repo;
+package org.glowroot.common.model;
 
 import java.util.List;
 import java.util.Map;
@@ -24,8 +24,9 @@ import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 
-import org.glowroot.storage.repo.AggregateRepository.SummarySortOrder;
-import org.glowroot.storage.repo.AggregateRepository.TransactionSummary;
+import org.glowroot.common.live.ImmutableTransactionSummary;
+import org.glowroot.common.live.LiveAggregateRepository.SummarySortOrder;
+import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 
 public class TransactionSummaryCollector {
 

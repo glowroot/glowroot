@@ -15,72 +15,68 @@
  */
 package org.glowroot.ui;
 
+import org.glowroot.common.live.ImmutableOverallQuery;
+import org.glowroot.common.live.LiveAggregateRepository;
+import org.glowroot.common.live.LiveAggregateRepository.ErrorSummarySortOrder;
+import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
+import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
+import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
+import org.glowroot.common.model.OverallErrorSummaryCollector;
+import org.glowroot.common.model.Result;
+import org.glowroot.common.model.TransactionErrorSummaryCollector;
 import org.glowroot.storage.repo.AggregateRepository;
-import org.glowroot.storage.repo.AggregateRepository.ErrorSummarySortOrder;
-import org.glowroot.storage.repo.AggregateRepository.OverallErrorSummary;
-import org.glowroot.storage.repo.AggregateRepository.OverallQuery;
-import org.glowroot.storage.repo.AggregateRepository.TransactionErrorSummary;
-import org.glowroot.storage.repo.ImmutableOverallErrorSummary;
-import org.glowroot.storage.repo.ImmutableOverallQuery;
-import org.glowroot.storage.repo.Result;
-import org.glowroot.storage.repo.TransactionErrorSummaryCollector;
 
 class ErrorCommonService {
 
     private final AggregateRepository aggregateRepository;
+    private final LiveAggregateRepository liveAggregateRepository;
 
-    ErrorCommonService(AggregateRepository aggregateRepository) {
+    ErrorCommonService(AggregateRepository aggregateRepository,
+            LiveAggregateRepository liveAggregateRepository) {
         this.aggregateRepository = aggregateRepository;
+        this.liveAggregateRepository = liveAggregateRepository;
     }
 
     // from is non-inclusive
     OverallErrorSummary readOverallErrorSummary(OverallQuery query) throws Exception {
+        OverallErrorSummaryCollector collector = new OverallErrorSummaryCollector();
         long revisedFrom = query.from();
-        long errorCount = 0;
-        long transactionCount = 0;
-        long lastCaptureTime = 0;
+        long revisedTo = liveAggregateRepository.mergeInOverallErrorSummary(collector, query);
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             OverallQuery revisedQuery = ImmutableOverallQuery.builder()
                     .copyFrom(query)
                     .from(revisedFrom)
-                    .to(query.to())
+                    .to(revisedTo)
                     .rollupLevel(rollupLevel)
                     .build();
-            OverallErrorSummary overallSummary =
-                    aggregateRepository.readOverallErrorSummary(revisedQuery);
-            errorCount += overallSummary.errorCount();
-            transactionCount += overallSummary.transactionCount();
-            lastCaptureTime = overallSummary.lastCaptureTime();
-            long lastRolledUpTime = overallSummary.lastCaptureTime();
+            aggregateRepository.mergeInOverallErrorSummary(collector, revisedQuery);
+            long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
-            if (revisedFrom > query.to()) {
+            if (revisedFrom > revisedTo) {
                 break;
             }
         }
-        return ImmutableOverallErrorSummary.builder()
-                .errorCount(errorCount)
-                .transactionCount(transactionCount)
-                .lastCaptureTime(lastCaptureTime)
-                .build();
+        return collector.getOverallErrorSummary();
     }
 
     // query.from() is non-inclusive
     Result<TransactionErrorSummary> readTransactionErrorSummaries(OverallQuery query,
             ErrorSummarySortOrder sortOrder, int limit) throws Exception {
-        long revisedFrom = query.from();
         TransactionErrorSummaryCollector collector = new TransactionErrorSummaryCollector();
+        long revisedFrom = query.from();
+        long revisedTo = liveAggregateRepository.mergeInTransactionErrorSummaries(collector, query);
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             OverallQuery revisedQuery = ImmutableOverallQuery.builder()
                     .copyFrom(query)
                     .from(revisedFrom)
-                    .to(query.to())
+                    .to(revisedTo)
                     .rollupLevel(rollupLevel)
                     .build();
             aggregateRepository.mergeInTransactionErrorSummaries(collector,
                     revisedQuery, sortOrder, limit);
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
-            if (revisedFrom > query.to()) {
+            if (revisedFrom > revisedTo) {
                 break;
             }
         }
