@@ -152,6 +152,13 @@ public class AgentModule {
                 instrumentation.addTransformer(transformer);
                 jvmRetransformClassesSupported = false;
             }
+            if (logger.isDebugEnabled()) {
+                for (Class<?> clazz : instrumentation.getAllLoadedClasses()) {
+                    if (Runnable.class.isAssignableFrom(clazz)) {
+                        logger.debug(clazz.getName());
+                    }
+                }
+            }
         }
 
         // now that instrumentation is set up, it is safe to create scheduled executor
