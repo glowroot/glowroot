@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.plugin.executor;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
@@ -78,11 +79,12 @@ public class GuavaListenableFutureIT {
         // when
         Trace trace = container.execute(AddListenerAfterComplete.class);
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
-        assertThat(trace.getEntry(0).getDepth()).isEqualTo(0);
-        assertThat(trace.getEntry(0).getMessage()).isEqualTo("auxiliary thread");
-        assertThat(trace.getEntry(1).getDepth()).isEqualTo(1);
-        assertThat(trace.getEntry(1).getMessage())
+        List<Trace.Entry> entries = trace.getEntryList();
+        // on jdk 7, sometimes this ends up being 2 nested auxiliary threads
+        for (int i = 0; i < entries.size() - 1; i++) {
+            assertThat(entries.get(i).getMessage()).isEqualTo("auxiliary thread");
+        }
+        assertThat(entries.get(entries.size() - 1).getMessage())
                 .isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
@@ -106,8 +108,12 @@ public class GuavaListenableFutureIT {
         // when
         Trace trace = container.execute(AddSameExecutorListenerAfterComplete.class);
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(1);
-        assertThat(trace.getEntry(0).getMessage())
+        List<Trace.Entry> entries = trace.getEntryList();
+        // on jdk 7, sometimes this ends up being 2 nested auxiliary threads
+        for (int i = 0; i < entries.size() - 1; i++) {
+            assertThat(entries.get(i).getMessage()).isEqualTo("auxiliary thread");
+        }
+        assertThat(entries.get(entries.size() - 1).getMessage())
                 .isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
