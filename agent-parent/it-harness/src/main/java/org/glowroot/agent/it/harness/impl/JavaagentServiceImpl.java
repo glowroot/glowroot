@@ -79,6 +79,14 @@ public class JavaagentServiceImpl implements JavaagentService {
         } finally {
             executingAppThread = null;
         }
+        try {
+            // this avoids a sporadic gRPC error when running AnalyzedClassPlanBeeIT
+            // TODO after next gRPC release, remove this and see if sporadic error still occurs
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+        }
         responseObserver.onNext(Void.getDefaultInstance());
         responseObserver.onCompleted();
     }

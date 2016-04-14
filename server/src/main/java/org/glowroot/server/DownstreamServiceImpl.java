@@ -18,6 +18,7 @@ package org.glowroot.server;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Exchanger;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
@@ -69,6 +70,7 @@ import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class DownstreamServiceImpl implements DownstreamService {
 
@@ -257,7 +259,7 @@ public class DownstreamServiceImpl implements DownstreamService {
 
     private class ConnectedAgent {
 
-        private final AtomicLong nextRequestId = new AtomicLong();
+        private final AtomicLong nextRequestId = new AtomicLong(1);
 
         // expiration in the unlikely case that response is never returned from agent
         private final Cache<Long, ResponseHolder> responseHolders = CacheBuilder.newBuilder()
@@ -285,9 +287,13 @@ public class DownstreamServiceImpl implements DownstreamService {
                             return;
                         }
                         try {
-                            responseHolder.response.exchange(value);
+                            // this shouldn't timeout since it is the other side of the exchange
+                            // that is waiting
+                            responseHolder.response.exchange(value, 1, MINUTES);
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
+                            logger.error(e.getMessage(), e);
+                        } catch (TimeoutException e) {
                             logger.error(e.getMessage(), e);
                         }
                     }
@@ -518,8 +524,8 @@ public class DownstreamServiceImpl implements DownstreamService {
             requestObserver.onNext(request);
             // timeout is in case agent never responds
             // passing ClientResponse.getDefaultInstance() is just dummy (non-null) value
-            ClientResponse response =
-                    responseHolder.response.exchange(ClientResponse.getDefaultInstance(), 1, HOURS);
+            ClientResponse response = responseHolder.response
+                    .exchange(ClientResponse.getDefaultInstance(), 1, MINUTES);
             if (response.getMessageCase() == MessageCase.UNKNOWN_REQUEST_RESPONSE) {
                 throw new OutdatedAgentException();
             }

@@ -106,7 +106,7 @@ class ConfigServiceImpl implements ConfigService {
                 .build());
     }
 
-    void resetConfig() throws InterruptedException {
+    void resetConfig() throws Exception {
         AgentConfig.Builder builder = AgentConfig.newBuilder()
                 .setTransactionConfig(getDefaultTransactionConfig())
                 .setUserRecordingConfig(getDefaultUserRecordingConfig())

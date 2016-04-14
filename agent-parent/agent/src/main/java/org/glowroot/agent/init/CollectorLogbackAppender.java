@@ -50,6 +50,9 @@ class CollectorLogbackAppender extends AppenderBase<ILoggingEvent> {
         if (inLogging.get()) {
             return;
         }
+        if (event.getLevel() == Level.DEBUG && event.getLoggerName().startsWith("io.grpc.")) {
+            return;
+        }
         LogEvent.Builder builder = LogEvent.newBuilder()
                 .setTimestamp(event.getTimeStamp())
                 .setLevel(toProto(event.getLevel()))

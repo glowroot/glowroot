@@ -16,13 +16,15 @@
 package org.glowroot.agent.it.harness.impl;
 
 import java.io.IOException;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Maps;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
@@ -52,6 +54,8 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ServerRequest;
 
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class GrpcServerWrapper {
@@ -97,12 +101,12 @@ public class GrpcServerWrapper {
         return agentConfig;
     }
 
-    void updateAgentConfig(AgentConfig agentConfig) throws InterruptedException {
+    void updateAgentConfig(AgentConfig agentConfig) throws Exception {
         downstreamService.updateAgentConfig(agentConfig);
         this.agentConfig = agentConfig;
     }
 
-    int reweave() throws InterruptedException {
+    int reweave() throws Exception {
         return downstreamService.reweave();
     }
 
@@ -199,9 +203,12 @@ public class GrpcServerWrapper {
 
     private static class DownstreamServiceImpl implements DownstreamService {
 
-        private final AtomicLong nextRequestId = new AtomicLong();
+        private final AtomicLong nextRequestId = new AtomicLong(1);
 
-        private final ConcurrentMap<Long, ResponseHolder> responseHolders = Maps.newConcurrentMap();
+        // expiration in the unlikely case that response is never returned from agent
+        private final Cache<Long, ResponseHolder> responseHolders = CacheBuilder.newBuilder()
+                .expireAfterWrite(1, HOURS)
+                .build();
 
         private final StreamObserver<ClientResponse> responseObserver =
                 new StreamObserver<ClientResponse>() {
@@ -211,11 +218,21 @@ public class GrpcServerWrapper {
                             return;
                         }
                         long requestId = value.getRequestId();
-                        ResponseHolder responseHolder = responseHolders.get(requestId);
-                        responseHolders.remove(requestId);
-                        responseHolder.response = value;
-                        synchronized (responseHolder) {
-                            responseHolder.notifyAll();
+                        ResponseHolder responseHolder = responseHolders.getIfPresent(requestId);
+                        responseHolders.invalidate(requestId);
+                        if (responseHolder == null) {
+                            logger.error("no response holder for request id: {}", requestId);
+                            return;
+                        }
+                        try {
+                            // this shouldn't timeout since it is the other side of the exchange
+                            // that is waiting
+                            responseHolder.response.exchange(value, 1, MINUTES);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            logger.error(e.getMessage(), e);
+                        } catch (TimeoutException e) {
+                            logger.error(e.getMessage(), e);
                         }
                     }
                     @Override
@@ -233,7 +250,7 @@ public class GrpcServerWrapper {
 
         private volatile boolean closedByAgent;
 
-        private void updateAgentConfig(AgentConfig agentConfig) throws InterruptedException {
+        private void updateAgentConfig(AgentConfig agentConfig) throws Exception {
             while (requestObserver == null) {
                 Thread.sleep(10);
             }
@@ -246,14 +263,12 @@ public class GrpcServerWrapper {
                             .setAgentConfigUpdateRequest(AgentConfigUpdateRequest.newBuilder()
                                     .setAgentConfig(agentConfig))
                             .build());
-            synchronized (responseHolder) {
-                while (responseHolder.response == null) {
-                    responseHolder.wait();
-                }
-            }
+            // timeout is in case agent never responds
+            // passing ClientResponse.getDefaultInstance() is just dummy (non-null) value
+            responseHolder.response.exchange(ClientResponse.getDefaultInstance(), 1, MINUTES);
         }
 
-        private int reweave() throws InterruptedException {
+        private int reweave() throws Exception {
             while (requestObserver == null) {
                 Thread.sleep(10);
             }
@@ -265,12 +280,10 @@ public class GrpcServerWrapper {
                             .setRequestId(requestId)
                             .setReweaveRequest(ReweaveRequest.getDefaultInstance())
                             .build());
-            synchronized (responseHolder) {
-                while (responseHolder.response == null) {
-                    responseHolder.wait();
-                }
-            }
-            return responseHolder.response.getReweaveResponse().getClassUpdateCount();
+            // timeout is in case agent never responds
+            // passing ClientResponse.getDefaultInstance() is just dummy (non-null) value
+            return responseHolder.response.exchange(ClientResponse.getDefaultInstance(), 1, MINUTES)
+                    .getReweaveResponse().getClassUpdateCount();
         }
 
         @Override
@@ -282,6 +295,6 @@ public class GrpcServerWrapper {
     }
 
     private static class ResponseHolder {
-        private volatile ClientResponse response;
+        private final Exchanger<ClientResponse> response = new Exchanger<ClientResponse>();
     }
 }
