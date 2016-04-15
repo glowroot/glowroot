@@ -41,7 +41,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-class GlowrootLogHttpService implements UnauthenticatedHttpService {
+class GlowrootLogHttpService implements HttpService {
 
     private static final int DEFAULT_MAX_LINES = 1000;
 
