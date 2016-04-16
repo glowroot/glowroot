@@ -214,6 +214,7 @@ class AlertConfigJsonService {
                 builder.gaugeThreshold(alertConfig.getGaugeThreshold().getValue());
             }
             return builder.gaugeDisplay(gauge == null ? "" : gauge.display())
+                    .gaugeUnit(gauge == null ? "" : gauge.unit())
                     .timePeriodSeconds(alertConfig.getTimePeriodSeconds())
                     .addAllEmailAddresses(alertConfig.getEmailAddressList())
                     .version(Versions.getVersion(alertConfig))
