@@ -68,9 +68,15 @@ glowroot.controller('ConfigAlertCtrl', [
       return '';
     };
 
+    var halfLoaded;
+
     $http.get('backend/jvm/all-gauges?agent-rollup=' + encodeURIComponent($scope.agentRollup))
         .success(function (data) {
-          $scope.loaded = true;
+          if (halfLoaded) {
+            $scope.loaded = true;
+          } else {
+            halfLoaded = true;
+          }
           $scope.gaugeNames = [];
           angular.forEach(data, function (gauge) {
             $scope.gauges = data;
@@ -81,7 +87,11 @@ glowroot.controller('ConfigAlertCtrl', [
     if (version) {
       $http.get('backend/config/alerts?agent-id=' + encodeURIComponent($scope.agentId) + '&version=' + version)
           .success(function (data) {
-            $scope.loaded = true;
+            if (halfLoaded) {
+              $scope.loaded = true;
+            } else {
+              halfLoaded = true;
+            }
             onNewData(data);
           })
           .error(httpErrors.handler($scope));
