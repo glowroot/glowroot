@@ -1,9 +1,9 @@
 <div id="gtTraceEntry{{index}}">
   <div style="width: 102px; vertical-align: top; float: left;"
-       title="duration {{nanosToMillis durationNanos}} milliseconds, offset {{nanosToMillis startOffsetNanos}} milliseconds">
+       title="duration {{nanosToMillis durationNanos}}{{#if active}}..{{/if}} milliseconds, offset {{nanosToMillis startOffsetNanos}} milliseconds">
     <div class="gt-trace-entry-bar-outer">
       <div class="gt-trace-entry-bar"
-           style="margin-left: {{traceEntryBarLeft startOffsetNanos}}px; width: {{traceEntryBarWidth durationNanos}}px;">
+           style="margin-left: {{traceEntryBarLeft startOffsetNanos}}px; width: {{traceEntryBarWidth .}}px;">
       </div>
     </div>
   </div>

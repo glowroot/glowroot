@@ -279,12 +279,16 @@ HandlebarsRendering = (function () {
     return indent1 * timer.depth;
   });
 
-  Handlebars.registerHelper('traceEntryBarLeft', function (nanos) {
-    return 2 * Math.floor(traceEntryBarWidth * nanos / traceDurationNanos);
+  Handlebars.registerHelper('traceEntryBarLeft', function (startOffsetNanos) {
+    var left = Math.floor(startOffsetNanos * traceEntryBarWidth / traceDurationNanos);
+    // Math.min is in case startOffsetNanos is equal to traceDurationNanos
+    return 2 * Math.min(left, traceEntryBarWidth - 1);
   });
 
-  Handlebars.registerHelper('traceEntryBarWidth', function (nanos) {
-    return 2 * Math.max(1, Math.floor(traceEntryBarWidth * (nanos - 1) / traceDurationNanos));
+  Handlebars.registerHelper('traceEntryBarWidth', function (traceEntry) {
+    var left = Math.floor(traceEntry.startOffsetNanos * traceEntryBarWidth / traceDurationNanos);
+    var right = Math.floor((traceEntry.startOffsetNanos + traceEntry.durationNanos - 1) * traceEntryBarWidth / traceDurationNanos);
+    return 2 * Math.max(1, right - left + 1);
   });
 
   Handlebars.registerHelper('firstPart', function (traceEntry) {
@@ -446,6 +450,7 @@ HandlebarsRendering = (function () {
         }
       }
     }
+
     var traceEntryIndex = $(this).data('index');
     var traceEntry = flattenedTraceEntries[traceEntryIndex];
     traceEntry.collapsed = !traceEntry.collapsed;
