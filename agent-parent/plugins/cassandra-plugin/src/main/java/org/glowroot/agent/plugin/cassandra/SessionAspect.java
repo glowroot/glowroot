@@ -153,6 +153,8 @@ public class SessionAspect {
                 asyncQueryEntry.end();
                 return;
             }
+            // TODO it is possible for race condition here if ResultSetFuture gets completed prior
+            // to @OnReturn, then end() will never be called on AsyncQueryEntry
             future.glowroot$setAsyncQueryEntry(asyncQueryEntry);
         }
         @OnThrow
@@ -179,7 +181,8 @@ public class SessionAspect {
             queryText = nullToEmpty(((RegularStatement) arg).getQueryString());
             messageSupplier = new QueryMessageSupplier(queryText);
         } else if (arg instanceof BoundStatement) {
-            PreparedStatement preparedStatement = ((BoundStatement) arg).glowroot$preparedStatement();
+            PreparedStatement preparedStatement =
+                    ((BoundStatement) arg).glowroot$preparedStatement();
             queryText = preparedStatement == null ? ""
                     : nullToEmpty(preparedStatement.getQueryString());
             messageSupplier = new QueryMessageSupplier(queryText);

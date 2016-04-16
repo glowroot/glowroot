@@ -37,7 +37,7 @@ public class ResultSetFutureAspect {
     @Mixin("com.datastax.driver.core.ResultSetFuture")
     public static class ResultSetFutureImpl implements ResultSetFutureMixin {
 
-        private @Nullable AsyncQueryEntry glowroot$asyncQueryEntry;
+        private volatile @Nullable AsyncQueryEntry glowroot$asyncQueryEntry;
 
         @Override
         public @Nullable AsyncQueryEntry glowroot$getAsyncQueryEntry() {
