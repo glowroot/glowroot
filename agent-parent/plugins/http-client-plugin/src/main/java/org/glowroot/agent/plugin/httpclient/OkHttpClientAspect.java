@@ -142,9 +142,13 @@ public class OkHttpClientAspect {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAdvice.class);
         @OnBefore
         public static @Nullable AsyncTraceEntry onBefore(ThreadContext context,
-                @BindReceiver Object call, @BindClassMeta OkHttpClientCallInvoker callInvoker) {
+                @BindReceiver Object call, @BindParameter @Nullable CallbackMixin callback,
+                @BindClassMeta OkHttpClientCallInvoker callInvoker) {
             Request originalRequest = (Request) callInvoker.getOriginalRequest(call);
             if (originalRequest == null) {
+                return null;
+            }
+            if (callback == null) {
                 return null;
             }
             String method = originalRequest.method();
@@ -160,23 +164,20 @@ public class OkHttpClientAspect {
             } else {
                 url = urlObj.toString();
             }
-            return context.startAsyncServiceCallEntry("HTTP", method + Uris.stripQueryString(url),
+            AsyncTraceEntry asyncTraceEntry = context.startAsyncServiceCallEntry("HTTP",
+                    method + Uris.stripQueryString(url),
                     MessageSupplier.from("http client request: {}{}", method, url), timerName);
-        }
-        @OnReturn
-        public static void onReturn(ThreadContext context,
-                @BindTraveler @Nullable AsyncTraceEntry asyncTraceEntry,
-                @BindParameter @Nullable CallbackMixin callback) {
-            if (asyncTraceEntry == null) {
-                return;
-            }
-            asyncTraceEntry.stopSyncTimer();
-            if (callback == null) {
-                asyncTraceEntry.end();
-                return;
-            }
+            // important to inject values into callback in @OnBefore since it's possible for
+            // callback to be invoked prior to @OnReturn
             callback.glowroot$setAsyncTraceEntry(asyncTraceEntry);
             callback.glowroot$setAuxContext(context.createAuxThreadContext());
+            return asyncTraceEntry;
+        }
+        @OnReturn
+        public static void onReturn(@BindTraveler @Nullable AsyncTraceEntry asyncTraceEntry) {
+            if (asyncTraceEntry != null) {
+                asyncTraceEntry.stopSyncTimer();
+            }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable throwable,

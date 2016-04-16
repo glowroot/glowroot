@@ -53,8 +53,7 @@ public class ApacheHttpAsyncClientAspect {
     public abstract static class HttpAsyncResponseConsumerImpl
             implements HttpAsyncResponseConsumerMixin {
 
-        // volatile not needed, only accessed by the main thread
-        private @Nullable AsyncTraceEntry glowroot$asyncTraceEntry;
+        private volatile @Nullable AsyncTraceEntry glowroot$asyncTraceEntry;
 
         @Override
         public @Nullable AsyncTraceEntry glowroot$getAsyncTraceEntry() {
@@ -251,6 +250,37 @@ public class ApacheHttpAsyncClientAspect {
             }
             if (callback != null) {
                 callback.glowroot$setAuxContext(context.createAuxThreadContext());
+            }
+        }
+    }
+
+    @Pointcut(className = "org.apache.http.nio.protocol.HttpAsyncResponseConsumer",
+            methodName = "responseCompleted",
+            methodParameterTypes = {"org.apache.http.protocol.HttpContext"})
+    public static class ResponseCompletedAdvice {
+        @OnBefore
+        public static void onBefore(@BindReceiver HttpAsyncResponseConsumerMixin consumer) {
+            AsyncTraceEntry asyncTraceEntry = consumer.glowroot$getAsyncTraceEntry();
+            if (asyncTraceEntry != null) {
+                asyncTraceEntry.end();
+            }
+        }
+    }
+
+    @Pointcut(className = "org.apache.http.nio.protocol.HttpAsyncResponseConsumer",
+            methodName = "failed", methodParameterTypes = {"java.util.Exception"})
+    public static class FailedAdvice {
+        @OnBefore
+        public static void onBefore(@BindReceiver HttpAsyncResponseConsumerMixin consumer,
+                @BindParameter @Nullable Exception exception) {
+            AsyncTraceEntry asyncTraceEntry = consumer.glowroot$getAsyncTraceEntry();
+            if (asyncTraceEntry == null) {
+                return;
+            }
+            if (exception == null) {
+                asyncTraceEntry.endWithError("");
+            } else {
+                asyncTraceEntry.endWithError(exception);
             }
         }
     }
