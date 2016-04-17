@@ -145,6 +145,7 @@ class AlertConfigJsonService {
         abstract @Nullable Double gaugeThreshold();
         abstract @Nullable String gaugeDisplay(); // only used in response
         abstract @Nullable String gaugeUnit(); // only used in response
+        abstract @Nullable String gaugeGrouping(); // only used in response
         abstract int timePeriodSeconds();
         abstract ImmutableList<String> emailAddresses();
         abstract Optional<String> version(); // absent for insert operations
@@ -215,6 +216,7 @@ class AlertConfigJsonService {
             }
             return builder.gaugeDisplay(gauge == null ? "" : gauge.display())
                     .gaugeUnit(gauge == null ? "" : gauge.unit())
+                    .gaugeGrouping(gauge == null ? "" : gauge.grouping())
                     .timePeriodSeconds(alertConfig.getTimePeriodSeconds())
                     .addAllEmailAddresses(alertConfig.getEmailAddressList())
                     .version(Versions.getVersion(alertConfig))

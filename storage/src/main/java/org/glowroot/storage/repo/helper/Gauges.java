@@ -30,6 +30,8 @@ public class Gauges {
 
     private static final ImmutableList<UnitPattern> unitPatterns;
 
+    private static final String GROUPING_PREFIX = "grouping-";
+
     static {
         List<UnitPattern> patterns = Lists.newArrayList();
         patterns.add(new UnitPattern(
@@ -37,6 +39,9 @@ public class Gauges {
                 "bytes"));
         patterns.add(new UnitPattern(
                 "java.lang:type=OperatingSystem:(Free|Total)(Physical|Swap)MemorySize", "bytes"));
+        patterns.add(
+                new UnitPattern("java.lang:type=OperatingSystem:(ProcessCpuLoad|SystemCpuLoad)",
+                        GROUPING_PREFIX + "1"));
         patterns.add(new UnitPattern("java.lang:type=Runtime:Uptime", "milliseconds"));
         patterns.add(new UnitPattern("java.lang:type=Threading:CurrentThread(Cpu|User)Time",
                 "nanoseconds"));
@@ -48,6 +53,9 @@ public class Gauges {
         patterns.add(
                 new UnitPattern("java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+:CollectionTime",
                         "milliseconds"));
+        patterns.add(new UnitPattern(
+                "java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+:CollectionCount",
+                GROUPING_PREFIX + "2"));
         patterns.add(
                 new UnitPattern("java.lang:type=Compilation:TotalCompilationTime", "milliseconds"));
         unitPatterns = ImmutableList.copyOf(patterns);
@@ -65,7 +73,16 @@ public class Gauges {
                     mbeanAttributeName.length() - "[counter]".length());
         }
         String display = display(mbeanObjectName) + '/' + mbeanAttributeName;
-        return ImmutableGauge.of(gaugeName, display, counter, unit(gaugeName));
+        String unit = unit(gaugeName);
+        if (unit.startsWith(GROUPING_PREFIX)) {
+            if (unit.endsWith(" per second")) {
+                return ImmutableGauge.of(gaugeName, display, counter, "per second", unit);
+            } else {
+                return ImmutableGauge.of(gaugeName, display, counter, "", unit);
+            }
+        } else {
+            return ImmutableGauge.of(gaugeName, display, counter, unit, unit);
+        }
     }
 
     public static String display(String mbeanObjectName) {
@@ -82,8 +99,13 @@ public class Gauges {
 
     private static String unit(String gaugeName) {
         if (gaugeName.endsWith("[counter]")) {
-            return getBaseUnit(gaugeName.substring(0, gaugeName.length() - "[counter]".length()))
-                    + " per second";
+            String baseUnit =
+                    getBaseUnit(gaugeName.substring(0, gaugeName.length() - "[counter]".length()));
+            if (baseUnit.isEmpty()) {
+                return "per second";
+            } else {
+                return baseUnit + " per second";
+            }
         } else {
             return getBaseUnit(gaugeName);
         }

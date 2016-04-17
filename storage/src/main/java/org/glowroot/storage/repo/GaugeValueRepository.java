@@ -41,5 +41,6 @@ public interface GaugeValueRepository {
         String display();
         boolean counter();
         String unit();
+        String grouping();
     }
 }

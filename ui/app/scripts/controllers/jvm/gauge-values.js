@@ -42,6 +42,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
 
     var gaugeShortDisplayMap = {};
     var gaugeUnits = {};
+    var gaugeGrouping = {};
 
     $scope.gaugeFilter = '';
 
@@ -186,6 +187,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
             var allGaugeNames = [];
             gaugeShortDisplayMap = {};
             gaugeUnits = {};
+            gaugeGrouping = {};
             angular.forEach(data, function (gauge) {
               allGaugeNames.push(gauge.name);
               gaugeShortDisplayMap[gauge.name] = gauge.shortDisplay;
@@ -193,6 +195,11 @@ glowroot.controller('JvmGaugeValuesCtrl', [
                 gaugeUnits[gauge.name] = ' ' + gauge.unit;
               } else {
                 gaugeUnits[gauge.name] = '';
+              }
+              if (gauge.grouping) {
+                gaugeGrouping[gauge.name] = gauge.grouping;
+              } else {
+                gaugeGrouping[gauge.name] = gauge.name;
               }
             });
             refreshData();
@@ -221,14 +228,39 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       yvalMaps = {};
       emptyGaugeNames = {};
 
-      for (var i = 0; i < data.length; i++) {
-        var dataSeries = data[i];
+      var groupingScale = {};
+
+      var i;
+      var dataSeries;
+      var scale;
+      var grouping;
+      for (i = 0; i < data.length; i++) {
+        dataSeries = data[i];
         if (dataSeries.data.length) {
           updateYvalMap(dataSeries.name, dataSeries.data);
-          var scale = scalePoints(dataSeries.data);
-          gaugeScales[dataSeries.name] = scale;
+          scale = getPointsScale(dataSeries.data);
+          grouping = gaugeGrouping[dataSeries.name];
+          if (groupingScale[grouping]) {
+            if (scale !== 'ANY') {
+              groupingScale[grouping] = Math.min(groupingScale[grouping], scale);
+            }
+          } else if (scale !== 'ANY') {
+            groupingScale[grouping] = scale;
+          }
         } else {
           emptyGaugeNames[dataSeries.name] = true;
+        }
+      }
+      for (i = 0; i < data.length; i++) {
+        dataSeries = data[i];
+        if (dataSeries.data.length) {
+          grouping = gaugeGrouping[dataSeries.name];
+          scale = groupingScale[grouping];
+          if (scale === undefined) {
+            scale = 1; // this corresponds to 'ANY' above
+          }
+          gaugeScales[dataSeries.name] = scale;
+          scalePoints(dataSeries.data, scale);
         }
       }
       updateThePlotData(data);
@@ -247,12 +279,10 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       yvalMaps[label] = map;
     }
 
-    function scalePoints(points) {
+    function getPointsScale(points) {
       var max = 0;
-      var j;
-      var point;
-      for (j = 0; j < points.length; j++) {
-        point = points[j];
+      for (var j = 0; j < points.length; j++) {
+        var point = points[j];
         if (!point) {
           continue;
         }
@@ -261,16 +291,22 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           max = value;
         }
       }
-      var scale = getScale(max);
-      if (scale !== 1) {
-        for (j = 0; j < points.length; j++) {
-          point = points[j];
-          if (point) {
-            point[1] *= scale;
-          }
+      if (max === 0) {
+        return 'ANY';
+      }
+      return getScale(max);
+    }
+
+    function scalePoints(points, scale) {
+      if (scale === 1) {
+        return;
+      }
+      for (var j = 0; j < points.length; j++) {
+        var point = points[j];
+        if (point) {
+          point[1] *= scale;
         }
       }
-      return scale;
     }
 
     function updateThePlotData(data) {
