@@ -106,6 +106,9 @@ public class TraceDao implements TraceRepository {
             ImmutableIndex.of("trace_transaction_error_idx",
                     ImmutableList.of("transaction_type", "transaction_name", "error",
                             "capture_time", "duration_nanos", "id")),
+            // trace_capture_time_idx is for reaper, this is very important when trace table is huge
+            // e.g. after leaving slow threshold at 0 for a while
+            ImmutableIndex.of("trace_capture_time_idx", ImmutableList.of("capture_time")),
             // trace_idx is for trace header lookup
             ImmutableIndex.of("trace_idx", ImmutableList.of("id")));
 
