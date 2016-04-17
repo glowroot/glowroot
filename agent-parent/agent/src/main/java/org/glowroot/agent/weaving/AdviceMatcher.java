@@ -76,11 +76,11 @@ abstract class AdviceMatcher {
     }
 
     private boolean isMethodParameterTypesMatch(List<Type> parameterTypes) {
-        String[] pointcutMethodParameterTypes = advice().pointcut().methodParameterTypes();
-        for (int i = 0; i < pointcutMethodParameterTypes.length; i++) {
-            String pointcutMethodParameterType = pointcutMethodParameterTypes[i];
+        List<Object> pointcutMethodParameterTypes = advice().pointcutMethodParameterTypes();
+        for (int i = 0; i < pointcutMethodParameterTypes.size(); i++) {
+            Object pointcutMethodParameterType = pointcutMethodParameterTypes.get(i);
             if (pointcutMethodParameterType.equals("..")) {
-                if (i != pointcutMethodParameterTypes.length - 1) {
+                if (i != pointcutMethodParameterTypes.size() - 1) {
                     logger.warn("'..' can only be used at the end of methodParameterTypes");
                     return false;
                 } else {
@@ -97,14 +97,17 @@ abstract class AdviceMatcher {
             }
         }
         // need this final test since argumentTypes may still have unmatched elements
-        return parameterTypes.size() == pointcutMethodParameterTypes.length;
+        return parameterTypes.size() == pointcutMethodParameterTypes.size();
     }
 
-    private boolean isMethodParameterTypeMatch(String pointcutMethodParameterType,
+    private boolean isMethodParameterTypeMatch(Object pointcutMethodParameterType,
             Type parameterType) {
-        // only supporting * at this point
-        return pointcutMethodParameterType.equals("*")
-                || pointcutMethodParameterType.equals(parameterType.getClassName());
+        String className = parameterType.getClassName();
+        if (pointcutMethodParameterType instanceof String) {
+            return pointcutMethodParameterType.equals(className);
+        } else {
+            return ((Pattern) pointcutMethodParameterType).matcher(className).matches();
+        }
     }
 
     private boolean isMethodReturnMatch(Type returnType) {

@@ -149,6 +149,7 @@ public class AdviceBuilder {
         }
         builder.pointcutMethodNamePattern(buildPattern(pointcut.methodName()));
         builder.pointcutMethodAnnotationPattern(buildPattern(pointcut.methodAnnotation()));
+        builder.pointcutMethodParameterTypes(buildPatterns(pointcut.methodParameterTypes()));
 
         // hasBindThreadContext will be overridden below if needed
         builder.hasBindThreadContext(false);
@@ -279,6 +280,19 @@ public class AdviceBuilder {
         if (!condition) {
             throw new AdviceConstructionException(message);
         }
+    }
+
+    private List<Object> buildPatterns(String[] maybePatterns) {
+        List<Object> patterns = Lists.newArrayList();
+        for (String maybePattern : maybePatterns) {
+            Pattern pattern = buildPattern(maybePattern);
+            if (pattern == null) {
+                patterns.add(maybePattern);
+            } else {
+                patterns.add(pattern);
+            }
+        }
+        return patterns;
     }
 
     static @Nullable Pattern buildPattern(String maybePattern) {

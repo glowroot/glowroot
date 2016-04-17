@@ -46,6 +46,7 @@ public abstract class Advice {
     abstract @Nullable Pattern pointcutMethodDeclaringClassNamePattern();
     abstract @Nullable Pattern pointcutMethodNamePattern();
     abstract @Nullable Pattern pointcutMethodAnnotationPattern();
+    abstract List<Object> pointcutMethodParameterTypes(); // items can be either String or Pattern
     abstract @Nullable Type travelerType();
     abstract @Nullable Method isEnabledAdvice();
     abstract @Nullable Method onBeforeAdvice();
