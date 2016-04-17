@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.server;
 
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -50,6 +51,8 @@ class ServerConnection {
     private final ManagedChannel channel;
 
     private final ScheduledExecutorService scheduledExecutor;
+
+    private final Random random = new Random();
 
     private volatile boolean closed;
 
@@ -191,7 +194,10 @@ class ServerConnection {
                     }
                 }
             }, nextDelayInSeconds, SECONDS);
-            nextDelayInSeconds = Math.min(nextDelayInSeconds * 2, maxSingleDelayInSeconds);
+            // retry delay doubles on average each time, randomized +/- 50%
+            double randomizedDoubling = 1.5 + random.nextDouble();
+            nextDelayInSeconds = Math.min((long) (nextDelayInSeconds * randomizedDoubling),
+                    maxSingleDelayInSeconds);
         }
 
         @Override
