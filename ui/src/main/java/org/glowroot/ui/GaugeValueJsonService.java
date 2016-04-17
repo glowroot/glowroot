@@ -118,19 +118,8 @@ class GaugeValueJsonService {
         double currTotal = 0;
         long currWeight = 0;
         long currRollupTime = Long.MIN_VALUE;
-        long maxCaptureTime;
-        if (orderedNonRolledUpGaugeValues.isEmpty()) {
-            maxCaptureTime = Long.MIN_VALUE;
-        } else {
-            maxCaptureTime = orderedNonRolledUpGaugeValues
-                    .get(orderedNonRolledUpGaugeValues.size() - 1).getCaptureTime();
-        }
-        maxCaptureTime = (long) (Math.floor(maxCaptureTime / 60000) * 60000);
         for (GaugeValue nonRolledUpGaugeValue : orderedNonRolledUpGaugeValues) {
             long captureTime = nonRolledUpGaugeValue.getCaptureTime();
-            if (captureTime > maxCaptureTime) {
-                break;
-            }
             long rollupTime = Utils.getNextRollupTime(captureTime, fixedIntervalMillis);
             if (rollupTime != currRollupTime && currWeight > 0) {
                 rolledUpGaugeValues.add(GaugeValue.newBuilder()
@@ -148,9 +137,11 @@ class GaugeValueJsonService {
         }
         if (currWeight > 0) {
             // roll up final one
+            long lastCaptureTime = orderedNonRolledUpGaugeValues
+                    .get(orderedNonRolledUpGaugeValues.size() - 1).getCaptureTime();
             rolledUpGaugeValues.add(GaugeValue.newBuilder()
                     .setGaugeName(gaugeName)
-                    .setCaptureTime(maxCaptureTime)
+                    .setCaptureTime(lastCaptureTime)
                     .setValue(currTotal / currWeight)
                     .setWeight(currWeight)
                     .build());
