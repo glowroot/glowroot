@@ -110,8 +110,8 @@ public class Logger {
             updateLibVersion("logback.version", "1.0." + i);
             runTest(test);
         }
-        for (int i = 0; i <= 6; i++) {
-            updateLibVersion("slf4j.version", "1.7.19");
+        for (int i = 0; i <= 7; i++) {
+            updateLibVersion("slf4j.version", "1.7.21");
             updateLibVersion("logback.version", "1.1." + i);
             runTest(test);
         }

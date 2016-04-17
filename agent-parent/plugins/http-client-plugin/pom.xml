@@ -21,7 +21,7 @@
     <apache.httpasyncclient.version>4.1.1</apache.httpasyncclient.version>
     <apache.httpclient3x.version>3.1</apache.httpclient3x.version>
     <okhttpclient.version>2.7.5</okhttpclient.version>
-    <cxf.version>3.1.5</cxf.version>
+    <cxf.version>3.1.6</cxf.version>
     <spring.version>4.2.5.RELEASE</spring.version>
   </properties>
 

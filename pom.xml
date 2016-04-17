@@ -84,10 +84,11 @@
     <netty.version>4.1.0.CR7</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.5</jackson.version>
-    <logback.version>1.1.6</logback.version>
-    <immutables.version>2.1.14</immutables.version>
+    <logback.version>1.1.7</logback.version>
+    <!-- immutables 2.1.16 generates code that requires JDK 7+ -->
+    <immutables.version>2.1.15</immutables.version>
     <javax.mail.version>1.5.5</javax.mail.version>
-    <jmh.version>1.11.3</jmh.version>
+    <jmh.version>1.12</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
@@ -139,13 +140,6 @@
         <version>${grpc.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.twitter</groupId>
-        <artifactId>hpack</artifactId>
-        <!-- transitive dependency of grpc-netty at multiple depths with conflicting versions
-          (0.10.1 and 0.11.0) -->
-        <version>0.11.0</version>
-      </dependency>
-      <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-buffer</artifactId>
         <version>${netty.version}</version>
@@ -162,6 +156,11 @@
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
+        <artifactId>netty-codec-http2</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
         <version>${netty.version}</version>
       </dependency>
@@ -173,7 +172,7 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.19</version>
+        <version>1.7.21</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>

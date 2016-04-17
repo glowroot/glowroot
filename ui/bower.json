@@ -1,8 +1,8 @@
 {
   "name": "glowroot",
   "dependencies": {
-    "angular": "1.5.1",
-    "angular-ui-bootstrap": "1.2.5",
+    "angular": "1.5.4",
+    "angular-ui-bootstrap": "1.3.2",
     "angular-ui-router": "0.2.18",
     "bootstrap": "3.3.6",
     "bootstrap-select": "1.10.0",
@@ -10,9 +10,9 @@
     "eonasdan-bootstrap-datetimepicker": "4.17.37",
     "flot": "trask/flot#glowroot-0.8.5",
     "flot.tooltip": "0.8.7",
-    "fontawesome": "4.5.0",
+    "fontawesome": "4.6.1",
     "handlebars": "4.0.5",
-    "jquery": "2.2.1",
+    "jquery": "2.2.3",
     "moment": "2.12.0",
     "sequeljs": "trask/sequeljs#66ba47556cb7eec089a828d61aa93adc41dcc59c",
     "spinjs": "2.3.2",
