@@ -82,7 +82,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
             PluginCache pluginCache) {
         ConfigRepositoryImpl configRepository =
                 new ConfigRepositoryImpl(baseDir, configService, pluginCache);
-        // it's nice to update config.json on startup if it is missing some/all config
+        // it's nice to update admin.json on startup if it is missing some/all config
         // properties so that the file contents can be reviewed/updated/copied if desired
         try {
             configRepository.writeAll();
@@ -99,15 +99,14 @@ class ConfigRepositoryImpl implements ConfigRepository {
         secretFile = new File(baseDir, "secret");
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
 
-        AccessConfig accessConfig =
-                configService.getOtherConfig(ACCESS_KEY, ImmutableAccessConfig.class);
+        AccessConfig accessConfig = configService.getAdmin(ACCESS_KEY, ImmutableAccessConfig.class);
         if (accessConfig == null) {
             this.accessConfig = ImmutableAccessConfig.builder().build();
         } else {
             this.accessConfig = accessConfig;
         }
         FatStorageConfig storageConfig =
-                configService.getOtherConfig(STORAGE_KEY, ImmutableFatStorageConfig.class);
+                configService.getAdmin(STORAGE_KEY, ImmutableFatStorageConfig.class);
         if (storageConfig == null) {
             this.storageConfig = ImmutableFatStorageConfig.builder().build();
         } else if (storageConfig.hasListIssues()) {
@@ -115,7 +114,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
         } else {
             this.storageConfig = storageConfig;
         }
-        SmtpConfig smtpConfig = configService.getOtherConfig(SMTP_KEY, ImmutableSmtpConfig.class);
+        SmtpConfig smtpConfig = configService.getAdmin(SMTP_KEY, ImmutableSmtpConfig.class);
         if (smtpConfig == null) {
             this.smtpConfig = ImmutableSmtpConfig.builder().build();
         } else {
@@ -524,7 +523,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
             throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(accessConfig.version(), priorVersion);
-            configService.updateOtherConfig(ACCESS_KEY, updatedConfig);
+            configService.updateAdminConfig(ACCESS_KEY, updatedConfig);
             accessConfig = updatedConfig;
         }
     }
@@ -539,7 +538,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
             throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(storageConfig.version(), priorVersion);
-            configService.updateOtherConfig(STORAGE_KEY, updatedConfig);
+            configService.updateAdminConfig(STORAGE_KEY, updatedConfig);
             storageConfig = updatedConfig;
         }
     }
@@ -548,7 +547,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     public void updateSmtpConfig(SmtpConfig updatedConfig, String priorVersion) throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(smtpConfig.version(), priorVersion);
-            configService.updateOtherConfig(SMTP_KEY, updatedConfig);
+            configService.updateAdminConfig(SMTP_KEY, updatedConfig);
             smtpConfig = updatedConfig;
         }
     }
@@ -606,7 +605,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
         configs.put(ACCESS_KEY, accessConfig);
         configs.put(STORAGE_KEY, storageConfig);
         configs.put(SMTP_KEY, smtpConfig);
-        configService.updateOtherConfigs(configs);
+        configService.updateAdminConfigs(configs);
     }
 
     private static FatStorageConfig withCorrectedLists(FatStorageConfig storageConfig) {

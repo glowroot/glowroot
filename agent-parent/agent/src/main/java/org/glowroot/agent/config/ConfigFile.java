@@ -37,29 +37,153 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.OnlyUsedByTests;
 
-// TODO if config.json file has unrecognized top-level node (something other than "transactions",
-// "userRecording", "advanced", etc) then log warning and remove that node
+// TODO if config.json or admin.json file have unrecognized top-level node (something other than
+// "transactions", "userRecording", "advanced", etc) then log warning and remove that node
 class ConfigFile {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigFile.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final File file;
-    private final ObjectNode rootObjectNode;
+    private final File configFile;
+    private final File adminFile;
+    private final ObjectNode configRootObjectNode;
+    private final ObjectNode adminRootObjectNode;
 
-    ConfigFile(File file) {
-        this.file = file;
-        if (!file.exists()) {
-            rootObjectNode = mapper.createObjectNode();
-            return;
+    ConfigFile(File configFile, File adminFile) {
+        this.configFile = configFile;
+        this.adminFile = adminFile;
+        if (configFile.exists()) {
+            configRootObjectNode = getRootObjectNode(configFile);
+        } else {
+            configRootObjectNode = mapper.createObjectNode();
         }
+        if (adminFile.exists()) {
+            adminRootObjectNode = getRootObjectNode(adminFile);
+        } else {
+            adminRootObjectNode = mapper.createObjectNode();
+        }
+    }
+
+    @Nullable
+    <T> T getConfigNode(String key, Class<T> clazz, ObjectMapper mapper) {
+        JsonNode node = configRootObjectNode.get(key);
+        if (node == null) {
+            return null;
+        }
+        try {
+            return mapper.treeToValue(node, clazz);
+        } catch (JsonProcessingException e) {
+            logger.error("error parsing config json node '{}': ", key, e);
+            return null;
+        }
+    }
+
+    @Nullable
+    <T> T getAdminNode(String key, Class<T> clazz, ObjectMapper mapper) {
+        JsonNode node = adminRootObjectNode.get(key);
+        if (node == null) {
+            return null;
+        }
+        try {
+            return mapper.treeToValue(node, clazz);
+        } catch (JsonProcessingException e) {
+            logger.error("error parsing admin json node '{}': ", key, e);
+            return null;
+        }
+    }
+
+    <T extends /*@NonNull*/ Object> /*@Nullable*/ T getConfigNode(String key,
+            TypeReference<T> typeReference, ObjectMapper mapper) {
+        JsonNode node = configRootObjectNode.get(key);
+        if (node == null) {
+            return null;
+        }
+        try {
+            return mapper.readValue(mapper.treeAsTokens(node), typeReference);
+        } catch (IOException e) {
+            logger.error("error parsing config json node '{}': ", key, e);
+            return null;
+        }
+    }
+
+    <T extends /*@NonNull*/ Object> /*@Nullable*/ T getAdminNode(String key,
+            TypeReference<T> typeReference, ObjectMapper mapper) {
+        JsonNode node = adminRootObjectNode.get(key);
+        if (node == null) {
+            return null;
+        }
+        try {
+            return mapper.readValue(mapper.treeAsTokens(node), typeReference);
+        } catch (IOException e) {
+            logger.error("error parsing admin json node '{}': ", key, e);
+            return null;
+        }
+    }
+
+    void writeConfig(String key, Object config, ObjectMapper mapper) throws IOException {
+        configRootObjectNode.replace(key, mapper.valueToTree(config));
+        writeToFileIfNeeded(configFile, configRootObjectNode);
+    }
+
+    void writeAdmin(String key, Object config, ObjectMapper mapper) throws IOException {
+        adminRootObjectNode.replace(key, mapper.valueToTree(config));
+        writeToFileIfNeeded(adminFile, adminRootObjectNode);
+    }
+
+    void writeConfig(Map<String, Object> config, ObjectMapper mapper) throws IOException {
+        for (Entry<String, Object> entry : config.entrySet()) {
+            configRootObjectNode.replace(entry.getKey(), mapper.valueToTree(entry.getValue()));
+        }
+        writeToFileIfNeeded(configFile, configRootObjectNode);
+    }
+
+    void writeAdmin(Map<String, Object> config, ObjectMapper mapper) throws IOException {
+        for (Entry<String, Object> entry : config.entrySet()) {
+            adminRootObjectNode.replace(entry.getKey(), mapper.valueToTree(entry.getValue()));
+        }
+        writeToFileIfNeeded(adminFile, adminRootObjectNode);
+    }
+
+    @OnlyUsedByTests
+    void delete() throws IOException {
+        if (!configFile.delete()) {
+            throw new IOException("Could not delete file: " + configFile.getCanonicalPath());
+        }
+    }
+
+    private static void writeToFileIfNeeded(File file, ObjectNode rootObjectNode)
+            throws IOException {
+        String content = writeConfigAsString(rootObjectNode);
+        if (file.exists()) {
+            String existingContent = Files.toString(file, Charsets.UTF_8);
+            if (content.equals(existingContent)) {
+                // it's nice to preserve the correct modification stamp on the file to track when it
+                // was last really changed
+                return;
+            }
+        }
+        Files.write(content, file, Charsets.UTF_8);
+    }
+
+    private static String writeConfigAsString(ObjectNode rootObjectNode) throws IOException {
+        ObjectNode rootObjectNodeCopy = rootObjectNode.deepCopy();
+        ObjectMappers.stripEmptyContainerNodes(rootObjectNodeCopy);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))
+                .setPrettyPrinter(ObjectMappers.getPrettyPrinter());
+        jg.writeTree(rootObjectNodeCopy);
+        jg.close();
+        // newline is not required, just a personal preference
+        return sb.toString() + ObjectMappers.NEWLINE;
+    }
+
+    private static ObjectNode getRootObjectNode(File file) {
         String content;
         try {
             content = Files.toString(file, Charsets.UTF_8);
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
-            rootObjectNode = mapper.createObjectNode();
-            return;
+            return mapper.createObjectNode();
         }
         ObjectNode rootObjectNode = null;
         try {
@@ -79,78 +203,6 @@ class ConfigFile {
                         f);
             }
         }
-        this.rootObjectNode = rootObjectNode == null ? mapper.createObjectNode() : rootObjectNode;
-    }
-
-    @Nullable
-    <T> T getNode(String key, Class<T> clazz, ObjectMapper mapper) {
-        JsonNode node = rootObjectNode.get(key);
-        if (node == null) {
-            return null;
-        }
-        try {
-            return mapper.treeToValue(node, clazz);
-        } catch (JsonProcessingException e) {
-            logger.error("error parsing config node '{}': ", key, e);
-            return null;
-        }
-    }
-
-    <T extends /*@NonNull*/ Object> /*@Nullable*/ T getNode(String key,
-            TypeReference<T> typeReference, ObjectMapper mapper) {
-        JsonNode node = rootObjectNode.get(key);
-        if (node == null) {
-            return null;
-        }
-        try {
-            return mapper.readValue(mapper.treeAsTokens(node), typeReference);
-        } catch (IOException e) {
-            logger.error("error parsing config node '{}': ", key, e);
-            return null;
-        }
-    }
-
-    void write(String key, Object config, ObjectMapper mapper) throws IOException {
-        rootObjectNode.replace(key, mapper.valueToTree(config));
-        writeToFileIfNeeded();
-    }
-
-    void write(Map<String, Object> config, ObjectMapper mapper) throws IOException {
-        for (Entry<String, Object> entry : config.entrySet()) {
-            rootObjectNode.replace(entry.getKey(), mapper.valueToTree(entry.getValue()));
-        }
-        writeToFileIfNeeded();
-    }
-
-    private void writeToFileIfNeeded() throws IOException {
-        String content = writeConfigAsString();
-        if (file.exists()) {
-            String existingContent = Files.toString(file, Charsets.UTF_8);
-            if (content.equals(existingContent)) {
-                // it's nice to preserve the correct modification stamp on the file to track when it
-                // was last really changed
-                return;
-            }
-        }
-        Files.write(content, file, Charsets.UTF_8);
-    }
-
-    @OnlyUsedByTests
-    void delete() throws IOException {
-        if (!file.delete()) {
-            throw new IOException("Could not delete file: " + file.getCanonicalPath());
-        }
-    }
-
-    private String writeConfigAsString() throws IOException {
-        ObjectNode rootObjectNode = this.rootObjectNode.deepCopy();
-        ObjectMappers.stripEmptyContainerNodes(rootObjectNode);
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))
-                .setPrettyPrinter(ObjectMappers.getPrettyPrinter());
-        jg.writeTree(rootObjectNode);
-        jg.close();
-        // newline is not required, just a personal preference
-        return sb.toString() + ObjectMappers.NEWLINE;
+        return rootObjectNode == null ? mapper.createObjectNode() : rootObjectNode;
     }
 }

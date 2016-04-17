@@ -151,8 +151,8 @@ public class WebDriverSetup {
     private static WebDriverSetup createSetup(boolean shared) throws Exception {
         int uiPort = getAvailablePort();
         File baseDir = Files.createTempDir();
-        File configFile = new File(baseDir, "config.json");
-        Files.write("{\"access\":{\"port\":" + uiPort + "}}", configFile, Charsets.UTF_8);
+        File adminFile = new File(baseDir, "admin.json");
+        Files.write("{\"access\":{\"port\":" + uiPort + "}}", adminFile, Charsets.UTF_8);
         Container container;
         if (Containers.useJavaagent()) {
             container = new JavaagentContainer(baseDir, true, false,
