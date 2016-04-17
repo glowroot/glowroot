@@ -103,16 +103,18 @@ public class HttpClient {
         final String test = "AsyncHttpClientPluginIT";
         for (int i = 1; i <= 24; i++) {
             updateLibVersion("asynchttpclient.version", "1.7." + i);
-            runTest(test);
+            runTest(test, "async-http-client-1.x");
         }
         for (int i = 0; i <= 16; i++) {
             updateLibVersion("asynchttpclient.version", "1.8." + i);
-            runTest(test);
+            runTest(test, "async-http-client-1.x");
         }
         for (int i = 0; i <= 36; i++) {
             updateLibVersion("asynchttpclient.version", "1.9." + i);
-            runTest(test);
+            runTest(test, "async-http-client-1.x");
         }
+        updateLibVersion("asynchttpclient.version", "2.0.0");
+        runTest(test, "async-http-client-2.x");
     }
 
     private static void okHttpClient() throws Exception {

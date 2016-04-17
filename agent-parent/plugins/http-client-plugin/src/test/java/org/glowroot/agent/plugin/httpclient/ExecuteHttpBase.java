@@ -32,8 +32,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpServerCodec;
@@ -90,8 +88,8 @@ public abstract class ExecuteHttpBase implements AppUnderTest, TransactionMarker
             FullHttpRequest request = (FullHttpRequest) msg;
             FullHttpResponse response =
                     new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.OK);
-            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
-            response.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.TEXT_PLAIN);
+            response.headers().set("Connection", "Close");
+            response.headers().set("Content-Type", "text/plain");
             ChannelFuture f = ctx.write(response);
             f.addListener(ChannelFutureListener.CLOSE);
             request.release();

@@ -60,9 +60,14 @@ public class AsyncHttpClientRequestInvoker {
 
     private static @Nullable Class<?> getRequestClass(Class<?> clazz) {
         try {
-            return Class.forName("com.ning.http.client.Request", false, clazz.getClassLoader());
+            return Class.forName("org.asynchttpclient.Request", false, clazz.getClassLoader());
         } catch (ClassNotFoundException e) {
-            logger.warn(e.getMessage(), e);
+            try {
+                return Class.forName("com.ning.http.client.Request", false, clazz.getClassLoader());
+            } catch (ClassNotFoundException f) {
+                // log original exception
+                logger.warn(e.getMessage(), e);
+            }
         }
         return null;
     }

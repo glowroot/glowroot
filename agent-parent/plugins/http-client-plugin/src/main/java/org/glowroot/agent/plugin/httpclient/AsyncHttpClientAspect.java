@@ -52,15 +52,16 @@ public class AsyncHttpClientAspect {
         }
     };
 
-    @Shim("com.ning.http.client.Request")
+    @Shim("org.asynchttpclient.Request|com.ning.http.client.Request")
     public interface Request {
         @Nullable
         String getMethod();
     }
 
     // the field and method names are verbose to avoid conflict since they will become fields
-    // and methods in all classes that extend com.ning.http.client.ListenableFuture
-    @Mixin("com.ning.http.client.ListenableFuture")
+    // and methods in all classes that extend org.asynchttpclient.ListenableFuture or
+    // com.ning.http.client.ListenableFuture
+    @Mixin({"org.asynchttpclient.ListenableFuture", "com.ning.http.client.ListenableFuture"})
     public abstract static class ListenableFutureImpl implements ListenableFutureMixin {
 
         // volatile not needed, only accessed by the main thread
@@ -78,7 +79,7 @@ public class AsyncHttpClientAspect {
     }
 
     // the method names are verbose to avoid conflict since they will become methods in all classes
-    // that extend com.ning.http.client.ListenableFuture
+    // that extend org.asynchttpclient.ListenableFuture or com.ning.http.client.ListenableFuture
     public interface ListenableFutureMixin {
 
         @Nullable
@@ -87,16 +88,33 @@ public class AsyncHttpClientAspect {
         void glowroot$setAsyncTraceEntry(@Nullable AsyncTraceEntry asyncTraceEntry);
     }
 
-    @Shim("com.ning.http.client.ListenableFuture")
     public interface ListenableFutureShim<V> extends Future<V> {
-
-        @Shim("com.ning.http.client.ListenableFuture"
-                + " addListener(java.lang.Runnable, java.util.concurrent.Executor)")
-        ListenableFutureShim<V> addListener(Runnable listener, Executor exec);
+        Object glowroot$addListener(Runnable listener, Executor exec);
     }
 
-    @Pointcut(className = "com.ning.http.client.AsyncHttpClient", methodName = "executeRequest",
-            methodParameterTypes = {"com.ning.http.client.Request", ".."},
+    @Shim("org.asynchttpclient.ListenableFuture")
+    public interface NewListenableFutureShim<V> extends ListenableFutureShim<V> {
+
+        @Override
+        @Shim("org.asynchttpclient.ListenableFuture"
+                + " addListener(java.lang.Runnable, java.util.concurrent.Executor)")
+        Object glowroot$addListener(Runnable listener, Executor exec);
+    }
+
+    @Shim("com.ning.http.client.ListenableFuture")
+    public interface OldListenableFutureShim<V> extends ListenableFutureShim<V> {
+
+        @Override
+        @Shim("com.ning.http.client.ListenableFuture"
+                + " addListener(java.lang.Runnable, java.util.concurrent.Executor)")
+        Object glowroot$addListener(Runnable listener, Executor exec);
+    }
+
+    @Pointcut(
+            className = "org.asynchttpclient.AsyncHttpClient|com.ning.http.client.AsyncHttpClient",
+            methodName = "executeRequest",
+            methodParameterTypes = {"org.asynchttpclient.Request|com.ning.http.client.Request",
+                    ".."},
             nestingGroup = "http-client", timerName = "http client request")
     public static class ExecuteRequestAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteRequestAdvice.class);
@@ -132,7 +150,7 @@ public class AsyncHttpClientAspect {
             }
             future.glowroot$setAsyncTraceEntry(asyncTraceEntry);
             final ListenableFutureShim<?> listenableFuture = (ListenableFutureShim<?>) future;
-            listenableFuture.addListener(new Runnable() {
+            listenableFuture.glowroot$addListener(new Runnable() {
                 // suppress warnings is needed because checker framework doesn't see that
                 // asyncTraceEntry must be non-null here
                 @Override
@@ -157,7 +175,8 @@ public class AsyncHttpClientAspect {
         }
     }
 
-    @Pointcut(className = "com.ning.http.client.ListenableFuture",
+    @Pointcut(className = "org.asynchttpclient.ListenableFuture"
+            + "|com.ning.http.client.ListenableFuture",
             methodDeclaringClassName = "java.util.concurrent.Future", methodName = "get",
             methodParameterTypes = {".."}, supersedes = "wait on future")
     public static class FutureGetAdvice {

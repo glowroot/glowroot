@@ -20,7 +20,6 @@
     <apache.httpclient.version>4.5.2</apache.httpclient.version>
     <apache.httpasyncclient.version>4.1.1</apache.httpasyncclient.version>
     <apache.httpclient3x.version>3.1</apache.httpclient3x.version>
-    <asynchttpclient.version>1.9.36</asynchttpclient.version>
     <okhttpclient.version>2.7.5</okhttpclient.version>
     <cxf.version>3.1.5</cxf.version>
     <spring.version>4.2.5.RELEASE</spring.version>
@@ -71,12 +70,6 @@
       <groupId>commons-httpclient</groupId>
       <artifactId>commons-httpclient</artifactId>
       <version>${apache.httpclient3x.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.ning</groupId>
-      <artifactId>async-http-client</artifactId>
-      <version>${asynchttpclient.version}</version> <!-- $NO-MVN-MAN-VER$ -->
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -181,6 +174,78 @@
               <!-- this is needed when building with java 7 -->
               <argLine>-XX:MaxPermSize=128m</argLine>
             </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>async-http-client-2.x</id>
+      <properties>
+        <asynchttpclient.version>2.0.0</asynchttpclient.version>
+        <netty.version>4.0.36.Final</netty.version>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>org.asynchttpclient</groupId>
+          <artifactId>async-http-client</artifactId>
+          <version>${asynchttpclient.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>generate-test-sources</phase>
+                <goals>
+                  <goal>add-test-source</goal>
+                </goals>
+                <configuration>
+                  <sources>
+                    <source>src/test/async-http-client-2.x/java</source>
+                  </sources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>async-http-client-1.x</id>
+      <properties>
+        <asynchttpclient.version>1.9.36</asynchttpclient.version>
+        <netty.version>4.0.36.Final</netty.version>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>com.ning</groupId>
+          <artifactId>async-http-client</artifactId>
+          <version>${asynchttpclient.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>generate-test-sources</phase>
+                <goals>
+                  <goal>add-test-source</goal>
+                </goals>
+                <configuration>
+                  <sources>
+                    <source>src/test/async-http-client-1.x/java</source>
+                  </sources>
+                </configuration>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>
