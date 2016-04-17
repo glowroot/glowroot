@@ -217,6 +217,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             TraceEntryImpl parentTraceEntry = entry.getParentTraceEntry();
             if (parentTraceEntry == null && !entryIsRoot) {
                 logFoundNonRootEntryWithNullParent(entry);
+                entry = entry.getNextTraceEntry();
                 continue;
             }
             if (!entryIsRoot) {
