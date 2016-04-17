@@ -53,10 +53,10 @@ public class Netty {
     }
 
     private static void runVertx() throws Exception {
-        runVertx("1.2.1-final", "3.5.0.Final", "vertx-1.x");
-        runVertx("1.2.3-final", "3.5.0.Final", "vertx-1.x");
-        runVertx("1.3.0-final", "3.5.8.Final", "vertx-1.x");
-        runVertx("1.3.1-final", "3.5.9.Final", "vertx-1.x");
+        runVertx("1.2.1.final", "3.5.0.Final", "vertx-1.x");
+        runVertx("1.2.3.final", "3.5.0.Final", "vertx-1.x");
+        runVertx("1.3.0.final", "3.5.8.Final", "vertx-1.x");
+        runVertx("1.3.1.final", "3.5.9.Final", "vertx-1.x");
 
         runVertx("2.0.0-final", "4.0.2.Final", "vertx-2.x");
         runVertx("2.0.1-final", "4.0.7.Final", "vertx-2.x");
