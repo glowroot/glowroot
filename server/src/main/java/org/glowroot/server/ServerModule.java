@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
+import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Version;
 import org.glowroot.server.storage.AgentDao;
@@ -145,6 +146,7 @@ public class ServerModule {
                     .repoAdmin(new NopRepoAdmin())
                     .rollupLevelService(rollupLevelService)
                     .liveTraceRepository(new LiveTraceRepositoryImpl(server.getDownstreamService()))
+                    .liveAggregateRepository(new LiveAggregateRepositoryNop())
                     .liveWeavingService(new LiveWeavingServiceImpl(server.getDownstreamService()))
                     .bindAddress("0.0.0.0")
                     .numWorkerThreads(50)
