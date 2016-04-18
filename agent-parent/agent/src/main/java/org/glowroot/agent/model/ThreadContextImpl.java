@@ -53,7 +53,6 @@ import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAsyncQueryEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAsyncTraceEntry;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAuxThreadContext;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopQueryEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTraceEntry;
@@ -498,13 +497,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public AuxThreadContext createAuxThreadContext() {
-        TraceEntryImpl activeEntry = traceEntryComponent.getActiveEntry();
-        if (activeEntry == null) {
-            logger.warn("cannot create async context because active entry is null");
-            return NopAuxThreadContext.INSTANCE;
-        }
-        return new AuxThreadContextImpl(this, activeEntry, traceEntryComponent.getTailEntry(),
-                servletMessageSupplier, transactionRegistry, transactionService);
+        return new AuxThreadContextImpl(this, traceEntryComponent.getActiveEntry(),
+                traceEntryComponent.getTailEntry(), servletMessageSupplier, transactionRegistry,
+                transactionService);
     }
 
     // typically pop() methods don't require the objects to pop, but for safety, the entry to pop is

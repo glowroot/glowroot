@@ -38,7 +38,7 @@ class TraceEntryComponent {
 
     private final TraceEntryImpl rootEntry;
 
-    private @Nullable TraceEntryImpl activeEntry;
+    private TraceEntryImpl activeEntry;
 
     private TraceEntryImpl tailEntry;
 
@@ -91,7 +91,7 @@ class TraceEntryComponent {
     // preventing any nasty bugs from a missed pop, e.g. an entry never being marked as complete)
     void popEntry(TraceEntryImpl entry, long endTick) {
         popEntrySafe(entry);
-        if (activeEntry == null) {
+        if (entry == rootEntry) {
             this.endTick = endTick;
             this.completed = true;
         }
@@ -114,7 +114,6 @@ class TraceEntryComponent {
         return entry;
     }
 
-    @Nullable
     TraceEntryImpl getActiveEntry() {
         return activeEntry;
     }
@@ -124,15 +123,17 @@ class TraceEntryComponent {
     }
 
     private void popEntrySafe(TraceEntryImpl entry) {
-        if (activeEntry == null) {
-            logger.error("entry stack is empty, cannot pop entry: {}", entry);
-            return;
-        }
-        if (activeEntry == entry) {
-            activeEntry = activeEntry.getParentTraceEntry();
-        } else {
+        if (activeEntry != entry) {
             // somehow(?) a pop was missed (or maybe too many pops), this is just damage control
             popEntryBailout(entry);
+            return;
+        }
+        TraceEntryImpl parentTraceEntry = activeEntry.getParentTraceEntry();
+        if (parentTraceEntry != null) {
+            // don't pop the root entry in case an async trace that exceeded the trace entry limit
+            // is still active, and ends with an error, but has not exceeded the extra error entry
+            // limit, so then adds a trace entry error, and so still needs an "active trace"
+            activeEntry = parentTraceEntry;
         }
     }
 
@@ -140,13 +141,10 @@ class TraceEntryComponent {
     private void popEntryBailout(TraceEntryImpl entry) {
         logger.error("found entry {} at top of stack when expecting entry {}", activeEntry, entry,
                 new Exception("location stack trace"));
-        if (entry == rootEntry) {
-            activeEntry = null;
-            return;
-        }
-        // don't pop the root trace entry
-        while (activeEntry != null && activeEntry != rootEntry && activeEntry != entry) {
-            activeEntry = activeEntry.getParentTraceEntry();
+        TraceEntryImpl parentTraceEntry = activeEntry.getParentTraceEntry();
+        while (activeEntry != entry && parentTraceEntry != null) {
+            activeEntry = parentTraceEntry;
+            parentTraceEntry = parentTraceEntry.getParentTraceEntry();
         }
     }
 }
