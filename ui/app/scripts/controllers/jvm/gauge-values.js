@@ -110,10 +110,10 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       if (!$scope.range.last) {
         return;
       }
-      var dataPointIntervalMillis = charts.getDataPointIntervalMillis(0, 1.1 * $scope.range.last);
       var now = moment().startOf('second').valueOf();
       var from = now - $scope.range.last;
       var to = now + $scope.range.last / 10;
+      var dataPointIntervalMillis = charts.getDataPointIntervalMillis(from, to);
       var revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
       var revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
       var revisedDataPointIntervalMillis = charts.getDataPointIntervalMillis(revisedFrom, revisedTo);
