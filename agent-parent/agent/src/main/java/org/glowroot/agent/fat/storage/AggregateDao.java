@@ -98,7 +98,7 @@ public class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("queries_capped_id", ColumnType.BIGINT),
                     ImmutableColumn.of("service_calls_capped_id", ColumnType.BIGINT),
                     ImmutableColumn.of("main_thread_profile_capped_id", ColumnType.BIGINT),
-                    ImmutableColumn.of("async_thread_profile_capped_id", ColumnType.BIGINT),
+                    ImmutableColumn.of("aux_thread_profile_capped_id", ColumnType.BIGINT),
                     ImmutableColumn.of("main_thread_root_timers", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("aux_thread_root_timers", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("async_root_timers", ColumnType.VARBINARY), // protobuf
@@ -118,7 +118,7 @@ public class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("queries_capped_id", ColumnType.BIGINT),
                     ImmutableColumn.of("service_calls_capped_id", ColumnType.BIGINT),
                     ImmutableColumn.of("main_thread_profile_capped_id", ColumnType.BIGINT),
-                    ImmutableColumn.of("async_thread_profile_capped_id", ColumnType.BIGINT),
+                    ImmutableColumn.of("aux_thread_profile_capped_id", ColumnType.BIGINT),
                     ImmutableColumn.of("main_thread_root_timers", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("aux_thread_root_timers", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("async_root_timers", ColumnType.VARBINARY), // protobuf
@@ -160,10 +160,14 @@ public class AggregateDao implements AggregateRepository {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         for (int i = 0; i < rollupConfigs.size(); i++) {
             String overallTableName = "aggregate_tt_rollup_" + castUntainted(i);
+            dataSource.renameColumn(overallTableName, "async_thread_profile_capped_id",
+                    "aux_thread_profile_capped_id");
             dataSource.syncTable(overallTableName, overallAggregatePointColumns);
             dataSource.syncIndexes(overallTableName, ImmutableList.<Index>of(
                     ImmutableIndex.of(overallTableName + "_idx", overallAggregateIndexColumns)));
             String transactionTableName = "aggregate_tn_rollup_" + castUntainted(i);
+            dataSource.renameColumn(transactionTableName, "async_thread_profile_capped_id",
+                    "aux_thread_profile_capped_id");
             dataSource.syncTable(transactionTableName, transactionAggregateColumns);
             dataSource.syncIndexes(transactionTableName, ImmutableList.<Index>of(ImmutableIndex
                     .of(transactionTableName + "_idx", transactionAggregateIndexColumns)));
@@ -318,13 +322,13 @@ public class AggregateDao implements AggregateRepository {
     @Override
     public void mergeInAuxThreadProfiles(ProfileCollector collector, TransactionQuery query)
             throws Exception {
-        mergeInProfiles(collector, query, "async_thread_profile_capped_id");
+        mergeInProfiles(collector, query, "aux_thread_profile_capped_id");
     }
 
     // query.from() is non-inclusive
     @Override
     public boolean hasAuxThreadProfile(TransactionQuery query) throws Exception {
-        return !dataSource.query(new CappedIdQuery("async_thread_profile_capped_id", query))
+        return !dataSource.query(new CappedIdQuery("aux_thread_profile_capped_id", query))
                 .isEmpty();
     }
 
@@ -339,7 +343,7 @@ public class AggregateDao implements AggregateRepository {
     @Override
     public boolean shouldHaveAuxThreadProfile(TransactionQuery query) throws Exception {
         return dataSource
-                .query(new ShouldHaveSomethingQuery(query, "async_thread_profile_capped_id"));
+                .query(new ShouldHaveSomethingQuery(query, "aux_thread_profile_capped_id"));
     }
 
     // query.from() is non-inclusive
@@ -647,7 +651,7 @@ public class AggregateDao implements AggregateRepository {
             }
             sb.append(" capture_time, total_duration_nanos, transaction_count, error_count,"
                     + " async_transactions, queries_capped_id, service_calls_capped_id,"
-                    + " main_thread_profile_capped_id, async_thread_profile_capped_id,"
+                    + " main_thread_profile_capped_id, aux_thread_profile_capped_id,"
                     + " main_thread_root_timers, aux_thread_root_timers, async_root_timers,"
                     + " main_thread_stats, aux_thread_stats, duration_nanos_histogram) values"
                     + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?");
@@ -1083,7 +1087,7 @@ public class AggregateDao implements AggregateRepository {
         public @Untainted String getSql() {
             return "select transaction_type, total_duration_nanos, transaction_count, error_count,"
                     + " async_transactions, queries_capped_id, service_calls_capped_id,"
-                    + " main_thread_profile_capped_id, async_thread_profile_capped_id,"
+                    + " main_thread_profile_capped_id, aux_thread_profile_capped_id,"
                     + " main_thread_root_timers, aux_thread_root_timers, async_root_timers,"
                     + " main_thread_stats, aux_thread_stats, duration_nanos_histogram"
                     + " from aggregate_tt_rollup_" + castUntainted(fromRollupLevel)
@@ -1150,7 +1154,7 @@ public class AggregateDao implements AggregateRepository {
             return "select transaction_type, transaction_name, total_duration_nanos,"
                     + " transaction_count, error_count, async_transactions, queries_capped_id,"
                     + " service_calls_capped_id, main_thread_profile_capped_id,"
-                    + " async_thread_profile_capped_id, main_thread_root_timers,"
+                    + " aux_thread_profile_capped_id, main_thread_root_timers,"
                     + " aux_thread_root_timers, async_root_timers, main_thread_stats,"
                     + " aux_thread_stats, duration_nanos_histogram from aggregate_tn_rollup_"
                     + castUntainted(fromRollupLevel) + " where capture_time > ?"

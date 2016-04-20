@@ -350,7 +350,7 @@ public class DataSource {
     }
 
     // helpful for upgrading schema
-    void renameColumn(@Untainted String tableName, @Untainted String oldColumnName,
+    public void renameColumn(@Untainted String tableName, @Untainted String oldColumnName,
             @Untainted String newColumnName) throws SQLException {
         if (Schemas.columnExists(tableName, oldColumnName, connection)) {
             execute("alter table " + tableName + " alter column " + oldColumnName + " rename to "
