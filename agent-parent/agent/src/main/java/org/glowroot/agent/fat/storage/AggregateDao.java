@@ -627,7 +627,7 @@ public class AggregateDao implements AggregateRepository {
                 this.mainThreadStats = null;
             }
             if (aggregate.hasAuxThreadStats()) {
-                this.auxThreadStats = aggregate.getMainThreadStats().toByteArray();
+                this.auxThreadStats = aggregate.getAuxThreadStats().toByteArray();
             } else {
                 this.auxThreadStats = null;
             }
