@@ -25,6 +25,7 @@ import java.util.Properties;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
@@ -91,9 +92,11 @@ public class ServerModule {
                     session = cluster.connect();
                     break;
                 } catch (NoHostAvailableException e) {
+                    logger.debug(e.getMessage(), e);
                     lastException = e;
                     if (!waitingForCassandraLogged) {
-                        logger.info("waiting for cassandra...");
+                        logger.info("waiting for cassandra ({}) ...",
+                                Joiner.on(",").join(serverConfig.cassandraContactPoint()));
                     }
                     waitingForCassandraLogged = true;
                     Thread.sleep(1000);
