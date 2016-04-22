@@ -29,6 +29,7 @@ public class All {
         Netty.main(args);
         Play.main(args);
         Quartz.main(args);
+        Spray.main(args);
         Spring.main(args);
         Struts.main(args);
     }
