@@ -194,11 +194,9 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             if (response != null) {
                 sendFullResponse(ctx, request, response);
             }
-        } catch (Exception f) {
-            logger.error(f.getMessage(), f);
-            FullHttpResponse response =
-                    newHttpResponseWithStackTrace(f, INTERNAL_SERVER_ERROR, null);
-            sendFullResponse(ctx, request, response);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            sendExceptionResponse(ctx, e);
         } finally {
             currentChannel.remove();
             request.release();
@@ -209,12 +207,18 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     private void sendFullResponse(ChannelHandlerContext ctx, FullHttpRequest request,
             FullHttpResponse response) throws Exception {
         boolean keepAlive = HttpUtil.isKeepAlive(request);
-        if (httpSessionManager.getSessionId(request) != null
-                && httpSessionManager.getAuthenticatedUser(request) == null
-                && !response.headers().contains("Set-Cookie")) {
-            httpSessionManager.deleteSessionCookie(response);
+        try {
+            if (httpSessionManager.getSessionId(request) != null
+                    && httpSessionManager.getAuthenticatedUser(request) == null
+                    && !response.headers().contains("Set-Cookie")) {
+                httpSessionManager.deleteSessionCookie(response);
+            }
+            response.headers().add("Glowroot-Layout-Version", layoutService.getLayoutVersion());
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            sendExceptionResponse(ctx, e);
+            return;
         }
-        response.headers().add("Glowroot-Layout-Version", layoutService.getLayoutVersion());
         if (response.headers().contains("Glowroot-Port-Changed")) {
             // current connection is the only open channel on the old port, keepAlive=false will add
             // the listener below to close the channel after the response completes
@@ -232,6 +236,17 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         if (!keepAlive) {
             f.addListener(ChannelFutureListener.CLOSE);
         }
+    }
+
+    // TODO check if this suppress warnings is needed in next checker framework release
+    @SuppressWarnings("argument.type.incompatible")
+    private void sendExceptionResponse(ChannelHandlerContext ctx, Exception exception)
+            throws Exception {
+        FullHttpResponse response =
+                newHttpResponseWithStackTrace(exception, INTERNAL_SERVER_ERROR, null);
+        response.headers().add(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
+        ChannelFuture f = ctx.write(response);
+        f.addListener(ChannelFutureListener.CLOSE);
     }
 
     @Override
