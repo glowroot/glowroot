@@ -25,30 +25,33 @@ public class Netty {
     }
 
     private static void runNetty() throws Exception {
-        runNetty("3.3.0.Final");
-        runNetty("3.3.1.Final");
+        runNetty("3.3.0.Final", "netty-3.x");
+        runNetty("3.3.1.Final", "netty-3.x");
         for (int i = 0; i <= 6; i++) {
-            runNetty("3.4." + i + ".Final");
+            runNetty("3.4." + i + ".Final", "netty-3.x");
         }
         for (int i = 0; i <= 13; i++) {
-            runNetty("3.5." + i + ".Final");
+            runNetty("3.5." + i + ".Final", "netty-3.x");
         }
         for (int i = 0; i <= 10; i++) {
-            runNetty("3.6." + i + ".Final");
+            runNetty("3.6." + i + ".Final", "netty-3.x");
         }
-        runNetty("3.7.0.Final");
-        runNetty("3.7.1.Final");
+        runNetty("3.7.0.Final", "netty-3.x");
+        runNetty("3.7.1.Final", "netty-3.x");
         for (int i = 0; i <= 3; i++) {
-            runNetty("3.8." + i + ".Final");
+            runNetty("3.8." + i + ".Final", "netty-3.x");
         }
         for (int i = 0; i <= 9; i++) {
-            runNetty("3.9." + i + ".Final");
+            runNetty("3.9." + i + ".Final", "netty-3.x");
         }
         for (int i = 0; i <= 5; i++) {
-            runNetty("3.10." + i + ".Final");
+            runNetty("3.10." + i + ".Final", "netty-3.x");
         }
         for (int i = 0; i <= 36; i++) {
-            runNetty("4.0." + i + ".Final");
+            runNetty("4.0." + i + ".Final", "netty-4.x");
+        }
+        for (int i = 1; i <= 7; i++) {
+            runNetty("4.1.0.CR" + i, "netty-4.x");
         }
     }
 
