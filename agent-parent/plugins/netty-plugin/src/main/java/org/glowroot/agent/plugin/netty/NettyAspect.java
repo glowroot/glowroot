@@ -173,6 +173,20 @@ public class NettyAspect {
 
     static TraceEntry startAsyncTransaction(OptionalThreadContext context,
             @Nullable String methodName, @Nullable String uri, TimerName timerName) {
+        String path = getPath(uri);
+        String message;
+        if (methodName == null) {
+            message = uri;
+        } else {
+            message = methodName + " " + uri;
+        }
+        TraceEntry traceEntry =
+                context.startTransaction("Web", path, MessageSupplier.from(message), timerName);
+        context.setAsyncTransaction();
+        return traceEntry;
+    }
+
+    private static String getPath(@Nullable String uri) {
         String path;
         if (uri == null) {
             path = "";
@@ -184,15 +198,6 @@ public class NettyAspect {
                 path = uri.substring(0, index);
             }
         }
-        String message;
-        if (methodName == null) {
-            message = uri;
-        } else {
-            message = methodName + " " + uri;
-        }
-        TraceEntry traceEntry =
-                context.startTransaction("Web", path, MessageSupplier.from(message), timerName);
-        context.setAsyncTransaction();
-        return traceEntry;
+        return path;
     }
 }

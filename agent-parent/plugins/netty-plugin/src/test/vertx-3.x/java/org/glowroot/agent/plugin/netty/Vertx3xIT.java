@@ -61,6 +61,7 @@ public class Vertx3xIT {
         Trace trace = container.execute(ExecuteHttpGet.class);
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/abc");
+        assertThat(trace.getHeader().getHeadline()).isEqualTo("GET /abc?xyz=123");
     }
 
     private static int getAvailablePort() throws IOException {

@@ -59,6 +59,7 @@ public class NettyIT {
         Trace trace = container.execute(ExecuteHttpGet.class);
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/abc");
+        assertThat(trace.getHeader().getHeadline()).isEqualTo("GET /abc?xyz=123");
         assertThat(trace.getEntryCount()).isZero();
     }
 
