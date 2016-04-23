@@ -25,6 +25,7 @@ import java.util.Properties;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
@@ -43,6 +44,7 @@ import org.glowroot.server.storage.AgentDao;
 import org.glowroot.server.storage.AggregateDao;
 import org.glowroot.server.storage.ConfigRepositoryImpl;
 import org.glowroot.server.storage.GaugeValueDao;
+import org.glowroot.server.storage.RollupService;
 import org.glowroot.server.storage.ServerConfigDao;
 import org.glowroot.server.storage.TraceDao;
 import org.glowroot.server.storage.TransactionTypeDao;
@@ -63,12 +65,14 @@ public class ServerModule {
 
     private final Cluster cluster;
     private final Session session;
+    private final RollupService rollupService;
     private final GrpcServer server;
     private final UiModule uiModule;
 
     ServerModule() throws Exception {
         Cluster cluster = null;
         Session session = null;
+        RollupService rollupService = null;
         GrpcServer server = null;
         UiModule uiModule = null;
         try {
@@ -88,6 +92,8 @@ public class ServerModule {
                     cluster = Cluster.builder()
                             .addContactPoints(
                                     serverConfig.cassandraContactPoint().toArray(new String[0]))
+                            // aggressive reconnect policy seems ok since not many clients
+                            .withReconnectionPolicy(new ConstantReconnectionPolicy(1000))
                             .build();
                     session = cluster.connect();
                     break;
@@ -121,15 +127,15 @@ public class ServerModule {
             TransactionTypeDao transactionTypeDao =
                     new TransactionTypeDao(session, configRepository);
             AggregateDao aggregateDao =
-                    new AggregateDao(session, agentDao, transactionTypeDao, configRepository);
-            TraceDao traceDao =
-                    new TraceDao(session, configRepository, agentDao, transactionTypeDao);
-            GaugeValueDao gaugeValueDao = new GaugeValueDao(session, agentDao, configRepository);
+                    new AggregateDao(session, transactionTypeDao, configRepository);
+            TraceDao traceDao = new TraceDao(session, configRepository);
+            GaugeValueDao gaugeValueDao = new GaugeValueDao(session, configRepository);
             TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session, configRepository);
             RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
             AlertingService alertingService = new AlertingService(configRepository,
                     triggeredAlertDao, aggregateDao, gaugeValueDao, rollupLevelService,
                     new MailService());
+            rollupService = new RollupService(aggregateDao, gaugeValueDao, clock);
 
             server = new GrpcServer(serverConfig.grpcPort(), agentDao, aggregateDao,
                     gaugeValueDao, traceDao, alertingService);
@@ -165,6 +171,9 @@ public class ServerModule {
             if (server != null) {
                 server.close();
             }
+            if (rollupService != null) {
+                rollupService.close();
+            }
             if (session != null) {
                 session.close();
             }
@@ -175,6 +184,7 @@ public class ServerModule {
         }
         this.cluster = cluster;
         this.session = session;
+        this.rollupService = rollupService;
         this.server = server;
         this.uiModule = uiModule;
     }
@@ -182,6 +192,7 @@ public class ServerModule {
     void close() throws InterruptedException {
         uiModule.close();
         server.close();
+        rollupService.close();
         session.close();
         cluster.close();
     }

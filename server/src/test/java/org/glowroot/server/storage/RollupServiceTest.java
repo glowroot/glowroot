@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.server.util;
+package org.glowroot.server.storage;
 
-public class Checkers {
+import org.junit.Test;
 
-    private Checkers() {}
+import static org.assertj.core.api.Assertions.assertThat;
 
-    @SuppressWarnings("return.type.incompatible")
-    public static <T> /*@Initialized*/ T castInitialized(/*@UnderInitialization*/ T obj) {
-        return obj;
+public class RollupServiceTest {
+
+    @Test
+    public void test() {
+        assertThat(RollupService.millisUntilNextRollup(15000)).isEqualTo(55000);
+        assertThat(RollupService.millisUntilNextRollup(30000)).isEqualTo(40000);
+        assertThat(RollupService.millisUntilNextRollup(45000)).isEqualTo(25000);
+        assertThat(RollupService.millisUntilNextRollup(60000)).isEqualTo(10000);
     }
 }

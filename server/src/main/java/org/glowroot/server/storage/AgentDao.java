@@ -24,12 +24,14 @@ import javax.annotation.Nullable;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.google.common.base.Optional;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.primitives.Ints;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -43,11 +45,14 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginPrope
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 // TODO need to validate cannot have agentIds "A/B/C" and "A/B" since there is logic elsewhere
 // (at least in the UI) that "A/B" is only a rollup
 public class AgentDao implements AgentRepository {
+
+    private static final String WITH_LCS =
+            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
     private final Session session;
 
@@ -55,7 +60,6 @@ public class AgentDao implements AgentRepository {
     private final PreparedStatement insertConfigOnlyPS;
     private final PreparedStatement readSystemInfoPS;
     private final PreparedStatement readAgentConfigPS;
-    private final PreparedStatement updateLastCaptureTimePS;
 
     private final PreparedStatement existsRollupPS;
     private final PreparedStatement insertRollupPS;
@@ -63,27 +67,32 @@ public class AgentDao implements AgentRepository {
 
     private volatile @MonotonicNonNull ConfigRepository configRepository;
 
+    private final LoadingCache<String, Optional<AgentConfig>> cache = CacheBuilder.newBuilder()
+            .expireAfterWrite(61, SECONDS).build(new CacheLoader<String, Optional<AgentConfig>>() {
+                @Override
+                public Optional<AgentConfig> load(String agentId) throws Exception {
+                    return Optional.fromNullable(readAgentConfigInternal(agentId));
+                }
+            });
+
     public AgentDao(Session session) {
         this.session = session;
 
         session.execute("create table if not exists agent (agent_id varchar, system_info blob,"
-                + " config blob, primary key (agent_id))");
+                + " config blob, primary key (agent_id)) " + WITH_LCS);
         session.execute("create table if not exists agent_rollup (one int, agent_rollup varchar,"
-                + " leaf boolean, primary key (one, agent_rollup))");
+                + " leaf boolean, primary key (one, agent_rollup)) " + WITH_LCS);
 
-        insertPS = session.prepare("insert into agent (agent_id, system_info, config)"
-                + " values (?, ?, ?) using ttl ?");
-        insertConfigOnlyPS =
-                session.prepare("insert into agent (agent_id, config) values (?, ?) using ttl ?");
+        insertPS = session
+                .prepare("insert into agent (agent_id, system_info, config) values (?, ?, ?)");
+        insertConfigOnlyPS = session.prepare("insert into agent (agent_id, config) values (?, ?)");
         readSystemInfoPS = session.prepare("select system_info from agent where agent_id = ?");
         readAgentConfigPS = session.prepare("select config from agent where agent_id = ?");
-        updateLastCaptureTimePS =
-                session.prepare("insert into agent (agent_id) values (?) using ttl ?");
 
         existsRollupPS = session.prepare(
                 "select agent_rollup from agent_rollup where one = 1 and agent_rollup = ?");
-        insertRollupPS = session.prepare(
-                "insert into agent_rollup (one, agent_rollup, leaf) values (1, ?, ?) using ttl ?");
+        insertRollupPS = session
+                .prepare("insert into agent_rollup (one, agent_rollup, leaf) values (1, ?, ?)");
         readRollupPS = session.prepare("select agent_rollup, leaf from agent_rollup where one = 1");
     }
 
@@ -165,7 +174,6 @@ public class AgentDao implements AgentRepository {
         boundStatement.setString(i++, agentId);
         boundStatement.setBytes(i++, ByteBuffer.wrap(systemInfo.toByteArray()));
         boundStatement.setBytes(i++, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
-        boundStatement.setInt(i++, getMaxTTL());
         session.execute(boundStatement);
         // insert into agent last so readSystemInfo() and readAgentConfig() below are more likely
         // to return non-null
@@ -173,8 +181,8 @@ public class AgentDao implements AgentRepository {
         i = 0;
         boundStatement.setString(i++, agentId);
         boundStatement.setBool(i++, true);
-        boundStatement.setInt(i++, getMaxTTL());
         session.execute(boundStatement);
+        cache.invalidate(agentId);
         return updatedAgentConfig;
     }
 
@@ -197,7 +205,25 @@ public class AgentDao implements AgentRepository {
         return SystemInfo.parseFrom(ByteString.copyFrom(bytes));
     }
 
-    public @Nullable AgentConfig readAgentConfig(String agentId)
+    public @Nullable AgentConfig readAgentConfig(String agentId) {
+        Optional<AgentConfig> optional = cache.getUnchecked(agentId);
+        if (optional == null) {
+            return null;
+        }
+        return optional.orNull();
+
+    }
+
+    public void storeAgentConfig(String agentId, AgentConfig agentConfig) {
+        BoundStatement boundStatement = insertConfigOnlyPS.bind();
+        int i = 0;
+        boundStatement.setString(i++, agentId);
+        boundStatement.setBytes(i++, ByteBuffer.wrap(agentConfig.toByteArray()));
+        session.execute(boundStatement);
+        cache.invalidate(agentId);
+    }
+
+    public @Nullable AgentConfig readAgentConfigInternal(String agentId)
             throws InvalidProtocolBufferException {
         BoundStatement boundStatement = readAgentConfigPS.bind();
         boundStatement.setString(0, agentId);
@@ -213,37 +239,5 @@ public class AgentDao implements AgentRepository {
             return null;
         }
         return AgentConfig.parseFrom(ByteString.copyFrom(bytes));
-    }
-
-    public void storeAgentConfig(String agentId, AgentConfig agentConfig) {
-        BoundStatement boundStatement = insertConfigOnlyPS.bind();
-        int i = 0;
-        boundStatement.setString(i++, agentId);
-        boundStatement.setBytes(i++, ByteBuffer.wrap(agentConfig.toByteArray()));
-        boundStatement.setInt(i++, getMaxTTL());
-        session.execute(boundStatement);
-    }
-
-    ResultSetFuture updateLastCaptureTime(String agentRollup, boolean leaf) {
-        BoundStatement boundStatement = insertRollupPS.bind();
-        int i = 0;
-        boundStatement.setString(i++, agentRollup);
-        boundStatement.setBool(i++, leaf);
-        boundStatement.setInt(i++, getMaxTTL());
-        session.execute(boundStatement);
-        boundStatement = updateLastCaptureTimePS.bind();
-        i = 0;
-        boundStatement.setString(i++, agentRollup);
-        boundStatement.setInt(i++, getMaxTTL());
-        return session.executeAsync(boundStatement);
-    }
-
-    private int getMaxTTL() {
-        checkNotNull(configRepository);
-        long maxTTL = 0;
-        for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
-            maxTTL = Math.max(maxTTL, HOURS.toSeconds(expirationHours));
-        }
-        return Ints.saturatedCast(maxTTL);
     }
 }

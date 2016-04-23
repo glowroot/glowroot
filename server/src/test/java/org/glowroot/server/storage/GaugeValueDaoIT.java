@@ -49,7 +49,7 @@ public class GaugeValueDaoIT {
         ConfigRepository configRepository = new ConfigRepositoryImpl(serverConfigDao, agentDao);
         agentDao.setConfigRepository(configRepository);
         serverConfigDao.setConfigRepository(configRepository);
-        gaugeValueDao = new GaugeValueDao(session, agentDao, configRepository);
+        gaugeValueDao = new GaugeValueDao(session, configRepository);
     }
 
     @AfterClass
@@ -78,9 +78,9 @@ public class GaugeValueDaoIT {
         List<Integer> rollupExpirationHours = Lists.newArrayList(
                 ImmutableServerStorageConfig.builder().build().rollupExpirationHours());
         rollupExpirationHours.add(0, rollupExpirationHours.get(0));
-        gaugeValueDao.rollup("one", rollupExpirationHours);
-        gaugeValueDao.rollup("one", rollupExpirationHours);
-        gaugeValueDao.rollup("one", rollupExpirationHours);
+        gaugeValueDao.rollup();
+        gaugeValueDao.rollup();
+        gaugeValueDao.rollup();
 
         // check rolled-up data after rollup
         gaugeValues = gaugeValueDao.readGaugeValues("one", "the gauge:attr1", 0, 300000, 1);

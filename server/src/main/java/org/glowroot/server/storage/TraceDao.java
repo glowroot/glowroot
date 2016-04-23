@@ -35,7 +35,6 @@ import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -69,11 +68,12 @@ import static java.util.concurrent.TimeUnit.HOURS;
 
 public class TraceDao implements TraceRepository {
 
+    private static final String WITH_DTCS =
+            "with compaction = { 'class' : 'DateTieredCompactionStrategy' }";
+
     private final Session session;
     private final ConfigRepository configRepository;
-
-    private final AgentDao agentDao;
-    private final TransactionTypeDao transactionTypeDao;
+    private final TraceAttributeNameDao traceAttributeNameDao;
 
     private final PreparedStatement insertOverallSlowPoint;
     private final PreparedStatement insertTransactionSlowPoint;
@@ -95,8 +95,6 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement insertMainThreadProfile;
     private final PreparedStatement insertAuxThreadProfile;
 
-    private final PreparedStatement insertAttributeName;
-
     private final PreparedStatement readOverallSlowPoint;
     private final PreparedStatement readTransactionSlowPoint;
     private final PreparedStatement readOverallErrorPoint;
@@ -105,10 +103,10 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement readOverallErrorMessage;
     private final PreparedStatement readTransactionErrorMessage;
 
-    private final PreparedStatement readAttributeName;
-
     private final PreparedStatement readHeader;
     private final PreparedStatement readEntries;
+    private final PreparedStatement readMainThreadProfile;
+    private final PreparedStatement readAuxThreadProfile;
 
     private final PreparedStatement deletePartialOverallSlowPoint;
     private final PreparedStatement deletePartialTransactionSlowPoint;
@@ -116,64 +114,65 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement deletePartialOverallSlowCount;
     private final PreparedStatement deletePartialTransactionSlowCount;
 
-    public TraceDao(Session session, ConfigRepository configRepository, AgentDao agentDao,
-            TransactionTypeDao transactionTypeDao) {
+    public TraceDao(Session session, ConfigRepository configRepository) {
         this.session = session;
         this.configRepository = configRepository;
-        this.agentDao = agentDao;
-        this.transactionTypeDao = transactionTypeDao;
+        traceAttributeNameDao = new TraceAttributeNameDao(session, configRepository);
 
         session.execute("create table if not exists trace_tt_slow_point (agent_rollup varchar,"
                 + " transaction_type varchar, capture_time timestamp, agent_id varchar,"
                 + " trace_id varchar, duration_nanos bigint, error boolean, headline varchar,"
                 + " user varchar, attributes blob, primary key ((agent_rollup, transaction_type),"
-                + " capture_time, agent_id, trace_id))");
+                + " capture_time, agent_id, trace_id)) " + WITH_DTCS);
 
         session.execute("create table if not exists trace_tn_slow_point (agent_rollup varchar,"
                 + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
                 + " agent_id varchar, trace_id varchar, duration_nanos bigint, error boolean,"
                 + " headline varchar, user varchar, attributes blob, primary key ((agent_rollup,"
-                + " transaction_type, transaction_name), capture_time, agent_id, trace_id))");
+                + " transaction_type, transaction_name), capture_time, agent_id, trace_id)) "
+                + WITH_DTCS);
 
         session.execute("create table if not exists trace_tt_error_point (agent_rollup varchar,"
                 + " transaction_type varchar, capture_time timestamp, agent_id varchar,"
                 + " trace_id varchar, duration_nanos bigint, error_message varchar,"
                 + " headline varchar, user varchar, attributes blob, primary key ((agent_rollup,"
-                + " transaction_type), capture_time, agent_id, trace_id))");
+                + " transaction_type), capture_time, agent_id, trace_id)) " + WITH_DTCS);
 
         session.execute("create table if not exists trace_tn_error_point (agent_rollup varchar,"
                 + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
                 + " agent_id varchar, trace_id varchar, duration_nanos bigint,"
                 + " error_message varchar, headline varchar, user varchar, attributes blob,"
                 + " primary key ((agent_rollup, transaction_type, transaction_name), capture_time,"
-                + " agent_id, trace_id))");
+                + " agent_id, trace_id)) " + WITH_DTCS);
 
         session.execute("create table if not exists trace_tt_error_message (agent_rollup varchar,"
                 + " transaction_type varchar, capture_time timestamp, agent_id varchar,"
                 + " trace_id varchar, error_message varchar, primary key ((agent_rollup,"
-                + " transaction_type), capture_time, agent_id, trace_id))");
+                + " transaction_type), capture_time, agent_id, trace_id)) " + WITH_DTCS);
 
         session.execute("create table if not exists trace_tn_error_message (agent_rollup varchar,"
                 + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
                 + " agent_id varchar, trace_id varchar, error_message varchar, primary key"
                 + " ((agent_rollup, transaction_type, transaction_name), capture_time, agent_id,"
-                + " trace_id))");
+                + " trace_id)) " + WITH_DTCS);
 
         session.execute("create table if not exists trace_header (agent_id varchar,"
-                + " trace_id varchar, header blob, primary key (agent_id, trace_id))");
+                + " trace_id varchar, header blob, primary key (agent_id, trace_id)) " + WITH_DTCS);
 
         // "index" is cassandra reserved word
         session.execute("create table if not exists trace_entry (agent_id varchar,"
                 + " trace_id varchar, index_ int, depth int, start_offset_nanos bigint,"
                 + " duration_nanos bigint, active boolean, message varchar, detail blob,"
                 + " location_stack_trace blob, error blob, primary key (agent_id, trace_id,"
-                + " index_))");
+                + " index_)) " + WITH_DTCS);
 
         session.execute("create table if not exists trace_main_thread_profile (agent_id varchar,"
-                + " trace_id varchar, profile blob, primary key (agent_id, trace_id))");
+                + " trace_id varchar, profile blob, primary key (agent_id, trace_id)) "
+                + WITH_DTCS);
 
         session.execute("create table if not exists trace_aux_thread_profile (agent_id varchar,"
-                + " trace_id varchar, profile blob, primary key (agent_id, trace_id))");
+                + " trace_id varchar, profile blob, primary key (agent_id, trace_id)) "
+                + WITH_DTCS);
 
         // agent_rollup/capture_time is not necessarily unique
         // using a counter would be nice since only need sum over capture_time range
@@ -182,26 +181,24 @@ public class TraceDao implements TraceRepository {
         session.execute("create table if not exists trace_tt_slow_count (agent_rollup varchar,"
                 + " transaction_type varchar, capture_time timestamp, agent_id varchar,"
                 + " trace_id varchar, primary key ((agent_rollup, transaction_type), capture_time,"
-                + " agent_id, trace_id))");
+                + " agent_id, trace_id)) " + WITH_DTCS);
 
         session.execute("create table if not exists trace_tn_slow_count (agent_rollup varchar,"
                 + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
                 + " agent_id varchar, trace_id varchar, primary key ((agent_rollup,"
-                + " transaction_type, transaction_name), capture_time, agent_id, trace_id))");
+                + " transaction_type, transaction_name), capture_time, agent_id, trace_id)) "
+                + WITH_DTCS);
 
         session.execute("create table if not exists trace_tt_error_count (agent_rollup varchar,"
                 + " transaction_type varchar, capture_time timestamp, agent_id varchar,"
                 + " trace_id varchar, primary key ((agent_rollup, transaction_type), capture_time,"
-                + " agent_id, trace_id))");
+                + " agent_id, trace_id)) " + WITH_DTCS);
 
         session.execute("create table if not exists trace_tn_error_count (agent_rollup varchar,"
                 + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
                 + " agent_id varchar, trace_id varchar, primary key ((agent_rollup,"
-                + " transaction_type, transaction_name), capture_time, agent_id, trace_id))");
-
-        session.execute("create table if not exists trace_attribute_name (agent_rollup varchar,"
-                + " transaction_type varchar, attribute_name varchar, primary key ((agent_rollup,"
-                + " transaction_type), attribute_name))");
+                + " transaction_type, transaction_name), capture_time, agent_id, trace_id)) "
+                + WITH_DTCS);
 
         insertOverallSlowPoint = session.prepare("insert into trace_tt_slow_point (agent_rollup,"
                 + " transaction_type, capture_time, agent_id, trace_id, duration_nanos, error,"
@@ -260,9 +257,6 @@ public class TraceDao implements TraceRepository {
         insertAuxThreadProfile = session.prepare("insert into trace_aux_thread_profile"
                 + " (agent_id, trace_id, profile) values (?, ?, ?) using ttl ?");
 
-        insertAttributeName = session.prepare("insert into trace_attribute_name (agent_rollup,"
-                + " transaction_type, attribute_name) values (?, ?, ?) using ttl ?");
-
         readOverallSlowPoint = session.prepare("select agent_id, trace_id, capture_time,"
                 + " duration_nanos, error, headline, user, attributes from trace_tt_slow_point"
                 + " where agent_rollup = ? and transaction_type = ? and capture_time > ?"
@@ -291,15 +285,18 @@ public class TraceDao implements TraceRepository {
                 + " from trace_tn_error_message where agent_rollup = ? and transaction_type = ?"
                 + " and transaction_name = ? and capture_time > ? and capture_time <= ?");
 
-        readAttributeName = session.prepare("select attribute_name from trace_attribute_name"
-                + " where agent_rollup = ? and transaction_type = ?");
-
         readHeader = session
                 .prepare("select header from trace_header where agent_id = ? and trace_id = ?");
 
         readEntries = session.prepare("select depth, start_offset_nanos, duration_nanos,"
                 + " active, message, detail, location_stack_trace, error from"
                 + " trace_entry where agent_id = ? and trace_id = ?");
+
+        readMainThreadProfile = session.prepare("select profile from trace_main_thread_profile"
+                + " where agent_id = ? and trace_id = ?");
+
+        readAuxThreadProfile = session.prepare("select profile from trace_aux_thread_profile"
+                + " where agent_id = ? and trace_id = ?");
 
         deletePartialOverallSlowPoint = session.prepare("delete from trace_tt_slow_point"
                 + " where agent_rollup = ? and transaction_type = ? and capture_time = ?"
@@ -519,17 +516,9 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setInt(i++, ttl);
                 futures.add(session.executeAsync(boundStatement));
             }
-            futures.add(agentDao.updateLastCaptureTime(agentRollup, agentRollup.equals(agentId)));
-            futures.add(transactionTypeDao.updateLastCaptureTime(agentRollup,
-                    header.getTransactionType()));
             for (Trace.Attribute attributeName : attributes) {
-                BoundStatement boundStatement = insertAttributeName.bind();
-                int i = 0;
-                boundStatement.setString(i++, agentRollup);
-                boundStatement.setString(i++, header.getTransactionType());
-                boundStatement.setString(i++, attributeName.getName());
-                boundStatement.setInt(i++, ttl);
-                futures.add(session.executeAsync(boundStatement));
+                traceAttributeNameDao.maybeUpdateLastCaptureTime(agentRollup,
+                        header.getTransactionType(), attributeName.getName(), futures);
             }
         }
 
@@ -600,15 +589,7 @@ public class TraceDao implements TraceRepository {
 
     @Override
     public List<String> readTraceAttributeNames(String agentRollup, String transactionType) {
-        BoundStatement boundStatement = readAttributeName.bind();
-        boundStatement.setString(0, agentRollup);
-        boundStatement.setString(1, transactionType);
-        ResultSet results = session.execute(boundStatement);
-        List<String> attributeNames = Lists.newArrayList();
-        for (Row row : results) {
-            attributeNames.add(checkNotNull(row.getString(0)));
-        }
-        return attributeNames;
+        return traceAttributeNameDao.getTraceAttributeNames(agentRollup, transactionType);
     }
 
     @Override
@@ -779,9 +760,6 @@ public class TraceDao implements TraceRepository {
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
         ResultSet results = session.execute(boundStatement);
-        if (results.isExhausted()) {
-            return readLegacyEntries(agentId, traceId);
-        }
         List<Trace.Entry> entries = Lists.newArrayList();
         while (!results.isExhausted()) {
             Row row = results.one();
@@ -811,29 +789,13 @@ public class TraceDao implements TraceRepository {
         return entries;
     }
 
-    private List<Trace.Entry> readLegacyEntries(String agentId, String traceId) throws IOException {
-        ResultSet results;
-        try {
-            results = session.execute(
-                    "select entries_ from trace_entries where agent_id = ? and trace_id = ?",
-                    agentId, traceId);
-        } catch (Exception e) {
-            // TODO better check for table not exists
-            return ImmutableList.of();
-        }
-        Row row = results.one();
-        if (row == null) {
-            return ImmutableList.of();
-        }
-        ByteBuffer bytes = checkNotNull(row.getBytes(0));
-        return Messages.parseDelimitedFrom(bytes, Trace.Entry.parser());
-    }
-
     @Override
     public @Nullable Profile readMainThreadProfile(String agentId, String traceId)
             throws InvalidProtocolBufferException {
-        ResultSet results = session.execute("select profile from trace_main_thread_profile"
-                + " where agent_id = ? and trace_id = ?", agentId, traceId);
+        BoundStatement boundStatement = readMainThreadProfile.bind();
+        boundStatement.setString(0, agentId);
+        boundStatement.setString(1, traceId);
+        ResultSet results = session.execute(boundStatement);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -845,8 +807,10 @@ public class TraceDao implements TraceRepository {
     @Override
     public @Nullable Profile readAuxThreadProfile(String agentId, String traceId)
             throws InvalidProtocolBufferException {
-        ResultSet results = session.execute("select profile from trace_aux_thread_profile"
-                + " where agent_id = ? and trace_id = ?", agentId, traceId);
+        BoundStatement boundStatement = readAuxThreadProfile.bind();
+        boundStatement.setString(0, agentId);
+        boundStatement.setString(1, traceId);
+        ResultSet results = session.execute(boundStatement);
         Row row = results.one();
         if (row == null) {
             return null;

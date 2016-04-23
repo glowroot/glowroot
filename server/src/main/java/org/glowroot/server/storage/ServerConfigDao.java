@@ -26,20 +26,28 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.primitives.Ints;
+import com.google.common.base.Optional;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common.util.Styles;
 import org.glowroot.storage.repo.ConfigRepository;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ServerConfigDao {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerConfigDao.class);
+
+    private static final String WITH_LCS =
+            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
@@ -50,12 +58,21 @@ public class ServerConfigDao {
 
     private volatile @MonotonicNonNull ConfigRepository configRepository;
 
+    private final LoadingCache<CacheKey, Optional<Object>> cache = CacheBuilder.newBuilder()
+            .expireAfterWrite(61, SECONDS).build(new CacheLoader<CacheKey, Optional<Object>>() {
+                @Override
+                public Optional<Object> load(CacheKey key) throws Exception {
+                    return Optional.fromNullable(readInternal(key.key(), checkNotNull(key.type())));
+                }
+            });
+
     public ServerConfigDao(Session session) {
         this.session = session;
+
         session.execute("create table if not exists server_config (key varchar, value varchar,"
-                + " primary key (key))");
-        insertPS =
-                session.prepare("insert into server_config (key, value) values (?, ?) using ttl ?");
+                + " primary key (key)) " + WITH_LCS);
+
+        insertPS = session.prepare("insert into server_config (key, value) values (?, ?)");
         readPS = session.prepare("select value from server_config where key = ?");
     }
 
@@ -68,12 +85,21 @@ public class ServerConfigDao {
         int i = 0;
         boundStatement.setString(i++, key);
         boundStatement.setString(i++, mapper.writeValueAsString(config));
-        boundStatement.setInt(i++, getMaxTTL());
         session.execute(boundStatement);
+        cache.invalidate(ImmutableCacheKey.of(key, null));
     }
 
     @Nullable
     <T> T read(String key, Class<T> clazz) {
+        Optional<Object> optional = cache.getUnchecked(ImmutableCacheKey.of(key, clazz));
+        if (optional == null) {
+            return null;
+        }
+        return clazz.cast(optional.orNull());
+    }
+
+    @Nullable
+    private <T> T readInternal(String key, Class<T> clazz) {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.bind(key);
         ResultSet results = session.execute(boundStatement);
@@ -93,12 +119,16 @@ public class ServerConfigDao {
         }
     }
 
-    private int getMaxTTL() {
-        checkNotNull(configRepository);
-        long maxTTL = 0;
-        for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
-            maxTTL = Math.max(maxTTL, HOURS.toSeconds(expirationHours));
-        }
-        return Ints.saturatedCast(maxTTL);
+    @Value.Immutable
+    @Styles.AllParameters
+    interface CacheKey {
+
+        String key();
+
+        // type is marked auxiliary so that it won't be included in hashCode or equals
+        // which is needed so that cache.invalidate() can be performed using the key alone
+        @Value.Auxiliary
+        @Nullable
+        Class<?> type();
     }
 }

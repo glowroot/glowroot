@@ -43,7 +43,6 @@ import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.Result;
 import org.glowroot.common.model.TransactionErrorSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector;
-import org.glowroot.storage.config.ImmutableServerStorageConfig;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.QueriesByType;
@@ -74,7 +73,7 @@ public class AggregateDaoIT {
         agentDao.setConfigRepository(configRepository);
         serverConfigDao.setConfigRepository(configRepository);
         TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session, configRepository);
-        aggregateDao = new AggregateDao(session, agentDao, transactionTypeDao, configRepository);
+        aggregateDao = new AggregateDao(session, transactionTypeDao, configRepository);
     }
 
     @AfterClass
@@ -175,12 +174,10 @@ public class AggregateDaoIT {
         assertThat(queriesByType.get(0).getQuery(0).getExecutionCount()).isEqualTo(4);
 
         // rollup
-        List<Integer> rollupExpirationHours =
-                ImmutableServerStorageConfig.builder().build().rollupExpirationHours();
-        aggregateDao.rollup("one", rollupExpirationHours);
-        aggregateDao.rollup("one", rollupExpirationHours);
-        aggregateDao.rollup("one", rollupExpirationHours);
-        aggregateDao.rollup("one", rollupExpirationHours);
+        aggregateDao.rollup();
+        aggregateDao.rollup();
+        aggregateDao.rollup();
+        aggregateDao.rollup();
 
         // check rolled-up data after rollup
         overallQuery = ImmutableOverallQuery.builder()

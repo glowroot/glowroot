@@ -28,6 +28,9 @@ import static java.util.concurrent.TimeUnit.HOURS;
 
 public class TriggeredAlertDao implements TriggeredAlertRepository {
 
+    private static final String WITH_LCS =
+            "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
+
     private final Session session;
     private final ConfigRepository configRepository;
 
@@ -41,7 +44,7 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
 
         session.execute("create table if not exists triggered_alert (agent_rollup varchar,"
                 + " alert_config_version varchar, primary key (agent_rollup,"
-                + " alert_config_version))");
+                + " alert_config_version)) " + WITH_LCS);
 
         insertPS = session.prepare("insert into triggered_alert (agent_rollup,"
                 + " alert_config_version) values (?, ?) using ttl ?");
