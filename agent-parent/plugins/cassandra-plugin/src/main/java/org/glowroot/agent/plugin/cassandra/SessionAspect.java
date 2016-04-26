@@ -153,9 +153,20 @@ public class SessionAspect {
                 asyncQueryEntry.end();
                 return;
             }
-            // TODO it is possible for race condition here if ResultSetFuture gets completed prior
-            // to @OnReturn, then end() will never be called on AsyncQueryEntry
+            // to prevent race condition, setting async query entry before getting completed status,
+            // and the converse is done when getting async query entry
+            // ok if end() happens to get called twice
             future.glowroot$setAsyncQueryEntry(asyncQueryEntry);
+            if (future.glowroot$isCompleted()) {
+                // ResultSetFuture completed really fast, prior to @OnReturn
+                Throwable exception = future.glowroot$getException();
+                if (exception == null) {
+                    asyncQueryEntry.end();
+                } else {
+                    asyncQueryEntry.endWithError(exception);
+                }
+                return;
+            }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,

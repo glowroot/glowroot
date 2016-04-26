@@ -38,7 +38,29 @@ public class ResultSetFutureAspect {
     @Mixin("com.datastax.driver.core.ResultSetFuture")
     public static class ResultSetFutureImpl implements ResultSetFutureMixin {
 
+        private volatile boolean glowroot$completed;
+        private volatile @Nullable Throwable glowroot$exception;
         private volatile @Nullable AsyncQueryEntry glowroot$asyncQueryEntry;
+
+        @Override
+        public void glowroot$setCompleted() {
+            glowroot$completed = true;
+        }
+
+        @Override
+        public boolean glowroot$isCompleted() {
+            return glowroot$completed;
+        }
+
+        @Override
+        public void glowroot$setException(Throwable exception) {
+            glowroot$exception = exception;
+        }
+
+        @Override
+        public @Nullable Throwable glowroot$getException() {
+            return glowroot$exception;
+        }
 
         @Override
         public @Nullable AsyncQueryEntry glowroot$getAsyncQueryEntry() {
@@ -49,26 +71,28 @@ public class ResultSetFutureAspect {
         public void glowroot$setAsyncQueryEntry(@Nullable AsyncQueryEntry asyncQueryEntry) {
             this.glowroot$asyncQueryEntry = asyncQueryEntry;
         }
-
-        @Override
-        public boolean glowroot$hasAsyncQueryEntry() {
-            return glowroot$asyncQueryEntry != null;
-        }
     }
 
     // the method names are verbose to avoid conflict since they will become methods in all classes
     // that extend com.datastax.driver.core.ResultSetFuture
     public interface ResultSetFutureMixin {
 
+        void glowroot$setCompleted();
+
+        boolean glowroot$isCompleted();
+
+        void glowroot$setException(Throwable t);
+
+        @Nullable
+        Throwable glowroot$getException();
+
         @Nullable
         AsyncQueryEntry glowroot$getAsyncQueryEntry();
 
         void glowroot$setAsyncQueryEntry(@Nullable AsyncQueryEntry asyncQueryEntry);
-
-        boolean glowroot$hasAsyncQueryEntry();
     }
 
-    // this is the main thread waiting on async result
+    // waiting on async result
     @Pointcut(className = "com.datastax.driver.core.ResultSetFuture",
             methodDeclaringClassName = "java.util.concurrent.Future", methodName = "get",
             methodParameterTypes = {".."}, supersedes = "wait on future")
@@ -100,7 +124,7 @@ public class ResultSetFutureAspect {
         }
     }
 
-    // this is the main thread waiting on async result
+    // waiting on async result
     @Pointcut(className = "com.datastax.driver.core.ResultSetFuture",
             methodName = "getUninterruptibly", methodParameterTypes = {".."})
     public static class FutureGetUninterruptiblyAdvice {
@@ -124,17 +148,23 @@ public class ResultSetFutureAspect {
             methodDeclaringClassName = "com.google.common.util.concurrent.AbstractFuture",
             methodName = "setException", methodParameterTypes = {"java.lang.Throwable"})
     public static class FutureSetExceptionAdvice {
-        @OnReturn
-        public static void onReturn(@BindReceiver ResultSetFutureMixin resultSetFuture,
+        // using @OnBefore instead of @OnReturn to ensure that async trace entry is ended prior to
+        // an overall transaction that may be waiting on this future has a chance to end
+        @OnBefore
+        public static void onBefore(@BindReceiver ResultSetFutureMixin resultSetFuture,
                 @BindParameter @Nullable Throwable t) {
             if (t == null) {
                 return;
             }
+            // to prevent race condition, setting completed/exception status before getting async
+            // query entry, and the converse is done when setting async query entry
+            // ok if end() happens to get called twice
+            resultSetFuture.glowroot$setCompleted();
+            resultSetFuture.glowroot$setException(t);
             AsyncQueryEntry asyncQueryEntry = resultSetFuture.glowroot$getAsyncQueryEntry();
-            if (asyncQueryEntry == null) {
-                return;
+            if (asyncQueryEntry != null) {
+                asyncQueryEntry.endWithError(t);
             }
-            asyncQueryEntry.endWithError(t);
         }
     }
 
@@ -142,13 +172,18 @@ public class ResultSetFutureAspect {
             methodDeclaringClassName = "com.google.common.util.concurrent.AbstractFuture",
             methodName = "set", methodParameterTypes = {"java.lang.Object"})
     public static class FutureSetAdvice {
-        @OnReturn
-        public static void onReturn(@BindReceiver ResultSetFutureMixin resultSetFuture) {
+        // using @OnBefore instead of @OnReturn to ensure that async trace entry is ended prior to
+        // an overall transaction that may be waiting on this future has a chance to end
+        @OnBefore
+        public static void onBefore(@BindReceiver ResultSetFutureMixin resultSetFuture) {
+            // to prevent race condition, setting completed status before getting async query entry,
+            // and the converse is done when setting async query entry
+            // ok if end() happens to get called twice
+            resultSetFuture.glowroot$setCompleted();
             AsyncQueryEntry asyncQueryEntry = resultSetFuture.glowroot$getAsyncQueryEntry();
-            if (asyncQueryEntry == null) {
-                return;
+            if (asyncQueryEntry != null) {
+                asyncQueryEntry.end();
             }
-            asyncQueryEntry.end();
         }
     }
 }
