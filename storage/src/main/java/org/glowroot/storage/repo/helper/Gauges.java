@@ -58,6 +58,10 @@ public class Gauges {
                 GROUPING_PREFIX + "2"));
         patterns.add(
                 new UnitPattern("java.lang:type=Compilation:TotalCompilationTime", "milliseconds"));
+        patterns.add(new UnitPattern("sun.management:type=HotspotRuntime:SafepointSyncTime",
+                "milliseconds"));
+        patterns.add(new UnitPattern("sun.management:type=HotspotRuntime:TotalSafepointTime",
+                "milliseconds"));
         unitPatterns = ImmutableList.copyOf(patterns);
     }
 
