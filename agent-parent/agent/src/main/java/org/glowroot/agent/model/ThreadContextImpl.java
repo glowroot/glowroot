@@ -1016,6 +1016,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
         // only used by transaction thread
         private @MonotonicNonNull TimerImpl extendedTimer;
 
+        private boolean initialComplete;
+
         public DummyTraceEntryOrQuery(TimerImpl syncTimer, @Nullable AsyncTimerImpl asyncTimer,
                 long startTick, MessageSupplier messageSupplier, @Nullable QueryData queryData,
                 long queryExecutionCount) {
@@ -1060,6 +1062,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
 
         private void endWithErrorInternal(@Nullable String message, @Nullable Throwable t) {
+            if (initialComplete) {
+                // this guards against end*() being called multiple times on async trace entries
+                return;
+            }
             long endTick = ticker.read();
             endInternal(endTick);
             if (transaction.allowAnotherErrorEntry()) {
@@ -1082,12 +1088,17 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
 
         private void endInternal(long endTick) {
+            if (initialComplete) {
+                // this guards against end*() being called multiple times on async trace entries
+                return;
+            }
             if (asyncTimer == null) {
                 syncTimer.end(endTick);
             } else {
                 asyncTimer.end(endTick);
             }
             endQueryData(endTick);
+            initialComplete = true;
         }
 
         @Override
