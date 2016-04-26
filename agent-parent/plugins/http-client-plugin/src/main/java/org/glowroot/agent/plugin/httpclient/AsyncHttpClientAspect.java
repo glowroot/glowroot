@@ -185,12 +185,13 @@ public class AsyncHttpClientAspect {
             return !ignoreFutureGet.get();
         }
         @OnBefore
-        public static @Nullable Timer onBefore(@BindReceiver ListenableFutureMixin future) {
+        public static @Nullable Timer onBefore(ThreadContext threadContext,
+                @BindReceiver ListenableFutureMixin future) {
             AsyncTraceEntry asyncTraceEntry = future.glowroot$getAsyncTraceEntry();
             if (asyncTraceEntry == null) {
                 return null;
             }
-            return asyncTraceEntry.extendSyncTimer();
+            return asyncTraceEntry.extendSyncTimer(threadContext);
         }
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable Timer syncTimer) {

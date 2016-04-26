@@ -28,7 +28,9 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
 import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.Timer;
+import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
 import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.wire.api.model.Proto;
@@ -361,7 +363,10 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
     }
 
     @Override
-    public Timer extendSyncTimer() {
+    public Timer extendSyncTimer(ThreadContext currThreadContext) {
+        if (currThreadContext != threadContext) {
+            return NopTimer.INSTANCE;
+        }
         // syncTimer is only null for trace entries added using addEntryEntry(), and these trace
         // entries are not returned from plugin api so no way for extendSyncTimer() to be called
         checkNotNull(syncTimer);

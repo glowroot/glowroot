@@ -24,5 +24,7 @@ public interface AsyncTraceEntry extends TraceEntry {
     void stopSyncTimer();
 
     // extend main thread timer without extending trace entry
-    Timer extendSyncTimer();
+    // only if this async trace entry is under currThreadContext
+    // otherwise returns a no-op Timer
+    Timer extendSyncTimer(ThreadContext currThreadContext);
 }

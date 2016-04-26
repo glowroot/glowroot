@@ -24,6 +24,7 @@ import org.glowroot.agent.plugin.api.AsyncTraceEntry;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.QueryEntry;
+import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
@@ -110,7 +111,7 @@ public class NopTransactionService {
         public void stopSyncTimer() {}
 
         @Override
-        public Timer extendSyncTimer() {
+        public Timer extendSyncTimer(ThreadContext currThreadContext) {
             return NopTimer.INSTANCE;
         }
     }

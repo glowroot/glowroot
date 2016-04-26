@@ -48,6 +48,7 @@ import org.glowroot.agent.plugin.api.AuxThreadContext;
 import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.QueryEntry;
+import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
@@ -1122,7 +1123,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
 
         @Override
-        public Timer extendSyncTimer() {
+        public Timer extendSyncTimer(ThreadContext currThreadContext) {
+            if (currThreadContext != this) {
+                return NopTimer.INSTANCE;
+            }
             return syncTimer.extend();
         }
     }

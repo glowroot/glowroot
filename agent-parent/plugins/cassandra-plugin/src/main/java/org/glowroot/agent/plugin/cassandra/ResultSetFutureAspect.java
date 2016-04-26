@@ -18,6 +18,7 @@ package org.glowroot.agent.plugin.cassandra;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
+import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
@@ -73,12 +74,13 @@ public class ResultSetFutureAspect {
             methodParameterTypes = {".."}, supersedes = "wait on future")
     public static class FutureGetAdvice {
         @OnBefore
-        public static @Nullable Timer onBefore(@BindReceiver ResultSetFutureMixin resultSetFuture) {
+        public static @Nullable Timer onBefore(ThreadContext threadContext,
+                @BindReceiver ResultSetFutureMixin resultSetFuture) {
             AsyncQueryEntry asyncQueryEntry = resultSetFuture.glowroot$getAsyncQueryEntry();
             if (asyncQueryEntry == null) {
                 return null;
             }
-            return asyncQueryEntry.extendSyncTimer();
+            return asyncQueryEntry.extendSyncTimer(threadContext);
         }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable ResultSet resultSet,
@@ -103,8 +105,9 @@ public class ResultSetFutureAspect {
             methodName = "getUninterruptibly", methodParameterTypes = {".."})
     public static class FutureGetUninterruptiblyAdvice {
         @OnBefore
-        public static @Nullable Timer onBefore(@BindReceiver ResultSetFutureMixin resultSetFuture) {
-            return FutureGetAdvice.onBefore(resultSetFuture);
+        public static @Nullable Timer onBefore(ThreadContext threadContext,
+                @BindReceiver ResultSetFutureMixin resultSetFuture) {
+            return FutureGetAdvice.onBefore(threadContext, resultSetFuture);
         }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable ResultSet resultSet,
