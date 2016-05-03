@@ -19,12 +19,13 @@ import java.lang.management.ThreadInfo;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.HashMultimap;
@@ -33,6 +34,7 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
+import com.google.common.io.BaseEncoding;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +74,9 @@ public class Transaction {
     // this is just to limit memory (and also to limit display size of trace)
     private static final long ATTRIBUTE_VALUES_PER_KEY_LIMIT = 1000;
 
-    private volatile @Nullable UUID uuid;
+    private static final Random random = new Random();
+
+    private volatile @Nullable String traceId;
 
     private final long startTime;
     private final long startTick;
@@ -182,18 +186,18 @@ public class Transaction {
     }
 
     public String getTraceId() {
-        if (uuid == null) {
-            // double-checked locking works here because uuid is volatile
+        if (traceId == null) {
+            // double-checked locking works here because traceId is volatile
             //
             // synchronized on "this" as a micro-optimization just so don't need to create an empty
             // object to lock on
             synchronized (this) {
-                if (uuid == null) {
-                    uuid = UUID.randomUUID();
+                if (traceId == null) {
+                    traceId = buildTraceId(startTime);
                 }
             }
         }
-        return uuid.toString();
+        return traceId;
     }
 
     public long getStartTick() {
@@ -575,6 +579,20 @@ public class Transaction {
     void memoryBarrierReadWrite() {
         memoryBarrierRead();
         memoryBarrierWrite();
+    }
+
+    @VisibleForTesting
+    static String buildTraceId(long startTime) {
+        byte[] bytes = new byte[10];
+        random.nextBytes(bytes);
+        // lower 6 bytes of current time will wrap only every 8925 years
+        return lowerSixBytesHex(startTime) + BaseEncoding.base16().encode(bytes);
+    }
+
+    @VisibleForTesting
+    static String lowerSixBytesHex(long startTime) {
+        long mask = 1L << 48;
+        return Long.toHexString(mask | (startTime & (mask - 1))).substring(1);
     }
 
     public static interface CompletionCallback {
