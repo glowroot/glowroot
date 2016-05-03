@@ -24,9 +24,9 @@ import org.glowroot.common.util.Versions;
 @Value.Immutable
 public abstract class FatStorageConfig implements StorageConfig {
 
-    // 2 days, 2 weeks, 2 months, 1 year
+    // 3 days, 2 weeks, 3 months, 3 months
     private static final ImmutableList<Integer> DEFAULT_ROLLUP_EXPIRATION_HOURS =
-            ImmutableList.of(24 * 2, 24 * 14, 24 * 60, 24 * 365);
+            ImmutableList.of(24 * 3, 24 * 14, 24 * 90, 24 * 90);
 
     private static final ImmutableList<Integer> DEFAULT_CAPPED_DATABASE_SIZES_MB =
             ImmutableList.of(500, 500, 500, 500);

@@ -24,9 +24,9 @@ import org.glowroot.common.util.Versions;
 @Value.Immutable
 public abstract class ServerStorageConfig implements StorageConfig {
 
-    // 2 days, 2 weeks, 2 months, 1 year
+    // 3 days, 2 weeks, 3 months, 2 years
     private static final ImmutableList<Integer> DEFAULT_ROLLUP_EXPIRATION_HOURS =
-            ImmutableList.of(24 * 2, 24 * 14, 24 * 60, 24 * 365);
+            ImmutableList.of(24 * 3, 24 * 14, 24 * 90, 24 * 365 * 2);
 
     // TODO revisit this comment
     //
@@ -42,8 +42,8 @@ public abstract class ServerStorageConfig implements StorageConfig {
     @Override
     @Value.Default
     public int traceExpirationHours() {
-        // 2 months
-        return 24 * 60;
+        // 2 weeks
+        return 24 * 14;
     }
 
     @Value.Derived

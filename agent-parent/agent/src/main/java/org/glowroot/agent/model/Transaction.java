@@ -298,8 +298,7 @@ public class Transaction {
     public boolean allowAnotherErrorEntry() {
         // use higher entry limit when adding errors, but still need some kind of cap
         return entryLimitCounter++ < maxTraceEntriesPerTransaction
-                || extraErrorEntryLimitCounter++ < 2
-                        * maxTraceEntriesPerTransaction;
+                || extraErrorEntryLimitCounter++ < maxTraceEntriesPerTransaction;
     }
 
     public boolean allowAnotherAggregateQuery() {
