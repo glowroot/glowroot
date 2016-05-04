@@ -319,13 +319,22 @@ public class TraceDao implements TraceRepository {
     @Override
     public void collect(String agentId, Trace trace) throws Exception {
         String traceId = trace.getId();
+        Trace.Header priorHeader = readHeader(agentId, traceId);
+        Trace.Header header = trace.getHeader();
+
         // TEMPORARY UNTIL ROLL OUT AGENT 0.9.1
         traceId = traceId.replaceAll("-", "");
         traceId = traceId.substring(traceId.length() - 20);
-        traceId = lowerSixBytesHex(trace.getHeader().getStartTime()) + traceId;
+        traceId = lowerSixBytesHex(header.getStartTime()) + traceId;
         // END TEMPORARY
-        Trace.Header priorHeader = readHeader(agentId, traceId);
-        Trace.Header header = trace.getHeader();
+
+        // TEMPORARY UNTIL ROLL OUT AGENT 0.9.0
+        if (header.getTransactionType().equals("Servlet")) {
+            header = Trace.Header.newBuilder(header)
+                    .setTransactionType("Web")
+                    .build();
+        }
+        // END TEMPORARY
 
         // unlike aggregates and gauge values, traces can get written to server rollups immediately
         List<String> agentRollups = AgentRollups.getAgentRollups(agentId);
@@ -527,7 +536,7 @@ public class TraceDao implements TraceRepository {
         int i = 0;
         boundStatement.setString(i++, agentId);
         boundStatement.setString(i++, traceId);
-        boundStatement.setBytes(i++, ByteBuffer.wrap(trace.getHeader().toByteArray()));
+        boundStatement.setBytes(i++, ByteBuffer.wrap(header.toByteArray()));
         boundStatement.setInt(i++, ttl);
         futures.add(session.executeAsync(boundStatement));
 

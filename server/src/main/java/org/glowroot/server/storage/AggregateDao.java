@@ -299,6 +299,11 @@ public class AggregateDao implements AggregateRepository {
         List<ResultSetFuture> futures = Lists.newArrayList();
         for (AggregatesByType aggregatesByType : aggregatesByTypeList) {
             String transactionType = aggregatesByType.getTransactionType();
+            // TEMPORARY UNTIL ROLL OUT AGENT 0.9.0
+            if (transactionType.equals("Servlet")) {
+                transactionType = "Web";
+            }
+            // END TEMPORARY
             Aggregate overallAggregate = aggregatesByType.getOverallAggregate();
             futures.addAll(storeOverallAggregate(agentId, transactionType, captureTime,
                     overallAggregate, ttls.get(0)));
@@ -316,6 +321,11 @@ public class AggregateDao implements AggregateRepository {
             @SuppressWarnings("assignment.type.incompatible")
             Set<String> transactionTypes = aggregatesByTypeList.stream()
                     .map(AggregatesByType::getTransactionType).collect(Collectors.toSet());
+            // TEMPORARY UNTIL ROLL OUT AGENT 0.9.0
+            if (transactionTypes.remove("Servlet")) {
+                transactionTypes.add("Web");
+            }
+            // END TEMPORARY
             long intervalMillis = rollupConfigs.get(i).intervalMillis();
             long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, intervalMillis);
             BoundStatement boundStatement = insertNeedsRollup.get(i - 1).bind();
