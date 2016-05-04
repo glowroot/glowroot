@@ -320,7 +320,7 @@ glowroot.factory('charts', [
     }
 
     function renderTooltipHtml(from, to, transactionCount, dataIndex, highlightSeriesIndex, plot, display,
-                               headerSuffix) {
+                               headerSuffix, nonStacked) {
       function smartFormat(millis) {
         if (millis % 60000 === 0) {
           return moment(millis).format('LT');
@@ -353,7 +353,16 @@ glowroot.factory('charts', [
       var displayText;
       for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
         dataSeries = plotData[seriesIndex];
-        if (dataSeries.data[dataIndex]) {
+        if (nonStacked) {
+          // dataIndex don't line up since non-stacked
+          displayText = display(undefined, dataSeries.label);
+          if (displayText === 'no data') {
+            // this continue really helps usability with live rollup tooltip when live rollups are over 60 seconds apart
+            // (see 60 second limit in GaugeValueJsonService.syncManualRollupCaptureTimes())
+            continue;
+          }
+          found = true;
+        } else if (dataSeries.data[dataIndex]) {
           value = dataSeries.data[dataIndex][1];
           found = true;
           displayText = display(value, dataSeries.label);

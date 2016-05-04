@@ -503,8 +503,11 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           return charts.renderTooltipHtml(from, to, undefined, flotItem.dataIndex, flotItem.seriesIndex,
               chartState.plot, function (value, label) {
                 var nonScaledValue = yvalMaps[label][xval];
+                if (nonScaledValue === undefined) {
+                  return 'no data';
+                }
                 return displaySixDigitsOfPrecision(nonScaledValue) + gaugeUnits[label];
-              }, ' (average value over this interval)');
+              }, ' (average value over this interval)', true);
         }
       }
     };

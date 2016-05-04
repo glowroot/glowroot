@@ -21,7 +21,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLongArray;
 
 import com.google.common.base.Joiner;
@@ -191,16 +190,9 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     private void rollup(long lastRollupTime, long safeRollupTime, long fixedIntervalMillis,
             int toRollupLevel, int fromRollupLevel) throws Exception {
-        // TODO handle when offset is different for lastRollupTime and safeRollupTime?
-        int offsetMillis = TimeZone.getDefault().getOffset(safeRollupTime);
         // need ".0" to force double result
-        String captureTimeSql = castUntainted("ceil((capture_time + " + offsetMillis + ") / "
-                + fixedIntervalMillis + ".0) * " + fixedIntervalMillis + " - " + offsetMillis);
-        rollup(lastRollupTime, safeRollupTime, captureTimeSql, toRollupLevel, fromRollupLevel);
-    }
-
-    private void rollup(long lastRollupTime, long safeRollupTime, @Untainted String captureTimeSql,
-            int toRollupLevel, int fromRollupLevel) throws Exception {
+        String captureTimeSql = castUntainted(
+                "ceil(capture_time / " + fixedIntervalMillis + ".0) * " + fixedIntervalMillis);
         dataSource.update("merge into gauge_value_rollup_" + castUntainted(toRollupLevel)
                 + " (gauge_id, capture_time, value, weight) key (gauge_id, capture_time)"
                 + " select gauge_id, " + captureTimeSql + " ceil_capture_time,"

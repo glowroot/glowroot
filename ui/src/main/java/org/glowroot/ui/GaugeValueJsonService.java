@@ -16,11 +16,14 @@
 package org.glowroot.ui;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
@@ -32,6 +35,8 @@ import org.glowroot.storage.repo.GaugeValueRepository.Gauge;
 import org.glowroot.storage.repo.Utils;
 import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonService
 class GaugeValueJsonService {
@@ -65,11 +70,18 @@ class GaugeValueJsonService {
         long revisedFrom = request.from() - intervalMillis;
         long revisedTo = request.to() + intervalMillis;
 
-        List<DataSeries> dataSeriesList = Lists.newArrayList();
+        Map<String, List<GaugeValue>> map = Maps.newHashMap();
         for (String gaugeName : request.gaugeNames()) {
-            List<GaugeValue> gaugeValues = getGaugeValues(request.agentRollup(), revisedFrom,
-                    revisedTo, gaugeName, rollupLevel);
-            dataSeriesList.add(convertToDataSeriesWithGaps(gaugeName, gaugeValues, gapMillis));
+            map.put(gaugeName, getGaugeValues(request.agentRollup(), revisedFrom, revisedTo,
+                    gaugeName, rollupLevel));
+        }
+        if (rollupLevel != 0) {
+            syncManualRollupCaptureTimes(map, rollupLevel);
+        }
+        List<DataSeries> dataSeriesList = Lists.newArrayList();
+        for (Entry<String, List<GaugeValue>> entry : map.entrySet()) {
+            dataSeriesList
+                    .add(convertToDataSeriesWithGaps(entry.getKey(), entry.getValue(), gapMillis));
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -147,6 +159,50 @@ class GaugeValueJsonService {
                     .build());
         }
         return rolledUpGaugeValues;
+    }
+
+    private void syncManualRollupCaptureTimes(Map<String, List<GaugeValue>> map, int rollupLevel) {
+        long fixedIntervalMillis =
+                configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
+        Map<String, Long> manualRollupCaptureTimes = Maps.newHashMap();
+        long maxCaptureTime = Long.MIN_VALUE;
+        for (Entry<String, List<GaugeValue>> entry : map.entrySet()) {
+            List<GaugeValue> gaugeValues = entry.getValue();
+            if (gaugeValues.isEmpty()) {
+                continue;
+            }
+            GaugeValue lastGaugeValue = gaugeValues.get(gaugeValues.size() - 1);
+            long lastCaptureTime = lastGaugeValue.getCaptureTime();
+            maxCaptureTime = Math.max(maxCaptureTime, lastCaptureTime);
+            if (lastCaptureTime % fixedIntervalMillis != 0) {
+                manualRollupCaptureTimes.put(entry.getKey(), lastCaptureTime);
+            }
+        }
+        if (maxCaptureTime == Long.MIN_VALUE) {
+            // nothing to sync
+            return;
+        }
+        long maxRollupTime = Utils.getNextRollupTime(maxCaptureTime, fixedIntervalMillis);
+        long maxDiffToSync = Math.min(fixedIntervalMillis / 5, 60000);
+        for (Entry<String, Long> entry : manualRollupCaptureTimes.entrySet()) {
+            Long captureTime = entry.getValue();
+            if (Utils.getNextRollupTime(captureTime, fixedIntervalMillis) != maxRollupTime) {
+                continue;
+            }
+            if (maxCaptureTime - captureTime > maxDiffToSync) {
+                // only sync up times that are close to each other
+                continue;
+            }
+            String gaugeName = entry.getKey();
+            List<GaugeValue> gaugeValues = checkNotNull(map.get(gaugeName));
+            // make copy in case ImmutableList
+            gaugeValues = Lists.newArrayList(gaugeValues);
+            GaugeValue lastGaugeValue = gaugeValues.get(gaugeValues.size() - 1);
+            gaugeValues.set(gaugeValues.size() - 1, GaugeValue.newBuilder(lastGaugeValue)
+                    .setCaptureTime(maxCaptureTime)
+                    .build());
+            map.put(gaugeName, gaugeValues);
+        }
     }
 
     private static DataSeries convertToDataSeriesWithGaps(String dataSeriesName,
