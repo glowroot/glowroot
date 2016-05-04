@@ -335,17 +335,18 @@ class TransactionCommonService {
                 configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
         List<OverviewAggregate> rolledUpOverviewAggregates = Lists.newArrayList();
         MutableAggregate currMergedAggregate = new MutableAggregate(0, 0);
-        long currRollupTime = Long.MIN_VALUE;
+        long currRollupCaptureTime = Long.MIN_VALUE;
         long maxCaptureTime = Long.MIN_VALUE;
         for (OverviewAggregate nonRolledUpOverviewAggregate : orderedNonRolledUpOverviewAggregates) {
             maxCaptureTime = nonRolledUpOverviewAggregate.captureTime();
-            long rollupTime = Utils.getNextRollupTime(maxCaptureTime, fixedIntervalMillis);
-            if (rollupTime != currRollupTime && !currMergedAggregate.isEmpty()) {
+            long rollupCaptureTime =
+                    Utils.getRollupCaptureTime(maxCaptureTime, fixedIntervalMillis);
+            if (rollupCaptureTime != currRollupCaptureTime && !currMergedAggregate.isEmpty()) {
                 rolledUpOverviewAggregates
-                        .add(currMergedAggregate.toOverviewAggregate(currRollupTime));
+                        .add(currMergedAggregate.toOverviewAggregate(currRollupCaptureTime));
                 currMergedAggregate = new MutableAggregate(0, 0);
             }
-            currRollupTime = rollupTime;
+            currRollupCaptureTime = rollupCaptureTime;
             currMergedAggregate
                     .addTotalDurationNanos(nonRolledUpOverviewAggregate.totalDurationNanos());
             currMergedAggregate
@@ -374,17 +375,18 @@ class TransactionCommonService {
                 configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
         List<PercentileAggregate> rolledUpPercentileAggregates = Lists.newArrayList();
         MutableAggregate currMergedAggregate = new MutableAggregate(0, 0);
-        long currRollupTime = Long.MIN_VALUE;
+        long currRollupCaptureTime = Long.MIN_VALUE;
         long maxCaptureTime = Long.MIN_VALUE;
         for (PercentileAggregate nonRolledUpPercentileAggregate : orderedNonRolledUpPercentileAggregates) {
             maxCaptureTime = nonRolledUpPercentileAggregate.captureTime();
-            long rollupTime = Utils.getNextRollupTime(maxCaptureTime, fixedIntervalMillis);
-            if (rollupTime != currRollupTime && !currMergedAggregate.isEmpty()) {
+            long rollupCaptureTime =
+                    Utils.getRollupCaptureTime(maxCaptureTime, fixedIntervalMillis);
+            if (rollupCaptureTime != currRollupCaptureTime && !currMergedAggregate.isEmpty()) {
                 rolledUpPercentileAggregates
-                        .add(currMergedAggregate.toPercentileAggregate(currRollupTime));
+                        .add(currMergedAggregate.toPercentileAggregate(currRollupCaptureTime));
                 currMergedAggregate = new MutableAggregate(0, 0);
             }
-            currRollupTime = rollupTime;
+            currRollupCaptureTime = rollupCaptureTime;
             currMergedAggregate
                     .addTotalDurationNanos(nonRolledUpPercentileAggregate.totalDurationNanos());
             currMergedAggregate
@@ -407,17 +409,18 @@ class TransactionCommonService {
                 configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
         List<ThroughputAggregate> rolledUpThroughputAggregates = Lists.newArrayList();
         long currTransactionCount = 0;
-        long currRollupTime = Long.MIN_VALUE;
+        long currRollupCaptureTime = Long.MIN_VALUE;
         long maxCaptureTime = Long.MIN_VALUE;
         for (ThroughputAggregate nonRolledUpThroughputAggregate : orderedNonRolledUpThroughputAggregates) {
             maxCaptureTime = nonRolledUpThroughputAggregate.captureTime();
-            long rollupTime = Utils.getNextRollupTime(maxCaptureTime, fixedIntervalMillis);
-            if (rollupTime != currRollupTime && currTransactionCount > 0) {
+            long rollupCaptureTime =
+                    Utils.getRollupCaptureTime(maxCaptureTime, fixedIntervalMillis);
+            if (rollupCaptureTime != currRollupCaptureTime && currTransactionCount > 0) {
                 rolledUpThroughputAggregates
-                        .add(ImmutableThroughputAggregate.of(currRollupTime, currTransactionCount));
+                        .add(ImmutableThroughputAggregate.of(currRollupCaptureTime, currTransactionCount));
                 currTransactionCount = 0;
             }
-            currRollupTime = rollupTime;
+            currRollupCaptureTime = rollupCaptureTime;
             currTransactionCount += nonRolledUpThroughputAggregate.transactionCount();
         }
         if (currTransactionCount > 0) {

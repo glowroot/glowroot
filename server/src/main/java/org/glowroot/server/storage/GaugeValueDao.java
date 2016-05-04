@@ -43,6 +43,7 @@ import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
 import org.glowroot.storage.repo.GaugeValueRepository;
+import org.glowroot.storage.repo.Utils;
 import org.glowroot.storage.repo.helper.Gauges;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
@@ -265,8 +266,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             long captureTime = gaugeValue.getCaptureTime();
             for (int i = 0; i < rollupConfigs.size(); i++) {
                 long intervalMillis = rollupConfigs.get(i).intervalMillis();
-                long rollupCaptureTime =
-                        (long) Math.ceil(captureTime / (double) intervalMillis) * intervalMillis;
+                long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, intervalMillis);
                 Map<Long, Set<String>> map = rollupCaptureTimeGaugeNames.get(i);
                 Set<String> gaugeNames = map.get(rollupCaptureTime);
                 if (gaugeNames == null) {

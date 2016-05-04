@@ -177,7 +177,7 @@ glowroot.controller('TransactionAverageCtrl', [
             return 'No data';
           }
           var from = xval - chartState.dataPointIntervalMillis;
-          // this math is to deal with active aggregate
+          // this math is to deal with live aggregate
           from = Math.ceil(from / chartState.dataPointIntervalMillis) * chartState.dataPointIntervalMillis;
           var to = xval;
           return charts.renderTooltipHtml(from, to, $scope.transactionCounts[xval], flotItem.dataIndex,

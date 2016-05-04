@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class Utils {
         }
     }
 
-    public static long getNextRollupTime(long captureTime, long intervalMillis) {
+    public static long getRollupCaptureTime(long captureTime, long intervalMillis) {
         return (long) Math.ceil(captureTime / (double) intervalMillis) * intervalMillis;
     }
 }

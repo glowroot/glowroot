@@ -497,7 +497,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
             return tooltip;
           }
           var from = xval - chartState.dataPointIntervalMillis;
-          // this math is to deal with active aggregate
+          // this math is to deal with live aggregate
           from = Math.ceil(from / chartState.dataPointIntervalMillis) * chartState.dataPointIntervalMillis;
           var to = xval;
           return charts.renderTooltipHtml(from, to, undefined, flotItem.dataIndex, flotItem.seriesIndex,

@@ -57,6 +57,7 @@ import org.glowroot.storage.repo.ImmutableErrorMessagePoint;
 import org.glowroot.storage.repo.ImmutableErrorMessageResult;
 import org.glowroot.storage.repo.ImmutableHeaderPlus;
 import org.glowroot.storage.repo.TraceRepository;
+import org.glowroot.storage.repo.Utils;
 import org.glowroot.storage.util.AgentRollups;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.Proto;
@@ -711,9 +712,8 @@ public class TraceDao implements TraceRepository {
             if (!matches(filter, errorMessage)) {
                 continue;
             }
-            captureTime =
-                    (long) Math.ceil(captureTime / (double) resolutionMillis) * resolutionMillis;
-            pointCounts.computeIfAbsent(captureTime, k -> new MutableLong()).increment();
+            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, resolutionMillis);
+            pointCounts.computeIfAbsent(rollupCaptureTime, k -> new MutableLong()).increment();
             messageCounts.computeIfAbsent(errorMessage, k -> new MutableLong()).increment();
         }
         List<ErrorMessagePoint> points = pointCounts.entrySet().stream()

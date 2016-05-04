@@ -81,6 +81,7 @@ import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
 import org.glowroot.storage.repo.MutableAggregate;
 import org.glowroot.storage.repo.MutableThreadStats;
 import org.glowroot.storage.repo.MutableTimer;
+import org.glowroot.storage.repo.Utils;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.QueriesByType;
@@ -316,8 +317,7 @@ public class AggregateDao implements AggregateRepository {
             Set<String> transactionTypes = aggregatesByTypeList.stream()
                     .map(AggregatesByType::getTransactionType).collect(Collectors.toSet());
             long intervalMillis = rollupConfigs.get(i).intervalMillis();
-            long rollupCaptureTime =
-                    (long) Math.ceil(captureTime / (double) intervalMillis) * intervalMillis;
+            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, intervalMillis);
             BoundStatement boundStatement = insertNeedsRollup.get(i - 1).bind();
             boundStatement.setString(0, agentId);
             boundStatement.setTimestamp(1, new Date(rollupCaptureTime));

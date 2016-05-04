@@ -129,21 +129,21 @@ class GaugeValueJsonService {
         List<GaugeValue> rolledUpGaugeValues = Lists.newArrayList();
         double currTotal = 0;
         long currWeight = 0;
-        long currRollupTime = Long.MIN_VALUE;
+        long currRollupCaptureTime = Long.MIN_VALUE;
         for (GaugeValue nonRolledUpGaugeValue : orderedNonRolledUpGaugeValues) {
             long captureTime = nonRolledUpGaugeValue.getCaptureTime();
-            long rollupTime = Utils.getNextRollupTime(captureTime, fixedIntervalMillis);
-            if (rollupTime != currRollupTime && currWeight > 0) {
+            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, fixedIntervalMillis);
+            if (rollupCaptureTime != currRollupCaptureTime && currWeight > 0) {
                 rolledUpGaugeValues.add(GaugeValue.newBuilder()
                         .setGaugeName(gaugeName)
-                        .setCaptureTime(currRollupTime)
+                        .setCaptureTime(currRollupCaptureTime)
                         .setValue(currTotal / currWeight)
                         .setWeight(currWeight)
                         .build());
                 currTotal = 0;
                 currWeight = 0;
             }
-            currRollupTime = rollupTime;
+            currRollupCaptureTime = rollupCaptureTime;
             currTotal += nonRolledUpGaugeValue.getValue() * nonRolledUpGaugeValue.getWeight();
             currWeight += nonRolledUpGaugeValue.getWeight();
         }
@@ -182,11 +182,12 @@ class GaugeValueJsonService {
             // nothing to sync
             return;
         }
-        long maxRollupTime = Utils.getNextRollupTime(maxCaptureTime, fixedIntervalMillis);
+        long maxRollupCaptureTime = Utils.getRollupCaptureTime(maxCaptureTime, fixedIntervalMillis);
         long maxDiffToSync = Math.min(fixedIntervalMillis / 5, 60000);
         for (Entry<String, Long> entry : manualRollupCaptureTimes.entrySet()) {
             Long captureTime = entry.getValue();
-            if (Utils.getNextRollupTime(captureTime, fixedIntervalMillis) != maxRollupTime) {
+            if (Utils.getRollupCaptureTime(captureTime,
+                    fixedIntervalMillis) != maxRollupCaptureTime) {
                 continue;
             }
             if (maxCaptureTime - captureTime > maxDiffToSync) {
