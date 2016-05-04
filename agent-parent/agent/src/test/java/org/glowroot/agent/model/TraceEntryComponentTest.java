@@ -18,10 +18,12 @@ package org.glowroot.agent.model;
 import com.google.common.base.Ticker;
 import org.junit.Test;
 
+import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TraceEntryComponentTest {
 
@@ -30,6 +32,7 @@ public class TraceEntryComponentTest {
         // given
         ThreadContextImpl threadContext = mock(ThreadContextImpl.class);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
+        when(messageSupplier.get()).thenReturn(Message.from("abc"));
         TimerImpl timer = mock(TimerImpl.class);
         Ticker ticker = mock(Ticker.class);
         TraceEntryComponent traceEntryComponent =
@@ -46,6 +49,8 @@ public class TraceEntryComponentTest {
         ThreadContextImpl threadContext = mock(ThreadContextImpl.class);
         MessageSupplier messageSupplier1 = mock(MessageSupplier.class);
         MessageSupplier messageSupplier2 = mock(MessageSupplier.class);
+        when(messageSupplier1.get()).thenReturn(Message.from("abc"));
+        when(messageSupplier2.get()).thenReturn(Message.from("xyz"));
         TimerImpl timer1 = mock(TimerImpl.class);
         TimerImpl timer2 = mock(TimerImpl.class);
         Ticker ticker = mock(Ticker.class);
@@ -64,6 +69,8 @@ public class TraceEntryComponentTest {
         ThreadContextImpl threadContext = mock(ThreadContextImpl.class);
         MessageSupplier messageSupplier1 = mock(MessageSupplier.class);
         MessageSupplier messageSupplier2 = mock(MessageSupplier.class);
+        when(messageSupplier1.get()).thenReturn(Message.from("abc"));
+        when(messageSupplier2.get()).thenReturn(Message.from("xyz"));
         TimerImpl timer1 = mock(TimerImpl.class);
         TimerImpl timer2 = mock(TimerImpl.class);
         Ticker ticker = mock(Ticker.class);
