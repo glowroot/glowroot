@@ -104,15 +104,9 @@ glowroot.factory('charts', [
         revisedFrom = Math.ceil(from / dataPointIntervalMillis) * dataPointIntervalMillis;
         revisedTo = Math.floor(to / dataPointIntervalMillis) * dataPointIntervalMillis;
         if (revisedTo <= revisedFrom) {
-          // shrunk too far
-          if (revisedFrom - from < to - revisedTo) {
-            // 'from' was not revised as much as 'to'
-            revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
-            revisedTo = revisedFrom + dataPointIntervalMillis;
-          } else {
-            revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
-            revisedFrom = revisedTo - dataPointIntervalMillis;
-          }
+          // selection is too small, so expand outward instead
+          revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
+          revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
         }
       }
       var now = new Date().getTime();
