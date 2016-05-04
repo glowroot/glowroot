@@ -97,6 +97,12 @@ public interface TraceEntry {
     void endWithError(@Nullable String message, Throwable t);
 
     /**
+     * This method is the same as {@link #endWithError(Throwable)}, except that it won't escalate a
+     * dummy entry into a real entry.
+     */
+    void endWithInfo(Throwable t);
+
+    /**
      * Returns the {@code MessageSupplier} that was supplied when the {@code TraceEntry} was
      * created.
      * 

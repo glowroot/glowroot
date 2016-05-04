@@ -227,6 +227,15 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
         endWithErrorInternal(message, t);
     }
 
+    @Override
+    public void endWithInfo(Throwable t) {
+        if (initialComplete) {
+            // this guards against end*() being called multiple times on async trace entries
+            return;
+        }
+        endWithErrorInternal(null, t);
+    }
+
     // for async trace entries, extend must be called by the same thread that started the async
     // trace entry
     @Override

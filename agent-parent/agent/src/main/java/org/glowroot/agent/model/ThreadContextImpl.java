@@ -1036,8 +1036,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
         public void endWithStackTrace(long threshold, TimeUnit unit) {
             if (threshold < 0) {
                 logger.error("endWithStackTrace(): argument 'threshold' must be non-negative");
-                end();
-                return;
             }
             endInternal(ticker.read());
         }
@@ -1055,6 +1053,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
         @Override
         public void endWithError(@Nullable String message, Throwable t) {
             endWithErrorInternal(message, t);
+        }
+
+        @Override
+        public void endWithInfo(Throwable t) {
+            endInternal(ticker.read());
         }
 
         private void endWithErrorInternal(@Nullable String message, @Nullable Throwable t) {

@@ -111,7 +111,11 @@ public class LogbackAspect {
             Throwable t = traveler.throwable;
             if (t != null) {
                 // intentionally not passing message since it is already the trace entry message
-                traveler.traceEntry.endWithError(t);
+                if (traveler.level >= WARN_INT) {
+                    traveler.traceEntry.endWithError(t);
+                } else {
+                    traveler.traceEntry.endWithInfo(t);
+                }
             } else if (traveler.level >= WARN_INT) {
                 traveler.traceEntry.endWithError(traveler.formattedMessage);
             } else {
@@ -153,7 +157,11 @@ public class LogbackAspect {
             Throwable t = traveler.throwable;
             if (t != null) {
                 // intentionally not passing message since it is already the trace entry message
-                traveler.traceEntry.endWithError(t);
+                if (traveler.level >= WARN_INT) {
+                    traveler.traceEntry.endWithError(t);
+                } else {
+                    traveler.traceEntry.endWithInfo(t);
+                }
             } else if (traveler.level >= WARN_INT) {
                 traveler.traceEntry.endWithError(traveler.formattedMessage);
             } else {

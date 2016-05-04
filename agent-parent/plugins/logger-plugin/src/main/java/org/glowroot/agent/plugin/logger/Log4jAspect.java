@@ -110,7 +110,11 @@ public class Log4jAspect {
             int lvl = level == null ? 0 : level.toInt();
             if (t != null) {
                 // intentionally not passing message since it is already the trace entry message
-                traceEntry.endWithError(t);
+                if (lvl >= WARN_INT) {
+                    traceEntry.endWithError(t);
+                } else {
+                    traceEntry.endWithInfo(t);
+                }
             } else if (lvl >= WARN_INT) {
                 traceEntry.endWithError(String.valueOf(message));
             } else {
