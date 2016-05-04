@@ -637,7 +637,7 @@ public class AggregateDao implements AggregateRepository {
         @Override
         public @Untainted String getSql() {
             StringBuilder sb = new StringBuilder();
-            sb.append("insert into aggregate_");
+            sb.append("merge into aggregate_");
             if (transactionName != null) {
                 sb.append("tn_");
             } else {
@@ -653,8 +653,12 @@ public class AggregateDao implements AggregateRepository {
                     + " async_transactions, queries_capped_id, service_calls_capped_id,"
                     + " main_thread_profile_capped_id, aux_thread_profile_capped_id,"
                     + " main_thread_root_timers, aux_thread_root_timers, async_root_timers,"
-                    + " main_thread_stats, aux_thread_stats, duration_nanos_histogram) values"
-                    + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?");
+                    + " main_thread_stats, aux_thread_stats, duration_nanos_histogram) key"
+                    + " (transaction_type");
+            if (transactionName != null) {
+                sb.append(", transaction_name");
+            }
+            sb.append(", capture_time) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?");
             if (transactionName != null) {
                 sb.append(", ?");
             }

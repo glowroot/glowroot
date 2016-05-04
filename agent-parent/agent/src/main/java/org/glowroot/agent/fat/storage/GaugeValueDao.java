@@ -154,8 +154,8 @@ public class GaugeValueDao implements GaugeValueRepository {
                 if (safeRollupTime > lastRollupTime) {
                     rollup(lastRollupTime, safeRollupTime, intervalMillis, i + 1, i);
                     // JVM termination here will cause last_rollup_*_time to be out of sync, which
-                    // will cause a re-rollup of this time after the next startup, but this possible
-                    // duplicate is filtered out by the distinct clause in readGaugeValues()
+                    // will cause a re-rollup of this time after the next startup, but this is ok
+                    // since it will just overwrite prior rollup
                     dataSource.update("update gauge_value_last_rollup_times set last_rollup_"
                             + castUntainted(i + 1) + "_time = ?", safeRollupTime);
                     lastRollupTimes.set(i, safeRollupTime);
@@ -173,9 +173,6 @@ public class GaugeValueDao implements GaugeValueRepository {
             // not necessarily an error, gauge id not created until first store
             return ImmutableList.of();
         }
-        // the distinct clause is needed for the rollup tables in order to handle corner case where
-        // JVM termination occurs in between rollup and updating gauge_value_last_rollup_times
-        // in which case a duplicate entry will occur after the next startup
         return dataSource.query(new GaugeValueQuery(gaugeId, from, to, rollupLevel));
     }
 
@@ -204,12 +201,13 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     private void rollup(long lastRollupTime, long safeRollupTime, @Untainted String captureTimeSql,
             int toRollupLevel, int fromRollupLevel) throws Exception {
-        dataSource.update("insert into gauge_value_rollup_" + castUntainted(toRollupLevel)
-                + " (gauge_id, capture_time, value, weight) select gauge_id, " + captureTimeSql
-                + " ceil_capture_time, sum(value * weight) / sum(weight), sum(weight)"
-                + " from gauge_value_rollup_" + castUntainted(fromRollupLevel)
-                + " gp where gp.capture_time > ? and gp.capture_time <= ?"
-                + " group by gp.gauge_id, ceil_capture_time", lastRollupTime, safeRollupTime);
+        dataSource.update("merge into gauge_value_rollup_" + castUntainted(toRollupLevel)
+                + " (gauge_id, capture_time, value, weight) key (gauge_id, capture_time)"
+                + " select gauge_id, " + captureTimeSql + " ceil_capture_time,"
+                + " sum(value * weight) / sum(weight), sum(weight) from gauge_value_rollup_"
+                + castUntainted(fromRollupLevel) + " gp where gp.capture_time > ?"
+                + " and gp.capture_time <= ? group by gp.gauge_id, ceil_capture_time",
+                lastRollupTime, safeRollupTime);
     }
 
     private class GaugeValuesBinder implements JdbcUpdate {
@@ -291,7 +289,7 @@ public class GaugeValueDao implements GaugeValueRepository {
 
         @Override
         public @Untainted String getSql() {
-            return "select distinct capture_time, value, weight from gauge_value_rollup_"
+            return "select capture_time, value, weight from gauge_value_rollup_"
                     + castUntainted(rollupLevel) + " where gauge_id = ? and capture_time >= ?"
                     + " and capture_time <= ? order by capture_time";
         }
