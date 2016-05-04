@@ -483,8 +483,9 @@ class TransactionJsonService {
             }
             lastThroughputAggregate = throughputAggregate;
             long from = throughputAggregate.captureTime() - dataPointIntervalMillis;
-            // this math is to deal with active aggregate
-            from = (long) (Math.ceil(from / dataPointIntervalMillis) * dataPointIntervalMillis);
+            // this math is to deal with live aggregate
+            from = (long) (Math.ceil(from / (double) dataPointIntervalMillis)
+                    * dataPointIntervalMillis);
             double transactionsPerMin = 60000.0 * throughputAggregate.transactionCount()
                     / (throughputAggregate.captureTime() - from);
             dataSeries.add(throughputAggregate.captureTime(), transactionsPerMin);
