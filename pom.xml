@@ -80,7 +80,7 @@
   </scm>
 
   <properties>
-    <grpc.version>0.13.2</grpc.version>
+    <grpc.version>0.14.0</grpc.version>
     <protobuf.version>3.0.0-beta-2</protobuf.version>
     <netty.version>4.1.0.CR7</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
@@ -725,7 +725,7 @@
         <checker.qual.group.id>org.checkerframework</checker.qual.group.id>
         <checker.qual.artifact.id>checker-qual</checker.qual.artifact.id>
         <!-- IMPORTANT when updating version, also need to update version in travis-build.sh -->
-        <checker.qual.version>1.9.11</checker.qual.version>
+        <checker.qual.version>2.0.0</checker.qual.version>
       </properties>
       <dependencies>
         <dependency>

@@ -429,6 +429,10 @@
                   <shadedPattern>org.glowroot.agent.shaded.google.protobuf</shadedPattern>
                 </relocation>
                 <relocation>
+                  <pattern>com.google.gson</pattern>
+                  <shadedPattern>org.glowroot.agent.shaded.google.gson</shadedPattern>
+                </relocation>
+                <relocation>
                   <!-- a couple of classes in guava are under this package name -->
                   <pattern>com.google.thirdparty</pattern>
                   <shadedPattern>org.glowroot.agent.shaded.google.thirdparty</shadedPattern>

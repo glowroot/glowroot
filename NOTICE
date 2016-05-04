@@ -70,9 +70,14 @@ SIL Open Font License 1.1 (font)
 MIT License (code)
 
 gRPC
-Copyright 2014, Google Inc.
+Copyright 2014 Google Inc.
 https://github.com/grpc/grpc-java
 BSD 3-Clause License
+
+Gson
+Copyright 2008 Google Inc.
+https://github.com/google/gson
+Apache License, Version 2.0
 
 Guava
 Copyright The Guava Authors
@@ -112,7 +117,7 @@ https://github.com/FasterXML/jackson
 Apache License, Version 2.0
 
 Janino
-Copyright (c) 2001-2010, Arno Unkrig
+Copyright (c) 2001-2010 Arno Unkrig
 https://github.com/aunkrig/janino
 BSD 3-Clause License
 
@@ -157,7 +162,7 @@ https://www.google.com/fonts/specimen/Open+Sans
 Apache License, Version 2.0
 
 Protocol Buffers
-Copyright 2014, Google Inc.
+Copyright 2014 Google Inc.
 https://github.com/google/protobuf
 BSD 3-Clause License
 
