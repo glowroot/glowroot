@@ -128,9 +128,13 @@
                 <descriptorRef>jar-with-dependencies</descriptorRef>
               </descriptorRefs>
               <archive>
-                <manifest>
-                  <mainClass>org.glowroot.server.Bootstrap</mainClass>
-                </manifest>
+                <manifestEntries>
+                  <Implementation-Title>${project.name}</Implementation-Title>
+                  <Implementation-Version>${project.version}</Implementation-Version>
+                  <Build-Commit>${glowroot.build.commit}</Build-Commit>
+                  <Build-Time>${maven.build.timestamp}</Build-Time>
+                  <Main-Class>org.glowroot.server.Bootstrap</Main-Class>
+                </manifestEntries>
               </archive>
             </configuration>
           </execution>
