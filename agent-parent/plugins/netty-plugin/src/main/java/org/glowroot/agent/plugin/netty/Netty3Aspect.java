@@ -283,4 +283,14 @@ public class Netty3Aspect {
             }
         }
     }
+
+    @Pointcut(className = "org.jboss.netty.channel.Channel", methodName = "close",
+            methodParameterTypes = {})
+    public static class CloseAdvice {
+
+        @OnBefore
+        public static void onBefore(ThreadContext context) {
+            context.completeAsyncTransaction();
+        }
+    }
 }

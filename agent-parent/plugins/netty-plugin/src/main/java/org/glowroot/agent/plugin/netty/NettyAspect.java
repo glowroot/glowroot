@@ -171,6 +171,19 @@ public class NettyAspect {
         }
     }
 
+    // ChannelOutboundInvoker is interface of ChannelHandlerContext in early 4.x versions and
+    // close() is defined on ChannelOutboundInvoker in those versions
+    @Pointcut(className = "io.netty.channel.ChannelHandlerContext"
+            + "|io.netty.channel.ChannelOutboundInvoker", methodName = "close",
+            methodParameterTypes = {})
+    public static class CloseAdvice {
+
+        @OnBefore
+        public static void onBefore(ThreadContext context) {
+            context.completeAsyncTransaction();
+        }
+    }
+
     static TraceEntry startAsyncTransaction(OptionalThreadContext context,
             @Nullable String methodName, @Nullable String uri, TimerName timerName) {
         String path = getPath(uri);

@@ -38,6 +38,10 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof HttpRequest) {
+            String uri = ((HttpRequest) msg).getUri();
+            if (uri.equals("/exception")) {
+                throw new Exception("Test");
+            }
             FullHttpResponse response =
                     new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(CONTENT));
             response.headers().set("Content-Type", "text/plain");
@@ -48,7 +52,6 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
         ctx.close();
     }
 }

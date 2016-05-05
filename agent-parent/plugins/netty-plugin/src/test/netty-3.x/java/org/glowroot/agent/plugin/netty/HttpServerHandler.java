@@ -40,6 +40,10 @@ public class HttpServerHandler extends SimpleChannelUpstreamHandler {
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         if (!readingChunks) {
             request = (HttpRequest) e.getMessage();
+            String uri = request.getUri();
+            if (uri.equals("/exception")) {
+                throw new Exception("Test");
+            }
             if (request.isChunked()) {
                 readingChunks = true;
             } else {
@@ -65,7 +69,6 @@ public class HttpServerHandler extends SimpleChannelUpstreamHandler {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-        e.getCause().printStackTrace();
         e.getChannel().close();
     }
 
