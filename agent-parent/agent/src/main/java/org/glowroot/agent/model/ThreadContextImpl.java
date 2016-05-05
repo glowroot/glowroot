@@ -401,15 +401,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 return null;
             }
             QueryData queryData = new QueryData(queryType, queryText, null);
-            queriesForFirstType = new QueryDataMap();
+            queriesForFirstType = new QueryDataMap(queryType);
             queriesForFirstType.put(queryText, queryData);
             headQueryData = queryData;
             return headQueryData;
         }
-        QueryDataMap queriesForCurrentType;
-        if (queryType.equals(headQueryData.getQueryType())) {
-            queriesForCurrentType = checkNotNull(queriesForFirstType);
-        } else {
+        QueryDataMap queriesForCurrentType = checkNotNull(queriesForFirstType);
+        if (!queriesForCurrentType.getType().equals(queryType)) {
             queriesForCurrentType = getOrCreateQueriesForType(queryType);
         }
         QueryData queryData = queriesForCurrentType.get(queryText);
@@ -428,15 +426,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 return null;
             }
             QueryData serviceCallData = new QueryData(type, text, null);
-            serviceCallsForFirstType = new QueryDataMap();
+            serviceCallsForFirstType = new QueryDataMap(type);
             serviceCallsForFirstType.put(text, serviceCallData);
             headServiceCallData = serviceCallData;
             return headServiceCallData;
         }
-        QueryDataMap serviceCallsForCurrentType;
-        if (type.equals(headServiceCallData.getQueryType())) {
-            serviceCallsForCurrentType = checkNotNull(serviceCallsForFirstType);
-        } else {
+        QueryDataMap serviceCallsForCurrentType = checkNotNull(serviceCallsForFirstType);
+        if (!serviceCallsForCurrentType.getType().equals(type)) {
             serviceCallsForCurrentType = getOrCreateServiceCallsForType(type);
         }
         QueryData serviceCallData = serviceCallsForCurrentType.get(text);
@@ -552,13 +548,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private QueryDataMap getOrCreateQueriesForType(String queryType) {
         if (allQueryTypesMap == null) {
             allQueryTypesMap = new HashMap<String, QueryDataMap>(2);
-            QueryDataMap queriesForCurrentType = new QueryDataMap();
+            QueryDataMap queriesForCurrentType = new QueryDataMap(queryType);
             allQueryTypesMap.put(queryType, queriesForCurrentType);
             return queriesForCurrentType;
         }
         QueryDataMap queriesForCurrentType = allQueryTypesMap.get(queryType);
         if (queriesForCurrentType == null) {
-            queriesForCurrentType = new QueryDataMap();
+            queriesForCurrentType = new QueryDataMap(queryType);
             allQueryTypesMap.put(queryType, queriesForCurrentType);
         }
         return queriesForCurrentType;
@@ -567,13 +563,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private QueryDataMap getOrCreateServiceCallsForType(String type) {
         if (allServiceCallTypesMap == null) {
             allServiceCallTypesMap = new HashMap<String, QueryDataMap>(2);
-            QueryDataMap serviceCallsForCurrentType = new QueryDataMap();
+            QueryDataMap serviceCallsForCurrentType = new QueryDataMap(type);
             allServiceCallTypesMap.put(type, serviceCallsForCurrentType);
             return serviceCallsForCurrentType;
         }
         QueryDataMap serviceCallsForCurrentType = allServiceCallTypesMap.get(type);
         if (serviceCallsForCurrentType == null) {
-            serviceCallsForCurrentType = new QueryDataMap();
+            serviceCallsForCurrentType = new QueryDataMap(type);
             allServiceCallTypesMap.put(type, serviceCallsForCurrentType);
         }
         return serviceCallsForCurrentType;

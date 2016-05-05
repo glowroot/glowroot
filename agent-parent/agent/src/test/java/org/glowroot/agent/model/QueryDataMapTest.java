@@ -29,7 +29,7 @@ public class QueryDataMapTest {
     @Test
     public void testBucketCollision() {
         // given
-        QueryDataMap map = new QueryDataMap();
+        QueryDataMap map = new QueryDataMap("");
         Map<String, QueryData> uniqueQueries = Maps.newHashMap();
         for (int i = 0; i < 100; i++) {
             uniqueQueries.put("query-" + i, mock(QueryData.class));

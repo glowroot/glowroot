@@ -20,9 +20,11 @@ import javax.annotation.Nullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 // micro-optimized map for query data
-public class QueryDataMap {
+class QueryDataMap {
 
     private static final Object CHAINED_KEY = new Object();
+
+    private final String type;
 
     // capacity must always be a power of 2, see comments in get() and put()
     private int capacity = 4;
@@ -30,6 +32,14 @@ public class QueryDataMap {
 
     private int size = 0;
     private int threshold = 3; // 0.75 * capacity
+
+    QueryDataMap(String type) {
+        this.type = type;
+    }
+
+    String getType() {
+        return type;
+    }
 
     @Nullable
     QueryData get(String key) {
