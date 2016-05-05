@@ -128,7 +128,6 @@ public class QueryData {
 
     void extend(long startTick) {
         if (selfNestingLevel++ == 0) {
-            // restarting a previously stopped execution, so need to decrement count
             this.startTick = startTick;
         }
     }
