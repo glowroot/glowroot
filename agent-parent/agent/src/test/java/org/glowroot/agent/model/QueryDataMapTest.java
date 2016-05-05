@@ -40,7 +40,7 @@ public class QueryDataMapTest {
         }
         // then
         for (Entry<String, QueryData> entry : uniqueQueries.entrySet()) {
-            assertThat(map.get(entry.getKey())).isEqualTo(entry.getValue());
+            assertThat(map.get(new String(entry.getKey()))).isEqualTo(entry.getValue());
         }
     }
 }

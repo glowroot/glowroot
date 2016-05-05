@@ -47,7 +47,7 @@ class QueryDataMap {
         int bucket = (key.hashCode() & (capacity - 1)) << 1;
         Object keyAtBucket = table[bucket];
         Object value = table[bucket + 1];
-        if (keyAtBucket == key) {
+        if (key.equals(keyAtBucket)) {
             return (QueryData) value;
         }
         if (keyAtBucket == CHAINED_KEY) {
@@ -68,7 +68,7 @@ class QueryDataMap {
         @Nullable
         Object[] chainedTable = (/*@Nullable*/ Object[]) value;
         for (int i = 0; i < chainedTable.length; i += 2) {
-            if (chainedTable[i] == key) {
+            if (key.equals(chainedTable[i])) {
                 return (QueryData) chainedTable[i + 1];
             }
         }
