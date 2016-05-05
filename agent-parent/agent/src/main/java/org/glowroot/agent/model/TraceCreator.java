@@ -96,7 +96,8 @@ public class TraceCreator {
         if (auxThreadProfile != null) {
             builder.setAuxThreadProfile(auxThreadProfile);
         }
-        return builder.build();
+        return builder.setUpdate(transaction.isPartiallyStored())
+                .build();
     }
 
     private static Trace.Header createTraceHeader(Transaction transaction, boolean slow,

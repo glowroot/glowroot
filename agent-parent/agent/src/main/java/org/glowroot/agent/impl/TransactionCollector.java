@@ -141,9 +141,9 @@ public class TransactionCollector {
         try {
             Trace trace = TraceCreator.createPartialTrace(transaction, clock.currentTimeMillis(),
                     ticker.read());
-            transaction.setPartiallyStored();
             // one last check if transaction has completed
             if (!transaction.isCompleted()) {
+                transaction.setPartiallyStored();
                 collector.collectTrace(trace);
             }
         } catch (Exception e) {

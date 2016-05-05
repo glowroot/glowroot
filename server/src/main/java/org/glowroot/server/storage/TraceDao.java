@@ -319,6 +319,7 @@ public class TraceDao implements TraceRepository {
     @Override
     public void collect(String agentId, Trace trace) throws Exception {
         String traceId = trace.getId();
+        // TODO after roll out agent 0.9.1, no need to read header if !trace.getUpdate()
         Trace.Header priorHeader = readHeader(agentId, traceId);
         Trace.Header header = trace.getHeader();
 

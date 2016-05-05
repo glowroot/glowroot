@@ -135,11 +135,9 @@ public class TraceDao implements TraceRepository {
     @Override
     public void collect(final String agentId, final Trace trace) throws Exception {
         final Trace.Header header = trace.getHeader();
-        boolean exists =
-                dataSource.queryForExists("select 1 from trace where id = ?", trace.getId());
-        dataSource.update(new TraceUpsert(trace, exists));
+        dataSource.update(new TraceMerge(trace));
         if (header.getAttributeCount() > 0) {
-            if (exists) {
+            if (trace.getUpdate()) {
                 dataSource.update("delete from trace_attribute where trace_id = ?", trace.getId());
             }
             dataSource.batchUpdate(new TraceAttributeInsert(trace));
@@ -313,17 +311,15 @@ public class TraceDao implements TraceRepository {
         return i;
     }
 
-    private class TraceUpsert implements JdbcUpdate {
+    private class TraceMerge implements JdbcUpdate {
 
-        private final boolean update;
         private final String traceId;
         private final Trace.Header header;
         private final @Nullable Long entriesId;
         private final @Nullable Long mainThreadProfileId;
         private final @Nullable Long auxThreadProfileId;
 
-        private TraceUpsert(Trace trace, boolean update) throws IOException {
-            this.update = update;
+        private TraceMerge(Trace trace) throws IOException {
             this.traceId = trace.getId();
             this.header = trace.getHeader();
 
@@ -350,25 +346,18 @@ public class TraceDao implements TraceRepository {
 
         @Override
         public @Untainted String getSql() {
-            if (update) {
-                return "update trace set partial = ?, slow = ?, error = ?, start_time = ?,"
-                        + " capture_time = ?, duration_nanos = ?, transaction_type = ?,"
-                        + " transaction_name = ?, headline = ?, user = ?, error_message = ?,"
-                        + " header = ?, entries_capped_id = ?, main_thread_profile_capped_id = ?,"
-                        + " aux_thread_profile_capped_id = ? where id = ?";
-            } else {
-                return "insert into trace (partial, slow, error, start_time, capture_time,"
-                        + " duration_nanos, transaction_type, transaction_name, headline,"
-                        + " user, error_message, header, entries_capped_id,"
-                        + " main_thread_profile_capped_id, aux_thread_profile_capped_id, id)"
-                        + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            }
+            return "merge into trace (id, partial, slow, error, start_time, capture_time,"
+                    + " duration_nanos, transaction_type, transaction_name, headline, user,"
+                    + " error_message, header, entries_capped_id, main_thread_profile_capped_id,"
+                    + " aux_thread_profile_capped_id) key (id)"
+                    + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         }
 
         // minimal work inside this method as it is called with active connection
         @Override
         public void bind(PreparedStatement preparedStatement) throws SQLException {
             int i = 1;
+            preparedStatement.setString(i++, traceId);
             preparedStatement.setBoolean(i++, header.getPartial());
             preparedStatement.setBoolean(i++, header.getSlow());
             preparedStatement.setBoolean(i++, header.hasError());
@@ -388,7 +377,6 @@ public class TraceDao implements TraceRepository {
             RowMappers.setLong(preparedStatement, i++, entriesId);
             RowMappers.setLong(preparedStatement, i++, mainThreadProfileId);
             RowMappers.setLong(preparedStatement, i++, auxThreadProfileId);
-            preparedStatement.setString(i++, traceId);
         }
     }
 
