@@ -102,7 +102,8 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
             LiveWeavingService liveWeavingService, LiveTraceRepository liveTraceRepository,
             String agentId) throws Exception {
         this.serverConnection = serverConnection;
-        downstreamServiceStub = DownstreamServiceGrpc.newStub(serverConnection.getChannel());
+        downstreamServiceStub = DownstreamServiceGrpc.newStub(serverConnection.getChannel())
+                .withCompression("gzip");
         this.agentConfigUpdater = agentConfigUpdater;
         this.liveJvmService = liveJvmService;
         this.liveWeavingService = liveWeavingService;

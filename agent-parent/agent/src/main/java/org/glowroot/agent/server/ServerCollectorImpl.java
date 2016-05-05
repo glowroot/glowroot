@@ -85,7 +85,8 @@ public class ServerCollectorImpl implements Collector {
         this.agentId = agentId;
 
         serverConnection = new ServerConnection(collectorHost, collectorPort, scheduledExecutor);
-        collectorServiceStub = CollectorServiceGrpc.newStub(serverConnection.getChannel());
+        collectorServiceStub = CollectorServiceGrpc.newStub(serverConnection.getChannel())
+                .withCompression("gzip");
         downstreamServiceObserver = new DownstreamServiceObserver(serverConnection,
                 agentConfigUpdater, liveJvmService, liveWeavingService, liveTraceRepository,
                 agentId);
