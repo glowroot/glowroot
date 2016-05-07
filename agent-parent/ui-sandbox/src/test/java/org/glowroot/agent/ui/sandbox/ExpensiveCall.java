@@ -25,8 +25,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.ning.http.client.AsyncHttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExpensiveCall {
+
+    private static final Logger logger = LoggerFactory.getLogger(ExpensiveCall.class);
 
     private static final AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
 
@@ -100,11 +104,11 @@ public class ExpensiveCall {
         expensive();
         execute5();
         try {
-            asyncHttpClient.prepareGet("http://example.org/hello").execute().get();
+            asyncHttpClient.prepareGet("http://example.org").execute().get();
         } catch (ExecutionException e) {
-            throw new RuntimeException(e);
+            logger.error(e.getMessage(), e);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            logger.error(e.getMessage(), e);
         }
     }
 
