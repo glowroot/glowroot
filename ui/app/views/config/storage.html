@@ -267,17 +267,15 @@
                  gt-label="Save changes"
                  gt-click="save(deferred)"
                  gt-disabled="formCtrl.$invalid"
-                 class="pull-left"
-                 style="margin-right: 8px;">
+                 class="gt-inline-block">
             </div>
             <div gt-button
                  gt-label="Defrag"
                  gt-click="defragData(deferred)"
                  gt-btn-class="btn-warning"
                  gt-dont-validate-form="true"
-                 class="pull-left"
-                 style="margin-right: 8px;"
-                 ng-show="layout.fat">
+                 ng-show="layout.fat"
+                 class="gt-inline-block">
             </div>
             <div gt-button
                  gt-label="Delete all data"
@@ -287,7 +285,7 @@
                  gt-confirm-header="Delete all data?"
                  gt-confirm-body="This will delete all captured data, including aggregated transaction data, traces and gauge data."
                  ng-show="layout.fat"
-                 class="pull-left">
+                 class="gt-inline-block">
             </div>
           </div>
           <div class="help-block" ng-if="!layout.fat">

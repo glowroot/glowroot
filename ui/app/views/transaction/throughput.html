@@ -1,5 +1,5 @@
 <!--
-  Copyright 2015 the original author or authors.
+  Copyright 2015-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@
   </div>
   <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
   <div class="clearfix" style="position: relative; z-index: 800;">
-    <div class="pull-right" style="margin-top: -20px; margin-bottom: -8px; font-size: 22px;">
+    <div class="pull-right gt-response-time-chart-tools" style="margin-bottom: -8px; font-size: 22px;">
       <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
       <a role="button"
          class="gt-chart-button"
@@ -93,7 +93,8 @@
       </div>
     </div>
     <div ng-show="transactionCount"
-         style="position: relative; padding-top: 30px; margin-left: 40px;">
+         class="gt-everything-below-throughput-chart"
+         style="position: relative; padding-top: 30px;">
       <div style="margin-top: 20px;">
         <label>Throughput:</label>
 

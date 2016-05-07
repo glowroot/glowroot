@@ -78,6 +78,7 @@
     <div class="navbar-header">
       <button type="button"
               class="navbar-toggle"
+              ng-if="!hideNavbar()"
               data-toggle="collapse"
               data-target=".navbar-collapse">
         <span class="icon-bar"></span>
@@ -123,21 +124,21 @@
                gt-url="{{layout.fat ? 'config/transaction' : 'config/access'}}">
             <i title="Configuration"
                class="fa fa-gears"
-               style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -3px;"></i>
+               style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -1px;"></i>
           </div>
           <li class="ng-cloak" ng-show="showSignIn()">
             <a href="login"
                ng-click="goToLogin($event)"
-               style="padding-top: 14px; padding-bottom: 0; height: 50px; width: 50px;">
+               style="padding-top: 14px; padding-bottom: 0; height: 50px;">
               <i title="Sign in"
                  class="fa fa-sign-in"
-                 style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -3px;"></i>
+                 style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -1px;"></i>
             </a>
           </li>
           <li class="ng-cloak" ng-show="showSignOut()">
             <a href="#"
                ng-click="signOut()"
-               style="padding-top: 14px; padding-bottom: 0; height: 50px; width: 50px;">
+               style="padding-top: 14px; padding-bottom: 0; height: 50px;">
               <i title="Sign out"
                  class="fa fa-sign-out"
                  style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -3px;"></i>
@@ -148,6 +149,11 @@
     </div>
   </div>
 </header>
+<div class="ng-cloak gt-button-message gt-button-message-success"
+     ng-if="displaySignOutMessage"
+     style="text-align: center; font-size: 20px;">
+  You have been signed out
+</div>
 <div class="container" id="container">
   <!-- autoscroll=true behavior is overridden to scroll to top of page, see $uiViewScroll decorator in routes.js -->
   <div ui-view></div>

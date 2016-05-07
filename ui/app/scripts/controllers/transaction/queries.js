@@ -48,6 +48,11 @@ glowroot.controller('TransactionQueriesCtrl', [
       }
     });
 
+    $scope.smallScreen = function() {
+      // using innerWidth so it will match to screen media queries
+      return window.innerWidth < 992;
+    };
+
     $scope.sort = function () {
       $location.search('sort-attribute', null);
       $location.search('sort-direction', null);

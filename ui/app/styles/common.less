@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,11 +50,16 @@
 // utilities
 // ---------
 
+.gt-button-spacing {
+  margin-right: 4px;
+  margin-bottom: 8px;
+}
+
 .gt-button-message {
+  display: inline-block;
   font-size: 16px;
   font-weight: 600;
-  margin-left: 14px;
-  vertical-align: middle;
+  vertical-align: 2px;
 }
 
 .gt-button-message-success {
@@ -119,7 +124,7 @@ span.disabled {
 
 // fix off-by-one-pixel, possibly bootstrap 3 issue that will get fixed
 .input-group .input-group-btn button {
-  height: 34px;
+  height: 36px;
 }
 
 // this keeps input-group-addon elements from appearing to the far right of the screen

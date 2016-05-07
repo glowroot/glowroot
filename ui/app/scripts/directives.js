@@ -78,13 +78,9 @@ glowroot.directive('gtButtonGroup', [
       transclude: true,
       template: '' +
       '<div class="clearfix">' +
-      '  <div ng-transclude style="float: left;"></div>' +
+      '  <div ng-transclude style="float: left; margin-right: 6px;"></div>' +
       '  <span class="gt-button-spinner hide" style="float: left;"></span>' +
-        // this needs to be div, and it's child needs to be div, for formatting of multi-line messages
-        // same as done in gt-button.html template
-      '  <div style="overflow-x: hidden;">' +
-      '    <div class="gt-button-message hide" style="padding-top: 5px;"></div>' +
-      '  </div>' +
+      '  <div class="gt-button-message hide" style="padding-top: 5px;"></div>' +
       '</div>',
       controller: [
         '$element',
@@ -424,7 +420,7 @@ glowroot.directive('gtSelectpicker', [
   }
 ]);
 
-glowroot.directive('gtTimerDisplay', function() {
+glowroot.directive('gtTimerDisplay', function () {
   return {
     scope: {
       heading: '@',
@@ -437,7 +433,7 @@ glowroot.directive('gtTimerDisplay', function() {
 });
 
 
-glowroot.directive('gtThreadStats', function() {
+glowroot.directive('gtThreadStats', function () {
   return {
     scope: {
       threadStats: '=',

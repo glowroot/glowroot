@@ -95,9 +95,10 @@ glowroot.run([
   '$http',
   '$location',
   '$state',
+  '$timeout',
   'login',
   'queryStrings',
-  function ($rootScope, $http, $location, $state, login, queryStrings) {
+  function ($rootScope, $http, $location, $state, $timeout, login, queryStrings) {
 
     $rootScope.agentId = '';
 
@@ -194,9 +195,10 @@ glowroot.run([
             if ($rootScope.layout.anonymousAccess === 'none') {
               login.goToLogin('You have been signed out', true);
             } else {
-              // reload is just for visual indication of sign out
-              // TODO display "You have been signed out" and do not perform reload
-              $state.reload();
+              $rootScope.displaySignOutMessage = true;
+              $timeout(function () {
+                $rootScope.displaySignOutMessage = false;
+              }, 2000);
             }
           })
           .error(function () {

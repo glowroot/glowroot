@@ -99,7 +99,7 @@
         </th>
       </tr>
       </thead>
-      <tbody>
+      <tbody ng-if="!smallScreen()">
       <tr ng-repeat="query in queries | filter:{queryType: queryType} | orderBy:sortAttr:sortReverse">
         <td class="gt-query-text-column"
             ng-click="showQueryModal(query)">
@@ -115,6 +115,35 @@
           {{query.timePerExecution | gtMillis}}
         </td>
         <td class="gt-query-rows-column">
+          {{query.rowsPerExecution | gtCount}}
+        </td>
+      </tr>
+      </tbody>
+      <tbody ng-if="smallScreen()">
+      <tr ng-repeat-start="query in queries | filter:{queryType: queryType} | orderBy:sortAttr:sortReverse">
+        <td class="gt-query-text-column"
+            ng-click="showQueryModal(query)"
+            colspan="5"
+            style="padding-bottom: 4px;">
+          {{query.queryText}}
+        </td>
+      </tr>
+      <tr ng-repeat-end>
+        <td style="border-top: none; padding-top: 0;"></td>
+        <td class="gt-query-total-column"
+            style="border-top: none; padding-top: 0;">
+          {{query.totalDurationNanos / 1000000 | gtMillis}}
+        </td>
+        <td class="gt-query-other-column"
+            style="border-top: none; padding-top: 0;">
+          {{query.executionCount}}
+        </td>
+        <td class="gt-query-other-column"
+            style="border-top: none; padding-top: 0;">
+          {{query.timePerExecution | gtMillis}}
+        </td>
+        <td class="gt-query-rows-column"
+            style="border-top: none; padding-top: 0;">
           {{query.rowsPerExecution | gtCount}}
         </td>
       </tr>

@@ -110,7 +110,7 @@
         <!-- input-group needs to be in a sub-div so it doesn't try to fill the entire width,
              which would push the addon "milliseconds" label flush right -->
         <div class="input-group"
-             style="width: {{filterDurationComparator === 'between' ? 30 : 25}}em;">
+             style="width: 100%; max-width: {{filterDurationComparator === 'between' ? 30 : 25}}em;">
           <div gt-input-group-dropdown
                gt-model="filterDurationComparator"
                gt-items="filterDurationComparatorOptions"
@@ -149,7 +149,7 @@
 
       <div class="col-lg-8">
         <div class="input-group"
-             style="width: 25em;">
+             style="width: 100%; max-width: 25em;">
           <div gt-input-group-dropdown
                gt-model="filter.headlineComparator"
                gt-items="filterTextComparatorOptions"
@@ -171,7 +171,7 @@
 
       <div class="col-lg-8">
         <div class="input-group"
-             style="width: 25em;">
+             style="width: 100%; max-width: 25em;">
           <div gt-input-group-dropdown
                gt-model="filter.errorMessageComparator"
                gt-items="filterTextComparatorOptions"
@@ -192,7 +192,7 @@
 
       <div class="col-lg-8">
         <div class="input-group"
-             style="width: 25em;">
+             style="width: 100%; max-width: 25em;">
           <div gt-input-group-dropdown
                gt-model="filter.userComparator"
                gt-items="filterTextComparatorOptions"
@@ -215,7 +215,7 @@
         <select ng-model="filter.attributeName"
                 class="form-control"
                 id="filterAttributeName"
-                style="width: 25em;">
+                style="width: 100%; max-width: 25em;">
           <option value=""></option>
           <option ng-repeat="attributeName in traceAttributeNames"
                   value="{{attributeName}}"
@@ -233,7 +233,7 @@
 
       <div class="col-lg-8">
         <div class="input-group"
-             style="width: 25em;">
+             style="width: 100%; max-width: 25em;">
           <div gt-input-group-dropdown
                gt-model="filter.attributeValueComparator"
                gt-items="filterTextComparatorOptions"
@@ -257,7 +257,7 @@
                 ng-options="option.value as option.text for option in filterLimitOptions"
                 class="form-control"
                 id="filterLimit"
-                style="width: 8em;">
+                style="width: 100%; max-width: 8em;">
         </select>
       </div>
     </div>

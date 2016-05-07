@@ -86,6 +86,11 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       }
     });
 
+    $scope.smallScreen = function() {
+      // using innerWidth so it will match to screen media queries
+      return window.innerWidth < 768;
+    };
+
     $scope.buildQueryObject = function (baseQuery) {
       var query = baseQuery || angular.copy($location.search());
       delete query.from;

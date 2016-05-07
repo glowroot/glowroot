@@ -224,9 +224,27 @@ body {
   padding-right: 15px !important;
 }
 
+@media screen and (min-width: @screen-xs) {
+  body {
+    font-size: 14px;
+  }
+  .btn, .form-control, .input-group-addon {
+    font-size: 14px !important;
+  }
+  .form-control, .input-group .input-group-btn button {
+    height: 34px;
+  }
+}
+
 @media screen and (min-width: 1400px) {
   .container {
     width: 1370px;
+  }
+}
+
+@media screen and (min-width: 1600px) {
+  .container {
+    width: 1570px;
   }
 }
 
@@ -450,5 +468,43 @@ hr.soften {
 
   .gt-query-other-column {
     width: 90px;
+  }
+}
+
+.gt-everything-below-throughput-chart {
+  padding: 0 20px;
+}
+
+@media screen and (min-width: @screen-sm) {
+  .gt-gauge-chart-tools {
+    margin-top: -20px;
+  }
+}
+
+@media screen and (min-width: @screen-md) {
+  .gt-response-time-chart-tools {
+    margin-top: -20px;
+  }
+  .gt-everything-below-throughput-chart {
+    padding: 0 40px;
+  }
+  .gt-everything-below-average-chart {
+    padding: 0 20px;
+  }
+}
+
+.gt-error-messages-chart-tools {
+  margin-top: -7px;
+}
+
+@media screen and (min-width: @screen-lg) {
+  .gt-error-messages-chart-tools {
+    margin-top: -22px;
+  }
+  .gt-everything-below-average-chart {
+    padding: 0 40px;
+  }
+  .gt-everything-below-gauge-chart {
+    padding: 0 20px;
   }
 }

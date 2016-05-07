@@ -46,18 +46,17 @@
                tied to the gt-button which will then get hidden due to ng-show="dirty" -->
           <div gt-button-group>
             <a class="btn btn-primary pull-left"
-               href="config/instrumentation{{newQueryString()}}">
+               href="config/instrumentation{{newQueryString()}}"
+               style="margin-right: 8px; margin-bottom: 8px;">
               Add new
             </a>
             <button ng-click="displayImportModal()"
-                    class="btn btn-default pull-left"
-                    style="margin-left: 8px;">
+                    class="btn btn-default gt-button-spacing">
               Import
             </button>
             <button ng-click="displayExportModal()"
                     ng-if="configs.length"
-                    class="btn btn-default pull-left"
-                    style="margin-left: 8px;">
+                    class="btn btn-default gt-button-spacing">
               Export all
             </button>
             <div gt-button
@@ -65,8 +64,7 @@
                  gt-label="Delete all"
                  gt-click="deleteAll(deferred)"
                  ng-if="configs.length"
-                 class="pull-left"
-                 style="margin-left: 8px;">
+                 class="gt-inline-block">
               Delete all
             </div>
             <div gt-button
@@ -76,8 +74,7 @@
                  gt-confirm-header="Apply changes to running JVM?"
                  gt-confirm-body="Important: Do not use this in production as it has chance of crashing the JVM."
                  ng-if="dirty && jvmRetransformClassesSupported"
-                 class="pull-left"
-                 style="margin-left: 8px;">
+                 class="gt-inline-block">
             </div>
           </div>
         </div>

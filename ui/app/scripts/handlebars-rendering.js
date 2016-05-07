@@ -347,7 +347,7 @@ HandlebarsRendering = (function () {
 
   $(document).on('click', '.gt-timers-view-toggle', function () {
     var $timers = $(this).parents('.gt-timers');
-    $timers.children('table').toggleClass('hide');
+    $timers.children('.gt-timers-table').toggleClass('hide');
     // re-focus on visible element, otherwise up/down/pgup/pgdown/ESC don't work
     var $timersViewToggle = $timers.find('.gt-timers-view-toggle:visible');
     $timersViewToggle.attr('tabindex', -1);

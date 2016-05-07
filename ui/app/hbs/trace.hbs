@@ -54,7 +54,9 @@
 </div>
 <div>
   <div class="gt-trace-attr-name">Duration:&nbsp;</div>
-  <div class="gt-trace-attr-value">{{nanosToMillis durationNanos}}{{#if active}}..{{^}}{{#if partial}}..{{/if}}{{/if}} milliseconds</div>
+  <div class="gt-trace-attr-value">{{nanosToMillis durationNanos}}{{#if active}}..{{^}}{{#if partial}}..{{/if}}{{/if}}
+    milliseconds
+  </div>
 </div>
 {{#if user}}
   <div class="gt-trace-attr-name">User:&nbsp;</div>
@@ -69,206 +71,200 @@
 {{/if}}
 {{#if mainThreadRootTimer}}
   <div class="gt-timers">
-    <table class="gt-timers-table" style="border-spacing: 0;">
-      <thead>
-      <tr>
-        <td class="gt-bold gt-breakdown-header" style="text-align: left;">
-          Breakdown{{#if auxThreadRootTimers}} (Main Thread){{/if}}:
-        </td>
-        <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
-        <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
-        <td class="gt-breakdown-header">
-          <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
-                  style="margin-top: -6px; margin-bottom: -6px;">
-            switch to tree view
-          </button>
-        </td>
-      </tr>
-      </thead>
-      <tbody>
-      {{#eachTimerFlattenedOrdered mainThreadRootTimer}}
-        <tr class="align-top">
-          <td style="text-align: left;">
-            <div class="gt-indent2 gt-break-word gt-second-line-indent">
-              {{name}}
-            </div>
+    <div class="gt-timers-table">
+      <table class="gt-inline-block" style="border-spacing: 0;">
+        <thead>
+        <tr>
+          <td class="gt-bold gt-breakdown-header" style="text-align: left;">
+            Breakdown{{#if auxThreadRootTimers}} (Main Thread){{/if}}:
           </td>
-          <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
-          <td>{{count}}</td>
-          <td></td>
+          <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+          <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
         </tr>
-      {{/eachTimerFlattenedOrdered}}
-      </tbody>
-    </table>
-    <table class="hide gt-timers-table" style="border-spacing: 0;">
-      <thead>
-      <tr>
-        <td class="gt-bold gt-breakdown-header" style="text-align: left;">
-          Breakdown{{#if auxThreadRootTimers}} (Main Thread){{/if}}:
-        </td>
-        <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
-        <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
-        <td class="gt-breakdown-header">
-          <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
-                  style="margin-top: -6px; margin-bottom: -6px;">
-            switch to flattened view
-          </button>
-        </td>
-      </tr>
-      </thead>
-      <tbody>
-      {{#eachTimerOrdered mainThreadRootTimer}}
-        <tr class="align-top">
-          <td style="text-align: left;">
-            <div class="gt-indent2">
-              <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
-                {{name}}{{#if extended}} (extended){{/if}}
+        </thead>
+        <tbody>
+        {{#eachTimerFlattenedOrdered mainThreadRootTimer}}
+          <tr class="align-top">
+            <td style="text-align: left;">
+              <div class="gt-indent2 gt-break-word gt-second-line-indent">
+                {{name}}
               </div>
-            </div>
+            </td>
+            <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td>{{count}}</td>
+          </tr>
+        {{/eachTimerFlattenedOrdered}}
+        </tbody>
+      </table>
+      <button class="gt-indent1 gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
+              style="vertical-align: top; margin-top: -1px;">
+        switch to tree view
+      </button>
+    </div>
+    <div class="hide gt-timers-table">
+      <table class="gt-inline-block" style="border-spacing: 0;">
+        <thead>
+        <tr>
+          <td class="gt-bold gt-breakdown-header" style="text-align: left;">
+            Breakdown{{#if auxThreadRootTimers}} (Main Thread){{/if}}:
           </td>
-          <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
-          <td>{{count}}</td>
-          <td></td>
+          <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+          <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
         </tr>
-      {{/eachTimerOrdered}}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+        {{#eachTimerOrdered mainThreadRootTimer}}
+          <tr class="align-top">
+            <td style="text-align: left;">
+              <div class="gt-indent2">
+                <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
+                  {{name}}{{#if extended}} (extended){{/if}}
+                </div>
+              </div>
+            </td>
+            <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td>{{count}}</td>
+          </tr>
+        {{/eachTimerOrdered}}
+        </tbody>
+      </table>
+      <button class="gt-indent1 gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
+              style="vertical-align: top; margin-top: -1px;">
+        switch to flattened view
+      </button>
+    </div>
   </div>
 {{/if}}
 {{#if auxThreadRootTimers}}
   <div class="gt-timers">
-    <table class="gt-timers-table" style="border-spacing: 0;">
-      <thead>
-      <tr>
-        <td class="gt-bold gt-breakdown-header" style="text-align: left;">
-          Breakdown{{#if mainThreadRootTimer}} (Auxiliary Threads){{/if}}:
-        </td>
-        <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
-        <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
-        <td class="gt-breakdown-header">
-          <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
-                  style="margin-top: -6px; margin-bottom: -6px;">
-            switch to tree view
-          </button>
-        </td>
-      </tr>
-      </thead>
-      <tbody>
-      {{#eachTimerFlattenedOrdered auxThreadRootTimers}}
-        <tr class="align-top">
-          <td style="text-align: left;">
-            <div class="gt-indent2 gt-break-word gt-second-line-indent">
-              {{name}}
-            </div>
+    <div class="gt-timers-table">
+      <table class="gt-inline-block" style="border-spacing: 0;">
+        <thead>
+        <tr>
+          <td class="gt-bold gt-breakdown-header" style="text-align: left;">
+            Breakdown{{#if mainThreadRootTimer}} (Auxiliary Threads){{/if}}:
           </td>
-          <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
-          <td>{{count}}</td>
-          <td></td>
+          <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+          <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
         </tr>
-      {{/eachTimerFlattenedOrdered}}
-      </tbody>
-    </table>
-    <table class="hide gt-timers-table" style="border-spacing: 0;">
-      <thead>
-      <tr>
-        <td class="gt-bold gt-breakdown-header" style="text-align: left;">
-          Breakdown{{#if mainThreadRootTimer}} (Auxiliary Threads){{/if}}:
-        </td>
-        <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
-        <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
-        <td class="gt-breakdown-header">
-          <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
-                  style="margin-top: -6px; margin-bottom: -6px;">
-            switch to flattened view
-          </button>
-        </td>
-      </tr>
-      </thead>
-      <tbody>
-      {{#eachTimerOrdered auxThreadRootTimers}}
-        <tr class="align-top">
-          <td style="text-align: left;">
-            <div class="gt-indent2">
-              <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
-                {{name}}{{#if extended}} (extended){{/if}}
+        </thead>
+        <tbody>
+        {{#eachTimerFlattenedOrdered auxThreadRootTimers}}
+          <tr class="align-top">
+            <td style="text-align: left;">
+              <div class="gt-indent2 gt-break-word gt-second-line-indent">
+                {{name}}
               </div>
-            </div>
+            </td>
+            <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td>{{count}}</td>
+          </tr>
+        {{/eachTimerFlattenedOrdered}}
+        </tbody>
+      </table>
+      <button class="gt-indent1 gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
+              style="vertical-align: top; margin-top: -1px;">
+        switch to tree view
+      </button>
+    </div>
+    <div class="hide gt-timers-table">
+      <table class="gt-inline-block" style="border-spacing: 0;">
+        <thead>
+        <tr>
+          <td class="gt-bold gt-breakdown-header" style="text-align: left;">
+            Breakdown{{#if mainThreadRootTimer}} (Auxiliary Threads){{/if}}:
           </td>
-          <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
-          <td>{{count}}</td>
-          <td></td>
+          <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+          <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
         </tr>
-      {{/eachTimerOrdered}}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+        {{#eachTimerOrdered auxThreadRootTimers}}
+          <tr class="align-top">
+            <td style="text-align: left;">
+              <div class="gt-indent2">
+                <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
+                  {{name}}{{#if extended}} (extended){{/if}}
+                </div>
+              </div>
+            </td>
+            <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td>{{count}}</td>
+          </tr>
+        {{/eachTimerOrdered}}
+        </tbody>
+      </table>
+      <button class="gt-indent1 gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
+              style="vertical-align: top; margin-top: -1px;">
+        switch to flattened view
+      </button>
+    </div>
   </div>
 {{/if}}
 {{#if asyncRootTimers}}
   <div class="gt-timers">
-    <table class="gt-timers-table" style="border-spacing: 0;">
-      <thead>
-      <tr>
-        <td class="gt-bold gt-breakdown-header" style="text-align: left;">
-          Breakdown (Async Timers):
-        </td>
-        <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
-        <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
-        <td class="gt-breakdown-header">
-          <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
-                  style="margin-top: -6px; margin-bottom: -6px;">
-            switch to tree view
-          </button>
-        </td>
-      </tr>
-      </thead>
-      <tbody>
-      {{#eachTimerFlattenedOrdered asyncRootTimers}}
-        <tr class="align-top">
-          <td style="text-align: left;">
-            <div class="gt-indent2 gt-break-word gt-second-line-indent">
-              {{name}}
-            </div>
+    <div class="gt-timers-table">
+      <table class="gt-inline-block" style="border-spacing: 0;">
+        <thead>
+        <tr>
+          <td class="gt-bold gt-breakdown-header" style="text-align: left;">
+            Breakdown (Async Timers):
           </td>
-          <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
-          <td>{{count}}</td>
-          <td></td>
+          <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+          <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
         </tr>
-      {{/eachTimerFlattenedOrdered}}
-      </tbody>
-    </table>
-    <table class="hide gt-timers-table" style="border-spacing: 0;">
-      <thead>
-      <tr>
-        <td class="gt-bold gt-breakdown-header" style="text-align: left;">
-          Breakdown (Async Timers):
-        </td>
-        <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
-        <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
-        <td class="gt-breakdown-header">
-          <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
-                  style="margin-top: -6px; margin-bottom: -6px;">
-            switch to flattened view
-          </button>
-        </td>
-      </tr>
-      </thead>
-      <tbody>
-      {{#eachTimerOrdered asyncRootTimers}}
-        <tr class="align-top">
-          <td style="text-align: left;">
-            <div class="gt-indent2">
-              <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
-                {{name}}{{#if extended}} (extended){{/if}}
+        </thead>
+        <tbody>
+        {{#eachTimerFlattenedOrdered asyncRootTimers}}
+          <tr class="align-top">
+            <td style="text-align: left;">
+              <div class="gt-indent2 gt-break-word gt-second-line-indent">
+                {{name}}
               </div>
-            </div>
+            </td>
+            <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td>{{count}}</td>
+          </tr>
+        {{/eachTimerFlattenedOrdered}}
+        </tbody>
+      </table>
+      <button class="gt-indent1 gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
+              style="vertical-align: top; margin-top: -1px;">
+        switch to tree view
+      </button>
+    </div>
+    <div class="hide gt-timers-table">
+      <table class="gt-inline-block" style="border-spacing: 0;">
+        <thead>
+        <tr>
+          <td class="gt-bold gt-breakdown-header" style="text-align: left;">
+            Breakdown (Async Timers):
           </td>
-          <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
-          <td>{{count}}</td>
-          <td></td>
+          <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+          <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
         </tr>
-      {{/eachTimerOrdered}}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+        {{#eachTimerOrdered asyncRootTimers}}
+          <tr class="align-top">
+            <td style="text-align: left;">
+              <div class="gt-indent2">
+                <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
+                  {{name}}{{#if extended}} (extended){{/if}}
+                </div>
+              </div>
+            </td>
+            <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td>{{count}}</td>
+          </tr>
+        {{/eachTimerOrdered}}
+        </tbody>
+      </table>
+      <button class="gt-indent1 gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
+              style="vertical-align: top; margin-top: -1px;">
+        switch to flattened view
+      </button>
+    </div>
   </div>
 {{/if}}
 {{#if mainThreadStats}}

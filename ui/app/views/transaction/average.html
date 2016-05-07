@@ -41,7 +41,7 @@
   </div>
   <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
   <div class="clearfix" style="position: relative; z-index: 800;">
-    <div class="pull-right" style="margin-top: -20px; margin-bottom: -8px; font-size: 22px;">
+    <div class="pull-right gt-response-time-chart-tools" style="margin-bottom: -8px; font-size: 22px;">
       <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
       <a role="button"
          class="gt-chart-button"
@@ -109,7 +109,8 @@
       </div>
     </div>
     <div ng-if="mergedAggregate.transactionCount"
-         style="position: relative; padding-top: 30px; margin-left: 40px;">
+         class="gt-everything-below-average-chart"
+         style="position: relative; padding-top: 30px;">
       <div ng-if="mainThreadFlattenedTimers.length">
         <div gt-timer-display
              heading="Breakdown{{auxThreadFlattenedTimers.length ? ' (Main Thread)' : ''}}:"
