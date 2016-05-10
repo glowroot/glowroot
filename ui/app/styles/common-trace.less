@@ -214,3 +214,16 @@
   // important is needed to override .gt-full-screen-modal.modal .gt-clip
   color: darken(@gt-blue, 12%) !important;
 }
+
+@media screen and (min-width: @screen-xs) {
+  body {
+    font-size: 14px;
+  }
+  .btn, .form-control, .input-group-addon {
+    font-size: 14px !important;
+  }
+  .form-control, .input-group .input-group-btn button {
+    // this is related to font-size
+    height: 34px;
+  }
+}
