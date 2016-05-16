@@ -215,7 +215,6 @@ glowroot.controller('ConfigGaugeCtrl', [
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
       postData.agentId = $scope.agentId;
-      postData.mbeanAttributes = $scope.config.mbeanAttributes;
       var url;
       if (version) {
         url = 'backend/config/gauges/update';
