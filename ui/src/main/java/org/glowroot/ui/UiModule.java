@@ -69,7 +69,7 @@ public class UiModule {
         LayoutService layoutService = new LayoutService(fat, version, configRepository,
                 agentRepository, transactionTypeRepository);
         HttpSessionManager httpSessionManager =
-                new HttpSessionManager(configRepository, clock, layoutService);
+                new HttpSessionManager(fat, configRepository, clock, layoutService);
         IndexHtmlHttpService indexHtmlHttpService =
                 new IndexHtmlHttpService(httpSessionManager, layoutService);
         LayoutHttpService layoutHttpService =
@@ -78,9 +78,8 @@ public class UiModule {
                 aggregateRepository, liveAggregateRepository, configRepository, clock);
         TraceCommonService traceCommonService =
                 new TraceCommonService(traceRepository, liveTraceRepository);
-        TransactionJsonService transactionJsonService =
-                new TransactionJsonService(transactionCommonService, aggregateRepository,
-                        traceRepository, liveTraceRepository, rollupLevelService, clock);
+        TransactionJsonService transactionJsonService = new TransactionJsonService(
+                transactionCommonService, aggregateRepository, rollupLevelService, clock);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(traceRepository,
                 liveTraceRepository, configRepository, ticker, clock);
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
@@ -93,14 +92,13 @@ public class UiModule {
                 new ErrorCommonService(aggregateRepository, liveAggregateRepository);
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
                 transactionCommonService, traceRepository, rollupLevelService, clock);
-        ConfigJsonService configJsonService = new ConfigJsonService(fat, configRepository,
-                repoAdmin, httpSessionManager, new MailService());
+        ConfigJsonService configJsonService = new ConfigJsonService(configRepository);
         GaugeValueJsonService gaugeValueJsonService = new GaugeValueJsonService(
                 gaugeValueRepository, rollupLevelService, configRepository);
         AlertConfigJsonService alertJsonService = new AlertConfigJsonService(configRepository);
-        AdminJsonService adminJsonService = new AdminJsonService(aggregateRepository,
-                traceRepository, transactionTypeRepository, gaugeValueRepository,
-                liveWeavingService, repoAdmin);
+        AdminJsonService adminJsonService = new AdminJsonService(fat, configRepository, repoAdmin,
+                new MailService(), aggregateRepository, traceRepository, transactionTypeRepository,
+                gaugeValueRepository);
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(transactionJsonService);
@@ -108,24 +106,26 @@ public class UiModule {
         jsonServices.add(traceJsonService);
         jsonServices.add(errorJsonService);
         jsonServices.add(configJsonService);
+        jsonServices.add(new UserConfigJsonService(configRepository));
+        jsonServices.add(new RoleConfigJsonService(fat, configRepository, agentRepository));
         jsonServices.add(gaugeValueJsonService);
         jsonServices.add(new JvmJsonService(agentRepository, liveJvmService));
         if (liveJvmService != null) {
             jsonServices.add(new GaugeConfigJsonService(configRepository, liveJvmService));
         }
-        if (liveWeavingService != null) {
-            jsonServices.add(
-                    new InstrumentationConfigJsonService(configRepository, liveWeavingService));
+        if (liveWeavingService != null && liveJvmService != null) {
+            jsonServices.add(new InstrumentationConfigJsonService(configRepository,
+                    liveWeavingService, liveJvmService));
         }
         jsonServices.add(alertJsonService);
         jsonServices.add(adminJsonService);
 
-        int port = configRepository.getAccessConfig().port();
+        int port = configRepository.getWebConfig().port();
         LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, httpSessionManager,
                 indexHtmlHttpService, layoutHttpService, layoutService, traceDetailHttpService,
                 traceExportHttpService, glowrootLogHttpService, jsonServices, numWorkerThreads);
 
-        lazyHttpServer.init(configJsonService);
+        lazyHttpServer.init(adminJsonService);
         return new UiModule(lazyHttpServer);
     }
 

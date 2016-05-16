@@ -18,6 +18,7 @@ package org.glowroot.ui;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -31,8 +32,8 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
@@ -67,10 +68,12 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.util.Styles;
+import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.ui.HttpSessionManager.Authentication;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
@@ -86,7 +89,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServerHandler.class);
-    private static final JsonFactory jsonFactory = new JsonFactory();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final long TEN_YEARS = DAYS.toMillis(365 * 10);
     private static final long ONE_DAY = DAYS.toMillis(1);
@@ -137,21 +140,13 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             for (Method method : jsonService.getClass().getDeclaredMethods()) {
                 GET annotationGET = method.getAnnotation(GET.class);
                 if (annotationGET != null) {
-                    jsonServiceMappings.add(ImmutableJsonServiceMapping.builder()
-                            .httpMethod(HttpMethod.GET)
-                            .path(annotationGET.value())
-                            .service(jsonService)
-                            .methodName(method.getName())
-                            .build());
+                    jsonServiceMappings.add(build(HttpMethod.GET, annotationGET.path(),
+                            annotationGET.permission(), jsonService, method));
                 }
                 POST annotationPOST = method.getAnnotation(POST.class);
                 if (annotationPOST != null) {
-                    jsonServiceMappings.add(ImmutableJsonServiceMapping.builder()
-                            .httpMethod(HttpMethod.POST)
-                            .path(annotationPOST.value())
-                            .service(jsonService)
-                            .methodName(method.getName())
-                            .build());
+                    jsonServiceMappings.add(build(HttpMethod.POST, annotationPOST.path(),
+                            annotationPOST.permission(), jsonService, method));
                 }
             }
         }
@@ -209,11 +204,15 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         boolean keepAlive = HttpUtil.isKeepAlive(request);
         try {
             if (httpSessionManager.getSessionId(request) != null
-                    && httpSessionManager.getAuthenticatedUser(request) == null
+                    && !httpSessionManager.isAuthenticated(request)
                     && !response.headers().contains("Set-Cookie")) {
                 httpSessionManager.deleteSessionCookie(response);
             }
-            response.headers().add("Glowroot-Layout-Version", layoutService.getLayoutVersion());
+            if (!request.uri().equals("/backend/layout")) {
+                Authentication authentication = httpSessionManager.getAuthentication(request);
+                response.headers().add("Glowroot-Layout-Version",
+                        layoutService.getLayoutVersion(authentication));
+            }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(ctx, e);
@@ -238,7 +237,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    // TODO check if this suppress warnings is needed in next checker framework release
+    // TODO report checker framework issue that occurs without this suppression
     @SuppressWarnings("argument.type.incompatible")
     private void sendExceptionResponse(ChannelHandlerContext ctx, Exception exception)
             throws Exception {
@@ -271,25 +270,23 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         if (httpService != null) {
             return handleHttpService(ctx, request, httpService);
         }
-        JsonServiceMatcher jsonServiceMatcher = getJsonServiceMatcher(request, path);
-        if (jsonServiceMatcher != null) {
-            return handleJsonServiceMappings(request, jsonServiceMatcher.jsonServiceMapping(),
-                    jsonServiceMatcher.matcher());
+        JsonServiceMapping jsonServiceMapping = getJsonServiceMapping(request, path);
+        if (jsonServiceMapping != null) {
+            return handleJsonServiceMappings(request, jsonServiceMapping);
         }
         return handleStaticResource(path, request);
     }
 
     private @Nullable FullHttpResponse handleIfLoginOrLogoutRequest(String path,
             FullHttpRequest request) throws Exception {
-        if (path.equals("/backend/authenticated-user")) {
+        if (path.equals("/backend/username")) {
             // this is only used when running under 'grunt serve'
-            return handleAuthenticatedUserRequest(request);
+            return handleUsernameRequest(request);
         }
-        if (path.equals("/backend/admin-login")) {
-            return httpSessionManager.login(request, true);
-        }
-        if (path.equals("/backend/read-only-login")) {
-            return httpSessionManager.login(request, false);
+        if (path.equals("/backend/login")) {
+            String content = request.content().toString(Charsets.ISO_8859_1);
+            Credentials credentials = mapper.readValue(content, ImmutableCredentials.class);
+            return httpSessionManager.login(credentials.username(), credentials.password());
         }
         if (path.equals("/backend/sign-out")) {
             return httpSessionManager.signOut(request);
@@ -297,14 +294,12 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         return null;
     }
 
-    private FullHttpResponse handleAuthenticatedUserRequest(FullHttpRequest request)
+    // this is only used when running under 'grunt serve'
+    private FullHttpResponse handleUsernameRequest(FullHttpRequest request)
             throws Exception {
-        String authenticatedUser = httpSessionManager.getAuthenticatedUser(request);
-        if (authenticatedUser == null) {
-            return HttpServices.createJsonResponse("null", OK);
-        } else {
-            return HttpServices.createJsonResponse("\"" + authenticatedUser + "\"", OK);
-        }
+        Authentication authentication = httpSessionManager.getAuthentication(request);
+        String username = authentication == null ? "" : authentication.username();
+        return HttpServices.createJsonResponse("\"" + username + "\"", OK);
     }
 
     private @Nullable HttpService getHttpService(String path) throws Exception {
@@ -319,53 +314,85 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     private @Nullable FullHttpResponse handleHttpService(ChannelHandlerContext ctx,
             FullHttpRequest request, HttpService httpService) throws Exception {
-        if (!httpSessionManager.hasReadAccess(request)
-                && !(httpService instanceof UnauthenticatedHttpService)) {
+        String permission = httpService.getPermission();
+        if (permission.equals("")) {
+            // service does not require any permission
+            return httpService.handleRequest(ctx, request);
+        }
+        Authentication authentication = httpSessionManager.getAuthentication(request);
+        if (authentication == null) {
             return handleNotAuthenticated(request);
         }
-        boolean isGetRequest = request.method().name().equals(HttpMethod.GET.name());
-        if (!isGetRequest && !httpSessionManager.hasAdminAccess(request)) {
-            return handleNotAuthorized();
+        if (!authentication.hasPermission(permission)) {
+            if (authentication.anonymous()) {
+                return handleNotAuthenticated(request);
+            } else {
+                return handleNotAuthorized();
+            }
         }
         return httpService.handleRequest(ctx, request);
     }
 
-    private @Nullable JsonServiceMatcher getJsonServiceMatcher(FullHttpRequest request,
+    private @Nullable JsonServiceMapping getJsonServiceMapping(FullHttpRequest request,
             String path) {
         for (JsonServiceMapping jsonServiceMapping : jsonServiceMappings) {
             if (!jsonServiceMapping.httpMethod().name().equals(request.method().name())) {
                 continue;
             }
-            Matcher matcher = jsonServiceMapping.pattern().matcher(path);
-            if (matcher.matches()) {
-                return ImmutableJsonServiceMatcher.of(jsonServiceMapping, matcher);
+            if (jsonServiceMapping.path().equals(path)) {
+                return jsonServiceMapping;
             }
         }
         return null;
     }
 
     private FullHttpResponse handleJsonServiceMappings(FullHttpRequest request,
-            JsonServiceMapping jsonServiceMapping, Matcher matcher) throws Exception {
-        if (!httpSessionManager.hasReadAccess(request)) {
+            JsonServiceMapping jsonServiceMapping) throws Exception {
+        Authentication authentication = httpSessionManager.getAuthentication(request);
+        if (authentication == null) {
             return handleNotAuthenticated(request);
         }
-        boolean isGetRequest = request.method().name().equals(HttpMethod.GET.name());
-        if (!isGetRequest && !httpSessionManager.hasAdminAccess(request)) {
-            return handleNotAuthorized();
+        List<Class<?>> parameterTypes = Lists.newArrayList();
+        List<Object> parameters = Lists.newArrayList();
+        QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+        Map<String, List<String>> queryParameters = decoder.parameters();
+        boolean permission;
+        if (jsonServiceMapping.bindAgentId()) {
+            List<String> values = queryParameters.get("agent-id");
+            if (values == null) {
+                throw new JsonServiceException(BAD_REQUEST, "missing agent-id query parameter");
+            }
+            String agentId = values.get(0);
+            parameterTypes.add(String.class);
+            parameters.add(agentId);
+            queryParameters.remove("agent-id");
+            permission =
+                    authentication.hasAgentLeafPermission(agentId, jsonServiceMapping.permission());
+        } else if (jsonServiceMapping.bindAgentRollup()) {
+            List<String> values = queryParameters.get("agent-rollup");
+            if (values == null) {
+                throw new JsonServiceException(BAD_REQUEST, "missing agent-rollup query parameter");
+            }
+            String agentRollup = values.get(0);
+            parameterTypes.add(String.class);
+            parameters.add(agentRollup);
+            queryParameters.remove("agent-rollup");
+            permission = authentication.hasAgentRollupPermission(agentRollup,
+                    jsonServiceMapping.permission());
+        } else {
+            permission = authentication.hasPermission(jsonServiceMapping.permission());
         }
-        String requestText = getRequestText(request);
-        String[] args = new String[matcher.groupCount()];
-        for (int i = 0; i < args.length; i++) {
-            String group = matcher.group(i + 1);
-            checkNotNull(group);
-            args[i] = group;
+        if (!permission) {
+            if (authentication.anonymous()) {
+                return handleNotAuthenticated(request);
+            } else {
+                return handleNotAuthorized();
+            }
         }
-        logger.debug("handleJsonRequest(): serviceMethodName={}, args={}, requestText={}",
-                jsonServiceMapping.methodName(), args, requestText);
         Object responseObject;
         try {
-            responseObject = callMethod(jsonServiceMapping.service(),
-                    jsonServiceMapping.methodName(), args, requestText);
+            responseObject = callMethod(jsonServiceMapping, parameterTypes, parameters,
+                    queryParameters, authentication.username(), request);
         } catch (Exception e) {
             return newHttpResponseFromException(e);
         }
@@ -438,6 +465,39 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         return response;
     }
 
+    private static ImmutableJsonServiceMapping build(HttpMethod httpMethod, String path,
+            String permission, Object jsonService, Method method) {
+        boolean bindAgentId = false;
+        boolean bindAgentRollup = false;
+        Class<?> bindRequest = null;
+        boolean bindUsername = false;
+        for (int i = 0; i < method.getParameterAnnotations().length; i++) {
+            Annotation[] parameterAnnotations = method.getParameterAnnotations()[i];
+            for (Annotation annotation : parameterAnnotations) {
+                if (annotation.annotationType() == BindAgentId.class) {
+                    bindAgentId = true;
+                } else if (annotation.annotationType() == BindAgentRollup.class) {
+                    bindAgentRollup = true;
+                } else if (annotation.annotationType() == BindRequest.class) {
+                    bindRequest = method.getParameterTypes()[i];
+                } else if (annotation.annotationType() == BindUsername.class) {
+                    bindUsername = true;
+                }
+            }
+        }
+        return ImmutableJsonServiceMapping.builder()
+                .httpMethod(httpMethod)
+                .path(path)
+                .permission(permission)
+                .service(jsonService)
+                .method(method)
+                .bindAgentId(bindAgentId)
+                .bindAgentRollup(bindAgentRollup)
+                .bindRequest(bindRequest)
+                .bindUsername(bindUsername)
+                .build();
+    }
+
     private static @Nullable URL getSecureUrlForPath(String path) {
         URL url = getUrlForPath(path);
         if (url != null && RESOURCE_BASE_URL_PREFIX != null
@@ -496,7 +556,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         // this is an "expected" exception, no need to send back stack trace
         StringBuilder sb = new StringBuilder();
         try {
-            JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+            JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();
             jg.writeStringField("message", message);
             jg.writeEndObject();
@@ -514,7 +574,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         e.printStackTrace(new PrintWriter(sw));
         StringBuilder sb = new StringBuilder();
         try {
-            JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+            JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();
             String message;
             if (simplifiedMessage == null) {
@@ -539,77 +599,60 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private static @Nullable Object callMethod(Object object, String methodName, String[] args,
-            String requestText) throws Exception {
-        List<Class<?>> parameterTypes = Lists.newArrayList();
-        List<Object> parameters = Lists.newArrayList();
-        for (int i = 0; i < args.length; i++) {
-            parameterTypes.add(String.class);
-            parameters.add(args[i]);
-        }
-        Method method = null;
-        try {
-            method = object.getClass().getDeclaredMethod(methodName,
-                    parameterTypes.toArray(new Class[parameterTypes.size()]));
-        } catch (Exception e) {
-            // log exception at trace level
-            logger.trace(e.getMessage(), e);
-            // try again with requestText
-            parameterTypes.add(String.class);
-            parameters.add(requestText);
-            try {
-                method = object.getClass().getDeclaredMethod(methodName,
-                        parameterTypes.toArray(new Class[parameterTypes.size()]));
-            } catch (Exception f) {
-                // log exception at debug level
-                logger.trace(f.getMessage(), f);
-                throw new NoSuchMethodException(methodName);
+    private static @Nullable Object callMethod(JsonServiceMapping jsonServiceMapping,
+            List<Class<?>> parameterTypes, List<Object> parameters,
+            Map<String, List<String>> queryParameters, String username, FullHttpRequest request)
+            throws Exception {
+        Class<?> bindRequest = jsonServiceMapping.bindRequest();
+        if (bindRequest != null) {
+            parameterTypes.add(bindRequest);
+            if (jsonServiceMapping.httpMethod() == HttpMethod.GET) {
+                parameters.add(QueryStrings.decode(queryParameters, bindRequest));
+            } else {
+                String content = request.content().toString(Charsets.ISO_8859_1);
+                if (bindRequest == String.class) {
+                    parameters.add(content);
+                } else {
+                    // TODO report checker framework issue that occurs without this suppression
+                    @SuppressWarnings("argument.type.incompatible")
+                    Object param = checkNotNull(
+                            mapper.readValue(content, QueryStrings.getImmutableClass(bindRequest)));
+                    parameters.add(param);
+                }
             }
         }
+        if (jsonServiceMapping.bindUsername()) {
+            parameterTypes.add(String.class);
+            parameters.add(username);
+        }
+        Object service = jsonServiceMapping.service();
         if (logger.isDebugEnabled()) {
             String params = Joiner.on(", ").join(parameters);
-            logger.debug("{}.{}(): {}", object.getClass().getSimpleName(), methodName, params);
+            logger.debug("{}.{}(): {}", service.getClass().getSimpleName(),
+                    jsonServiceMapping.method().getName(), params);
         }
-        return method.invoke(object, parameters.toArray(new Object[parameters.size()]));
-    }
-
-    private static String getRequestText(FullHttpRequest request) {
-        if (request.method() == io.netty.handler.codec.http.HttpMethod.POST) {
-            return request.content().toString(Charsets.ISO_8859_1);
-        } else {
-            int index = request.uri().indexOf('?');
-            if (index == -1) {
-                return "";
-            } else {
-                return request.uri().substring(index + 1);
-            }
-        }
+        return jsonServiceMapping.method().invoke(service,
+                parameters.toArray(new Object[parameters.size()]));
     }
 
     @Value.Immutable
-    @Styles.AllParameters
-    interface JsonServiceMatcher {
-        JsonServiceMapping jsonServiceMapping();
-        Matcher matcher();
+    interface Credentials {
+        String username();
+        String password();
     }
 
     @Value.Immutable
-    abstract static class JsonServiceMapping {
-
-        abstract HttpMethod httpMethod();
-        abstract String path();
-        abstract Object service();
-        abstract String methodName();
-
-        @Value.Derived
-        Pattern pattern() {
-            String path = path();
-            if (path.contains("(")) {
-                return Pattern.compile(path);
-            } else {
-                return Pattern.compile(Pattern.quote(path));
-            }
-        }
+    interface JsonServiceMapping {
+        HttpMethod httpMethod();
+        String path();
+        String permission();
+        Object service();
+        Method method();
+        boolean bindAgentId();
+        boolean bindAgentRollup();
+        @Nullable
+        Class<?> bindRequest();
+        boolean bindUsername();
     }
 
     enum HttpMethod {

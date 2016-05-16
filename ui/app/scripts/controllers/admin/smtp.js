@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,14 @@
 
 /* global glowroot, angular, $ */
 
-glowroot.controller('ConfigSmtpCtrl', [
+glowroot.controller('AdminSmtpCtrl', [
   '$scope',
   '$http',
   'modals',
   'confirmIfHasChanges',
   'httpErrors',
   function ($scope, $http, modals, confirmIfHasChanges, httpErrors) {
+
     $scope.hasChanges = function () {
       return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
     };
@@ -54,7 +55,7 @@ glowroot.controller('ConfigSmtpCtrl', [
     $scope.sendTestEmail = function (deferred) {
       var postData = angular.copy($scope.config);
       postData.testEmailRecipient = $scope.testEmailRecipient;
-      $http.post('backend/config/send-test-email', postData)
+      $http.post('backend/admin/send-test-email', postData)
           .success(function () {
             deferred.resolve('Sent');
           })
@@ -62,7 +63,7 @@ glowroot.controller('ConfigSmtpCtrl', [
     };
 
     $scope.save = function (deferred) {
-      $http.post('backend/config/smtp', $scope.config)
+      $http.post('backend/admin/smtp', $scope.config)
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Saved');
@@ -70,7 +71,7 @@ glowroot.controller('ConfigSmtpCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/smtp')
+    $http.get('backend/admin/smtp')
         .success(onNewData)
         .error(httpErrors.handler($scope));
   }

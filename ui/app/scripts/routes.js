@@ -24,7 +24,7 @@ glowroot.config([
     var waitForLayout = function (needsTransactionType, loginPage) {
       return ['$q', '$rootScope', '$location', function ($q, $rootScope, $location) {
         if (window.layout) {
-          if (loginPage && !$rootScope.layout.needsAuthentication && !$rootScope.layout.adminPasswordEnabled) {
+          if (loginPage && $rootScope.layout.hideLogin) {
             // no need to log in
             $location.path('/').replace();
             return;
@@ -42,7 +42,7 @@ glowroot.config([
             if (!value) {
               return;
             }
-            if (loginPage && !$rootScope.layout.needsAuthentication && !$rootScope.layout.adminPasswordEnabled) {
+            if (loginPage && $rootScope.layout.hideLogin) {
               // no need to log in
               $location.path('/').replace();
               return;
@@ -435,20 +435,53 @@ glowroot.config([
         }
       }
     });
-    $stateProvider.state('config.access', {
-      url: '/access',
-      templateUrl: 'views/config/access.html',
-      controller: 'ConfigAccessCtrl'
+    $stateProvider.state('admin', {
+      url: '/admin',
+      templateUrl: 'views/config.html',
+      controller: 'ConfigCtrl',
+      resolve: {
+        waitForLayout: waitForLayout(false)
+      }
     });
-    $stateProvider.state('config.storage', {
+    $stateProvider.state('admin.userList', {
+      url: '/user-list',
+      templateUrl: 'views/admin/user-list.html',
+      controller: 'AdminUserListCtrl'
+    });
+    $stateProvider.state('admin.user', {
+      url: '/user',
+      templateUrl: 'views/admin/user.html',
+      controller: 'AdminUserCtrl'
+    });
+    $stateProvider.state('admin.roleList', {
+      url: '/role-list',
+      templateUrl: 'views/admin/role-list.html',
+      controller: 'AdminRoleListCtrl'
+    });
+    $stateProvider.state('admin.role', {
+      url: '/role',
+      templateUrl: 'views/admin/role.html',
+      controller: 'AdminRoleCtrl'
+    });
+    $stateProvider.state('admin.web', {
+      url: '/web',
+      templateUrl: 'views/admin/web.html',
+      controller: 'AdminWebCtrl'
+    });
+    $stateProvider.state('admin.storage', {
       url: '/storage',
-      templateUrl: 'views/config/storage.html',
-      controller: 'ConfigStorageCtrl'
+      templateUrl: 'views/admin/storage.html',
+      controller: 'AdminStorageCtrl'
     });
-    $stateProvider.state('config.smtp', {
+    $stateProvider.state('admin.smtp', {
       url: '/smtp',
-      templateUrl: 'views/config/smtp.html',
-      controller: 'ConfigSmtpCtrl'
+      templateUrl: 'views/admin/smtp.html',
+      controller: 'AdminSmtpCtrl'
+    });
+    $stateProvider.state('admin.changePassword', {
+      url: '^/change-password',
+      templateUrl: 'views/change-password.html',
+      controller: 'ChangePasswordCtrl'
     });
     $stateProvider.state('login', {
       url: '/login',

@@ -30,11 +30,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.QueryStringDecoder;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.ObjectMappers;
@@ -46,6 +46,8 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.Instrumenta
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignature;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonService
 class InstrumentationConfigJsonService {
@@ -60,18 +62,18 @@ class InstrumentationConfigJsonService {
 
     private final ConfigRepository configRepository;
     private final LiveWeavingService liveWeavingService;
+    private final LiveJvmService liveJvmService;
 
     InstrumentationConfigJsonService(ConfigRepository configRepository,
-            LiveWeavingService liveWeavingService) {
+            LiveWeavingService liveWeavingService, LiveJvmService liveJvmService) {
         this.configRepository = configRepository;
         this.liveWeavingService = liveWeavingService;
+        this.liveJvmService = liveJvmService;
     }
 
-    @GET("/backend/config/instrumentation")
-    String getInstrumentationConfig(String queryString) throws Exception {
-        InstrumentationConfigRequest request =
-                QueryStrings.decode(queryString, InstrumentationConfigRequest.class);
-        String agentId = request.agentId();
+    @GET(path = "/backend/config/instrumentation", permission = "agent:config:view:instrumentation")
+    String getInstrumentationConfig(@BindAgentId String agentId,
+            @BindRequest InstrumentationConfigRequest request) throws Exception {
         Optional<String> version = request.version();
         if (version.isPresent()) {
             return getInstrumentationConfigInternal(agentId, version.get());
@@ -99,10 +101,9 @@ class InstrumentationConfigJsonService {
         }
     }
 
-    // this is marked as @GET so it can be used without update rights (e.g. demo instance)
-    @GET("/backend/config/preload-classpath-cache")
-    void preloadClasspathCache(String queryString) throws Exception {
-        final String agentId = getAgentId(queryString);
+    @GET(path = "/backend/config/preload-classpath-cache",
+            permission = "agent:config:view:instrumentation")
+    void preloadClasspathCache(final @BindAgentId String agentId) throws Exception {
         // HttpServer is configured with a very small thread pool to keep number of threads down
         // (currently only a single thread), so spawn a background thread to perform the preloading
         // so it doesn't block other http requests
@@ -123,28 +124,36 @@ class InstrumentationConfigJsonService {
         thread.start();
     }
 
-    @GET("/backend/config/matching-class-names")
-    String getMatchingClassNames(String queryString) throws Exception {
-        ClassNamesRequest request = QueryStrings.decode(queryString, ClassNamesRequest.class);
-        return mapper.writeValueAsString(liveWeavingService.getMatchingClassNames(
-                request.agentId(), request.partialClassName(), request.limit()));
+    @GET(path = "/backend/config/new-instrumentation-check-agent-connected",
+            permission = "agent:config:edit:instrumentation")
+    String checkAgentConnected(@BindAgentId String agentId) throws Exception {
+        checkNotNull(liveJvmService);
+        return Boolean.toString(liveJvmService.isAvailable(agentId));
     }
 
-    @GET("/backend/config/matching-method-names")
-    String getMatchingMethodNames(String queryString) throws Exception {
-        MethodNamesRequest request = QueryStrings.decode(queryString, MethodNamesRequest.class);
-        List<String> matchingMethodNames =
-                liveWeavingService.getMatchingMethodNames(request.agentId(), request.className(),
-                        request.partialMethodName(), request.limit());
+    @GET(path = "/backend/config/matching-class-names",
+            permission = "agent:config:edit:instrumentation")
+    String getMatchingClassNames(@BindAgentId String agentId,
+            @BindRequest ClassNamesRequest request) throws Exception {
+        return mapper.writeValueAsString(liveWeavingService.getMatchingClassNames(agentId,
+                request.partialClassName(), request.limit()));
+    }
+
+    @GET(path = "/backend/config/matching-method-names",
+            permission = "agent:config:edit:instrumentation")
+    String getMatchingMethodNames(@BindAgentId String agentId,
+            @BindRequest MethodNamesRequest request) throws Exception {
+        List<String> matchingMethodNames = liveWeavingService.getMatchingMethodNames(agentId,
+                request.className(), request.partialMethodName(), request.limit());
         return mapper.writeValueAsString(matchingMethodNames);
     }
 
-    @GET("/backend/config/method-signatures")
-    String getMethodSignatures(String queryString) throws Exception {
-        MethodSignaturesRequest request =
-                QueryStrings.decode(queryString, MethodSignaturesRequest.class);
-        List<MethodSignature> signatures = liveWeavingService
-                .getMethodSignatures(request.agentId(), request.className(), request.methodName());
+    @GET(path = "/backend/config/method-signatures",
+            permission = "agent:config:edit:instrumentation")
+    String getMethodSignatures(@BindAgentId String agentId,
+            @BindRequest MethodSignaturesRequest request) throws Exception {
+        List<MethodSignature> signatures = liveWeavingService.getMethodSignatures(agentId,
+                request.className(), request.methodName());
         List<MethodSignatureDto> methodSignatures = Lists.newArrayList();
         for (MethodSignature signature : signatures) {
             methodSignatures.add(MethodSignatureDto.create(signature));
@@ -152,44 +161,48 @@ class InstrumentationConfigJsonService {
         return mapper.writeValueAsString(methodSignatures);
     }
 
-    @POST("/backend/config/instrumentation/add")
-    String addInstrumentationConfig(String content) throws Exception {
-        InstrumentationConfigDto configDto =
-                mapper.readValue(content, ImmutableInstrumentationConfigDto.class);
-        String agentId = configDto.agentId().get();
+    @POST(path = "/backend/config/instrumentation/add",
+            permission = "agent:config:edit:instrumentation")
+    String addInstrumentationConfig(@BindAgentId String agentId,
+            @BindRequest InstrumentationConfigDto configDto) throws Exception {
         InstrumentationConfig config = configDto.convert();
         configRepository.insertInstrumentationConfig(agentId, config);
         return getInstrumentationConfigInternal(agentId, Versions.getVersion(config));
     }
 
-    @POST("/backend/config/instrumentation/update")
-    String updateInstrumentationConfig(String content) throws Exception {
-        InstrumentationConfigDto configDto =
-                mapper.readValue(content, ImmutableInstrumentationConfigDto.class);
-        String agentId = configDto.agentId().get();
+    @POST(path = "/backend/config/instrumentation/update",
+            permission = "agent:config:edit:instrumentation")
+    String updateInstrumentationConfig(@BindAgentId String agentId,
+            @BindRequest InstrumentationConfigDto configDto) throws Exception {
         InstrumentationConfig config = configDto.convert();
         String version = configDto.version().get();
         configRepository.updateInstrumentationConfig(agentId, config, version);
         return getInstrumentationConfigInternal(agentId, Versions.getVersion(config));
     }
 
-    @POST("/backend/config/instrumentation/remove")
-    void removeInstrumentationConfig(String content) throws Exception {
-        InstrumentationDeleteRequest request =
-                mapper.readValue(content, ImmutableInstrumentationDeleteRequest.class);
-        configRepository.deleteInstrumentationConfigs(request.agentId(), request.versions());
+    @POST(path = "/backend/config/instrumentation/remove",
+            permission = "agent:config:edit:instrumentation")
+    void removeInstrumentationConfig(@BindAgentId String agentId,
+            @BindRequest InstrumentationDeleteRequest request) throws Exception {
+        configRepository.deleteInstrumentationConfigs(agentId, request.versions());
     }
 
-    @POST("/backend/config/instrumentation/import")
-    void importInstrumentationConfig(String content) throws Exception {
-        InstrumentationImportRequest request =
-                mapper.readValue(content, ImmutableInstrumentationImportRequest.class);
-        String agentId = request.agentId();
+    @POST(path = "/backend/config/instrumentation/import",
+            permission = "agent:config:edit:instrumentation")
+    void importInstrumentationConfig(@BindAgentId String agentId,
+            @BindRequest InstrumentationImportRequest request) throws Exception {
         List<InstrumentationConfig> configs = Lists.newArrayList();
         for (InstrumentationConfigDto configDto : request.configs()) {
             configs.add(configDto.convert());
         }
         configRepository.insertInstrumentationConfigs(agentId, configs);
+    }
+
+    @POST(path = "/backend/config/reweave", permission = "agent:config:edit:instrumentation")
+    String reweave(@BindAgentId String agentId) throws Exception {
+        checkNotNull(liveWeavingService);
+        int count = liveWeavingService.reweave(agentId);
+        return "{\"classes\":" + count + "}";
     }
 
     private String getInstrumentationConfigInternal(String agentId, String version)
@@ -239,26 +252,19 @@ class InstrumentationConfigJsonService {
                 && config.getMethodParameterType(0).equals("..");
     }
 
-    private static String getAgentId(String queryString) {
-        return QueryStringDecoder.decodeComponent(queryString.substring("agent-id".length() + 1));
-    }
-
     @Value.Immutable
     interface InstrumentationConfigRequest {
-        String agentId();
         Optional<String> version();
     }
 
     @Value.Immutable
     interface ClassNamesRequest {
-        String agentId();
         String partialClassName();
         int limit();
     }
 
     @Value.Immutable
     interface MethodNamesRequest {
-        String agentId();
         String className();
         String partialMethodName();
         int limit();
@@ -266,7 +272,6 @@ class InstrumentationConfigJsonService {
 
     @Value.Immutable
     interface MethodSignaturesRequest {
-        String agentId();
         String className();
         String methodName();
     }
@@ -292,13 +297,11 @@ class InstrumentationConfigJsonService {
 
     @Value.Immutable
     interface InstrumentationImportRequest {
-        String agentId();
         ImmutableList<ImmutableInstrumentationConfigDto> configs();
     }
 
     @Value.Immutable
     interface InstrumentationDeleteRequest {
-        String agentId();
         List<String> versions();
     }
 

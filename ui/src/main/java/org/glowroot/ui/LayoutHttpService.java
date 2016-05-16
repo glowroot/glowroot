@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpRequest;
 
+import org.glowroot.ui.HttpSessionManager.Authentication;
+
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
-class LayoutHttpService implements UnauthenticatedHttpService {
+class LayoutHttpService implements HttpService {
 
     private final HttpSessionManager httpSessionManager;
     private final LayoutService layoutJsonService;
@@ -32,13 +34,20 @@ class LayoutHttpService implements UnauthenticatedHttpService {
     }
 
     @Override
+    public String getPermission() {
+        // this service does not require any permission
+        return "";
+    }
+
+    @Override
     public FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
             throws Exception {
+        Authentication authentication = httpSessionManager.getAuthentication(request);
         String layout;
-        if (httpSessionManager.hasReadAccess(request)) {
-            layout = layoutJsonService.getLayout();
-        } else {
+        if (authentication == null) {
             layout = layoutJsonService.getNeedsAuthenticationLayout();
+        } else {
+            layout = layoutJsonService.getLayout(authentication);
         }
         return HttpServices.createJsonResponse(layout, OK);
     }

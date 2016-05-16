@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Properties;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
@@ -44,11 +45,13 @@ import org.glowroot.server.storage.AgentDao;
 import org.glowroot.server.storage.AggregateDao;
 import org.glowroot.server.storage.ConfigRepositoryImpl;
 import org.glowroot.server.storage.GaugeValueDao;
+import org.glowroot.server.storage.RoleDao;
 import org.glowroot.server.storage.RollupService;
 import org.glowroot.server.storage.ServerConfigDao;
 import org.glowroot.server.storage.TraceDao;
 import org.glowroot.server.storage.TransactionTypeDao;
 import org.glowroot.server.storage.TriggeredAlertDao;
+import org.glowroot.server.storage.UserDao;
 import org.glowroot.storage.repo.RepoAdmin;
 import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.storage.repo.helper.RollupLevelService;
@@ -119,8 +122,12 @@ public class ServerModule {
 
             ServerConfigDao serverConfigDao = new ServerConfigDao(session);
             AgentDao agentDao = new AgentDao(session);
+            KeyspaceMetadata keyspace =
+                    cluster.getMetadata().getKeyspace(serverConfig.cassandraKeyspace());
+            UserDao userDao = new UserDao(session, keyspace);
+            RoleDao roleDao = new RoleDao(session, keyspace);
             ConfigRepositoryImpl configRepository =
-                    new ConfigRepositoryImpl(serverConfigDao, agentDao);
+                    new ConfigRepositoryImpl(serverConfigDao, agentDao, userDao, roleDao);
             serverConfigDao.setConfigRepository(configRepository);
             agentDao.setConfigRepository(configRepository);
 

@@ -51,8 +51,8 @@ public class ConfigSidebar {
         return Utils.withWait(driver, getSidebar(), linkText("Advanced"));
     }
 
-    public WebElement getAccessLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Access"));
+    public WebElement getWebLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Web"));
     }
 
     public WebElement getStorageLink() {

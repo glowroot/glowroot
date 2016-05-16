@@ -43,14 +43,14 @@ glowroot.controller('TransactionTabCtrl', [
       filteredTraceTabCount = traceCount;
     });
 
-    $scope.traceCount = function () {
-      if (!$scope.tabBarData) {
+    $scope.traceCountDisplay = function () {
+      if ($scope.traceCount === undefined) {
         return '...';
       }
       if (filteredTraceTabCount !== undefined) {
         return filteredTraceTabCount;
       }
-      return $scope.tabBarData.traceCount;
+      return $scope.traceCount;
     };
 
     $scope.clickTab = function (tabItem, event) {
@@ -101,9 +101,7 @@ glowroot.controller('TransactionTabCtrl', [
 
     function updateTabBarData() {
       if ((!$scope.agentRollup && !$scope.layout.fat) || !$scope.transactionType) {
-        $scope.tabBarData = {
-          traceCount: 0
-        };
+        $scope.traceCount = 0;
         return;
       }
       var query = {
@@ -114,7 +112,7 @@ glowroot.controller('TransactionTabCtrl', [
         to: $scope.range.chartTo
       };
       concurrentUpdateCount++;
-      $http.get('backend/' + shortName + '/tab-bar-data' + queryStrings.encodeObject(query))
+      $http.get('backend/' + shortName + '/trace-count' + queryStrings.encodeObject(query))
           .success(function (data) {
             concurrentUpdateCount--;
             if (concurrentUpdateCount) {
@@ -123,7 +121,7 @@ glowroot.controller('TransactionTabCtrl', [
             if ($scope.activeTabItem !== 'traces') {
               filteredTraceTabCount = undefined;
             }
-            $scope.tabBarData = data;
+            $scope.traceCount = data;
           })
           .error(function (data, status) {
             concurrentUpdateCount--;

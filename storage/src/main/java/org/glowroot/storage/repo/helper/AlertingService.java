@@ -77,6 +77,9 @@ public class AlertingService {
     }
 
     public void checkTransactionAlerts(String agentId, long endTime) throws Exception {
+        if (configRepository.getSmtpConfig().host().isEmpty()) {
+            return;
+        }
         try {
             for (String agentRollup : AgentRollups.getAgentRollups(agentId)) {
                 for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollup)) {
@@ -133,9 +136,8 @@ public class AlertingService {
         startTime++;
         int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
         List<PercentileAggregate> percentileAggregates =
-                aggregateRepository.readPercentileAggregates(
+                aggregateRepository.readPercentileAggregates(agentRollup,
                         ImmutableTransactionQuery.builder()
-                                .agentRollup(agentRollup)
                                 .transactionType(alertConfig.getTransactionType())
                                 .from(startTime)
                                 .to(endTime)

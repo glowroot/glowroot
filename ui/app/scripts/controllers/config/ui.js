@@ -26,11 +26,12 @@ glowroot.controller('ConfigUiCtrl', [
   'httpErrors',
   function ($scope, $http, $rootScope, $location, $timeout, confirmIfHasChanges, httpErrors) {
 
+    // initialize page binding object
+    $scope.page = {};
+
     if ($scope.hideMainContent()) {
       return;
     }
-
-    $scope.page = {};
 
     $scope.$watch('page.defaultDisplayedPercentiles', function (newVal) {
       if ($scope.config) {
@@ -63,8 +64,7 @@ glowroot.controller('ConfigUiCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.agentId = $scope.agentId;
-      $http.post('backend/config/ui', postData)
+      $http.post('backend/config/ui?agent-id=' + encodeURIComponent($scope.agentId), postData)
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Saved');

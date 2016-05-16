@@ -23,11 +23,11 @@ import org.glowroot.agent.webdriver.tests.Utils;
 
 import static org.openqa.selenium.By.xpath;
 
-public class AccessConfigPage {
+public class WebConfigPage {
 
     private final WebDriver driver;
 
-    public AccessConfigPage(WebDriver driver) {
+    public WebConfigPage(WebDriver driver) {
         this.driver = driver;
     }
 

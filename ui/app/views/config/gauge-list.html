@@ -22,6 +22,10 @@
       <div ng-include src="'template/gt-loading-overlay.html'"></div>
       <div ng-include src="'template/gt-http-error-overlay.html'"></div>
       <div style="margin: 15px;">
+        <div ng-if="!gauges.length"
+             style="font-style: italic;">
+          There are no configured gauges
+        </div>
         <div ng-repeat="gauge in gauges"
              style="padding-bottom: 8px;">
           <div>
@@ -33,8 +37,8 @@
           </div>
         </div>
         <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
-             before it gets pushed down by existing gauge sections -->
-        <div ng-show="loaded"
+             before it gets pushed down by existing gauges -->
+        <div ng-if="loaded && permissions.config.edit.gauge"
              style="margin-top: 30px;">
           <a class="btn btn-primary"
              href="config/gauge{{newQueryString()}}">

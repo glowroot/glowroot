@@ -27,14 +27,28 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 // similar to javax.ws.rs.GET
 @Retention(RUNTIME)
 @interface GET {
-    String value();
+    String path();
+    String permission();
 }
 
 // similar to javax.ws.rs.POST
 @Retention(RUNTIME)
 @interface POST {
-    String value();
+    String path();
+    String permission();
 }
+
+@Retention(RUNTIME)
+@interface BindAgentId {}
+
+@Retention(RUNTIME)
+@interface BindAgentRollup {}
+
+@Retention(RUNTIME)
+@interface BindRequest {}
+
+@Retention(RUNTIME)
+@interface BindUsername {}
 
 // used for "expected" exceptions, these are not logged and their stack trace is not sent back to
 // browser

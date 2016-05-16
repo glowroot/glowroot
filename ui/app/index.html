@@ -89,7 +89,8 @@
         Glowroot
       </div>
     </div>
-    <div ng-hide="hideNavbar()"
+    <div class="ng-cloak"
+         ng-hide="hideNavbar()"
          ng-controller="NavbarCtrl">
       <nav class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
@@ -109,24 +110,24 @@
                gt-url="jvm/gauges{{queryString(true)}}">
           </div>
           <div gt-navbar-item
-               ng-if="!layout.fat"
                gt-display="Config"
                gt-item-name="agentConfig"
-               gt-url="config/transaction{{serverConfigQueryString()}}">
+               gt-url="config/transaction{{configQueryString()}}"
+               ng-if="!layout.fat && layout.showNavbarConfig">
           </div>
         </ul>
         <ul class="nav navbar-nav navbar-right"
             style="margin-right: 0;">
-          <div class="ng-cloak"
-               gt-navbar-item
+          <div gt-navbar-item
                gt-display=""
-               gt-item-name="{{layout.fat ? 'agentConfig' : 'serverConfig'}}"
-               gt-url="{{layout.fat ? 'config/transaction' : 'config/access'}}">
-            <i title="Configuration"
+               gt-item-name="gears"
+               gt-url="{{gearIconUrl()}}"
+               ng-if="layout.admin || layout.fat && layout.showNavbarConfig || !isAnonymous()">
+            <i title="{{gearIconNavbarTitle()}}"
                class="fa fa-gears"
                style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -1px;"></i>
           </div>
-          <li class="ng-cloak" ng-show="showSignIn()">
+          <li class="ng-cloak" ng-if="showSignIn()">
             <a href="login"
                ng-click="goToLogin($event)"
                style="padding-top: 14px; padding-bottom: 0; height: 50px;">
@@ -135,7 +136,7 @@
                  style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -1px;"></i>
             </a>
           </li>
-          <li class="ng-cloak" ng-show="showSignOut()">
+          <li class="ng-cloak" ng-if="showSignOut()">
             <a href="#"
                ng-click="signOut()"
                style="padding-top: 14px; padding-bottom: 0; height: 50px;">
@@ -149,9 +150,9 @@
     </div>
   </div>
 </header>
-<div class="ng-cloak gt-button-message gt-button-message-success"
+<div class="ng-cloak gt-button-message-success"
      ng-if="displaySignOutMessage"
-     style="text-align: center; font-size: 20px;">
+     style="text-align: center; font-size: 20px; font-weight: 600;">
   You have been signed out
 </div>
 <div class="container" id="container">
@@ -269,9 +270,14 @@
 <script src="scripts/controllers/config/instrumentation-list.js"></script>
 <script src="scripts/controllers/config/instrumentation.js"></script>
 <script src="scripts/controllers/config/user-recording.js"></script>
-<script src="scripts/controllers/config/access.js"></script>
-<script src="scripts/controllers/config/storage.js"></script>
-<script src="scripts/controllers/config/smtp.js"></script>
+<script src="scripts/controllers/admin/user-list.js"></script>
+<script src="scripts/controllers/admin/user.js"></script>
+<script src="scripts/controllers/admin/role-list.js"></script>
+<script src="scripts/controllers/admin/role.js"></script>
+<script src="scripts/controllers/admin/web.js"></script>
+<script src="scripts/controllers/admin/storage.js"></script>
+<script src="scripts/controllers/admin/smtp.js"></script>
+<script src="scripts/controllers/change-password.js"></script>
 <script src="scripts/controllers/login.js"></script>
 <!-- handlebars-templates.js is generated at build time by grunt-contrib-handlebars -->
 <script src="scripts/generated/handlebars-templates.js"></script>

@@ -66,10 +66,11 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    OverallSummary readOverallSummary(OverallQuery query) throws Exception {
+    OverallSummary readOverallSummary(String agentRollup, OverallQuery query) throws Exception {
         OverallSummaryCollector collector = new OverallSummaryCollector();
         long revisedFrom = query.from();
-        long revisedTo = liveAggregateRepository.mergeInOverallSummary(collector, query);
+        long revisedTo =
+                liveAggregateRepository.mergeInOverallSummary(agentRollup, query, collector);
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             OverallQuery revisedQuery = ImmutableOverallQuery.builder()
                     .copyFrom(query)
@@ -77,7 +78,7 @@ class TransactionCommonService {
                     .to(revisedTo)
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeInOverallSummary(collector, revisedQuery);
+            aggregateRepository.mergeInOverallSummary(agentRollup, revisedQuery, collector);
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {
@@ -88,11 +89,12 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    Result<TransactionSummary> readTransactionSummaries(OverallQuery query,
+    Result<TransactionSummary> readTransactionSummaries(String agentRollup, OverallQuery query,
             SummarySortOrder sortOrder, int limit) throws Exception {
         TransactionSummaryCollector collector = new TransactionSummaryCollector();
         long revisedFrom = query.from();
-        long revisedTo = liveAggregateRepository.mergeInTransactionSummaries(collector, query);
+        long revisedTo =
+                liveAggregateRepository.mergeInTransactionSummaries(agentRollup, query, collector);
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             OverallQuery revisedQuery = ImmutableOverallQuery.builder()
                     .copyFrom(query)
@@ -100,8 +102,8 @@ class TransactionCommonService {
                     .to(revisedTo)
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeInTransactionSummaries(collector, revisedQuery, sortOrder,
-                    limit);
+            aggregateRepository.mergeInTransactionSummaries(agentRollup, revisedQuery, sortOrder,
+                    limit, collector);
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {
@@ -112,16 +114,17 @@ class TransactionCommonService {
     }
 
     // query.from() is INCLUSIVE
-    List<OverviewAggregate> getOverviewAggregates(TransactionQuery query) throws Exception {
+    List<OverviewAggregate> getOverviewAggregates(String agentRollup, TransactionQuery query)
+            throws Exception {
         LiveResult<OverviewAggregate> liveResult =
-                liveAggregateRepository.getOverviewAggregates(query);
+                liveAggregateRepository.getOverviewAggregates(agentRollup, query);
         long revisedTo = liveResult == null ? query.to() : liveResult.revisedTo();
         TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
                 .copyFrom(query)
                 .to(revisedTo)
                 .build();
         List<OverviewAggregate> aggregates =
-                aggregateRepository.readOverviewAggregates(revisedQuery);
+                aggregateRepository.readOverviewAggregates(agentRollup, revisedQuery);
         if (revisedQuery.rollupLevel() == 0) {
             if (liveResult != null) {
                 aggregates = Lists.newArrayList(aggregates);
@@ -136,11 +139,12 @@ class TransactionCommonService {
         }
         List<OverviewAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
         orderedNonRolledUpAggregates.addAll(
-                aggregateRepository.readOverviewAggregates(ImmutableTransactionQuery.builder()
-                        .copyFrom(revisedQuery)
-                        .from(nonRolledUpFrom)
-                        .rollupLevel(0)
-                        .build()));
+                aggregateRepository.readOverviewAggregates(agentRollup,
+                        ImmutableTransactionQuery.builder()
+                                .copyFrom(revisedQuery)
+                                .from(nonRolledUpFrom)
+                                .rollupLevel(0)
+                                .build()));
         if (liveResult != null) {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
         }
@@ -158,16 +162,17 @@ class TransactionCommonService {
     }
 
     // query.from() is INCLUSIVE
-    List<PercentileAggregate> getPercentileAggregates(TransactionQuery query) throws Exception {
+    List<PercentileAggregate> getPercentileAggregates(String agentRollup, TransactionQuery query)
+            throws Exception {
         LiveResult<PercentileAggregate> liveResult =
-                liveAggregateRepository.getPercentileAggregates(query);
+                liveAggregateRepository.getPercentileAggregates(agentRollup, query);
         long revisedTo = liveResult == null ? query.to() : liveResult.revisedTo();
         TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
                 .copyFrom(query)
                 .to(revisedTo)
                 .build();
         List<PercentileAggregate> aggregates =
-                aggregateRepository.readPercentileAggregates(revisedQuery);
+                aggregateRepository.readPercentileAggregates(agentRollup, revisedQuery);
         if (revisedQuery.rollupLevel() == 0) {
             if (liveResult != null) {
                 aggregates = Lists.newArrayList(aggregates);
@@ -182,11 +187,12 @@ class TransactionCommonService {
         }
         List<PercentileAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
         orderedNonRolledUpAggregates.addAll(
-                aggregateRepository.readPercentileAggregates(ImmutableTransactionQuery.builder()
-                        .copyFrom(revisedQuery)
-                        .from(nonRolledUpFrom)
-                        .rollupLevel(0)
-                        .build()));
+                aggregateRepository.readPercentileAggregates(agentRollup,
+                        ImmutableTransactionQuery.builder()
+                                .copyFrom(revisedQuery)
+                                .from(nonRolledUpFrom)
+                                .rollupLevel(0)
+                                .build()));
         if (liveResult != null) {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
         }
@@ -204,16 +210,17 @@ class TransactionCommonService {
     }
 
     // query.from() is INCLUSIVE
-    List<ThroughputAggregate> getThroughputAggregates(TransactionQuery query) throws Exception {
+    List<ThroughputAggregate> getThroughputAggregates(String agentRollup, TransactionQuery query)
+            throws Exception {
         LiveResult<ThroughputAggregate> liveResult =
-                liveAggregateRepository.getThroughputAggregates(query);
+                liveAggregateRepository.getThroughputAggregates(agentRollup, query);
         long revisedTo = liveResult == null ? query.to() : liveResult.revisedTo();
         TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
                 .copyFrom(query)
                 .to(revisedTo)
                 .build();
         List<ThroughputAggregate> aggregates =
-                aggregateRepository.readThroughputAggregates(revisedQuery);
+                aggregateRepository.readThroughputAggregates(agentRollup, revisedQuery);
         if (revisedQuery.rollupLevel() == 0) {
             if (liveResult != null) {
                 aggregates = Lists.newArrayList(aggregates);
@@ -227,12 +234,13 @@ class TransactionCommonService {
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<ThroughputAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
-        orderedNonRolledUpAggregates.addAll(
-                aggregateRepository.readThroughputAggregates(ImmutableTransactionQuery.builder()
-                        .copyFrom(revisedQuery)
-                        .from(nonRolledUpFrom)
-                        .rollupLevel(0)
-                        .build()));
+        orderedNonRolledUpAggregates.addAll(aggregateRepository
+                .readThroughputAggregates(agentRollup,
+                        ImmutableTransactionQuery.builder()
+                                .copyFrom(revisedQuery)
+                                .from(nonRolledUpFrom)
+                                .rollupLevel(0)
+                                .build()));
         if (liveResult != null) {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
         }
@@ -250,11 +258,12 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    List<Aggregate.QueriesByType> getMergedQueries(TransactionQuery query) throws Exception {
-        int maxAggregateQueriesPerType = getMaxAggregateQueriesPerType(query.agentRollup());
+    List<Aggregate.QueriesByType> getMergedQueries(String agentRollup, TransactionQuery query)
+            throws Exception {
+        int maxAggregateQueriesPerType = getMaxAggregateQueriesPerType(agentRollup);
         QueryCollector queryCollector = new QueryCollector(maxAggregateQueriesPerType, 0);
         long revisedFrom = query.from();
-        long revisedTo = liveAggregateRepository.mergeInQueries(queryCollector, query);
+        long revisedTo = liveAggregateRepository.mergeInQueries(agentRollup, query, queryCollector);
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
                     .copyFrom(query)
@@ -262,7 +271,7 @@ class TransactionCommonService {
                     .to(revisedTo)
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeInQueries(queryCollector, revisedQuery);
+            aggregateRepository.mergeInQueries(agentRollup, revisedQuery, queryCollector);
             long lastRolledUpTime = queryCollector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {
@@ -273,14 +282,16 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    List<Aggregate.ServiceCallsByType> getMergedServiceCalls(TransactionQuery query)
+    List<Aggregate.ServiceCallsByType> getMergedServiceCalls(String agentRollup,
+            TransactionQuery query)
             throws Exception {
         int maxAggregateServiceCallsPerType =
-                getMaxAggregateServiceCallsPerType(query.agentRollup());
+                getMaxAggregateServiceCallsPerType(agentRollup);
         ServiceCallCollector serviceCallCollector =
                 new ServiceCallCollector(maxAggregateServiceCallsPerType, 0);
         long revisedFrom = query.from();
-        long revisedTo = liveAggregateRepository.mergeInServiceCalls(serviceCallCollector, query);
+        long revisedTo = liveAggregateRepository.mergeInServiceCalls(agentRollup, query,
+                serviceCallCollector);
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
                     .copyFrom(query)
@@ -288,7 +299,8 @@ class TransactionCommonService {
                     .to(revisedTo)
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeInServiceCalls(serviceCallCollector, revisedQuery);
+            aggregateRepository.mergeInServiceCalls(agentRollup, revisedQuery,
+                    serviceCallCollector);
             long lastRolledUpTime = serviceCallCollector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {
@@ -299,10 +311,10 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    MutableProfile getMergedProfile(TransactionQuery query, boolean auxiliary,
+    MutableProfile getMergedProfile(String agentRollup, TransactionQuery query, boolean auxiliary,
             List<String> includes, List<String> excludes, double truncateBranchPercentage)
             throws Exception {
-        MutableProfile profile = getMergedProfile(query, auxiliary);
+        MutableProfile profile = getMergedProfile(agentRollup, query, auxiliary);
         if (!includes.isEmpty() || !excludes.isEmpty()) {
             profile.filter(includes, excludes);
         }
@@ -315,13 +327,13 @@ class TransactionCommonService {
         return profile;
     }
 
-    boolean hasAuxThreadProfile(TransactionQuery query) throws Exception {
+    boolean hasAuxThreadProfile(String agentRollup, TransactionQuery query) throws Exception {
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
                     .copyFrom(query)
                     .rollupLevel(rollupLevel)
                     .build();
-            if (aggregateRepository.hasAuxThreadProfile(revisedQuery)) {
+            if (aggregateRepository.hasAuxThreadProfile(agentRollup, revisedQuery)) {
                 return true;
             }
         }
@@ -417,7 +429,8 @@ class TransactionCommonService {
                     Utils.getRollupCaptureTime(maxCaptureTime, fixedIntervalMillis);
             if (rollupCaptureTime != currRollupCaptureTime && currTransactionCount > 0) {
                 rolledUpThroughputAggregates
-                        .add(ImmutableThroughputAggregate.of(currRollupCaptureTime, currTransactionCount));
+                        .add(ImmutableThroughputAggregate.of(currRollupCaptureTime,
+                                currTransactionCount));
                 currTransactionCount = 0;
             }
             currRollupCaptureTime = rollupCaptureTime;
@@ -431,15 +444,17 @@ class TransactionCommonService {
         return rolledUpThroughputAggregates;
     }
 
-    private MutableProfile getMergedProfile(TransactionQuery query, boolean auxiliary)
-            throws Exception {
+    private MutableProfile getMergedProfile(String agentRollup, TransactionQuery query,
+            boolean auxiliary) throws Exception {
         ProfileCollector collector = new ProfileCollector();
         long revisedFrom = query.from();
         long revisedTo;
         if (auxiliary) {
-            revisedTo = liveAggregateRepository.mergeInAuxThreadProfiles(collector, query);
+            revisedTo =
+                    liveAggregateRepository.mergeInAuxThreadProfiles(agentRollup, query, collector);
         } else {
-            revisedTo = liveAggregateRepository.mergeInMainThreadProfiles(collector, query);
+            revisedTo = liveAggregateRepository.mergeInMainThreadProfiles(agentRollup, query,
+                    collector);
         }
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
@@ -449,9 +464,9 @@ class TransactionCommonService {
                     .rollupLevel(rollupLevel)
                     .build();
             if (auxiliary) {
-                aggregateRepository.mergeInAuxThreadProfiles(collector, revisedQuery);
+                aggregateRepository.mergeInAuxThreadProfiles(agentRollup, revisedQuery, collector);
             } else {
-                aggregateRepository.mergeInMainThreadProfiles(collector, revisedQuery);
+                aggregateRepository.mergeInMainThreadProfiles(agentRollup, revisedQuery, collector);
             }
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);

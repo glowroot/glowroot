@@ -150,21 +150,21 @@ glowroot.controller('ConfigAlertCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.agentId = $scope.agentId;
       var url;
       if (version) {
         url = 'backend/config/alerts/update';
       } else {
         url = 'backend/config/alerts/add';
       }
-      $http.post(url, postData)
+      var agentId = $scope.agentId;
+      $http.post(url + '?agent-id=' + agentId, postData)
           .success(function (data) {
             onNewData(data);
             deferred.resolve(version ? 'Saved' : 'Added');
             version = data.version;
             // fix current url (with updated version) before returning to list page in case back button is used later
-            if (postData.agentId) {
-              $location.search({'agent-id': postData.agentId, v: version}).replace();
+            if (agentId) {
+              $location.search({'agent-id': agentId, v: version}).replace();
             } else {
               $location.search({v: version}).replace();
             }

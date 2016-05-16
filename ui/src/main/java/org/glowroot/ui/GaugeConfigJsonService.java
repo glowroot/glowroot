@@ -20,7 +20,6 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -43,6 +42,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MBeanAttribute;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 
 @JsonService
@@ -59,12 +59,6 @@ class GaugeConfigJsonService {
         }
     };
 
-    static {
-        SimpleModule module = new SimpleModule();
-        module.addAbstractTypeMapping(MBeanAttributeDto.class, ImmutableMBeanAttributeDto.class);
-        mapper.registerModule(module);
-    }
-
     private final ConfigRepository configRepository;
     private final LiveJvmService liveJvmService;
 
@@ -73,10 +67,9 @@ class GaugeConfigJsonService {
         this.liveJvmService = liveJvmService;
     }
 
-    @GET("/backend/config/gauges")
-    String getGaugeConfig(String queryString) throws Exception {
-        GaugeConfigRequest request = QueryStrings.decode(queryString, GaugeConfigRequest.class);
-        String agentId = request.agentId();
+    @GET(path = "/backend/config/gauges", permission = "agent:config:view:gauge")
+    String getGaugeConfig(@BindAgentId String agentId, @BindRequest GaugeConfigRequest request)
+            throws Exception {
         Optional<String> version = request.version();
         if (version.isPresent()) {
             GaugeConfig gaugeConfig = configRepository.getGaugeConfig(agentId, version.get());
@@ -97,23 +90,27 @@ class GaugeConfigJsonService {
         }
     }
 
-    @GET("/backend/config/matching-mbean-objects")
-    String getMatchingMBeanObjects(String queryString) throws Exception {
-        MBeanObjectNameRequest request =
-                QueryStrings.decode(queryString, MBeanObjectNameRequest.class);
+    @GET(path = "/backend/config/new-gauge-check-agent-connected",
+            permission = "agent:config:edit:gauge")
+    String checkAgentConnected(@BindAgentId String agentId) throws Exception {
+        checkNotNull(liveJvmService);
+        return Boolean.toString(liveJvmService.isAvailable(agentId));
+    }
+
+    @GET(path = "/backend/config/matching-mbean-objects", permission = "agent:config:edit:gauge")
+    String getMatchingMBeanObjects(@BindAgentId String agentId,
+            @BindRequest MBeanObjectNameRequest request) throws Exception {
         try {
-            return mapper.writeValueAsString(liveJvmService.getMatchingMBeanObjectNames(
-                    request.agentId(), request.partialObjectName(), request.limit()));
+            return mapper.writeValueAsString(liveJvmService.getMatchingMBeanObjectNames(agentId,
+                    request.partialObjectName(), request.limit()));
         } catch (AgentNotConnectedException e) {
             return "[]";
         }
     }
 
-    @GET("/backend/config/mbean-attributes")
-    String getMBeanAttributes(String queryString) throws Exception {
-        MBeanAttributeNamesRequest request =
-                QueryStrings.decode(queryString, MBeanAttributeNamesRequest.class);
-        String agentId = request.agentId();
+    @GET(path = "/backend/config/mbean-attributes", permission = "agent:config:edit:gauge")
+    String getMBeanAttributes(@BindAgentId String agentId,
+            @BindRequest MBeanAttributeNamesRequest request) throws Exception {
         boolean duplicateMBean = false;
         for (GaugeConfig gaugeConfig : configRepository.getGaugeConfigs(agentId)) {
             if (gaugeConfig.getMbeanObjectName().equals(request.objectName())
@@ -131,10 +128,9 @@ class GaugeConfigJsonService {
                 .build());
     }
 
-    @POST("/backend/config/gauges/add")
-    String addGauge(String content) throws Exception {
-        GaugeConfigDto gaugeConfigDto = mapper.readValue(content, ImmutableGaugeConfigDto.class);
-        String agentId = gaugeConfigDto.agentId().get();
+    @POST(path = "/backend/config/gauges/add", permission = "agent:config:edit:gauge")
+    String addGauge(@BindAgentId String agentId, @BindRequest GaugeConfigDto gaugeConfigDto)
+            throws Exception {
         GaugeConfig gaugeConfig = gaugeConfigDto.convert();
         try {
             configRepository.insertGaugeConfig(agentId, gaugeConfig);
@@ -146,10 +142,9 @@ class GaugeConfigJsonService {
         return mapper.writeValueAsString(buildResponse(agentId, gaugeConfig));
     }
 
-    @POST("/backend/config/gauges/update")
-    String updateGauge(String content) throws Exception {
-        GaugeConfigDto gaugeConfigDto = mapper.readValue(content, ImmutableGaugeConfigDto.class);
-        String agentId = gaugeConfigDto.agentId().get();
+    @POST(path = "/backend/config/gauges/update", permission = "agent:config:edit:gauge")
+    String updateGauge(@BindAgentId String agentId, @BindRequest GaugeConfigDto gaugeConfigDto)
+            throws Exception {
         GaugeConfig gaugeConfig = gaugeConfigDto.convert();
         String version = gaugeConfigDto.version().get();
         try {
@@ -162,10 +157,10 @@ class GaugeConfigJsonService {
         return mapper.writeValueAsString(buildResponse(agentId, gaugeConfig));
     }
 
-    @POST("/backend/config/gauges/remove")
-    void removeGauge(String content) throws Exception {
-        GaugeConfigRequest request = mapper.readValue(content, ImmutableGaugeConfigRequest.class);
-        configRepository.deleteGaugeConfig(request.agentId(), request.version().get());
+    @POST(path = "/backend/config/gauges/remove", permission = "agent:config:edit:gauge")
+    void removeGauge(@BindAgentId String agentId, @BindRequest GaugeConfigRequest request)
+            throws Exception {
+        configRepository.deleteGaugeConfig(agentId, request.version().get());
     }
 
     private GaugeResponse buildResponse(String agentId, GaugeConfig gaugeConfig) throws Exception {
@@ -200,20 +195,17 @@ class GaugeConfigJsonService {
 
     @Value.Immutable
     interface GaugeConfigRequest {
-        String agentId();
         Optional<String> version();
     }
 
     @Value.Immutable
     interface MBeanObjectNameRequest {
-        String agentId();
         String partialObjectName();
         int limit();
     }
 
     @Value.Immutable
     interface MBeanAttributeNamesRequest {
-        String agentId();
         String objectName();
         @Nullable
         String gaugeVersion();
@@ -242,7 +234,7 @@ class GaugeConfigJsonService {
         abstract Optional<String> agentId(); // only used in request
         abstract @Nullable String display(); // only used in response
         abstract String mbeanObjectName();
-        abstract ImmutableList<MBeanAttributeDto> mbeanAttributes();
+        abstract ImmutableList<ImmutableMBeanAttributeDto> mbeanAttributes();
         abstract Optional<String> version(); // absent for insert operations
 
         private GaugeConfig convert() {
@@ -280,7 +272,7 @@ class GaugeConfigJsonService {
                     .build();
         }
 
-        private static MBeanAttributeDto create(MBeanAttribute mbeanAttribute) {
+        private static ImmutableMBeanAttributeDto create(MBeanAttribute mbeanAttribute) {
             return ImmutableMBeanAttributeDto.builder()
                     .name(mbeanAttribute.getName())
                     .counter(mbeanAttribute.getCounter())

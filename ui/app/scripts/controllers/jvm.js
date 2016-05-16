@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot */
+/* global glowroot, angular */
 
 glowroot.controller('JvmCtrl', [
   '$scope',
@@ -39,6 +39,30 @@ glowroot.controller('JvmCtrl', [
 
     $scope.currentUrl = function () {
       return $location.path().substring(1);
+    };
+
+    function agentRollupUrl(path, agentRollup, leaf) {
+      // preserve query string
+      var query = angular.copy($location.search());
+      if (leaf) {
+        query['agent-id'] = agentRollup;
+      } else {
+        query['agent-rollup'] = agentRollup;
+      }
+      return path + queryStrings.encodeObject(query);
+    }
+
+    $scope.agentRollupUrl = function (agentRollup, agentRollupObj) {
+      var path = $location.path().substring(1);
+      if (path === 'jvm/thread-dump' && !agentRollupObj.permissions.tool.threadDump
+          || path === 'jvm/heap-dump' && !agentRollupObj.permissions.tool.heapDump
+          || path === 'jvm/mbean-tree' && !agentRollupObj.permissions.tool.mbeanTree
+          || path === 'jvm/gc' && !agentRollupObj.permissions.tool.gc
+          || path === 'jvm/capabilities' && !agentRollupObj.permissions.tool.capabilities) {
+        return agentRollupUrl('jvm/gauges', agentRollup, agentRollupObj.leaf);
+      } else {
+        return agentRollupUrl(path, agentRollup, agentRollupObj.leaf);
+      }
     };
 
     $scope.$on('$stateChangeSuccess', function () {

@@ -31,7 +31,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
-import io.netty.handler.codec.http.QueryStringDecoder;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,16 +67,8 @@ class JvmJsonService {
         this.liveJvmService = liveJvmService;
     }
 
-    @GET("/backend/jvm/agent-connected")
-    String getAgentConnected(String queryString) throws Exception {
-        checkNotNull(liveJvmService);
-        String agentId = getAgentId(queryString);
-        return Boolean.toString(liveJvmService.isAvailable(agentId));
-    }
-
-    @GET("/backend/jvm/system-info")
-    String getSystemInfo(String queryString) throws Exception {
-        String agentId = getAgentId(queryString);
+    @GET(path = "/backend/jvm/system-info", permission = "agent:view:jvm:systemInfo")
+    String getSystemInfo(@BindAgentId String agentId) throws Exception {
         SystemInfo systemInfo = agentRepository.readSystemInfo(agentId);
         if (systemInfo == null) {
             return "{}";
@@ -120,10 +111,9 @@ class JvmJsonService {
         return sw.toString();
     }
 
-    @GET("/backend/jvm/thread-dump")
-    String getThreadDump(String queryString) throws Exception {
+    @GET(path = "/backend/jvm/thread-dump", permission = "agent:tool:threadDump")
+    String getThreadDump(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
-        String agentId = getAgentId(queryString);
         ThreadDump threadDump;
         try {
             threadDump = liveJvmService.getThreadDump(agentId);
@@ -151,10 +141,9 @@ class JvmJsonService {
         return sw.toString();
     }
 
-    @GET("/backend/jvm/heap-dump-default-dir")
-    String getHeapDumpDefaultDir(String queryString) throws Exception {
+    @GET(path = "/backend/jvm/heap-dump-default-dir", permission = "agent:tool:heapDump")
+    String getHeapDumpDefaultDir(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
-        String agentId = getAgentId(queryString);
         if (!liveJvmService.isAvailable(agentId)) {
             return "{\"agentNotConnected\":true}";
         }
@@ -169,13 +158,13 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @POST("/backend/jvm/available-disk-space")
-    String getAvailableDiskSpace(String content) throws Exception {
+    @POST(path = "/backend/jvm/available-disk-space", permission = "agent:tool:heapDump")
+    String getAvailableDiskSpace(@BindAgentId String agentId, @BindRequest HeapDumpRequest request)
+            throws Exception {
         checkNotNull(liveJvmService);
-        HeapDumpRequest request = mapper.readValue(content, ImmutableHeapDumpRequest.class);
         try {
-            return Long.toString(
-                    liveJvmService.getAvailableDiskSpace(request.agentId(), request.directory()));
+            return Long
+                    .toString(liveJvmService.getAvailableDiskSpace(agentId, request.directory()));
         } catch (IOException e) {
             logger.debug(e.getMessage(), e);
             // this is for specific common errors, e.g. "Directory doesn't exist"
@@ -189,13 +178,13 @@ class JvmJsonService {
         }
     }
 
-    @POST("/backend/jvm/heap-dump")
-    String heapDump(String content) throws Exception {
+    @POST(path = "/backend/jvm/heap-dump", permission = "agent:tool:heapDump")
+    String heapDump(@BindAgentId String agentId, @BindRequest HeapDumpRequest request)
+            throws Exception {
         checkNotNull(liveJvmService);
-        HeapDumpRequest request = mapper.readValue(content, ImmutableHeapDumpRequest.class);
         HeapDumpFileInfo heapDumpFileInfo;
         try {
-            heapDumpFileInfo = liveJvmService.heapDump(request.agentId(), request.directory());
+            heapDumpFileInfo = liveJvmService.heapDump(agentId, request.directory());
         } catch (IOException e) {
             logger.debug(e.getMessage(), e);
             // this is for specific common errors, e.g. "Directory doesn't exist"
@@ -217,20 +206,25 @@ class JvmJsonService {
         return sw.toString();
     }
 
-    @POST("/backend/jvm/gc")
-    void performGC(String content) throws Exception {
+    @GET(path = "/backend/jvm/gc-check-agent-connected", permission = "agent:tool:gc")
+    String checkAgentConnected(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
-        GcRequest request = mapper.readValue(content, ImmutableGcRequest.class);
-        liveJvmService.gc(request.agentId());
+        return Boolean.toString(liveJvmService.isAvailable(agentId));
     }
 
-    @GET("/backend/jvm/mbean-tree")
-    String getMBeanTree(String queryString) throws Exception {
+    @POST(path = "/backend/jvm/gc", permission = "agent:tool:gc")
+    void performGC(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
-        MBeanTreeRequest request = QueryStrings.decode(queryString, MBeanTreeRequest.class);
+        liveJvmService.gc(agentId);
+    }
+
+    @GET(path = "/backend/jvm/mbean-tree", permission = "agent:tool:mbeanTree")
+    String getMBeanTree(@BindAgentId String agentId, @BindRequest MBeanTreeRequest request)
+            throws Exception {
+        checkNotNull(liveJvmService);
         MBeanDump mbeanDump;
         try {
-            mbeanDump = liveJvmService.getMBeanDump(request.agentId(),
+            mbeanDump = liveJvmService.getMBeanDump(agentId,
                     MBeanDumpKind.ALL_MBEANS_INCLUDE_ATTRIBUTES_FOR_SOME, request.expanded());
         } catch (AgentNotConnectedException e) {
             logger.debug(e.getMessage(), e);
@@ -264,14 +258,13 @@ class JvmJsonService {
         return mapper.writeValueAsString(sortedRootNodes);
     }
 
-    @GET("/backend/jvm/mbean-attribute-map")
-    String getMBeanAttributeMap(String queryString) throws Exception {
+    @GET(path = "/backend/jvm/mbean-attribute-map", permission = "agent:tool:mbeanTree")
+    String getMBeanAttributeMap(@BindAgentId String agentId,
+            @BindRequest MBeanAttributeMapRequest request) throws Exception {
         checkNotNull(liveJvmService);
-        MBeanAttributeMapRequest request =
-                QueryStrings.decode(queryString, MBeanAttributeMapRequest.class);
-        MBeanDump mbeanDump = liveJvmService.getMBeanDump(request.agentId(),
-                MBeanDumpKind.SOME_MBEANS_INCLUDE_ATTRIBUTES,
-                ImmutableList.of(request.objectName()));
+        MBeanDump mbeanDump =
+                liveJvmService.getMBeanDump(agentId, MBeanDumpKind.SOME_MBEANS_INCLUDE_ATTRIBUTES,
+                        ImmutableList.of(request.objectName()));
         List<MBeanDump.MBeanInfo> mbeanInfos = mbeanDump.getMbeanInfoList();
         if (mbeanInfos.isEmpty()) {
             throw new IllegalStateException(
@@ -284,10 +277,9 @@ class JvmJsonService {
         return mapper.writeValueAsString(getSortedAttributeMap(mbeanInfo.getAttributeList()));
     }
 
-    @GET("/backend/jvm/capabilities")
-    String getCapabilities(String queryString) throws Exception {
+    @GET(path = "/backend/jvm/capabilities", permission = "agent:tool:capabilities")
+    String getCapabilities(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
-        String agentId = getAgentId(queryString);
         Capabilities capabilities;
         try {
             capabilities = liveJvmService.getCapabilities(agentId);
@@ -312,10 +304,6 @@ class JvmJsonService {
         jg.writeBooleanField("available", availability.getAvailable());
         jg.writeStringField("reason", availability.getReason());
         jg.writeEndObject();
-    }
-
-    private static String getAgentId(String queryString) {
-        return QueryStringDecoder.decodeComponent(queryString.substring("agent-id".length() + 1));
     }
 
     private static void writeTransactionThread(ThreadDump.Transaction transaction, JsonGenerator jg)
@@ -398,24 +386,16 @@ class JvmJsonService {
 
     @Value.Immutable
     interface HeapDumpRequest {
-        String agentId();
         String directory();
     }
 
     @Value.Immutable
-    interface GcRequest {
-        String agentId();
-    }
-
-    @Value.Immutable
     interface MBeanTreeRequest {
-        String agentId();
         List<String> expanded();
     }
 
     @Value.Immutable
     interface MBeanAttributeMapRequest {
-        String agentId();
         String objectName();
     }
 

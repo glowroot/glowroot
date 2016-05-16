@@ -100,13 +100,12 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
 
     $scope.deleteAll = function (deferred) {
       var postData = {
-        agentId: $scope.agentId,
         versions: []
       };
       angular.forEach($scope.configs, function (config) {
         postData.versions.push(config.version);
       });
-      $http.post('backend/config/instrumentation/remove', postData)
+      $http.post('backend/config/instrumentation/remove?agent-id=' + encodeURIComponent($scope.agentId), postData)
           .success(function (data) {
             var wrapped = $q.defer();
             wrapped.promise.finally(function () {
@@ -136,7 +135,6 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
       }
       var initialErrors = [];
       var postData = {
-        agentId: $scope.agentId,
         configs: []
       };
       angular.forEach(configs, function (config) {
@@ -175,7 +173,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
         return;
       }
       $scope.importing = true;
-      $http.post('backend/config/instrumentation/import', postData)
+      $http.post('backend/config/instrumentation/import?agent-id=' + encodeURIComponent($scope.agentId), postData)
           .success(function (data) {
             var deferred = $q.defer();
             deferred.promise.finally(function () {
@@ -192,10 +190,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
     };
 
     $scope.retransformClasses = function (deferred) {
-      var postData = {
-        agentId: $scope.agentId
-      };
-      $http.post('backend/admin/reweave', postData)
+      $http.post('backend/config/reweave?agent-id=' + encodeURIComponent($scope.agentId))
           .success(function (data) {
             $scope.dirty = false;
             if (data.classes) {

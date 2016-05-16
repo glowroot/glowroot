@@ -26,6 +26,7 @@ glowroot.controller('TransactionCtrl', [
   'shortName',
   'defaultSummarySortOrder',
   function ($scope, $location, $timeout, queryStrings, charts, headerDisplay, shortName, defaultSummarySortOrder) {
+
     // \u00b7 is &middot;
     document.title = headerDisplay + ' \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = shortName;

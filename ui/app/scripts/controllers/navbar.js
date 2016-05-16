@@ -21,6 +21,7 @@ glowroot.controller('NavbarCtrl', [
   '$location',
   'queryStrings',
   function ($scope, $location, queryStrings) {
+
     $scope.queryString = function (preserveAgentSelection, preserveTransactionType) {
       var query = {};
       if (preserveAgentSelection) {
@@ -48,11 +49,43 @@ glowroot.controller('NavbarCtrl', [
       }
       return queryStrings.encodeObject(query);
     };
-    $scope.serverConfigQueryString = function () {
-      var query = {};
-      query['agent-rollup'] = $location.search()['agent-rollup'];
-      query['agent-id'] = $location.search()['agent-id'];
-      return queryStrings.encodeObject(query);
+
+    $scope.configQueryString = function () {
+      if ($scope.permissions && $scope.permissions.config.view) {
+        return '?agent-id=' + encodeURIComponent($scope.agentId || $scope.agentRollup);
+      } else {
+        return '';
+      }
+    };
+
+    $scope.isAnonymous = function () {
+      return $scope.username && $scope.username.toLowerCase() === 'anonymous';
+    };
+
+    $scope.gearIconUrl = function () {
+      if (!$scope.layout) {
+        return '';
+      }
+      if ($scope.layout.fat && ($scope.permissions.config.view || $scope.layout.admin)) {
+        return 'config/transaction';
+      } else if (!$scope.layout.fat && $scope.layout.admin) {
+        return 'admin/user-list';
+      } else {
+        return 'change-password';
+      }
+    };
+
+    $scope.gearIconNavbarTitle = function () {
+      if (!$scope.layout) {
+        return '';
+      }
+      if ($scope.layout.fat && ($scope.permissions.config.view || $scope.layout.admin)) {
+        return 'Configuration';
+      } else if (!$scope.layout.fat && $scope.layout.admin) {
+        return 'Administration';
+      } else {
+        return 'Profile';
+      }
     };
   }
 ]);

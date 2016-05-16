@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2015 the original author or authors.
+  Copyright 2013-2016 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -22,29 +22,25 @@
      gt-form-with-primary-button
      gt-form-autofocus-on-first-input
      name="formCtrl">
-  <div class="form-group" ng-show="layout.readOnlyPasswordEnabled">
-    <select class="form-control inline-block"
-            ng-model="page.user"
-            style="max-width: 20em;">
-      <option ng-if="layout.readOnlyPasswordEnabled"
-              value="read-only">
-        Read only account
-      </option>
-      <option value="admin">Admin account</option>
-    </select>
-  </div>
   <div class="form-group">
-    <input type="password"
-           class="form-control gt-inline-block"
-           ng-model="page.password"
-           id="loginPassword"
-           placeholder="Enter password"
+    <input class="form-control gt-inline-block"
+           ng-model="page.username"
+           id="username"
+           placeholder="Enter username"
            style="max-width: 20em;">
     <span class="gt-red"
           ng-show="message"
           style="padding-left: 15px;">
       {{message}}
     </span>
+  </div>
+  <div class="form-group">
+    <input type="password"
+           class="form-control gt-inline-block"
+           ng-model="page.password"
+           id="password"
+           placeholder="Enter password"
+           style="max-width: 20em;">
   </div>
   <div class="form-group gt-form-buttons">
     <div gt-button

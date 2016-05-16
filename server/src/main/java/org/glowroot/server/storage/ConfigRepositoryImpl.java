@@ -40,15 +40,17 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.util.Versions;
 import org.glowroot.server.DownstreamServiceImpl;
-import org.glowroot.storage.config.AccessConfig;
 import org.glowroot.storage.config.FatStorageConfig;
-import org.glowroot.storage.config.ImmutableAccessConfig;
 import org.glowroot.storage.config.ImmutableFatStorageConfig;
 import org.glowroot.storage.config.ImmutableServerStorageConfig;
 import org.glowroot.storage.config.ImmutableSmtpConfig;
+import org.glowroot.storage.config.ImmutableWebConfig;
+import org.glowroot.storage.config.RoleConfig;
 import org.glowroot.storage.config.ServerStorageConfig;
 import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.config.StorageConfig;
+import org.glowroot.storage.config.UserConfig;
+import org.glowroot.storage.config.WebConfig;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.util.Encryption;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -75,6 +77,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private final ServerConfigDao serverConfigDao;
     private final AgentDao agentDao;
+    private final UserDao userDao;
+    private final RoleDao roleDao;
 
     private final ImmutableList<RollupConfig> rollupConfigs;
 
@@ -94,13 +98,18 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     return new Object();
                 }
             });
-    private final Object accessConfigLock = new Object();
+    private final Object userConfigLock = new Object();
+    private final Object roleConfigLock = new Object();
+    private final Object webConfigLock = new Object();
     private final Object storageConfigLock = new Object();
     private final Object smtpConfigLock = new Object();
 
-    public ConfigRepositoryImpl(ServerConfigDao serverConfigDao, AgentDao agentDao) {
+    public ConfigRepositoryImpl(ServerConfigDao serverConfigDao, AgentDao agentDao, UserDao userDao,
+            RoleDao roleDao) {
         this.serverConfigDao = serverConfigDao;
         this.agentDao = agentDao;
+        this.userDao = userDao;
+        this.roleDao = roleDao;
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
         secretFile = new File("secret");
     }
@@ -230,12 +239,37 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public AccessConfig getAccessConfig() {
-        AccessConfig config = serverConfigDao.read(ACCESS_KEY, ImmutableAccessConfig.class);
+    public List<UserConfig> getUserConfigs() {
+        return userDao.read();
+    }
+
+    @Override
+    public @Nullable UserConfig getUserConfig(String username) {
+        return userDao.read(username);
+    }
+
+    @Override
+    public List<RoleConfig> getRoleConfigs() {
+        return roleDao.read();
+    }
+
+    @Override
+    public @Nullable RoleConfig getRoleConfig(String name) {
+        return roleDao.read(name);
+    }
+
+    @Override
+    public WebConfig getWebConfig() {
+        WebConfig config = serverConfigDao.read(WEB_KEY, ImmutableWebConfig.class);
         if (config == null) {
-            return ImmutableAccessConfig.builder().build();
+            return ImmutableWebConfig.builder().build();
         }
         return config;
+    }
+
+    @Override
+    public FatStorageConfig getFatStorageConfig() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -249,11 +283,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             return withCorrectedLists(config);
         }
         return config;
-    }
-
-    @Override
-    public FatStorageConfig getFatStorageConfig() {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -660,14 +689,93 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateAccessConfig(AccessConfig userInterfaceConfig,
-            String priorVersion) throws Exception {
-        synchronized (accessConfigLock) {
-            if (!getAccessConfig().version().equals(priorVersion)) {
+    public void insertUserConfig(UserConfig userConfig) throws Exception {
+        synchronized (userConfigLock) {
+            // check for case-insensitive duplicate
+            String username = userConfig.username();
+            for (UserConfig loopUserConfig : userDao.read()) {
+                if (loopUserConfig.username().equalsIgnoreCase(username)) {
+                    throw new DuplicateUsernameException();
+                }
+            }
+            userDao.insert(userConfig);
+        }
+    }
+
+    @Override
+    public void updateUserConfig(UserConfig userConfig, String priorVersion) throws Exception {
+        synchronized (userConfigLock) {
+            boolean found = false;
+            for (UserConfig loopUserConfig : userDao.read()) {
+                if (loopUserConfig.version().equals(priorVersion)) {
+                    found = true;
+                }
+            }
+            if (!found) {
                 throw new OptimisticLockException();
             }
-            serverConfigDao.write(ACCESS_KEY, userInterfaceConfig);
+            userDao.insert(userConfig);
         }
+    }
+
+    @Override
+    public void deleteUserConfig(String username) throws Exception {
+        synchronized (userConfigLock) {
+            userDao.delete(username);
+        }
+    }
+
+    @Override
+    public void insertRoleConfig(RoleConfig roleConfig) throws Exception {
+        synchronized (roleConfigLock) {
+            // check for case-insensitive duplicate
+            String name = roleConfig.name();
+            for (RoleConfig loopRoleConfig : roleDao.read()) {
+                if (loopRoleConfig.name().equalsIgnoreCase(name)) {
+                    throw new DuplicateRoleNameException();
+                }
+            }
+            roleDao.insert(roleConfig);
+        }
+    }
+
+    @Override
+    public void updateRoleConfig(RoleConfig roleConfig, String priorVersion) throws Exception {
+        synchronized (roleConfigLock) {
+            boolean found = false;
+            for (RoleConfig loopRoleConfig : roleDao.read()) {
+                if (loopRoleConfig.version().equals(priorVersion)) {
+                    found = true;
+                }
+            }
+            if (!found) {
+                throw new OptimisticLockException();
+            }
+            roleDao.insert(roleConfig);
+        }
+    }
+
+    @Override
+    public void deleteRoleConfig(String name) throws Exception {
+        synchronized (roleConfigLock) {
+            roleDao.delete(name);
+        }
+    }
+
+    @Override
+    public void updateWebConfig(WebConfig userInterfaceConfig,
+            String priorVersion) throws Exception {
+        synchronized (webConfigLock) {
+            if (!getWebConfig().version().equals(priorVersion)) {
+                throw new OptimisticLockException();
+            }
+            serverConfigDao.write(WEB_KEY, userInterfaceConfig);
+        }
+    }
+
+    @Override
+    public void updateFatStorageConfig(FatStorageConfig storageConfig, String priorVersion) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -679,11 +787,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
             serverConfigDao.write(STORAGE_KEY, storageConfig);
         }
-    }
-
-    @Override
-    public void updateFatStorageConfig(FatStorageConfig storageConfig, String priorVersion) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

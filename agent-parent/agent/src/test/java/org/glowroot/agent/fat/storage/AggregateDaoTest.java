@@ -95,23 +95,22 @@ public class AggregateDaoTest {
         populateAggregates();
         // when
         TransactionQuery query = ImmutableTransactionQuery.builder()
-                .agentRollup(AGENT_ID)
                 .transactionType("a type")
                 .from(0)
                 .to(100000)
                 .rollupLevel(0)
                 .build();
         OverallQuery query2 = ImmutableOverallQuery.builder()
-                .agentRollup(AGENT_ID)
                 .transactionType("a type")
                 .from(0)
                 .to(100000)
                 .rollupLevel(0)
                 .build();
         TransactionSummaryCollector collector = new TransactionSummaryCollector();
-        List<OverviewAggregate> overallAggregates = aggregateDao.readOverviewAggregates(query);
-        aggregateDao.mergeInTransactionSummaries(collector, query2,
-                SummarySortOrder.TOTAL_TIME, 10);
+        List<OverviewAggregate> overallAggregates =
+                aggregateDao.readOverviewAggregates(AGENT_ID, query);
+        aggregateDao.mergeInTransactionSummaries(AGENT_ID, query2, SummarySortOrder.TOTAL_TIME, 10,
+                collector);
         Result<TransactionSummary> queryResult =
                 collector.getResult(SummarySortOrder.TOTAL_TIME, 10);
         // then

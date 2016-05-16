@@ -38,7 +38,7 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 // TODO if config.json or admin.json file have unrecognized top-level node (something other than
-// "transactions", "userRecording", "advanced", etc) then log warning and remove that node
+// "transactions", "ui", "userRecording", "advanced", etc) then log warning and remove that node
 class ConfigFile {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigFile.class);

@@ -56,7 +56,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
     }
 
     @Override
-    public void deleteAll(String agentRollup) throws Exception {
+    public void deleteAll() throws Exception {
         dataSource.update("truncate table transaction_types");
     }
 

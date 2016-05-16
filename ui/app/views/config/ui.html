@@ -24,12 +24,14 @@
       <div ng-form
            gt-form-autofocus-on-first-input
            class="form-horizontal"
-           name="formCtrl">
+           name="formCtrl"
+           style="padding-top: 15px;">
         <div gt-form-group
              gt-label="Default displayed transaction type"
              gt-model="config.defaultDisplayedTransactionType"
              gt-number="true"
              gt-required="loaded"
+             gt-disabled="!permissions.config.edit.ui"
              gt-width="20em"
              gt-col-class1="col-lg-4"
              gt-col-class2="col-lg-8">
@@ -42,6 +44,7 @@
              gt-model="page.defaultDisplayedPercentiles"
              gt-pattern="pattern.percentileList"
              gt-required="loaded"
+             gt-disabled="!permissions.config.edit.ui"
              gt-width="20em"
              gt-col-class1="col-lg-4"
              gt-col-class2="col-lg-8">
@@ -53,7 +56,8 @@
             14 milliseconds from the true 99.9<sup>th</sup> percentile value.
           </div>
         </div>
-        <div class="form-group gt-form-buttons">
+        <div class="form-group gt-form-buttons"
+             ng-if="permissions.config.edit.ui">
           <div class="col-lg-offset-4 col-lg-8">
             <div gt-button
                  gt-label="Save changes"

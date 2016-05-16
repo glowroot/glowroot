@@ -65,11 +65,11 @@ class LazyHttpServer {
         this.numWorkerThreads = numWorkerThreads;
     }
 
-    void init(ConfigJsonService configJsonService) {
+    void init(AdminJsonService adminJsonService) {
         HttpServer httpServer = build();
         if (httpServer != null) {
             this.httpServer = httpServer;
-            configJsonService.setHttpServer(httpServer);
+            adminJsonService.setHttpServer(httpServer);
         }
         int port = httpServer != null ? httpServer.getPort() : -1;
         startupLogger.info("Glowroot listening at http://localhost:{}", port);
@@ -89,6 +89,8 @@ class LazyHttpServer {
         httpServices.put(Pattern.compile("^/error/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/admin/.*$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/change-password$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/login$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/backend/layout$"), layoutHttpService);
         // export service is not bound under /backend since the export url is visible to users

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,10 +30,12 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpRequest;
 
+import org.glowroot.ui.HttpSessionManager.Authentication;
+
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-class IndexHtmlHttpService implements UnauthenticatedHttpService {
+class IndexHtmlHttpService implements HttpService {
 
     private static final String BASE_HREF;
 
@@ -58,19 +60,25 @@ class IndexHtmlHttpService implements UnauthenticatedHttpService {
     }
 
     @Override
+    public String getPermission() {
+        // this service does not require any permission
+        return "";
+    }
+
+    @Override
     public FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
             throws Exception {
         URL url = Resources.getResource("org/glowroot/ui/app-dist/index.html");
         String indexHtml = Resources.toString(url, Charsets.UTF_8);
+        Authentication authentication = httpSessionManager.getAuthentication(request);
         String layout;
-        if (httpSessionManager.hasReadAccess(request)) {
-            layout = layoutJsonService.getLayout();
-        } else {
+        if (authentication == null) {
             layout = layoutJsonService.getNeedsAuthenticationLayout();
+        } else {
+            layout = layoutJsonService.getLayout(authentication);
         }
-        String authenticatedUser = httpSessionManager.getAuthenticatedUser(request);
-        String layoutScript = "var layout=" + layout + ";var authenticatedUser = '"
-                + Strings.nullToEmpty(authenticatedUser) + "'";
+        String username = authentication == null ? "" : authentication.username();
+        String layoutScript = "var layout=" + layout + ";var username = '" + username + "'";
         indexHtml = indexHtml.replaceFirst("<base href=\"/\">",
                 "<base href=\"" + BASE_HREF + "\"><script>" + layoutScript + "</script>");
         // this is to work around an issue with IE10-11 (IE9 is OK)

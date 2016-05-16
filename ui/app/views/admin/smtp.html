@@ -24,8 +24,9 @@
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-form
          gt-form-autofocus-on-first-input
-         class="form-horizontal"
-         name="formCtrl">
+         class="form-horizontal gt-sometimes-legend-padding-smtp"
+         name="formCtrl"
+         style="padding-top: 15px;">
       <div gt-form-group
            gt-label="From email address"
            gt-model="config.fromEmailAddress"
@@ -61,9 +62,9 @@
         </div>
       </div>
       <div gt-form-group
+           gt-type="checkbox"
            gt-label="Use SSL"
            gt-model="config.ssl"
-           gt-type="checkbox"
            class="gt-form-group-without-help-block">
       </div>
       <div gt-form-group

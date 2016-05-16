@@ -38,13 +38,15 @@
          gt-form-autofocus-on-first-input
          ng-show="loaded"
          class="form-horizontal"
-         name="formCtrl">
+         name="formCtrl"
+         style="padding-top: 15px;">
       <div ng-repeat="property in config.properties">
         <div ng-switch on="property.type">
           <div ng-switch-when="string">
             <div gt-form-group
                  gt-label="{{property.label}}"
                  gt-model="property.value"
+                 gt-disabled="!permissions.config.edit.plugin"
                  gt-width="25em"
                  ng-class="{ 'gt-form-group-without-help-block': property.description === null }"
                  gt-col-class1="col-lg-4"
@@ -56,10 +58,11 @@
           </div>
           <div ng-switch-when="boolean">
             <div gt-form-group
+                 gt-type="checkbox"
                  gt-label="{{property.label}}"
                  gt-checkbox-label="{{property.checkboxLabel}}"
                  gt-model="property.value"
-                 gt-type="checkbox"
+                 gt-disabled="!permissions.config.edit.plugin"
                  ng-class="{ 'gt-form-group-without-help-block': property.description === null }"
                  gt-col-class1="col-lg-4"
                  gt-col-class2="col-lg-8">
@@ -72,6 +75,7 @@
             <div gt-form-group
                  gt-label="{{property.label}}"
                  gt-model="property.value"
+                 gt-disabled="!permissions.config.edit.plugin"
                  gt-number="true"
                  gt-pattern="pattern.double"
                  gt-width="7em"
@@ -85,7 +89,8 @@
           </div>
         </div>
       </div>
-      <div class="form-group gt-form-buttons">
+      <div class="form-group gt-form-buttons"
+           ng-if="permissions.config.edit.plugin">
         <div class="col-lg-offset-4 col-lg-8">
           <div gt-button
                gt-label="Save changes"

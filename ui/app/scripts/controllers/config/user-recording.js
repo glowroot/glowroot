@@ -25,6 +25,8 @@ glowroot.controller('ConfigUserRecordingCtrl', [
   'confirmIfHasChanges',
   'httpErrors',
   function ($scope, $http, $rootScope, $location, $timeout, confirmIfHasChanges, httpErrors) {
+
+    // initialize page binding object
     $scope.page = {};
 
     $scope.$watch('page.users', function (newVal) {
@@ -54,8 +56,7 @@ glowroot.controller('ConfigUserRecordingCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.agentId = $scope.agentId;
-      $http.post('backend/config/user-recording', postData)
+      $http.post('backend/config/user-recording?agent-id=' + encodeURIComponent($scope.agentId), postData)
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Saved');

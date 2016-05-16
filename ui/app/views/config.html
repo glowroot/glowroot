@@ -16,7 +16,7 @@
 <div class="gt-header" style="margin-bottom: 6px;">
   <div class="gt-header-page-name">
     <div ng-show="hideAgentRollupDropdown()">
-      Configuration
+      {{navbarTitle()}}
     </div>
     <div style="margin-top: -16px;" ng-hide="hideAgentRollupDropdown()">
       <span class="gt-inline-block gt-header-menu" ng-if="activeNavbarItem === 'agentConfig'">
@@ -27,7 +27,7 @@
           </a>
           <ul class="dropdown-menu" role="menu">
             <li ng-repeat="(rollup, value) in layout.agentRollups"
-                ng-hide="rollup === agentRollup">
+                ng-hide="!value.permissions.config.view || rollup === agentRollup">
               <a role="menuitem"
                  tabindex="-1"
                  ng-href="{{agentRollupUrl(rollup, value.leaf)}}">
@@ -37,16 +37,13 @@
           </ul>
         </span>
       </span>
-      <span ng-if="activeNavbarItem === 'serverConfig'">
-        Server
-      </span>
       <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
            while chrome guesses the placement of the border based on default font and then it moves slightly
            once font is available -->
-      <span class="gt-inline-block gt-separator">
+      <span class="gt-inline-block gt-separator" ng-if="activeNavbarItem === 'agentConfig'">
         |
       </span>
-      <span class="gt-inline-block">
+      <span class="gt-inline-block" ng-if="activeNavbarItem === 'agentConfig'">
         Configuration
       </span>
     </div>
@@ -54,7 +51,7 @@
 </div>
 <div class="gt-sidebar hidden-print">
   <div class="panel panel-default"
-       ng-if="activeNavbarItem === 'agentConfig'">
+       ng-if="showConfigSidebarItems()">
     <ul class="list-group">
       <div gt-sidebar-item
            gt-display="Transactions"
@@ -98,19 +95,40 @@
     </ul>
   </div>
   <div class="panel panel-default"
-       ng-if="activeNavbarItem === 'serverConfig' || layout.fat">
+       ng-if="(activeNavbarItem === 'gears' || layout.fat) && layout.admin">
     <ul class="list-group">
       <div gt-sidebar-item
-           gt-display="Access"
-           gt-url="config/access">
+           gt-display="Users"
+           gt-url="admin/user-list"
+           gt-active="currentUrl() === 'admin/user-list'"
+           gt-sub-active="currentUrl() === 'admin/user'">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Roles"
+           gt-url="admin/role-list"
+           gt-active="currentUrl() === 'admin/role-list'"
+           gt-sub-active="currentUrl() === 'admin/role'">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Web"
+           gt-url="admin/web">
       </div>
       <div gt-sidebar-item
            gt-display="Storage"
-           gt-url="config/storage">
+           gt-url="admin/storage">
       </div>
       <div gt-sidebar-item
            gt-display="SMTP"
-           gt-url="config/smtp">
+           gt-url="admin/smtp">
+      </div>
+    </ul>
+  </div>
+  <div class="panel panel-default"
+       ng-if="activeNavbarItem === 'gears' && !isAnonymous()">
+    <ul class="list-group">
+      <div gt-sidebar-item
+           gt-display="Change {{layout.admin ? 'my' : ''}} password"
+           gt-url="change-password">
       </div>
     </ul>
   </div>

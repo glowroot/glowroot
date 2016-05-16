@@ -25,11 +25,13 @@ import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
-import org.glowroot.storage.config.AccessConfig;
 import org.glowroot.storage.config.FatStorageConfig;
+import org.glowroot.storage.config.RoleConfig;
 import org.glowroot.storage.config.ServerStorageConfig;
 import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.config.StorageConfig;
+import org.glowroot.storage.config.UserConfig;
+import org.glowroot.storage.config.WebConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
@@ -42,7 +44,9 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordi
 
 public interface ConfigRepository {
 
-    String ACCESS_KEY = "access";
+    String USERS_KEY = "users";
+    String ROLES_KEY = "roles";
+    String WEB_KEY = "web";
     String STORAGE_KEY = "storage";
     String SMTP_KEY = "smtp";
 
@@ -88,7 +92,17 @@ public interface ConfigRepository {
     InstrumentationConfig getInstrumentationConfig(String agentId, String version)
             throws IOException;
 
-    AccessConfig getAccessConfig();
+    List<UserConfig> getUserConfigs();
+
+    @Nullable
+    UserConfig getUserConfig(String username);
+
+    List<RoleConfig> getRoleConfigs();
+
+    @Nullable
+    RoleConfig getRoleConfig(String name);
+
+    WebConfig getWebConfig();
 
     FatStorageConfig getFatStorageConfig();
 
@@ -136,12 +150,24 @@ public interface ConfigRepository {
     void updateAdvancedConfig(String agentId, AdvancedConfig advancedConfig, String priorVersion)
             throws Exception;
 
-    void updateAccessConfig(AccessConfig accessConfig, String priorVersion) throws Exception;
+    void insertUserConfig(UserConfig userConfig) throws Exception;
 
-    void updateServerStorageConfig(ServerStorageConfig storageConfig, String priorVersion)
-            throws Exception;
+    void updateUserConfig(UserConfig userConfig, String priorVersion) throws Exception;
+
+    void deleteUserConfig(String username) throws Exception;
+
+    void insertRoleConfig(RoleConfig roleConfig) throws Exception;
+
+    void updateRoleConfig(RoleConfig roleConfig, String priorVersion) throws Exception;
+
+    void deleteRoleConfig(String name) throws Exception;
+
+    void updateWebConfig(WebConfig webConfig, String priorVersion) throws Exception;
 
     void updateFatStorageConfig(FatStorageConfig storageConfig, String priorVersion)
+            throws Exception;
+
+    void updateServerStorageConfig(ServerStorageConfig storageConfig, String priorVersion)
             throws Exception;
 
     void updateSmtpConfig(SmtpConfig smtpConfig, String priorVersion) throws Exception;
@@ -193,5 +219,17 @@ public interface ConfigRepository {
     class OptimisticLockException extends Exception {}
 
     @SuppressWarnings("serial")
+    class UserNotFoundException extends Exception {}
+
+    @SuppressWarnings("serial")
+    class RoleNotFoundException extends Exception {}
+
+    @SuppressWarnings("serial")
     class DuplicateMBeanObjectNameException extends Exception {}
+
+    @SuppressWarnings("serial")
+    class DuplicateUsernameException extends Exception {}
+
+    @SuppressWarnings("serial")
+    class DuplicateRoleNameException extends Exception {}
 }

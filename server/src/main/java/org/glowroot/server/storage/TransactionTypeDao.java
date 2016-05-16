@@ -105,7 +105,7 @@ public class TransactionTypeDao implements TransactionTypeRepository {
     }
 
     @Override
-    public void deleteAll(String agentRollup) throws Exception {
+    public void deleteAll() throws Exception {
         // this is not currently supported (to avoid row key range query)
         throw new UnsupportedOperationException();
     }

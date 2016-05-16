@@ -16,47 +16,21 @@
 package org.glowroot.ui;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.QueryStringDecoder;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
-import org.glowroot.storage.config.AccessConfig;
-import org.glowroot.storage.config.AccessConfig.AnonymousAccess;
-import org.glowroot.storage.config.FatStorageConfig;
-import org.glowroot.storage.config.ImmutableAccessConfig;
-import org.glowroot.storage.config.ImmutableFatStorageConfig;
-import org.glowroot.storage.config.ImmutableServerStorageConfig;
-import org.glowroot.storage.config.ImmutableSmtpConfig;
-import org.glowroot.storage.config.ServerStorageConfig;
-import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.OptimisticLockException;
-import org.glowroot.storage.repo.RepoAdmin;
-import org.glowroot.storage.repo.helper.AlertingService;
-import org.glowroot.storage.util.Encryption;
-import org.glowroot.storage.util.MailService;
-import org.glowroot.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
@@ -66,48 +40,40 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordi
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_FAILED;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 @JsonService
 class ConfigJsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final boolean fat;
     private final ConfigRepository configRepository;
-    private final RepoAdmin repoAdmin;
-    private final HttpSessionManager httpSessionManager;
-    private final MailService mailService;
 
-    private volatile @MonotonicNonNull HttpServer httpServer;
-
-    ConfigJsonService(boolean fat, ConfigRepository configRepository, RepoAdmin repoAdmin,
-            HttpSessionManager httpSessionManager, MailService mailService) {
-        this.fat = fat;
+    ConfigJsonService(ConfigRepository configRepository) {
         this.configRepository = configRepository;
-        this.repoAdmin = repoAdmin;
-        this.httpSessionManager = httpSessionManager;
-        this.mailService = mailService;
     }
 
-    void setHttpServer(HttpServer httpServer) {
-        this.httpServer = httpServer;
+    @GET(path = "/backend/config/transaction", permission = "agent:config:view:transaction")
+    String getTransactionConfig(@BindAgentId String agentId) throws Exception {
+        TransactionConfig config = configRepository.getTransactionConfig(agentId);
+        if (config == null) {
+            return "{}";
+        }
+        return mapper.writeValueAsString(TransactionConfigDto.create(config));
     }
 
-    @GET("/backend/config/transaction")
-    String getTransactionConfig(String queryString) throws Exception {
-        String agentId = getAgentId(queryString);
-        return getTransactionConfigInternal(agentId);
+    @GET(path = "/backend/config/ui", permission = "agent:config:view:ui")
+    String getUiConfig(@BindAgentId String agentId) throws Exception {
+        UiConfig config = configRepository.getUiConfig(agentId);
+        if (config == null) {
+            return "{}";
+        }
+        return mapper.writeValueAsString(UiConfigDto.create(config));
     }
 
-    @GET("/backend/config/plugins")
-    String getPluginConfig(String queryString) throws Exception {
-        PluginConfigRequest request = QueryStrings.decode(queryString, PluginConfigRequest.class);
-        String agentId = checkNotNull(request.agentId());
+    @GET(path = "/backend/config/plugins", permission = "agent:config:view:plugin")
+    String getPluginConfig(@BindAgentId String agentId, @BindRequest PluginConfigRequest request)
+            throws Exception {
         Optional<String> pluginId = request.pluginId();
         if (pluginId.isPresent()) {
             return getPluginConfigInternal(agentId, request.pluginId().get());
@@ -125,209 +91,9 @@ class ConfigJsonService {
         }
     }
 
-    @GET("/backend/config/user-recording")
-    String getUserRecordingConfig(String queryString) throws Exception {
-        String agentId = getAgentId(queryString);
-        return getUserRecordingConfigInternal(agentId);
-    }
-
-    @GET("/backend/config/advanced")
-    String getAdvancedConfig(String queryString) throws Exception {
-        String agentId = getAgentId(queryString);
-        return getAdvancedConfigInternal(agentId);
-    }
-
-    @GET("/backend/config/ui")
-    String getUiConfig(String queryString) throws Exception {
-        String agentId = getAgentId(queryString);
-        return getUiConfigInternal(agentId);
-    }
-
-    @GET("/backend/config/access")
-    String getAccessConfig() throws Exception {
-        // this code cannot be reached when httpServer is null
-        checkNotNull(httpServer);
-        return getAccess(false);
-    }
-
-    @GET("/backend/config/storage")
-    String getStorageConfig() throws Exception {
-        if (fat) {
-            FatStorageConfig config = configRepository.getFatStorageConfig();
-            return mapper.writeValueAsString(FatStorageConfigDto.create(config));
-        } else {
-            ServerStorageConfig config = configRepository.getServerStorageConfig();
-            return mapper.writeValueAsString(ServerStorageConfigDto.create(config));
-        }
-    }
-
-    @GET("/backend/config/smtp")
-    String getSmtpConfig() throws Exception {
-        SmtpConfig config = configRepository.getSmtpConfig();
-        String localServerName = InetAddress.getLocalHost().getHostName();
-        return mapper.writeValueAsString(ImmutableSmtpConfigResponse.builder()
-                .config(SmtpConfigDto.create(config))
-                .localServerName(localServerName)
-                .build());
-    }
-
-    @POST("/backend/config/transaction")
-    String updateTransactionConfig(String content) throws Exception {
-        TransactionConfigDto configDto =
-                mapper.readValue(content, ImmutableTransactionConfigDto.class);
-        String agentId = configDto.agentId().get();
-        try {
-            configRepository.updateTransactionConfig(agentId, configDto.convert(),
-                    configDto.version());
-        } catch (OptimisticLockException e) {
-            throw new JsonServiceException(PRECONDITION_FAILED, e);
-        }
-        return getTransactionConfigInternal(agentId);
-    }
-
-    @POST("/backend/config/ui")
-    String updateUiConfig(String content) throws Exception {
-        UiConfigDto configDto = mapper.readValue(content, ImmutableUiConfigDto.class);
-        String agentId = configDto.agentId().get();
-        try {
-            configRepository.updateUiConfig(agentId, configDto.convert(),
-                    configDto.version());
-        } catch (OptimisticLockException e) {
-            throw new JsonServiceException(PRECONDITION_FAILED, e);
-        }
-        return getUiConfigInternal(agentId);
-    }
-
-    @POST("/backend/config/user-recording")
-    String updateUserRecordingConfig(String content) throws Exception {
-        UserRecordingConfigDto configDto =
-                mapper.readValue(content, ImmutableUserRecordingConfigDto.class);
-        String agentId = configDto.agentId().get();
-        try {
-            configRepository.updateUserRecordingConfig(agentId, configDto.convert(),
-                    configDto.version());
-        } catch (OptimisticLockException e) {
-            throw new JsonServiceException(PRECONDITION_FAILED, e);
-        }
-        return getUserRecordingConfigInternal(agentId);
-    }
-
-    @POST("/backend/config/advanced")
-    String updateAdvancedConfig(String content) throws Exception {
-        AdvancedConfigDto configDto = mapper.readValue(content, ImmutableAdvancedConfigDto.class);
-        String agentId = configDto.agentId().get();
-        try {
-            configRepository.updateAdvancedConfig(agentId, configDto.convert(),
-                    configDto.version());
-        } catch (OptimisticLockException e) {
-            throw new JsonServiceException(PRECONDITION_FAILED, e);
-        }
-        return getAdvancedConfigInternal(agentId);
-    }
-
-    @POST("/backend/config/plugins")
-    String updatePluginConfig(String content) throws Exception {
-        PluginUpdateRequest pluginUpdateRequest =
-                mapper.readValue(content, ImmutablePluginUpdateRequest.class);
-        String agentId = pluginUpdateRequest.agentId();
-        String pluginId = pluginUpdateRequest.pluginId();
-        List<PluginProperty> properties = Lists.newArrayList();
-        for (PluginPropertyDto prop : pluginUpdateRequest.properties()) {
-            properties.add(prop.convert());
-        }
-        try {
-            configRepository.updatePluginConfig(agentId, pluginId, properties,
-                    pluginUpdateRequest.version());
-        } catch (OptimisticLockException e) {
-            throw new JsonServiceException(PRECONDITION_FAILED, e);
-        }
-        return getPluginConfigInternal(agentId, pluginId);
-    }
-
-    @POST("/backend/config/access")
-    Object updateAccessConfig(String content) throws Exception {
-        // this code cannot be reached when httpServer is null
-        checkNotNull(httpServer);
-        AccessConfigDto configDto = mapper.readValue(content, ImmutableAccessConfigDto.class);
-        configDto.validate();
-        AccessConfig priorConfig = configRepository.getAccessConfig();
-        AccessConfig config;
-        try {
-            config = configDto.convert(priorConfig);
-        } catch (CurrentPasswordIncorrectException e) {
-            return "{\"currentPasswordIncorrect\":true}";
-        }
-        try {
-            configRepository.updateAccessConfig(config, configDto.version());
-        } catch (OptimisticLockException e) {
-            throw new JsonServiceException(PRECONDITION_FAILED, e);
-        }
-        return onSuccessfulAccessUpdate(priorConfig, config);
-    }
-
-    @POST("/backend/config/storage")
-    String updateStorageConfig(String content) throws Exception {
-        if (fat) {
-            FatStorageConfigDto configDto =
-                    mapper.readValue(content, ImmutableFatStorageConfigDto.class);
-            try {
-                configRepository.updateFatStorageConfig(configDto.convert(), configDto.version());
-            } catch (OptimisticLockException e) {
-                throw new JsonServiceException(PRECONDITION_FAILED, e);
-            }
-            repoAdmin.resizeIfNecessary();
-        } else {
-            ServerStorageConfigDto configDto =
-                    mapper.readValue(content, ImmutableServerStorageConfigDto.class);
-            try {
-                configRepository.updateServerStorageConfig(configDto.convert(),
-                        configDto.version());
-            } catch (OptimisticLockException e) {
-                throw new JsonServiceException(PRECONDITION_FAILED, e);
-            }
-            repoAdmin.resizeIfNecessary();
-        }
-        return getStorageConfig();
-    }
-
-    @POST("/backend/config/smtp")
-    String updateSmtpConfig(String content) throws Exception {
-        SmtpConfigDto configDto = mapper.readValue(content, ImmutableSmtpConfigDto.class);
-        try {
-            configRepository.updateSmtpConfig(configDto.convert(configRepository),
-                    configDto.version());
-        } catch (OptimisticLockException e) {
-            throw new JsonServiceException(PRECONDITION_FAILED, e);
-        }
-        return getSmtpConfig();
-    }
-
-    @POST("/backend/config/send-test-email")
-    void sendTestEmail(String content) throws Exception {
-        SmtpConfigDto configDto = mapper.readValue(content, ImmutableSmtpConfigDto.class);
-        String testEmailRecipient = configDto.testEmailRecipient();
-        checkNotNull(testEmailRecipient);
-        AlertingService.sendTestEmails(testEmailRecipient, configDto.convert(configRepository),
-                configRepository, mailService);
-    }
-
-    private String getTransactionConfigInternal(String agentId) throws IOException {
-        TransactionConfig config = configRepository.getTransactionConfig(agentId);
-        if (config == null) {
-            return "{}";
-        }
-        return mapper.writeValueAsString(TransactionConfigDto.create(config));
-    }
-
-    private String getUiConfigInternal(String agentId) throws Exception {
-        UiConfig config = configRepository.getUiConfig(agentId);
-        if (config == null) {
-            return "{}";
-        }
-        return mapper.writeValueAsString(UiConfigDto.create(config));
-    }
-
-    private String getUserRecordingConfigInternal(String agentId) throws IOException {
+    @GET(path = "/backend/config/user-recording",
+            permission = "agent:config:view:userRecording")
+    String getUserRecordingConfig(@BindAgentId String agentId) throws Exception {
         UserRecordingConfig config = configRepository.getUserRecordingConfig(agentId);
         if (config == null) {
             return "{}";
@@ -335,12 +101,77 @@ class ConfigJsonService {
         return mapper.writeValueAsString(UserRecordingConfigDto.create(config));
     }
 
-    private String getAdvancedConfigInternal(String agentId) throws IOException {
+    @GET(path = "/backend/config/advanced", permission = "agent:config:view:advanced")
+    String getAdvancedConfig(@BindAgentId String agentId) throws Exception {
         AdvancedConfig config = configRepository.getAdvancedConfig(agentId);
         if (config == null) {
             return "{}";
         }
         return mapper.writeValueAsString(AdvancedConfigDto.create(config));
+    }
+
+    @POST(path = "/backend/config/transaction", permission = "agent:config:edit:transaction")
+    String updateTransactionConfig(@BindAgentId String agentId,
+            @BindRequest TransactionConfigDto configDto) throws Exception {
+        try {
+            configRepository.updateTransactionConfig(agentId, configDto.convert(),
+                    configDto.version());
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getTransactionConfig(agentId);
+    }
+
+    @POST(path = "/backend/config/ui", permission = "agent:config:edit:ui")
+    String updateUiConfig(@BindAgentId String agentId, @BindRequest UiConfigDto configDto)
+            throws Exception {
+        try {
+            configRepository.updateUiConfig(agentId, configDto.convert(),
+                    configDto.version());
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getUiConfig(agentId);
+    }
+
+    @POST(path = "/backend/config/plugins", permission = "agent:config:edit:plugins")
+    String updatePluginConfig(@BindAgentId String agentId, @BindRequest PluginUpdateRequest request)
+            throws Exception {
+        List<PluginProperty> properties = Lists.newArrayList();
+        for (PluginPropertyDto prop : request.properties()) {
+            properties.add(prop.convert());
+        }
+        String pluginId = request.pluginId();
+        try {
+            configRepository.updatePluginConfig(agentId, pluginId, properties, request.version());
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getPluginConfigInternal(agentId, pluginId);
+    }
+
+    @POST(path = "/backend/config/user-recording", permission = "agent:config:edit:userRecording")
+    String updateUserRecordingConfig(@BindAgentId String agentId,
+            @BindRequest UserRecordingConfigDto configDto) throws Exception {
+        try {
+            configRepository.updateUserRecordingConfig(agentId, configDto.convert(),
+                    configDto.version());
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getUserRecordingConfig(agentId);
+    }
+
+    @POST(path = "/backend/config/advanced", permission = "agent:config:edit:advanced")
+    String updateAdvancedConfig(@BindAgentId String agentId,
+            @BindRequest AdvancedConfigDto configDto) throws Exception {
+        try {
+            configRepository.updateAdvancedConfig(agentId, configDto.convert(),
+                    configDto.version());
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getAdvancedConfig(agentId);
     }
 
     private String getPluginConfigInternal(String agentId, String pluginId) throws IOException {
@@ -351,123 +182,12 @@ class ConfigJsonService {
         return mapper.writeValueAsString(PluginConfigDto.create(config));
     }
 
-    @RequiresNonNull("httpServer")
-    private Object onSuccessfulAccessUpdate(AccessConfig priorConfig, AccessConfig config)
-            throws Exception {
-        boolean portChangedSucceeded = false;
-        boolean portChangedFailed = false;
-        if (priorConfig.port() != config.port()) {
-            try {
-                httpServer.changePort(config.port());
-                portChangedSucceeded = true;
-            } catch (PortChangeFailedException e) {
-                logger.error(e.getMessage(), e);
-                portChangedFailed = true;
-            }
-        }
-        String responseText = getAccess(portChangedFailed);
-        ByteBuf responseContent = Unpooled.copiedBuffer(responseText, Charsets.ISO_8859_1);
-        FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, responseContent);
-        if (portChangedSucceeded) {
-            response.headers().set("Glowroot-Port-Changed", "true");
-        }
-        // only create/delete session on successful update
-        if (!priorConfig.adminPasswordEnabled() && config.adminPasswordEnabled()) {
-            httpSessionManager.createSession(response, true);
-        } else if (priorConfig.adminPasswordEnabled() && !config.adminPasswordEnabled()) {
-            httpSessionManager.clearAllSessions();
-            httpSessionManager.deleteSessionCookie(response);
-        }
-        return response;
-    }
-
-    @RequiresNonNull("httpServer")
-    private String getAccess(boolean portChangeFailed) throws Exception {
-        AccessConfig config = configRepository.getAccessConfig();
-        AccessConfigDto configDto = ImmutableAccessConfigDto.builder()
-                .port(config.port())
-                .adminPasswordEnabled(config.adminPasswordEnabled())
-                .readOnlyPasswordEnabled(config.readOnlyPasswordEnabled())
-                .anonymousAccess(config.anonymousAccess())
-                .sessionTimeoutMinutes(config.sessionTimeoutMinutes())
-                .version(config.version())
-                .build();
-        return mapper.writeValueAsString(ImmutableAccessConfigResponse.builder()
-                .config(configDto)
-                .activePort(httpServer.getPort())
-                .portChangeFailed(portChangeFailed)
-                .build());
-    }
-
-    private static String getAgentId(String queryString) {
-        return QueryStringDecoder.decodeComponent(queryString.substring("agent-id".length() + 1));
-    }
-
     private static OptionalInt32 of(int value) {
         return OptionalInt32.newBuilder().setValue(value).build();
     }
 
-    private static class AdminPasswordHelper {
-
-        private final String currentPassword;
-        private final String newPassword;
-        private final String originalPasswordHash;
-
-        private AdminPasswordHelper(String currentPassword, String newPassword,
-                String originalPasswordHash) {
-            this.currentPassword = currentPassword;
-            this.newPassword = newPassword;
-            this.originalPasswordHash = originalPasswordHash;
-        }
-
-        private String verifyAndGenerateNewPasswordHash() throws Exception {
-            if (enablePassword()) {
-                // UI validation prevents this from happening
-                checkState(originalPasswordHash.isEmpty(), "Password is already enabled");
-                return PasswordHash.createHash(newPassword);
-            }
-            if (!PasswordHash.validatePassword(currentPassword, originalPasswordHash)) {
-                throw new CurrentPasswordIncorrectException();
-            }
-            if (disablePassword()) {
-                return "";
-            }
-            if (changePassword()) {
-                return PasswordHash.createHash(newPassword);
-            }
-            // UI validation prevents this from happening
-            throw new IllegalStateException("Current and new password are both empty");
-        }
-
-        private boolean enablePassword() {
-            return currentPassword.isEmpty() && !newPassword.isEmpty();
-        }
-
-        private boolean disablePassword() {
-            return !currentPassword.isEmpty() && newPassword.isEmpty();
-        }
-
-        private boolean changePassword() {
-            return !currentPassword.isEmpty() && !newPassword.isEmpty();
-        }
-    }
-
-    @Value.Immutable
-    interface AccessConfigResponse {
-        AccessConfigDto config();
-        int activePort();
-        boolean portChangeFailed();
-    }
-
-    @Value.Immutable
-    interface SmtpConfigResponse {
-        SmtpConfigDto config();
-        String localServerName();
-    }
-
     @Value.Immutable
     interface PluginConfigRequest {
-        String agentId();
         Optional<String> pluginId();
     }
 
@@ -540,7 +260,6 @@ class ConfigJsonService {
 
     @Value.Immutable
     interface PluginUpdateRequest {
-        String agentId();
         String pluginId();
         List<ImmutablePluginPropertyDto> properties();
         String version();
@@ -727,200 +446,4 @@ class ConfigJsonService {
                     .build();
         }
     }
-
-    @Value.Immutable
-    abstract static class AccessConfigDto {
-
-        abstract int port();
-        abstract boolean adminPasswordEnabled();
-        abstract boolean readOnlyPasswordEnabled();
-        abstract AnonymousAccess anonymousAccess();
-        // only used for requests
-        @Value.Default
-        String currentAdminPassword() {
-            return "";
-        }
-        // only used for requests
-        @Value.Default
-        String newAdminPassword() {
-            return "";
-        }
-        // only used for requests
-        @Value.Default
-        String newReadOnlyPassword() {
-            return "";
-        }
-        abstract int sessionTimeoutMinutes();
-        abstract String version();
-
-        private void validate() {
-            if (readOnlyPasswordEnabled()) {
-                checkState(adminPasswordEnabled());
-            }
-            switch (anonymousAccess()) {
-                case ADMIN:
-                    checkState(!adminPasswordEnabled());
-                    checkState(!readOnlyPasswordEnabled());
-                    break;
-                case READ_ONLY:
-                    checkState(adminPasswordEnabled());
-                    checkState(!readOnlyPasswordEnabled());
-                    break;
-                case NONE:
-                    checkState(adminPasswordEnabled());
-                    break;
-                default:
-                    throw new IllegalStateException(
-                            "Unexpected anonymous access: " + anonymousAccess());
-            }
-        }
-
-        private AccessConfig convert(AccessConfig priorConfig) throws Exception {
-            ImmutableAccessConfig.Builder builder = ImmutableAccessConfig.builder()
-                    .port(port())
-                    .sessionTimeoutMinutes(sessionTimeoutMinutes());
-            if (currentAdminPassword().length() > 0 || newAdminPassword().length() > 0) {
-                AdminPasswordHelper adminPasswordHelper =
-                        new AdminPasswordHelper(currentAdminPassword(), newAdminPassword(),
-                                priorConfig.adminPasswordHash());
-                builder.adminPasswordHash(adminPasswordHelper.verifyAndGenerateNewPasswordHash());
-            } else {
-                builder.adminPasswordHash(priorConfig.adminPasswordHash());
-            }
-            if (!readOnlyPasswordEnabled()) {
-                // clear read only password
-                builder.readOnlyPasswordHash("");
-            } else if (readOnlyPasswordEnabled() && !newReadOnlyPassword().isEmpty()) {
-                // change read only password
-                String readOnlyPasswordHash = PasswordHash.createHash(newReadOnlyPassword());
-                builder.readOnlyPasswordHash(readOnlyPasswordHash);
-            } else {
-                // keep existing read only password
-                builder.readOnlyPasswordHash(priorConfig.readOnlyPasswordHash());
-            }
-            if (priorConfig.anonymousAccess() != AnonymousAccess.ADMIN
-                    && anonymousAccess() == AnonymousAccess.ADMIN
-                    && currentAdminPassword().isEmpty()) {
-                // enabling admin access for anonymous users requires admin password
-                throw new IllegalStateException();
-            }
-            builder.anonymousAccess(anonymousAccess());
-            return builder.build();
-        }
-    }
-
-    @Value.Immutable
-    abstract static class FatStorageConfigDto {
-
-        abstract ImmutableList<Integer> rollupExpirationHours();
-        abstract int traceExpirationHours();
-        abstract ImmutableList<Integer> rollupCappedDatabaseSizesMb();
-        abstract int traceCappedDatabaseSizeMb();
-        abstract String version();
-
-        private FatStorageConfig convert() {
-            return ImmutableFatStorageConfig.builder()
-                    .rollupExpirationHours(rollupExpirationHours())
-                    .traceExpirationHours(traceExpirationHours())
-                    .rollupCappedDatabaseSizesMb(rollupCappedDatabaseSizesMb())
-                    .traceCappedDatabaseSizeMb(traceCappedDatabaseSizeMb())
-                    .build();
-        }
-
-        private static FatStorageConfigDto create(FatStorageConfig config) {
-            return ImmutableFatStorageConfigDto.builder()
-                    .addAllRollupExpirationHours(config.rollupExpirationHours())
-                    .traceExpirationHours(config.traceExpirationHours())
-                    .addAllRollupCappedDatabaseSizesMb(config.rollupCappedDatabaseSizesMb())
-                    .traceCappedDatabaseSizeMb(config.traceCappedDatabaseSizeMb())
-                    .version(config.version())
-                    .build();
-        }
-    }
-
-    @Value.Immutable
-    abstract static class ServerStorageConfigDto {
-
-        abstract ImmutableList<Integer> rollupExpirationHours();
-        abstract int traceExpirationHours();
-        abstract String version();
-
-        private ServerStorageConfig convert() {
-            return ImmutableServerStorageConfig.builder()
-                    .rollupExpirationHours(rollupExpirationHours())
-                    .traceExpirationHours(traceExpirationHours())
-                    .build();
-        }
-
-        private static ServerStorageConfigDto create(ServerStorageConfig config) {
-            return ImmutableServerStorageConfigDto.builder()
-                    .addAllRollupExpirationHours(config.rollupExpirationHours())
-                    .traceExpirationHours(config.traceExpirationHours())
-                    .version(config.version())
-                    .build();
-        }
-    }
-
-    @Value.Immutable
-    abstract static class SmtpConfigDto {
-
-        abstract String fromEmailAddress();
-        abstract String fromDisplayName();
-        abstract String host();
-        abstract @Nullable Integer port();
-        abstract boolean ssl();
-        abstract String username();
-        abstract boolean passwordExists();
-        abstract Map<String, String> additionalProperties();
-        // only used for requests
-        @Value.Default
-        String newPassword() {
-            return "";
-        }
-        // only used for requests
-        abstract @Nullable String testEmailRecipient();
-        abstract String version();
-
-        private SmtpConfig convert(ConfigRepository configRepository) throws Exception {
-            ImmutableSmtpConfig.Builder builder = ImmutableSmtpConfig.builder()
-                    .fromEmailAddress(fromEmailAddress())
-                    .fromDisplayName(fromDisplayName())
-                    .host(host())
-                    .port(port())
-                    .ssl(ssl())
-                    .username(username())
-                    .putAllAdditionalProperties(additionalProperties());
-            if (!passwordExists()) {
-                // clear password
-                builder.encryptedPassword("");
-            } else if (passwordExists() && !newPassword().isEmpty()) {
-                // change password
-                String newEncryptedPassword =
-                        Encryption.encrypt(newPassword(), configRepository.getSecretKey());
-                builder.encryptedPassword(newEncryptedPassword);
-            } else {
-                // keep existing password
-                SmtpConfig priorConfig = configRepository.getSmtpConfig();
-                builder.encryptedPassword(priorConfig.encryptedPassword());
-            }
-            return builder.build();
-        }
-
-        private static SmtpConfigDto create(SmtpConfig config) {
-            return ImmutableSmtpConfigDto.builder()
-                    .fromEmailAddress(config.fromEmailAddress())
-                    .fromDisplayName(config.fromDisplayName())
-                    .host(config.host())
-                    .port(config.port())
-                    .ssl(config.ssl())
-                    .username(config.username())
-                    .passwordExists(!config.encryptedPassword().isEmpty())
-                    .putAllAdditionalProperties(config.additionalProperties())
-                    .version(config.version())
-                    .build();
-        }
-    }
-
-    @SuppressWarnings("serial")
-    private static class CurrentPasswordIncorrectException extends Exception {}
 }

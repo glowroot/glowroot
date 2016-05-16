@@ -49,6 +49,11 @@ class TraceDetailHttpService implements HttpService {
     }
 
     @Override
+    public String getPermission() {
+        return "trace:view";
+    }
+
+    @Override
     public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
             throws Exception {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());

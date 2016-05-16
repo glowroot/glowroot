@@ -93,7 +93,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
           })
           .error(httpErrors.handler($scope));
     } else {
-      $http.get('backend/jvm/agent-connected?agent-id=' + encodeURIComponent($scope.agentId))
+      $http.get('backend/config/new-instrumentation-check-agent-connected?agent-id=' + encodeURIComponent($scope.agentId))
           .success(function (data) {
             $scope.loaded = true;
             $scope.agentNotConnected = !data;
@@ -108,7 +108,8 @@ glowroot.controller('ConfigInstrumentationCtrl', [
             }
             onNewData({
               config: {
-                // when these are updated, make sure to update similar list in importFromJson (see instrumentation-list.js)
+                // when these are updated, make sure to update similar list in importFromJson
+                // (see instrumentation-list.js)
                 classAnnotation: '',
                 methodDeclaringClassName: '',
                 methodAnnotation: '',
@@ -146,14 +147,14 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       if ($scope.agentNotConnected) {
         return [];
       }
-      var postData = {
+      var queryData = {
         agentId: $scope.agentId,
         partialClassName: suggestion,
         limit: 10
       };
       $scope.showClassNameSpinner++;
       // using 'then' method to return promise
-      return $http.get('backend/config/matching-class-names' + queryStrings.encodeObject(postData))
+      return $http.get('backend/config/matching-class-names' + queryStrings.encodeObject(queryData))
           .then(function (response) {
             $scope.showClassNameSpinner--;
             return response.data;
@@ -286,21 +287,21 @@ glowroot.controller('ConfigInstrumentationCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.agentId = $scope.agentId;
       var url;
       if (version) {
         url = 'backend/config/instrumentation/update';
       } else {
         url = 'backend/config/instrumentation/add';
       }
-      $http.post(url, postData)
+      var agentId = $scope.agentId;
+      $http.post(url + '?agent-id=' + agentId, postData)
           .success(function (data) {
             onNewData(data);
             deferred.resolve(version ? 'Saved' : 'Added');
             version = data.config.version;
             // fix current url (with updated version) before returning to list page in case back button is used later
-            if (postData.agentId) {
-              $location.search({'agent-id': postData.agentId, v: version}).replace();
+            if (agentId) {
+              $location.search({'agent-id': agentId, v: version}).replace();
             } else {
               $location.search({v: version}).replace();
             }
@@ -310,12 +311,11 @@ glowroot.controller('ConfigInstrumentationCtrl', [
 
     $scope.delete = function (deferred) {
       var postData = {
-        agentId: $scope.agentId,
         versions: [
           $scope.config.version
         ]
       };
-      $http.post('backend/config/instrumentation/remove', postData)
+      $http.post('backend/config/instrumentation/remove?agent-id=' + encodeURIComponent($scope.agentId), postData)
           .success(function () {
             removeConfirmIfHasChangesListener();
             if (postData.agentId) {

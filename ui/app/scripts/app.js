@@ -48,6 +48,12 @@ glowroot.config([
               $injector.get('$http').get('backend/layout')
                   .success(function (data) {
                     $rootScope.layout = data;
+                    if ($rootScope.layout.fat || $rootScope.agentRollup) {
+                      $rootScope.permissions = $rootScope.layout.agentRollups[$rootScope.agentRollup].permissions;
+                    } else {
+                      // FIXME redirect to agent selection page
+                      $rootScope.permissions = undefined;
+                    }
                   });
               // TODO handle error() above
             }
@@ -105,6 +111,15 @@ glowroot.run([
     $rootScope.$on('$locationChangeSuccess', function () {
       $rootScope.agentId = $location.search()['agent-id'] || '';
       $rootScope.agentRollup = $location.search()['agent-rollup'] || $rootScope.agentId;
+      if ($rootScope.layout) {
+        // layout doesn't exist on first page load when running under grunt serve
+        if ($rootScope.layout.fat || $rootScope.agentRollup) {
+          $rootScope.permissions = $rootScope.layout.agentRollups[$rootScope.agentRollup].permissions;
+        } else {
+          // FIXME redirect to agent selection page
+          $rootScope.permissions = undefined;
+        }
+      }
     });
 
     $rootScope.agentQueryString = function () {
@@ -124,12 +139,10 @@ glowroot.run([
       var url = $location.path().substring(1);
       // preserve query string
       var query = angular.copy($location.search());
-      if (!$rootScope.layout.fat) {
-        if (leaf) {
-          query['agent-id'] = agentRollup;
-        } else {
-          query['agent-rollup'] = agentRollup;
-        }
+      if (leaf) {
+        query['agent-id'] = agentRollup;
+      } else {
+        query['agent-rollup'] = agentRollup;
       }
       url += queryStrings.encodeObject(query);
       return url;
@@ -169,11 +182,11 @@ glowroot.run([
     };
 
     $rootScope.showSignIn = function () {
-      return !$rootScope.authenticatedUser && $rootScope.layout && $rootScope.layout.adminPasswordEnabled;
+      return $rootScope.username === 'anonymous' && $rootScope.layout && !$rootScope.layout.hideLogin;
     };
 
     $rootScope.showSignOut = function () {
-      return $rootScope.authenticatedUser && $rootScope.layout && $rootScope.layout.adminPasswordEnabled;
+      return $rootScope.username && $rootScope.username !== 'anonymous';
     };
 
     $rootScope.goToLogin = function (event) {
@@ -191,7 +204,8 @@ glowroot.run([
       $navbarCollapse.addClass('collapse');
       $http.post('backend/sign-out')
           .success(function () {
-            $rootScope.authenticatedUser = undefined;
+            $rootScope.username = 'anonymous';
+            // FIXME need to check anonymous permissions (store in layout)
             if ($rootScope.layout.anonymousAccess === 'none') {
               login.goToLogin('You have been signed out', true);
             } else {
@@ -231,9 +245,10 @@ glowroot.run([
 
     function setInitialLayout(data) {
       $rootScope.layout = data;
-      if ($rootScope.layout.needsAuthentication) {
+      // FIXME check anonymous permissions (in layout) to see if need to go to login
+      if ($rootScope.layout.username === 'anonymous') {
         login.goToLogin();
-      } else if ($location.path() === '/login' && $rootScope.authenticatedUser) {
+      } else if ($location.path() === '/login' && $rootScope.username && $rootScope.username !== 'anonymous') {
         // authentication is not needed
         $location.path('/').replace();
       }
@@ -241,15 +256,21 @@ glowroot.run([
 
     if (window.layout) {
       setInitialLayout(window.layout);
-      $rootScope.authenticatedUser = window.authenticatedUser;
+      $rootScope.username = window.username;
     } else {
       // running in dev under 'grunt serve'
-      $http.get('backend/authenticated-user')
+      $http.get('backend/username')
           .success(function (data) {
-            $rootScope.authenticatedUser = data;
+            $rootScope.username = data;
             $http.get('backend/layout')
                 .success(function (data) {
                   setInitialLayout(data);
+                  if ($rootScope.layout.fat || $rootScope.agentRollup) {
+                    $rootScope.permissions = $rootScope.layout.agentRollups[$rootScope.agentRollup].permissions;
+                  } else {
+                    // FIXME redirect to agent selection page
+                    $rootScope.permissions = undefined;
+                  }
                 });
           });
     }

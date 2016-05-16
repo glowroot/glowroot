@@ -34,36 +34,41 @@ import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 public interface LiveAggregateRepository {
 
-    long mergeInOverallSummary(OverallSummaryCollector collector, OverallQuery query);
+    long mergeInOverallSummary(String agentId, OverallQuery query,
+            OverallSummaryCollector collector);
 
-    long mergeInTransactionSummaries(TransactionSummaryCollector collector, OverallQuery query);
+    long mergeInTransactionSummaries(String agentId, OverallQuery query,
+            TransactionSummaryCollector collector);
 
-    long mergeInOverallErrorSummary(OverallErrorSummaryCollector collector, OverallQuery query);
+    long mergeInOverallErrorSummary(String agentId, OverallQuery query,
+            OverallErrorSummaryCollector collector);
 
-    long mergeInTransactionErrorSummaries(TransactionErrorSummaryCollector collector,
-            OverallQuery query);
-
-    @Nullable
-    LiveResult<OverviewAggregate> getOverviewAggregates(TransactionQuery query);
-
-    @Nullable
-    LiveResult<PercentileAggregate> getPercentileAggregates(TransactionQuery query);
+    long mergeInTransactionErrorSummaries(String agentId, OverallQuery query,
+            TransactionErrorSummaryCollector collector);
 
     @Nullable
-    LiveResult<ThroughputAggregate> getThroughputAggregates(TransactionQuery query);
+    LiveResult<OverviewAggregate> getOverviewAggregates(String agentId, TransactionQuery query);
 
-    long mergeInQueries(QueryCollector collector, TransactionQuery query) throws IOException;
+    @Nullable
+    LiveResult<PercentileAggregate> getPercentileAggregates(String agentId, TransactionQuery query);
 
-    long mergeInServiceCalls(ServiceCallCollector collector, TransactionQuery query)
+    @Nullable
+    LiveResult<ThroughputAggregate> getThroughputAggregates(String agentId, TransactionQuery query);
+
+    long mergeInQueries(String agentId, TransactionQuery query, QueryCollector collector)
             throws IOException;
 
-    long mergeInMainThreadProfiles(ProfileCollector collector, TransactionQuery query);
+    long mergeInServiceCalls(String agentId, TransactionQuery query, ServiceCallCollector collector)
+            throws IOException;
 
-    long mergeInAuxThreadProfiles(ProfileCollector collector, TransactionQuery query);
+    long mergeInMainThreadProfiles(String agentId, TransactionQuery query,
+            ProfileCollector collector);
+
+    long mergeInAuxThreadProfiles(String agentId, TransactionQuery query,
+            ProfileCollector collector);
 
     @Value.Immutable
     public interface OverallQuery {
-        String agentRollup();
         String transactionType();
         long from();
         long to();
@@ -72,7 +77,6 @@ public interface LiveAggregateRepository {
 
     @Value.Immutable
     public interface TransactionQuery {
-        String agentRollup();
         String transactionType();
         @Nullable
         String transactionName();
@@ -171,63 +175,68 @@ public interface LiveAggregateRepository {
     public static class LiveAggregateRepositoryNop implements LiveAggregateRepository {
 
         @Override
-        public long mergeInOverallSummary(OverallSummaryCollector collector, OverallQuery query) {
+        public long mergeInOverallSummary(String agentId, OverallQuery query,
+                OverallSummaryCollector collector) {
             return query.to();
         }
 
         @Override
-        public long mergeInTransactionSummaries(TransactionSummaryCollector collector,
-                OverallQuery query) {
+        public long mergeInTransactionSummaries(String agentId, OverallQuery query,
+                TransactionSummaryCollector collector) {
             return query.to();
         }
 
         @Override
-        public long mergeInOverallErrorSummary(OverallErrorSummaryCollector collector,
-                OverallQuery query) {
+        public long mergeInOverallErrorSummary(String agentId, OverallQuery query,
+                OverallErrorSummaryCollector collector) {
             return query.to();
         }
 
         @Override
-        public long mergeInTransactionErrorSummaries(TransactionErrorSummaryCollector collector,
-                OverallQuery query) {
+        public long mergeInTransactionErrorSummaries(String agentId, OverallQuery query,
+                TransactionErrorSummaryCollector collector) {
             return query.to();
         }
 
         @Override
-        public @Nullable LiveResult<OverviewAggregate> getOverviewAggregates(
+        public @Nullable LiveResult<OverviewAggregate> getOverviewAggregates(String agentId,
                 TransactionQuery query) {
             return null;
         }
 
         @Override
-        public @Nullable LiveResult<PercentileAggregate> getPercentileAggregates(
+        public @Nullable LiveResult<PercentileAggregate> getPercentileAggregates(String agentId,
                 TransactionQuery query) {
             return null;
         }
 
         @Override
-        public @Nullable LiveResult<ThroughputAggregate> getThroughputAggregates(
+        public @Nullable LiveResult<ThroughputAggregate> getThroughputAggregates(String agentId,
                 TransactionQuery query) {
             return null;
         }
 
         @Override
-        public long mergeInQueries(QueryCollector collector, TransactionQuery query) {
+        public long mergeInQueries(String agentId, TransactionQuery query,
+                QueryCollector collector) {
             return query.to();
         }
 
         @Override
-        public long mergeInServiceCalls(ServiceCallCollector collector, TransactionQuery query) {
+        public long mergeInServiceCalls(String agentId, TransactionQuery query,
+                ServiceCallCollector collector) {
             return query.to();
         }
 
         @Override
-        public long mergeInMainThreadProfiles(ProfileCollector collector, TransactionQuery query) {
+        public long mergeInMainThreadProfiles(String agentId, TransactionQuery query,
+                ProfileCollector collector) {
             return query.to();
         }
 
         @Override
-        public long mergeInAuxThreadProfiles(ProfileCollector collector, TransactionQuery query) {
+        public long mergeInAuxThreadProfiles(String agentId, TransactionQuery query,
+                ProfileCollector collector) {
             return query.to();
         }
     }

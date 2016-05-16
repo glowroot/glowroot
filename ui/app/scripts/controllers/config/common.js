@@ -41,8 +41,7 @@ glowroot.controller('ConfigCommonCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.agentId = $scope.agentId;
-      $http.post(backendUrl, postData)
+      $http.post(backendUrl + '?agent-id=' + encodeURIComponent($scope.agentId), postData)
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Saved');

@@ -194,7 +194,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public void deleteAll(String agentRollup) {
+    public void deleteAll() {
         // this is not currently supported (to avoid row key range query)
         throw new UnsupportedOperationException();
     }

@@ -22,5 +22,5 @@ public interface TransactionTypeRepository {
 
     Map<String, List<String>> readTransactionTypes() throws Exception;
 
-    void deleteAll(String agentRollup) throws Exception;
+    void deleteAll() throws Exception;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,24 +32,21 @@ glowroot.controller('LoginCtrl', [
     // initialize page binding object
     $scope.page = {};
 
-    if ($scope.layout.readOnlyPasswordEnabled) {
-      $scope.page.user = 'read-only';
-    } else {
-      $scope.page.user = 'admin';
-    }
-
     $scope.message = login.getMessage();
     $scope.login = function (deferred) {
       $scope.message = undefined;
-      var user = $scope.page.user;
-      $http.post('backend/' + user + '-login', $scope.page.password)
+      var postData = {
+        username: $scope.page.username,
+        password: $scope.page.password
+      };
+      $http.post('backend/login', postData)
           .success(function (data) {
-            if (data.incorrectPassword) {
+            if (data.incorrectLogin) {
               $('#loginPassword').select();
               deferred.reject('Password incorrect');
             } else {
               $rootScope.layout = data;
-              $rootScope.authenticatedUser = user;
+              $rootScope.username = postData.username;
               deferred.resolve('Success');
               login.returnToOriginalPath();
             }

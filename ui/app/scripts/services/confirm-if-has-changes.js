@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,6 @@ glowroot.factory('confirmIfHasChanges', [
     return function ($scope) {
       var confirmed;
       return function (event, newUrl) {
-        if ($rootScope.layout.adminPasswordEnabled && $rootScope.authenticatedUser !== 'admin') {
-          // no point in confirming when user doesn't have permission to make the changes anyways
-          return;
-        }
         if (!$scope.httpError && !confirmed && $scope.hasChanges()) {
           event.preventDefault();
 

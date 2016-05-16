@@ -30,13 +30,13 @@ class TraceJsonService {
         this.traceCommonService = traceCommonService;
     }
 
-    @GET("/backend/trace/header")
-    String getHeader(String queryString) throws Exception {
-        HeaderRequest request = QueryStrings.decode(queryString, HeaderRequest.class);
-        String headerJson = traceCommonService.getHeaderJson(request.agentId(), request.traceId(),
+    @GET(path = "/backend/trace/header", permission = "agent:view:trace")
+    String getHeader(@BindAgentId String agentId, @BindRequest HeaderRequest request)
+            throws Exception {
+        String headerJson = traceCommonService.getHeaderJson(agentId, request.traceId(),
                 request.checkLiveTraces());
         if (headerJson == null) {
-            logger.debug("no trace found for agent id '{}' and trace id '{}'", request.agentId(),
+            logger.debug("no trace found for agent id '{}' and trace id '{}'", agentId,
                     request.traceId());
             return "{\"expired\":true}";
         } else {
@@ -46,7 +46,6 @@ class TraceJsonService {
 
     @Value.Immutable
     abstract static class HeaderRequest {
-        abstract String agentId();
         abstract String traceId();
         @Value.Default
         boolean checkLiveTraces() {

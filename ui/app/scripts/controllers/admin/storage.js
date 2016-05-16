@@ -16,7 +16,7 @@
 
 /* global glowroot, angular, $ */
 
-glowroot.controller('ConfigStorageCtrl', [
+glowroot.controller('AdminStorageCtrl', [
   '$scope',
   '$http',
   '$location',
@@ -61,7 +61,7 @@ glowroot.controller('ConfigStorageCtrl', [
     }
 
     $scope.save = function (deferred) {
-      $http.post('backend/config/storage', $scope.config)
+      $http.post('backend/admin/storage', $scope.config)
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Saved');
@@ -69,23 +69,15 @@ glowroot.controller('ConfigStorageCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $scope.defragData = function (deferred) {
-      $http.post('backend/admin/defrag-data')
-          .success(function () {
-            deferred.resolve('Defragmented');
-          })
-          .error(httpErrors.handler($scope, deferred));
-    };
-
-    $scope.deleteAllData = function (deferred) {
-      $http.post('backend/admin/delete-all-data', {agentRollup: $scope.agentRollup})
+    $scope.deleteAllStoredData = function (deferred) {
+      $http.post('backend/admin/delete-all-stored-data', {agentRollup: $scope.agentRollup})
           .success(function () {
             deferred.resolve('Deleted');
           })
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/storage')
+    $http.get('backend/admin/storage')
         .success(onNewData)
         .error(httpErrors.handler($scope));
 

@@ -53,7 +53,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     };
 
     function refreshData() {
-      charts.refreshData('backend/jvm/gauge-values', chartState, $scope, addToQuery, onRefreshData);
+      charts.refreshData('backend/jvm/gauges', chartState, $scope, addToQuery, onRefreshData);
     }
 
     function watchListener(newValues, oldValues) {

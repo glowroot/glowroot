@@ -26,7 +26,7 @@ glowroot.factory('login', [
         message = msg;
         originalUrl = doNotSaveLocation ? '/' : $location.url();
         if (originalUrl !== '/login') {
-          $location.url('/login');
+          $location.url('/login').replace();
         }
       },
       getMessage: function () {

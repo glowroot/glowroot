@@ -18,6 +18,7 @@ package org.glowroot.server.storage;
 import java.util.List;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Session;
 import com.google.common.collect.Lists;
 import org.junit.AfterClass;
@@ -44,9 +45,13 @@ public class GaugeValueDaoIT {
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
         session.execute("use glowroot");
 
-        AgentDao agentDao = new AgentDao(session);
         ServerConfigDao serverConfigDao = new ServerConfigDao(session);
-        ConfigRepository configRepository = new ConfigRepositoryImpl(serverConfigDao, agentDao);
+        AgentDao agentDao = new AgentDao(session);
+        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot");
+        UserDao userDao = new UserDao(session, keyspace);
+        RoleDao roleDao = new RoleDao(session, keyspace);
+        ConfigRepository configRepository =
+                new ConfigRepositoryImpl(serverConfigDao, agentDao, userDao, roleDao);
         agentDao.setConfigRepository(configRepository);
         serverConfigDao.setConfigRepository(configRepository);
         gaugeValueDao = new GaugeValueDao(session, configRepository);

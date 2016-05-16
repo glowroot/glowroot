@@ -33,12 +33,11 @@ glowroot.controller('JvmHeapDumpCtrl', [
 
     $scope.checkDiskSpace = function (deferred) {
       var postData = {
-        agentId: $scope.agentId,
         directory: $scope.page.directory
       };
       $scope.availableDiskSpaceBytes = undefined;
       $scope.heapDumpResponse = false;
-      $http.post('backend/jvm/available-disk-space', postData)
+      $http.post('backend/jvm/available-disk-space?agent-id=' + encodeURIComponent($scope.agentId), postData)
           .success(function (data) {
             if (data.error) {
               deferred.reject(data.error);
@@ -52,12 +51,11 @@ glowroot.controller('JvmHeapDumpCtrl', [
 
     $scope.heapDump = function (deferred) {
       var postData = {
-        agentId: $scope.agentId,
         directory: $scope.page.directory
       };
       $scope.availableDiskSpaceBytes = undefined;
       $scope.heapDumpResponse = false;
-      $http.post('backend/jvm/heap-dump', postData)
+      $http.post('backend/jvm/heap-dump?agent-id=' + encodeURIComponent($scope.agentId), postData)
           .success(function (data) {
             if (data.error) {
               deferred.reject(data.error);

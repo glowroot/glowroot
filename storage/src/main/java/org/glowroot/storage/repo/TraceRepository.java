@@ -37,18 +37,18 @@ public interface TraceRepository {
     List<String> readTraceAttributeNames(String agentRollup, String transactionType)
             throws Exception;
 
-    Result<TracePoint> readSlowPoints(TraceQuery query, TracePointFilter filter, int limit)
-            throws Exception;
+    Result<TracePoint> readSlowPoints(String agentRollup, TraceQuery query, TracePointFilter filter,
+            int limit) throws Exception;
 
-    Result<TracePoint> readErrorPoints(TraceQuery query, TracePointFilter filter, int limit)
-            throws Exception;
+    Result<TracePoint> readErrorPoints(String agentRollup, TraceQuery query,
+            TracePointFilter filter, int limit) throws Exception;
 
-    long readSlowCount(TraceQuery query) throws Exception;
+    long readSlowCount(String agentRollup, TraceQuery query) throws Exception;
 
-    long readErrorCount(TraceQuery query) throws Exception;
+    long readErrorCount(String agentRollup, TraceQuery query) throws Exception;
 
-    ErrorMessageResult readErrorMessages(TraceQuery query, ErrorMessageFilter filter,
-            long resolutionMillis, int limit) throws Exception;
+    ErrorMessageResult readErrorMessages(String agentRollup, TraceQuery query,
+            ErrorMessageFilter filter, long resolutionMillis, int limit) throws Exception;
 
     @Nullable
     HeaderPlus readHeaderPlus(String agentId, String traceId) throws Exception;
@@ -61,11 +61,10 @@ public interface TraceRepository {
     @Nullable
     Profile readAuxThreadProfile(String agentId, String traceId) throws Exception;
 
-    void deleteAll(String agentRollup) throws Exception;
+    void deleteAll() throws Exception;
 
     @Value.Immutable
     public interface TraceQuery {
-        String agentRollup();
         String transactionType();
         @Nullable
         String transactionName();

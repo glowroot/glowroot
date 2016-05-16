@@ -19,28 +19,33 @@ import java.net.InetAddress;
 
 import javax.mail.Message;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
+import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.RepoAdmin;
+import org.glowroot.storage.repo.TraceRepository;
+import org.glowroot.storage.repo.TransactionTypeRepository;
 import org.glowroot.storage.util.MailService;
-import org.glowroot.ui.ConfigJsonService.SmtpConfigDto;
+import org.glowroot.ui.AdminJsonService.SmtpConfigDto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class ConfigJsonServiceTest {
+public class AdminJsonServiceTest {
 
     private MockMailService mailService;
-    private ConfigJsonService configJsonService;
+    private AdminJsonService adminJsonService;
 
     @Before
     public void beforeEachTest() {
         mailService = new MockMailService();
-        configJsonService = new ConfigJsonService(false, mock(ConfigRepository.class),
-                mock(RepoAdmin.class), mock(HttpSessionManager.class), mailService);
+        adminJsonService = new AdminJsonService(false, mock(ConfigRepository.class),
+                mock(RepoAdmin.class), mailService, mock(AggregateRepository.class),
+                mock(TraceRepository.class), mock(TransactionTypeRepository.class),
+                mock(GaugeValueRepository.class));
     }
 
     @Test
@@ -56,9 +61,8 @@ public class ConfigJsonServiceTest {
                 .version("1234")
                 .testEmailRecipient("to@example.org")
                 .build();
-        String content = new ObjectMapper().writeValueAsString(configDto);
         // when
-        configJsonService.sendTestEmail(content);
+        adminJsonService.sendTestEmail(configDto);
         // then
         Message message = mailService.getMessage();
         assertThat(message.getFrom()[0].toString()).isEqualTo("From Example <from@example.org>");
@@ -81,9 +85,8 @@ public class ConfigJsonServiceTest {
                 .version("1234")
                 .testEmailRecipient("to@example.org")
                 .build();
-        String content = new ObjectMapper().writeValueAsString(configDto);
         // when
-        configJsonService.sendTestEmail(content);
+        adminJsonService.sendTestEmail(configDto);
         // then
         Message message = mailService.getMessage();
         String localHostname = InetAddress.getLocalHost().getHostName();
@@ -108,9 +111,8 @@ public class ConfigJsonServiceTest {
                 .version("1234")
                 .testEmailRecipient("to@example.org")
                 .build();
-        String content = new ObjectMapper().writeValueAsString(configDto);
         // when
-        configJsonService.sendTestEmail(content);
+        adminJsonService.sendTestEmail(configDto);
         // then
         Message message = mailService.getMessage();
         String localHostname = InetAddress.getLocalHost().getHostName();

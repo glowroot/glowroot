@@ -32,7 +32,7 @@ public interface GaugeValueRepository {
     List<GaugeValue> readGaugeValues(String agentRollup, String gaugeName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception;
 
-    void deleteAll(String agentRollup) throws Exception;
+    void deleteAll() throws Exception;
 
     @Value.Immutable
     @Styles.AllParameters

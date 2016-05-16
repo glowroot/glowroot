@@ -39,8 +39,9 @@
     <div ng-form
          gt-form-autofocus-on-first-input
          class="form-horizontal"
-         name="formCtrl">
-      <div class="form-group"
+         name="formCtrl"
+         style="padding-top: 15px;">
+      <div class="form-group gt-form-group-without-help-block"
            ng-class="{'has-error': hasMBeanObjectNameError()}">
         <label class="col-lg-3 control-label"
                for="mbeanObjectName{{$id}}">
@@ -52,6 +53,7 @@
                  class="form-control"
                  ng-model="config.mbeanObjectName"
                  ng-required="true"
+                 ng-disabled="!permissions.config.edit.gauge"
                  uib-typeahead="suggestion for suggestion in mbeanObjectNames($viewValue)"
                  typeahead-on-select="onSelectMBeanObjectName()"
                  ng-blur="onBlurMBeanObjectName()"
@@ -81,7 +83,7 @@
           </div>
         </div>
       </div>
-      <div class="form-group">
+      <div class="form-group gt-form-group-without-help-block">
         <label class="col-lg-3 control-label">
           MBean attributes
         </label>
@@ -93,24 +95,27 @@
                style="height: 50px;">
           </div>
           <table>
-            <tr ng-repeat="mbeanAttribute in allMBeanAttributes | orderBy:'name'"
-                ng-show="allMBeanAttributes">
+            <tr ng-repeat="mbeanAttribute in allMBeanAttributes | orderBy:'name'">
               <td class="checkbox">
                 <label>
-                  <input type="checkbox" ng-model="mbeanAttribute.checked">
+                  <input type="checkbox"
+                         ng-model="mbeanAttribute.checked"
+                         ng-disabled="!permissions.config.edit.gauge">
                   {{mbeanAttribute.name}}
-                <span ng-show="!mbeanAttribute.available && !mbeanUnavailable && !mbeanUnmatched"
-                      class="gt-red"
-                      style="padding-left: 10px;">
-                  Attribute not found
-                </span>
+                  <span ng-show="!mbeanAttribute.available && !mbeanUnavailable && !mbeanUnmatched"
+                        class="gt-red"
+                        style="padding-left: 10px;">
+                    Attribute not found
+                  </span>
                 </label>
               </td>
               <td style="padding-left: 40px;">
                 <div class="checkbox"
                      ng-show="mbeanAttribute.checked">
                   <label>
-                    <input type="checkbox" ng-model="mbeanAttribute.counter">
+                    <input type="checkbox"
+                           ng-model="mbeanAttribute.counter"
+                           ng-disabled="!permissions.config.edit.gauge">
                     Counter?
                   </label>
                 </div>
@@ -124,7 +129,8 @@
           </div>
         </div>
       </div>
-      <div class="form-group gt-form-buttons">
+      <div class="form-group gt-form-buttons"
+           ng-if="permissions.config.edit.gauge">
         <div class="col-lg-offset-3 col-lg-9">
           <div gt-button-group>
             <div gt-button

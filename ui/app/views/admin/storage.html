@@ -261,7 +261,7 @@
         </div>
       </div>
       <div class="form-group gt-form-buttons">
-        <div class="col-lg-offset-4 col-lg-8">
+        <div class="col-lg-offset-4 col-lg-8 gt-sometimes-legend-padding-storage">
           <div gt-button-group>
             <div gt-button
                  gt-label="Save changes"
@@ -270,16 +270,8 @@
                  class="gt-inline-block">
             </div>
             <div gt-button
-                 gt-label="Defrag"
-                 gt-click="defragData(deferred)"
-                 gt-btn-class="btn-warning"
-                 gt-dont-validate-form="true"
-                 ng-show="layout.fat"
-                 class="gt-inline-block">
-            </div>
-            <div gt-button
                  gt-label="Delete all data"
-                 gt-click="deleteAllData(deferred)"
+                 gt-click="deleteAllStoredData(deferred)"
                  gt-btn-class="btn-danger"
                  gt-dont-validate-form="true"
                  gt-confirm-header="Delete all data?"

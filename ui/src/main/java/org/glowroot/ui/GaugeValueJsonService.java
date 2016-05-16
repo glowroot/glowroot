@@ -54,9 +54,9 @@ class GaugeValueJsonService {
         this.configRepository = configRepository;
     }
 
-    @GET("/backend/jvm/gauge-values")
-    String getGaugeValues(String queryString) throws Exception {
-        GaugeValueRequest request = QueryStrings.decode(queryString, GaugeValueRequest.class);
+    @GET(path = "/backend/jvm/gauges", permission = "agent:view:jvm:gauges")
+    String getGaugeValues(@BindAgentRollup String agentRollup,
+            @BindRequest GaugeValueRequest request) throws Exception {
         int rollupLevel =
                 rollupLevelService.getGaugeRollupLevelForView(request.from(), request.to());
         long intervalMillis;
@@ -72,8 +72,8 @@ class GaugeValueJsonService {
 
         Map<String, List<GaugeValue>> map = Maps.newHashMap();
         for (String gaugeName : request.gaugeNames()) {
-            map.put(gaugeName, getGaugeValues(request.agentRollup(), revisedFrom, revisedTo,
-                    gaugeName, rollupLevel));
+            map.put(gaugeName,
+                    getGaugeValues(agentRollup, revisedFrom, revisedTo, gaugeName, rollupLevel));
         }
         if (rollupLevel != 0) {
             syncManualRollupCaptureTimes(map, rollupLevel);
@@ -92,10 +92,8 @@ class GaugeValueJsonService {
         return sb.toString();
     }
 
-    @GET("/backend/jvm/all-gauges")
-    String getAllGaugeNames(String queryString) throws Exception {
-        String agentRollup =
-                QueryStrings.decode(queryString, AllGaugeNamesRequest.class).agentRollup();
+    @GET(path = "/backend/jvm/all-gauges", permission = "agent:view:jvm:gauges")
+    String getAllGaugeNames(@BindAgentRollup String agentRollup) throws Exception {
         List<Gauge> gauges = gaugeValueRepository.getGauges(agentRollup);
         ImmutableList<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
         return mapper.writeValueAsString(sortedGauges);
@@ -222,13 +220,7 @@ class GaugeValueJsonService {
     }
 
     @Value.Immutable
-    interface AllGaugeNamesRequest {
-        String agentRollup();
-    }
-
-    @Value.Immutable
     interface GaugeValueRequest {
-        String agentRollup();
         long from();
         long to();
         ImmutableList<String> gaugeNames();

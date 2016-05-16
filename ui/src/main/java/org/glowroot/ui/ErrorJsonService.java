@@ -77,18 +77,16 @@ class ErrorJsonService {
         this.clock = clock;
     }
 
-    @GET("/backend/error/messages")
-    String getData(String queryString) throws Exception {
-        ErrorMessageRequest request = QueryStrings.decode(queryString, ErrorMessageRequest.class);
+    @GET(path = "/backend/error/messages", permission = "agent:view:error:messages")
+    String getData(@BindAgentRollup String agentRollup, @BindRequest ErrorMessageRequest request)
+            throws Exception {
         TraceQuery query = ImmutableTraceQuery.builder()
-                .agentRollup(request.agentRollup())
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
                 .to(request.to())
                 .build();
         TransactionQuery transactionQuery = ImmutableTransactionQuery.builder()
-                .agentRollup(request.agentRollup())
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
@@ -102,7 +100,7 @@ class ErrorJsonService {
                 .build();
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates =
-                transactionCommonService.getThroughputAggregates(transactionQuery);
+                transactionCommonService.getThroughputAggregates(agentRollup, transactionQuery);
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
         Map<Long, Long> transactionCountMap = Maps.newHashMap();
@@ -117,7 +115,7 @@ class ErrorJsonService {
                     throughputAggregates.get(throughputAggregates.size() - 1).captureTime();
             long resolutionMillis =
                     rollupLevelService.getDataPointIntervalMillis(query.from(), query.to());
-            ErrorMessageResult result = traceRepository.readErrorMessages(
+            ErrorMessageResult result = traceRepository.readErrorMessages(agentRollup,
                     ImmutableTraceQuery.builder().copyFrom(query).to(maxCaptureTime).build(),
                     filter, resolutionMillis, request.errorMessageLimit());
             List<ErrorPoint> errorPoints = Lists.newArrayList();
@@ -151,19 +149,20 @@ class ErrorJsonService {
         return sb.toString();
     }
 
-    @GET("/backend/error/summaries")
-    String getSummaries(String queryString) throws Exception {
-        ErrorSummaryRequest request = QueryStrings.decode(queryString, ErrorSummaryRequest.class);
+    @GET(path = "/backend/error/summaries", permission = "agent:view:error:messages")
+    String getSummaries(@BindAgentRollup String agentRollup,
+            @BindRequest ErrorSummaryRequest request) throws Exception {
         OverallQuery query = ImmutableOverallQuery.builder()
-                .agentRollup(request.agentRollup())
                 .transactionType(request.transactionType())
                 .from(request.from())
                 .to(request.to())
                 .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to()))
                 .build();
-        OverallErrorSummary overallSummary = errorCommonService.readOverallErrorSummary(query);
-        Result<TransactionErrorSummary> queryResult = errorCommonService
-                .readTransactionErrorSummaries(query, request.sortOrder(), request.limit());
+        OverallErrorSummary overallSummary =
+                errorCommonService.readOverallErrorSummary(agentRollup, query);
+        Result<TransactionErrorSummary> queryResult =
+                errorCommonService.readTransactionErrorSummaries(agentRollup, query,
+                        request.sortOrder(), request.limit());
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -171,19 +170,6 @@ class ErrorJsonService {
         jg.writeObjectField("overall", overallSummary);
         jg.writeObjectField("transactions", queryResult.records());
         jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
-    }
-
-    @GET("/backend/error/tab-bar-data")
-    String getTabBarData(String queryString) throws Exception {
-        TraceQuery query = QueryStrings.decode(queryString, TraceQuery.class);
-        long traceCount = traceRepository.readErrorCount(query);
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeNumberField("traceCount", traceCount);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -226,7 +212,6 @@ class ErrorJsonService {
 
     @Value.Immutable
     interface ErrorSummaryRequest {
-        String agentRollup();
         String transactionType();
         long from();
         long to();
@@ -236,7 +221,6 @@ class ErrorJsonService {
 
     @Value.Immutable
     interface ErrorMessageRequest {
-        String agentRollup();
         String transactionType();
         @Nullable
         String transactionName();

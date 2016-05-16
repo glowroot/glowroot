@@ -202,13 +202,12 @@ public class AlertingServiceTest {
         when(configRepository.getAlertConfigs(AGENT_ID))
                 .thenReturn(ImmutableList.of(alertConfig));
         ImmutableTransactionQuery query = ImmutableTransactionQuery.builder()
-                .agentRollup(AGENT_ID)
                 .transactionType("tt")
                 .from(60001)
                 .to(120000)
                 .rollupLevel(0)
                 .build();
-        when(aggregateRepository.readPercentileAggregates(query))
+        when(aggregateRepository.readPercentileAggregates(AGENT_ID, query))
                 .thenReturn(ImmutableList.of(aggregate));
     }
 

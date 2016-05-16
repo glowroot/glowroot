@@ -36,7 +36,8 @@
     <div ng-form
          gt-form-autofocus-on-first-input
          class="form-horizontal"
-         name="formCtrl">
+         name="formCtrl"
+         style="padding-top: 15px;">
       <div class="form-group gt-form-group-without-help-block">
         <label class="col-lg-3 control-label">
           Based on
@@ -47,6 +48,7 @@
               <input type="radio"
                      class="gt-autofocus-ignore"
                      ng-model="config.kind"
+                     ng-disabled="!permissions.config.edit.alert"
                      value="transaction">
               Transaction response times
             </label>
@@ -56,6 +58,7 @@
               <input type="radio"
                      class="gt-autofocus-ignore"
                      ng-model="config.kind"
+                     ng-disabled="!permissions.config.edit.alert"
                      value="gauge">
               Gauge values
             </label>
@@ -72,6 +75,7 @@
             <select ng-model="config.transactionType"
                     class="form-control"
                     ng-required="loaded"
+                    ng-disabled="!permissions.config.edit.alert"
                     name="transactionType"
                     id="transactionType"
                     style="width: auto;">
@@ -92,6 +96,7 @@
              gt-number="true"
              gt-pattern="pattern.percentile"
              gt-required="loaded"
+             gt-disabled="!permissions.config.edit.alert"
              gt-width="7em"
              gt-addon="percentile">
           <div class="help-block">
@@ -108,6 +113,7 @@
              gt-number="true"
              gt-pattern="pattern.integer"
              gt-required="loaded"
+             gt-disabled="!permissions.config.edit.alert"
              gt-width="7em"
              gt-addon="milliseconds">
           <div class="help-block">
@@ -120,6 +126,7 @@
              gt-number="true"
              gt-pattern="pattern.integer"
              gt-required="loaded"
+             gt-disabled="!permissions.config.edit.alert"
              gt-width="7em"
              gt-addon="minutes">
           <div class="help-block">
@@ -132,6 +139,7 @@
              gt-number="true"
              gt-pattern="pattern.integer"
              gt-required="loaded"
+             gt-disabled="!permissions.config.edit.alert"
              gt-width="7em">
           <div class="help-block">
             Time periods with very few transactions have much less reliable percentiles, so increasing this can be used
@@ -149,6 +157,7 @@
             <select ng-model="config.gaugeName"
                     class="form-control"
                     ng-required="loaded"
+                    ng-disabled="!permissions.config.edit.alert"
                     name="gaugeName"
                     id="gaugeName"
                     style="width: auto;">
@@ -169,6 +178,7 @@
              gt-number="true"
              gt-pattern="pattern.double"
              gt-required="loaded"
+             gt-disabled="!permissions.config.edit.alert"
              gt-width="7em"
              gt-addon="{{unit()}}">
           <div class="help-block">
@@ -181,6 +191,7 @@
              gt-number="true"
              gt-pattern="pattern.integer"
              gt-required="loaded"
+             gt-disabled="!permissions.config.edit.alert"
              gt-width="7em"
              gt-addon="minutes">
           <div class="help-block">
@@ -193,13 +204,15 @@
            gt-label="Email addresses"
            gt-model="emailAddresses"
            gt-required="loaded"
+           gt-disabled="!permissions.config.edit.alert"
            gt-width="30em"
            ng-show="loaded">
         <div class="help-block">
           Comma separated list of email addresses.
         </div>
       </div>
-      <div class="form-group gt-form-buttons">
+      <div class="form-group gt-form-buttons"
+           ng-if="permissions.config.edit.alert">
         <div class="col-lg-offset-3 col-lg-9">
           <div gt-button-group>
             <div gt-button

@@ -19,16 +19,16 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpRequest;
@@ -37,13 +37,18 @@ import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
+import org.apache.shiro.authz.permission.WildcardPermission;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.Clock;
-import org.glowroot.storage.config.AccessConfig.AnonymousAccess;
+import org.glowroot.storage.config.RoleConfig;
+import org.glowroot.storage.config.UserConfig;
 import org.glowroot.storage.repo.ConfigRepository;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -53,30 +58,34 @@ class HttpSessionManager {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpSessionManager.class);
 
+    private final boolean fat;
     private final ConfigRepository configRepository;
     private final Clock clock;
     private final LayoutService layoutJsonService;
 
     private final SecureRandom secureRandom = new SecureRandom();
-    private final Map<String, Long> adminSessionExpirations = Maps.newConcurrentMap();
-    private final Map<String, Long> readOnlySessionExpirations = Maps.newConcurrentMap();
+    private final Map<String, Session> sessions = Maps.newConcurrentMap();
 
-    HttpSessionManager(ConfigRepository configRepository, Clock clock,
-            LayoutService layoutJsonService) {
+    HttpSessionManager(boolean fat, ConfigRepository configRepository,
+            Clock clock, LayoutService layoutJsonService) {
+        this.fat = fat;
         this.configRepository = configRepository;
         this.clock = clock;
         this.layoutJsonService = layoutJsonService;
     }
 
-    FullHttpResponse login(FullHttpRequest request, boolean admin) throws Exception {
-        boolean success;
-        String password = request.content().toString(Charsets.ISO_8859_1);
-        String existingPasswordHash;
-        if (admin) {
-            existingPasswordHash = configRepository.getAccessConfig().adminPasswordHash();
-        } else {
-            existingPasswordHash = configRepository.getAccessConfig().readOnlyPasswordHash();
+    FullHttpResponse login(String username, String password) throws Exception {
+        if (username.toLowerCase(Locale.ENGLISH).equals("anonymous")) {
+            String text = "{\"incorrectLogin\":true}";
+            return HttpServices.createJsonResponse(text, OK);
         }
+        UserConfig userConfig = getUserConfigCaseInsensitive(username);
+        if (userConfig == null) {
+            String text = "{\"incorrectLogin\":true}";
+            return HttpServices.createJsonResponse(text, OK);
+        }
+        boolean success;
+        String existingPasswordHash = userConfig.passwordHash();
         try {
             success = validatePassword(password, existingPasswordHash);
         } catch (GeneralSecurityException e) {
@@ -84,75 +93,36 @@ class HttpSessionManager {
             return new DefaultFullHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }
         if (success) {
-            String text = layoutJsonService.getLayout();
+            Authentication authentication = getAuthentication(userConfig);
+            String text = layoutJsonService.getLayout(authentication);
             FullHttpResponse response = HttpServices.createJsonResponse(text, OK);
-            createSession(response, admin);
+            createSession(response, username);
             return response;
         } else {
-            String text = "{\"incorrectPassword\":true}";
+            String text = "{\"incorrectLogin\":true}";
             return HttpServices.createJsonResponse(text, OK);
         }
-    }
-
-    boolean hasReadAccess(HttpRequest request) throws Exception {
-        if (configRepository.getAccessConfig().anonymousAccess() != AnonymousAccess.NONE) {
-            return true;
-        }
-        String sessionId = getSessionId(request);
-        if (sessionId == null) {
-            return false;
-        }
-        if (isValidNonExpired(sessionId, true)) {
-            return true;
-        }
-        if (isValidNonExpired(sessionId, false)) {
-            return true;
-        }
-        return false;
-    }
-
-    boolean hasAdminAccess(HttpRequest request) throws Exception {
-        if (configRepository.getAccessConfig().anonymousAccess() == AnonymousAccess.ADMIN) {
-            // anonymous is ok
-            return true;
-        }
-        // anonymous is not ok
-        String sessionId = getSessionId(request);
-        if (sessionId == null) {
-            return false;
-        }
-        return isValidNonExpired(sessionId, true);
-    }
-
-    @Nullable
-    String getAuthenticatedUser(HttpRequest request) throws Exception {
-        String sessionId = getSessionId(request);
-        if (sessionId == null) {
-            return null;
-        }
-        if (isValidNonExpired(sessionId, true)) {
-            return "admin";
-        }
-        if (isValidNonExpired(sessionId, false)) {
-            return "read-only";
-        }
-        return null;
     }
 
     FullHttpResponse signOut(HttpRequest request) {
         String sessionId = getSessionId(request);
         if (sessionId != null) {
-            adminSessionExpirations.remove(sessionId);
-            readOnlySessionExpirations.remove(sessionId);
+            sessions.remove(sessionId);
         }
         FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK);
         deleteSessionCookie(response);
         return response;
     }
 
-    void createSession(HttpResponse response, boolean admin) throws Exception {
+    void createSession(HttpResponse response, String username) throws Exception {
         String sessionId = new BigInteger(130, secureRandom).toString(32);
-        updateSessionExpiration(sessionId, admin);
+        int timeoutMinutes = configRepository.getWebConfig().sessionTimeoutMinutes();
+        if (timeoutMinutes == 0) {
+            sessions.put(sessionId, new Session(username, Long.MAX_VALUE));
+        } else {
+            sessions.put(sessionId, new Session(username,
+                    clock.currentTimeMillis() + MINUTES.toMillis(timeoutMinutes)));
+        }
         Cookie cookie = new DefaultCookie("GLOWROOT_SESSION_ID", sessionId);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
@@ -171,8 +141,40 @@ class HttpSessionManager {
     }
 
     void clearAllSessions() {
-        adminSessionExpirations.clear();
-        readOnlySessionExpirations.clear();
+        sessions.clear();
+    }
+
+    boolean isAuthenticated(HttpRequest request) {
+        String sessionId = getSessionId(request);
+        if (sessionId == null) {
+            return false;
+        }
+        Session session = sessions.get(sessionId);
+        if (session == null) {
+            return false;
+        }
+        return session.timeout > clock.currentTimeMillis();
+    }
+
+    @Nullable
+    Authentication getAuthentication(HttpRequest request) {
+        String sessionId = getSessionId(request);
+        if (sessionId == null) {
+            return getAnonymousAuthentication();
+        }
+        Session session = sessions.get(sessionId);
+        if (session == null) {
+            return getAnonymousAuthentication();
+        }
+        if (session.timeout < clock.currentTimeMillis()) {
+            return getAnonymousAuthentication();
+        }
+        UserConfig userConfig = getUserConfigCaseInsensitive(session.username);
+        if (userConfig == null) {
+            // user must have been just deleted
+            return getAnonymousAuthentication();
+        }
+        return getAuthentication(userConfig);
     }
 
     @Nullable
@@ -190,41 +192,49 @@ class HttpSessionManager {
         return null;
     }
 
+    private @Nullable Authentication getAnonymousAuthentication() {
+        UserConfig userConfig = getUserConfigCaseInsensitive("anonymous");
+        if (userConfig == null) {
+            return null;
+        }
+        return getAuthentication(userConfig);
+    }
+
+    private Authentication getAuthentication(UserConfig userConfig) {
+        Set<String> permissions = Sets.newHashSet();
+        for (String roleName : userConfig.roles()) {
+            RoleConfig roleConfig = configRepository.getRoleConfig(roleName);
+            if (roleConfig == null) {
+                continue;
+            }
+            permissions.addAll(roleConfig.permissions());
+        }
+        return ImmutableAuthentication.builder()
+                .fat(fat)
+                .anonymous(userConfig.username().equalsIgnoreCase("anonymous"))
+                .username(userConfig.username())
+                .permissions(permissions)
+                .build();
+    }
+
+    private @Nullable UserConfig getUserConfigCaseInsensitive(String username) {
+        for (UserConfig userConfig : configRepository.getUserConfigs()) {
+            if (userConfig.username().equalsIgnoreCase(username)) {
+                return userConfig;
+            }
+        }
+        return null;
+    }
+
     private void purgeExpiredSessions() {
         long currentTimeMillis = clock.currentTimeMillis();
-        purgeExpiredSessions(currentTimeMillis, adminSessionExpirations);
-        purgeExpiredSessions(currentTimeMillis, readOnlySessionExpirations);
+        purgeExpiredSessions(currentTimeMillis);
     }
 
-    private boolean isValidNonExpired(String sessionId, boolean admin) throws Exception {
-        Map<String, Long> sessionExpirations =
-                admin ? adminSessionExpirations : readOnlySessionExpirations;
-        Long expires = sessionExpirations.get(sessionId);
-        if (expires == null || clock.currentTimeMillis() > expires) {
-            return false;
-        }
-        // session is valid and not expired, update expiration
-        updateSessionExpiration(sessionId, admin);
-        return true;
-    }
-
-    private void updateSessionExpiration(String sessionId, boolean admin) throws Exception {
-        Map<String, Long> sessionExpirations =
-                admin ? adminSessionExpirations : readOnlySessionExpirations;
-        int timeoutMinutes = configRepository.getAccessConfig().sessionTimeoutMinutes();
-        if (timeoutMinutes == 0) {
-            sessionExpirations.put(sessionId, Long.MAX_VALUE);
-        } else {
-            sessionExpirations.put(sessionId,
-                    clock.currentTimeMillis() + MINUTES.toMillis(timeoutMinutes));
-        }
-    }
-
-    private static void purgeExpiredSessions(long currentTimeMillis,
-            Map<String, Long> sessionExpirations) {
-        Iterator<Entry<String, Long>> i = sessionExpirations.entrySet().iterator();
+    private void purgeExpiredSessions(long currentTimeMillis) {
+        Iterator<Entry<String, Session>> i = sessions.entrySet().iterator();
         while (i.hasNext()) {
-            if (i.next().getValue() < currentTimeMillis) {
+            if (i.next().getValue().timeout < currentTimeMillis) {
                 i.remove();
             }
         }
@@ -237,6 +247,70 @@ class HttpSessionManager {
             return password.isEmpty();
         } else {
             return PasswordHash.validatePassword(password, passwordHash);
+        }
+    }
+
+    private static class Session {
+
+        private final String username;
+        private volatile long timeout;
+
+        private Session(String username, long timeout) {
+            this.username = username;
+            this.timeout = timeout;
+        }
+    }
+
+    @Value.Immutable
+    abstract static class Authentication {
+
+        abstract boolean fat();
+        abstract boolean anonymous();
+        abstract String username();
+        abstract Set<String> permissions();
+
+        boolean hasAgentLeafPermission(String agentId, String permission) {
+            checkArgument(
+                    permission.startsWith("agent:config:") || permission.startsWith("agent:tool:")
+                            || permission.equals("agent:view:jvm:gauges")
+                            || permission.equals("agent:view:jvm:systemInfo"),
+                    permission);
+            if (fat()) {
+                checkArgument(agentId.isEmpty(), agentId);
+                return hasPermission(permission);
+            } else {
+                return hasPermission("agent:" + agentId + permission.substring(5));
+            }
+        }
+
+        boolean hasAgentRollupPermission(String agentRollup, String permission) {
+            checkArgument(permission.equals("agent:view") || permission.startsWith("agent:view:"),
+                    permission);
+            if (fat()) {
+                checkState(agentRollup.isEmpty(), agentRollup);
+                return hasPermission(permission);
+            } else {
+                return hasPermission("agent:" + agentRollup + permission.substring(5));
+            }
+        }
+
+        boolean hasAdminPermission(String permission) {
+            checkArgument(permission.startsWith("admin:"), permission);
+            return hasPermission(permission);
+        }
+
+        boolean hasPermission(String permission) {
+            if (permission.isEmpty()) {
+                // "" means no permission needed
+                return true;
+            }
+            WildcardPermission p = new WildcardPermission(permission);
+            for (String perm : permissions()) {
+                if (new WildcardPermission(perm).implies(p)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

@@ -604,12 +604,12 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public Result<TracePoint> readSlowPoints(TraceQuery query, TracePointFilter filter, int limit)
-            throws IOException {
+    public Result<TracePoint> readSlowPoints(String agentRollup, TraceQuery query,
+            TracePointFilter filter, int limit) throws IOException {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             BoundStatement boundStatement = readOverallSlowPoint.bind();
-            boundStatement.setString(0, query.agentRollup());
+            boundStatement.setString(0, agentRollup);
             boundStatement.setString(1, query.transactionType());
             boundStatement.setTimestamp(2, new Date(query.from()));
             boundStatement.setTimestamp(3, new Date(query.to()));
@@ -617,7 +617,7 @@ public class TraceDao implements TraceRepository {
             return processPoints(results, filter, limit, false);
         } else {
             BoundStatement boundStatement = readTransactionSlowPoint.bind();
-            boundStatement.setString(0, query.agentRollup());
+            boundStatement.setString(0, agentRollup);
             boundStatement.setString(1, query.transactionType());
             boundStatement.setString(2, transactionName);
             boundStatement.setTimestamp(3, new Date(query.from()));
@@ -628,12 +628,12 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public Result<TracePoint> readErrorPoints(TraceQuery query, TracePointFilter filter, int limit)
-            throws IOException {
+    public Result<TracePoint> readErrorPoints(String agentRollup, TraceQuery query,
+            TracePointFilter filter, int limit) throws IOException {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             BoundStatement boundStatement = readOverallErrorPoint.bind();
-            boundStatement.setString(0, query.agentRollup());
+            boundStatement.setString(0, agentRollup);
             boundStatement.setString(1, query.transactionType());
             boundStatement.setTimestamp(2, new Date(query.from()));
             boundStatement.setTimestamp(3, new Date(query.to()));
@@ -641,7 +641,7 @@ public class TraceDao implements TraceRepository {
             return processPoints(results, filter, limit, true);
         } else {
             BoundStatement boundStatement = readTransactionErrorPoint.bind();
-            boundStatement.setString(0, query.agentRollup());
+            boundStatement.setString(0, agentRollup);
             boundStatement.setString(1, query.transactionType());
             boundStatement.setString(2, transactionName);
             boundStatement.setTimestamp(3, new Date(query.from()));
@@ -652,61 +652,61 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public long readSlowCount(TraceQuery query) {
+    public long readSlowCount(String agentRollup, TraceQuery query) {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             ResultSet results = session.execute(
                     "select count(*) from trace_tt_slow_count where agent_rollup = ?"
                             + " and transaction_type = ? and capture_time > ?"
                             + " and capture_time <= ?",
-                    query.agentRollup(), query.transactionType(), query.from(), query.to());
+                    agentRollup, query.transactionType(), query.from(), query.to());
             return results.one().getLong(0);
         } else {
             ResultSet results = session.execute(
                     "select count(*) from trace_tn_slow_count where agent_rollup = ?"
                             + " and transaction_type = ? and transaction_name = ?"
                             + " and capture_time > ? and capture_time <= ?",
-                    query.agentRollup(), query.transactionType(), transactionName, query.from(),
+                    agentRollup, query.transactionType(), transactionName, query.from(),
                     query.to());
             return results.one().getLong(0);
         }
     }
 
     @Override
-    public long readErrorCount(TraceQuery query) {
+    public long readErrorCount(String agentRollup, TraceQuery query) {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             ResultSet results = session.execute(
                     "select count(*) from trace_tt_error_count where agent_rollup = ?"
                             + " and transaction_type = ? and capture_time > ?"
                             + " and capture_time <= ?",
-                    query.agentRollup(), query.transactionType(), query.from(), query.to());
+                    agentRollup, query.transactionType(), query.from(), query.to());
             return results.one().getLong(0);
         } else {
             ResultSet results = session.execute(
                     "select count(*) from trace_tn_error_count where agent_rollup = ?"
                             + " and transaction_type = ? and transaction_name = ?"
                             + " and capture_time > ? and capture_time <= ?",
-                    query.agentRollup(), query.transactionType(), transactionName, query.from(),
+                    agentRollup, query.transactionType(), transactionName, query.from(),
                     query.to());
             return results.one().getLong(0);
         }
     }
 
     @Override
-    public ErrorMessageResult readErrorMessages(TraceQuery query, ErrorMessageFilter filter,
-            long resolutionMillis, int limit) throws Exception {
+    public ErrorMessageResult readErrorMessages(String agentRollup, TraceQuery query,
+            ErrorMessageFilter filter, long resolutionMillis, int limit) throws Exception {
         BoundStatement boundStatement;
         String transactionName = query.transactionName();
         if (transactionName == null) {
             boundStatement = readOverallErrorMessage.bind();
-            boundStatement.setString(0, query.agentRollup());
+            boundStatement.setString(0, agentRollup);
             boundStatement.setString(1, query.transactionType());
             boundStatement.setTimestamp(2, new Date(query.from()));
             boundStatement.setTimestamp(3, new Date(query.to()));
         } else {
             boundStatement = readTransactionErrorMessage.bind();
-            boundStatement.setString(0, query.agentRollup());
+            boundStatement.setString(0, agentRollup);
             boundStatement.setString(1, query.transactionType());
             boundStatement.setString(2, transactionName);
             boundStatement.setTimestamp(3, new Date(query.from()));
@@ -830,7 +830,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public void deleteAll(String agentRollup) {
+    public void deleteAll() {
         // this is not currently supported (to avoid row key range query)
         throw new UnsupportedOperationException();
     }

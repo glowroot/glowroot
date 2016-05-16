@@ -29,17 +29,14 @@ glowroot.controller('JvmGcCtrl', [
     }
 
     $scope.gc = function (deferred) {
-      var postData = {
-        agentId: $scope.agentId
-      };
-      $http.post('backend/jvm/gc', postData)
+      $http.post('backend/jvm/gc?agent-id=' + encodeURIComponent($scope.agentId))
           .success(function (data) {
             deferred.resolve('Success');
           })
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/jvm/agent-connected?agent-id=' + encodeURIComponent($scope.agentId))
+    $http.get('backend/jvm/gc-check-agent-connected?agent-id=' + encodeURIComponent($scope.agentId))
         .success(function (data) {
           $scope.loaded = true;
           $scope.agentNotConnected = !data;

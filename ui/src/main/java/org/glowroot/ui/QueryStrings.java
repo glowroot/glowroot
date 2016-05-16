@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import io.netty.handler.codec.http.QueryStringDecoder;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -47,21 +46,15 @@ class QueryStrings {
 
     private QueryStrings() {}
 
-    static <T> T decode(String queryString, Class<T> clazz) throws Exception {
-        String prefix = "";
-        Package pkg = clazz.getPackage();
-        if (pkg != null) {
-            prefix = pkg.getName() + '.';
-        }
-        String immutableClassName = prefix + "Immutable" + clazz.getSimpleName();
-        Class<?> immutableClass = Class.forName(immutableClassName, false, clazz.getClassLoader());
+    static <T> /*@NonNull*/ T decode(Map<String, List<String>> queryParameters, Class<T> clazz)
+            throws Exception {
+        Class<?> immutableClass = getImmutableClass(clazz);
         Method builderMethod = immutableClass.getDeclaredMethod("builder");
         Object builder = builderMethod.invoke(null);
         checkNotNull(builder);
         Class<?> immutableBuilderClass = builder.getClass();
         Map<String, Method> setters = settersCache.getUnchecked(immutableBuilderClass);
-        QueryStringDecoder decoder = new QueryStringDecoder('?' + queryString);
-        for (Entry<String, List<String>> entry : decoder.parameters().entrySet()) {
+        for (Entry<String, List<String>> entry : queryParameters.entrySet()) {
             String key = entry.getKey();
             key = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, key);
             // special rule for "-mbean" so that it will convert to "...MBean"
@@ -91,7 +84,18 @@ class QueryStrings {
         Method build = immutableBuilderClass.getDeclaredMethod("build");
         @SuppressWarnings("unchecked")
         T decoded = (T) build.invoke(builder);
-        return decoded;
+        return checkNotNull(decoded);
+    }
+
+    static <T> Class<?> getImmutableClass(Class<T> clazz) throws ClassNotFoundException {
+        String prefix = "";
+        Package pkg = clazz.getPackage();
+        if (pkg != null) {
+            prefix = pkg.getName() + '.';
+        }
+        String immutableClassName = prefix + "Immutable" + clazz.getSimpleName();
+        Class<?> immutableClass = Class.forName(immutableClassName, false, clazz.getClassLoader());
+        return immutableClass;
     }
 
     private static @Nullable Object parseString(String str, Class<?> targetClass) {

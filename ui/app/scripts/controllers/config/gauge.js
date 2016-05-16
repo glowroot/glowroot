@@ -92,7 +92,7 @@ glowroot.controller('ConfigGaugeCtrl', [
           })
           .error(httpErrors.handler($scope));
     } else {
-      $http.get('backend/jvm/agent-connected?agent-id=' + encodeURIComponent($scope.agentId))
+      $http.get('backend/config/new-gauge-check-agent-connected?agent-id=' + encodeURIComponent($scope.agentId))
           .success(function (data) {
             $scope.loaded = true;
             $scope.agentNotConnected = !data;
@@ -208,27 +208,27 @@ glowroot.controller('ConfigGaugeCtrl', [
     };
 
     $scope.saveDisabled = function () {
-      return !$scope.config.mbeanAttributes.length || $scope.formCtrl.$invalid || $scope.mbeanUnavailable
+      return !$scope.config || !$scope.config.mbeanAttributes.length || $scope.formCtrl.$invalid || $scope.mbeanUnavailable
           || $scope.mbeanUnmatched || $scope.duplicateMBean;
     };
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.agentId = $scope.agentId;
       var url;
       if (version) {
         url = 'backend/config/gauges/update';
       } else {
         url = 'backend/config/gauges/add';
       }
-      $http.post(url, postData)
+      var agentId = $scope.agentId;
+      $http.post(url + '?agent-id=' + agentId, postData)
           .success(function (data) {
             onNewData(data);
             deferred.resolve(version ? 'Saved' : 'Added');
             version = data.config.version;
             // fix current url (with updated version) before returning to list page in case back button is used later
-            if (postData.agentId) {
-              $location.search({'agent-id': postData.agentId, v: version}).replace();
+            if (agentId) {
+              $location.search({'agent-id': agentId, v: version}).replace();
             } else {
               $location.search({v: version}).replace();
             }
@@ -245,14 +245,14 @@ glowroot.controller('ConfigGaugeCtrl', [
 
     $scope.delete = function (deferred) {
       var postData = {
-        agentId: $scope.agentId,
         version: $scope.config.version
       };
-      $http.post('backend/config/gauges/remove', postData)
+      var agentId = $scope.agentId;
+      $http.post('backend/config/gauges/remove?agent-id=' + agentId, postData)
           .success(function () {
             removeConfirmIfHasChangesListener();
-            if (postData.agentId) {
-              $location.url('config/gauge-list?agent-id=' + encodeURIComponent(postData.agentId)).replace();
+            if (agentId) {
+              $location.url('config/gauge-list?agent-id=' + encodeURIComponent(agentId)).replace();
             } else {
               $location.url('config/gauge-list').replace();
             }

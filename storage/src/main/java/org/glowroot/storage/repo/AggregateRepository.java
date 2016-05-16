@@ -39,65 +39,72 @@ public interface AggregateRepository {
             throws Exception;
 
     // query.from() is non-inclusive
-    void mergeInOverallSummary(OverallSummaryCollector collector, OverallQuery query)
-            throws Exception;
+    void mergeInOverallSummary(String agentRollup, OverallQuery query,
+            OverallSummaryCollector collector) throws Exception;
 
     // query.from() is non-inclusive
     // sortOrder and limit are only used by fat agent H2 repository, while the glowroot server
     // repository which currently has to pull in all records anyways, just delegates ordering and
     // limit to TransactionSummaryCollector
-    void mergeInTransactionSummaries(TransactionSummaryCollector collector, OverallQuery query,
-            SummarySortOrder sortOrder, int limit) throws Exception;
+    void mergeInTransactionSummaries(String agentRollup, OverallQuery query,
+            SummarySortOrder sortOrder, int limit, TransactionSummaryCollector collector)
+            throws Exception;
 
     // query.from() is non-inclusive
-    void mergeInOverallErrorSummary(OverallErrorSummaryCollector collector, OverallQuery query)
-            throws Exception;
+    void mergeInOverallErrorSummary(String agentRollup, OverallQuery query,
+            OverallErrorSummaryCollector collector) throws Exception;
 
     // query.from() is non-inclusive
     // sortOrder and limit are only used by fat agent H2 repository, while the glowroot server
     // repository which currently has to pull in all records anyways, just delegates ordering and
     // limit to TransactionErrorSummaryCollector
-    void mergeInTransactionErrorSummaries(TransactionErrorSummaryCollector collector,
-            OverallQuery query, ErrorSummarySortOrder sortOrder, int limit) throws Exception;
+    void mergeInTransactionErrorSummaries(String agentRollup, OverallQuery query,
+            ErrorSummarySortOrder sortOrder, int limit, TransactionErrorSummaryCollector collector)
+            throws Exception;
 
     // query.from() is INCLUSIVE
-    List<OverviewAggregate> readOverviewAggregates(TransactionQuery query) throws Exception;
+    List<OverviewAggregate> readOverviewAggregates(String agentRollup, TransactionQuery query)
+            throws Exception;
 
     // query.from() is INCLUSIVE
-    List<PercentileAggregate> readPercentileAggregates(TransactionQuery query) throws Exception;
+    List<PercentileAggregate> readPercentileAggregates(String agentRollup, TransactionQuery query)
+            throws Exception;
 
     // query.from() is INCLUSIVE
-    List<ThroughputAggregate> readThroughputAggregates(TransactionQuery query) throws Exception;
-
-    // query.from() is non-inclusive
-    void mergeInQueries(QueryCollector collector, TransactionQuery query) throws Exception;
-
-    // query.from() is non-inclusive
-    void mergeInServiceCalls(ServiceCallCollector collector, TransactionQuery query)
+    List<ThroughputAggregate> readThroughputAggregates(String agentRollup, TransactionQuery query)
             throws Exception;
 
     // query.from() is non-inclusive
-    void mergeInMainThreadProfiles(ProfileCollector collector, TransactionQuery query)
+    void mergeInQueries(String agentRollup, TransactionQuery query, QueryCollector collector)
             throws Exception;
 
     // query.from() is non-inclusive
-    void mergeInAuxThreadProfiles(ProfileCollector collector, TransactionQuery query)
+    void mergeInServiceCalls(String agentRollup, TransactionQuery query,
+            ServiceCallCollector collector) throws Exception;
+
+    // query.from() is non-inclusive
+    void mergeInMainThreadProfiles(String agentRollup, TransactionQuery query,
+            ProfileCollector collector) throws Exception;
+
+    // query.from() is non-inclusive
+    void mergeInAuxThreadProfiles(String agentRollup, TransactionQuery query,
+            ProfileCollector collector) throws Exception;
+
+    // query.from() is non-inclusive
+    boolean hasAuxThreadProfile(String agentRollup, TransactionQuery query) throws Exception;
+
+    // query.from() is non-inclusive
+    boolean shouldHaveQueries(String agentRollup, TransactionQuery query) throws Exception;
+
+    // query.from() is non-inclusive
+    boolean shouldHaveServiceCalls(String agentRollup, TransactionQuery query) throws Exception;
+
+    // query.from() is non-inclusive
+    boolean shouldHaveMainThreadProfile(String agentRollup, TransactionQuery query)
             throws Exception;
 
     // query.from() is non-inclusive
-    boolean hasAuxThreadProfile(TransactionQuery query) throws Exception;
+    boolean shouldHaveAuxThreadProfile(String agentRollup, TransactionQuery query) throws Exception;
 
-    // query.from() is non-inclusive
-    boolean shouldHaveQueries(TransactionQuery query) throws Exception;
-
-    // query.from() is non-inclusive
-    boolean shouldHaveServiceCalls(TransactionQuery query) throws Exception;
-
-    // query.from() is non-inclusive
-    boolean shouldHaveMainThreadProfile(TransactionQuery query) throws Exception;
-
-    // query.from() is non-inclusive
-    boolean shouldHaveAuxThreadProfile(TransactionQuery query) throws Exception;
-
-    void deleteAll(String agentRollup) throws Exception;
+    void deleteAll() throws Exception;
 }

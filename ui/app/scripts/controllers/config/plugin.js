@@ -23,7 +23,8 @@ glowroot.controller('ConfigPluginCtrl', [
   '$location',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $stateParams, $http, $location, confirmIfHasChanges, httpErrors) {
+  'queryStrings',
+  function ($scope, $stateParams, $http, $location, confirmIfHasChanges, httpErrors, queryStrings) {
 
     function onNewData(data) {
       $scope.loaded = true;
@@ -46,12 +47,11 @@ glowroot.controller('ConfigPluginCtrl', [
         });
       });
       var postData = {
-        agentId: $scope.agentId,
         pluginId: $stateParams['plugin-id'],
         properties: properties,
         version: $scope.config.version
       };
-      $http.post('backend/config/plugins', postData)
+      $http.post('backend/config/plugins?agent-id=' + encodeURIComponent($scope.agentId), postData)
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Saved');
@@ -59,7 +59,11 @@ glowroot.controller('ConfigPluginCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/plugins?agent-id=' + encodeURIComponent($scope.agentId) + '&plugin-id=' + $stateParams['plugin-id'])
+    var queryData = {
+      agentId: $scope.agentId,
+      pluginId: $stateParams['plugin-id']
+    };
+    $http.get('backend/config/plugins' + queryStrings.encodeObject(queryData))
         .success(function (data) {
           onNewData(data);
         })

@@ -157,19 +157,19 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public Result<TracePoint> readSlowPoints(TraceQuery query, TracePointFilter filter, int limit)
-            throws Exception {
+    public Result<TracePoint> readSlowPoints(String agentRollup, TraceQuery query,
+            TracePointFilter filter, int limit) throws Exception {
         return readPoints(TraceKind.SLOW, query, filter, limit);
     }
 
     @Override
-    public Result<TracePoint> readErrorPoints(TraceQuery query, TracePointFilter filter, int limit)
-            throws Exception {
+    public Result<TracePoint> readErrorPoints(String agentRollup, TraceQuery query,
+            TracePointFilter filter, int limit) throws Exception {
         return readPoints(TraceKind.ERROR, query, filter, limit);
     }
 
     @Override
-    public long readSlowCount(TraceQuery query) throws Exception {
+    public long readSlowCount(String agentRollup, TraceQuery query) throws Exception {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             return dataSource.queryForLong(
@@ -185,7 +185,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public long readErrorCount(TraceQuery query) throws Exception {
+    public long readErrorCount(String agentRollup, TraceQuery query) throws Exception {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             return dataSource.queryForLong(
@@ -201,8 +201,8 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public ErrorMessageResult readErrorMessages(TraceQuery query, ErrorMessageFilter filter,
-            long resolutionMillis, int limit) throws Exception {
+    public ErrorMessageResult readErrorMessages(String agentRollup, TraceQuery query,
+            ErrorMessageFilter filter, long resolutionMillis, int limit) throws Exception {
         List<ErrorMessagePoint> points =
                 dataSource.query(new ErrorPointQuery(query, filter, resolutionMillis));
         List<ErrorMessageCount> counts =
@@ -255,7 +255,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public void deleteAll(String agentRollup) throws Exception {
+    public void deleteAll() throws Exception {
         traceAttributeNameDao.deleteAll();
         dataSource.execute("truncate table trace");
         dataSource.execute("truncate table trace_attribute");

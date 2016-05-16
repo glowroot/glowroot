@@ -30,7 +30,7 @@
                 ng-hide="rollup === agentRollup">
               <a role="menuitem"
                  tabindex="-1"
-                 ng-href="{{agentRollupUrl(rollup, value.leaf)}}">
+                 ng-href="{{agentRollupUrl(rollup, value)}}">
                 {{rollup}}
               </a>
             </li>
@@ -49,34 +49,40 @@
     </div>
   </div>
 </div>
-<div class="panel panel-default gt-sidebar hidden-print">
-  <ul class="list-group">
-    <div gt-sidebar-item
-         gt-display="Gauges"
-         gt-url="jvm/gauges{{agentQueryString()}}"
-         gt-active="currentUrl() === 'jvm/gauges'">
-    </div>
-    <div gt-sidebar-item
-         gt-display="Thread dump"
-         gt-url="jvm/thread-dump{{agentQueryString()}}"
-         gt-active="currentUrl() === 'jvm/thread-dump'">
-    </div>
-    <div gt-sidebar-item
-         gt-display="Heap dump"
-         gt-url="jvm/heap-dump{{agentQueryString()}}"
-         gt-active="currentUrl() === 'jvm/heap-dump'">
-    </div>
-    <div gt-sidebar-item
-         gt-display="MBean tree"
-         gt-url="jvm/mbean-tree{{agentQueryString()}}"
-         gt-active="currentUrl() === 'jvm/mbean-tree'">
-    </div>
-    <div gt-sidebar-item
-         gt-display="System info"
-         gt-url="jvm/system-info{{agentQueryString()}}"
-         gt-active="currentUrl() === 'jvm/system-info'">
-    </div>
-  </ul>
+<div class="gt-sidebar hidden-print">
+  <div class="panel panel-default"
+       ng-if="layout.fat || agentRollup">
+    <ul class="list-group">
+      <div gt-sidebar-item
+           gt-display="Gauges"
+           gt-url="jvm/gauges{{agentQueryString()}}"
+           gt-active="currentUrl() === 'jvm/gauges'">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Thread dump"
+           gt-url="jvm/thread-dump{{agentQueryString()}}"
+           gt-active="currentUrl() === 'jvm/thread-dump'"
+           ng-if="permissions.tool.threadDump">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Heap dump"
+           gt-url="jvm/heap-dump{{agentQueryString()}}"
+           gt-active="currentUrl() === 'jvm/heap-dump'"
+           ng-if="permissions.tool.heapDump">
+      </div>
+      <div gt-sidebar-item
+           gt-display="MBean tree"
+           gt-url="jvm/mbean-tree{{agentQueryString()}}"
+           gt-active="currentUrl() === 'jvm/mbean-tree'"
+           ng-if="permissions.tool.mbeanTree">
+      </div>
+      <div gt-sidebar-item
+           gt-display="System info"
+           gt-url="jvm/system-info{{agentQueryString()}}"
+           gt-active="currentUrl() === 'jvm/system-info'">
+      </div>
+    </ul>
+  </div>
 </div>
 <div class="panel panel-default gt-main-column">
   <div class="panel-heading">

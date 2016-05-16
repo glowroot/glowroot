@@ -152,7 +152,7 @@ public class WebDriverSetup {
         int uiPort = getAvailablePort();
         File baseDir = Files.createTempDir();
         File adminFile = new File(baseDir, "admin.json");
-        Files.write("{\"access\":{\"port\":" + uiPort + "}}", adminFile, Charsets.UTF_8);
+        Files.write("{\"web\":{\"port\":" + uiPort + "}}", adminFile, Charsets.UTF_8);
         Container container;
         if (Containers.useJavaagent()) {
             container = new JavaagentContainer(baseDir, true, false,

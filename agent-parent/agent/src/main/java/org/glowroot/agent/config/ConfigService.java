@@ -285,7 +285,8 @@ public class ConfigService {
         notifyConfigListeners();
     }
 
-    public <T extends /*@NonNull*/ Object> /*@Nullable*/ T getAdmin(String key, Class<T> clazz) {
+    public <T extends /*@NonNull*/ Object> /*@Nullable*/ T getAdminConfig(String key,
+            Class<T> clazz) {
         return configFile.getAdminNode(key, clazz, mapper);
     }
 

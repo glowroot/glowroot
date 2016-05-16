@@ -24,6 +24,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -44,14 +45,18 @@ import org.glowroot.agent.config.TransactionConfig;
 import org.glowroot.agent.config.UiConfig;
 import org.glowroot.agent.config.UserRecordingConfig;
 import org.glowroot.common.util.Versions;
-import org.glowroot.storage.config.AccessConfig;
 import org.glowroot.storage.config.FatStorageConfig;
-import org.glowroot.storage.config.ImmutableAccessConfig;
 import org.glowroot.storage.config.ImmutableFatStorageConfig;
+import org.glowroot.storage.config.ImmutableRoleConfig;
 import org.glowroot.storage.config.ImmutableSmtpConfig;
+import org.glowroot.storage.config.ImmutableUserConfig;
+import org.glowroot.storage.config.ImmutableWebConfig;
+import org.glowroot.storage.config.RoleConfig;
 import org.glowroot.storage.config.ServerStorageConfig;
 import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.config.StorageConfig;
+import org.glowroot.storage.config.UserConfig;
+import org.glowroot.storage.config.WebConfig;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.util.Encryption;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -71,7 +76,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     private final ImmutableList<RollupConfig> rollupConfigs;
 
-    private volatile AccessConfig accessConfig;
+    private volatile ImmutableList<UserConfig> userConfigs;
+    private volatile ImmutableList<RoleConfig> roleConfigs;
+    private volatile WebConfig webConfig;
     private volatile FatStorageConfig storageConfig;
     private volatile SmtpConfig smtpConfig;
 
@@ -99,14 +106,42 @@ class ConfigRepositoryImpl implements ConfigRepository {
         secretFile = new File(baseDir, "secret");
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
 
-        AccessConfig accessConfig = configService.getAdmin(ACCESS_KEY, ImmutableAccessConfig.class);
-        if (accessConfig == null) {
-            this.accessConfig = ImmutableAccessConfig.builder().build();
+        List<ImmutableUserConfig> userConfigs = configService.getAdminConfig(USERS_KEY,
+                new TypeReference<List<ImmutableUserConfig>>() {});
+        if (userConfigs == null) {
+            this.userConfigs = ImmutableList.of();
         } else {
-            this.accessConfig = accessConfig;
+            this.userConfigs = ImmutableList.<UserConfig>copyOf(userConfigs);
+        }
+        if (this.userConfigs.isEmpty()) {
+            this.userConfigs = ImmutableList.<UserConfig>of(ImmutableUserConfig.builder()
+                    .username("anonymous")
+                    .passwordHash("")
+                    .addRoles("Administrator")
+                    .build());
+        }
+        List<ImmutableRoleConfig> roleConfigs = configService.getAdminConfig(ROLES_KEY,
+                new TypeReference<List<ImmutableRoleConfig>>() {});
+        if (roleConfigs == null) {
+            this.roleConfigs = ImmutableList.of();
+        } else {
+            this.roleConfigs = ImmutableList.<RoleConfig>copyOf(roleConfigs);
+        }
+        if (this.roleConfigs.isEmpty()) {
+            this.roleConfigs = ImmutableList.<RoleConfig>of(ImmutableRoleConfig.builder()
+                    .name("Administrator")
+                    .addPermissions("agent:view", "agent:tool", "agent:config:view",
+                            "agent:config:edit", "admin")
+                    .build());
+        }
+        WebConfig webConfig = configService.getAdminConfig(WEB_KEY, ImmutableWebConfig.class);
+        if (webConfig == null) {
+            this.webConfig = ImmutableWebConfig.builder().build();
+        } else {
+            this.webConfig = webConfig;
         }
         FatStorageConfig storageConfig =
-                configService.getAdmin(STORAGE_KEY, ImmutableFatStorageConfig.class);
+                configService.getAdminConfig(STORAGE_KEY, ImmutableFatStorageConfig.class);
         if (storageConfig == null) {
             this.storageConfig = ImmutableFatStorageConfig.builder().build();
         } else if (storageConfig.hasListIssues()) {
@@ -114,7 +149,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
         } else {
             this.storageConfig = storageConfig;
         }
-        SmtpConfig smtpConfig = configService.getAdmin(SMTP_KEY, ImmutableSmtpConfig.class);
+        SmtpConfig smtpConfig = configService.getAdminConfig(SMTP_KEY, ImmutableSmtpConfig.class);
         if (smtpConfig == null) {
             this.smtpConfig = ImmutableSmtpConfig.builder().build();
         } else {
@@ -223,8 +258,38 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public AccessConfig getAccessConfig() {
-        return accessConfig;
+    public List<UserConfig> getUserConfigs() {
+        return userConfigs;
+    }
+
+    @Override
+    public @Nullable UserConfig getUserConfig(String username) {
+        for (UserConfig userConfig : userConfigs) {
+            if (userConfig.username().equals(username)) {
+                return userConfig;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public List<RoleConfig> getRoleConfigs() {
+        return roleConfigs;
+    }
+
+    @Override
+    public @Nullable RoleConfig getRoleConfig(String name) {
+        for (RoleConfig roleConfig : roleConfigs) {
+            if (roleConfig.name().equals(name)) {
+                return roleConfig;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public WebConfig getWebConfig() {
+        return webConfig;
     }
 
     @Override
@@ -284,8 +349,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
             boolean found = false;
             for (ListIterator<GaugeConfig> i = configs.listIterator(); i.hasNext();) {
                 GaugeConfig loopConfig = i.next();
-                String currVersion = Versions.getVersion(loopConfig.toProto());
-                if (priorVersion.equals(currVersion)) {
+                String loopVersion = Versions.getVersion(loopConfig.toProto());
+                if (loopVersion.equals(priorVersion)) {
                     i.set(GaugeConfig.create(gaugeConfig));
                     found = true;
                     break;
@@ -306,8 +371,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
             boolean found = false;
             for (ListIterator<GaugeConfig> i = configs.listIterator(); i.hasNext();) {
-                String currVersion = Versions.getVersion(i.next().toProto());
-                if (version.equals(currVersion)) {
+                GaugeConfig loopConfig = i.next();
+                String loopVersion = Versions.getVersion(loopConfig.toProto());
+                if (version.equals(loopVersion)) {
                     i.remove();
                     found = true;
                     break;
@@ -346,8 +412,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
             boolean found = false;
             for (ListIterator<AlertConfig> i = configs.listIterator(); i.hasNext();) {
                 AlertConfig loopConfig = i.next();
-                String currVersion = Versions.getVersion(loopConfig.toProto());
-                if (priorVersion.equals(currVersion)) {
+                String loopVersion = Versions.getVersion(loopConfig.toProto());
+                if (loopVersion.equals(priorVersion)) {
                     i.set(AlertConfig.create(alertConfig));
                     found = true;
                     break;
@@ -366,8 +432,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
             List<AlertConfig> configs = Lists.newArrayList(configService.getAlertConfigs());
             boolean found = false;
             for (ListIterator<AlertConfig> i = configs.listIterator(); i.hasNext();) {
-                String currVersion = Versions.getVersion(i.next().toProto());
-                if (version.equals(currVersion)) {
+                AlertConfig loopConfig = i.next();
+                String loopVersion = Versions.getVersion(loopConfig.toProto());
+                if (version.equals(loopVersion)) {
                     i.remove();
                     found = true;
                     break;
@@ -399,8 +466,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
             for (ListIterator<PluginConfig> i = configs.listIterator(); i.hasNext();) {
                 PluginConfig loopPluginConfig = i.next();
                 if (pluginId.equals(loopPluginConfig.id())) {
-                    String currVersion = Versions.getVersion(loopPluginConfig.toProto());
-                    checkVersionsEqual(currVersion, priorVersion);
+                    String loopVersion = Versions.getVersion(loopPluginConfig.toProto());
+                    checkVersionsEqual(loopVersion, priorVersion);
                     PluginDescriptor pluginDescriptor = getPluginDescriptor(pluginId);
                     i.set(PluginConfig.create(pluginDescriptor, properties));
                     found = true;
@@ -439,8 +506,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
                     Lists.newArrayList(configService.getInstrumentationConfigs());
             boolean found = false;
             for (ListIterator<InstrumentationConfig> i = configs.listIterator(); i.hasNext();) {
-                String currVersion = Versions.getVersion(i.next().toProto());
-                if (priorVersion.equals(currVersion)) {
+                InstrumentationConfig loopConfig = i.next();
+                String loopVersion = Versions.getVersion(loopConfig.toProto());
+                if (loopVersion.equals(priorVersion)) {
                     i.set(InstrumentationConfig.create(instrumentationConfig));
                     found = true;
                     break;
@@ -461,10 +529,11 @@ class ConfigRepositoryImpl implements ConfigRepository {
                     Lists.newArrayList(configService.getInstrumentationConfigs());
             List<String> remainingVersions = Lists.newArrayList(versions);
             for (ListIterator<InstrumentationConfig> i = configs.listIterator(); i.hasNext();) {
-                String currVersion = Versions.getVersion(i.next().toProto());
-                if (remainingVersions.contains(currVersion)) {
+                InstrumentationConfig loopConfig = i.next();
+                String loopVersion = Versions.getVersion(loopConfig.toProto());
+                if (remainingVersions.contains(loopVersion)) {
                     i.remove();
-                    remainingVersions.remove(currVersion);
+                    remainingVersions.remove(loopVersion);
                 }
             }
             if (!remainingVersions.isEmpty()) {
@@ -519,18 +588,141 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateAccessConfig(AccessConfig updatedConfig, String priorVersion)
-            throws Exception {
+    public void insertUserConfig(UserConfig userConfig) throws Exception {
         synchronized (writeLock) {
-            checkVersionsEqual(accessConfig.version(), priorVersion);
-            configService.updateAdminConfig(ACCESS_KEY, updatedConfig);
-            accessConfig = updatedConfig;
+            List<UserConfig> configs = Lists.newArrayList(userConfigs);
+            // check for case-insensitive duplicate
+            String username = userConfig.username();
+            for (UserConfig loopConfig : configs) {
+                if (loopConfig.username().equalsIgnoreCase(username)) {
+                    throw new DuplicateUsernameException();
+                }
+            }
+            configs.add(userConfig);
+            configService.updateAdminConfig(USERS_KEY, configs);
+            userConfigs = ImmutableList.copyOf(configs);
         }
     }
 
     @Override
-    public void updateServerStorageConfig(ServerStorageConfig updatedConfig, String priorVersion) {
-        throw new UnsupportedOperationException();
+    public void updateUserConfig(UserConfig userConfig, String priorVersion) throws Exception {
+        synchronized (writeLock) {
+            List<UserConfig> configs = Lists.newArrayList(userConfigs);
+            String username = userConfig.username();
+            boolean found = false;
+            for (ListIterator<UserConfig> i = configs.listIterator(); i.hasNext();) {
+                UserConfig loopConfig = i.next();
+                if (loopConfig.username().equals(username)) {
+                    if (loopConfig.version().equals(priorVersion)) {
+                        i.set(userConfig);
+                        found = true;
+                        break;
+                    } else {
+                        throw new OptimisticLockException();
+                    }
+                }
+            }
+            if (!found) {
+                throw new UserNotFoundException();
+            }
+            configService.updateAdminConfig(USERS_KEY, configs);
+            userConfigs = ImmutableList.copyOf(configs);
+        }
+    }
+
+    @Override
+    public void deleteUserConfig(String username) throws Exception {
+        synchronized (writeLock) {
+            List<UserConfig> configs = Lists.newArrayList(userConfigs);
+            boolean found = false;
+            for (ListIterator<UserConfig> i = configs.listIterator(); i.hasNext();) {
+                UserConfig loopConfig = i.next();
+                if (loopConfig.username().equals(username)) {
+                    i.remove();
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new UserNotFoundException();
+            }
+            configService.updateAdminConfig(USERS_KEY, configs);
+            userConfigs = ImmutableList.copyOf(configs);
+        }
+    }
+
+    @Override
+    public void insertRoleConfig(RoleConfig roleConfig) throws Exception {
+        synchronized (writeLock) {
+            List<RoleConfig> configs = Lists.newArrayList(roleConfigs);
+            // check for case-insensitive duplicate
+            String name = roleConfig.name();
+            for (RoleConfig loopConfig : configs) {
+                if (loopConfig.name().equalsIgnoreCase(name)) {
+                    throw new DuplicateRoleNameException();
+                }
+            }
+            configs.add(roleConfig);
+            configService.updateAdminConfig(ROLES_KEY, configs);
+            roleConfigs = ImmutableList.copyOf(configs);
+        }
+    }
+
+    @Override
+    public void updateRoleConfig(RoleConfig roleConfig, String priorVersion) throws Exception {
+        synchronized (writeLock) {
+            List<RoleConfig> configs = Lists.newArrayList(roleConfigs);
+            String name = roleConfig.name();
+            boolean found = false;
+            for (ListIterator<RoleConfig> i = configs.listIterator(); i.hasNext();) {
+                RoleConfig loopConfig = i.next();
+                if (loopConfig.name().equals(name)) {
+                    if (loopConfig.version().equals(priorVersion)) {
+                        i.set(roleConfig);
+                        found = true;
+                        break;
+                    } else {
+                        throw new OptimisticLockException();
+                    }
+                }
+            }
+            if (!found) {
+                throw new RoleNotFoundException();
+            }
+            configService.updateAdminConfig(ROLES_KEY, configs);
+            roleConfigs = ImmutableList.copyOf(configs);
+        }
+    }
+
+    @Override
+    public void deleteRoleConfig(String name) throws Exception {
+        synchronized (writeLock) {
+            List<RoleConfig> configs = Lists.newArrayList(roleConfigs);
+            boolean found = false;
+            for (ListIterator<RoleConfig> i = configs.listIterator(); i.hasNext();) {
+                RoleConfig loopConfig = i.next();
+                if (loopConfig.name().equals(name)) {
+                    i.remove();
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new RoleNotFoundException();
+            }
+            configService.updateAdminConfig(ROLES_KEY, configs);
+            roleConfigs = ImmutableList.copyOf(configs);
+        }
+    }
+
+    @Override
+    public void updateWebConfig(WebConfig updatedConfig, String priorVersion)
+            throws Exception {
+        synchronized (writeLock) {
+            checkVersionsEqual(webConfig.version(), priorVersion);
+            configService.updateAdminConfig(WEB_KEY, updatedConfig);
+            webConfig = updatedConfig;
+        }
     }
 
     @Override
@@ -541,6 +733,11 @@ class ConfigRepositoryImpl implements ConfigRepository {
             configService.updateAdminConfig(STORAGE_KEY, updatedConfig);
             storageConfig = updatedConfig;
         }
+    }
+
+    @Override
+    public void updateServerStorageConfig(ServerStorageConfig updatedConfig, String priorVersion) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -602,7 +799,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
     private void writeAll() throws IOException {
         // linked hash map to preserve ordering when writing to config file
         Map<String, Object> configs = Maps.newLinkedHashMap();
-        configs.put(ACCESS_KEY, accessConfig);
+        configs.put(USERS_KEY, userConfigs);
+        configs.put(ROLES_KEY, roleConfigs);
+        configs.put(WEB_KEY, webConfig);
         configs.put(STORAGE_KEY, storageConfig);
         configs.put(SMTP_KEY, smtpConfig);
         configService.updateAdminConfigs(configs);

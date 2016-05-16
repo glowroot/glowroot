@@ -222,57 +222,61 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInOverallSummary(OverallSummaryCollector collector,
-            OverallQuery query) throws Exception {
+    public void mergeInOverallSummary(String agentRollup, OverallQuery query,
+            OverallSummaryCollector collector) throws Exception {
         dataSource.query(new OverallSummaryQuery(collector, query));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInTransactionSummaries(TransactionSummaryCollector collector,
-            OverallQuery query, SummarySortOrder sortOrder, int limit) throws Exception {
+    public void mergeInTransactionSummaries(String agentRollup, OverallQuery query,
+            SummarySortOrder sortOrder, int limit, TransactionSummaryCollector collector)
+            throws Exception {
         dataSource.query(
                 new TransactionSummaryQuery(query, sortOrder, limit, collector));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInOverallErrorSummary(OverallErrorSummaryCollector collector,
-            OverallQuery query) throws Exception {
+    public void mergeInOverallErrorSummary(String agentRollup, OverallQuery query,
+            OverallErrorSummaryCollector collector) throws Exception {
         dataSource.query(new OverallErrorSummaryQuery(collector, query));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInTransactionErrorSummaries(TransactionErrorSummaryCollector collector,
-            OverallQuery query, ErrorSummarySortOrder sortOrder, int limit) throws Exception {
+    public void mergeInTransactionErrorSummaries(String agentRollup, OverallQuery query,
+            ErrorSummarySortOrder sortOrder, int limit, TransactionErrorSummaryCollector collector)
+            throws Exception {
         dataSource.query(new TransactionErrorSummaryQuery(query, sortOrder, limit,
                 collector));
     }
 
     // query.from() is INCLUSIVE
     @Override
-    public List<OverviewAggregate> readOverviewAggregates(TransactionQuery query) throws Exception {
+    public List<OverviewAggregate> readOverviewAggregates(String agentRollup,
+            TransactionQuery query) throws Exception {
         return dataSource.query(new OverviewAggregateQuery(query));
     }
 
     // query.from() is INCLUSIVE
     @Override
-    public List<PercentileAggregate> readPercentileAggregates(TransactionQuery query)
-            throws Exception {
+    public List<PercentileAggregate> readPercentileAggregates(String agentRollup,
+            TransactionQuery query) throws Exception {
         return dataSource.query(new PercentileAggregateQuery(query));
     }
 
     // query.from() is INCLUSIVE
     @Override
-    public List<ThroughputAggregate> readThroughputAggregates(TransactionQuery query)
-            throws Exception {
+    public List<ThroughputAggregate> readThroughputAggregates(String agentRollup,
+            TransactionQuery query) throws Exception {
         return dataSource.query(new ThroughputAggregateQuery(query));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInQueries(QueryCollector collector, TransactionQuery query) throws Exception {
+    public void mergeInQueries(String agentRollup, TransactionQuery query, QueryCollector collector)
+            throws Exception {
         // get list of capped ids first since that is done under the data source lock
         // then do the expensive part of reading and constructing the protobuf messages outside of
         // the data source lock
@@ -291,8 +295,8 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInServiceCalls(ServiceCallCollector collector, TransactionQuery query)
-            throws Exception {
+    public void mergeInServiceCalls(String agentRollup, TransactionQuery query,
+            ServiceCallCollector collector) throws Exception {
         // get list of capped ids first since that is done under the data source lock
         // then do the expensive part of reading and constructing the protobuf messages outside of
         // the data source lock
@@ -313,53 +317,57 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInMainThreadProfiles(ProfileCollector collector, TransactionQuery query)
-            throws Exception {
+    public void mergeInMainThreadProfiles(String agentRollup, TransactionQuery query,
+            ProfileCollector collector) throws Exception {
         mergeInProfiles(collector, query, "main_thread_profile_capped_id");
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInAuxThreadProfiles(ProfileCollector collector, TransactionQuery query)
-            throws Exception {
+    public void mergeInAuxThreadProfiles(String agentRollup, TransactionQuery query,
+            ProfileCollector collector) throws Exception {
         mergeInProfiles(collector, query, "aux_thread_profile_capped_id");
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean hasAuxThreadProfile(TransactionQuery query) throws Exception {
+    public boolean hasAuxThreadProfile(String agentRollup, TransactionQuery query)
+            throws Exception {
         return !dataSource.query(new CappedIdQuery("aux_thread_profile_capped_id", query))
                 .isEmpty();
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveMainThreadProfile(TransactionQuery query) throws Exception {
+    public boolean shouldHaveMainThreadProfile(String agentRollup, TransactionQuery query)
+            throws Exception {
         return dataSource
                 .query(new ShouldHaveSomethingQuery(query, "main_thread_profile_capped_id"));
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveAuxThreadProfile(TransactionQuery query) throws Exception {
+    public boolean shouldHaveAuxThreadProfile(String agentRollup, TransactionQuery query)
+            throws Exception {
         return dataSource
                 .query(new ShouldHaveSomethingQuery(query, "aux_thread_profile_capped_id"));
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveQueries(TransactionQuery query) throws Exception {
+    public boolean shouldHaveQueries(String agentRollup, TransactionQuery query) throws Exception {
         return dataSource.query(new ShouldHaveSomethingQuery(query, "queries_capped_id"));
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveServiceCalls(TransactionQuery query) throws Exception {
+    public boolean shouldHaveServiceCalls(String agentRollup, TransactionQuery query)
+            throws Exception {
         return dataSource.query(new ShouldHaveSomethingQuery(query, "service_calls_capped_id"));
     }
 
     @Override
-    public void deleteAll(String agentRollup) throws Exception {
+    public void deleteAll() throws Exception {
         for (int i = 0; i < configRepository.getRollupConfigs().size(); i++) {
             dataSource.execute("truncate table aggregate_tt_rollup_" + castUntainted(i));
             dataSource.execute("truncate table aggregate_tn_rollup_" + castUntainted(i));

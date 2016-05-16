@@ -22,17 +22,48 @@ glowroot.controller('ConfigCtrl', [
   function ($scope, $location) {
     // \u00b7 is &middot;
     document.title = 'Configuration \u00b7 Glowroot';
+    if ($scope.layout.fat || $location.path().indexOf('/admin/') === 0
+        || $location.path().indexOf('/change-password') === 0) {
+      $scope.$parent.activeNavbarItem = 'gears';
+    } else {
+      $scope.$parent.activeNavbarItem = 'agentConfig';
+    }
 
     $scope.hideAgentRollupDropdown = function () {
       if (!$scope.layout) {
         // this is ok, under grunt serve and layout hasn't loaded yet
         return true;
       }
-      return $scope.layout.agentRollups.length === 1 || $scope.layout.fat;
+      return $scope.activeNavbarItem === 'gears' || $scope.layout.agentRollups.length === 1;
     };
 
     $scope.hideMainContent = function () {
       return !$scope.agentRollup && !$scope.agentId && !$scope.layout.fat;
+    };
+
+    $scope.navbarTitle = function () {
+      if (!$scope.layout) {
+        return '';
+      }
+      if ($scope.layout.fat && ($scope.permissions.config.view || $scope.layout.admin)) {
+        return 'Configuration';
+      } else if (!$scope.layout.fat && $scope.layout.admin) {
+        return 'Administration';
+      } else {
+        return 'Profile';
+      }
+    };
+
+    $scope.showConfigSidebarItems = function () {
+      if ($scope.layout.fat) {
+        return $scope.permissions.config.view;
+      } else {
+        return $scope.activeNavbarItem === 'agentConfig';
+      }
+    };
+
+    $scope.isAnonymous = function () {
+      return $scope.username && $scope.username.toLowerCase() === 'anonymous';
     };
 
     $scope.percentileSuffix = function (percentile) {
@@ -76,17 +107,5 @@ glowroot.controller('ConfigCtrl', [
     $scope.currentUrl = function () {
       return $location.path().substring(1);
     };
-
-    function onLocationChangeSuccess() {
-      if (($location.path() === '/config/access' || $location.path() === '/config/storage' || $location.path() === '/config/smtp')
-          && !$scope.layout.fat) {
-        $scope.$parent.activeNavbarItem = 'serverConfig';
-      } else {
-        $scope.$parent.activeNavbarItem = 'agentConfig';
-      }
-    }
-
-    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
-    onLocationChangeSuccess();
   }
 ]);

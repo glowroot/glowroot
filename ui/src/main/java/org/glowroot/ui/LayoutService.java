@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,13 +34,12 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
-import org.glowroot.storage.config.AccessConfig;
-import org.glowroot.storage.config.AccessConfig.AnonymousAccess;
 import org.glowroot.storage.repo.AgentRepository;
 import org.glowroot.storage.repo.AgentRepository.AgentRollup;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
 import org.glowroot.storage.repo.TransactionTypeRepository;
+import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -67,41 +68,37 @@ class LayoutService {
         this.transactionTypeRepository = transactionTypeRepository;
     }
 
-    String getLayout() throws Exception {
-        Layout layout = buildLayout();
+    String getLayout(Authentication authentication) throws Exception {
+        Layout layout = buildLayout(authentication);
         return mapper.writeValueAsString(layout);
     }
 
-    String getLayoutVersion() throws Exception {
-        Layout layout = buildLayout();
+    String getLayoutVersion(Authentication authentication) throws Exception {
+        Layout layout = buildLayout(authentication);
         return layout.version();
     }
 
     String getNeedsAuthenticationLayout() throws Exception {
-        AccessConfig userInterfaceConfig = configRepository.getAccessConfig();
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeBooleanField("needsAuthentication", true);
-        jg.writeBooleanField("readOnlyPasswordEnabled",
-                userInterfaceConfig.readOnlyPasswordEnabled());
         jg.writeStringField("footerMessage", "Glowroot version " + version);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
 
-    private Layout buildLayout() throws Exception {
+    private Layout buildLayout(Authentication authentication) throws Exception {
         List<Long> rollupExpirationMillis = Lists.newArrayList();
         for (long hours : configRepository.getStorageConfig().rollupExpirationHours()) {
             rollupExpirationMillis.add(HOURS.toMillis(hours));
         }
-        AccessConfig accessConfig = configRepository.getAccessConfig();
 
         // linked hash map to preserve ordering
         Map<String, AgentRollupLayout> agentRollups = Maps.newLinkedHashMap();
         Map<String, List<String>> transactionTypesMap =
                 transactionTypeRepository.readTransactionTypes();
+        boolean showNavbarConfig = false;
         if (fat) {
             // a couple of special cases for fat agent
             UiConfig uiConfig = checkNotNull(configRepository.getUiConfig(AGENT_ID));
@@ -113,14 +110,22 @@ class LayoutService {
             }
             transactionTypes.add(defaultDisplayedTransactionType);
 
+            Permissions permissions = getPermissions(authentication, AGENT_ID);
             agentRollups.put(AGENT_ID, ImmutableAgentRollupLayout.builder()
                     .leaf(true)
+                    .permissions(permissions)
                     .addAllTransactionTypes(transactionTypes)
                     .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
                     .defaultDisplayedPercentiles(uiConfig.getDefaultDisplayedPercentileList())
                     .build());
+            showNavbarConfig = checkNotNull(permissions.config()).view();
         } else {
             for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
+                boolean view =
+                        authentication.hasAgentRollupPermission(agentRollup.name(), "agent:view");
+                if (!view) {
+                    continue;
+                }
                 UiConfig uiConfig = configRepository.getUiConfig(agentRollup.name());
                 String defaultDisplayedTransactionType;
                 List<Double> defaultDisplayedPercentiles;
@@ -133,8 +138,14 @@ class LayoutService {
                     defaultDisplayedPercentiles = uiConfig.getDefaultDisplayedPercentileList();
                 }
                 Set<String> transactionTypes = Sets.newHashSet();
+                boolean leaf = agentRollup.leaf();
                 ImmutableAgentRollupLayout.Builder builder = ImmutableAgentRollupLayout.builder()
-                        .leaf(agentRollup.leaf());
+                        .leaf(leaf);
+                if (leaf) {
+                    Permissions permissions = getPermissions(authentication, agentRollup.name());
+                    builder.permissions(permissions);
+                    showNavbarConfig = showNavbarConfig || permissions.config().view();
+                }
                 List<String> storedTransactionTypes = transactionTypesMap.get(agentRollup.name());
                 if (storedTransactionTypes != null) {
                     transactionTypes.addAll(storedTransactionTypes);
@@ -149,13 +160,52 @@ class LayoutService {
         return ImmutableLayout.builder()
                 .fat(fat)
                 .footerMessage("Glowroot version " + version)
-                .adminPasswordEnabled(accessConfig.adminPasswordEnabled())
-                .readOnlyPasswordEnabled(accessConfig.readOnlyPasswordEnabled())
-                .anonymousAccess(accessConfig.anonymousAccess())
+                // FIXME hide login if no users
+                .hideLogin(false)
                 .addAllRollupConfigs(configRepository.getRollupConfigs())
                 .addAllRollupExpirationMillis(rollupExpirationMillis)
                 .gaugeCollectionIntervalMillis(configRepository.getGaugeCollectionIntervalMillis())
                 .agentRollups(agentRollups)
+                .showNavbarConfig(showNavbarConfig)
+                .admin(authentication.hasPermission("admin"))
+                .build();
+    }
+
+    private Permissions getPermissions(Authentication authentication, String agentRollup) {
+        return ImmutablePermissions.builder()
+                .tool(ImmutableToolPermissions.builder()
+                        .threadDump(authentication.hasAgentLeafPermission(agentRollup,
+                                "agent:tool:threadDump"))
+                        .heapDump(authentication.hasAgentLeafPermission(agentRollup,
+                                "agent:tool:heapDump"))
+                        .gc(authentication.hasAgentLeafPermission(agentRollup, "agent:tool:gc"))
+                        .mbeanTree(authentication.hasAgentLeafPermission(agentRollup,
+                                "agent:tool:mbeanTree"))
+                        .capabilities(authentication.hasAgentLeafPermission(agentRollup,
+                                "agent:tool:capabilities"))
+                        .build())
+                .config(ImmutableConfigPermissions.builder()
+                        .view(authentication.hasAgentLeafPermission(agentRollup,
+                                "agent:config:view"))
+                        .edit(ImmutableEditConfigPermissions.builder()
+                                .transaction(authentication.hasAgentLeafPermission(agentRollup,
+                                        "agent:config:edit:transaction"))
+                                .gauge(authentication.hasAgentLeafPermission(agentRollup,
+                                        "agent:config:edit:gauge"))
+                                .alert(authentication.hasAgentLeafPermission(agentRollup,
+                                        "agent:config:edit:alert"))
+                                .ui(authentication.hasAgentLeafPermission(agentRollup,
+                                        "agent:config:edit:ui"))
+                                .plugin(authentication.hasAgentLeafPermission(agentRollup,
+                                        "agent:config:edit:plugin"))
+                                .instrumentation(authentication.hasAgentLeafPermission(
+                                        agentRollup, "agent:config:edit:instrumentation"))
+                                .advanced(authentication.hasAgentLeafPermission(agentRollup,
+                                        "agent:config:edit:advanced"))
+                                .userRecording(authentication.hasAgentLeafPermission(
+                                        agentRollup, "agent:config:edit:userRecording"))
+                                .build())
+                        .build())
                 .build();
     }
 
@@ -164,13 +214,13 @@ class LayoutService {
 
         abstract boolean fat();
         abstract String footerMessage();
-        abstract boolean adminPasswordEnabled();
-        abstract boolean readOnlyPasswordEnabled();
-        abstract AnonymousAccess anonymousAccess();
+        abstract boolean hideLogin();
         abstract ImmutableList<RollupConfig> rollupConfigs();
         abstract ImmutableList<Long> rollupExpirationMillis();
         abstract long gaugeCollectionIntervalMillis();
         abstract ImmutableMap<String, AgentRollupLayout> agentRollups();
+        abstract boolean showNavbarConfig();
+        abstract boolean admin();
 
         @Value.Derived
         public String version() {
@@ -181,8 +231,43 @@ class LayoutService {
     @Value.Immutable
     interface AgentRollupLayout {
         boolean leaf();
+        @Nullable
+        Permissions permissions(); // null for non-leaf agent rollup
         List<String> transactionTypes();
         String defaultDisplayedTransactionType();
         List<Double> defaultDisplayedPercentiles();
+    }
+
+    @Value.Immutable
+    interface Permissions {
+        ToolPermissions tool();
+        ConfigPermissions config();
+    }
+
+    @Value.Immutable
+    interface ToolPermissions {
+        boolean threadDump();
+        boolean heapDump();
+        boolean gc();
+        boolean mbeanTree();
+        boolean capabilities();
+    }
+
+    @Value.Immutable
+    interface ConfigPermissions {
+        boolean view();
+        EditConfigPermissions edit();
+    }
+
+    @Value.Immutable
+    interface EditConfigPermissions {
+        boolean transaction();
+        boolean gauge();
+        boolean alert();
+        boolean ui();
+        boolean plugin();
+        boolean instrumentation();
+        boolean userRecording();
+        boolean advanced();
     }
 }

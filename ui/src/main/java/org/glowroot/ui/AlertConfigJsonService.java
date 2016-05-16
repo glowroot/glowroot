@@ -74,20 +74,19 @@ class AlertConfigJsonService {
         this.configRepository = configRepository;
     }
 
-    @GET("/backend/config/alerts")
-    String getAlert(String queryString) throws Exception {
-        AlertConfigRequest request = QueryStrings.decode(queryString, AlertConfigRequest.class);
+    @GET(path = "/backend/config/alerts", permission = "agent:config:view:alert")
+    String getAlert(@BindAgentId String agentId, @BindRequest AlertConfigRequest request)
+            throws Exception {
         Optional<String> version = request.version();
         if (version.isPresent()) {
-            AlertConfig alertConfig =
-                    configRepository.getAlertConfig(request.agentId(), version.get());
+            AlertConfig alertConfig = configRepository.getAlertConfig(agentId, version.get());
             if (alertConfig == null) {
                 throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
             }
             return mapper.writeValueAsString(AlertConfigDto.create(alertConfig));
         } else {
             List<AlertConfigDto> alertConfigDtos = Lists.newArrayList();
-            List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(request.agentId());
+            List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(agentId);
             alertConfigs = orderingByName.immutableSortedCopy(alertConfigs);
             for (AlertConfig alertConfig : alertConfigs) {
                 alertConfigDtos.add(AlertConfigDto.create(alertConfig));
@@ -96,12 +95,12 @@ class AlertConfigJsonService {
         }
     }
 
-    @POST("/backend/config/alerts/add")
-    String addAlert(String content) throws Exception {
-        AlertConfigDto alertConfigDto = mapper.readValue(content, ImmutableAlertConfigDto.class);
-        AlertConfig alertConfig = alertConfigDto.convert();
+    @POST(path = "/backend/config/alerts/add", permission = "agent:config:edit:alert")
+    String addAlert(@BindAgentId String agentId, @BindRequest AlertConfigDto configDto)
+            throws Exception {
+        AlertConfig alertConfig = configDto.convert();
         try {
-            configRepository.insertAlertConfig(alertConfigDto.agentId().get(), alertConfig);
+            configRepository.insertAlertConfig(agentId, alertConfig);
         } catch (DuplicateMBeanObjectNameException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
@@ -110,24 +109,22 @@ class AlertConfigJsonService {
         return mapper.writeValueAsString(AlertConfigDto.create(alertConfig));
     }
 
-    @POST("/backend/config/alerts/update")
-    String updateAlert(String content) throws Exception {
-        AlertConfigDto alertConfigDto = mapper.readValue(content, ImmutableAlertConfigDto.class);
-        AlertConfig alertConfig = alertConfigDto.convert();
-        configRepository.updateAlertConfig(alertConfigDto.agentId().get(), alertConfig,
-                alertConfigDto.version().get());
+    @POST(path = "/backend/config/alerts/update", permission = "agent:config:edit:alert")
+    String updateAlert(@BindAgentId String agentId, @BindRequest AlertConfigDto configDto)
+            throws Exception {
+        AlertConfig alertConfig = configDto.convert();
+        configRepository.updateAlertConfig(agentId, alertConfig, configDto.version().get());
         return mapper.writeValueAsString(AlertConfigDto.create(alertConfig));
     }
 
-    @POST("/backend/config/alerts/remove")
-    void removeAlert(String content) throws Exception {
-        AlertConfigRequest request = mapper.readValue(content, ImmutableAlertConfigRequest.class);
-        configRepository.deleteAlertConfig(request.agentId(), request.version().get());
+    @POST(path = "/backend/config/alerts/remove", permission = "agent:config:edit:alert")
+    void removeAlert(@BindAgentId String agentId, @BindRequest AlertConfigRequest request)
+            throws Exception {
+        configRepository.deleteAlertConfig(agentId, request.version().get());
     }
 
     @Value.Immutable
     interface AlertConfigRequest {
-        String agentId();
         Optional<String> version();
     }
 
@@ -136,7 +133,6 @@ class AlertConfigJsonService {
 
         abstract AlertKind kind();
 
-        abstract Optional<String> agentId(); // only used in request
         abstract @Nullable String transactionType();
         abstract @Nullable Double transactionPercentile();
         abstract @Nullable Integer transactionThresholdMillis();

@@ -62,8 +62,9 @@ public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
         JsonNode responseNode = new ObjectMapper().readTree(response.getResponseBody());
         String version = responseNode.get("version").asText();
         request = asyncHttpClient
-                .preparePost("http://localhost:" + getUiPort() + "/backend/config/transaction")
-                .setBody("{\"agentId\":\"\",\"slowThresholdMillis\":" + Integer.MAX_VALUE
+                .preparePost(
+                        "http://localhost:" + getUiPort() + "/backend/config/transaction?agent-id=")
+                .setBody("{\"slowThresholdMillis\":" + Integer.MAX_VALUE
                         + ",\"profilingIntervalMillis\":0,\"captureThreadStats\":false,"
                         + "\"version\":\"" + version + "\"}")
                 .build();

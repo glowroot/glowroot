@@ -16,35 +16,16 @@
 package org.glowroot.storage.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Versions;
 
 @Value.Immutable
-public abstract class AccessConfig {
+public abstract class WebConfig {
 
     @Value.Default
     public int port() {
         return 4000;
-    }
-
-    @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
-    public String adminPasswordHash() {
-        return "";
-    }
-
-    @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
-    public String readOnlyPasswordHash() {
-        return "";
-    }
-
-    @Value.Default
-    public AnonymousAccess anonymousAccess() {
-        return AnonymousAccess.ADMIN;
     }
 
     // timeout 0 means sessions do not time out (except on jvm restart)
@@ -57,17 +38,5 @@ public abstract class AccessConfig {
     @JsonIgnore
     public String version() {
         return Versions.getJsonVersion(this);
-    }
-
-    public boolean adminPasswordEnabled() {
-        return !adminPasswordHash().isEmpty();
-    }
-
-    public boolean readOnlyPasswordEnabled() {
-        return !readOnlyPasswordHash().isEmpty();
-    }
-
-    public enum AnonymousAccess {
-        NONE, READ_ONLY, ADMIN
     }
 }

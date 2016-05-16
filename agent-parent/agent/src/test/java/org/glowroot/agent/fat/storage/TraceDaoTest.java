@@ -27,8 +27,8 @@ import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.common.live.ImmutableTracePointFilter;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
-import org.glowroot.common.model.Result;
 import org.glowroot.common.live.StringComparator;
+import org.glowroot.common.model.Result;
 import org.glowroot.storage.repo.ImmutableTraceQuery;
 import org.glowroot.storage.repo.TraceRepository.TraceQuery;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -69,7 +69,6 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -78,7 +77,7 @@ public class TraceDaoTest {
                 .durationNanosLow(0)
                 .durationNanosHigh(Long.MAX_VALUE)
                 .build();
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
         Trace.Header header =
                 traceDao.readHeaderPlus(AGENT_ID, queryResult.records().get(0).traceId()).header();
         // then
@@ -96,7 +95,6 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -106,7 +104,7 @@ public class TraceDaoTest {
                 .durationNanosHigh(trace.getHeader().getDurationNanos())
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
         // then
         assertThat(queryResult.records()).hasSize(1);
     }
@@ -117,7 +115,6 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -127,7 +124,7 @@ public class TraceDaoTest {
                 .durationNanosHigh(trace.getHeader().getDurationNanos() + 2)
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
         // then
         assertThat(queryResult.records()).isEmpty();
     }
@@ -138,7 +135,6 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -148,7 +144,7 @@ public class TraceDaoTest {
                 .durationNanosHigh(trace.getHeader().getDurationNanos() - 1)
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
         // then
         assertThat(queryResult.records()).isEmpty();
     }
@@ -159,7 +155,6 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -172,7 +167,7 @@ public class TraceDaoTest {
                 .attributeValue("xyz")
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
         // then
         assertThat(queryResult.records()).hasSize(1);
     }
@@ -183,7 +178,6 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -196,7 +190,7 @@ public class TraceDaoTest {
                 .attributeValue(null)
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
         // then
         assertThat(queryResult.records()).hasSize(1);
     }
@@ -207,7 +201,6 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -220,7 +213,7 @@ public class TraceDaoTest {
                 .attributeValue("xyz")
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
         // then
         assertThat(queryResult.records()).hasSize(1);
     }
@@ -231,7 +224,6 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -244,7 +236,7 @@ public class TraceDaoTest {
                 .attributeValue("abc")
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
         // then
         assertThat(queryResult.records()).isEmpty();
     }
@@ -255,7 +247,6 @@ public class TraceDaoTest {
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
-                .agentRollup(AGENT_ID)
                 .transactionType("unit test")
                 .from(0)
                 .to(100)
@@ -268,7 +259,7 @@ public class TraceDaoTest {
                 .attributeValue("xyz1")
                 .build();
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
         // then
         assertThat(queryResult.records()).isEmpty();
     }

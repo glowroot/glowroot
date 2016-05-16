@@ -34,13 +34,14 @@ import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveTraceRepository.TraceKind;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
-import org.glowroot.common.model.Result;
 import org.glowroot.common.live.StringComparator;
+import org.glowroot.common.model.Result;
 import org.glowroot.common.util.Clock;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ImmutableTraceQuery;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.TraceRepository.TraceQuery;
+import org.glowroot.ui.TransactionJsonService.TransactionDataRequest;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
@@ -67,19 +68,50 @@ class TracePointJsonService {
         this.clock = clock;
     }
 
-    @GET("/backend/transaction/points")
-    String getTransactionPoints(String queryString) throws Exception {
-        return getPoints(TraceKind.SLOW, queryString);
+    @GET(path = "/backend/transaction/trace-count", permission = "agent:view:transaction:traces")
+    String getTransactionTraceCount(@BindAgentRollup String agentRollup,
+            @BindRequest TransactionDataRequest request) throws Exception {
+        TraceQuery query = ImmutableTraceQuery.builder()
+                .transactionType(request.transactionType())
+                .transactionName(request.transactionName())
+                .from(request.from())
+                .to(request.to())
+                .build();
+        long traceCount = traceRepository.readSlowCount(agentRollup, query);
+        boolean includeActiveTraces = shouldIncludeActiveTraces(request);
+        if (includeActiveTraces) {
+            traceCount += liveTraceRepository.getMatchingTraceCount(agentRollup,
+                    request.transactionType(), request.transactionName());
+        }
+        return Long.toString(traceCount);
     }
 
-    @GET("/backend/error/points")
-    String getErrorPoints(String queryString) throws Exception {
-        return getPoints(TraceKind.ERROR, queryString);
+    @GET(path = "/backend/error/trace-count", permission = "agent:view:error:traces")
+    String getErrorTraceCount(@BindAgentRollup String agentRollup, @BindRequest TraceQuery query)
+            throws Exception {
+        return Long.toString(traceRepository.readErrorCount(agentRollup, query));
     }
 
-    private String getPoints(TraceKind traceKind, String queryString) throws Exception {
-        TracePointRequest request = QueryStrings.decode(queryString, TracePointRequest.class);
+    @GET(path = "/backend/transaction/points", permission = "agent:view:transaction:traces")
+    String getTransactionPoints(@BindAgentRollup String agentRollup,
+            @BindRequest TracePointRequest request) throws Exception {
+        return getPoints(TraceKind.SLOW, agentRollup, request);
+    }
 
+    @GET(path = "/backend/error/points", permission = "agent:view:error:traces")
+    String getErrorPoints(@BindAgentRollup String agentRollup,
+            @BindRequest TracePointRequest request) throws Exception {
+        return getPoints(TraceKind.ERROR, agentRollup, request);
+    }
+
+    private boolean shouldIncludeActiveTraces(TransactionDataRequest request) {
+        long currentTimeMillis = clock.currentTimeMillis();
+        return (request.to() == 0 || request.to() > currentTimeMillis)
+                && request.from() < currentTimeMillis;
+    }
+
+    private String getPoints(TraceKind traceKind, String agentRollup, TracePointRequest request)
+            throws Exception {
         double durationMillisLow = request.durationMillisLow();
         long durationNanosLow = Math.round(durationMillisLow * NANOSECONDS_PER_MILLISECOND);
         Long durationNanosHigh = null;
@@ -88,7 +120,6 @@ class TracePointJsonService {
             durationNanosHigh = Math.round(durationMillisHigh * NANOSECONDS_PER_MILLISECOND);
         }
         TraceQuery query = ImmutableTraceQuery.builder()
-                .agentRollup(request.agentRollup())
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
@@ -107,18 +138,21 @@ class TracePointJsonService {
                 .attributeValueComparator(request.attributeValueComparator())
                 .attributeValue(request.attributeValue())
                 .build();
-        return new Handler(traceKind, query, filter, request.limit()).handle();
+        return new Handler(traceKind, agentRollup, query, filter, request.limit()).handle();
     }
 
     private class Handler {
 
         private final TraceKind traceKind;
+        private final String agentRollup;
         private final TraceQuery query;
         private final TracePointFilter filter;
         private final int limit;
 
-        private Handler(TraceKind traceKind, TraceQuery query, TracePointFilter filter, int limit) {
+        private Handler(TraceKind traceKind, String agentRollup, TraceQuery query,
+                TracePointFilter filter, int limit) {
             this.traceKind = traceKind;
+            this.agentRollup = agentRollup;
             this.query = query;
             this.filter = filter;
             this.limit = limit;
@@ -135,8 +169,8 @@ class TracePointJsonService {
                 // capture active traces first to make sure that none are missed in the transition
                 // between active and pending/stored (possible duplicates are removed below)
                 activeTracePoints.addAll(liveTraceRepository.getMatchingActiveTracePoints(traceKind,
-                        query.agentRollup(), query.transactionType(), query.transactionName(),
-                        filter, limit, captureTime, captureTick));
+                        agentRollup, query.transactionType(), query.transactionName(), filter,
+                        limit, captureTime, captureTick));
             }
             Result<TracePoint> queryResult =
                     getStoredAndPendingPoints(captureTime, captureActiveTracePoints);
@@ -144,8 +178,8 @@ class TracePointJsonService {
             removeDuplicatesBetweenActiveAndNormalTracePoints(activeTracePoints, points);
             boolean expired = points.isEmpty() && query.to() < clock.currentTimeMillis()
                     - HOURS.toMillis(configRepository.getStorageConfig().traceExpirationHours());
-            List<String> traceAttributeNames = traceRepository
-                    .readTraceAttributeNames(query.agentRollup(), query.transactionType());
+            List<String> traceAttributeNames =
+                    traceRepository.readTraceAttributeNames(agentRollup, query.transactionType());
             return writeResponse(points, activeTracePoints, queryResult.moreAvailable(), expired,
                     traceAttributeNames);
         }
@@ -164,17 +198,17 @@ class TracePointJsonService {
                 // important to grab pending traces before stored points to ensure none are
                 // missed in the transition between pending and stored
                 matchingPendingPoints = liveTraceRepository.getMatchingPendingPoints(traceKind,
-                        query.agentRollup(), query.transactionType(), query.transactionName(),
-                        filter, captureTime);
+                        agentRollup, query.transactionType(), query.transactionName(), filter,
+                        captureTime);
             } else {
                 matchingPendingPoints = ImmutableList.of();
             }
             Result<TracePoint> queryResult;
             if (traceKind == TraceKind.SLOW) {
-                queryResult = traceRepository.readSlowPoints(query, filter, limit);
+                queryResult = traceRepository.readSlowPoints(agentRollup, query, filter, limit);
             } else {
                 // TraceKind.ERROR
-                queryResult = traceRepository.readErrorPoints(query, filter, limit);
+                queryResult = traceRepository.readErrorPoints(agentRollup, query, filter, limit);
             }
             // create single merged and limited list of points
             List<TracePoint> orderedPoints = Lists.newArrayList(queryResult.records());
@@ -240,7 +274,7 @@ class TracePointJsonService {
 
         private String writeResponse(List<TracePoint> points, List<TracePoint> activePoints,
                 boolean limitExceeded, boolean expired, List<String> traceAttributeNames)
-                        throws Exception {
+                throws Exception {
             StringBuilder sb = new StringBuilder();
             JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();
@@ -293,7 +327,6 @@ class TracePointJsonService {
     @Value.Immutable
     public abstract static class TracePointRequest {
 
-        public abstract String agentRollup();
         public abstract String transactionType();
         public abstract @Nullable String transactionName();
         public abstract long from();
