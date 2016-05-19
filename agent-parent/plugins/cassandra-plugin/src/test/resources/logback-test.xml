@@ -27,4 +27,6 @@
   <root level="warn">
     <appender-ref ref="FILE" />
   </root>
+  <!-- this is needed to suppress a harmless warning message  -->
+  <logger name="com.datastax.driver.core.NettyUtil" level="error" />
 </configuration>
