@@ -48,7 +48,7 @@ public class AsyncHttpClientRequestInvoker {
         this.getURIMethod = getURIMethod;
     }
 
-    // TODO report checker framework issue that occurs without this warning suppression
+    // TODO report checker framework issue that occurs without this suppression
     @SuppressWarnings("assignment.type.incompatible")
     String getUrl(Object request) {
         if (getURIMethod == null) {

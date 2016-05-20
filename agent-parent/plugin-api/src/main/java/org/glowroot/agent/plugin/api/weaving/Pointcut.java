@@ -59,7 +59,7 @@ public @interface Pointcut {
     //
     // orders can be negative if an ordering before the default 0 is needed
     //
-    // given a pointcut A with order 10 and a pointcut B with order 0:
+    // given a pointcut A with order 0 and a pointcut B with order 10:
     // * A's @OnBefore will be called before B's @OnBefore
     // * A's @OnReturn will be called after B's @OnReturn
     // * A's @OnThrow will be called after B's @OnThrow

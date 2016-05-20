@@ -135,14 +135,14 @@ public class MainEntryPoint {
                 System.setProperty("glowroot.base.dir", prior);
             }
         }
-        // checker framework is not currently detecting that startupLogger is non-null here
+        // TODO report checker framework issue that occurs without checkNotNull
         checkNotNull(startupLogger);
     }
 
     @RequiresNonNull("startupLogger")
     private static void start(File baseDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile)
-                    throws Exception {
+            throws Exception {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion(MainEntryPoint.class);

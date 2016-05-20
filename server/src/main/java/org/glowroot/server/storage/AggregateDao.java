@@ -317,7 +317,7 @@ public class AggregateDao implements AggregateRepository {
         }
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         for (int i = 1; i < rollupConfigs.size(); i++) {
-            // TODO submit checker framework issue
+            // TODO report checker framework issue that occurs without this suppression
             @SuppressWarnings("assignment.type.incompatible")
             Set<String> transactionTypes = aggregatesByTypeList.stream()
                     .map(AggregatesByType::getTransactionType).collect(Collectors.toSet());

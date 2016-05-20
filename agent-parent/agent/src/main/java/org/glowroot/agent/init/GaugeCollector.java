@@ -106,7 +106,6 @@ class GaugeCollector extends ScheduledRunnable {
                                     "registerInternalMBeans", MBeanServer.class);
                     registerInternalMBeansMethod.invoke(null, mbeanServer);
                 } catch (Exception e) {
-                    // checkNotNull is just to satisfy checker framework
                     logger.debug(e.getMessage(), e);
                 }
             }
