@@ -141,11 +141,7 @@ public class UserProfileScheduler {
             if (!mainThreadContext.isCompleted()) {
                 activeThreadContexts.add(mainThreadContext);
             }
-            for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
-                if (!auxThreadContext.isCompleted()) {
-                    activeThreadContexts.add(auxThreadContext);
-                }
-            }
+            activeThreadContexts.addAll(transaction.getActiveAuxThreadContexts());
             captureStackTraces(activeThreadContexts);
         }
 

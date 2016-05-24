@@ -22,14 +22,16 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import org.glowroot.agent.model.Transaction.RootTimerCollector;
+import org.glowroot.agent.model.Transaction.ThreadStatsCollector;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile.ProfileNode;
 import org.glowroot.wire.api.model.Proto;
+import org.glowroot.wire.api.model.Proto.OptionalInt64;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 @Styles.Private
@@ -132,26 +134,22 @@ public class TraceCreator {
             errorBuilder.build();
         }
         TimerImpl mainThreadRootTimer = transaction.getMainThreadRootTimer();
-        List<TimerImpl> auxThreadRootTimers = Lists.newArrayList();
-        for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
-            auxThreadRootTimers.add(auxThreadContext.getRootTimer());
-        }
         builder.setMainThreadRootTimer(mainThreadRootTimer.toProto());
-        builder.addAllAuxThreadRootTimer(mergeRootTimers(auxThreadRootTimers));
-        builder.addAllAsyncTimer(mergeRootTimers(transaction.getAsyncTimers()));
-        ThreadStats mainThreadStats = transaction.getMainThreadStats();
-        List<ThreadStats> auxThreadStats = Lists.newArrayList();
-        for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
-            auxThreadStats.add(auxThreadContext.getThreadStats());
+        RootTimerCollectorImpl auxThreadRootTimers = new RootTimerCollectorImpl();
+        transaction.mergeAuxThreadTimersInto(auxThreadRootTimers);
+        builder.addAllAuxThreadRootTimer(auxThreadRootTimers.toProto());
+        RootTimerCollectorImpl asyncTimers = new RootTimerCollectorImpl();
+        transaction.mergeAsyncTimersInto(asyncTimers);
+        builder.addAllAsyncTimer(asyncTimers.toProto());
+        ThreadStatsCollectorImpl mainThreadStats = new ThreadStatsCollectorImpl();
+        mainThreadStats.mergeThreadStats(transaction.getMainThreadStats());
+        if (!mainThreadStats.isNA()) {
+            builder.setMainThreadStats(mainThreadStats.toProto());
         }
-        Trace.ThreadStats mainThreadStatsProto =
-                mergeThreadStats(ImmutableList.of(mainThreadStats));
-        if (mainThreadStatsProto != null) {
-            builder.setMainThreadStats(mainThreadStatsProto);
-        }
-        Trace.ThreadStats auxThreadStatsProto = mergeThreadStats(auxThreadStats);
-        if (auxThreadStatsProto != null) {
-            builder.setAuxThreadStats(auxThreadStatsProto);
+        ThreadStatsCollectorImpl auxThreadStats = new ThreadStatsCollectorImpl();
+        transaction.mergeAuxThreadStatsInto(auxThreadStats);
+        if (!auxThreadStats.isNA()) {
+            builder.setAuxThreadStats(auxThreadStats.toProto());
         }
         builder.setEntryCount(entryCount);
         builder.setEntryLimitExceeded(transaction.isEntryLimitExceeded());
@@ -162,34 +160,6 @@ public class TraceCreator {
         builder.setAuxThreadProfileSampleLimitExceeded(
                 transaction.isAuxThreadProfileSampleLimitExceeded());
         return builder.build();
-    }
-
-    // merge root timers where possible
-    private static List<Trace.Timer> mergeRootTimers(
-            Iterable<? extends CommonTimerImpl> toBeMergedRootTimers) {
-        List<MutableTimer> rootMutableTimers = Lists.newArrayList();
-        for (CommonTimerImpl toBeMergedRootTimer : toBeMergedRootTimers) {
-            mergeRootTimer(toBeMergedRootTimer, rootMutableTimers);
-        }
-        List<Trace.Timer> rootTimers = Lists.newArrayList();
-        for (MutableTimer rootMutableTimer : rootMutableTimers) {
-            rootTimers.add(rootMutableTimer.toProto());
-        }
-        return rootTimers;
-    }
-
-    private static void mergeRootTimer(CommonTimerImpl toBeMergedRootTimer,
-            List<MutableTimer> rootTimers) {
-        for (MutableTimer rootTimer : rootTimers) {
-            if (toBeMergedRootTimer.getName().equals(rootTimer.getName())) {
-                rootTimer.merge(toBeMergedRootTimer);
-                return;
-            }
-        }
-        MutableTimer rootTimer = MutableTimer.createRootTimer(toBeMergedRootTimer.getName(),
-                toBeMergedRootTimer.isExtended());
-        rootTimer.merge(toBeMergedRootTimer);
-        rootTimers.add(rootTimer);
     }
 
     private static long getProfileSampleCount(@Nullable Profile profile) {
@@ -205,15 +175,49 @@ public class TraceCreator {
         return profileSampleCount;
     }
 
-    private static @Nullable Trace.ThreadStats mergeThreadStats(List<ThreadStats> threadStatsList) {
-        if (threadStatsList.isEmpty()) {
-            return null;
+    private static class RootTimerCollectorImpl implements RootTimerCollector {
+
+        List<MutableTimer> rootMutableTimers = Lists.newArrayList();
+
+        @Override
+        public void mergeRootTimer(CommonTimerImpl rootTimer) {
+            mergeRootTimer(rootTimer, rootMutableTimers);
         }
-        long totalCpuNanos = 0;
-        long totalBlockedNanos = 0;
-        long totalWaitedNanos = 0;
-        long totalAllocatedBytes = 0;
-        for (ThreadStats threadStats : threadStatsList) {
+
+        private List<Trace.Timer> toProto() {
+            List<Trace.Timer> rootTimers = Lists.newArrayList();
+            for (MutableTimer rootMutableTimer : rootMutableTimers) {
+                rootTimers.add(rootMutableTimer.toProto());
+            }
+            return rootTimers;
+        }
+
+        private static void mergeRootTimer(CommonTimerImpl toBeMergedRootTimer,
+                List<MutableTimer> rootTimers) {
+            for (MutableTimer rootTimer : rootTimers) {
+                if (toBeMergedRootTimer.getName().equals(rootTimer.getName())) {
+                    rootTimer.merge(toBeMergedRootTimer);
+                    return;
+                }
+            }
+            MutableTimer rootTimer = MutableTimer.createRootTimer(toBeMergedRootTimer.getName(),
+                    toBeMergedRootTimer.isExtended());
+            rootTimer.merge(toBeMergedRootTimer);
+            rootTimers.add(rootTimer);
+        }
+    }
+
+    private static class ThreadStatsCollectorImpl implements ThreadStatsCollector {
+
+        private long totalCpuNanos;
+        private long totalBlockedNanos;
+        private long totalWaitedNanos;
+        private long totalAllocatedBytes;
+
+        private boolean empty = true;
+
+        @Override
+        public void mergeThreadStats(ThreadStats threadStats) {
             totalCpuNanos = NotAvailableAware.add(totalCpuNanos, threadStats.getTotalCpuNanos());
             totalBlockedNanos = NotAvailableAware.addMillisToNanos(totalBlockedNanos,
                     threadStats.getTotalBlockedMillis());
@@ -221,31 +225,38 @@ public class TraceCreator {
                     threadStats.getTotalWaitedMillis());
             totalAllocatedBytes = NotAvailableAware.add(totalAllocatedBytes,
                     threadStats.getTotalAllocatedBytes());
+            empty = false;
         }
-        boolean totalCpuNanosNA = NotAvailableAware.isNA(totalCpuNanos);
-        boolean totalBlockedNanosNA = NotAvailableAware.isNA(totalBlockedNanos);
-        boolean totalWaitedNanosNA = NotAvailableAware.isNA(totalWaitedNanos);
-        boolean totalAllocatedBytesNA = NotAvailableAware.isNA(totalAllocatedBytes);
-        if (totalCpuNanosNA && totalBlockedNanosNA && totalWaitedNanosNA && totalAllocatedBytesNA) {
-            return null;
-        }
-        Trace.ThreadStats.Builder builder = Trace.ThreadStats.newBuilder();
-        if (!totalCpuNanosNA) {
-            builder.setTotalCpuNanos(getOptionalInt(totalCpuNanos));
-        }
-        if (!totalBlockedNanosNA) {
-            builder.setTotalBlockedNanos(getOptionalInt(totalBlockedNanos));
-        }
-        if (!totalWaitedNanosNA) {
-            builder.setTotalWaitedNanos(getOptionalInt(totalWaitedNanos));
-        }
-        if (!totalAllocatedBytesNA) {
-            builder.setTotalAllocatedBytes(getOptionalInt(totalAllocatedBytes));
-        }
-        return builder.build();
-    }
 
-    private static Proto.OptionalInt64 getOptionalInt(long value) {
-        return Proto.OptionalInt64.newBuilder().setValue(value).build();
+        private boolean isNA() {
+            if (empty) {
+                return true;
+            }
+            return NotAvailableAware.isNA(totalCpuNanos)
+                    && NotAvailableAware.isNA(totalBlockedNanos)
+                    && NotAvailableAware.isNA(totalWaitedNanos)
+                    && NotAvailableAware.isNA(totalAllocatedBytes);
+        }
+
+        public Trace.ThreadStats toProto() {
+            Trace.ThreadStats.Builder builder = Trace.ThreadStats.newBuilder();
+            if (!NotAvailableAware.isNA(totalCpuNanos)) {
+                builder.setTotalCpuNanos(toProto(totalCpuNanos));
+            }
+            if (!NotAvailableAware.isNA(totalBlockedNanos)) {
+                builder.setTotalBlockedNanos(toProto(totalBlockedNanos));
+            }
+            if (!NotAvailableAware.isNA(totalWaitedNanos)) {
+                builder.setTotalWaitedNanos(toProto(totalWaitedNanos));
+            }
+            if (!NotAvailableAware.isNA(totalAllocatedBytes)) {
+                builder.setTotalAllocatedBytes(toProto(totalAllocatedBytes));
+            }
+            return builder.build();
+        }
+
+        private static OptionalInt64 toProto(long value) {
+            return OptionalInt64.newBuilder().setValue(value).build();
+        }
     }
 }

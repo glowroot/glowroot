@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.TraceEntryImpl;
+import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.TraceEntry;
@@ -38,26 +39,27 @@ public class AuxThreadContextImpl implements AuxThreadContext {
 
     private static final Logger logger = LoggerFactory.getLogger(AuxThreadContextImpl.class);
 
-    private final ThreadContextImpl parentThreadContext;
+    private final Transaction transaction;
     private final TraceEntryImpl parentTraceEntry;
-    private final TraceEntryImpl parentThreadContextTailEntry;
+    private final TraceEntryImpl parentThreadContextPriorEntry;
     private final @Nullable MessageSupplier servletMessageSupplier;
     private final TransactionRegistry transactionRegistry;
     private final TransactionServiceImpl transactionService;
 
-    public AuxThreadContextImpl(ThreadContextImpl parentThreadContext,
-            TraceEntryImpl parentTraceEntry, TraceEntryImpl parentThreadContextTailEntry,
+    public AuxThreadContextImpl(Transaction transaction, TraceEntryImpl parentTraceEntry,
+            TraceEntryImpl parentThreadContextPriorEntry,
             @Nullable MessageSupplier servletMessageSupplier,
             TransactionRegistry transactionRegistry, TransactionServiceImpl transactionService) {
-        this.parentThreadContext = parentThreadContext;
+        this.transaction = transaction;
         this.parentTraceEntry = parentTraceEntry;
-        this.parentThreadContextTailEntry = parentThreadContextTailEntry;
+        this.parentThreadContextPriorEntry = parentThreadContextPriorEntry;
         this.servletMessageSupplier = servletMessageSupplier;
         this.transactionRegistry = transactionRegistry;
         this.transactionService = transactionService;
         if (logger.isDebugEnabled()) {
             logger.debug("new AUX thread context: {}, parent thread context: {}, thread name: {}",
-                    castInitialized(this).hashCode(), parentThreadContext.hashCode(),
+                    castInitialized(this).hashCode(),
+                    parentTraceEntry.getThreadContext().hashCode(),
                     Thread.currentThread().getName(), new Exception());
         }
     }
@@ -82,18 +84,17 @@ public class AuxThreadContextImpl implements AuxThreadContext {
             }
             return NopTraceEntry.INSTANCE;
         }
-        context = transactionService.startAuxThreadContextInternal(parentThreadContext,
-                parentTraceEntry, parentThreadContextTailEntry, servletMessageSupplier,
-                threadContextHolder);
+        context = transactionService.startAuxThreadContextInternal(transaction, parentTraceEntry,
+                parentThreadContextPriorEntry, servletMessageSupplier, threadContextHolder);
         if (context == null) {
-            // transaction is already complete
+            // transaction is already complete or auxiliary thread context limit exceeded
             return NopTraceEntry.INSTANCE;
         }
         if (logger.isDebugEnabled()) {
             logger.debug("start AUX thread context: {}, thread context: {},"
                     + " parent thread context: {}, thread name: {}", hashCode(), context.hashCode(),
-                    parentThreadContext.hashCode(), Thread.currentThread().getName(),
-                    new Exception());
+                    parentTraceEntry.getThreadContext().hashCode(),
+                    Thread.currentThread().getName(), new Exception());
         }
         if (completeAsyncTransaction) {
             context.completeAsyncTransaction();

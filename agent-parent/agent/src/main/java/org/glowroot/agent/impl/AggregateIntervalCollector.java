@@ -28,10 +28,7 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.agent.model.Profile;
-import org.glowroot.agent.model.ThreadContextImpl;
-import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
@@ -321,14 +318,10 @@ public class AggregateIntervalCollector {
         private void merge(Transaction transaction, AggregateCollector aggregateCollector) {
             synchronized (aggregateCollector) {
                 aggregateCollector.add(transaction);
-                TimerImpl mainThreadRootTimer = transaction.getMainThreadRootTimer();
-                aggregateCollector.mergeMainThreadRootTimer(mainThreadRootTimer);
-                for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
-                    aggregateCollector.mergeAuxThreadRootTimer(auxThreadContext.getRootTimer());
-                }
-                for (CommonTimerImpl rootTimer : transaction.getAsyncTimers()) {
-                    aggregateCollector.mergeAsyncTimer(rootTimer);
-                }
+                aggregateCollector.getMainThreadRootTimers()
+                        .mergeRootTimer(transaction.getMainThreadRootTimer());
+                transaction.mergeAuxThreadTimersInto(aggregateCollector.getAuxThreadRootTimers());
+                transaction.mergeAsyncTimersInto(aggregateCollector.getAsyncTimers());
                 transaction.mergeQueriesInto(aggregateCollector.getQueryCollector());
                 transaction.mergeServiceCallsInto(aggregateCollector.getServiceCallCollector());
                 Profile mainThreadProfile = transaction.getMainThreadProfile();

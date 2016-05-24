@@ -280,6 +280,10 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
         this.stackTrace = stackTrace;
     }
 
+    public ThreadContextImpl getThreadContext() {
+        return threadContext;
+    }
+
     @Nullable
     TraceEntryImpl getParentTraceEntry() {
         return parentTraceEntry;
@@ -299,6 +303,11 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
         this.endTick = endTick;
         selfNestingLevel--;
         initialComplete = true;
+    }
+
+    boolean isAuxThreadRoot() {
+        // TODO this is a little hacky depending on timer name
+        return syncTimer != null && syncTimer.getName().equals("auxiliary thread");
     }
 
     private boolean isCompleted() {

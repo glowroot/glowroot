@@ -17,13 +17,13 @@ package org.glowroot.agent.model;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Ticker;
 
 import org.glowroot.agent.model.TimerImpl.TimerImplSnapshot;
 import org.glowroot.agent.util.Tickers;
-import org.glowroot.common.util.Styles;
 
-@Styles.Private
 public class AsyncTimerImpl implements CommonTimerImpl {
 
     private static final Ticker ticker = Tickers.getTicker();
@@ -32,6 +32,9 @@ public class AsyncTimerImpl implements CommonTimerImpl {
     private final long startTick;
 
     private volatile long totalNanos = -1;
+
+    // this is for maintaining list of async timers
+    private volatile @Nullable AsyncTimerImpl nextAsyncTimer;
 
     AsyncTimerImpl(TimerNameImpl timerName, long startTick) {
         this.timerName = timerName;
@@ -79,6 +82,10 @@ public class AsyncTimerImpl implements CommonTimerImpl {
     @Override
     public void mergeChildTimersInto2(List<org.glowroot.agent.impl.MutableTimer> mutableTimers) {
         // async timers have no child timers
+    }
+
+    boolean active() {
+        return totalNanos == -1;
     }
 
     @Override

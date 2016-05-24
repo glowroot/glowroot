@@ -26,10 +26,10 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.agent.model.Profile;
-import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.ThreadStats;
-import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
+import org.glowroot.agent.model.Transaction.RootTimerCollector;
+import org.glowroot.agent.model.Transaction.ThreadStatsCollector;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
 import org.glowroot.common.live.ImmutableThroughputAggregate;
@@ -62,11 +62,11 @@ class AggregateCollector {
     private long transactionCount;
     private long errorCount;
     private boolean asyncTransactions;
-    private final List<MutableTimer> mainThreadRootTimers = Lists.newArrayList();
-    private final List<MutableTimer> auxThreadRootTimers = Lists.newArrayList();
-    private final List<MutableTimer> asyncTimers = Lists.newArrayList();
-    private final MutableThreadStats mainThreadStats = new MutableThreadStats();
-    private final MutableThreadStats auxThreadStats = new MutableThreadStats();
+    private final RootTimerCollectorImpl mainThreadRootTimers = new RootTimerCollectorImpl();
+    private final RootTimerCollectorImpl auxThreadRootTimers = new RootTimerCollectorImpl();
+    private final RootTimerCollectorImpl asyncTimers = new RootTimerCollectorImpl();
+    private final ThreadStatsCollectorImpl mainThreadStats = new ThreadStatsCollectorImpl();
+    private final ThreadStatsCollectorImpl auxThreadStats = new ThreadStatsCollectorImpl();
     // histogram values are in nanoseconds, but with microsecond precision to reduce the number of
     // buckets (and memory) required
     private final LazyHistogram durationNanosHistogram = new LazyHistogram();
@@ -96,23 +96,21 @@ class AggregateCollector {
         if (transaction.isAsync()) {
             asyncTransactions = true;
         }
-        this.mainThreadStats.addThreadStats(transaction.getMainThreadStats());
-        for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
-            this.auxThreadStats.addThreadStats(auxThreadContext.getThreadStats());
-        }
+        mainThreadStats.mergeThreadStats(transaction.getMainThreadStats());
+        transaction.mergeAuxThreadStatsInto(auxThreadStats);
         durationNanosHistogram.add(totalDurationNanos);
     }
 
-    void mergeMainThreadRootTimer(TimerImpl toBeMergedRootTimer) {
-        mergeRootTimer(toBeMergedRootTimer, mainThreadRootTimers);
+    RootTimerCollector getMainThreadRootTimers() {
+        return mainThreadRootTimers;
     }
 
-    void mergeAuxThreadRootTimer(TimerImpl toBeMergedRootTimer) {
-        mergeRootTimer(toBeMergedRootTimer, auxThreadRootTimers);
+    RootTimerCollector getAuxThreadRootTimers() {
+        return auxThreadRootTimers;
     }
 
-    void mergeAsyncTimer(CommonTimerImpl toBeMergedAsyncTimer) {
-        mergeRootTimer(toBeMergedAsyncTimer, asyncTimers);
+    RootTimerCollector getAsyncTimers() {
+        return asyncTimers;
     }
 
     void mergeMainThreadProfile(Profile toBeMergedProfile) {
@@ -157,9 +155,9 @@ class AggregateCollector {
                 .setTransactionCount(transactionCount)
                 .setErrorCount(errorCount)
                 .setAsyncTransactions(asyncTransactions)
-                .addAllMainThreadRootTimer(getRootTimersProtobuf(mainThreadRootTimers))
-                .addAllAuxThreadRootTimer(getRootTimersProtobuf(auxThreadRootTimers))
-                .addAllAsyncTimer(getRootTimersProtobuf(asyncTimers))
+                .addAllMainThreadRootTimer(mainThreadRootTimers.toProto())
+                .addAllAuxThreadRootTimer(auxThreadRootTimers.toProto())
+                .addAllAsyncTimer(asyncTimers.toProto())
                 .setDurationNanosHistogram(durationNanosHistogram.toProto(scratchBuffer));
         if (!mainThreadStats.isNA()) {
             builder.setMainThreadStats(mainThreadStats.toProto());
@@ -208,9 +206,9 @@ class AggregateCollector {
                 .totalDurationNanos(totalDurationNanos)
                 .transactionCount(transactionCount)
                 .asyncTransactions(asyncTransactions)
-                .mainThreadRootTimers(getRootTimersProtobuf(mainThreadRootTimers))
-                .auxThreadRootTimers(getRootTimersProtobuf(auxThreadRootTimers))
-                .asyncTimers(getRootTimersProtobuf(asyncTimers));
+                .mainThreadRootTimers(mainThreadRootTimers.toProto())
+                .auxThreadRootTimers(auxThreadRootTimers.toProto())
+                .asyncTimers(asyncTimers.toProto());
         if (!mainThreadStats.isNA()) {
             builder.mainThreadStats(mainThreadStats.toProto());
         }
@@ -257,30 +255,39 @@ class AggregateCollector {
         }
     }
 
-    private static void mergeRootTimer(CommonTimerImpl toBeMergedRootTimer,
-            List<MutableTimer> rootTimers) {
-        for (MutableTimer rootTimer : rootTimers) {
-            if (toBeMergedRootTimer.getName().equals(rootTimer.getName())) {
-                rootTimer.merge(toBeMergedRootTimer);
-                return;
+    private static class RootTimerCollectorImpl implements RootTimerCollector {
+
+        List<MutableTimer> rootMutableTimers = Lists.newArrayList();
+
+        @Override
+        public void mergeRootTimer(CommonTimerImpl rootTimer) {
+            mergeRootTimer(rootTimer, rootMutableTimers);
+        }
+
+        private List<Aggregate.Timer> toProto() {
+            List<Aggregate.Timer> rootTimers = Lists.newArrayList();
+            for (MutableTimer rootMutableTimer : rootMutableTimers) {
+                rootTimers.add(rootMutableTimer.toProto());
             }
+            return rootTimers;
         }
-        MutableTimer rootTimer = MutableTimer.createRootTimer(toBeMergedRootTimer.getName(),
-                toBeMergedRootTimer.isExtended());
-        rootTimer.merge(toBeMergedRootTimer);
-        rootTimers.add(rootTimer);
+
+        private static void mergeRootTimer(CommonTimerImpl toBeMergedRootTimer,
+                List<MutableTimer> rootTimers) {
+            for (MutableTimer rootTimer : rootTimers) {
+                if (toBeMergedRootTimer.getName().equals(rootTimer.getName())) {
+                    rootTimer.merge(toBeMergedRootTimer);
+                    return;
+                }
+            }
+            MutableTimer rootTimer = MutableTimer.createRootTimer(toBeMergedRootTimer.getName(),
+                    toBeMergedRootTimer.isExtended());
+            rootTimer.merge(toBeMergedRootTimer);
+            rootTimers.add(rootTimer);
+        }
     }
 
-    private static List<Aggregate.Timer> getRootTimersProtobuf(List<MutableTimer> rootTimers) {
-        List<Aggregate.Timer> protobufRootTimers =
-                Lists.newArrayListWithCapacity(rootTimers.size());
-        for (MutableTimer rootTimer : rootTimers) {
-            protobufRootTimers.add(rootTimer.toProto());
-        }
-        return protobufRootTimers;
-    }
-
-    private static class MutableThreadStats {
+    private static class ThreadStatsCollectorImpl implements ThreadStatsCollector {
 
         private double totalCpuNanos;
         private double totalBlockedNanos;
@@ -289,7 +296,8 @@ class AggregateCollector {
 
         private boolean empty = true;
 
-        private void addThreadStats(ThreadStats threadStats) {
+        @Override
+        public void mergeThreadStats(ThreadStats threadStats) {
             totalCpuNanos = NotAvailableAware.add(totalCpuNanos, threadStats.getTotalCpuNanos());
             totalBlockedNanos = NotAvailableAware.addMillisToNanos(totalBlockedNanos,
                     threadStats.getTotalBlockedMillis());

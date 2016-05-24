@@ -61,11 +61,7 @@ class ThreadDumpService {
             if (!mainThreadContext.isCompleted()) {
                 activeThreadContexts.add(mainThreadContext);
             }
-            for (ThreadContextImpl threadContext : transaction.getAuxThreadContexts()) {
-                if (!threadContext.isCompleted()) {
-                    activeThreadContexts.add(threadContext);
-                }
-            }
+            activeThreadContexts.addAll(transaction.getActiveAuxThreadContexts());
         }
         @Nullable
         ThreadInfo[] threadInfos =

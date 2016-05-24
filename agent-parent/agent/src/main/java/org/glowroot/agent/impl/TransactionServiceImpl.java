@@ -130,16 +130,15 @@ public class TransactionServiceImpl implements ConfigListener {
     }
 
     @Nullable
-    ThreadContextImpl startAuxThreadContextInternal(ThreadContextImpl parentThreadContext,
-            TraceEntryImpl parentTraceEntry, TraceEntryImpl parentThreadContextTailEntry,
+    ThreadContextImpl startAuxThreadContextInternal(Transaction transaction,
+            TraceEntryImpl parentTraceEntry, TraceEntryImpl parentThreadContextPriorEntry,
             @Nullable MessageSupplier servletMessageSupplier,
             Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
         long startTick = ticker.read();
-        // FIXME implement limit on auxiliary thread context creation for a given transaction
         TimerName auxThreadTimerName = timerNameCache.getAuxThreadTimerName();
-        return parentThreadContext.startAuxThreadContext(parentTraceEntry,
-                parentThreadContextTailEntry, auxThreadTimerName, startTick, threadContextHolder,
-                servletMessageSupplier, threadAllocatedBytes);
+        return transaction.startAuxThreadContext(parentTraceEntry, parentThreadContextPriorEntry,
+                auxThreadTimerName, startTick, threadContextHolder, servletMessageSupplier,
+                threadAllocatedBytes);
     }
 
     @Override
