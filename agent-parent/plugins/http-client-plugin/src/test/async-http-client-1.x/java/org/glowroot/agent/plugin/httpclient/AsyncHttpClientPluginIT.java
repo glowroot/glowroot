@@ -64,11 +64,11 @@ public class AsyncHttpClientPluginIT {
         assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("http client request");
         assertThat(rootTimer.getChildTimer(0).getCount()).isEqualTo(1);
         assertThat(trace.getHeader().getAuxThreadRootTimerCount()).isZero();
-        assertThat(trace.getHeader().getAsyncRootTimerCount()).isEqualTo(1);
-        Trace.Timer asyncRootTimer = trace.getHeader().getAsyncRootTimer(0);
-        assertThat(asyncRootTimer.getChildTimerCount()).isZero();
-        assertThat(asyncRootTimer.getName()).isEqualTo("http client request");
-        assertThat(asyncRootTimer.getCount()).isEqualTo(1);
+        assertThat(trace.getHeader().getAsyncTimerCount()).isEqualTo(1);
+        Trace.Timer asyncTimer = trace.getHeader().getAsyncTimer(0);
+        assertThat(asyncTimer.getChildTimerCount()).isZero();
+        assertThat(asyncTimer.getName()).isEqualTo("http client request");
+        assertThat(asyncTimer.getCount()).isEqualTo(1);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage())
@@ -83,11 +83,11 @@ public class AsyncHttpClientPluginIT {
         assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("http client request");
         assertThat(rootTimer.getChildTimer(0).getCount()).isEqualTo(1);
         assertThat(trace.getHeader().getAuxThreadRootTimerCount()).isZero();
-        assertThat(trace.getHeader().getAsyncRootTimerCount()).isEqualTo(1);
-        Trace.Timer asyncRootTimer = trace.getHeader().getAsyncRootTimer(0);
-        assertThat(asyncRootTimer.getChildTimerCount()).isZero();
-        assertThat(asyncRootTimer.getName()).isEqualTo("http client request");
-        assertThat(asyncRootTimer.getCount()).isEqualTo(1);
+        assertThat(trace.getHeader().getAsyncTimerCount()).isEqualTo(1);
+        Trace.Timer asyncTimer = trace.getHeader().getAsyncTimer(0);
+        assertThat(asyncTimer.getChildTimerCount()).isZero();
+        assertThat(asyncTimer.getName()).isEqualTo("http client request");
+        assertThat(asyncTimer.getCount()).isEqualTo(1);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage())
@@ -102,11 +102,11 @@ public class AsyncHttpClientPluginIT {
         assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("http client request");
         assertThat(rootTimer.getChildTimer(0).getCount()).isEqualTo(1);
         assertThat(trace.getHeader().getAuxThreadRootTimerCount()).isZero();
-        assertThat(trace.getHeader().getAsyncRootTimerCount()).isEqualTo(1);
-        Trace.Timer asyncRootTimer = trace.getHeader().getAsyncRootTimer(0);
-        assertThat(asyncRootTimer.getChildTimerCount()).isZero();
-        assertThat(asyncRootTimer.getName()).isEqualTo("http client request");
-        assertThat(asyncRootTimer.getCount()).isEqualTo(1);
+        assertThat(trace.getHeader().getAsyncTimerCount()).isEqualTo(1);
+        Trace.Timer asyncTimer = trace.getHeader().getAsyncTimer(0);
+        assertThat(asyncTimer.getChildTimerCount()).isZero();
+        assertThat(asyncTimer.getName()).isEqualTo("http client request");
+        assertThat(asyncTimer.getCount()).isEqualTo(1);
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage())

@@ -326,8 +326,8 @@ public class AggregateIntervalCollector {
                 for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {
                     aggregateCollector.mergeAuxThreadRootTimer(auxThreadContext.getRootTimer());
                 }
-                for (CommonTimerImpl rootTimer : transaction.getAsyncRootTimers()) {
-                    aggregateCollector.mergeAsyncRootTimer(rootTimer);
+                for (CommonTimerImpl rootTimer : transaction.getAsyncTimers()) {
+                    aggregateCollector.mergeAsyncTimer(rootTimer);
                 }
                 transaction.mergeQueriesInto(aggregateCollector.getQueryCollector());
                 transaction.mergeServiceCallsInto(aggregateCollector.getServiceCallCollector());

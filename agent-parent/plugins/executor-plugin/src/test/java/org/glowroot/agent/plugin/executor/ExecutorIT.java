@@ -98,7 +98,7 @@ public class ExecutorIT {
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getAuxThreadRootTimerCount()).isEqualTo(1);
-        assertThat(header.getAsyncRootTimerCount()).isZero();
+        assertThat(header.getAsyncTimerCount()).isZero();
         assertThat(header.getAuxThreadRootTimer(0).getName()).isEqualTo("auxiliary thread");
         assertThat(header.getAuxThreadRootTimer(0).getCount()).isEqualTo(3);
         assertThat(header.getAuxThreadRootTimer(0).getTotalNanos())
@@ -207,7 +207,7 @@ public class ExecutorIT {
                     .isLessThanOrEqualTo(3);
         }
         assertThat(header.getAuxThreadRootTimerCount()).isEqualTo(1);
-        assertThat(header.getAsyncRootTimerCount()).isZero();
+        assertThat(header.getAsyncTimerCount()).isZero();
         assertThat(header.getAuxThreadRootTimer(0).getName()).isEqualTo("auxiliary thread");
         if (isAny) {
             assertThat(header.getAuxThreadRootTimer(0).getCount()).isBetween(1L, 3L);

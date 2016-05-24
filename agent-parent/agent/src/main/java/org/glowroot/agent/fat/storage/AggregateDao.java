@@ -414,7 +414,7 @@ public class AggregateDao implements AggregateRepository {
         Long auxThreadProfileCappedId = RowMappers.getLong(resultSet, i++);
         byte[] mainThreadRootTimers = resultSet.getBytes(i++);
         byte[] auxThreadRootTimers = resultSet.getBytes(i++);
-        byte[] asyncRootTimers = resultSet.getBytes(i++);
+        byte[] asyncTimers = resultSet.getBytes(i++);
         byte[] mainThreadStats = resultSet.getBytes(i++);
         byte[] auxThreadStats = resultSet.getBytes(i++);
         byte[] durationNanosHistogram = checkNotNull(resultSet.getBytes(i++));
@@ -431,9 +431,8 @@ public class AggregateDao implements AggregateRepository {
             mergedAggregate.mergeAuxThreadRootTimers(
                     readMessages(auxThreadRootTimers, Aggregate.Timer.parser()));
         }
-        if (asyncRootTimers != null) {
-            mergedAggregate
-                    .mergeAsyncRootTimers(readMessages(asyncRootTimers, Aggregate.Timer.parser()));
+        if (asyncTimers != null) {
+            mergedAggregate.mergeAsyncTimers(readMessages(asyncTimers, Aggregate.Timer.parser()));
         }
         if (mainThreadStats == null) {
             mergedAggregate.mergeMainThreadStats(null);
@@ -548,7 +547,7 @@ public class AggregateDao implements AggregateRepository {
         private final @Nullable Long auxThreadProfileCappedId;
         private final byte /*@Nullable*/[] mainThreadRootTimers;
         private final byte /*@Nullable*/[] auxThreadRootTimers;
-        private final byte /*@Nullable*/[] asyncRootTimers;
+        private final byte /*@Nullable*/[] asyncTimers;
         private final byte /*@Nullable*/[] mainThreadStats;
         private final byte /*@Nullable*/[] auxThreadStats;
         private final byte[] durationNanosHistogramBytes;
@@ -611,15 +610,15 @@ public class AggregateDao implements AggregateRepository {
                 }
                 this.auxThreadRootTimers = baos.toByteArray();
             }
-            List<Aggregate.Timer> asyncRootTimers = aggregate.getAsyncRootTimerList();
-            if (asyncRootTimers.isEmpty()) {
-                this.asyncRootTimers = null;
+            List<Aggregate.Timer> asyncTimers = aggregate.getAsyncTimerList();
+            if (asyncTimers.isEmpty()) {
+                this.asyncTimers = null;
             } else {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                for (AbstractMessageLite message : asyncRootTimers) {
+                for (AbstractMessageLite message : asyncTimers) {
                     message.writeDelimitedTo(baos);
                 }
-                this.asyncRootTimers = baos.toByteArray();
+                this.asyncTimers = baos.toByteArray();
             }
             if (aggregate.hasMainThreadStats()) {
                 this.mainThreadStats = aggregate.getMainThreadStats().toByteArray();
@@ -693,10 +692,10 @@ public class AggregateDao implements AggregateRepository {
             } else {
                 preparedStatement.setBytes(i++, auxThreadRootTimers);
             }
-            if (asyncRootTimers == null) {
+            if (asyncTimers == null) {
                 preparedStatement.setNull(i++, Types.VARBINARY);
             } else {
-                preparedStatement.setBytes(i++, asyncRootTimers);
+                preparedStatement.setBytes(i++, asyncTimers);
             }
             if (mainThreadStats == null) {
                 preparedStatement.setNull(i++, Types.VARBINARY);
@@ -986,9 +985,9 @@ public class AggregateDao implements AggregateRepository {
                 builder.auxThreadRootTimers(
                         readMessages(auxThreadRootTimers, Aggregate.Timer.parser()));
             }
-            byte[] asyncRootTimers = resultSet.getBytes(i++);
-            if (asyncRootTimers != null) {
-                builder.asyncRootTimers(readMessages(asyncRootTimers, Aggregate.Timer.parser()));
+            byte[] asyncTimers = resultSet.getBytes(i++);
+            if (asyncTimers != null) {
+                builder.asyncTimers(readMessages(asyncTimers, Aggregate.Timer.parser()));
             }
             byte[] mainThreadStats = resultSet.getBytes(i++);
             if (mainThreadStats != null) {

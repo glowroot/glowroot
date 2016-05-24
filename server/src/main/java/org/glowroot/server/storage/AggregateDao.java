@@ -428,7 +428,7 @@ public class AggregateDao implements AggregateRepository {
                     Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
             List<Aggregate.Timer> auxThreadRootTimers =
                     Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
-            List<Aggregate.Timer> asyncRootTimers =
+            List<Aggregate.Timer> asyncTimers =
                     Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
             ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
                     .captureTime(captureTime)
@@ -437,7 +437,7 @@ public class AggregateDao implements AggregateRepository {
                     .asyncTransactions(asyncTransactions)
                     .addAllMainThreadRootTimers(mainThreadRootTimers)
                     .addAllAuxThreadRootTimers(auxThreadRootTimers)
-                    .addAllAsyncRootTimers(asyncRootTimers);
+                    .addAllAsyncTimers(asyncTimers);
             ByteBuffer mainThreadStats = row.getBytes(i++);
             if (mainThreadStats != null) {
                 builder.mainThreadStats(
@@ -768,7 +768,7 @@ public class AggregateDao implements AggregateRepository {
         boolean asyncTransactions = false;
         List<MutableTimer> mainThreadRootTimers = Lists.newArrayList();
         List<MutableTimer> auxThreadRootTimers = Lists.newArrayList();
-        List<MutableTimer> asyncRootTimers = Lists.newArrayList();
+        List<MutableTimer> asyncTimers = Lists.newArrayList();
         MutableThreadStats mainThreadStats = new MutableThreadStats();
         MutableThreadStats auxThreadStats = new MutableThreadStats();
         for (Row row : results) {
@@ -784,9 +784,9 @@ public class AggregateDao implements AggregateRepository {
             List<Aggregate.Timer> toBeMergedAuxThreadRootTimers =
                     Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
             MutableAggregate.mergeRootTimers(toBeMergedAuxThreadRootTimers, auxThreadRootTimers);
-            List<Aggregate.Timer> toBeMergedAsyncRootTimers =
+            List<Aggregate.Timer> toBeMergedAsyncTimers =
                     Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
-            MutableAggregate.mergeRootTimers(toBeMergedAsyncRootTimers, asyncRootTimers);
+            MutableAggregate.mergeRootTimers(toBeMergedAsyncTimers, asyncTimers);
             ByteBuffer toBeMergedMainThreadStats = row.getBytes(i++);
             if (toBeMergedMainThreadStats != null) {
                 mainThreadStats.addThreadStats(Aggregate.ThreadStats
@@ -819,7 +819,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setBytes(i++,
                 Messages.toByteBuffer(MutableAggregate.toProto(auxThreadRootTimers)));
         boundStatement.setBytes(i++,
-                Messages.toByteBuffer(MutableAggregate.toProto(asyncRootTimers)));
+                Messages.toByteBuffer(MutableAggregate.toProto(asyncTimers)));
         boundStatement.setBytes(i++, toByteBuffer(mainThreadStats.toProto()));
         boundStatement.setBytes(i++, toByteBuffer(auxThreadStats.toProto()));
         boundStatement.setInt(i++, rollup.ttl());
@@ -1278,9 +1278,9 @@ public class AggregateDao implements AggregateRepository {
         } else {
             boundStatement.setToNull(i++);
         }
-        List<Timer> asyncRootTimers = aggregate.getAsyncRootTimerList();
-        if (!asyncRootTimers.isEmpty()) {
-            boundStatement.setBytes(i++, Messages.toByteBuffer(asyncRootTimers));
+        List<Timer> asyncTimers = aggregate.getAsyncTimerList();
+        if (!asyncTimers.isEmpty()) {
+            boundStatement.setBytes(i++, Messages.toByteBuffer(asyncTimers));
         } else {
             boundStatement.setToNull(i++);
         }

@@ -60,7 +60,7 @@ public class ApacheHttpAsyncClientPluginIT {
     public void shouldCaptureAsyncHttpGet() throws Exception {
         Trace trace = container.execute(ExecuteAsyncHttpGet.class);
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(trace.getHeader().getAsyncRootTimer(0).getActive()).isFalse();
+        assertThat(trace.getHeader().getAsyncTimer(0).getActive()).isFalse();
         assertThat(entries).hasSize(3);
         assertThat(entries.get(0).getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello1");
@@ -72,7 +72,7 @@ public class ApacheHttpAsyncClientPluginIT {
     public void shouldCaptureAsyncHttpGetUsingHttpHostArg() throws Exception {
         Trace trace = container.execute(ExecuteAsyncHttpGetUsingHttpHostArg.class);
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(trace.getHeader().getAsyncRootTimer(0).getActive()).isFalse();
+        assertThat(trace.getHeader().getAsyncTimer(0).getActive()).isFalse();
         assertThat(entries).hasSize(3);
         assertThat(entries.get(0).getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello2");
@@ -84,7 +84,7 @@ public class ApacheHttpAsyncClientPluginIT {
     public void shouldCaptureAsyncHttpPost() throws Exception {
         Trace trace = container.execute(ExecuteAsyncHttpPost.class);
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(trace.getHeader().getAsyncRootTimer(0).getActive()).isFalse();
+        assertThat(trace.getHeader().getAsyncTimer(0).getActive()).isFalse();
         assertThat(entries).hasSize(3);
         assertThat(entries.get(0).getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello3");
@@ -96,7 +96,7 @@ public class ApacheHttpAsyncClientPluginIT {
     public void shouldCaptureAsyncHttpPostUsingHttpHostArg() throws Exception {
         Trace trace = container.execute(ExecuteAsyncHttpPostUsingHttpHostArg.class);
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(trace.getHeader().getAsyncRootTimer(0).getActive()).isFalse();
+        assertThat(trace.getHeader().getAsyncTimer(0).getActive()).isFalse();
         assertThat(entries).hasSize(3);
         assertThat(entries.get(0).getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello4");

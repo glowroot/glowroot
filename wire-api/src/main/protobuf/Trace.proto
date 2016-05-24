@@ -35,8 +35,7 @@ message Trace {
     Error error = 13;
     Timer main_thread_root_timer = 14;
     repeated Timer aux_thread_root_timer = 15;
-    repeated Timer async_root_timer = 16; // children are also async, so sum of time in children can
-                                          // be greater than time in parent
+    repeated Timer async_timer = 16; // async timers have no child timers
     ThreadStats main_thread_stats = 17;
     ThreadStats aux_thread_stats = 18;
     int32 entry_count = 19;

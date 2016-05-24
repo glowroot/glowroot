@@ -86,7 +86,7 @@ public class OkHttpClientPluginIT {
         assertThat(entries.get(1).getMessage()).matches("auxiliary thread");
         assertThat(entries.get(2).getDepth()).isEqualTo(2);
         assertThat(entries.get(2).getMessage()).matches("trace entry marker / CreateTraceEntry");
-        assertThat(trace.getHeader().getAsyncRootTimer(0).getName())
+        assertThat(trace.getHeader().getAsyncTimer(0).getName())
                 .isEqualTo("http client request");
     }
 
@@ -102,7 +102,7 @@ public class OkHttpClientPluginIT {
         assertThat(entries.get(1).getMessage()).matches("auxiliary thread");
         assertThat(entries.get(2).getDepth()).isEqualTo(2);
         assertThat(entries.get(2).getMessage()).matches("trace entry marker / CreateTraceEntry");
-        assertThat(trace.getHeader().getAsyncRootTimer(0).getName())
+        assertThat(trace.getHeader().getAsyncTimer(0).getName())
                 .isEqualTo("http client request");
     }
 

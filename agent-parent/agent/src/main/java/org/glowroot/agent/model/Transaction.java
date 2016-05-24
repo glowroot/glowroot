@@ -145,7 +145,7 @@ public class Transaction {
     // async root timers are the root timers which do not have corresponding thread context
     // (those corresponding to async trace entries)
     // FIXME impose simple max on number of async root timers (AdvancedConfig)
-    private volatile @MonotonicNonNull List<AsyncTimerImpl> asyncRootTimers = null;
+    private volatile @MonotonicNonNull List<AsyncTimerImpl> asyncTimers = null;
 
     private volatile boolean completed;
     private volatile long endTick;
@@ -272,12 +272,12 @@ public class Transaction {
         return mainThreadContext.getRootTimer();
     }
 
-    public List<AsyncTimerImpl> getAsyncRootTimers() {
+    public List<AsyncTimerImpl> getAsyncTimers() {
         memoryBarrierRead();
-        if (asyncRootTimers == null) {
+        if (asyncTimers == null) {
             return ImmutableList.of();
         }
-        return asyncRootTimers;
+        return asyncTimers;
     }
 
     // can be called from a non-transaction thread
@@ -479,18 +479,18 @@ public class Transaction {
 
     public AsyncTimerImpl startAsyncTimer(TimerName asyncTimerName, long startTick) {
         AsyncTimerImpl asyncTimer = new AsyncTimerImpl((TimerNameImpl) asyncTimerName, startTick);
-        if (asyncRootTimers == null) {
+        if (asyncTimers == null) {
             // double-checked locking works here because auxThreadContexts is volatile
             //
             // synchronized on "this" as a micro-optimization just so don't need to create an empty
             // object to lock on
             synchronized (this) {
-                if (asyncRootTimers == null) {
-                    asyncRootTimers = Lists.newCopyOnWriteArrayList();
+                if (asyncTimers == null) {
+                    asyncTimers = Lists.newCopyOnWriteArrayList();
                 }
             }
         }
-        asyncRootTimers.add(asyncTimer);
+        asyncTimers.add(asyncTimer);
         return asyncTimer;
     }
 

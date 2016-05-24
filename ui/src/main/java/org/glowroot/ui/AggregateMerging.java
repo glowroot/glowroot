@@ -38,14 +38,14 @@ class AggregateMerging {
         long transactionCount = 0;
         List<MutableTimer> mainThreadRootTimers = Lists.newArrayList();
         List<MutableTimer> auxThreadRootTimers = Lists.newArrayList();
-        List<MutableTimer> asyncRootTimers = Lists.newArrayList();
+        List<MutableTimer> asyncTimers = Lists.newArrayList();
         MutableThreadStats mainThreadStats = new MutableThreadStats();
         MutableThreadStats auxThreadStats = new MutableThreadStats();
         for (OverviewAggregate aggregate : overviewAggregates) {
             transactionCount += aggregate.transactionCount();
             mergeRootTimers(aggregate.mainThreadRootTimers(), mainThreadRootTimers);
             mergeRootTimers(aggregate.auxThreadRootTimers(), auxThreadRootTimers);
-            mergeRootTimers(aggregate.asyncRootTimers(), asyncRootTimers);
+            mergeRootTimers(aggregate.asyncTimers(), asyncTimers);
             mainThreadStats.addThreadStats(aggregate.mainThreadStats());
             auxThreadStats.addThreadStats(aggregate.auxThreadStats());
         }
@@ -53,7 +53,7 @@ class AggregateMerging {
         mergedAggregate.transactionCount(transactionCount);
         mergedAggregate.mainThreadRootTimers(mainThreadRootTimers);
         mergedAggregate.auxThreadRootTimers(auxThreadRootTimers);
-        mergedAggregate.asyncRootTimers(asyncRootTimers);
+        mergedAggregate.asyncTimers(asyncTimers);
         if (!mainThreadStats.isNA()) {
             mergedAggregate.mainThreadStats(mainThreadStats);
         }
@@ -88,7 +88,7 @@ class AggregateMerging {
         long transactionCount();
         List<MutableTimer> mainThreadRootTimers();
         List<MutableTimer> auxThreadRootTimers();
-        List<MutableTimer> asyncRootTimers();
+        List<MutableTimer> asyncTimers();
         @Nullable
         MutableThreadStats mainThreadStats();
         @Nullable

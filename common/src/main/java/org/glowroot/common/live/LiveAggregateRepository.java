@@ -118,7 +118,7 @@ public interface LiveAggregateRepository {
         boolean asyncTransactions();
         List<Aggregate.Timer> mainThreadRootTimers();
         List<Aggregate.Timer> auxThreadRootTimers();
-        List<Aggregate.Timer> asyncRootTimers();
+        List<Aggregate.Timer> asyncTimers();
         @Nullable
         Aggregate.ThreadStats mainThreadStats();
         @Nullable

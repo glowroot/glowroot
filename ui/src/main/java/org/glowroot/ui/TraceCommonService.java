@@ -302,13 +302,13 @@ class TraceCommonService {
             writeTimer(header.getMainThreadRootTimer(), jg);
         }
         jg.writeArrayFieldStart("auxThreadRootTimers");
-        for (Trace.Timer asyncRootTimer : header.getAuxThreadRootTimerList()) {
-            writeTimer(asyncRootTimer, jg);
+        for (Trace.Timer rootTimer : header.getAuxThreadRootTimerList()) {
+            writeTimer(rootTimer, jg);
         }
         jg.writeEndArray();
-        jg.writeArrayFieldStart("asyncRootTimers");
-        for (Trace.Timer asyncRootTimer : header.getAsyncRootTimerList()) {
-            writeTimer(asyncRootTimer, jg);
+        jg.writeArrayFieldStart("asyncTimers");
+        for (Trace.Timer asyncTimer : header.getAsyncTimerList()) {
+            writeTimer(asyncTimer, jg);
         }
         jg.writeEndArray();
         if (header.hasMainThreadStats()) {

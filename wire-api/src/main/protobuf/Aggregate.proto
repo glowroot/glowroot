@@ -27,8 +27,7 @@ message Aggregate {
   bool async_transactions = 4; // true if there was at least one async transaction in aggregate
   repeated Timer main_thread_root_timer = 5;
   repeated Timer aux_thread_root_timer = 6;
-  repeated Timer async_root_timer = 7; // children are also async, so sum of time in children can
-                                       // be greater than time in parent
+  repeated Timer async_timer = 7; // async timers have no child timers
   ThreadStats main_thread_stats = 8;
   ThreadStats aux_thread_stats = 9;
   Histogram duration_nanos_histogram = 10; // histogram values are in nanoseconds with microsecond

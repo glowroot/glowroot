@@ -79,10 +79,8 @@ glowroot.controller('TransactionAverageCtrl', [
       if ($scope.mergedAggregate.transactionCount) {
         $scope.mainThreadTreeTimers = createTreeTimers($scope.mergedAggregate.mainThreadRootTimer);
         $scope.auxThreadTreeTimers = createTreeTimers($scope.mergedAggregate.auxThreadRootTimers);
-        $scope.asyncTreeTimers = createTreeTimers($scope.mergedAggregate.asyncRootTimers);
         $scope.mainThreadFlattenedTimers = createFlattenedTimers($scope.mergedAggregate.mainThreadRootTimer);
         $scope.auxThreadFlattenedTimers = createFlattenedTimers($scope.mergedAggregate.auxThreadRootTimers);
-        $scope.asyncFlattenedTimers = createFlattenedTimers($scope.mergedAggregate.asyncRootTimers);
       }
     }
 

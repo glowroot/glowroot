@@ -138,7 +138,7 @@ public class TraceCreator {
         }
         builder.setMainThreadRootTimer(mainThreadRootTimer.toProto());
         builder.addAllAuxThreadRootTimer(mergeRootTimers(auxThreadRootTimers));
-        builder.addAllAsyncRootTimer(mergeRootTimers(transaction.getAsyncRootTimers()));
+        builder.addAllAsyncTimer(mergeRootTimers(transaction.getAsyncTimers()));
         ThreadStats mainThreadStats = transaction.getMainThreadStats();
         List<ThreadStats> auxThreadStats = Lists.newArrayList();
         for (ThreadContextImpl auxThreadContext : transaction.getAuxThreadContexts()) {

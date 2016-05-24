@@ -114,11 +114,11 @@ public class CassandraAsyncIT {
         assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("cql execute");
         assertThat(rootTimer.getChildTimer(0).getCount()).isEqualTo(1);
         assertThat(trace.getHeader().getAuxThreadRootTimerCount()).isZero();
-        assertThat(trace.getHeader().getAsyncRootTimerCount()).isEqualTo(1);
-        Trace.Timer asyncRootTimer = trace.getHeader().getAsyncRootTimer(0);
-        assertThat(asyncRootTimer.getChildTimerCount()).isZero();
-        assertThat(asyncRootTimer.getName()).isEqualTo("cql execute");
-        assertThat(asyncRootTimer.getCount()).isEqualTo(1);
+        assertThat(trace.getHeader().getAsyncTimerCount()).isEqualTo(1);
+        Trace.Timer asyncTimer = trace.getHeader().getAsyncTimer(0);
+        assertThat(asyncTimer.getChildTimerCount()).isZero();
+        assertThat(asyncTimer.getName()).isEqualTo("cql execute");
+        assertThat(asyncTimer.getCount()).isEqualTo(1);
     }
 
     public static class ExecuteAsyncStatement implements AppUnderTest, TransactionMarker {

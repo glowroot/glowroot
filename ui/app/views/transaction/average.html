@@ -129,13 +129,29 @@
         </div>
       </div>
 
-      <div ng-if="asyncFlattenedTimers.length" style="margin-top: 10px;">
-        <div gt-timer-display
-             heading="Breakdown (Async Timers):"
-             flattened-timers="asyncFlattenedTimers"
-             tree-timers="asyncTreeTimers"
-             transaction-count="mergedAggregate.transactionCount">
-        </div>
+      <div ng-if="mergedAggregate.asyncTimers.length" style="margin-top: 10px;">
+        <table class="gt-timers-table gt-inline-block"
+               style="border-spacing: 0;">
+          <thead>
+          <tr>
+            <td class="gt-breakdown-header gt-bold" style="text-align: left;">Breakdown (Async Timers):</td>
+            <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+            <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
+          </tr>
+          </thead>
+          <tbody>
+          <tr class="align-top"
+              ng-repeat="asyncTimer in mergedAggregate.asyncTimers">
+            <td style="text-align: left;">
+              <div class="gt-indent2">
+                <div class="gt-break-word gt-second-line-indent">{{asyncTimer.name}}</div>
+              </div>
+            </td>
+            <td>{{asyncTimer.totalNanos / (1000000 * mergedAggregate.transactionCount) | gtMillis}}</td>
+            <td>{{asyncTimer.count / mergedAggregate.transactionCount | gtCount}}</td>
+          </tr>
+          </tbody>
+        </table>
       </div>
 
       <div ng-if="mergedAggregate.mainThreadStats" style="margin-top: 15px;">

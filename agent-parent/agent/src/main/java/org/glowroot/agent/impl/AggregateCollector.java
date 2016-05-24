@@ -64,7 +64,7 @@ class AggregateCollector {
     private boolean asyncTransactions;
     private final List<MutableTimer> mainThreadRootTimers = Lists.newArrayList();
     private final List<MutableTimer> auxThreadRootTimers = Lists.newArrayList();
-    private final List<MutableTimer> asyncRootTimers = Lists.newArrayList();
+    private final List<MutableTimer> asyncTimers = Lists.newArrayList();
     private final MutableThreadStats mainThreadStats = new MutableThreadStats();
     private final MutableThreadStats auxThreadStats = new MutableThreadStats();
     // histogram values are in nanoseconds, but with microsecond precision to reduce the number of
@@ -111,8 +111,8 @@ class AggregateCollector {
         mergeRootTimer(toBeMergedRootTimer, auxThreadRootTimers);
     }
 
-    void mergeAsyncRootTimer(CommonTimerImpl toBeMergedRootTimer) {
-        mergeRootTimer(toBeMergedRootTimer, asyncRootTimers);
+    void mergeAsyncTimer(CommonTimerImpl toBeMergedAsyncTimer) {
+        mergeRootTimer(toBeMergedAsyncTimer, asyncTimers);
     }
 
     void mergeMainThreadProfile(Profile toBeMergedProfile) {
@@ -159,7 +159,7 @@ class AggregateCollector {
                 .setAsyncTransactions(asyncTransactions)
                 .addAllMainThreadRootTimer(getRootTimersProtobuf(mainThreadRootTimers))
                 .addAllAuxThreadRootTimer(getRootTimersProtobuf(auxThreadRootTimers))
-                .addAllAsyncRootTimer(getRootTimersProtobuf(asyncRootTimers))
+                .addAllAsyncTimer(getRootTimersProtobuf(asyncTimers))
                 .setDurationNanosHistogram(durationNanosHistogram.toProto(scratchBuffer));
         if (!mainThreadStats.isNA()) {
             builder.setMainThreadStats(mainThreadStats.toProto());
@@ -210,7 +210,7 @@ class AggregateCollector {
                 .asyncTransactions(asyncTransactions)
                 .mainThreadRootTimers(getRootTimersProtobuf(mainThreadRootTimers))
                 .auxThreadRootTimers(getRootTimersProtobuf(auxThreadRootTimers))
-                .asyncRootTimers(getRootTimersProtobuf(asyncRootTimers));
+                .asyncTimers(getRootTimersProtobuf(asyncTimers));
         if (!mainThreadStats.isNA()) {
             builder.mainThreadStats(mainThreadStats.toProto());
         }

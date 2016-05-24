@@ -356,7 +356,7 @@ class TransactionCommonService {
             currMergedAggregate
                     .mergeAuxThreadRootTimers(nonRolledUpOverviewAggregate.auxThreadRootTimers());
             currMergedAggregate
-                    .mergeAsyncRootTimers(nonRolledUpOverviewAggregate.asyncRootTimers());
+                    .mergeAsyncTimers(nonRolledUpOverviewAggregate.asyncTimers());
             currMergedAggregate
                     .mergeMainThreadStats(nonRolledUpOverviewAggregate.mainThreadStats());
             currMergedAggregate.mergeAuxThreadStats(nonRolledUpOverviewAggregate.auxThreadStats());
