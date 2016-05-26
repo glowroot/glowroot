@@ -40,7 +40,6 @@ import org.glowroot.common.util.Styles;
 import org.glowroot.storage.repo.ConfigRepository;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ServerConfigDao {
 
@@ -59,7 +58,7 @@ public class ServerConfigDao {
     private volatile @MonotonicNonNull ConfigRepository configRepository;
 
     private final LoadingCache<CacheKey, Optional<Object>> cache = CacheBuilder.newBuilder()
-            .expireAfterWrite(61, SECONDS).build(new CacheLoader<CacheKey, Optional<Object>>() {
+            .build(new CacheLoader<CacheKey, Optional<Object>>() {
                 @Override
                 public Optional<Object> load(CacheKey key) throws Exception {
                     return Optional.fromNullable(readInternal(key.key(), checkNotNull(key.type())));

@@ -45,7 +45,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginPrope
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 // TODO need to validate cannot have agentIds "A/B/C" and "A/B" since there is logic elsewhere
 // (at least in the UI) that "A/B" is only a rollup
@@ -68,7 +67,7 @@ public class AgentDao implements AgentRepository {
     private volatile @MonotonicNonNull ConfigRepository configRepository;
 
     private final LoadingCache<String, Optional<AgentConfig>> cache = CacheBuilder.newBuilder()
-            .expireAfterWrite(61, SECONDS).build(new CacheLoader<String, Optional<AgentConfig>>() {
+            .build(new CacheLoader<String, Optional<AgentConfig>>() {
                 @Override
                 public Optional<AgentConfig> load(String agentId) throws Exception {
                     return Optional.fromNullable(readAgentConfigInternal(agentId));
