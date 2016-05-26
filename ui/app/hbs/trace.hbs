@@ -54,9 +54,10 @@
 </div>
 <div>
   <div class="gt-trace-attr-name">Duration:&nbsp;</div>
-  <div class="gt-trace-attr-value">{{nanosToMillis durationNanos}}{{#if active}}..{{^}}{{#if partial}}..{{/if}}{{/if}}
-    milliseconds
-  </div>
+  <div class="gt-trace-attr-value"><!--
+    lack of space here is significant because of gt-pre-wrap (which is mixin to gt-trace-attr-value)
+ -->{{nanosToMillis durationNanos}}{{#if active}}..{{^}}{{#if partial}}..{{/if}}{{/if}}&nbsp;milliseconds<!--
+--></div>
 </div>
 {{#if user}}
   <div class="gt-trace-attr-name">User:&nbsp;</div>
