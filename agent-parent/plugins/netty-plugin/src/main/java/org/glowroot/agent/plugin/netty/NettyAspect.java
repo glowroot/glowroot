@@ -18,6 +18,7 @@ package org.glowroot.agent.plugin.netty;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.AuxThreadContext;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.OptionalThreadContext;
 import org.glowroot.agent.plugin.api.ThreadContext;
@@ -43,6 +44,7 @@ public class NettyAspect {
     public abstract static class ChannelImpl implements ChannelMixin {
 
         private volatile boolean glowroot$completeAsyncTransaction;
+        private volatile @Nullable AuxThreadContext glowroot$auxContext;
 
         @Override
         public boolean glowroot$getCompleteAsyncTransaction() {
@@ -53,6 +55,16 @@ public class NettyAspect {
         public void glowroot$setCompleteAsyncTransaction(boolean completeAsyncTransaction) {
             this.glowroot$completeAsyncTransaction = completeAsyncTransaction;
         }
+
+        @Override
+        public @Nullable AuxThreadContext glowroot$getAuxContext() {
+            return glowroot$auxContext;
+        }
+
+        @Override
+        public void glowroot$setAuxContext(@Nullable AuxThreadContext auxContext) {
+            this.glowroot$auxContext = auxContext;
+        }
     }
 
     // the method names are verbose to avoid conflict since they will become methods in all classes
@@ -62,6 +74,11 @@ public class NettyAspect {
         boolean glowroot$getCompleteAsyncTransaction();
 
         void glowroot$setCompleteAsyncTransaction(boolean completeAsyncTransaction);
+
+        @Nullable
+        AuxThreadContext glowroot$getAuxContext();
+
+        void glowroot$setAuxContext(@Nullable AuxThreadContext auxThreadContext);
     }
 
     @Shim("io.netty.channel.ChannelHandlerContext")
@@ -87,9 +104,6 @@ public class NettyAspect {
         String name();
     }
 
-    @Shim("io.netty.handler.codec.http.FullHttpResponse")
-    public interface FullHttpResponse {}
-
     @Shim("io.netty.handler.codec.http.LastHttpContent")
     public interface LastHttpContent {}
 
@@ -108,14 +122,23 @@ public class NettyAspect {
             if (channel == null) {
                 return null;
             }
+            AuxThreadContext auxContext = channel.glowroot$getAuxContext();
+            if (auxContext != null) {
+                return auxContext.start();
+            }
             if (!(msg instanceof HttpRequest)) {
                 return null;
             }
             HttpRequest request = (HttpRequest) msg;
             HttpMethod method = request.glowroot$getMethod();
             String methodName = method == null ? null : method.name();
+            TraceEntry traceEntry =
+                    startAsyncTransaction(context, methodName, request.getUri(), timerName);
             channel.glowroot$setCompleteAsyncTransaction(true);
-            return startAsyncTransaction(context, methodName, request.getUri(), timerName);
+            if (!(msg instanceof LastHttpContent)) {
+                channel.glowroot$setAuxContext(context.createAuxThreadContext());
+            }
+            return traceEntry;
         }
 
         @OnReturn
@@ -156,7 +179,7 @@ public class NettyAspect {
             if (channelHandlerContext == null) {
                 return;
             }
-            if (msg instanceof FullHttpResponse || msg instanceof LastHttpContent) {
+            if (msg instanceof LastHttpContent) {
                 completeAsyncTransaction(context, channelHandlerContext);
             }
         }
@@ -167,6 +190,7 @@ public class NettyAspect {
             ChannelMixin channel = channelHandlerContext.glowroot$channel();
             if (channel != null) {
                 channel.glowroot$setCompleteAsyncTransaction(false);
+                channel.glowroot$setAuxContext(null);
             }
         }
     }
