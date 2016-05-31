@@ -57,7 +57,7 @@ public class Spring {
         for (int i = 0; i <= 9; i++) {
             run("4.1." + i + ".RELEASE");
         }
-        for (int i = 0; i <= 5; i++) {
+        for (int i = 0; i <= 6; i++) {
             run("4.2." + i + ".RELEASE");
         }
     }

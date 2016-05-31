@@ -128,6 +128,7 @@ public class ServerConfigDao {
         // which is needed so that cache.invalidate() can be performed using the key alone
         @Value.Auxiliary
         @Nullable
+        @SuppressWarnings("immutables")
         Class<?> type();
     }
 }

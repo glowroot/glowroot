@@ -29,7 +29,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.protobuf.AbstractMessageLite;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import org.checkerframework.checker.tainting.qual.Untainted;
@@ -603,7 +602,7 @@ public class AggregateDao implements AggregateRepository {
                 this.mainThreadRootTimers = null;
             } else {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                for (AbstractMessageLite message : mainThreadRootTimers) {
+                for (Timer message : mainThreadRootTimers) {
                     message.writeDelimitedTo(baos);
                 }
                 this.mainThreadRootTimers = baos.toByteArray();
@@ -613,7 +612,7 @@ public class AggregateDao implements AggregateRepository {
                 this.auxThreadRootTimers = null;
             } else {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                for (AbstractMessageLite message : auxThreadRootTimers) {
+                for (Timer message : auxThreadRootTimers) {
                     message.writeDelimitedTo(baos);
                 }
                 this.auxThreadRootTimers = baos.toByteArray();
@@ -623,7 +622,7 @@ public class AggregateDao implements AggregateRepository {
                 this.asyncTimers = null;
             } else {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                for (AbstractMessageLite message : asyncTimers) {
+                for (Timer message : asyncTimers) {
                     message.writeDelimitedTo(baos);
                 }
                 this.asyncTimers = baos.toByteArray();

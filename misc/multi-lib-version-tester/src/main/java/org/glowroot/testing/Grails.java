@@ -27,7 +27,7 @@ public class Grails {
             }
             run("3.0." + i);
         }
-        for (int i = 0; i <= 4; i++) {
+        for (int i = 0; i <= 7; i++) {
             if (i == 1) {
                 // there is no 3.1.1 in maven central
                 continue;

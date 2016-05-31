@@ -20,41 +20,42 @@ public class JAXRS {
     private static final String MODULE_PATH = "agent-parent/plugins/jaxrs-plugin";
 
     public static void main(String[] args) throws Exception {
-        // run("2.0");
-        // run("2.0.1");
-        // run("2.1");
-        // run("2.2");
-        // run("2.3");
-        // run("2.3.1");
-        // run("2.4");
-        // run("2.4.1");
-        // run("2.5");
-        // run("2.5.1");
-        // run("2.5.2");
-        // run("2.6");
-        // run("2.7");
-        // run("2.8");
-        // run("2.9");
-        // run("2.9.1");
-        // run("2.10");
-        // for (int i = 1; i <= 4; i++) {
-        // run("2.10." + i);
-        // }
-        // run("2.11");
-        // run("2.12");
-        // run("2.13");
-        // run("2.14");
-        // run("2.15");
-        // run("2.16");
-        // run("2.17");
-        // run("2.18");
-        // run("2.19");
+        run("2.0");
+        run("2.0.1");
+        run("2.1");
+        run("2.2");
+        run("2.3");
+        run("2.3.1");
+        run("2.4");
+        run("2.4.1");
+        run("2.5");
+        run("2.5.1");
+        run("2.5.2");
+        run("2.6");
+        run("2.7");
+        run("2.8");
+        run("2.9");
+        run("2.9.1");
+        run("2.10");
+        for (int i = 1; i <= 4; i++) {
+            run("2.10." + i);
+        }
+        run("2.11");
+        run("2.12");
+        run("2.13");
+        run("2.14");
+        run("2.15");
+        run("2.16");
+        run("2.17");
+        run("2.18");
+        run("2.19");
         run("2.20");
         run("2.21");
         run("2.21.1");
         run("2.22");
         run("2.22.1");
         run("2.22.2");
+        run("2.23");
     }
 
     private static void run(String version) throws Exception {

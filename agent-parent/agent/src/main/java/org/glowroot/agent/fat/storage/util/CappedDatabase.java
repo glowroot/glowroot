@@ -39,7 +39,6 @@ import com.google.common.io.CharSource;
 import com.google.common.io.CountingOutputStream;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.AbstractMessage;
-import com.google.protobuf.AbstractMessageLite;
 import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
 import com.ning.compress.lzf.LZFInputStream;
@@ -75,7 +74,7 @@ public class CappedDatabase {
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
     }
 
-    public long writeMessage(final AbstractMessageLite message, String type) throws IOException {
+    public long writeMessage(final AbstractMessage message, String type) throws IOException {
         return write(type, new Copier() {
             @Override
             public void copyTo(OutputStream writer) throws IOException {
@@ -84,12 +83,12 @@ public class CappedDatabase {
         });
     }
 
-    public long writeMessages(final List<? extends AbstractMessageLite> messages, String type)
+    public long writeMessages(final List<? extends AbstractMessage> messages, String type)
             throws IOException {
         return write(type, new Copier() {
             @Override
             public void copyTo(OutputStream writer) throws IOException {
-                for (AbstractMessageLite message : messages) {
+                for (AbstractMessage message : messages) {
                     message.writeDelimitedTo(writer);
                 }
             }

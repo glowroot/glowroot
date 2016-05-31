@@ -53,6 +53,7 @@ public class Netty {
         for (int i = 1; i <= 7; i++) {
             runNetty("4.1.0.CR" + i, "netty-4.x");
         }
+        runNetty("4.1.0.Final", "netty-4.x");
     }
 
     private static void runVertx() throws Exception {

@@ -129,15 +129,15 @@ public class AsyncControllerIT {
         public @ResponseBody DeferredResult<String> test() throws InterruptedException {
             new CreateTraceEntry().traceEntryMarker();
             final DeferredResult<String> result = new DeferredResult<String>();
-            ExecutorService executor = Executors.newCachedThreadPool();
+            final ExecutorService executor = Executors.newCachedThreadPool();
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
                     new CreateTraceEntry().traceEntryMarker();
                     result.setResult("async2 world");
+                    executor.shutdown();
                 }
             });
-            executor.shutdown();
             return result;
         }
     }

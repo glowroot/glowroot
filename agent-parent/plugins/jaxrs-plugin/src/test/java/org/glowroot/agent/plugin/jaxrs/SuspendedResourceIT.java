@@ -21,10 +21,8 @@ import java.util.concurrent.Executors;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
-import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -92,24 +90,20 @@ public class SuspendedResourceIT {
 
         @GET
         @Path("{param}")
-        public void log(@PathParam("param") final String msg,
-                @Suspended final AsyncResponse asyncResponse) {
-
+        public void log(@Suspended final AsyncResponse asyncResponse) {
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        // ignore
+                    }
                     new CreateTraceEntry().traceEntryMarker();
-                    asyncResponse.resume(Response.status(200).entity(msg).build());
+                    asyncResponse.resume("hido");
+                    executor.shutdown();
                 }
             });
-
-            executor.shutdown();
-
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                // ignore
-            }
         }
     }
 

@@ -34,6 +34,7 @@ public class Quartz {
         run("2.2.0");
         run("2.2.1");
         run("2.2.2");
+        run("2.2.3");
     }
 
     private static void run(String version, String... profiles) throws Exception {

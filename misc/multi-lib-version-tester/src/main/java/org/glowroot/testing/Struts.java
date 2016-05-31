@@ -98,11 +98,19 @@ public class Struts {
         runTest(test);
         updateLibVersion("struts2.version", "2.3.20.1");
         runTest(test);
+        updateLibVersion("struts2.version", "2.3.20.3");
+        runTest(test);
         updateLibVersion("struts2.version", "2.3.24");
         runTest(test);
         updateLibVersion("struts2.version", "2.3.24.1");
         runTest(test);
+        updateLibVersion("struts2.version", "2.3.24.3");
+        runTest(test);
         updateLibVersion("struts2.version", "2.3.28");
+        runTest(test);
+        updateLibVersion("struts2.version", "2.3.28.1");
+        runTest(test);
+        updateLibVersion("struts2.version", "2.5");
         runTest(test);
     }
 

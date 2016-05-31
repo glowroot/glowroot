@@ -85,7 +85,7 @@ public class HttpClient {
         updateLibVersion("apache.httpclient.version", "4.4.1");
         runTest(test);
         updateLibVersion("apache.httpasyncclient.version", "4.1.1");
-        updateLibVersion("apache.httpclient.version", "4.5.1");
+        updateLibVersion("apache.httpclient.version", "4.5.2");
         runTest(test);
     }
 
@@ -173,7 +173,7 @@ public class HttpClient {
             updateLibVersion("cxf.version", "3.0." + i);
             runTest(test);
         }
-        for (int i = 0; i <= 5; i++) {
+        for (int i = 0; i <= 6; i++) {
             updateLibVersion("cxf.version", "3.1." + i);
             runTest(test);
         }
@@ -205,7 +205,7 @@ public class HttpClient {
             updateLibVersion("spring.version", "4.1." + i + ".RELEASE");
             runTest(test);
         }
-        for (int i = 0; i <= 5; i++) {
+        for (int i = 0; i <= 6; i++) {
             updateLibVersion("spring.version", "4.2." + i + ".RELEASE");
             runTest(test);
         }

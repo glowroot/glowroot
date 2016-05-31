@@ -19,7 +19,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.hash.Hashing;
-import com.google.protobuf.AbstractMessageLite;
+import com.google.protobuf.AbstractMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +40,7 @@ public class Versions {
         }
     }
 
-    public static String getVersion(AbstractMessageLite obj) {
+    public static String getVersion(AbstractMessage obj) {
         return Hashing.sha1().hashBytes(obj.toByteArray()).toString();
     }
 }

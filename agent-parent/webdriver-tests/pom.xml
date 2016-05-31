@@ -103,7 +103,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <version>4.2.5.RELEASE</version>
+      <version>4.2.6.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -111,7 +111,7 @@
         org.springframework.mock.web.MockHttpServletRequest -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <version>4.2.5.RELEASE</version>
+      <version>4.2.6.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -182,7 +182,7 @@
             <execution>
               <id>default-testCompile</id>
               <configuration>
-                <!-- selenium 2.47.0 and later requires jdk 7+ -->
+                <!-- selenium 2.47.0 and later requires Java 7+ -->
                 <source>1.7</source>
                 <target>1.7</target>
               </configuration>

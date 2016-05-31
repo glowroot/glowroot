@@ -114,14 +114,24 @@ public class ResourceIT {
         // when
         Trace trace = container.execute(WithLessNormalServletMapping.class);
         // then
-        // JAX-RS (at least Jersey implementation) doesn't like this "less than normal" servlet
-        // mapping, and ends up mapping everything to RootResource
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
-                + " org.glowroot.agent.plugin.jaxrs.ResourceIT$RootResource.echo()");
+        if (trace.getHeader().getTransactionName().equals("GET /")) {
+            // Jersey (2.5 and above) doesn't like this "less than normal" servlet mapping, and ends
+            // up
+            // mapping everything to RootResource
+            assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /");
+            List<Trace.Entry> entries = trace.getEntryList();
+            assertThat(entries).hasSize(1);
+            Trace.Entry entry = entries.get(0);
+            assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+                    + " org.glowroot.agent.plugin.jaxrs.ResourceIT$RootResource.echo()");
+        } else {
+            assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /hello/*");
+            List<Trace.Entry> entries = trace.getEntryList();
+            assertThat(entries).hasSize(1);
+            Trace.Entry entry = entries.get(0);
+            assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+                    + " org.glowroot.agent.plugin.jaxrs.ResourceIT$HelloResource.echo()");
+        }
     }
 
     @Test

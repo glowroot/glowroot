@@ -81,8 +81,15 @@ public class StrutsTwoIT {
             Tomcat tomcat = new Tomcat();
             tomcat.setBaseDir("target/tomcat");
             tomcat.setPort(port);
-            Context context =
-                    tomcat.addWebapp("", new File("src/test/resources/struts2").getAbsolutePath());
+            String subdir;
+            try {
+                Class.forName("org.apache.struts2.dispatcher.filter.StrutsPrepareAndExecuteFilter");
+                subdir = "struts2.5";
+            } catch (ClassNotFoundException e) {
+                subdir = "struts2";
+            }
+            Context context = tomcat.addWebapp("",
+                    new File("src/test/resources/" + subdir).getAbsolutePath());
 
             WebappLoader webappLoader =
                     new WebappLoader(ExecuteActionInTomcat.class.getClassLoader());

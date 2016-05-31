@@ -51,7 +51,9 @@ public class Hibernate {
     private static void run(String version, String annotationsVersion, String... profiles)
             throws Exception {
         Util.updateLibVersion(MODULE_PATH, "hibernate.version", version);
-        Util.updateLibVersion(MODULE_PATH, "hibernate.annotations.version", annotationsVersion);
+        if (!annotationsVersion.isEmpty()) {
+            Util.updateLibVersion(MODULE_PATH, "hibernate.annotations.version", annotationsVersion);
+        }
         Util.runTests(MODULE_PATH, profiles);
     }
 

@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.protobuf.AbstractMessageLite;
+import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.Parser;
 
 import org.glowroot.common.util.SizeLimitBypassingParser;
@@ -34,17 +34,17 @@ public class Messages {
 
     private Messages() {}
 
-    public static ByteBuffer toByteBuffer(List<? extends AbstractMessageLite> messages)
+    public static ByteBuffer toByteBuffer(List<? extends AbstractMessage> messages)
             throws IOException {
         // TODO optimize byte copying
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        for (AbstractMessageLite message : messages) {
+        for (AbstractMessage message : messages) {
             message.writeDelimitedTo(output);
         }
         return ByteBuffer.wrap(output.toByteArray());
     }
 
-    public static <T extends /*@NonNull*/ AbstractMessageLite> List<T> parseDelimitedFrom(
+    public static <T extends /*@NonNull*/ AbstractMessage> List<T> parseDelimitedFrom(
             @Nullable ByteBuffer byteBuf, Parser<T> parser) throws IOException {
         if (byteBuf == null) {
             return ImmutableList.of();

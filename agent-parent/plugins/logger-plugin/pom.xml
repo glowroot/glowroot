@@ -20,6 +20,7 @@
     <logback.version>1.1.7</logback.version>
     <slf4j.version>1.7.21</slf4j.version>
     <log4j.version>1.2.17</log4j.version>
+    <!-- tests fail with log4j 2.6 due to https://github.com/apache/logging-log4j2/pull/31 -->
     <log4j2x.version>2.5</log4j2x.version>
     <commons.logging.version>1.2</commons.logging.version>
   </properties>
