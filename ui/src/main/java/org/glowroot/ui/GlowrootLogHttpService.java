@@ -60,7 +60,7 @@ class GlowrootLogHttpService implements HttpService {
 
     @Override
     public String getPermission() {
-        return "log:view";
+        return "agent:view:log";
     }
 
     @Override

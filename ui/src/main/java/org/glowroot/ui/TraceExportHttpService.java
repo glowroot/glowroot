@@ -66,7 +66,7 @@ class TraceExportHttpService implements HttpService {
 
     @Override
     public String getPermission() {
-        return "trace:view";
+        return "agent:view:trace";
     }
 
     @Override

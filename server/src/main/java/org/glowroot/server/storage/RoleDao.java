@@ -64,7 +64,8 @@ public class RoleDao {
             BoundStatement boundStatement = insertPS.bind();
             int i = 0;
             boundStatement.setString(i++, "Administrator");
-            boundStatement.setSet(i++, ImmutableSet.of("admin"));
+            boundStatement.setSet(i++, ImmutableSet.of("agent:*:view", "agent:*:tool",
+                    "agent:*:config:view", "agent:*:config:edit", "admin"));
             session.execute(boundStatement);
         }
     }

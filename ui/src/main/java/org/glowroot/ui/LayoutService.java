@@ -107,6 +107,7 @@ class LayoutService {
                     .build());
             showNavbarConfig = checkNotNull(permissions.config()).view();
         } else if (!fat) {
+            hasSomeAccess = subject.isPermitted("admin");
             for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
                 if (!isPermitted(subject, agentRollup.name(), "agent:view")) {
                     continue;
