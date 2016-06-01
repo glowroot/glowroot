@@ -22,6 +22,11 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
+import org.apache.shiro.authc.credential.PasswordMatcher;
+import org.apache.shiro.authc.credential.PasswordService;
+import org.apache.shiro.mgt.DefaultSecurityManager;
+import org.apache.shiro.mgt.SecurityManager;
+import org.apache.shiro.realm.AuthorizingRealm;
 import org.immutables.builder.Builder;
 
 import org.glowroot.common.live.LiveAggregateRepository;
@@ -66,14 +71,18 @@ public class UiModule {
             int numWorkerThreads,
             String version) throws Exception {
 
+        AuthorizingRealm realm = new GlowrootRealm(configRepository);
+        realm.setAuthorizationCachingEnabled(false);
+        PasswordMatcher passwordMatcher = new PasswordMatcher();
+        realm.setCredentialsMatcher(passwordMatcher);
+        PasswordService passwordService = passwordMatcher.getPasswordService();
+
         LayoutService layoutService = new LayoutService(fat, version, configRepository,
                 agentRepository, transactionTypeRepository);
-        HttpSessionManager httpSessionManager =
-                new HttpSessionManager(fat, configRepository, clock, layoutService);
-        IndexHtmlHttpService indexHtmlHttpService =
-                new IndexHtmlHttpService(httpSessionManager, layoutService);
-        LayoutHttpService layoutHttpService =
-                new LayoutHttpService(httpSessionManager, layoutService);
+        SecurityManager securityManager = new DefaultSecurityManager(realm);
+        SessionHelper sessionHelper = new SessionHelper(configRepository, layoutService);
+        IndexHtmlHttpService indexHtmlHttpService = new IndexHtmlHttpService(layoutService);
+        LayoutHttpService layoutHttpService = new LayoutHttpService(layoutService);
         TransactionCommonService transactionCommonService = new TransactionCommonService(
                 aggregateRepository, liveAggregateRepository, configRepository, clock);
         TraceCommonService traceCommonService =
@@ -97,8 +106,8 @@ public class UiModule {
                 gaugeValueRepository, rollupLevelService, configRepository);
         AlertConfigJsonService alertJsonService = new AlertConfigJsonService(configRepository);
         AdminJsonService adminJsonService = new AdminJsonService(fat, configRepository, repoAdmin,
-                new MailService(), aggregateRepository, traceRepository, transactionTypeRepository,
-                gaugeValueRepository);
+                new MailService(), passwordService, aggregateRepository,
+                traceRepository, transactionTypeRepository, gaugeValueRepository);
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(transactionJsonService);
@@ -106,7 +115,7 @@ public class UiModule {
         jsonServices.add(traceJsonService);
         jsonServices.add(errorJsonService);
         jsonServices.add(configJsonService);
-        jsonServices.add(new UserConfigJsonService(configRepository));
+        jsonServices.add(new UserConfigJsonService(configRepository, passwordService));
         jsonServices.add(new RoleConfigJsonService(fat, configRepository, agentRepository));
         jsonServices.add(gaugeValueJsonService);
         jsonServices.add(new JvmJsonService(agentRepository, liveJvmService));
@@ -121,9 +130,10 @@ public class UiModule {
         jsonServices.add(adminJsonService);
 
         int port = configRepository.getWebConfig().port();
-        LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, httpSessionManager,
-                indexHtmlHttpService, layoutHttpService, layoutService, traceDetailHttpService,
-                traceExportHttpService, glowrootLogHttpService, jsonServices, numWorkerThreads);
+        LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, securityManager,
+                sessionHelper, indexHtmlHttpService, layoutHttpService, layoutService,
+                traceDetailHttpService, traceExportHttpService, glowrootLogHttpService,
+                jsonServices, numWorkerThreads);
 
         lazyHttpServer.init(adminJsonService);
         return new UiModule(lazyHttpServer);

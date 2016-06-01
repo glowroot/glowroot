@@ -29,8 +29,7 @@ import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpRequest;
-
-import org.glowroot.ui.HttpSessionManager.Authentication;
+import org.apache.shiro.SecurityUtils;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -51,11 +50,9 @@ class IndexHtmlHttpService implements HttpService {
         }
     }
 
-    private final HttpSessionManager httpSessionManager;
     private final LayoutService layoutJsonService;
 
-    IndexHtmlHttpService(HttpSessionManager httpSessionManager, LayoutService layoutJsonService) {
-        this.httpSessionManager = httpSessionManager;
+    IndexHtmlHttpService(LayoutService layoutJsonService) {
         this.layoutJsonService = layoutJsonService;
     }
 
@@ -70,15 +67,10 @@ class IndexHtmlHttpService implements HttpService {
             throws Exception {
         URL url = Resources.getResource("org/glowroot/ui/app-dist/index.html");
         String indexHtml = Resources.toString(url, Charsets.UTF_8);
-        Authentication authentication = httpSessionManager.getAuthentication(request);
-        String layout;
-        if (authentication == null) {
-            layout = layoutJsonService.getNeedsAuthenticationLayout();
-        } else {
-            layout = layoutJsonService.getLayout(authentication);
-        }
-        String username = authentication == null ? "" : authentication.username();
-        String layoutScript = "var layout=" + layout + ";var username = '" + username + "'";
+        String layout = layoutJsonService.getLayout();
+        String username = (String) SecurityUtils.getSubject().getPrincipal();
+        String layoutScript =
+                "var layout=" + layout + ";var username = '" + Strings.nullToEmpty(username) + "'";
         indexHtml = indexHtml.replaceFirst("<base href=\"/\">",
                 "<base href=\"" + BASE_HREF + "\"><script>" + layoutScript + "</script>");
         // this is to work around an issue with IE10-11 (IE9 is OK)

@@ -40,6 +40,7 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Slf4JLoggerFactory;
+import org.apache.shiro.mgt.SecurityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,8 +61,8 @@ class HttpServer {
     private volatile int port;
 
     HttpServer(String bindAddress, int port, int numWorkerThreads, LayoutService layoutService,
-            Map<Pattern, HttpService> httpServices, HttpSessionManager httpSessionManager,
-            List<Object> jsonServices) throws Exception {
+            Map<Pattern, HttpService> httpServices, SecurityManager securityManager,
+            SessionHelper sessionHelper, List<Object> jsonServices) throws Exception {
 
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
 
@@ -73,7 +74,7 @@ class HttpServer {
         workerGroup = new NioEventLoopGroup(numWorkerThreads, workerThreadFactory);
 
         final HttpServerHandler handler = new HttpServerHandler(layoutService, httpServices,
-                httpSessionManager, jsonServices);
+                securityManager, sessionHelper, jsonServices);
 
         bootstrap = new ServerBootstrap();
         bootstrap.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)

@@ -27,6 +27,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
+import org.apache.shiro.authc.credential.PasswordService;
+import org.apache.shiro.subject.Subject;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
@@ -71,6 +73,7 @@ class AdminJsonService {
     private final ConfigRepository configRepository;
     private final RepoAdmin repoAdmin;
     private final MailService mailService;
+    private final PasswordService passwordService;
 
     private final AggregateRepository aggregateRepository;
     private final TraceRepository traceRepository;
@@ -80,13 +83,15 @@ class AdminJsonService {
     private volatile @MonotonicNonNull HttpServer httpServer;
 
     AdminJsonService(boolean fat, ConfigRepository configRepository, RepoAdmin repoAdmin,
-            MailService mailService, AggregateRepository aggregateRepository,
-            TraceRepository traceRepository, TransactionTypeRepository transactionTypeRepository,
+            MailService mailService, PasswordService passwordService,
+            AggregateRepository aggregateRepository, TraceRepository traceRepository,
+            TransactionTypeRepository transactionTypeRepository,
             GaugeValueRepository gaugeValueRepository) {
         this.fat = fat;
         this.configRepository = configRepository;
         this.repoAdmin = repoAdmin;
         this.mailService = mailService;
+        this.passwordService = passwordService;
         this.aggregateRepository = aggregateRepository;
         this.traceRepository = traceRepository;
         this.transactionTypeRepository = transactionTypeRepository;
@@ -99,16 +104,16 @@ class AdminJsonService {
 
     // all users have permission to change their own password
     @POST(path = "/backend/change-password", permission = "")
-    String changePassword(@BindRequest ChangePassword changePassword, @BindUsername String username)
+    String changePassword(@BindRequest ChangePassword changePassword, @BindSubject Subject subject)
             throws Exception {
-        UserConfig userConfig = configRepository.getUserConfig(username);
+        UserConfig userConfig = configRepository.getUserConfig((String) subject.getPrincipal());
         checkNotNull(userConfig, "user no longer exists");
-        if (!PasswordHash.validatePassword(changePassword.currentPassword(),
+        if (!passwordService.passwordsMatch(changePassword.currentPassword(),
                 userConfig.passwordHash())) {
             return "{\"currentPasswordIncorrect\":true}";
         }
         ImmutableUserConfig updatedUserConfig = ImmutableUserConfig.builder().copyFrom(userConfig)
-                .passwordHash(PasswordHash.createHash(changePassword.newPassword()))
+                .passwordHash(passwordService.encryptPassword(changePassword.newPassword()))
                 .build();
         configRepository.updateUserConfig(updatedUserConfig, userConfig.version());
         return "";

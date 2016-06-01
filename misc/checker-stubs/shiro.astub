@@ -1,0 +1,8 @@
+import org.checkerframework.checker.nullness.qual.*;
+
+/* ========================================================================== */
+package org.apache.shiro.subject;
+
+public class Subject {
+    <V extends @Nullable Object> V execute(Callable<V> callable);
+}

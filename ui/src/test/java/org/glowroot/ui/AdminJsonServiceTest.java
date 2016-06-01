@@ -19,6 +19,7 @@ import java.net.InetAddress;
 
 import javax.mail.Message;
 
+import org.apache.shiro.authc.credential.PasswordService;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,9 +44,9 @@ public class AdminJsonServiceTest {
     public void beforeEachTest() {
         mailService = new MockMailService();
         adminJsonService = new AdminJsonService(false, mock(ConfigRepository.class),
-                mock(RepoAdmin.class), mailService, mock(AggregateRepository.class),
-                mock(TraceRepository.class), mock(TransactionTypeRepository.class),
-                mock(GaugeValueRepository.class));
+                mock(RepoAdmin.class), mailService, mock(PasswordService.class),
+                mock(AggregateRepository.class), mock(TraceRepository.class),
+                mock(TransactionTypeRepository.class), mock(GaugeValueRepository.class));
     }
 
     @Test

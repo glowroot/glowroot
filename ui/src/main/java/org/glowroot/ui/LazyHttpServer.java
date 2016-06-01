@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.Maps;
+import org.apache.shiro.mgt.SecurityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,8 @@ class LazyHttpServer {
 
     private final String bindAddress;
     private final int port;
-    private final HttpSessionManager httpSessionManager;
+    private final SecurityManager securityManager;
+    private final SessionHelper sessionHelper;
     private final IndexHtmlHttpService indexHtmlHttpService;
     private final LayoutHttpService layoutHttpService;
     private final LayoutService layoutService;
@@ -46,15 +48,17 @@ class LazyHttpServer {
 
     private volatile @Nullable HttpServer httpServer;
 
-    LazyHttpServer(String bindAddress, int port, HttpSessionManager httpSessionManager,
-            IndexHtmlHttpService indexHtmlHttpService, LayoutHttpService layoutHttpService,
-            LayoutService layoutService, TraceDetailHttpService traceDetailHttpService,
+    LazyHttpServer(String bindAddress, int port, SecurityManager securityManager,
+            SessionHelper sessionHelper, IndexHtmlHttpService indexHtmlHttpService,
+            LayoutHttpService layoutHttpService, LayoutService layoutService,
+            TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService,
             GlowrootLogHttpService glowrootLogHttpService, List<Object> jsonServices,
             int numWorkerThreads) {
         this.bindAddress = bindAddress;
         this.port = port;
-        this.httpSessionManager = httpSessionManager;
+        this.securityManager = securityManager;
+        this.sessionHelper = sessionHelper;
         this.indexHtmlHttpService = indexHtmlHttpService;
         this.layoutHttpService = layoutHttpService;
         this.layoutService = layoutService;
@@ -105,7 +109,7 @@ class LazyHttpServer {
         // services
         try {
             return new HttpServer(bindAddress, port, numWorkerThreads, layoutService, httpServices,
-                    httpSessionManager, jsonServices);
+                    securityManager, sessionHelper, jsonServices);
         } catch (Exception e) {
             // binding to the specified port failed and binding to port 0 (any port) failed
             logger.error("error binding to any port, the user interface will not be available", e);

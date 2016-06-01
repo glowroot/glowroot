@@ -19,17 +19,13 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpRequest;
 
-import org.glowroot.ui.HttpSessionManager.Authentication;
-
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 class LayoutHttpService implements HttpService {
 
-    private final HttpSessionManager httpSessionManager;
     private final LayoutService layoutJsonService;
 
-    LayoutHttpService(HttpSessionManager httpSessionManager, LayoutService layoutJsonService) {
-        this.httpSessionManager = httpSessionManager;
+    LayoutHttpService(LayoutService layoutJsonService) {
         this.layoutJsonService = layoutJsonService;
     }
 
@@ -42,13 +38,6 @@ class LayoutHttpService implements HttpService {
     @Override
     public FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
             throws Exception {
-        Authentication authentication = httpSessionManager.getAuthentication(request);
-        String layout;
-        if (authentication == null) {
-            layout = layoutJsonService.getNeedsAuthenticationLayout();
-        } else {
-            layout = layoutJsonService.getLayout(authentication);
-        }
-        return HttpServices.createJsonResponse(layout, OK);
+        return HttpServices.createJsonResponse(layoutJsonService.getLayout(), OK);
     }
 }

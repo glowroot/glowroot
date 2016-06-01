@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.apache.shiro.authc.credential.PasswordService;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,9 +58,11 @@ class UserConfigJsonService {
     };
 
     private final ConfigRepository configRepository;
+    private final PasswordService passwordService;
 
-    UserConfigJsonService(ConfigRepository configRepository) {
+    UserConfigJsonService(ConfigRepository configRepository, PasswordService passwordService) {
         this.configRepository = configRepository;
+        this.passwordService = passwordService;
     }
 
     @GET(path = "/backend/admin/users", permission = "admin:view:user")
@@ -85,7 +88,7 @@ class UserConfigJsonService {
 
     @POST(path = "/backend/admin/users/add", permission = "admin:edit:user")
     String addUser(@BindRequest UserConfigDto userConfigDto) throws Exception {
-        UserConfig userConfig = userConfigDto.convert(null);
+        UserConfig userConfig = userConfigDto.convert(null, passwordService);
         try {
             configRepository.insertUserConfig(userConfig);
         } catch (DuplicateUsernameException e) {
@@ -102,7 +105,7 @@ class UserConfigJsonService {
         if (existingUserConfig == null) {
             throw new UserNotFoundException();
         }
-        UserConfig userConfig = userConfigDto.convert(existingUserConfig);
+        UserConfig userConfig = userConfigDto.convert(existingUserConfig, passwordService);
         String version = userConfigDto.version().get();
         try {
             configRepository.updateUserConfig(userConfig, version);
@@ -161,7 +164,8 @@ class UserConfigJsonService {
         abstract ImmutableList<String> roles();
         abstract Optional<String> version(); // absent for insert operations
 
-        private UserConfig convert(@Nullable UserConfig existingUserConfig)
+        private UserConfig convert(@Nullable UserConfig existingUserConfig,
+                PasswordService passwordService)
                 throws GeneralSecurityException {
             String passwordHash;
             String newPassword = newPassword();
@@ -170,7 +174,7 @@ class UserConfigJsonService {
             } else if (newPassword.isEmpty()) {
                 passwordHash = checkNotNull(existingUserConfig).passwordHash();
             } else {
-                passwordHash = PasswordHash.createHash(newPassword);
+                passwordHash = passwordService.encryptPassword(newPassword);
             }
             return ImmutableUserConfig.builder()
                     .username(username())
