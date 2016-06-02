@@ -15,11 +15,13 @@
  */
 package org.glowroot.ui;
 
+import java.io.StringWriter;
 import java.net.InetAddress;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
@@ -27,7 +29,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
+import org.apache.shiro.authc.AuthenticationException;
+import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.authc.credential.PasswordService;
+import org.apache.shiro.realm.ldap.JndiLdapRealm;
 import org.apache.shiro.subject.Subject;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -38,10 +43,12 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.storage.config.FatStorageConfig;
 import org.glowroot.storage.config.ImmutableFatStorageConfig;
+import org.glowroot.storage.config.ImmutableLdapConfig;
 import org.glowroot.storage.config.ImmutableServerStorageConfig;
 import org.glowroot.storage.config.ImmutableSmtpConfig;
 import org.glowroot.storage.config.ImmutableUserConfig;
 import org.glowroot.storage.config.ImmutableWebConfig;
+import org.glowroot.storage.config.LdapConfig;
 import org.glowroot.storage.config.ServerStorageConfig;
 import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.config.UserConfig;
@@ -147,6 +154,11 @@ class AdminJsonService {
                 .build());
     }
 
+    @GET(path = "/backend/admin/ldap", permission = "admin:view:ldap")
+    String getLdapConfig() throws Exception {
+        return mapper.writeValueAsString(LdapConfigDto.create(configRepository.getLdapConfig()));
+    }
+
     @POST(path = "/backend/admin/web", permission = "admin:edit:web")
     Object updateWebConfig(@BindRequest WebConfigDto configDto) throws Exception {
         // this code cannot be reached when httpServer is null
@@ -197,12 +209,47 @@ class AdminJsonService {
         return getSmtpConfig();
     }
 
+    @POST(path = "/backend/admin/ldap", permission = "admin:edit:ldap")
+    String updateLdapConfig(@BindRequest LdapConfigDto configDto) throws Exception {
+        try {
+            configRepository.updateLdapConfig(configDto.convert(), configDto.version());
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getLdapConfig();
+    }
+
     @POST(path = "/backend/admin/send-test-email", permission = "admin:edit:smtp")
     void sendTestEmail(@BindRequest SmtpConfigDto configDto) throws Exception {
         String testEmailRecipient = configDto.testEmailRecipient();
         checkNotNull(testEmailRecipient);
         AlertingService.sendTestEmails(testEmailRecipient, configDto.convert(configRepository),
                 configRepository, mailService);
+    }
+
+    @POST(path = "/backend/admin/test-ldap-connection", permission = "admin:edit:ldap")
+    String testLdapConnection(@BindRequest LdapConfigDto configDto) throws Exception {
+        JndiLdapRealm jndiLdapRealm = new JndiLdapRealm();
+        GlowrootLdapRealm.init(jndiLdapRealm, configDto.convert());
+        try {
+            jndiLdapRealm.getAuthenticationInfo(
+                    new UsernamePasswordToken(checkNotNull(configDto.testLdapUsername()),
+                            checkNotNull(configDto.testLdapPassword())));
+        } catch (AuthenticationException e) {
+            logger.debug(e.getMessage(), e);
+            Throwable cause = e.getCause();
+            String message =
+                    cause == null ? e.getMessage() : "Authentication failed " + cause.getMessage();
+            StringWriter sw = new StringWriter();
+            JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+            jg.writeStartObject();
+            jg.writeBooleanField("error", true);
+            jg.writeStringField("message", message);
+            jg.writeEndObject();
+            jg.close();
+            return sw.toString();
+        }
+        return "{}";
     }
 
     @POST(path = "/backend/admin/delete-all-stored-data", permission = "admin:edit:storage")
@@ -355,13 +402,11 @@ class AdminJsonService {
         abstract String username();
         abstract boolean passwordExists();
         abstract Map<String, String> additionalProperties();
-        // only used in request
         @Value.Default
-        String newPassword() {
+        String newPassword() { // only used in request
             return "";
         }
-        // only used in request
-        abstract @Nullable String testEmailRecipient();
+        abstract @Nullable String testEmailRecipient(); // only used in request
         abstract String version();
 
         private SmtpConfig convert(ConfigRepository configRepository) throws Exception {
@@ -399,6 +444,34 @@ class AdminJsonService {
                     .username(config.username())
                     .passwordExists(!config.encryptedPassword().isEmpty())
                     .putAllAdditionalProperties(config.additionalProperties())
+                    .version(config.version())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class LdapConfigDto {
+
+        abstract String url();
+        abstract String userDnTemplate();
+        abstract String authenticationMechanism();
+        abstract @Nullable String testLdapUsername(); // only used in request
+        abstract @Nullable String testLdapPassword(); // only used in request
+        abstract String version();
+
+        private LdapConfig convert() throws Exception {
+            return ImmutableLdapConfig.builder()
+                    .url(url())
+                    .userDnTemplate(userDnTemplate())
+                    .authenticationMechanism(authenticationMechanism())
+                    .build();
+        }
+
+        private static LdapConfigDto create(LdapConfig config) {
+            return ImmutableLdapConfigDto.builder()
+                    .url(config.url())
+                    .userDnTemplate(config.userDnTemplate())
+                    .authenticationMechanism(config.authenticationMechanism())
                     .version(config.version())
                     .build();
         }

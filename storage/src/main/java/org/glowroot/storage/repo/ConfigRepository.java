@@ -26,6 +26,7 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
 import org.glowroot.storage.config.FatStorageConfig;
+import org.glowroot.storage.config.LdapConfig;
 import org.glowroot.storage.config.RoleConfig;
 import org.glowroot.storage.config.ServerStorageConfig;
 import org.glowroot.storage.config.SmtpConfig;
@@ -49,6 +50,7 @@ public interface ConfigRepository {
     String WEB_KEY = "web";
     String STORAGE_KEY = "storage";
     String SMTP_KEY = "smtp";
+    String LDAP_KEY = "ldap";
 
     long ROLLUP_0_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.0.intervalMillis", 60 * 1000); // 1 minute
@@ -109,6 +111,8 @@ public interface ConfigRepository {
     ServerStorageConfig getServerStorageConfig();
 
     SmtpConfig getSmtpConfig();
+
+    LdapConfig getLdapConfig();
 
     void updateTransactionConfig(String agentId, TransactionConfig transactionConfig,
             String priorVersion) throws Exception;
@@ -171,6 +175,8 @@ public interface ConfigRepository {
             throws Exception;
 
     void updateSmtpConfig(SmtpConfig smtpConfig, String priorVersion) throws Exception;
+
+    void updateLdapConfig(LdapConfig ldapConfig, String priorVersion) throws Exception;
 
     StorageConfig getStorageConfig();
 

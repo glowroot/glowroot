@@ -156,6 +156,7 @@ class UserConfigJsonService {
     abstract static class UserConfigDto {
 
         abstract String username();
+        abstract boolean ldap();
         // only used in request
         @Value.Default
         String newPassword() {
@@ -178,6 +179,7 @@ class UserConfigJsonService {
             }
             return ImmutableUserConfig.builder()
                     .username(username())
+                    .ldap(ldap())
                     .passwordHash(passwordHash)
                     .roles(roles())
                     .build();
@@ -186,6 +188,7 @@ class UserConfigJsonService {
         private static UserConfigDto create(UserConfig userConfig) {
             return ImmutableUserConfigDto.builder()
                     .username(userConfig.username())
+                    .ldap(userConfig.ldap())
                     .roles(userConfig.roles())
                     .version(userConfig.version())
                     .build();

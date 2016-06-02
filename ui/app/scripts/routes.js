@@ -478,6 +478,11 @@ glowroot.config([
       templateUrl: 'views/admin/smtp.html',
       controller: 'AdminSmtpCtrl'
     });
+    $stateProvider.state('admin.ldap', {
+      url: '/ldap',
+      templateUrl: 'views/admin/ldap.html',
+      controller: 'AdminLdapCtrl'
+    });
     $stateProvider.state('admin.changePassword', {
       url: '^/change-password',
       templateUrl: 'views/change-password.html',

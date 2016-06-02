@@ -18,33 +18,30 @@ package org.glowroot.storage.config;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.google.common.collect.ImmutableSet;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Versions;
 
 @Value.Immutable
-public abstract class UserConfig {
+public abstract class LdapConfig {
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
-    public String username() {
+    public String url() {
         return "";
     }
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
-    public String passwordHash() {
+    public String userDnTemplate() {
         return "";
     }
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
-    public boolean ldap() {
-        return false;
+    public String authenticationMechanism() {
+        return "";
     }
-
-    public abstract ImmutableSet<String> roles();
 
     @Value.Derived
     @JsonIgnore

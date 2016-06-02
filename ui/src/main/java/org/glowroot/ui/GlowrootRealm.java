@@ -17,7 +17,6 @@ package org.glowroot.ui;
 
 import javax.annotation.Nullable;
 
-import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.SimpleAccount;
@@ -45,6 +44,13 @@ class GlowrootRealm extends AuthorizingRealm {
     }
 
     @Override
+    public boolean supports(AuthenticationToken token) {
+        String username = (String) token.getPrincipal();
+        UserConfig userConfig = getUserConfigCaseInsensitive(username);
+        return userConfig != null && !userConfig.ldap();
+    }
+
+    @Override
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
         String username = (String) principals.getPrimaryPrincipal();
         UserConfig userConfig = getUserConfigCaseInsensitive(username);
@@ -61,16 +67,13 @@ class GlowrootRealm extends AuthorizingRealm {
     }
 
     @Override
-    protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token)
-            throws AuthenticationException {
+    protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) {
         UsernamePasswordToken upToken = (UsernamePasswordToken) token;
         UserConfig userConfig = getUserConfigCaseInsensitive(upToken.getUsername());
         if (userConfig == null) {
             throw new UnknownAccountException();
         }
-        SimpleAccount authenticationInfo =
-                new SimpleAccount(userConfig.username(), userConfig.passwordHash(), GLOWROOT_REALM);
-        return authenticationInfo;
+        return new SimpleAccount(userConfig.username(), userConfig.passwordHash(), GLOWROOT_REALM);
     }
 
     private @Nullable UserConfig getUserConfigCaseInsensitive(String username) {

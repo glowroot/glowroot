@@ -65,7 +65,7 @@ public class ObjectMappers {
     public static ObjectMapper create(Module... extraModules) {
         SimpleModule module = new SimpleModule();
 
-        module.addSerializer(Boolean.class, new BooleanSerializer(Boolean.class));
+        module.addSerializer(boolean.class, new BooleanSerializer(Boolean.class));
         module.addSerializer(Enum.class, new EnumSerializer(Enum.class));
         module.setDeserializerModifier(new EnumDeserializerModifier());
 

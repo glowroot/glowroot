@@ -42,9 +42,11 @@ import org.glowroot.common.util.Versions;
 import org.glowroot.server.DownstreamServiceImpl;
 import org.glowroot.storage.config.FatStorageConfig;
 import org.glowroot.storage.config.ImmutableFatStorageConfig;
+import org.glowroot.storage.config.ImmutableLdapConfig;
 import org.glowroot.storage.config.ImmutableServerStorageConfig;
 import org.glowroot.storage.config.ImmutableSmtpConfig;
 import org.glowroot.storage.config.ImmutableWebConfig;
+import org.glowroot.storage.config.LdapConfig;
 import org.glowroot.storage.config.RoleConfig;
 import org.glowroot.storage.config.ServerStorageConfig;
 import org.glowroot.storage.config.SmtpConfig;
@@ -103,6 +105,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     private final Object webConfigLock = new Object();
     private final Object storageConfigLock = new Object();
     private final Object smtpConfigLock = new Object();
+    private final Object ldapConfigLock = new Object();
 
     public ConfigRepositoryImpl(ServerConfigDao serverConfigDao, AgentDao agentDao, UserDao userDao,
             RoleDao roleDao) {
@@ -290,6 +293,15 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         SmtpConfig config = serverConfigDao.read(SMTP_KEY, ImmutableSmtpConfig.class);
         if (config == null) {
             return ImmutableSmtpConfig.builder().build();
+        }
+        return config;
+    }
+
+    @Override
+    public LdapConfig getLdapConfig() {
+        LdapConfig config = serverConfigDao.read(LDAP_KEY, ImmutableLdapConfig.class);
+        if (config == null) {
+            return ImmutableLdapConfig.builder().build();
         }
         return config;
     }
@@ -796,6 +808,16 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 throw new OptimisticLockException();
             }
             serverConfigDao.write(SMTP_KEY, smtpConfig);
+        }
+    }
+
+    @Override
+    public void updateLdapConfig(LdapConfig smtpConfig, String priorVersion) throws Exception {
+        synchronized (ldapConfigLock) {
+            if (!getLdapConfig().version().equals(priorVersion)) {
+                throw new OptimisticLockException();
+            }
+            serverConfigDao.write(LDAP_KEY, smtpConfig);
         }
     }
 

@@ -47,10 +47,12 @@ import org.glowroot.agent.config.UserRecordingConfig;
 import org.glowroot.common.util.Versions;
 import org.glowroot.storage.config.FatStorageConfig;
 import org.glowroot.storage.config.ImmutableFatStorageConfig;
+import org.glowroot.storage.config.ImmutableLdapConfig;
 import org.glowroot.storage.config.ImmutableRoleConfig;
 import org.glowroot.storage.config.ImmutableSmtpConfig;
 import org.glowroot.storage.config.ImmutableUserConfig;
 import org.glowroot.storage.config.ImmutableWebConfig;
+import org.glowroot.storage.config.LdapConfig;
 import org.glowroot.storage.config.RoleConfig;
 import org.glowroot.storage.config.ServerStorageConfig;
 import org.glowroot.storage.config.SmtpConfig;
@@ -81,6 +83,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     private volatile WebConfig webConfig;
     private volatile FatStorageConfig storageConfig;
     private volatile SmtpConfig smtpConfig;
+    private volatile LdapConfig ldapConfig;
 
     // volatile not needed as access is guarded by secretFile
     private @MonotonicNonNull SecretKey secretKey;
@@ -154,6 +157,12 @@ class ConfigRepositoryImpl implements ConfigRepository {
             this.smtpConfig = ImmutableSmtpConfig.builder().build();
         } else {
             this.smtpConfig = smtpConfig;
+        }
+        LdapConfig ldapConfig = configService.getAdminConfig(LDAP_KEY, ImmutableLdapConfig.class);
+        if (ldapConfig == null) {
+            this.ldapConfig = ImmutableLdapConfig.builder().build();
+        } else {
+            this.ldapConfig = ldapConfig;
         }
     }
 
@@ -305,6 +314,11 @@ class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public SmtpConfig getSmtpConfig() {
         return smtpConfig;
+    }
+
+    @Override
+    public LdapConfig getLdapConfig() {
+        return ldapConfig;
     }
 
     @Override
@@ -750,6 +764,15 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public void updateLdapConfig(LdapConfig updatedConfig, String priorVersion) throws Exception {
+        synchronized (writeLock) {
+            checkVersionsEqual(ldapConfig.version(), priorVersion);
+            configService.updateAdminConfig(LDAP_KEY, updatedConfig);
+            ldapConfig = updatedConfig;
+        }
+    }
+
+    @Override
     public StorageConfig getStorageConfig() {
         return getFatStorageConfig();
     }
@@ -804,6 +827,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
         configs.put(WEB_KEY, webConfig);
         configs.put(STORAGE_KEY, storageConfig);
         configs.put(SMTP_KEY, smtpConfig);
+        configs.put(LDAP_KEY, ldapConfig);
         configService.updateAdminConfigs(configs);
     }
 

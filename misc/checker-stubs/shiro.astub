@@ -6,3 +6,22 @@ package org.apache.shiro.subject;
 public class Subject {
     <V extends @Nullable Object> V execute(Callable<V> callable);
 }
+
+/* ========================================================================== */
+package org.apache.shiro.realm;
+
+public class AuthenticatingRealm {
+    @Nullable AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token);
+}
+
+public class AuthorizingRealm {
+    @Nullable AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals);
+}
+
+/* ========================================================================== */
+package org.apache.shiro.realm.ldap;
+
+public class JndiLdapRealm {
+    @Nullable AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token);
+    @Nullable AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals);
+}

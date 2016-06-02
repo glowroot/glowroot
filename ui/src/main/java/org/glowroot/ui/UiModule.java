@@ -21,12 +21,13 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.shiro.authc.credential.PasswordMatcher;
 import org.apache.shiro.authc.credential.PasswordService;
 import org.apache.shiro.mgt.DefaultSecurityManager;
 import org.apache.shiro.mgt.SecurityManager;
-import org.apache.shiro.realm.AuthorizingRealm;
+import org.apache.shiro.realm.Realm;
 import org.immutables.builder.Builder;
 
 import org.glowroot.common.live.LiveAggregateRepository;
@@ -71,15 +72,16 @@ public class UiModule {
             int numWorkerThreads,
             String version) throws Exception {
 
-        AuthorizingRealm realm = new GlowrootRealm(configRepository);
-        realm.setAuthorizationCachingEnabled(false);
+        GlowrootRealm glowrootRealm = new GlowrootRealm(configRepository);
+        glowrootRealm.setAuthorizationCachingEnabled(false);
         PasswordMatcher passwordMatcher = new PasswordMatcher();
-        realm.setCredentialsMatcher(passwordMatcher);
+        glowrootRealm.setCredentialsMatcher(passwordMatcher);
         PasswordService passwordService = passwordMatcher.getPasswordService();
-
+        GlowrootLdapRealm glowrootLdapRealm = new GlowrootLdapRealm(configRepository);
         LayoutService layoutService = new LayoutService(fat, version, configRepository,
                 agentRepository, transactionTypeRepository);
-        SecurityManager securityManager = new DefaultSecurityManager(realm);
+        SecurityManager securityManager = new DefaultSecurityManager(
+                ImmutableList.<Realm>of(glowrootRealm, glowrootLdapRealm));
         SessionHelper sessionHelper = new SessionHelper(configRepository, layoutService);
         IndexHtmlHttpService indexHtmlHttpService = new IndexHtmlHttpService(layoutService);
         LayoutHttpService layoutHttpService = new LayoutHttpService(layoutService);
