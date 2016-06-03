@@ -83,7 +83,10 @@ class UserConfigJsonService {
 
     @GET(path = "/backend/admin/all-role-names", permission = "admin:edit:user")
     String getAllRoleNames() throws JsonProcessingException {
-        return mapper.writeValueAsString(getAllRoleNamesInternal());
+        return mapper.writeValueAsString(ImmutableAllRolesResponse.builder()
+                .allRoles(getAllRoleNamesInternal())
+                .ldapAvailable(!configRepository.getLdapConfig().url().isEmpty())
+                .build());
     }
 
     @POST(path = "/backend/admin/users/add", permission = "admin:edit:user")
@@ -130,6 +133,7 @@ class UserConfigJsonService {
         return mapper.writeValueAsString(ImmutableUserConfigResponse.builder()
                 .config(UserConfigDto.create(userConfig))
                 .allRoles(getAllRoleNamesInternal())
+                .ldapAvailable(!configRepository.getLdapConfig().url().isEmpty())
                 .build());
     }
 
@@ -149,7 +153,14 @@ class UserConfigJsonService {
     @Value.Immutable
     interface UserConfigResponse {
         UserConfigDto config();
-        abstract ImmutableList<String> allRoles();
+        ImmutableList<String> allRoles();
+        boolean ldapAvailable();
+    }
+
+    @Value.Immutable
+    interface AllRolesResponse {
+        ImmutableList<String> allRoles();
+        boolean ldapAvailable();
     }
 
     @Value.Immutable
@@ -170,7 +181,7 @@ class UserConfigJsonService {
                 throws GeneralSecurityException {
             String passwordHash;
             String newPassword = newPassword();
-            if (username().toLowerCase(Locale.ENGLISH).equals("<anonymous>")) {
+            if (ldap() || username().toLowerCase(Locale.ENGLISH).equals("<anonymous>")) {
                 passwordHash = "";
             } else if (newPassword.isEmpty()) {
                 passwordHash = checkNotNull(existingUserConfig).passwordHash();

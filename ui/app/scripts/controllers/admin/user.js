@@ -77,6 +77,7 @@ glowroot.controller('AdminUserCtrl', [
           available: value.available
         });
       });
+      $scope.ldapAvailable = data.ldapAvailable;
     }
 
     if ($scope.username) {
@@ -94,7 +95,8 @@ glowroot.controller('AdminUserCtrl', [
               config: {
                 roles: []
               },
-              allRoles: data
+              allRoles: data.allRoles,
+              ldapAvailable: data.ldapAvailable
             });
           })
           .error(httpErrors.handler($scope));
