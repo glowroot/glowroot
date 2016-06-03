@@ -257,6 +257,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public boolean namedUsersExist() {
+        return userDao.namedUsersExist();
+    }
+
+    @Override
     public List<RoleConfig> getRoleConfigs() {
         return roleDao.read();
     }

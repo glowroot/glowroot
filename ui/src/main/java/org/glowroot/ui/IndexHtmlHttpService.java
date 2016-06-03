@@ -29,7 +29,6 @@ import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpRequest;
-import org.apache.shiro.SecurityUtils;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -68,11 +67,8 @@ class IndexHtmlHttpService implements HttpService {
         URL url = Resources.getResource("org/glowroot/ui/app-dist/index.html");
         String indexHtml = Resources.toString(url, Charsets.UTF_8);
         String layout = layoutJsonService.getLayout();
-        String username = (String) SecurityUtils.getSubject().getPrincipal();
-        String layoutScript =
-                "var layout=" + layout + ";var username = '" + Strings.nullToEmpty(username) + "'";
         indexHtml = indexHtml.replaceFirst("<base href=\"/\">",
-                "<base href=\"" + BASE_HREF + "\"><script>" + layoutScript + "</script>");
+                "<base href=\"" + BASE_HREF + "\"><script>var layout=" + layout + "</script>");
         // this is to work around an issue with IE10-11 (IE9 is OK)
         // (even without reverse proxy/non-root base href)
         // IE doesn't use the base href when loading the favicon
@@ -80,7 +76,7 @@ class IndexHtmlHttpService implements HttpService {
                 "<link rel=\"shortcut icon\" href=\"favicon\\.([0-9a-f]+)\\.ico\">",
                 "<script>document.write('<link rel=\"shortcut icon\" href=\"'"
                         + " + document.getElementsByTagName(\"base\")[0].href"
-                        + " + 'favicon.$1.ico\">');</script>");
+                        + " + 'favicon.$1.ico\">')</script>");
         if (GOOGLE_ANALYTICS_TRACKING_ID != null) {
             // this is for demo.glowroot.org
             indexHtml = indexHtml.replaceFirst(
@@ -93,7 +89,7 @@ class IndexHtmlHttpService implements HttpService {
                             + "m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;"
                             + "m.parentNode.insertBefore(a,m)})(window,document,'script',"
                             + "'//www.google-analytics.com/analytics.js','ga');ga('create', '"
-                            + GOOGLE_ANALYTICS_TRACKING_ID + "', 'auto');</script>\n</body>");
+                            + GOOGLE_ANALYTICS_TRACKING_ID + "', 'auto')</script>\n</body>");
         }
         ByteBuf content = Unpooled.copiedBuffer(indexHtml, Charsets.ISO_8859_1);
         FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, content);

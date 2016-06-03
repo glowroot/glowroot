@@ -101,7 +101,8 @@ class AdminJsonService {
     @POST(path = "/backend/change-password", permission = "")
     String changePassword(@BindRequest ChangePassword changePassword, @BindSubject Subject subject)
             throws Exception {
-        UserConfig userConfig = configRepository.getUserConfig((String) subject.getPrincipal());
+        UserConfig userConfig =
+                configRepository.getUserConfig((String) checkNotNull(subject.getPrincipal()));
         checkNotNull(userConfig, "user no longer exists");
         if (!passwordService.passwordsMatch(changePassword.currentPassword(),
                 userConfig.passwordHash())) {

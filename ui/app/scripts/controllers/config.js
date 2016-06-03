@@ -45,7 +45,7 @@ glowroot.controller('ConfigCtrl', [
       if (!$scope.layout) {
         return '';
       }
-      if ($scope.layout.fat && ($scope.permissions.config.view || $scope.layout.admin)) {
+      if ($scope.layout.fat && ($scope.agentPermissions && $scope.agentPermissions.config.view || $scope.layout.admin)) {
         return 'Configuration';
       } else if (!$scope.layout.fat && $scope.layout.admin) {
         return 'Administration';
@@ -56,14 +56,14 @@ glowroot.controller('ConfigCtrl', [
 
     $scope.showConfigSidebarItems = function () {
       if ($scope.layout.fat) {
-        return $scope.permissions.config.view;
+        return $scope.agentPermissions && $scope.agentPermissions.config.view;
       } else {
         return $scope.activeNavbarItem === 'agentConfig';
       }
     };
 
     $scope.isAnonymous = function () {
-      return $scope.username && $scope.username.toLowerCase() === 'anonymous';
+      return $scope.layout.username && $scope.layout.username.toLowerCase() === 'anonymous';
     };
 
     $scope.percentileSuffix = function (percentile) {

@@ -46,7 +46,6 @@ glowroot.controller('LoginCtrl', [
               deferred.reject('Password incorrect');
             } else {
               $rootScope.layout = data;
-              $rootScope.username = postData.username;
               deferred.resolve('Success');
               login.returnToOriginalPath();
             }

@@ -292,6 +292,16 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public boolean namedUsersExist() {
+        for (UserConfig userConfig : userConfigs) {
+            if (!userConfig.username().equalsIgnoreCase("anonymous")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public List<RoleConfig> getRoleConfigs() {
         return roleConfigs;
     }

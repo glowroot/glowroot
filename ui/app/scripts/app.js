@@ -47,13 +47,7 @@ glowroot.config([
             if (layoutVersion && $rootScope.layout && layoutVersion !== $rootScope.layout.version) {
               $injector.get('$http').get('backend/layout')
                   .success(function (data) {
-                    $rootScope.layout = data;
-                    if ($rootScope.layout.fat || $rootScope.agentRollup) {
-                      $rootScope.permissions = $rootScope.layout.agentRollups[$rootScope.agentRollup].permissions;
-                    } else {
-                      // FIXME redirect to agent selection page
-                      $rootScope.permissions = undefined;
-                    }
+                    $rootScope.setLayout(data);
                   });
               // TODO handle error() above
             }
@@ -114,10 +108,10 @@ glowroot.run([
       if ($rootScope.layout) {
         // layout doesn't exist on first page load when running under grunt serve
         if ($rootScope.layout.fat || $rootScope.agentRollup) {
-          $rootScope.permissions = $rootScope.layout.agentRollups[$rootScope.agentRollup].permissions;
+          var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollup];
+          $rootScope.agentPermissions = agentRollup ? agentRollup.permissions : undefined;
         } else {
-          // FIXME redirect to agent selection page
-          $rootScope.permissions = undefined;
+          $rootScope.agentPermissions = undefined;
         }
       }
     });
@@ -182,11 +176,11 @@ glowroot.run([
     };
 
     $rootScope.showSignIn = function () {
-      return $rootScope.username === 'anonymous' && $rootScope.layout && !$rootScope.layout.hideLogin;
+      return $rootScope.layout && $rootScope.layout.username === 'anonymous' && !$rootScope.layout.hideLogin;
     };
 
     $rootScope.showSignOut = function () {
-      return $rootScope.username && $rootScope.username !== 'anonymous';
+      return $rootScope.layout && $rootScope.layout.username && $rootScope.layout.username !== 'anonymous';
     };
 
     $rootScope.goToLogin = function (event) {
@@ -204,9 +198,7 @@ glowroot.run([
       $navbarCollapse.addClass('collapse');
       $http.post('backend/sign-out')
           .success(function () {
-            $rootScope.username = 'anonymous';
-            // FIXME need to check anonymous permissions (store in layout)
-            if ($rootScope.layout.anonymousAccess === 'none') {
+            if ($rootScope.layout.redirectToLogin) {
               login.goToLogin('You have been signed out', true);
             } else {
               $rootScope.displaySignOutMessage = true;
@@ -243,35 +235,28 @@ glowroot.run([
       }
     });
 
-    function setInitialLayout(data) {
+    $rootScope.setLayout = function(data) {
       $rootScope.layout = data;
-      // FIXME check anonymous permissions (in layout) to see if need to go to login
-      if ($rootScope.layout.username === 'anonymous') {
+      if ($rootScope.layout.redirectToLogin) {
         login.goToLogin();
-      } else if ($location.path() === '/login' && $rootScope.username && $rootScope.username !== 'anonymous') {
+      } else if ($location.path() === '/login' && (data.username !== 'anonymous' || data.hideLogin)) {
         // authentication is not needed
         $location.path('/').replace();
+      } else if ($rootScope.layout.fat || $rootScope.agentRollup) {
+        var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollup];
+        $rootScope.agentPermissions = agentRollup ? agentRollup.permissions : undefined;
+      } else {
+        $rootScope.agentPermissions = undefined;
       }
-    }
+    };
 
     if (window.layout) {
-      setInitialLayout(window.layout);
-      $rootScope.username = window.username;
+      $rootScope.setLayout(window.layout);
     } else {
       // running in dev under 'grunt serve'
-      $http.get('backend/username')
+      $http.get('backend/layout')
           .success(function (data) {
-            $rootScope.username = data;
-            $http.get('backend/layout')
-                .success(function (data) {
-                  setInitialLayout(data);
-                  if ($rootScope.layout.fat || $rootScope.agentRollup) {
-                    $rootScope.permissions = $rootScope.layout.agentRollups[$rootScope.agentRollup].permissions;
-                  } else {
-                    // FIXME redirect to agent selection page
-                    $rootScope.permissions = undefined;
-                  }
-                });
+            $rootScope.setLayout(data);
           });
     }
 

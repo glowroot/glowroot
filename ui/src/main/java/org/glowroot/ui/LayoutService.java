@@ -144,6 +144,7 @@ class LayoutService {
                 agentRollups.put(agentRollup.name(), builder.build());
             }
         }
+        String username = (String) checkNotNull(subject.getPrincipal());
         if (hasSomeAccess) {
             List<Long> rollupExpirationMillis = Lists.newArrayList();
             for (long hours : configRepository.getStorageConfig().rollupExpirationHours()) {
@@ -152,8 +153,7 @@ class LayoutService {
             return ImmutableLayout.builder()
                     .fat(fat)
                     .footerMessage("Glowroot version " + version)
-                    // FIXME hide login if no users
-                    .hideLogin(false)
+                    .hideLogin(!configRepository.namedUsersExist())
                     .addAllRollupConfigs(configRepository.getRollupConfigs())
                     .addAllRollupExpirationMillis(rollupExpirationMillis)
                     .gaugeCollectionIntervalMillis(
@@ -161,6 +161,8 @@ class LayoutService {
                     .agentRollups(agentRollups)
                     .showNavbarConfig(showNavbarConfig)
                     .admin(subject.isPermitted("admin"))
+                    .username(username)
+                    .redirectToLogin(false)
                     .build();
         } else {
             return ImmutableLayout.builder()
@@ -170,6 +172,8 @@ class LayoutService {
                     .gaugeCollectionIntervalMillis(0)
                     .showNavbarConfig(false)
                     .admin(false)
+                    .username(username)
+                    .redirectToLogin(true)
                     .build();
         }
     }
@@ -225,6 +229,8 @@ class LayoutService {
         abstract ImmutableMap<String, AgentRollupLayout> agentRollups();
         abstract boolean showNavbarConfig();
         abstract boolean admin();
+        abstract String username();
+        abstract boolean redirectToLogin();
 
         @Value.Derived
         public String version() {

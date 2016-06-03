@@ -38,7 +38,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -192,29 +191,30 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         logger.debug("messageReceived(): request.uri={}", request.uri());
         Channel channel = ctx.channel();
         currentChannel.set(channel);
-        String sessionId = sessionHelper.getSessionId(request);
-        Subject subject = null;
-        if (sessionId != null) {
-            subject = new Subject.Builder(securityManager)
-                    .sessionId(sessionId)
-                    .buildSubject();
-        }
-        if (subject == null || !subject.isAuthenticated()) {
-            subject = new Subject.Builder(securityManager)
-                    .principals(new SimplePrincipalCollection("anonymous", ""))
-                    .buildSubject();
-        }
+        Subject subject = buildSubject(request);
         try {
-            subject.execute(new Callable</*@Nullable*/ Void>() {
-                @Override
-                public @Nullable Void call() throws Exception {
-                    FullHttpResponse response = handleRequest(ctx, request);
-                    if (response != null) {
-                        sendFullResponse(ctx, request, response);
-                    }
-                    return null;
+            final FullHttpResponse response =
+                    subject.execute(new Callable</*@Nullable*/ FullHttpResponse>() {
+                        @Override
+                        public @Nullable FullHttpResponse call() throws Exception {
+                            return handleRequest(ctx, request);
+                        }
+                    });
+            if (response != null) {
+                if (subject.getPrincipal() == null) {
+                    // just signed out
+                    subject = buildAnonymousSubject();
                 }
-            });
+                subject.execute(new Callable</*@Nullable*/ Object>() {
+                    @Override
+                    public @Nullable Object call() throws Exception {
+                        // TODO report checker framework issue that occurs without checkNotNull
+                        checkNotNull(response);
+                        sendFullResponse(ctx, request, response);
+                        return null;
+                    }
+                });
+            }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(ctx, e);
@@ -222,6 +222,25 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             currentChannel.remove();
             request.release();
         }
+    }
+
+    private Subject buildSubject(FullHttpRequest request) {
+        String sessionId = sessionHelper.getSessionId(request);
+        if (sessionId != null) {
+            Subject subject = new Subject.Builder(securityManager)
+                    .sessionId(sessionId)
+                    .buildSubject();
+            if (subject.isAuthenticated()) {
+                return subject;
+            }
+        }
+        return buildAnonymousSubject();
+    }
+
+    private Subject buildAnonymousSubject() {
+        return new Subject.Builder(securityManager)
+                .principals(new SimplePrincipalCollection("anonymous", ""))
+                .buildSubject();
     }
 
     @SuppressWarnings("argument.type.incompatible")
@@ -303,11 +322,6 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     private @Nullable FullHttpResponse handleIfLoginOrLogoutRequest(String path,
             FullHttpRequest request) throws Exception {
-        if (path.equals("/backend/username")) {
-            // this is only used when running under 'grunt serve'
-            String username = (String) SecurityUtils.getSubject().getPrincipal();
-            return HttpServices.createJsonResponse("\"" + Strings.nullToEmpty(username) + "\"", OK);
-        }
         if (path.equals("/backend/login")) {
             String content = request.content().toString(Charsets.ISO_8859_1);
             Credentials credentials = mapper.readValue(content, ImmutableCredentials.class);

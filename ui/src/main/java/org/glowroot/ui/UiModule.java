@@ -26,8 +26,10 @@ import com.google.common.collect.Lists;
 import org.apache.shiro.authc.credential.PasswordMatcher;
 import org.apache.shiro.authc.credential.PasswordService;
 import org.apache.shiro.mgt.DefaultSecurityManager;
-import org.apache.shiro.mgt.SecurityManager;
+import org.apache.shiro.mgt.DefaultSubjectDAO;
 import org.apache.shiro.realm.Realm;
+import org.apache.shiro.session.mgt.DefaultSessionManager;
+import org.apache.shiro.subject.Subject;
 import org.immutables.builder.Builder;
 
 import org.glowroot.common.live.LiveAggregateRepository;
@@ -46,6 +48,8 @@ import org.glowroot.storage.repo.TransactionTypeRepository;
 import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.storage.util.MailService;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 public class UiModule {
 
     private final LazyHttpServer lazyHttpServer;
@@ -57,7 +61,7 @@ public class UiModule {
             Clock clock,
             File logDir,
             @Nullable LiveJvmService liveJvmService,
-            ConfigRepository configRepository,
+            final ConfigRepository configRepository,
             AgentRepository agentRepository,
             TransactionTypeRepository transactionTypeRepository,
             AggregateRepository aggregateRepository,
@@ -80,8 +84,23 @@ public class UiModule {
         GlowrootLdapRealm glowrootLdapRealm = new GlowrootLdapRealm(configRepository);
         LayoutService layoutService = new LayoutService(fat, version, configRepository,
                 agentRepository, transactionTypeRepository);
-        SecurityManager securityManager = new DefaultSecurityManager(
+        DefaultSecurityManager securityManager = new DefaultSecurityManager(
                 ImmutableList.<Realm>of(glowrootRealm, glowrootLdapRealm));
+        // overriding default subject dao to prevent session from being created for anonymous users
+        securityManager.setSubjectDAO(new DefaultSubjectDAO() {
+            @Override
+            protected void mergePrincipals(Subject subject) {
+                if (subject.isAuthenticated()) {
+                    super.mergePrincipals(subject);
+                }
+            }
+        });
+        securityManager.setSessionManager(new DefaultSessionManager() {
+            @Override
+            public long getGlobalSessionTimeout() {
+                return MINUTES.toMillis(configRepository.getWebConfig().sessionTimeoutMinutes());
+            }
+        });
         SessionHelper sessionHelper = new SessionHelper(configRepository, layoutService);
         IndexHtmlHttpService indexHtmlHttpService = new IndexHtmlHttpService(layoutService);
         LayoutHttpService layoutHttpService = new LayoutHttpService(layoutService);

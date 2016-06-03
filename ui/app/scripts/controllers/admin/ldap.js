@@ -23,9 +23,6 @@ glowroot.controller('AdminLdapCtrl', [
   'httpErrors',
   function ($scope, $http, confirmIfHasChanges, httpErrors) {
 
-    // initialize page binding object
-    $scope.page = {};
-
     $scope.hasChanges = function () {
       return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
     };
@@ -36,13 +33,6 @@ glowroot.controller('AdminLdapCtrl', [
       $scope.config = data;
       $scope.originalConfig = angular.copy(data);
     }
-
-    $scope.$watch('page.activeDirectory', function (newVal) {
-      if (newVal) {
-        $scope.config.userDnTemplate = '';
-        $scope.config.authenticationMechanism = '';
-      }
-    });
 
     $scope.save = function (deferred) {
       // another copy to modify for the http post data

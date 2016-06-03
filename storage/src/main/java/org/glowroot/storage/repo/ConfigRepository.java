@@ -102,6 +102,8 @@ public interface ConfigRepository {
     @Nullable
     UserConfig getUserConfigCaseInsensitive(String username);
 
+    boolean namedUsersExist();
+
     List<RoleConfig> getRoleConfigs();
 
     @Nullable

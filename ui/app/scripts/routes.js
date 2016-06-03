@@ -21,12 +21,11 @@ glowroot.config([
   '$stateProvider',
   '$urlRouterProvider',
   function ($provide, $stateProvider, $urlRouterProvider) {
-    var waitForLayout = function (needsTransactionType, loginPage) {
+    var waitForLayout = function (needsTransactionType) {
       return ['$q', '$rootScope', '$location', function ($q, $rootScope, $location) {
         if (window.layout) {
-          if (loginPage && $rootScope.layout.hideLogin) {
-            // no need to log in
-            $location.path('/').replace();
+          if ($location.path() === '/login') {
+            // no need to add transaction-type to url
             return;
           }
           var hasAgent = $location.search()['agent-id'] || $location.search()['agent-rollup'] || $rootScope.layout.fat;
@@ -42,9 +41,10 @@ glowroot.config([
             if (!value) {
               return;
             }
-            if (loginPage && $rootScope.layout.hideLogin) {
-              // no need to log in
-              $location.path('/').replace();
+            if ($location.path() === '/login') {
+              // no need to add transaction-type to url
+              deferred.resolve();
+              unregisterWatch();
               return;
             }
             var hasAgent = $location.search()['agent-id'] || $location.search()['agent-rollup']

@@ -93,6 +93,7 @@ glowroot.controller('AdminUserCtrl', [
             $scope.loaded = true;
             onNewData({
               config: {
+                ldap: false,
                 roles: []
               },
               allRoles: data.allRoles,

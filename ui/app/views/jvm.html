@@ -62,19 +62,19 @@
            gt-display="Thread dump"
            gt-url="jvm/thread-dump{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/thread-dump'"
-           ng-if="permissions.tool.threadDump">
+           ng-if="agentPermissions.tool.threadDump">
       </div>
       <div gt-sidebar-item
            gt-display="Heap dump"
            gt-url="jvm/heap-dump{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/heap-dump'"
-           ng-if="permissions.tool.heapDump">
+           ng-if="agentPermissions.tool.heapDump">
       </div>
       <div gt-sidebar-item
            gt-display="MBean tree"
            gt-url="jvm/mbean-tree{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/mbean-tree'"
-           ng-if="permissions.tool.mbeanTree">
+           ng-if="agentPermissions.tool.mbeanTree">
       </div>
       <div gt-sidebar-item
            gt-display="System info"

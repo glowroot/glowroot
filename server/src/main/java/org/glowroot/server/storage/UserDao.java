@@ -43,6 +43,8 @@ public class UserDao {
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
+    private static final String NAMED_USERS_EXIST_SINGLE_CACHE_KEY = "x";
+
     private final Session session;
 
     private final PreparedStatement readPS;
@@ -54,6 +56,14 @@ public class UserDao {
                 @Override
                 public Optional<UserConfig> load(String username) throws Exception {
                     return Optional.fromNullable(readUpperCase(username));
+                }
+            });
+
+    private final LoadingCache<String, Boolean> namedUsersExist =
+            CacheBuilder.newBuilder().build(new CacheLoader<String, Boolean>() {
+                @Override
+                public Boolean load(String username) throws Exception {
+                    return namedUsersExistInternal();
                 }
             });
 
@@ -102,6 +112,10 @@ public class UserDao {
         return upperCaseCache.getUnchecked(username.toUpperCase(Locale.ENGLISH)).orNull();
     }
 
+    public boolean namedUsersExist() {
+        return namedUsersExist.getUnchecked(NAMED_USERS_EXIST_SINGLE_CACHE_KEY);
+    }
+
     public void insert(UserConfig userConfig) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
@@ -110,6 +124,7 @@ public class UserDao {
         boundStatement.setSet(i++, userConfig.roles());
         session.execute(boundStatement);
         upperCaseCache.invalidate(userConfig.username().toUpperCase(Locale.ENGLISH));
+        namedUsersExist.invalidate(NAMED_USERS_EXIST_SINGLE_CACHE_KEY);
     }
 
     public void delete(String username) throws Exception {
@@ -117,6 +132,7 @@ public class UserDao {
         boundStatement.setString(0, username);
         session.execute(boundStatement);
         upperCaseCache.invalidate(username.toUpperCase(Locale.ENGLISH));
+        namedUsersExist.invalidate(NAMED_USERS_EXIST_SINGLE_CACHE_KEY);
     }
 
     private @Nullable UserConfig readUpperCase(String usernameUpper) {
@@ -126,6 +142,15 @@ public class UserDao {
             }
         }
         return null;
+    }
+
+    private boolean namedUsersExistInternal() {
+        for (UserConfig userConfig : read()) {
+            if (!userConfig.username().equalsIgnoreCase("anonymous")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static ImmutableUserConfig buildUser(Row row) {

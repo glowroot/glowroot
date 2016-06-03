@@ -34,23 +34,12 @@
            class="gt-form-group-without-help-block">
       </div>
       <div gt-form-group
-           gt-type="checkbox"
-           gt-label="Microsoft Active Directory"
-           gt-model="page.activeDirectory"
-           gt-col-class1="col-lg-4"
-           gt-col-class2="col-lg-8"
-           class="gt-form-group-without-help-block"
-           style="padding-top: 7px;"
-           ng-if="config.username.toLowerCase() !== 'anonymous'">
-      </div>
-      <div gt-form-group
            gt-label="User DN template"
            gt-model="config.userDnTemplate"
            gt-width="30em"
            gt-pattern="'.*{[0]}.*'"
            gt-col-class1="col-lg-4"
-           gt-col-class2="col-lg-8"
-           ng-if="!page.activeDirectory">
+           gt-col-class2="col-lg-8">
         <div class="help-block">
           When non-empty, this must contain the user placeholder '{0}', e.g.
           <span class="gt-nowrap" style="font-style: italic;">uid={0},ou=users,dc=example,dc=com</span>
@@ -62,8 +51,7 @@
            gt-width="20em"
            gt-col-class1="col-lg-4"
            gt-col-class2="col-lg-8"
-           class="gt-form-group-without-help-block"
-           ng-if="!page.activeDirectory">
+           class="gt-form-group-without-help-block">
       </div>
       <div class="form-group gt-form-buttons">
         <div class="col-lg-offset-4 col-lg-8">
