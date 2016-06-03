@@ -17,11 +17,8 @@ package org.glowroot.server.storage;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
@@ -31,15 +28,17 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.Futures;
 
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.server.storage.AggregateDao.RollupCaptureTime;
+import org.glowroot.server.storage.AggregateDao.RollupKey;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
 import org.glowroot.storage.repo.GaugeValueRepository;
@@ -108,16 +107,17 @@ public class GaugeValueDao implements GaugeValueRepository {
         List<PreparedStatement> deleteNeedsRollup = Lists.newArrayList();
         for (int i = 1; i <= count; i++) {
             session.execute("create table if not exists gauge_needs_rollup_" + i
-                    + " (agent_rollup varchar, capture_time timestamp, gauge_names set<varchar>,"
-                    + " last_update timeuuid, primary key (agent_rollup, capture_time)) "
-                    + WITH_LCS);
+                    + " (agent_rollup varchar, gauge_name varchar, capture_time timestamp,"
+                    + " last_update timeuuid, primary key (agent_rollup, gauge_name,"
+                    + " capture_time)) " + WITH_LCS);
             insertNeedsRollup.add(session.prepare("insert into gauge_needs_rollup_" + i
-                    + " (agent_rollup, capture_time, gauge_names, last_update) values"
+                    + " (agent_rollup, gauge_name, capture_time, last_update) values"
                     + " (?, ?, ?, ?)"));
-            readNeedsRollup.add(session.prepare("select agent_rollup, capture_time, gauge_names,"
+            readNeedsRollup.add(session.prepare("select agent_rollup, gauge_name, capture_time,"
                     + " last_update from gauge_needs_rollup_" + i));
             deleteNeedsRollup.add(session.prepare("delete from gauge_needs_rollup_" + i
-                    + " where agent_rollup = ? and capture_time = ? if last_update = ?"));
+                    + " where agent_rollup = ? and gauge_name = ? and capture_time = ?"
+                    + " if last_update = ?"));
         }
         this.insertNeedsRollup = insertNeedsRollup;
         this.readNeedsRollup = readNeedsRollup;
@@ -144,18 +144,15 @@ public class GaugeValueDao implements GaugeValueRepository {
             gaugeNameDao.maybeUpdateLastCaptureTime(agentId, gaugeValue.getGaugeName(), futures);
         }
         // insert into gauge_needs_rollup_*
-        List<Map<Long, Set<String>>> rollupCaptureTimeGaugeNames =
-                getRollupCaptureTimeGaugeNames(gaugeValues);
+        List<SetMultimap<String, Long>> rollupCaptureTimes = getRollupCaptureTimes(gaugeValues);
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         for (int i = 0; i < rollupConfigs.size(); i++) {
-            Map<Long, Set<String>> map = rollupCaptureTimeGaugeNames.get(i);
-            for (Entry<Long, Set<String>> entry : map.entrySet()) {
-                long rollupCaptureTime = entry.getKey();
-                Set<String> gaugeNames = entry.getValue();
+            SetMultimap<String, Long> map = rollupCaptureTimes.get(i);
+            for (Entry<String, Long> entry : map.entries()) {
                 BoundStatement boundStatement = insertNeedsRollup.get(i).bind();
                 boundStatement.setString(0, agentId);
-                boundStatement.setTimestamp(1, new Date(rollupCaptureTime));
-                boundStatement.setSet(2, gaugeNames);
+                boundStatement.setString(1, entry.getKey());
+                boundStatement.setTimestamp(2, new Date(entry.getValue()));
                 boundStatement.setUUID(3, UUIDs.timeBased());
                 futures.add(session.executeAsync(boundStatement));
             }
@@ -207,59 +204,59 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
     }
 
-    private void rollupLevel(int rollupLevel, List<Integer> ttls)
-            throws Exception, InterruptedException, ExecutionException {
-        ListMultimap<String, Row> agentRows = getNeedsRollup(rollupLevel);
+    private void rollupLevel(int rollupLevel, List<Integer> ttls) throws Exception {
+        ListMultimap<RollupKey, RollupCaptureTime> needsRollup = getNeedsRollup(rollupLevel);
         long rollupIntervalMillis =
                 configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
-        for (String agentRollup : agentRows.keySet()) {
-            for (Row row : agentRows.get(agentRollup)) {
-                long captureTime = checkNotNull(row.getTimestamp(1)).getTime();
-                Set<String> gaugeNames = row.getSet(2, String.class);
-                UUID lastUpdate = row.getUUID(3);
-
-                List<ResultSetFuture> futures = Lists.newArrayList();
-                for (String gaugeName : gaugeNames) {
-                    futures.add(rollupOne(rollupLevel, agentRollup, gaugeName,
-                            captureTime - rollupIntervalMillis, captureTime, ttls));
-                }
-                Futures.allAsList(futures).get();
-
-                BoundStatement boundStatement = deleteNeedsRollup.get(rollupLevel - 1).bind();
-                boundStatement.setString(0, agentRollup);
-                boundStatement.setTimestamp(1, new Date(captureTime));
-                boundStatement.setUUID(2, lastUpdate);
-                session.execute(boundStatement);
-            }
+        for (Entry<RollupKey, RollupCaptureTime> entry : needsRollup.entries()) {
+            RollupKey rollupKey = entry.getKey();
+            RollupCaptureTime rollupCaptureTime = entry.getValue();
+            List<ResultSetFuture> futures = Lists.newArrayList();
+            futures.add(rollupOne(rollupLevel, rollupKey.agentRollup(), rollupKey.key(),
+                    rollupCaptureTime.captureTime() - rollupIntervalMillis,
+                    rollupCaptureTime.captureTime(), ttls));
+            Futures.allAsList(futures).get();
+            BoundStatement boundStatement = deleteNeedsRollup.get(rollupLevel - 1).bind();
+            boundStatement.setString(0, rollupKey.agentRollup());
+            boundStatement.setString(1, rollupKey.key());
+            boundStatement.setTimestamp(2, new Date(rollupCaptureTime.captureTime()));
+            boundStatement.setUUID(3, rollupCaptureTime.lastUpdate());
+            session.execute(boundStatement);
         }
     }
 
-    private ListMultimap<String, Row> getNeedsRollup(int rollupLevel) {
+    private ListMultimap<RollupKey, RollupCaptureTime> getNeedsRollup(int rollupLevel) {
         BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind();
         ResultSet results = session.execute(boundStatement);
-        ListMultimap<String, Row> agentRows = ArrayListMultimap.create();
+        ListMultimap<RollupKey, RollupCaptureTime> needsRollup = ArrayListMultimap.create();
         for (Row row : results) {
             String agentRollup = checkNotNull(row.getString(0));
-            agentRows.put(agentRollup, row);
+            String transactionType = checkNotNull(row.getString(1));
+            long captureTime = checkNotNull(row.getTimestamp(2)).getTime();
+            UUID lastUpdate = row.getUUID(3);
+            needsRollup.put(ImmutableRollupKey.of(agentRollup, transactionType),
+                    ImmutableRollupCaptureTime.builder()
+                            .captureTime(captureTime)
+                            .lastUpdate(lastUpdate)
+                            .build());
         }
-        // copy of key set is required since removing a key's last remaining value from a multimap
-        // removes the key itself which then triggers ConcurrentModificationException
-        for (String agentRollup : ImmutableList.copyOf(agentRows.keySet())) {
-            List<Row> rows = agentRows.get(agentRollup);
+        // copy of key set is required since removing a key's last remaining value from a
+        // multimap removes the key itself which then triggers ConcurrentModificationException
+        for (RollupKey rollupKey : ImmutableList.copyOf(needsRollup.keySet())) {
+            List<RollupCaptureTime> list = needsRollup.get(rollupKey);
             // don't roll up the most recent one since it is likely still being added, this is
-            // mostly to avoid rolling up this data twice, but also currently the UI assumes when it
-            // finds a 1-min rollup it doesn't check for non-rolled up 5-second gauge values
-            rows.remove(rows.size() - 1);
+            // mostly to avoid rolling up this data twice, but also currently the UI assumes
+            // when it finds a 1-min rollup it doesn't check for non-rolled up 1-min aggregates
+            list.remove(list.size() - 1);
         }
-        return agentRows;
+        return needsRollup;
     }
 
-    private List<Map<Long, Set<String>>> getRollupCaptureTimeGaugeNames(
-            List<GaugeValue> gaugeValues) {
-        List<Map<Long, Set<String>>> rollupCaptureTimeGaugeNames = Lists.newArrayList();
+    private List<SetMultimap<String, Long>> getRollupCaptureTimes(List<GaugeValue> gaugeValues) {
+        List<SetMultimap<String, Long>> rollupCaptureTimes = Lists.newArrayList();
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         for (int i = 1; i <= rollupConfigs.size(); i++) {
-            rollupCaptureTimeGaugeNames.add(Maps.newHashMap());
+            rollupCaptureTimes.add(HashMultimap.create());
         }
         for (GaugeValue gaugeValue : gaugeValues) {
             String gaugeName = gaugeValue.getGaugeName();
@@ -267,16 +264,11 @@ public class GaugeValueDao implements GaugeValueRepository {
             for (int i = 0; i < rollupConfigs.size(); i++) {
                 long intervalMillis = rollupConfigs.get(i).intervalMillis();
                 long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, intervalMillis);
-                Map<Long, Set<String>> map = rollupCaptureTimeGaugeNames.get(i);
-                Set<String> gaugeNames = map.get(rollupCaptureTime);
-                if (gaugeNames == null) {
-                    gaugeNames = Sets.newHashSet();
-                    map.put(rollupCaptureTime, gaugeNames);
-                }
-                gaugeNames.add(gaugeName);
+                SetMultimap<String, Long> map = rollupCaptureTimes.get(i);
+                map.put(gaugeName, rollupCaptureTime);
             }
         }
-        return rollupCaptureTimeGaugeNames;
+        return rollupCaptureTimes;
     }
 
     // from is non-inclusive
