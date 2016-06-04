@@ -465,12 +465,14 @@ public class TraceDao implements TraceRepository {
 
         @Override
         public HeaderPlus mapRow(ResultSet resultSet) throws Exception {
-            byte[] header = checkNotNull(resultSet.getBytes(1));
-            Existence entriesExistence = RowMappers.getExistence(resultSet, 2, traceCappedDatabase);
+            int i = 1;
+            byte[] header = checkNotNull(resultSet.getBytes(i++));
+            Existence entriesExistence =
+                    RowMappers.getExistence(resultSet, i++, traceCappedDatabase);
             Existence mainThreadProfileExistence =
-                    RowMappers.getExistence(resultSet, 3, traceCappedDatabase);
+                    RowMappers.getExistence(resultSet, i++, traceCappedDatabase);
             Existence auxThreadProfileExistence =
-                    RowMappers.getExistence(resultSet, 3, traceCappedDatabase);
+                    RowMappers.getExistence(resultSet, i++, traceCappedDatabase);
             Existence profileExistence;
             if (mainThreadProfileExistence == Existence.EXPIRED
                     || auxThreadProfileExistence == Existence.EXPIRED) {
