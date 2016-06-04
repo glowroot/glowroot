@@ -97,7 +97,10 @@ public interface ConfigRepository {
     List<UserConfig> getUserConfigs();
 
     @Nullable
-    UserConfig getUserConfig(String username);
+    UserConfig getUserConfig(String username) throws Exception;
+
+    @Nullable
+    UserConfig getUserConfigCaseInsensitive(String username);
 
     List<RoleConfig> getRoleConfigs();
 

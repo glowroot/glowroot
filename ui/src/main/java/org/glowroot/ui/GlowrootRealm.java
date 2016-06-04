@@ -20,7 +20,6 @@ import javax.annotation.Nullable;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.SimpleAccount;
-import org.apache.shiro.authc.UnknownAccountException;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
@@ -46,14 +45,14 @@ class GlowrootRealm extends AuthorizingRealm {
     @Override
     public boolean supports(AuthenticationToken token) {
         String username = (String) token.getPrincipal();
-        UserConfig userConfig = getUserConfigCaseInsensitive(username);
+        UserConfig userConfig = configRepository.getUserConfigCaseInsensitive(username);
         return userConfig != null && !userConfig.ldap();
     }
 
     @Override
-    protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
+    protected @Nullable AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
         String username = (String) principals.getPrimaryPrincipal();
-        UserConfig userConfig = getUserConfigCaseInsensitive(username);
+        UserConfig userConfig = configRepository.getUserConfigCaseInsensitive(username);
         checkNotNull(userConfig);
         SimpleAuthorizationInfo authorizationInfo = new SimpleAuthorizationInfo(userConfig.roles());
         for (String roleName : userConfig.roles()) {
@@ -67,21 +66,13 @@ class GlowrootRealm extends AuthorizingRealm {
     }
 
     @Override
-    protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) {
+    protected @Nullable AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) {
         UsernamePasswordToken upToken = (UsernamePasswordToken) token;
-        UserConfig userConfig = getUserConfigCaseInsensitive(upToken.getUsername());
+        UserConfig userConfig =
+                configRepository.getUserConfigCaseInsensitive(upToken.getUsername());
         if (userConfig == null) {
-            throw new UnknownAccountException();
+            return null;
         }
         return new SimpleAccount(userConfig.username(), userConfig.passwordHash(), GLOWROOT_REALM);
-    }
-
-    private @Nullable UserConfig getUserConfigCaseInsensitive(String username) {
-        for (UserConfig userConfig : configRepository.getUserConfigs()) {
-            if (userConfig.username().equalsIgnoreCase(username)) {
-                return userConfig;
-            }
-        }
-        return null;
     }
 }

@@ -282,6 +282,16 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public @Nullable UserConfig getUserConfigCaseInsensitive(String username) {
+        for (UserConfig userConfig : userConfigs) {
+            if (userConfig.username().equalsIgnoreCase(username)) {
+                return userConfig;
+            }
+        }
+        return null;
+    }
+
+    @Override
     public List<RoleConfig> getRoleConfigs() {
         return roleConfigs;
     }

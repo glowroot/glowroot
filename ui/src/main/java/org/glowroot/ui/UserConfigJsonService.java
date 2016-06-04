@@ -125,7 +125,7 @@ class UserConfigJsonService {
         configRepository.deleteUserConfig(request.username().get());
     }
 
-    private String getUserConfigInternal(String username) throws JsonProcessingException {
+    private String getUserConfigInternal(String username) throws Exception {
         UserConfig userConfig = configRepository.getUserConfig(username);
         if (userConfig == null) {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);

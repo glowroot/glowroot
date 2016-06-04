@@ -205,11 +205,7 @@ public class AgentDao implements AgentRepository {
     }
 
     public @Nullable AgentConfig readAgentConfig(String agentId) {
-        Optional<AgentConfig> optional = cache.getUnchecked(agentId);
-        if (optional == null) {
-            return null;
-        }
-        return optional.orNull();
+        return cache.getUnchecked(agentId).orNull();
 
     }
 

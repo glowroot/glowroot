@@ -252,6 +252,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public @Nullable UserConfig getUserConfigCaseInsensitive(String username) {
+        return userDao.readCaseInsensitive(username);
+    }
+
+    @Override
     public List<RoleConfig> getRoleConfigs() {
         return roleDao.read();
     }

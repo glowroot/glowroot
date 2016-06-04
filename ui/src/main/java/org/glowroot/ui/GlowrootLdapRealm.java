@@ -52,7 +52,7 @@ class GlowrootLdapRealm extends JndiLdapRealm {
             return false;
         }
         String username = (String) token.getPrincipal();
-        UserConfig userConfig = getUserConfigCaseInsensitive(username);
+        UserConfig userConfig = configRepository.getUserConfigCaseInsensitive(username);
         return userConfig != null && userConfig.ldap();
     }
 
@@ -91,15 +91,6 @@ class GlowrootLdapRealm extends JndiLdapRealm {
             contextFactory.setUrl(url);
             contextFactory.setAuthenticationMechanism(ldapConfig.authenticationMechanism());
         }
-    }
-
-    private @Nullable UserConfig getUserConfigCaseInsensitive(String username) {
-        for (UserConfig userConfig : configRepository.getUserConfigs()) {
-            if (userConfig.username().equalsIgnoreCase(username)) {
-                return userConfig;
-            }
-        }
-        return null;
     }
 
     @SuppressWarnings("return.type.incompatible")

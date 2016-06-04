@@ -25,6 +25,10 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.google.common.base.Optional;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
@@ -45,6 +49,14 @@ public class RoleDao {
     private final PreparedStatement deletePS;
 
     private final PreparedStatement readOnePS;
+
+    private final LoadingCache<String, Optional<RoleConfig>> cache = CacheBuilder.newBuilder()
+            .build(new CacheLoader<String, Optional<RoleConfig>>() {
+                @Override
+                public Optional<RoleConfig> load(String name) throws Exception {
+                    return Optional.fromNullable(readInternal(name));
+                }
+            });
 
     public RoleDao(Session session, KeyspaceMetadata keyspaceMetadata) {
         this.session = session;
@@ -80,6 +92,26 @@ public class RoleDao {
     }
 
     public @Nullable RoleConfig read(String name) {
+        return cache.getUnchecked(name).orNull();
+    }
+
+    public void delete(String name) throws Exception {
+        BoundStatement boundStatement = deletePS.bind();
+        boundStatement.setString(0, name);
+        session.execute(boundStatement);
+        cache.invalidate(name);
+    }
+
+    public void insert(RoleConfig userConfig) throws Exception {
+        BoundStatement boundStatement = insertPS.bind();
+        int i = 0;
+        boundStatement.setString(i++, userConfig.name());
+        boundStatement.setSet(i++, userConfig.permissions());
+        session.execute(boundStatement);
+        cache.invalidate(userConfig.name());
+    }
+
+    private @Nullable RoleConfig readInternal(String name) {
         BoundStatement boundStatement = readOnePS.bind();
         boundStatement.setString(0, name);
         ResultSet results = session.execute(boundStatement);
@@ -91,20 +123,6 @@ public class RoleDao {
             throw new IllegalStateException("Multiple role records for name: " + name);
         }
         return buildRole(row);
-    }
-
-    public void delete(String name) throws Exception {
-        BoundStatement boundStatement = deletePS.bind();
-        boundStatement.setString(0, name);
-        session.execute(boundStatement);
-    }
-
-    public void insert(RoleConfig userConfig) throws Exception {
-        BoundStatement boundStatement = insertPS.bind();
-        int i = 0;
-        boundStatement.setString(i++, userConfig.name());
-        boundStatement.setSet(i++, userConfig.permissions());
-        session.execute(boundStatement);
     }
 
     private static ImmutableRoleConfig buildRole(Row row) {

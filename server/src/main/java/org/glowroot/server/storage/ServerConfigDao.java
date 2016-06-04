@@ -90,11 +90,7 @@ public class ServerConfigDao {
 
     @Nullable
     <T> T read(String key, Class<T> clazz) {
-        Optional<Object> optional = cache.getUnchecked(ImmutableCacheKey.of(key, clazz));
-        if (optional == null) {
-            return null;
-        }
-        return clazz.cast(optional.orNull());
+        return clazz.cast(cache.getUnchecked(ImmutableCacheKey.of(key, clazz)).orNull());
     }
 
     @Nullable

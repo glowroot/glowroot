@@ -16,6 +16,7 @@
 package org.glowroot.server.storage;
 
 import java.util.List;
+import java.util.Locale;
 
 import javax.annotation.Nullable;
 
@@ -25,6 +26,10 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.google.common.base.Optional;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
@@ -44,8 +49,13 @@ public class UserDao {
     private final PreparedStatement insertPS;
     private final PreparedStatement deletePS;
 
-    private final PreparedStatement readOnePS;
-    private final PreparedStatement existsPS;
+    private final LoadingCache<String, Optional<UserConfig>> upperCaseCache =
+            CacheBuilder.newBuilder().build(new CacheLoader<String, Optional<UserConfig>>() {
+                @Override
+                public Optional<UserConfig> load(String username) throws Exception {
+                    return Optional.fromNullable(readUpperCase(username));
+                }
+            });
 
     public UserDao(Session session, KeyspaceMetadata keyspaceMetadata) {
         this.session = session;
@@ -59,10 +69,6 @@ public class UserDao {
         insertPS = session
                 .prepare("insert into user (username, password_hash, roles) values (?, ?, ?)");
         deletePS = session.prepare("delete from user where username = ?");
-
-        readOnePS = session
-                .prepare("select username, password_hash, roles from user where username = ?");
-        existsPS = session.prepare("select username from user where username = ?");
 
         if (createAnonymousUser) {
             BoundStatement boundStatement = insertPS.bind();
@@ -84,17 +90,16 @@ public class UserDao {
     }
 
     public @Nullable UserConfig read(String username) {
-        BoundStatement boundStatement = readOnePS.bind();
-        boundStatement.setString(0, username);
-        ResultSet results = session.execute(boundStatement);
-        if (results.isExhausted()) {
-            return null;
+        for (UserConfig userConfig : read()) {
+            if (userConfig.username().equals(username)) {
+                return userConfig;
+            }
         }
-        Row row = results.one();
-        if (!results.isExhausted()) {
-            throw new IllegalStateException("Multiple user records for username: " + username);
-        }
-        return buildUser(row);
+        return null;
+    }
+
+    public @Nullable UserConfig readCaseInsensitive(String username) {
+        return upperCaseCache.getUnchecked(username.toUpperCase(Locale.ENGLISH)).orNull();
     }
 
     public void insert(UserConfig userConfig) throws Exception {
@@ -104,19 +109,23 @@ public class UserDao {
         boundStatement.setString(i++, userConfig.passwordHash());
         boundStatement.setSet(i++, userConfig.roles());
         session.execute(boundStatement);
+        upperCaseCache.invalidate(userConfig.username().toUpperCase(Locale.ENGLISH));
     }
 
     public void delete(String username) throws Exception {
         BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, username);
         session.execute(boundStatement);
+        upperCaseCache.invalidate(username.toUpperCase(Locale.ENGLISH));
     }
 
-    public boolean exists(String username) throws Exception {
-        BoundStatement boundStatement = existsPS.bind();
-        boundStatement.setString(0, username);
-        ResultSet results = session.execute(boundStatement);
-        return !results.isExhausted();
+    private @Nullable UserConfig readUpperCase(String usernameUpper) {
+        for (UserConfig userConfig : read()) {
+            if (userConfig.username().toUpperCase(Locale.ENGLISH).equals(usernameUpper)) {
+                return userConfig;
+            }
+        }
+        return null;
     }
 
     private static ImmutableUserConfig buildUser(Row row) {

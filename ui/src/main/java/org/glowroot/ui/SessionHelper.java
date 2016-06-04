@@ -55,7 +55,7 @@ class SessionHelper {
             String text = "{\"incorrectLogin\":true}";
             return HttpServices.createJsonResponse(text, OK);
         }
-        UserConfig userConfig = getUserConfigCaseInsensitive(username);
+        UserConfig userConfig = configRepository.getUserConfigCaseInsensitive(username);
         if (userConfig == null) {
             String text = "{\"incorrectLogin\":true}";
             return HttpServices.createJsonResponse(text, OK);
@@ -104,15 +104,6 @@ class SessionHelper {
         for (Cookie cookie : cookies) {
             if (cookie.name().equals("GLOWROOT_SESSION_ID")) {
                 return cookie.value();
-            }
-        }
-        return null;
-    }
-
-    private @Nullable UserConfig getUserConfigCaseInsensitive(String username) {
-        for (UserConfig userConfig : configRepository.getUserConfigs()) {
-            if (userConfig.username().equalsIgnoreCase(username)) {
-                return userConfig;
             }
         }
         return null;
