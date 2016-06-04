@@ -21,6 +21,4 @@ import java.util.Map;
 public interface TransactionTypeRepository {
 
     Map<String, List<String>> readTransactionTypes() throws Exception;
-
-    void deleteAll() throws Exception;
 }

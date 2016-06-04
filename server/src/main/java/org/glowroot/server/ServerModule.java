@@ -252,6 +252,8 @@ public class ServerModule {
 
     private static class NopRepoAdmin implements RepoAdmin {
         @Override
+        public void deleteAllData() throws Exception {}
+        @Override
         public void defrag() throws Exception {}
         @Override
         public void resizeIfNecessary() throws Exception {}

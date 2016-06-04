@@ -105,6 +105,4 @@ public interface AggregateRepository {
 
     // query.from() is non-inclusive
     boolean shouldHaveAuxThreadProfile(String agentRollup, TransactionQuery query) throws Exception;
-
-    void deleteAll() throws Exception;
 }

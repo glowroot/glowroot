@@ -23,12 +23,9 @@ import org.apache.shiro.authc.credential.PasswordService;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.storage.repo.AggregateRepository;
+import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.RepoAdmin;
-import org.glowroot.storage.repo.TraceRepository;
-import org.glowroot.storage.repo.TransactionTypeRepository;
 import org.glowroot.storage.util.MailService;
 import org.glowroot.ui.AdminJsonService.SmtpConfigDto;
 
@@ -44,9 +41,8 @@ public class AdminJsonServiceTest {
     public void beforeEachTest() {
         mailService = new MockMailService();
         adminJsonService = new AdminJsonService(false, mock(ConfigRepository.class),
-                mock(RepoAdmin.class), mailService, mock(PasswordService.class),
-                mock(AggregateRepository.class), mock(TraceRepository.class),
-                mock(TransactionTypeRepository.class), mock(GaugeValueRepository.class));
+                mock(RepoAdmin.class), mock(LiveAggregateRepository.class), mailService,
+                mock(PasswordService.class));
     }
 
     @Test

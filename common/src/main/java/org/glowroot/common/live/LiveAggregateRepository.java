@@ -67,6 +67,8 @@ public interface LiveAggregateRepository {
     long mergeInAuxThreadProfiles(String agentId, TransactionQuery query,
             ProfileCollector collector);
 
+    void clearInMemoryAggregate();
+
     @Value.Immutable
     public interface OverallQuery {
         String transactionType();
@@ -239,5 +241,8 @@ public interface LiveAggregateRepository {
                 ProfileCollector collector) {
             return query.to();
         }
+
+        @Override
+        public void clearInMemoryAggregate() {}
     }
 }

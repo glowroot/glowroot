@@ -61,8 +61,6 @@ public interface TraceRepository {
     @Nullable
     Profile readAuxThreadProfile(String agentId, String traceId) throws Exception;
 
-    void deleteAll() throws Exception;
-
     @Value.Immutable
     public interface TraceQuery {
         String transactionType();

@@ -190,12 +190,6 @@ public class GaugeValueDao implements GaugeValueRepository {
         return gaugeValues;
     }
 
-    @Override
-    public void deleteAll() {
-        // this is not currently supported (to avoid row key range query)
-        throw new UnsupportedOperationException();
-    }
-
     void rollup() throws Exception {
         List<Integer> ttls = getTTLs();
         for (int rollupLevel = 1; rollupLevel <= configRepository.getRollupConfigs()

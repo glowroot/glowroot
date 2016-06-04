@@ -212,4 +212,9 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
         }
         return revisedTo;
     }
+
+    @Override
+    public void clearInMemoryAggregate() {
+        aggregator.clearInMemoryAggregate();
+    }
 }

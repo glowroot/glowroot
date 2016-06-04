@@ -38,6 +38,11 @@ class RepoAdminImpl implements RepoAdmin {
     }
 
     @Override
+    public void deleteAllData() throws Exception {
+        dataSource.deleteAll();
+    }
+
+    @Override
     public void defrag() throws Exception {
         dataSource.defrag();
     }

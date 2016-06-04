@@ -40,6 +40,7 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.storage.config.FatStorageConfig;
 import org.glowroot.storage.config.ImmutableFatStorageConfig;
@@ -53,13 +54,9 @@ import org.glowroot.storage.config.ServerStorageConfig;
 import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.config.UserConfig;
 import org.glowroot.storage.config.WebConfig;
-import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.OptimisticLockException;
-import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.RepoAdmin;
-import org.glowroot.storage.repo.TraceRepository;
-import org.glowroot.storage.repo.TransactionTypeRepository;
 import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.storage.util.Encryption;
 import org.glowroot.storage.util.MailService;
@@ -79,30 +76,21 @@ class AdminJsonService {
     private final boolean fat;
     private final ConfigRepository configRepository;
     private final RepoAdmin repoAdmin;
+    private final LiveAggregateRepository liveAggregateRepository;
     private final MailService mailService;
     private final PasswordService passwordService;
-
-    private final AggregateRepository aggregateRepository;
-    private final TraceRepository traceRepository;
-    private final TransactionTypeRepository transactionTypeRepository;
-    private final GaugeValueRepository gaugeValueRepository;
 
     private volatile @MonotonicNonNull HttpServer httpServer;
 
     AdminJsonService(boolean fat, ConfigRepository configRepository, RepoAdmin repoAdmin,
-            MailService mailService, PasswordService passwordService,
-            AggregateRepository aggregateRepository, TraceRepository traceRepository,
-            TransactionTypeRepository transactionTypeRepository,
-            GaugeValueRepository gaugeValueRepository) {
+            LiveAggregateRepository liveAggregateRepository, MailService mailService,
+            PasswordService passwordService) {
         this.fat = fat;
         this.configRepository = configRepository;
         this.repoAdmin = repoAdmin;
+        this.liveAggregateRepository = liveAggregateRepository;
         this.mailService = mailService;
         this.passwordService = passwordService;
-        this.aggregateRepository = aggregateRepository;
-        this.traceRepository = traceRepository;
-        this.transactionTypeRepository = transactionTypeRepository;
-        this.gaugeValueRepository = gaugeValueRepository;
     }
 
     void setHttpServer(HttpServer httpServer) {
@@ -254,12 +242,8 @@ class AdminJsonService {
 
     @POST(path = "/backend/admin/delete-all-stored-data", permission = "admin:edit:storage")
     void deleteAllData() throws Exception {
-        // TODO optimize by just deleting and re-creating h2 db
-        traceRepository.deleteAll();
-        aggregateRepository.deleteAll();
-        transactionTypeRepository.deleteAll();
-        gaugeValueRepository.deleteAll();
-        repoAdmin.defrag();
+        repoAdmin.deleteAllData();
+        liveAggregateRepository.clearInMemoryAggregate();
     }
 
     @POST(path = "/backend/admin/defrag-data", permission = "admin:edit:storage")

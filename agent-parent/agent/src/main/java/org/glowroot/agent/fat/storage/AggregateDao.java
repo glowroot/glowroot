@@ -365,14 +365,6 @@ public class AggregateDao implements AggregateRepository {
         return dataSource.query(new ShouldHaveSomethingQuery(query, "service_calls_capped_id"));
     }
 
-    @Override
-    public void deleteAll() throws Exception {
-        for (int i = 0; i < configRepository.getRollupConfigs().size(); i++) {
-            dataSource.execute("truncate table aggregate_tt_rollup_" + castUntainted(i));
-            dataSource.execute("truncate table aggregate_tn_rollup_" + castUntainted(i));
-        }
-    }
-
     void deleteBefore(long captureTime, int rollupLevel) throws Exception {
         dataSource.deleteBefore("aggregate_tt_rollup_" + castUntainted(rollupLevel), captureTime);
         dataSource.deleteBefore("aggregate_tn_rollup_" + castUntainted(rollupLevel), captureTime);

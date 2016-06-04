@@ -108,8 +108,7 @@ public class UiModule {
                 gaugeValueRepository, rollupLevelService, configRepository);
         AlertConfigJsonService alertJsonService = new AlertConfigJsonService(configRepository);
         AdminJsonService adminJsonService = new AdminJsonService(fat, configRepository, repoAdmin,
-                new MailService(), passwordService, aggregateRepository,
-                traceRepository, transactionTypeRepository, gaugeValueRepository);
+                liveAggregateRepository, new MailService(), passwordService);
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(transactionJsonService);

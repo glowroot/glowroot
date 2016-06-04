@@ -90,6 +90,10 @@ public class Aggregator {
         return intervalCollectors;
     }
 
+    public void clearInMemoryAggregate() {
+        activeIntervalCollector.clear();
+    }
+
     long add(Transaction transaction) {
         // this synchronized block is to ensure traces are placed into processing queue in the
         // order of captureTime (so that queue reader can assume if captureTime indicates time to

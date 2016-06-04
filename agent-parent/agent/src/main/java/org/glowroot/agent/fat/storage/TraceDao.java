@@ -254,13 +254,6 @@ public class TraceDao implements TraceRepository {
         return traceCappedDatabase.readMessage(cappedId, Profile.parser());
     }
 
-    @Override
-    public void deleteAll() throws Exception {
-        traceAttributeNameDao.deleteAll();
-        dataSource.execute("truncate table trace");
-        dataSource.execute("truncate table trace_attribute");
-    }
-
     void deleteBefore(long captureTime) throws Exception {
         traceAttributeNameDao.deleteBefore(captureTime);
         dataSource.deleteBefore("trace", captureTime);

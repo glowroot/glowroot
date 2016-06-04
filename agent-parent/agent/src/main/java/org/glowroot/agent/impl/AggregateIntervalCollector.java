@@ -239,6 +239,10 @@ public class AggregateIntervalCollector {
         collector.collectAggregates(captureTime, aggregatesByTypeList);
     }
 
+    void clear() {
+        typeCollectors.clear();
+    }
+
     private IntervalTypeCollector getTypeCollector(String transactionType) {
         IntervalTypeCollector typeCollector;
         typeCollector = typeCollectors.get(transactionType);

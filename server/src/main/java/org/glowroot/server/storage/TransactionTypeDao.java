@@ -104,12 +104,6 @@ public class TransactionTypeDao implements TransactionTypeRepository {
         return builder.build();
     }
 
-    @Override
-    public void deleteAll() throws Exception {
-        // this is not currently supported (to avoid row key range query)
-        throw new UnsupportedOperationException();
-    }
-
     void maybeUpdateLastCaptureTime(String agentRollup, String transactionType,
             List<ResultSetFuture> futures) {
         RateLimiter rateLimiter = rateLimiters

@@ -587,12 +587,6 @@ public class AggregateDao implements AggregateRepository {
         return false;
     }
 
-    @Override
-    public void deleteAll() {
-        // this is not currently supported (to avoid row key range query)
-        throw new UnsupportedOperationException();
-    }
-
     @OnlyUsedByTests
     void truncateAll() {
         for (Table table : allTables) {

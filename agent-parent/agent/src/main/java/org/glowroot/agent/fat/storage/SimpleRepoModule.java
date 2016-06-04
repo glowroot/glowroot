@@ -102,7 +102,7 @@ public class SimpleRepoModule {
                 transactionTypeDao);
         traceDao = new TraceDao(dataSource, traceCappedDatabase, transactionTypeDao);
         GaugeNameDao gaugeNameDao = new GaugeNameDao(dataSource);
-        gaugeValueDao = new GaugeValueDao(dataSource, gaugeNameDao, configRepository, clock);
+        gaugeValueDao = new GaugeValueDao(dataSource, gaugeNameDao, clock);
 
         repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
                 configRepository);

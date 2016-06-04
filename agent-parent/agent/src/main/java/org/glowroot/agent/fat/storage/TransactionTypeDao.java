@@ -55,11 +55,6 @@ class TransactionTypeDao implements TransactionTypeRepository {
         return ImmutableMap.of(AGENT_ID, transactionTypes);
     }
 
-    @Override
-    public void deleteAll() throws Exception {
-        dataSource.update("truncate table transaction_types");
-    }
-
     void updateLastCaptureTime(String transactionType, long captureTime) throws Exception {
         synchronized (lock) {
             int updateCount = dataSource.update("update transaction_types set last_capture_time = ?"

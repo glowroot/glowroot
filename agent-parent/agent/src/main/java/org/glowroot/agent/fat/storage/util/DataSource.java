@@ -22,6 +22,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
@@ -36,6 +38,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.checkerframework.checker.tainting.qual.Untainted;
 import org.h2.jdbc.JdbcConnection;
 import org.slf4j.Logger;
@@ -62,6 +65,9 @@ public class DataSource {
     private Connection connection;
     private volatile int queryTimeoutSeconds;
     private volatile boolean closing = false;
+
+    private final Map</*@Untainted*/String, ImmutableList<Column>> tables = Maps.newConcurrentMap();
+    private final Map</*@Untainted*/String, ImmutableList<Index>> indexes = Maps.newConcurrentMap();
 
     private final LoadingCache</*@Untainted*/ String, PreparedStatement> preparedStatementCache =
             CacheBuilder.newBuilder().weakValues()
@@ -102,6 +108,30 @@ public class DataSource {
             execute("shutdown defrag");
             preparedStatementCache.invalidateAll();
             connection = createConnection(dbFile);
+        }
+    }
+
+    public void deleteAll() throws SQLException {
+        if (dbFile == null) {
+            return;
+        }
+        synchronized (lock) {
+            if (closing) {
+                return;
+            }
+            connection.close();
+            preparedStatementCache.invalidateAll();
+            boolean success = dbFile.delete();
+            connection = createConnection(dbFile);
+            for (Entry</*@Untainted*/String, ImmutableList<Column>> entry : tables.entrySet()) {
+                syncTable(entry.getKey(), entry.getValue());
+            }
+            for (Entry</*@Untainted*/String, ImmutableList<Index>> entry : indexes.entrySet()) {
+                syncIndexes(entry.getKey(), entry.getValue());
+            }
+            if (!success) {
+                throw new SQLException("Could not delete file: " + dbFile.getAbsolutePath());
+            }
         }
     }
 
@@ -318,6 +348,7 @@ public class DataSource {
                 return;
             }
             Schemas.syncTable(tableName, columns, connection);
+            tables.put(tableName, ImmutableList.copyOf(columns));
         }
     }
 
@@ -328,6 +359,7 @@ public class DataSource {
                 return;
             }
             Schemas.syncIndexes(tableName, indexes, connection);
+            this.indexes.put(tableName, indexes);
         }
     }
 

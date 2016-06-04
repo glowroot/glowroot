@@ -829,12 +829,6 @@ public class TraceDao implements TraceRepository {
         return Profile.parseFrom(ByteString.copyFrom(bytes));
     }
 
-    @Override
-    public void deleteAll() {
-        // this is not currently supported (to avoid row key range query)
-        throw new UnsupportedOperationException();
-    }
-
     private @Nullable Trace.Header readHeader(String agentId, String traceId)
             throws InvalidProtocolBufferException {
         BoundStatement boundStatement = readHeader.bind();

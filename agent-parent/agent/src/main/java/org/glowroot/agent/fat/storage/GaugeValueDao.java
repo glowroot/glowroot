@@ -40,7 +40,6 @@ import org.glowroot.agent.fat.storage.util.Schemas.Column;
 import org.glowroot.agent.fat.storage.util.Schemas.ColumnType;
 import org.glowroot.agent.fat.storage.util.Schemas.Index;
 import org.glowroot.common.util.Clock;
-import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.helper.Gauges;
@@ -62,7 +61,6 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     private final GaugeNameDao gaugeNameDao;
     private final DataSource dataSource;
-    private final ConfigRepository configRepository;
     private final Clock clock;
     private final ImmutableList<RollupConfig> rollupConfigs;
 
@@ -71,11 +69,9 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     private final Object rollupLock = new Object();
 
-    GaugeValueDao(DataSource dataSource, GaugeNameDao gaugeNameDao,
-            ConfigRepository configRepository, Clock clock) throws Exception {
+    GaugeValueDao(DataSource dataSource, GaugeNameDao gaugeNameDao, Clock clock) throws Exception {
         this.dataSource = dataSource;
         this.gaugeNameDao = gaugeNameDao;
-        this.configRepository = configRepository;
         this.clock = clock;
         this.rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
 
@@ -173,15 +169,6 @@ public class GaugeValueDao implements GaugeValueRepository {
             return ImmutableList.of();
         }
         return dataSource.query(new GaugeValueQuery(gaugeId, from, to, rollupLevel));
-    }
-
-    @Override
-    public void deleteAll() throws Exception {
-        dataSource.execute("truncate table gauge_value_rollup_0");
-        for (int i = 1; i <= configRepository.getRollupConfigs().size(); i++) {
-            dataSource.execute("truncate table gauge_value_rollup_" + castUntainted(i));
-        }
-        gaugeNameDao.deleteAll();
     }
 
     void deleteBefore(long captureTime, int rollupLevel) throws Exception {
