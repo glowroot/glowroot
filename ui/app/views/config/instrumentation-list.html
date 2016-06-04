@@ -63,14 +63,11 @@
                     class="btn btn-default gt-button-spacing">
               Export all
             </button>
-            <div gt-button
-                 gt-btn-class="btn-warning"
-                 gt-label="Delete all"
-                 gt-click="deleteAll(deferred)"
-                 ng-if="configs.length"
-                 class="gt-inline-block">
+            <button ng-click="displayDeleteAllConfirmationModal()"
+                    ng-if="configs.length"
+                    class="btn btn-warning gt-button-spacing">
               Delete all
-            </div>
+            </button>
             <div gt-button
                  gt-btn-class="btn-danger"
                  gt-label="Apply changes to running JVM"
@@ -111,7 +108,7 @@
             </div>
           </div>
           <div class="gt-button-message gt-button-message-error"
-               style="margin-left: 0;"
+               style="margin-left: 0; padding-top: 20px;"
                ng-show="importErrorMessage">
             {{importErrorMessage}}
           </div>
@@ -136,6 +133,37 @@
       </div>
       <div class="modal-body" style="padding-top: 20px; height: 500px; overflow-y: auto;">
         <pre id="jsonExport" style="white-space: pre-wrap; word-wrap: break-word;">{{jsonExport}}</pre>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal" id="deleteAllConfirmationModal" tabindex="-1">
+  <div class="modal-dialog"
+       style="max-width: 500px;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Delete all configured instrumentation</h3>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete all configured instrumentation?</p>
+        <div style="min-height: 60px;">
+          <div class="gt-inline-block">
+            <div gt-spinner
+                 gt-show="deletingAll"
+                 class="gt-left-aligned-spinner"
+                 style="width: 50px; margin-bottom: -30px;">
+            </div>
+          </div>
+          <div class="gt-button-message gt-button-message-error"
+               style="margin-left: 0; padding-top: 20px;"
+               ng-show="deleteAllErrorMessage">
+            {{deleteAllErrorMessage}}
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" ng-click="deleteAll()">Yes</button>
+        <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
       </div>
     </div>
   </div>

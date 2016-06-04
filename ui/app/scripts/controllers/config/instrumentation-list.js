@@ -98,23 +98,33 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
       $location.search('export', true);
     };
 
-    $scope.deleteAll = function (deferred) {
+    $scope.displayDeleteAllConfirmationModal = function () {
+      modals.display('#deleteAllConfirmationModal', true);
+    };
+
+    $scope.deleteAll = function () {
+      $scope.deleteAllErrorMessage = '';
       var postData = {
         versions: []
       };
       angular.forEach($scope.configs, function (config) {
         postData.versions.push(config.version);
       });
+      $scope.deletingAll = true;
       $http.post('backend/config/instrumentation/remove?agent-id=' + encodeURIComponent($scope.agentId), postData)
           .success(function (data) {
-            var wrapped = $q.defer();
-            wrapped.promise.finally(function () {
+            var deferred = $q.defer();
+            deferred.promise.finally(function () {
               // leave spinner going until subsequent refresh is complete
-              deferred.resolve('Deleted');
+              $scope.deletingAll = false;
+              $('#deleteAllConfirmationModal').modal('hide');
             });
-            refresh(wrapped);
+            refresh(deferred);
           })
-          .error(httpErrors.handler($scope, deferred));
+          .error(function (data, status) {
+            $scope.deletingAll = false;
+            httpErrors.handler($scope)(data, status);
+          });
     };
 
     $scope.$watch('jsonToImport', function () {

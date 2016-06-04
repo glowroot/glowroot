@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular */
+/* global glowroot, angular, $ */
 
 glowroot.controller('AdminUserCtrl', [
   '$scope',
@@ -23,8 +23,8 @@ glowroot.controller('AdminUserCtrl', [
   '$timeout',
   'confirmIfHasChanges',
   'httpErrors',
-  'queryStrings',
-  function ($scope, $location, $http, $timeout, confirmIfHasChanges, httpErrors, queryStrings) {
+  'modals',
+  function ($scope, $location, $http, $timeout, confirmIfHasChanges, httpErrors, modals) {
 
     // initialize page binding object
     $scope.page = {};
@@ -159,16 +159,29 @@ glowroot.controller('AdminUserCtrl', [
           });
     };
 
-    $scope.delete = function (deferred) {
+    // delete user deserves confirmation dialog (as opposed to other deletes), since it cannot be undone without
+    // re-creating user password which may be unknown to administrator
+    $scope.displayDeleteConfirmationModal = function () {
+      modals.display('#deleteConfirmationModal', true);
+    };
+
+    $scope.delete = function () {
+      $scope.deleteErrorMessage = '';
       var postData = {
         username: $scope.username
       };
+      $scope.deleting = true;
       $http.post('backend/admin/users/remove', postData)
-          .success(function () {
+          .success(function (data) {
+            $scope.deleting = false;
+            $('#deleteConfirmationModal').modal('hide');
             removeConfirmIfHasChangesListener();
             $location.url('admin/user-list').replace();
           })
-          .error(httpErrors.handler($scope, deferred));
+          .error(function (data, status) {
+            $scope.deleting = false;
+            httpErrors.handler($scope)(data, status);
+          });
     };
   }
 ]);
