@@ -26,7 +26,9 @@ glowroot.factory('login', [
         message = msg;
         originalUrl = doNotSaveLocation ? '/' : $location.url();
         if (originalUrl !== '/login') {
-          $location.url('/login').replace();
+          // don't do .replace() here, since then back button doesn't work after clicking login
+          // (this is relevant when anonymous access is enabled)
+          $location.url('/login');
         }
       },
       getMessage: function () {
@@ -35,11 +37,16 @@ glowroot.factory('login', [
       returnToOriginalPath: function () {
         // originalPath can be undefined if user hits login page directly
         if (originalUrl && originalUrl !== '/login') {
-          $location.url(originalUrl).replace();
+          // don't do .replace() here, since then back button goes back to page right before /login, which is the same
+          // page as right after /login, which is then confusing
+          // (this is relevant when anonymous access is enabled)
+          $location.url(originalUrl);
         } else {
-          $location.url('/').replace();
+          // don't do .replace() here for same reason as above
+          $location.url('/');
         }
       }
     };
   }
 ]);
+
