@@ -103,7 +103,6 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
     };
 
     $scope.deleteAll = function () {
-      $scope.deleteAllErrorMessage = '';
       var postData = {
         versions: []
       };
@@ -112,7 +111,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
       });
       $scope.deletingAll = true;
       $http.post('backend/config/instrumentation/remove?agent-id=' + encodeURIComponent($scope.agentId), postData)
-          .success(function (data) {
+          .success(function () {
             var deferred = $q.defer();
             deferred.promise.finally(function () {
               // leave spinner going until subsequent refresh is complete
@@ -184,7 +183,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
       }
       $scope.importing = true;
       $http.post('backend/config/instrumentation/import?agent-id=' + encodeURIComponent($scope.agentId), postData)
-          .success(function (data) {
+          .success(function () {
             var deferred = $q.defer();
             deferred.promise.finally(function () {
               // leave spinner going until subsequent refresh is complete

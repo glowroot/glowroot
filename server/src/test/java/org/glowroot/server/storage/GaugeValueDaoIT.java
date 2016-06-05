@@ -33,21 +33,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class GaugeValueDaoIT {
 
+    private static Cluster cluster;
     private static Session session;
     private static GaugeValueDao gaugeValueDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        CassandraWrapper.start();
-        Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
+        SharedSetupRunListener.startCassandra();
+        cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
         session = cluster.newSession();
-        session.execute("create keyspace if not exists glowroot with replication ="
+        session.execute("create keyspace if not exists glowroot_unit_tests with replication ="
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
-        session.execute("use glowroot");
+        session.execute("use glowroot_unit_tests");
 
         ServerConfigDao serverConfigDao = new ServerConfigDao(session);
         AgentDao agentDao = new AgentDao(session);
-        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot");
+        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
         UserDao userDao = new UserDao(session, keyspace);
         RoleDao roleDao = new RoleDao(session, keyspace);
         ConfigRepository configRepository =
@@ -60,7 +61,8 @@ public class GaugeValueDaoIT {
     @AfterClass
     public static void tearDown() throws Exception {
         session.close();
-        CassandraWrapper.stop();
+        cluster.close();
+        SharedSetupRunListener.stopCassandra();
     }
 
     @Test

@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
+import org.glowroot.agent.plugin.api.util.Reflection;
 
 public class AsyncHttpClientRequestInvoker {
 
@@ -32,7 +33,7 @@ public class AsyncHttpClientRequestInvoker {
 
     public AsyncHttpClientRequestInvoker(Class<?> clazz) {
         Class<?> requestClass = getRequestClass(clazz);
-        getUrlMethod = Invokers.getMethod(requestClass, "getUrl");
+        getUrlMethod = Reflection.getMethod(requestClass, "getUrl");
         // in async-http-client versions from 1.7.12 up until just prior to 1.9.0, getUrl() stripped
         // trailing "/"
         // in these versions only there was method getURI that returned the non-stripped URI
@@ -52,9 +53,9 @@ public class AsyncHttpClientRequestInvoker {
     @SuppressWarnings("assignment.type.incompatible")
     String getUrl(Object request) {
         if (getURIMethod == null) {
-            return Invokers.invoke(getUrlMethod, request, "");
+            return Reflection.invokeWithDefault(getUrlMethod, request, "");
         }
-        URI uri = Invokers.invoke(getURIMethod, request, null);
+        URI uri = Reflection.invoke(getURIMethod, request);
         return uri == null ? "" : uri.toString();
     }
 

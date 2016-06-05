@@ -844,7 +844,7 @@ public class WeaverTest {
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
         AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisorsSupplier,
                 ImmutableList.<ShimType>of(), ImmutableList.<MixinType>of(), null);
-        WeaverImpl weaver = new WeaverImpl(advisorsSupplier, ImmutableList.<ShimType>of(),
+        Weaver weaver = new Weaver(advisorsSupplier, ImmutableList.<ShimType>of(),
                 ImmutableList.<MixinType>of(), analyzedWorld, NopWeavingTimerService.INSTANCE);
         isolatedWeavingClassLoader.setWeaver(weaver);
         Misc test = isolatedWeavingClassLoader.newInstance(BasicMisc.class, Misc.class);
@@ -1526,7 +1526,7 @@ public class WeaverTest {
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
         AnalyzedWorld analyzedWorld =
                 new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes, null);
-        WeaverImpl weaver = new WeaverImpl(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
+        Weaver weaver = new Weaver(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
                 NopWeavingTimerService.INSTANCE);
         isolatedWeavingClassLoader.setWeaver(weaver);
         return isolatedWeavingClassLoader.newInstance(implClass, bridgeClass);
@@ -1562,7 +1562,7 @@ public class WeaverTest {
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
         AnalyzedWorld analyzedWorld =
                 new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes, null);
-        WeaverImpl weaver = new WeaverImpl(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
+        Weaver weaver = new Weaver(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
                 NopWeavingTimerService.INSTANCE);
         isolatedWeavingClassLoader.setWeaver(weaver);
 

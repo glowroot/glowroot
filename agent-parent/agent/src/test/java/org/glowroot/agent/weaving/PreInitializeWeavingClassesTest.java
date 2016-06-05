@@ -45,7 +45,7 @@ public class PreInitializeWeavingClassesTest {
         // "call" WeavingClassFileTransformer constructor
         globalCollector.processMethodFailIfNotFound(
                 ReferencedMethod.from("org/glowroot/agent/weaving/WeavingClassFileTransformer",
-                        "<init>", "(Lorg/glowroot/agent/weaving/WeaverImpl;)V"));
+                        "<init>", "(Lorg/glowroot/agent/weaving/Weaver;)V"));
         // "call" WeavingClassFileTransformer.transform()
         globalCollector.processMethodFailIfNotFound(
                 ReferencedMethod.from("org/glowroot/agent/weaving/WeavingClassFileTransformer",

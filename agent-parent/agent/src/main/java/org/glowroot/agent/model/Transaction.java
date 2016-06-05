@@ -65,7 +65,7 @@ import org.glowroot.common.util.Cancellable;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.glowroot.agent.fat.storage.util.Checkers.castInitialized;
+import static org.glowroot.agent.util.Checkers.castInitialized;
 
 // contains all data that has been captured for a given transaction (e.g. a servlet request)
 //
@@ -363,22 +363,22 @@ public class Transaction {
         }
     }
 
-    public boolean allowAnotherEntry() {
+    boolean allowAnotherEntry() {
         return entryLimitCounter++ < maxTraceEntriesPerTransaction;
     }
 
-    public boolean allowAnotherErrorEntry() {
+    boolean allowAnotherErrorEntry() {
         // use higher entry limit when adding errors, but still need some kind of cap
         return entryLimitCounter++ < maxTraceEntriesPerTransaction
                 || extraErrorEntryLimitCounter++ < maxTraceEntriesPerTransaction;
     }
 
-    public boolean allowAnotherAggregateQuery() {
+    boolean allowAnotherAggregateQuery() {
         return aggregateQueryLimitCounter++ < maxAggregateQueriesPerType
                 * AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER;
     }
 
-    public boolean allowAnotherAggregateServiceCall() {
+    boolean allowAnotherAggregateServiceCall() {
         return aggregateServiceCallLimitCounter++ < maxAggregateServiceCallsPerType
                 * AdvancedConfig.OVERALL_AGGREGATE_SERVICE_CALLS_HARD_LIMIT_MULTIPLIER;
     }
@@ -464,10 +464,6 @@ public class Transaction {
         return slowThresholdMillis;
     }
 
-    public @Nullable Cancellable getUserProfileRunnable() {
-        return userProfileRunnable;
-    }
-
     public @Nullable Cancellable getImmedateTraceStoreRunnable() {
         return immedateTraceStoreRunnable;
     }
@@ -495,7 +491,7 @@ public class Transaction {
         }
     }
 
-    public void setAsync() {
+    void setAsync() {
         this.async = true;
     }
 
@@ -537,7 +533,7 @@ public class Transaction {
         }
     }
 
-    public void setError(@Nullable String message, @Nullable Throwable t) {
+    void setError(@Nullable String message, @Nullable Throwable t) {
         if (this.errorMessage == null) {
             this.errorMessage = ErrorMessage.from(message, t, getThrowableFrameLimitCounter());
         }
@@ -619,7 +615,7 @@ public class Transaction {
         return auxThreadContext;
     }
 
-    public AsyncTimerImpl startAsyncTimer(TimerName asyncTimerName, long startTick) {
+    AsyncTimerImpl startAsyncTimer(TimerName asyncTimerName, long startTick) {
         AsyncTimerImpl asyncTimer = new AsyncTimerImpl((TimerNameImpl) asyncTimerName, startTick);
         synchronized (asyncTimerLock) {
             if (asyncTimers == null) {
@@ -656,7 +652,7 @@ public class Transaction {
         return entryLimitCounter++ > maxTraceEntriesPerTransaction;
     }
 
-    public void captureStackTrace(boolean auxiliary, ThreadInfo threadInfo, int limit) {
+    void captureStackTrace(boolean auxiliary, ThreadInfo threadInfo, int limit) {
         if (completed) {
             return;
         }
@@ -839,7 +835,7 @@ public class Transaction {
         byte[] bytes = new byte[10];
         random.nextBytes(bytes);
         // lower 6 bytes of current time will wrap only every 8925 years
-        return lowerSixBytesHex(startTime) + BaseEncoding.base16().encode(bytes);
+        return lowerSixBytesHex(startTime) + BaseEncoding.base16().lowerCase().encode(bytes);
     }
 
     @VisibleForTesting

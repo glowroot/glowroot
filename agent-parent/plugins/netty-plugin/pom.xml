@@ -73,6 +73,9 @@
   <profiles>
     <profile>
       <id>netty-4.x</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
       <properties>
         <netty.version>4.1.0.Final</netty.version>
       </properties>

@@ -23,10 +23,10 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 class LayoutHttpService implements HttpService {
 
-    private final LayoutService layoutJsonService;
+    private final LayoutService layoutService;
 
-    LayoutHttpService(LayoutService layoutJsonService) {
-        this.layoutJsonService = layoutJsonService;
+    LayoutHttpService(LayoutService layoutService) {
+        this.layoutService = layoutService;
     }
 
     @Override
@@ -38,6 +38,6 @@ class LayoutHttpService implements HttpService {
     @Override
     public FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
             throws Exception {
-        return HttpServices.createJsonResponse(layoutJsonService.getLayout(), OK);
+        return HttpServices.createJsonResponse(layoutService.getLayout(), OK);
     }
 }

@@ -4,8 +4,14 @@
 # /dev/./urandom (as opposed to simply /dev/urandom) is needed prior to Java 8
 # (see https://docs.oracle.com/javase/8/docs/technotes/guides/security/enhancements-8.html)
 #
-# MaxPermSize bump is needed for running grails plugin tests
-surefire_jvm_args="-Xmx512m -XX:MaxPermSize=128m -Djava.security.egd=file:/dev/./urandom"
+# NewRatio is to leave as much memory as possible to old gen
+surefire_jvm_args="-Xmx256m -XX:NewRatio=20 -Djava.security.egd=file:/dev/./urandom"
+java_version=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}')
+if [[ "$java_version" < "1.8" ]]
+then
+  # MaxPermSize bump is needed for running grails plugin tests
+  surefire_jvm_args="$surefire_jvm_args -XX:MaxPermSize=128m"
+fi
 
 case "$1" in
 
@@ -18,6 +24,17 @@ case "$1" in
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -Dglowroot.test.fileLoggingOnly=false \
                                  -B
+               if [[ "$java_version" > "1.8" && "$SKIP_SHADING" == "true" ]]
+               then
+                 # glowroot server requires java 8+
+                 # and needs to run against unshaded it-harness to avoid shading complications
+                 mvn clean verify -pl :glowroot-webdriver-tests \
+                                  -Dglowroot.internal.webdriver.server=true \
+                                  -DargLine="$surefire_jvm_args" \
+                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
+                                  -Dglowroot.test.fileLoggingOnly=false \
+                                  -B
+               fi
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -DargLine="$surefire_jvm_args" \
                                 $skip_shading_opt \
@@ -69,12 +86,6 @@ case "$1" in
                  # won't report usage of those bytecode modified classes
                  #
                  # jacoco destFile needs absolute path, otherwise it is relative to each submodule
-                 #
-                 # code coverage for @Pointcut classes are only captured when run with javaagent
-                 # integration test harness since in that case jacoco javaagent goes first
-                 # (see JavaagentMain) and uses the original bytecode to construct the class ids,
-                 # whereas when run with local integration test harness jacoco javaagent uses the
-                 # bytecode that is woven by IsolatedWeavingClassLoader to construct the class ids
                  mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent test \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
@@ -83,27 +94,89 @@ case "$1" in
                                  -Dglowroot.test.fileLoggingOnly=false \
                                  -B
                  # intentionally calling failsafe plugin directly in order to skip surefire (unit test) execution
-                 mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent-integration test-compile failsafe:integration-test failsafe:verify \
+                 #
+                 # code coverage for @Pointcut classes are only captured when run with javaagent
+                 # integration test harness since in that case jacoco javaagent goes first
+                 # (see JavaagentMain) and uses the original bytecode to construct the class ids,
+                 # whereas when run with local integration test harness jacoco javaagent uses the
+                 # bytecode that is woven by IsolatedWeavingClassLoader to construct the class ids
+                 common_mvn_args="clean \
+                                 org.jacoco:jacoco-maven-plugin:prepare-agent-integration \
+                                 test-compile \
+                                 failsafe:integration-test \
+                                 failsafe:verify \
                                  -Djacoco.destFile=$PWD/jacoco-combined-it.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
-                                 -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                 -Djacoco.append=true \
                                  -Dglowroot.shade.skip \
                                  -Dglowroot.it.harness=javaagent \
-                                 -Dglowroot.test.fileLoggingOnly=false \
-                                 -B
+                                 -Dglowroot.test.fileLoggingOnly=false"
+                 # run integration tests
+                 mvn $common_mvn_args -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -B
+                 # install unshaded to run webdriver tests against server
+                 mvn clean install -Dglowroot.shade.skip -DskipTests -B
+                 # run webdriver tests against server
+                 mvn $common_mvn_args -pl :glowroot-webdriver-tests \
+                                      -Dglowroot.internal.webdriver.server=true \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -B
+                 # install shaded in order to run certain plugin tests
+                 mvn clean install -DskipTests -B
+                 # enforcer.skip is needed for remaining tests
+                 common_mvn_args="$common_mvn_args \
+                                  -Denforcer.skip \
+                                  \"-DargLine=$surefire_jvm_args \\\${jacocoArgLine}\""
+                 # async-http-client 2.x (AsyncHttpClientPluginIT)
+                 mvn $common_mvn_args -pl agent-parent/plugins/http-client-plugin \
+                                      -P async-http-client-2.x \
+                                      -Dit.test=AsyncHttpClientPluginIT \
+                                      -B
+                 # async-http-client 1.x (AsyncHttpClientPluginIT)
+                 mvn $common_mvn_args -pl agent-parent/plugins/http-client-plugin \
+                                      -P async-http-client-1.x \
+                                      -Dit.test=AsyncHttpClientPluginIT \
+                                      -B
+                 # okhttp prior to 2.2.0 (OkHttpClientPluginIT)
+                 mvn $common_mvn_args -pl agent-parent/plugins/http-client-plugin \
+                                      -Dokhttpclient.version=2.1.0 \
+                                      -Dit.test=OkHttpClientPluginIT \
+                                      -B
+                 # LogbackIT (only runs against shaded agent)
+                 mvn $common_mvn_args -pl agent-parent/plugins/logger-plugin \
+                                      -Dit.test=LogbackIT \
+                                      -B
+                 # LogbackIT prior to 0.9.16
+                 mvn $common_mvn_args -pl agent-parent/plugins/logger-plugin \
+                                      -P logback-old \
+                                      -Dit.test=LogbackIT \
+                                      -B
+                 # netty 3.x
+                 mvn $common_mvn_args -pl agent-parent/plugins/netty-plugin \
+                                      -P netty-3.x \
+                                      -B
+                 # play 2.2.x
+                 mvn $common_mvn_args -pl agent-parent/plugins/play-plugin \
+                                      -P play-2.2.x,play-2.x \
+                                      -B
+                 # TODO Play 2.0.x and 2.1.x require Java 7
+                 # play 1.x
+                 mvn $common_mvn_args -pl agent-parent/plugins/play-plugin \
+                                      -P play-1.x \
+                                      -B
                  # the sonar.jdbc.password system property is set in the pom.xml using the
                  # environment variable SONAR_DB_PASSWORD (instead of setting the system
                  # property on the command line which which would make it visible to ps)
-                 mvn clean verify sonar:sonar -pl !misc/checker-qual-jdk6,!misc/license-resource-bundle,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!agent-parent/distribution \
-                                 -Dsonar.jdbc.url=$SONAR_JDBC_URL \
-                                 -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
-                                 -Dsonar.host.url=$SONAR_HOST_URL \
-                                 -Dsonar.jacoco.reportPath=$PWD/jacoco-combined.exec \
-                                 -Dsonar.jacoco.itReportPath=$PWD/jacoco-combined-it.exec \
-                                 -DargLine="$surefire_jvm_args" \
-                                 -Dglowroot.shade.skip \
-                                 -Dglowroot.test.fileLoggingOnly=false \
-                                 -B
+                 mvn clean verify sonar:sonar -pl !misc/license-resource-bundle,!misc/checker-qual-jdk6,!misc/multi-lib-version-tester,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!agent-parent/dist-maven-plugin,!agent-parent/distribution \
+                                   -Dsonar.jdbc.url=$SONAR_JDBC_URL \
+                                   -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
+                                   -Dsonar.host.url=$SONAR_HOST_URL \
+                                   -Dsonar.jacoco.reportPath=$PWD/jacoco-combined.exec \
+                                   -Dsonar.jacoco.itReportPath=$PWD/jacoco-combined-it.exec \
+                                   -DargLine="$surefire_jvm_args" \
+                                   -Dglowroot.shade.skip \
+                                   -Dglowroot.test.fileLoggingOnly=false \
+                                   -B
                else
                  echo skipping, sonar analysis only runs against master repository and master branch
                fi
@@ -145,18 +218,14 @@ case "$1" in
                                  -Dglowroot.ui.skip \
                                  -DskipTests \
                                  -B
-               # process-classes is needed (as opposed to compile) in order to generate glowroot-agent-dist-maven-plugin's plugin.xml
-               # otherwise glowroot-agent-distribution module fails with
-               # "Failed to parse plugin descriptor for org.glowroot:glowroot-agent-dist-maven-plugin:0.9-SNAPSHOT
-               # (/home/travis/build/trask/glowroot/agent-parent/dist-maven-plugin/target/classes): No plugin descriptor found at META-INF/maven/plugin.xml"
-               mvn clean process-classes -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/it-harness,!agent-parent/benchmarks,!agent-parent/ui-sandbox \
-                                         -Pchecker \
-                                         -Dchecker.install.dir=$HOME/checker-framework \
-                                         -Dchecker.stubs.dir=$PWD/misc/checker-stubs \
-                                         -Dglowroot.ui.skip \
-                                         -DargLine="$surefire_jvm_args" \
-                                         -B \
-                                         | sed 's/\[ERROR\] .*[\/]\([^\/.]*\.java\):\[\([0-9]*\),\([0-9]*\)\]/[ERROR] (\1:\2) [column \3]/'
+               mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/it-harness,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!agent-parent/distribution \
+                                 -Pchecker \
+                                 -Dchecker.install.dir=$HOME/checker-framework \
+                                 -Dchecker.stubs.dir=$PWD/misc/checker-stubs \
+                                 -Dglowroot.ui.skip \
+                                 -DargLine="$surefire_jvm_args" \
+                                 -B \
+                                 | sed 's/\[ERROR\] .*[\/]\([^\/.]*\.java\):\[\([0-9]*\),\([0-9]*\)\]/[ERROR] (\1:\2) [column \3]/'
                # preserve exit status from mvn (needed because of pipe to sed)
                mvn_status=${PIPESTATUS[0]}
                git checkout -- .
@@ -171,7 +240,7 @@ case "$1" in
                then
                  mvn clean install -DskipTests \
                                    -B
-                 cd agent-parent/webdriver-tests
+                 cd webdriver-tests
                  mvn clean verify -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
                                   -Dsaucelabs.browser.name="$SAUCELABS_BROWSER_NAME" \
                                   -Dsaucelabs.browser.version="$SAUCELABS_BROWSER_VERSION" \

@@ -204,12 +204,12 @@ public class AgentDao implements AgentRepository {
         return SystemInfo.parseFrom(ByteString.copyFrom(bytes));
     }
 
-    public @Nullable AgentConfig readAgentConfig(String agentId) {
+    @Nullable
+    AgentConfig readAgentConfig(String agentId) {
         return cache.getUnchecked(agentId).orNull();
-
     }
 
-    public void storeAgentConfig(String agentId, AgentConfig agentConfig) {
+    void storeAgentConfig(String agentId, AgentConfig agentConfig) {
         BoundStatement boundStatement = insertConfigOnlyPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentId);
@@ -218,7 +218,7 @@ public class AgentDao implements AgentRepository {
         cache.invalidate(agentId);
     }
 
-    public @Nullable AgentConfig readAgentConfigInternal(String agentId)
+    private @Nullable AgentConfig readAgentConfigInternal(String agentId)
             throws InvalidProtocolBufferException {
         BoundStatement boundStatement = readAgentConfigPS.bind();
         boundStatement.setString(0, agentId);

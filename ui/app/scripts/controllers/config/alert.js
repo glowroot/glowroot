@@ -78,9 +78,7 @@ glowroot.controller('ConfigAlertCtrl', [
             halfLoaded = true;
           }
           $scope.gaugeNames = [];
-          angular.forEach(data, function (gauge) {
-            $scope.gauges = data;
-          });
+          $scope.gauges = data;
         })
         .error(httpErrors.handler($scope));
 
@@ -176,14 +174,14 @@ glowroot.controller('ConfigAlertCtrl', [
 
     $scope.delete = function (deferred) {
       var postData = {
-        agentId: $scope.agentId,
         version: $scope.config.version
       };
-      $http.post('backend/config/alerts/remove', postData)
+      var agentId = $scope.agentId;
+      $http.post('backend/config/alerts/remove?agent-id=' + encodeURIComponent(agentId), postData)
           .success(function () {
             removeConfirmIfHasChangesListener();
-            if (postData.agentId) {
-              $location.url('config/alert-list?agent-id=' + encodeURIComponent(postData.agentId)).replace();
+            if (postData) {
+              $location.url('config/alert-list?agent-id=' + encodeURIComponent(agentId)).replace();
             } else {
               $location.url('config/alert-list').replace();
             }

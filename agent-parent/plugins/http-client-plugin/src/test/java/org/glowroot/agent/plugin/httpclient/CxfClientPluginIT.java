@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.List;
 
@@ -88,7 +87,7 @@ public class CxfClientPluginIT {
             client.hello("world");
         }
 
-        private int getAvailablePort() throws IOException {
+        private int getAvailablePort() throws Exception {
             ServerSocket serverSocket = new ServerSocket(0);
             int port = serverSocket.getLocalPort();
             serverSocket.close();

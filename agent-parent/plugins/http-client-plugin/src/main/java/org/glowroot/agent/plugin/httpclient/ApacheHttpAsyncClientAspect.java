@@ -236,21 +236,11 @@ public class ApacheHttpAsyncClientAspect {
                     "org.apache.http.concurrent.FutureCallback"})
     public static class ExecuteWithProducerConsumerContextAdvice {
         @OnBefore
-        public static void onBefore(ThreadContext context,
-                @SuppressWarnings("unused") @BindParameter @Nullable Object producer,
+        public static void onBefore(ThreadContext context, @BindParameter @Nullable Object producer,
                 @BindParameter @Nullable HttpAsyncResponseConsumerMixin consumer,
                 @SuppressWarnings("unused") @BindParameter @Nullable Object httpContext,
                 @BindParameter @Nullable FutureCallbackMixin callback) {
-            AsyncTraceEntry asyncTraceEntry = asyncTraceEntryHolder.get();
-            if (asyncTraceEntry == null) {
-                return;
-            }
-            if (consumer != null) {
-                consumer.glowroot$setAsyncTraceEntry(asyncTraceEntry);
-            }
-            if (callback != null) {
-                callback.glowroot$setAuxContext(context.createAuxThreadContext());
-            }
+            ExecuteWithProducerConsumerAdvice.onBefore(context, producer, consumer, callback);
         }
     }
 

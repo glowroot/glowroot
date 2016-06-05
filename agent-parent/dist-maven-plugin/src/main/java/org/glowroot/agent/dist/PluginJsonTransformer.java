@@ -42,17 +42,17 @@ import org.glowroot.agent.config.PropertyDescriptor;
 import org.glowroot.agent.config.PropertyValue;
 import org.glowroot.agent.dist.PluginConfig.PropertyConfig;
 
-public class PluginJsonTransformer {
+class PluginJsonTransformer {
 
     private final MavenProject project;
     private final PluginConfig[] pluginConfigs;
 
-    public PluginJsonTransformer(MavenProject project, PluginConfig[] pluginConfigs) {
+    PluginJsonTransformer(MavenProject project, PluginConfig[] pluginConfigs) {
         this.project = project;
         this.pluginConfigs = pluginConfigs;
     }
 
-    public void execute() throws Exception {
+    void execute() throws Exception {
         Set<Artifact> artifacts = project.getDependencyArtifacts();
         createArtifactJar(artifacts);
     }

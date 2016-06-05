@@ -15,12 +15,10 @@
  */
 package org.glowroot.ui;
 
-import java.util.Locale;
 import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpRequest;
@@ -33,25 +31,28 @@ import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.subject.Subject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.storage.config.UserConfig;
 import org.glowroot.storage.repo.ConfigRepository;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 class SessionHelper {
 
-    private final ConfigRepository configRepository;
-    private final LayoutService layoutJsonService;
+    private static final Logger logger = LoggerFactory.getLogger(SessionHelper.class);
 
-    SessionHelper(ConfigRepository configRepository, LayoutService layoutJsonService) {
+    private final ConfigRepository configRepository;
+    private final LayoutService layoutService;
+
+    SessionHelper(ConfigRepository configRepository, LayoutService layoutService) {
         this.configRepository = configRepository;
-        this.layoutJsonService = layoutJsonService;
+        this.layoutService = layoutService;
     }
 
     FullHttpResponse login(String username, String password) throws Exception {
-        if (username.toLowerCase(Locale.ENGLISH).equals("anonymous")) {
+        if (username.equalsIgnoreCase("anonymous")) {
             String text = "{\"incorrectLogin\":true}";
             return HttpServices.createJsonResponse(text, OK);
         }
@@ -64,10 +65,11 @@ class SessionHelper {
         try {
             subject.login(new UsernamePasswordToken(username, password));
         } catch (AuthenticationException e) {
+            logger.debug(e.getMessage(), e);
             String text = "{\"incorrectLogin\":true}";
             return HttpServices.createJsonResponse(text, OK);
         }
-        String text = layoutJsonService.getLayout();
+        String text = layoutService.getLayout();
         FullHttpResponse response = HttpServices.createJsonResponse(text, OK);
         Cookie cookie =
                 new DefaultCookie("GLOWROOT_SESSION_ID", (String) subject.getSession().getId());
@@ -75,13 +77,6 @@ class SessionHelper {
         cookie.setPath("/");
         response.headers().add(HttpHeaderNames.SET_COOKIE,
                 ServerCookieEncoder.STRICT.encode(cookie));
-        return response;
-    }
-
-    FullHttpResponse signOut() {
-        SecurityUtils.getSubject().logout();
-        FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK);
-        deleteSessionCookie(response);
         return response;
     }
 

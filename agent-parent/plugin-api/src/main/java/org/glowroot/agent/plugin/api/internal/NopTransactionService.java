@@ -84,34 +84,11 @@ public class NopTransactionService {
         public void setCurrRow(long row) {}
     }
 
-    public static class NopAsyncTraceEntry implements AsyncTraceEntry {
+    public static class NopAsyncTraceEntry extends NopTraceEntry implements AsyncTraceEntry {
 
         public static final NopAsyncTraceEntry INSTANCE = new NopAsyncTraceEntry();
 
         private NopAsyncTraceEntry() {}
-
-        @Override
-        public void end() {}
-
-        @Override
-        public void endWithStackTrace(long threshold, TimeUnit unit) {}
-
-        @Override
-        public void endWithError(Throwable t) {}
-
-        @Override
-        public void endWithError(@Nullable String message) {}
-
-        @Override
-        public void endWithError(@Nullable String message, Throwable t) {}
-
-        @Override
-        public void endWithInfo(Throwable t) {}
-
-        @Override
-        public @Nullable MessageSupplier getMessageSupplier() {
-            return null;
-        }
 
         @Override
         public void stopSyncTimer() {}
@@ -122,25 +99,19 @@ public class NopTransactionService {
         }
     }
 
-    public static class NopAsyncQueryEntry extends NopAsyncTraceEntry implements AsyncQueryEntry {
+    public static class NopAsyncQueryEntry extends NopQueryEntry implements AsyncQueryEntry {
 
         public static final NopAsyncQueryEntry INSTANCE = new NopAsyncQueryEntry();
 
         private NopAsyncQueryEntry() {}
 
         @Override
-        public Timer extend() {
+        public void stopSyncTimer() {}
+
+        @Override
+        public Timer extendSyncTimer(ThreadContext currThreadContext) {
             return NopTimer.INSTANCE;
         }
-
-        @Override
-        public void rowNavigationAttempted() {}
-
-        @Override
-        public void incrementCurrRow() {}
-
-        @Override
-        public void setCurrRow(long row) {}
     }
 
     public static class NopAuxThreadContext implements AuxThreadContext {

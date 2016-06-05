@@ -329,15 +329,17 @@ public class ConfigService {
     }
 
     @OnlyUsedByTests
-    public void resetAllConfig() throws IOException {
+    public void resetConfig() throws IOException {
         transactionConfig = ImmutableTransactionConfig.builder()
                 .slowThresholdMillis(0)
                 .build();
+        uiConfig = ImmutableUiConfig.builder().build();
         userRecordingConfig = ImmutableUserRecordingConfig.builder().build();
         advancedConfig = ImmutableAdvancedConfig.builder().build();
+        gaugeConfigs = getDefaultGaugeConfigs();
+        alertConfigs = ImmutableList.of();
         pluginConfigs =
                 fixPluginConfigs(ImmutableList.<ImmutablePluginConfigTemp>of(), pluginDescriptors);
-        gaugeConfigs = getDefaultGaugeConfigs();
         instrumentationConfigs = ImmutableList.of();
         writeAll();
         notifyConfigListeners();
@@ -446,9 +448,6 @@ public class ConfigService {
             return PropertyValue.getDefaultValue(propertyType);
         }
     }
-
-    public static class ShadeProtectedTypeReference<T extends /*@NonNull*/ Object>
-            extends TypeReference<T> {}
 
     private static class PluginDescriptorOrdering extends Ordering<PluginDescriptor> {
         @Override

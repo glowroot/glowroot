@@ -17,6 +17,8 @@ package org.glowroot.agent.plugin.servlet;
 
 import java.util.Map;
 
+import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
@@ -25,6 +27,8 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.servlet.ServletAspect.HttpServletRequest;
 
 public class RequestParameterAspect {
+
+    private static final Logger logger = Agent.getLogger(RequestParameterAspect.class);
 
     @Pointcut(className = "javax.servlet.ServletRequest", methodName = "getParameter*",
             methodParameterTypes = {".."}, nestingGroup = "servlet-inner-call")
@@ -66,6 +70,8 @@ public class RequestParameterAspect {
                 // atg.servlet.MutableHttpServletRequest and generates a NullPointerException since
                 // the super class was not set up expecting the call
 
+                // log exception at debug level
+                logger.debug(e.getMessage(), e);
                 // set flag so don't keep generating/catching exception over and over
                 requestClassMeta.setBadParameterMapImplementation();
                 messageSupplier.setCaptureRequestParameters(

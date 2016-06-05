@@ -276,7 +276,7 @@ public class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, T
         }
     }
 
-    public void setStackTrace(ImmutableList<StackTraceElement> stackTrace) {
+    void setStackTrace(ImmutableList<StackTraceElement> stackTrace) {
         this.stackTrace = stackTrace;
     }
 

@@ -17,13 +17,13 @@ package org.glowroot.ui;
 
 import org.glowroot.common.live.ImmutableOverallQuery;
 import org.glowroot.common.live.LiveAggregateRepository;
-import org.glowroot.common.live.LiveAggregateRepository.ErrorSummarySortOrder;
-import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
 import org.glowroot.common.model.OverallErrorSummaryCollector;
+import org.glowroot.common.model.OverallErrorSummaryCollector.OverallErrorSummary;
 import org.glowroot.common.model.Result;
 import org.glowroot.common.model.TransactionErrorSummaryCollector;
+import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
+import org.glowroot.common.model.TransactionErrorSummaryCollector.TransactionErrorSummary;
 import org.glowroot.storage.repo.AggregateRepository;
 
 class ErrorCommonService {

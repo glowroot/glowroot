@@ -55,9 +55,9 @@ import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.glowroot.agent.fat.storage.util.Checkers.castUntainted;
+import static org.glowroot.agent.util.Checkers.castUntainted;
 
-public class TraceDao implements TraceRepository {
+class TraceDao implements TraceRepository {
 
     private static final String AGENT_ID = "";
 

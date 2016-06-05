@@ -34,7 +34,7 @@ glowroot.factory('charts', [
       };
     }
 
-    function init(chartState, $chart, $scope, $parentScope) {
+    function init(chartState, $chart, $scope) {
 
       $scope.showChartSpinner = 0;
 
@@ -396,7 +396,7 @@ glowroot.factory('charts', [
           }
           nextRefresh();
         }, delay);
-        $scope.$on('$destroy', function (event) {
+        $scope.$on('$destroy', function () {
           $timeout.cancel(timer);
         });
       }

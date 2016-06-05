@@ -52,13 +52,14 @@ glowroot.controller('TransactionProfileCtrl', [
     };
 
     $scope.clickActiveTopLink = function (event, item) {
+      if (event.ctrlKey) {
+        return;
+      }
       if (($scope.auxiliary && item === 'aux-thread-profile') || (!$scope.auxiliary && item === 'main-thread-profile')) {
-        if (!event.ctrlKey) {
-          $scope.range.chartRefresh++;
-          // suppress normal link
-          event.preventDefault();
-          return false;
-        }
+        $scope.range.chartRefresh++;
+        // suppress normal link
+        event.preventDefault();
+        return false;
       }
     };
 

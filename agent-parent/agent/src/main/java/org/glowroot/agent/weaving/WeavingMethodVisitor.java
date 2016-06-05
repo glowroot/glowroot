@@ -40,11 +40,11 @@ import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.impl.OptionalThreadContextImpl;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionRegistry.TransactionRegistryHolder;
 import org.glowroot.agent.impl.TransactionServiceImpl;
 import org.glowroot.agent.impl.TransactionServiceImpl.TransactionServiceHolder;
-import org.glowroot.agent.model.OptionalThreadContextImpl;
 import org.glowroot.agent.model.ThreadContextPlus;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
@@ -335,18 +335,17 @@ class WeavingMethodVisitor extends AdviceAdapter {
             storeLocal(enabledLocal);
         }
         String nestingGroup = advice.pointcut().nestingGroup();
-        if (!nestingGroup.isEmpty() || advice.hasBindThreadContext()
-                || advice.hasBindOptionalThreadContext()) {
-            if (threadContextHolderLocal == null) {
-                // need to define thread context local var outside of any branches,
-                // but also don't want to load ThreadContext if enabledLocal exists and is false
-                threadContextHolderLocal = newLocal(fastThreadLocalHolderType);
-                visitInsn(ACONST_NULL);
-                storeLocal(threadContextHolderLocal);
-                threadContextLocal = newLocal(threadContextPlusType);
-                visitInsn(ACONST_NULL);
-                storeLocal(threadContextLocal);
-            }
+        if ((!nestingGroup.isEmpty() || advice.hasBindThreadContext()
+                || advice.hasBindOptionalThreadContext())
+                && threadContextHolderLocal == null) {
+            // need to define thread context local var outside of any branches,
+            // but also don't want to load ThreadContext if enabledLocal exists and is false
+            threadContextHolderLocal = newLocal(fastThreadLocalHolderType);
+            visitInsn(ACONST_NULL);
+            storeLocal(threadContextHolderLocal);
+            threadContextLocal = newLocal(threadContextPlusType);
+            visitInsn(ACONST_NULL);
+            storeLocal(threadContextLocal);
         }
         Integer prevNestingGroupIdLocal = null;
         if (!nestingGroup.isEmpty()) {
@@ -905,14 +904,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     // ideally this would have else statement and pop() the prior method result if the
     // bytecode generated method returns void
     private void cleanUpStackIfNeeded(int opcode) {
-        int expectedStackFrameSize;
-        if (opcode == IRETURN || opcode == FRETURN || opcode == ARETURN) {
-            expectedStackFrameSize = 1;
-        } else if (opcode == LRETURN || opcode == DRETURN) {
-            expectedStackFrameSize = 2;
-        } else {
-            expectedStackFrameSize = 0;
-        }
+        int expectedStackFrameSize = getExpectedStackFrameSize(opcode);
         if (stackFrame.size() == expectedStackFrameSize) {
             return;
         }
@@ -994,6 +986,16 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private static boolean isReturnOpcode(int opcode) {
         return opcode >= IRETURN && opcode <= RETURN;
+    }
+
+    private static int getExpectedStackFrameSize(int opcode) {
+        if (opcode == IRETURN || opcode == FRETURN || opcode == ARETURN) {
+            return 1;
+        } else if (opcode == LRETURN || opcode == DRETURN) {
+            return 2;
+        } else {
+            return 0;
+        }
     }
 
     @Value.Immutable

@@ -27,12 +27,12 @@ import io.netty.util.concurrent.GenericFutureListener;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class EventLoopGroups {
+class EventLoopGroups {
 
     private EventLoopGroups() {}
 
     // copy of io.grpc.netty.Utils.DefaultEventLoopGroupResource with some modification
-    public static EventLoopGroup create(String name) {
+    static EventLoopGroup create(String name) {
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
                 .setDaemon(true)
                 .setNameFormat(name + "-%d")

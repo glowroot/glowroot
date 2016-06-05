@@ -91,6 +91,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <!-- conditional logback configuration is only used in tests -->
       <groupId>org.codehaus.janino</groupId>
       <artifactId>janino</artifactId>
@@ -154,6 +159,15 @@
       </plugin>
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <properties>
+            <property>
+              <!-- this is just a test performance optimization -->
+              <name>listener</name>
+              <value>org.glowroot.server.storage.SharedSetupRunListener</value>
+            </property>
+          </properties>
+        </configuration>
         <executions>
           <execution>
             <goals>

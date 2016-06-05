@@ -62,7 +62,7 @@ public class TimerNameCache {
         }
     }
 
-    public TimerName getAuxThreadTimerName() {
+    TimerName getAuxThreadTimerName() {
         return auxThreadTimerName;
     }
 

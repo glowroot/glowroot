@@ -55,7 +55,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class ServerCollectorImpl implements Collector {
 
-    static final Logger logger = LoggerFactory.getLogger(ServerCollectorImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(ServerCollectorImpl.class);
 
     private final String agentId;
     private final ServerConnection serverConnection;

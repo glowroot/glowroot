@@ -24,7 +24,7 @@ import com.google.common.base.Ticker;
 import org.glowroot.agent.model.TimerImpl.TimerImplSnapshot;
 import org.glowroot.agent.util.Tickers;
 
-public class AsyncTimerImpl implements CommonTimerImpl {
+class AsyncTimerImpl implements CommonTimerImpl {
 
     private static final Ticker ticker = Tickers.getTicker();
 
@@ -41,11 +41,7 @@ public class AsyncTimerImpl implements CommonTimerImpl {
         this.startTick = startTick;
     }
 
-    public void stop() {
-        totalNanos = ticker.read() - startTick;
-    }
-
-    public void end(long endTick) {
+    void end(long endTick) {
         totalNanos = endTick - startTick;
     }
 

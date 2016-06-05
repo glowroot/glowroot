@@ -41,7 +41,7 @@ import static org.objectweb.asm.Opcodes.IRETURN;
 import static org.objectweb.asm.Opcodes.POP;
 
 // this is a workaround for https://github.com/qos-ch/logback/pull/291
-public class LogbackPatch implements ClassFileTransformer {
+class LogbackPatch implements ClassFileTransformer {
 
     @Override
     public byte /*@Nullable*/[] transform(@Nullable ClassLoader loader, @Nullable String className,

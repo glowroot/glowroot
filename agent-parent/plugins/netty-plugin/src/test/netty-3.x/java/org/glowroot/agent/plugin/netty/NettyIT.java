@@ -75,7 +75,7 @@ public class NettyIT {
         assertThat(trace.getHeader().getPartial()).isFalse();
     }
 
-    private static int getAvailablePort() throws IOException {
+    private static int getAvailablePort() throws Exception {
         ServerSocket serverSocket = new ServerSocket(0);
         int port = serverSocket.getLocalPort();
         serverSocket.close();

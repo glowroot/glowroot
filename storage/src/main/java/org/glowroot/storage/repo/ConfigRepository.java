@@ -191,13 +191,6 @@ public interface ConfigRepository {
 
     SecretKey getSecretKey() throws Exception;
 
-    interface DeprecatedConfigListener {
-        // the new config is not passed to onChange so that the receiver has to get the latest,
-        // this avoids race condition worries that two updates may get sent to the receiver in the
-        // wrong order
-        void onChange();
-    }
-
     @Value.Immutable
     @Styles.AllParameters
     abstract class RollupConfig {

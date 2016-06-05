@@ -104,6 +104,7 @@ class GaugeConfigJsonService {
             return mapper.writeValueAsString(liveJvmService.getMatchingMBeanObjectNames(agentId,
                     request.partialObjectName(), request.limit()));
         } catch (AgentNotConnectedException e) {
+            logger.debug(e.getMessage(), e);
             return "[]";
         }
     }

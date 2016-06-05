@@ -59,12 +59,12 @@ public class StackOverflowOOMIT {
     public static class StackOverflowOOMApp implements AppUnderTest, TransactionMarker {
 
         @Override
-        public void executeApp() throws Exception {
+        public void executeApp() {
             transactionMarker();
         }
 
         @Override
-        public void transactionMarker() throws Exception {
+        public void transactionMarker() {
             try {
                 new StackOverflowTester().test();
             } catch (Exception e) {

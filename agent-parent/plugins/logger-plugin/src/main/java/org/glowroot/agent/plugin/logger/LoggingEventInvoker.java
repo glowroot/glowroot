@@ -21,6 +21,7 @@ import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
+import org.glowroot.agent.plugin.api.util.Reflection;
 
 public class LoggingEventInvoker {
 
@@ -38,10 +39,10 @@ public class LoggingEventInvoker {
 
     public LoggingEventInvoker(Class<?> clazz) {
         Class<?> loggerClass = getLoggerClass(clazz);
-        getLoggerNameMethod = Invokers.getMethod(loggerClass, "getName");
+        getLoggerNameMethod = Reflection.getMethod(loggerClass, "getName");
         Class<?> loggingEventClass = getLoggingEventClass(clazz);
-        getFormattedMessageMethod = Invokers.getMethod(loggingEventClass, "getFormattedMessage");
-        getLevelMethod = Invokers.getMethod(loggingEventClass, "getLevel");
+        getFormattedMessageMethod = Reflection.getMethod(loggingEventClass, "getFormattedMessage");
+        getLevelMethod = Reflection.getMethod(loggingEventClass, "getLevel");
         if (loggingEventClass == null) {
             getThrowableProxyMethod = null;
             getThrowableMethod = null;
@@ -63,7 +64,7 @@ public class LoggingEventInvoker {
                             Class.forName("ch.qos.logback.classic.spi.ThrowableInformation", false,
                                     clazz.getClassLoader());
                     localGetThrowableMethod =
-                            Invokers.getMethod(throwableInformationClass, "getThrowable");
+                            Reflection.getMethod(throwableInformationClass, "getThrowable");
                 } catch (Throwable tt) {
                     // log at debug
                     logger.debug(tt.getMessage(), tt);
@@ -74,33 +75,33 @@ public class LoggingEventInvoker {
             getThrowableProxyMethod = localGetThrowableProxyMethod;
             getThrowableMethod = localGetThrowableMethod;
         }
-        toIntMethod = Invokers.getMethod(getLevelClass(clazz), "toInt");
+        toIntMethod = Reflection.getMethod(getLevelClass(clazz), "toInt");
     }
 
-    public String getFormattedMessage(Object loggingEvent) {
-        return Invokers.invoke(getFormattedMessageMethod, loggingEvent, "");
+    String getFormattedMessage(Object loggingEvent) {
+        return Reflection.invokeWithDefault(getFormattedMessageMethod, loggingEvent, "");
     }
 
-    public int getLevel(Object loggingEvent) {
-        Object level = Invokers.invoke(getLevelMethod, loggingEvent, null);
+    int getLevel(Object loggingEvent) {
+        Object level = Reflection.invoke(getLevelMethod, loggingEvent);
         if (level == null) {
             return 0;
         }
-        return Invokers.invoke(toIntMethod, level, 0);
+        return Reflection.invokeWithDefault(toIntMethod, level, 0);
     }
 
-    public @Nullable Throwable getThrowable(Object loggingEvent) {
+    @Nullable
+    Throwable getThrowable(Object loggingEvent) {
         Object throwableInformation =
-                Invokers.invoke(getThrowableProxyMethod, loggingEvent, null);
+                Reflection.invoke(getThrowableProxyMethod, loggingEvent);
         if (throwableInformation == null) {
             return null;
         }
-        return Invokers.</*@Nullable*/ Throwable>invoke(getThrowableMethod, throwableInformation,
-                null);
+        return Reflection.</*@Nullable*/ Throwable>invoke(getThrowableMethod, throwableInformation);
     }
 
-    public String getLoggerName(Object logger) {
-        return Invokers.invoke(getLoggerNameMethod, logger, "");
+    String getLoggerName(Object logger) {
+        return Reflection.invokeWithDefault(getLoggerNameMethod, logger, "");
     }
 
     private static @Nullable Class<?> getLoggerClass(Class<?> clazz) {

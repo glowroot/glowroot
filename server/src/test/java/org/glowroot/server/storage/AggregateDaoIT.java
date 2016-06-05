@@ -20,6 +20,7 @@ import java.util.List;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.SocketOptions;
 import com.google.common.collect.Lists;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -27,23 +28,23 @@ import org.junit.Test;
 
 import org.glowroot.common.live.ImmutableOverallQuery;
 import org.glowroot.common.live.ImmutableTransactionQuery;
-import org.glowroot.common.live.LiveAggregateRepository.ErrorSummarySortOrder;
-import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
-import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.SummarySortOrder;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.model.OverallErrorSummaryCollector;
+import org.glowroot.common.model.OverallErrorSummaryCollector.OverallErrorSummary;
 import org.glowroot.common.model.OverallSummaryCollector;
+import org.glowroot.common.model.OverallSummaryCollector.OverallSummary;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.Result;
 import org.glowroot.common.model.TransactionErrorSummaryCollector;
+import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
+import org.glowroot.common.model.TransactionErrorSummaryCollector.TransactionErrorSummary;
 import org.glowroot.common.model.TransactionSummaryCollector;
+import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
+import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.QueriesByType;
@@ -56,21 +57,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class AggregateDaoIT {
 
+    private static Cluster cluster;
     private static Session session;
     private static AggregateDao aggregateDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        CassandraWrapper.start();
-        Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
+        SharedSetupRunListener.startCassandra();
+        cluster = Cluster.builder().addContactPoint("127.0.0.1")
+                // long read timeout is sometimes needed on slow travis ci machines
+                .withSocketOptions(new SocketOptions().setReadTimeoutMillis(30000))
+                .build();
         session = cluster.newSession();
-        session.execute("create keyspace if not exists glowroot with replication ="
+        session.execute("create keyspace if not exists glowroot_unit_tests with replication ="
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
-        session.execute("use glowroot");
+        session.execute("use glowroot_unit_tests");
 
         ServerConfigDao serverConfigDao = new ServerConfigDao(session);
         AgentDao agentDao = new AgentDao(session);
-        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot");
+        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
         UserDao userDao = new UserDao(session, keyspace);
         RoleDao roleDao = new RoleDao(session, keyspace);
         ConfigRepository configRepository =
@@ -84,7 +89,8 @@ public class AggregateDaoIT {
     @AfterClass
     public static void tearDown() throws Exception {
         session.close();
-        CassandraWrapper.stop();
+        cluster.close();
+        SharedSetupRunListener.stopCassandra();
     }
 
     @Test

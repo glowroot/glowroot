@@ -166,13 +166,12 @@ glowroot.controller('AdminUserCtrl', [
     };
 
     $scope.delete = function () {
-      $scope.deleteErrorMessage = '';
       var postData = {
         username: $scope.username
       };
       $scope.deleting = true;
       $http.post('backend/admin/users/remove', postData)
-          .success(function (data) {
+          .success(function () {
             $scope.deleting = false;
             $('#deleteConfirmationModal').modal('hide');
             removeConfirmIfHasChangesListener();

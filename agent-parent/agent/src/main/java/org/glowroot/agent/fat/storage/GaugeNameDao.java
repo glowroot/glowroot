@@ -74,12 +74,6 @@ class GaugeNameDao {
         return dataSource.queryForStringList("select gauge_name from gauge_name");
     }
 
-    void deleteAll() throws Exception {
-        synchronized (lock) {
-            dataSource.update("truncate table gauge_name");
-        }
-    }
-
     void deleteBefore(long captureTime) throws Exception {
         synchronized (lock) {
             dataSource.update("delete from gauge_name where last_capture_time < ?", captureTime);

@@ -17,7 +17,6 @@ package org.glowroot.ui;
 
 import java.security.GeneralSecurityException;
 import java.util.List;
-import java.util.Locale;
 
 import javax.annotation.Nullable;
 
@@ -181,7 +180,7 @@ class UserConfigJsonService {
                 throws GeneralSecurityException {
             String passwordHash;
             String newPassword = newPassword();
-            if (ldap() || username().toLowerCase(Locale.ENGLISH).equals("<anonymous>")) {
+            if (ldap() || username().equalsIgnoreCase("anonymous")) {
                 passwordHash = "";
             } else if (newPassword.isEmpty()) {
                 passwordHash = checkNotNull(existingUserConfig).passwordHash();

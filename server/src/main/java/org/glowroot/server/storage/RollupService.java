@@ -72,7 +72,7 @@ public class RollupService implements Runnable {
     }
 
     @SuppressWarnings("return.type.incompatible")
-    public static <T> /*@Initialized*/ T castInitialized(/*@UnderInitialization*/ T obj) {
+    private static <T> /*@Initialized*/ T castInitialized(/*@UnderInitialization*/ T obj) {
         return obj;
     }
 }

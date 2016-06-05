@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,13 +63,13 @@ public class Containers {
     }
 
     // since baseDir is passed to the container, the container will not delete baseDir on close
-    public static Container create(File baseDir) throws Exception {
+    private static Container create(File baseDir) throws Exception {
         switch (harness) {
             case JAVAAGENT:
                 // this is the most realistic way to run tests because it launches an external JVM
                 // process using -javaagent:glowroot.jar
                 logger.debug("create(): using javaagent container");
-                return new JavaagentContainer(baseDir, false, false, ImmutableList.<String>of());
+                return new JavaagentContainer(baseDir, false, ImmutableList.<String>of());
             case LOCAL:
                 // this is the easiest way to run/debug tests inside of Eclipse
                 logger.debug("create(): using local container");

@@ -28,7 +28,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassFileTransformer.class);
 
-    private final WeaverImpl weaver;
+    private final Weaver weaver;
 
     private final boolean weaveBootstrapClassLoader;
 
@@ -39,7 +39,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // hard-coded results in org.glowroot.weaving.PreInitializeWeavingClassesTest)
     // note: an exception is made for WeavingTimerService, see PreInitializeWeavingClassesTest for
     // explanation
-    public WeavingClassFileTransformer(WeaverImpl weaver) {
+    public WeavingClassFileTransformer(Weaver weaver) {
         this.weaver = weaver;
         // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
         // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since

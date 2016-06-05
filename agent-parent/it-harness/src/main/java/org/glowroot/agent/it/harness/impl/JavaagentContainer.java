@@ -31,7 +31,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
-import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -93,20 +92,20 @@ public class JavaagentContainer implements Container {
     private final Thread shutdownHook;
 
     public static JavaagentContainer create() throws Exception {
-        return new JavaagentContainer(null, false, false, ImmutableList.<String>of());
+        return new JavaagentContainer(null, false, ImmutableList.<String>of());
     }
 
     public static JavaagentContainer create(File baseDir) throws Exception {
-        return new JavaagentContainer(baseDir, false, false, ImmutableList.<String>of());
+        return new JavaagentContainer(baseDir, false, ImmutableList.<String>of());
     }
 
     public static JavaagentContainer createWithExtraJvmArgs(List<String> extraJvmArgs)
             throws Exception {
-        return new JavaagentContainer(null, false, false, extraJvmArgs);
+        return new JavaagentContainer(null, false, extraJvmArgs);
     }
 
-    public JavaagentContainer(@Nullable File baseDir, boolean fat, boolean captureConsoleOutput,
-            List<String> extraJvmArgs) throws Exception {
+    public JavaagentContainer(@Nullable File baseDir, boolean fat, List<String> extraJvmArgs)
+            throws Exception {
         if (baseDir == null) {
             this.baseDir = TempDirs.createTempDir("glowroot-test-basedir");
             deleteBaseDirOnClose = true;
@@ -152,7 +151,7 @@ public class JavaagentContainer implements Container {
         // process.getInputStream() only returns null if ProcessBuilder.redirectOutput() is used
         // to redirect output to a file
         checkNotNull(in);
-        consoleOutputPipe = new ConsoleOutputPipe(in, System.out, captureConsoleOutput);
+        consoleOutputPipe = new ConsoleOutputPipe(in, System.out);
         consolePipeExecutor.submit(consoleOutputPipe);
         this.process = process;
 
@@ -169,7 +168,7 @@ public class JavaagentContainer implements Container {
                 .build();
 
         Stopwatch stopwatch = Stopwatch.createStarted();
-        // this can take a while on slow travis-ci build machines
+        // this can take a while on slow travis ci build machines
         while (stopwatch.elapsed(SECONDS) < 30) {
             try {
                 JavaagentServiceBlockingClient javaagentService =
@@ -214,7 +213,9 @@ public class JavaagentContainer implements Container {
     public Trace execute(Class<? extends AppUnderTest> appClass) throws Exception {
         checkNotNull(traceCollector);
         executeInternal(appClass);
-        Trace trace = traceCollector.getCompletedTrace(10, SECONDS);
+        // extra long wait time is needed for StackOverflowOOMIT on slow travis ci machines since it
+        // can sometimes take a long time for that large trace to be serialized and transferred
+        Trace trace = traceCollector.getCompletedTrace(20, SECONDS);
         traceCollector.clearTrace();
         return trace;
     }
@@ -271,28 +272,6 @@ public class JavaagentContainer implements Container {
             server.close();
         }
         cleanup();
-    }
-
-    public List<String> getUnexpectedConsoleLines() {
-        List<String> unexpectedLines = Lists.newArrayList();
-        Splitter splitter = Splitter.on(Pattern.compile("\r?\n")).omitEmptyStrings();
-        String capturedOutput = consoleOutputPipe.getCapturedOutput();
-        if (capturedOutput == null) {
-            throw new IllegalStateException("Cannot check console lines unless JavaagentContainer"
-                    + " was created with captureConsoleOutput=true");
-        }
-        for (String line : splitter.split(capturedOutput)) {
-            if (line.contains("Glowroot started") || line.contains("Glowroot listening")
-                    || line.contains("Glowroot plugins loaded")) {
-                continue;
-            }
-            if (line.matches("objc\\[\\d+\\]: Class JavaLaunchHelper is implemented in both .*")) {
-                // OSX jvm loves to emit this
-                continue;
-            }
-            unexpectedLines.add(line);
-        }
-        return unexpectedLines;
     }
 
     private void cleanup() throws Exception {
@@ -443,6 +422,8 @@ public class JavaagentContainer implements Container {
         if (!hasXmx) {
             command.add("-Xmx" + Runtime.getRuntime().maxMemory());
         }
+        // leave as much memory as possible to old gen
+        command.add("-XX:NewRatio=20");
         for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
             Object keyObject = entry.getKey();
             if (!(keyObject instanceof String)) {
@@ -498,17 +479,10 @@ public class JavaagentContainer implements Container {
 
         private final InputStream in;
         private final OutputStream out;
-        // the one place ever that StringBuffer's synchronization is useful :-)
-        private final @Nullable StringBuffer capturedOutput;
 
-        private ConsoleOutputPipe(InputStream in, OutputStream out, boolean captureOutput) {
+        private ConsoleOutputPipe(InputStream in, OutputStream out) {
             this.in = in;
             this.out = out;
-            if (captureOutput) {
-                capturedOutput = new StringBuffer();
-            } else {
-                capturedOutput = null;
-            }
         }
 
         @Override
@@ -520,19 +494,11 @@ public class JavaagentContainer implements Container {
                     if (n == -1) {
                         break;
                     }
-                    if (capturedOutput != null) {
-                        // intentionally using platform default charset
-                        capturedOutput.append(new String(buffer, 0, n));
-                    }
                     out.write(buffer, 0, n);
                 }
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
             }
-        }
-
-        private @Nullable String getCapturedOutput() {
-            return capturedOutput == null ? null : capturedOutput.toString();
         }
     }
 }

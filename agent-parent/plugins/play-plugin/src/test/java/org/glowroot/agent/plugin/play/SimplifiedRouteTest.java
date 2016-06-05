@@ -24,6 +24,7 @@ public class SimplifiedRouteTest {
     @Test
     public void test() {
         assertThat(Play2xAspect.simplifiedRoute("")).isEqualTo("");
+        assertThat(Play2xAspect.simplifiedRoute("/one")).isEqualTo("/one");
         assertThat(Play2xAspect.simplifiedRoute("/one/$two<[^/]+>/three"))
                 .isEqualTo("/one/*/three");
         assertThat(Play2xAspect.simplifiedRoute("/assets/$file<.+>")).isEqualTo("/assets/**");

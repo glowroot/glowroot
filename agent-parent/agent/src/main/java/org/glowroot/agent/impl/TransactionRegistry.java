@@ -24,7 +24,7 @@ import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
-import static org.glowroot.agent.fat.storage.util.Checkers.castInitialized;
+import static org.glowroot.agent.util.Checkers.castInitialized;
 
 public class TransactionRegistry {
 
@@ -48,6 +48,7 @@ public class TransactionRegistry {
         return threadContext.getTransaction();
     }
 
+    @UsedByGeneratedBytecode
     public Holder</*@Nullable*/ ThreadContextImpl> getCurrentThreadContextHolder() {
         return currentThreadContext.getHolder();
     }
@@ -64,6 +65,8 @@ public class TransactionRegistry {
     public static class TransactionRegistryHolder {
 
         private static @Nullable TransactionRegistry transactionRegistry;
+
+        private TransactionRegistryHolder() {}
 
         public static @Nullable TransactionRegistry getTransactionRegistry() {
             return transactionRegistry;

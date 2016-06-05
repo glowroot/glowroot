@@ -39,8 +39,8 @@ public abstract class PluginDescriptor {
     public abstract ImmutableList<InstrumentationConfig> instrumentationConfigs();
     public abstract ImmutableList<String> aspects();
 
-    // this is only for use by packager-maven-plugin, which needs to perform de-serialization of
-    // shaded immutables objects using shaded jackson
+    // this is only for use by glowroot-agent-dist-maven-plugin, which needs to perform
+    // de-serialization of shaded immutables objects using shaded jackson
     public static PluginDescriptor readValue(String content) throws IOException {
         SimpleModule module = new SimpleModule();
         module.addAbstractTypeMapping(InstrumentationConfig.class,
@@ -50,8 +50,8 @@ public abstract class PluginDescriptor {
         return mapper.readValue(content, ImmutablePluginDescriptor.class);
     }
 
-    // this is only for use by packager-maven-plugin, which needs to perform serialization of shaded
-    // immutables objects using shaded jackson
+    // this is only for use by glowroot-agent-dist-maven-plugin, which needs to perform
+    // serialization of shaded immutables objects using shaded jackson
     public static String writeValue(List<PluginDescriptor> pluginDescriptors) throws IOException {
         ObjectMapper mapper = ObjectMappers.create();
         StringBuilder sb = new StringBuilder();

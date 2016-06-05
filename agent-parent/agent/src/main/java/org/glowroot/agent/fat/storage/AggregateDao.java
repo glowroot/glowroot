@@ -48,11 +48,9 @@ import org.glowroot.agent.fat.storage.util.Schemas.Index;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
 import org.glowroot.common.live.ImmutableThroughputAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.ErrorSummarySortOrder;
 import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.SummarySortOrder;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
@@ -62,7 +60,9 @@ import org.glowroot.common.model.ProfileCollector;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.model.TransactionErrorSummaryCollector;
+import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector;
+import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.common.util.Styles;
 import org.glowroot.storage.config.ConfigDefaults;
 import org.glowroot.storage.repo.AggregateRepository;
@@ -80,9 +80,9 @@ import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.glowroot.agent.fat.storage.util.Checkers.castUntainted;
+import static org.glowroot.agent.util.Checkers.castUntainted;
 
-public class AggregateDao implements AggregateRepository {
+class AggregateDao implements AggregateRepository {
 
     private static final String AGENT_ID = "";
 
@@ -172,7 +172,7 @@ public class AggregateDao implements AggregateRepository {
                     .of(transactionTableName + "_idx", transactionAggregateIndexColumns)));
         }
 
-        // don't need last_rollup_times table like in GaugePointDao since there is already index
+        // don't need last_rollup_times table like in GaugeValueDao since there is already index
         // on capture_time so these queries are relatively fast
         long[] lastRollupTimes = new long[rollupConfigs.size()];
         lastRollupTimes[0] = 0;

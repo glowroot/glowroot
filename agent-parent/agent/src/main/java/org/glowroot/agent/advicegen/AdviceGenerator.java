@@ -420,48 +420,10 @@ public class AdviceGenerator {
                     "setTransactionType", "(Ljava/lang/String;I)V", true);
         }
         if (!config.transactionNameTemplate().isEmpty() && !config.isTransaction()) {
-            mv.visitVarInsn(ALOAD, 0);
-            mv.visitVarInsn(ALOAD, 4);
-            // methodMetaInternalName is non-null when transactionNameTemplate is non-empty
-            checkNotNull(methodMetaInternalName);
-            mv.visitMethodInsn(INVOKEVIRTUAL, methodMetaInternalName, "getTransactionNameTemplate",
-                    "()Lorg/glowroot/agent/advicegen/MessageTemplate;", false);
-            mv.visitVarInsn(ALOAD, 1);
-            mv.visitVarInsn(ALOAD, 2);
-            mv.visitVarInsn(ALOAD, 3);
-            mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/advicegen/GenericMessageSupplier",
-                    "create",
-                    "(Lorg/glowroot/agent/advicegen/MessageTemplate;Ljava/lang/Object;"
-                            + "Ljava/lang/String;[Ljava/lang/Object;)"
-                            + "Lorg/glowroot/agent/advicegen/GenericMessageSupplier;",
-                    false);
-            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/agent/advicegen/GenericMessageSupplier",
-                    "getMessageText", "()Ljava/lang/String;", false);
-            mv.visitIntInsn(BIPUSH, Priority.USER_CONFIG);
-            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
-                    "setTransactionName", "(Ljava/lang/String;I)V", true);
+            addCodeForSetTransactionX(mv, "getTransactionNameTemplate", "setTransactionName");
         }
         if (!config.transactionUserTemplate().isEmpty()) {
-            mv.visitVarInsn(ALOAD, 0);
-            mv.visitVarInsn(ALOAD, 4);
-            // methodMetaInternalName is non-null when transactionUserTemplate is non-empty
-            checkNotNull(methodMetaInternalName);
-            mv.visitMethodInsn(INVOKEVIRTUAL, methodMetaInternalName, "getTransactionUserTemplate",
-                    "()Lorg/glowroot/agent/advicegen/MessageTemplate;", false);
-            mv.visitVarInsn(ALOAD, 1);
-            mv.visitVarInsn(ALOAD, 2);
-            mv.visitVarInsn(ALOAD, 3);
-            mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/advicegen/GenericMessageSupplier",
-                    "create",
-                    "(Lorg/glowroot/agent/advicegen/MessageTemplate;Ljava/lang/Object;"
-                            + "Ljava/lang/String;[Ljava/lang/Object;)"
-                            + "Lorg/glowroot/agent/advicegen/GenericMessageSupplier;",
-                    false);
-            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/agent/advicegen/GenericMessageSupplier",
-                    "getMessageText", "()Ljava/lang/String;", false);
-            mv.visitIntInsn(BIPUSH, Priority.USER_CONFIG);
-            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
-                    "setTransactionUser", "(Ljava/lang/String;I)V", true);
+            addCodeForSetTransactionX(mv, "getTransactionUserTemplate", "setTransactionUser");
         }
         int i = 0;
         for (String attrName : config.transactionAttributeTemplates().keySet()) {
@@ -640,6 +602,31 @@ public class AdviceGenerator {
                 .type(Type.getObjectType(methodMetaInternalName))
                 .bytes(cw.toByteArray())
                 .build();
+    }
+
+    private void addCodeForSetTransactionX(MethodVisitor mv, String templateGetterName,
+            String threadContextSetterName) {
+        mv.visitVarInsn(ALOAD, 0);
+        mv.visitVarInsn(ALOAD, 4);
+        // methodMetaInternalName is non-null when transactionNameTemplate or
+        // transactionUserTemplate are non-empty
+        checkNotNull(methodMetaInternalName);
+        mv.visitMethodInsn(INVOKEVIRTUAL, methodMetaInternalName, templateGetterName,
+                "()Lorg/glowroot/agent/advicegen/MessageTemplate;", false);
+        mv.visitVarInsn(ALOAD, 1);
+        mv.visitVarInsn(ALOAD, 2);
+        mv.visitVarInsn(ALOAD, 3);
+        mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/advicegen/GenericMessageSupplier",
+                "create",
+                "(Lorg/glowroot/agent/advicegen/MessageTemplate;Ljava/lang/Object;"
+                        + "Ljava/lang/String;[Ljava/lang/Object;)"
+                        + "Lorg/glowroot/agent/advicegen/GenericMessageSupplier;",
+                false);
+        mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/agent/advicegen/GenericMessageSupplier",
+                "getMessageText", "()Ljava/lang/String;", false);
+        mv.visitIntInsn(BIPUSH, Priority.USER_CONFIG);
+        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
+                threadContextSetterName, "(Ljava/lang/String;I)V", true);
     }
 
     @RequiresNonNull("methodMetaInternalName")

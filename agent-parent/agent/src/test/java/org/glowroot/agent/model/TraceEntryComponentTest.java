@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.model;
 
-import com.google.common.base.Ticker;
 import org.junit.Test;
 
 import org.glowroot.agent.plugin.api.Message;
@@ -34,9 +33,8 @@ public class TraceEntryComponentTest {
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         when(messageSupplier.get()).thenReturn(Message.from("abc"));
         TimerImpl timer = mock(TimerImpl.class);
-        Ticker ticker = mock(Ticker.class);
         TraceEntryComponent traceEntryComponent =
-                new TraceEntryComponent(threadContext, messageSupplier, timer, 0, ticker);
+                new TraceEntryComponent(threadContext, messageSupplier, timer, 0);
         // when
         traceEntryComponent.popEntry(traceEntryComponent.getRootEntry(), 0);
         traceEntryComponent.popEntry(traceEntryComponent.getRootEntry(), 0);
@@ -53,9 +51,8 @@ public class TraceEntryComponentTest {
         when(messageSupplier2.get()).thenReturn(Message.from("xyz"));
         TimerImpl timer1 = mock(TimerImpl.class);
         TimerImpl timer2 = mock(TimerImpl.class);
-        Ticker ticker = mock(Ticker.class);
         TraceEntryComponent traceEntryComponent =
-                new TraceEntryComponent(threadContext, messageSupplier1, timer1, 0, ticker);
+                new TraceEntryComponent(threadContext, messageSupplier1, timer1, 0);
         // when
         traceEntryComponent.pushEntry(0, messageSupplier2, timer2, null, null, 0);
         traceEntryComponent.popEntry(traceEntryComponent.getRootEntry(), 0);
@@ -73,9 +70,8 @@ public class TraceEntryComponentTest {
         when(messageSupplier2.get()).thenReturn(Message.from("xyz"));
         TimerImpl timer1 = mock(TimerImpl.class);
         TimerImpl timer2 = mock(TimerImpl.class);
-        Ticker ticker = mock(Ticker.class);
         TraceEntryComponent traceEntryComponent =
-                new TraceEntryComponent(threadContext, messageSupplier1, timer1, 0, ticker);
+                new TraceEntryComponent(threadContext, messageSupplier1, timer1, 0);
         // when
         traceEntryComponent.pushEntry(0, messageSupplier2, timer2, null, null, 0);
         traceEntryComponent.popEntry(mock(TraceEntryImpl.class), 0);

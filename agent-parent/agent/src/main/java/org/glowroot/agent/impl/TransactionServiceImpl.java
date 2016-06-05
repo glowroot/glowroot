@@ -167,6 +167,8 @@ public class TransactionServiceImpl implements ConfigListener {
 
         private static @Nullable TransactionServiceImpl transactionService;
 
+        private TransactionServiceHolder() {}
+
         public static @Nullable TransactionServiceImpl getTransactionService() {
             return transactionService;
         }

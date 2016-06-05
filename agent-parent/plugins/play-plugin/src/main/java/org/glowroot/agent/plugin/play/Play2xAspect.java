@@ -139,14 +139,19 @@ public class Play2xAspect {
         String simplifiedRoute = simplifiedRoutes.get(route);
         if (simplifiedRoute == null) {
             Matcher matcher = routePattern.matcher(route);
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
+            int end = 0;
             while (matcher.find()) {
+                if (end == 0) {
+                    sb.append(route.substring(0, matcher.start()));
+                }
                 String regex = nullToEmpty(matcher.group(1));
                 regex = regex.replace("[^/]+", "*");
                 regex = regex.replace(".+", "**");
-                matcher.appendReplacement(sb, regex);
+                sb.append(regex);
+                end = matcher.end();
             }
-            matcher.appendTail(sb);
+            sb.append(route.substring(end));
             simplifiedRoute = sb.toString();
             simplifiedRoutes.putIfAbsent(route, simplifiedRoute);
         }
@@ -155,10 +160,11 @@ public class Play2xAspect {
 
     private static String getAltTransactionName(String controller, String methodName) {
         int index = controller.lastIndexOf('.');
-        if (index != -1) {
-            controller = controller.substring(index + 1);
+        if (index == -1) {
+            return controller + "#" + methodName;
+        } else {
+            return controller.substring(index + 1) + "#" + methodName;
         }
-        return controller + "#" + methodName;
     }
 
     private static String nullToEmpty(@Nullable String s) {

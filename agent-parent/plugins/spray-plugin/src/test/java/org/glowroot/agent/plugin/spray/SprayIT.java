@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.plugin.spray;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
 
@@ -64,7 +63,7 @@ public class SprayIT {
         assertThat(trace.getEntryCount()).isZero();
     }
 
-    private static int getAvailablePort() throws IOException {
+    private static int getAvailablePort() throws Exception {
         ServerSocket serverSocket = new ServerSocket(0);
         int port = serverSocket.getLocalPort();
         serverSocket.close();

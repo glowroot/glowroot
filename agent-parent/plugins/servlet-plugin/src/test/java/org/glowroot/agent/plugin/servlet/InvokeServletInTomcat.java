@@ -16,7 +16,6 @@
 package org.glowroot.agent.plugin.servlet;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.ServerSocket;
 
 import org.apache.catalina.Context;
@@ -56,7 +55,7 @@ abstract class InvokeServletInTomcat implements AppUnderTest {
 
     protected abstract void doTest(int port) throws Exception;
 
-    private static int getAvailablePort() throws IOException {
+    private static int getAvailablePort() throws Exception {
         ServerSocket serverSocket = new ServerSocket(0);
         int port = serverSocket.getLocalPort();
         serverSocket.close();

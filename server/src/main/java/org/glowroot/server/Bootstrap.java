@@ -23,6 +23,8 @@ public class Bootstrap {
 
     private static volatile @Nullable ServerModule serverModule;
 
+    private Bootstrap() {}
+
     public static void main(String[] args) throws Exception {
         if (args.length == 0 || args[0].equals("start")) {
             serverModule = new ServerModule();

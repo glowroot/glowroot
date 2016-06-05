@@ -90,8 +90,6 @@ public class ServletAspect {
         @Nullable
         String /*@Nullable*/[] getParameterValues(String name);
 
-        void setAttribute(String name, Object o);
-
         @Nullable
         Object getAttribute(String name);
 

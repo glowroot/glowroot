@@ -90,7 +90,7 @@ public class UserDao {
         }
     }
 
-    public List<UserConfig> read() {
+    List<UserConfig> read() {
         ResultSet results = session.execute(readPS.bind());
         List<UserConfig> users = Lists.newArrayList();
         for (Row row : results) {
@@ -99,7 +99,8 @@ public class UserDao {
         return users;
     }
 
-    public @Nullable UserConfig read(String username) {
+    @Nullable
+    UserConfig read(String username) {
         for (UserConfig userConfig : read()) {
             if (userConfig.username().equals(username)) {
                 return userConfig;
@@ -108,15 +109,16 @@ public class UserDao {
         return null;
     }
 
-    public @Nullable UserConfig readCaseInsensitive(String username) {
+    @Nullable
+    UserConfig readCaseInsensitive(String username) {
         return upperCaseCache.getUnchecked(username.toUpperCase(Locale.ENGLISH)).orNull();
     }
 
-    public boolean namedUsersExist() {
+    boolean namedUsersExist() {
         return namedUsersExist.getUnchecked(NAMED_USERS_EXIST_SINGLE_CACHE_KEY);
     }
 
-    public void insert(UserConfig userConfig) throws Exception {
+    void insert(UserConfig userConfig) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
         boundStatement.setString(i++, userConfig.username());
@@ -127,7 +129,7 @@ public class UserDao {
         namedUsersExist.invalidate(NAMED_USERS_EXIST_SINGLE_CACHE_KEY);
     }
 
-    public void delete(String username) throws Exception {
+    void delete(String username) throws Exception {
         BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, username);
         session.execute(boundStatement);
@@ -137,7 +139,7 @@ public class UserDao {
 
     private @Nullable UserConfig readUpperCase(String usernameUpper) {
         for (UserConfig userConfig : read()) {
-            if (userConfig.username().toUpperCase(Locale.ENGLISH).equals(usernameUpper)) {
+            if (userConfig.username().equalsIgnoreCase(usernameUpper)) {
                 return userConfig;
             }
         }

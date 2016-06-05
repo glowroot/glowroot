@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
-
-import org.glowroot.common.live.ImmutableTransactionErrorSummary;
-import org.glowroot.common.live.LiveAggregateRepository.ErrorSummarySortOrder;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
+import org.immutables.value.Value;
 
 public class TransactionErrorSummaryCollector {
 
@@ -71,14 +68,6 @@ public class TransactionErrorSummaryCollector {
         return lastCaptureTime;
     }
 
-    public void mergeTransactionSummaries(List<TransactionErrorSummary> transactionErrorSummaries,
-            long lastCaptureTime) {
-        for (TransactionErrorSummary transactionErrorSummary : transactionErrorSummaries) {
-            collect(transactionErrorSummary.transactionName(), transactionErrorSummary.errorCount(),
-                    transactionErrorSummary.transactionCount(), lastCaptureTime);
-        }
-    }
-
     public Result<TransactionErrorSummary> getResult(ErrorSummarySortOrder sortOrder, int limit) {
         List<TransactionErrorSummary> summaries = Lists.newArrayList();
         for (Map.Entry<String, MutableTransactionErrorSummary> entry : transactionErrorSummaries
@@ -96,6 +85,7 @@ public class TransactionErrorSummaryCollector {
             return new Result<TransactionErrorSummary>(summaries, false);
         }
     }
+
     private static List<TransactionErrorSummary> sortTransactionErrorSummaries(
             Iterable<TransactionErrorSummary> errorSummaries,
             ErrorSummarySortOrder sortOrder) {
@@ -112,5 +102,16 @@ public class TransactionErrorSummaryCollector {
     private static class MutableTransactionErrorSummary {
         private long errorCount;
         private long transactionCount;
+    }
+
+    public enum ErrorSummarySortOrder {
+        ERROR_COUNT, ERROR_RATE
+    }
+
+    @Value.Immutable
+    public interface TransactionErrorSummary {
+        String transactionName();
+        long errorCount();
+        long transactionCount();
     }
 }

@@ -57,13 +57,15 @@ public class DataSource {
     private static final int CACHE_SIZE =
             Integer.getInteger("glowroot.internal.h2.cacheSize", 8192);
 
+    private static final int QUERY_TIMEOUT_SECONDS =
+            Integer.getInteger("glowroot.internal.h2.queryTimeout", 60);
+
     // null means use memDb
     private final @Nullable File dbFile;
     private final Thread shutdownHookThread;
     private final Object lock = new Object();
     @GuardedBy("lock")
     private Connection connection;
-    private volatile int queryTimeoutSeconds;
     private volatile boolean closing = false;
 
     private final Map</*@Untainted*/String, ImmutableList<Column>> tables = Maps.newConcurrentMap();
@@ -91,10 +93,6 @@ public class DataSource {
         connection = createConnection(dbFile);
         shutdownHookThread = new ShutdownHookThread();
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
-    }
-
-    void setQueryTimeoutSeconds(Integer queryTimeoutSeconds) {
-        this.queryTimeoutSeconds = queryTimeoutSeconds;
     }
 
     public void defrag() throws SQLException {
@@ -220,7 +218,7 @@ public class DataSource {
             }
             PreparedStatement preparedStatement = prepareStatement(jdbcQuery.getSql());
             // setQueryTimeout() affects all statements of this connection (at least with h2)
-            preparedStatement.setQueryTimeout(queryTimeoutSeconds);
+            preparedStatement.setQueryTimeout(QUERY_TIMEOUT_SECONDS);
             jdbcQuery.bind(preparedStatement);
             ResultSet resultSet = preparedStatement.executeQuery();
             ResultSetCloser closer = new ResultSetCloser(resultSet);
@@ -255,7 +253,7 @@ public class DataSource {
             }
             PreparedStatement preparedStatement = prepareStatement(jdbcQuery.getSql());
             // setQueryTimeout() affects all statements of this connection (at least with h2)
-            preparedStatement.setQueryTimeout(queryTimeoutSeconds);
+            preparedStatement.setQueryTimeout(QUERY_TIMEOUT_SECONDS);
             jdbcQuery.bind(preparedStatement);
             ResultSet resultSet = preparedStatement.executeQuery();
             ResultSetCloser closer = new ResultSetCloser(resultSet);
@@ -410,7 +408,7 @@ public class DataSource {
             preparedStatement.setObject(i + 1, args[i]);
         }
         // setQueryTimeout() affects all statements of this connection (at least with h2)
-        preparedStatement.setQueryTimeout(queryTimeoutSeconds);
+        preparedStatement.setQueryTimeout(QUERY_TIMEOUT_SECONDS);
         ResultSet resultSet = preparedStatement.executeQuery();
         ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
@@ -506,7 +504,7 @@ public class DataSource {
         void bind(PreparedStatement preparedStatement) throws SQLException;
     }
 
-    interface ResultSetExtractor<T extends /*@Nullable*/ Object> {
+    private interface ResultSetExtractor<T extends /*@Nullable*/ Object> {
         T extractData(ResultSet resultSet) throws Exception;
     }
 

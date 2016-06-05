@@ -32,7 +32,7 @@ import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class JavaagentMain {
+class JavaagentMain {
 
     public static void main(String... args) throws Exception {
 

@@ -60,7 +60,7 @@ glowroot.config([
         }
       }];
     };
-    $urlRouterProvider.otherwise(function ($injector) {
+    $urlRouterProvider.otherwise(function () {
       return 'transaction/average';
     });
     $stateProvider.state('transaction', {
@@ -493,7 +493,7 @@ glowroot.config([
       templateUrl: 'views/login.html',
       controller: 'LoginCtrl',
       resolve: {
-        waitForLayout: waitForLayout(false, true)
+        waitForLayout: waitForLayout(false)
       }
     });
   }

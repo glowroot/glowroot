@@ -16,7 +16,6 @@
 package org.glowroot.agent.plugin.jaxrs;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.ServerSocket;
 
 import com.ning.http.client.AsyncHttpClient;
@@ -53,7 +52,7 @@ abstract class InvokeJaxrsResourceInTomcat implements AppUnderTest {
         tomcat.destroy();
     }
 
-    private static int getAvailablePort() throws IOException {
+    private static int getAvailablePort() throws Exception {
         ServerSocket serverSocket = new ServerSocket(0);
         int port = serverSocket.getLocalPort();
         serverSocket.close();

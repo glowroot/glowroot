@@ -40,6 +40,9 @@ public class Reflections {
             // NoClassDefFoundError is thrown if any method signature in clazz references a missing
             // class (see MissingOptionalDependenciesReflectionTest.java)
             // seems best to treat same as NoSuchMethodException
+
+            // log exception at trace level
+            logger.trace(e.getMessage(), e);
             throw new NoSuchMethodException();
         }
     }
@@ -54,6 +57,9 @@ public class Reflections {
             // NoClassDefFoundError is thrown if any method signature in clazz references a missing
             // class (see MissingOptionalDependenciesReflectionTest.java)
             // seems best to treat same as NoSuchMethodException
+
+            // log exception at trace level
+            logger.trace(e.getMessage(), e);
             throw new NoSuchMethodException();
         }
     }

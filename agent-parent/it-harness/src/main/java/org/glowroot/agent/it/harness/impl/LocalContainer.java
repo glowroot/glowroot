@@ -16,7 +16,6 @@
 package org.glowroot.agent.it.harness.impl;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -29,6 +28,7 @@ import com.google.common.collect.Maps;
 import com.google.common.reflect.Reflection;
 
 import org.glowroot.agent.MainEntryPoint;
+import org.glowroot.agent.fat.init.GlowrootFatAgentInit;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.ConfigService;
@@ -155,10 +155,12 @@ public class LocalContainer implements Container {
 
     @Override
     public void checkAndReset() throws Exception {
-        if (configService == null) {
-            glowrootAgentInit.getAgentModule().getConfigService().resetAllConfig();
-        } else {
+        if (glowrootAgentInit instanceof GlowrootFatAgentInit) {
+            ((GlowrootFatAgentInit) glowrootAgentInit).resetConfig();
+        } else if (configService != null) {
             configService.resetConfig();
+        } else {
+            // webdriver, using thin agent, pointing to server
         }
         if (traceCollector != null) {
             traceCollector.checkAndResetLogMessages();
@@ -179,10 +181,6 @@ public class LocalContainer implements Container {
         isolatedWeavingClassLoader = null;
     }
 
-    public boolean isClosed() {
-        return isolatedWeavingClassLoader == null;
-    }
-
     private void executeInternal(Class<? extends AppUnderTest> appClass) throws Exception {
         IsolatedWeavingClassLoader isolatedWeavingClassLoader = this.isolatedWeavingClassLoader;
         checkNotNull(isolatedWeavingClassLoader);
@@ -198,7 +196,7 @@ public class LocalContainer implements Container {
         }
     }
 
-    static int getAvailablePort() throws IOException {
+    static int getAvailablePort() throws Exception {
         ServerSocket serverSocket = new ServerSocket(0);
         int port = serverSocket.getLocalPort();
         serverSocket.close();

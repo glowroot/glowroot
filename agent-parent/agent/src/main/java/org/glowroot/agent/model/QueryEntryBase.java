@@ -22,7 +22,7 @@ import org.glowroot.agent.plugin.api.QueryEntry;
 // ideally this would be a component of it's subclasses instead of a parent class, but for
 // micro-optimization purposes it is not (in order to prevent extra object instances/memory
 // addresses that must be navigated)
-public abstract class QueryEntryBase implements QueryEntry {
+abstract class QueryEntryBase implements QueryEntry {
 
     private final @Nullable QueryData queryData;
 
@@ -31,17 +31,17 @@ public abstract class QueryEntryBase implements QueryEntry {
 
     private long maxRow;
 
-    public QueryEntryBase(@Nullable QueryData queryData) {
+    QueryEntryBase(@Nullable QueryData queryData) {
         this.queryData = queryData;
     }
 
-    public void extendQueryData(long startTick) {
+    void extendQueryData(long startTick) {
         if (queryData != null) {
             queryData.extend(startTick);
         }
     }
 
-    public void endQueryData(long endTick) {
+    void endQueryData(long endTick) {
         if (queryData != null) {
             queryData.end(endTick);
         }

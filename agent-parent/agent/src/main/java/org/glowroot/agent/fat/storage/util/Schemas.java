@@ -45,7 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.glowroot.agent.fat.storage.util.Checkers.castUntainted;
+import static org.glowroot.agent.util.Checkers.castUntainted;
 
 public class Schemas {
 

@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.it.harness.impl;
 
-public class InitLogging {
+class InitLogging {
 
     static {
         try {

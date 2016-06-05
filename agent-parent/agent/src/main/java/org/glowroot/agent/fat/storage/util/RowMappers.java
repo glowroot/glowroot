@@ -23,7 +23,6 @@ import java.sql.Types;
 import javax.annotation.Nullable;
 
 import org.glowroot.common.live.LiveTraceRepository.Existence;
-import org.glowroot.common.util.NotAvailableAware;
 
 public class RowMappers {
 
@@ -44,16 +43,6 @@ public class RowMappers {
             preparedStatement.setNull(columnIndex, Types.BIGINT);
         } else {
             preparedStatement.setLong(columnIndex, value);
-        }
-    }
-
-    public static double getNotAvailableAwareDouble(ResultSet resultSet, int columnIndex)
-            throws SQLException {
-        double value = resultSet.getDouble(columnIndex);
-        if (value == 0 && resultSet.wasNull()) {
-            return NotAvailableAware.NA;
-        } else {
-            return value;
         }
     }
 

@@ -17,7 +17,6 @@ package org.glowroot.agent.model;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,13 +41,10 @@ class TraceEntryComponent {
 
     private TraceEntryImpl tailEntry;
 
-    private final Ticker ticker;
-
     TraceEntryComponent(ThreadContextImpl threadContext, MessageSupplier messageSupplier,
-            TimerImpl timer, long startTick, Ticker ticker) {
+            TimerImpl timer, long startTick) {
         this.threadContext = threadContext;
         this.startTick = startTick;
-        this.ticker = ticker;
         rootEntry = new TraceEntryImpl(threadContext, null, messageSupplier, null, 0, startTick,
                 timer, null);
         activeEntry = rootEntry;
@@ -69,10 +65,6 @@ class TraceEntryComponent {
 
     long getEndTick() {
         return endTick;
-    }
-
-    long getDurationNanos() {
-        return completed ? endTick - startTick : ticker.read() - startTick;
     }
 
     TraceEntryImpl pushEntry(long startTick, MessageSupplier messageSupplier,

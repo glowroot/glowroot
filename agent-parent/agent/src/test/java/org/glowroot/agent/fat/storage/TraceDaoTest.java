@@ -36,6 +36,10 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+// NOTE this is mostly a copy of TraceDaoIT.java in glowroot-server
+//
+// this is not an integration test (*IT.java) since then it would run against shaded agent and fail
+// due to shading issues
 public class TraceDaoTest {
 
     private static final String AGENT_ID = "";

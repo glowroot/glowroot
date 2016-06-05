@@ -18,7 +18,6 @@ package org.glowroot.server.storage;
 import java.util.Date;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.UUID;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
@@ -27,7 +26,6 @@ import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
@@ -199,17 +197,16 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     private void rollupLevel(int rollupLevel, List<Integer> ttls) throws Exception {
-        ListMultimap<RollupKey, RollupCaptureTime> needsRollup = getNeedsRollup(rollupLevel);
+        ListMultimap<RollupKey, RollupCaptureTime> needsRollup =
+                AggregateDao.getNeedsRollup(rollupLevel, readNeedsRollup, session);
         long rollupIntervalMillis =
                 configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
         for (Entry<RollupKey, RollupCaptureTime> entry : needsRollup.entries()) {
             RollupKey rollupKey = entry.getKey();
             RollupCaptureTime rollupCaptureTime = entry.getValue();
-            List<ResultSetFuture> futures = Lists.newArrayList();
-            futures.add(rollupOne(rollupLevel, rollupKey.agentRollup(), rollupKey.key(),
+            rollupOne(rollupLevel, rollupKey.agentRollup(), rollupKey.key(),
                     rollupCaptureTime.captureTime() - rollupIntervalMillis,
-                    rollupCaptureTime.captureTime(), ttls));
-            Futures.allAsList(futures).get();
+                    rollupCaptureTime.captureTime(), ttls);
             BoundStatement boundStatement = deleteNeedsRollup.get(rollupLevel - 1).bind();
             boundStatement.setString(0, rollupKey.agentRollup());
             boundStatement.setString(1, rollupKey.key());
@@ -217,33 +214,6 @@ public class GaugeValueDao implements GaugeValueRepository {
             boundStatement.setUUID(3, rollupCaptureTime.lastUpdate());
             session.execute(boundStatement);
         }
-    }
-
-    private ListMultimap<RollupKey, RollupCaptureTime> getNeedsRollup(int rollupLevel) {
-        BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind();
-        ResultSet results = session.execute(boundStatement);
-        ListMultimap<RollupKey, RollupCaptureTime> needsRollup = ArrayListMultimap.create();
-        for (Row row : results) {
-            String agentRollup = checkNotNull(row.getString(0));
-            String transactionType = checkNotNull(row.getString(1));
-            long captureTime = checkNotNull(row.getTimestamp(2)).getTime();
-            UUID lastUpdate = row.getUUID(3);
-            needsRollup.put(ImmutableRollupKey.of(agentRollup, transactionType),
-                    ImmutableRollupCaptureTime.builder()
-                            .captureTime(captureTime)
-                            .lastUpdate(lastUpdate)
-                            .build());
-        }
-        // copy of key set is required since removing a key's last remaining value from a
-        // multimap removes the key itself which then triggers ConcurrentModificationException
-        for (RollupKey rollupKey : ImmutableList.copyOf(needsRollup.keySet())) {
-            List<RollupCaptureTime> list = needsRollup.get(rollupKey);
-            // don't roll up the most recent one since it is likely still being added, this is
-            // mostly to avoid rolling up this data twice, but also currently the UI assumes
-            // when it finds a 1-min rollup it doesn't check for non-rolled up 1-min aggregates
-            list.remove(list.size() - 1);
-        }
-        return needsRollup;
     }
 
     private List<SetMultimap<String, Long>> getRollupCaptureTimes(List<GaugeValue> gaugeValues) {
@@ -266,8 +236,8 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     // from is non-inclusive
-    private ResultSetFuture rollupOne(int rollupLevel, String agentRollup, String gaugeName,
-            long from, long to, List<Integer> ttls) throws Exception {
+    private void rollupOne(int rollupLevel, String agentRollup, String gaugeName, long from,
+            long to, List<Integer> ttls) throws Exception {
         BoundStatement boundStatement = readValueForRollupPS.get(rollupLevel - 1).bind();
         boundStatement.setString(0, agentRollup);
         boundStatement.setString(1, gaugeName);
@@ -290,7 +260,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         boundStatement.setDouble(i++, totalWeightedValue / totalWeight);
         boundStatement.setLong(i++, totalWeight);
         boundStatement.setInt(i++, ttls.get(rollupLevel));
-        return session.executeAsync(boundStatement);
+        session.execute(boundStatement);
     }
 
     private List<Integer> getTTLs() {

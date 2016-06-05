@@ -19,11 +19,15 @@ import java.io.IOException;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.SocketOptions;
 
 class Sessions {
 
     static Session createSession() throws IOException {
-        Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
+        Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1")
+                // long read timeout is sometimes needed on slow travis ci machines
+                .withSocketOptions(new SocketOptions().setReadTimeoutMillis(30000))
+                .build();
         Session session = cluster.connect();
         session.execute("CREATE KEYSPACE IF NOT EXISTS test WITH REPLICATION ="
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");

@@ -17,11 +17,9 @@ package org.glowroot.storage.repo;
 
 import java.util.List;
 
-import org.glowroot.common.live.LiveAggregateRepository.ErrorSummarySortOrder;
 import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.SummarySortOrder;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.OverallErrorSummaryCollector;
@@ -30,7 +28,9 @@ import org.glowroot.common.model.ProfileCollector;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.model.TransactionErrorSummaryCollector;
+import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector;
+import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 
 public interface AggregateRepository {

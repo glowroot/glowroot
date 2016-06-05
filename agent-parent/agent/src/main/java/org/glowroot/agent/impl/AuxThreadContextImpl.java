@@ -29,7 +29,7 @@ import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTraceEntry;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 
-import static org.glowroot.agent.fat.storage.util.Checkers.castInitialized;
+import static org.glowroot.agent.util.Checkers.castInitialized;
 
 // TODO this has ability to retain a transaction beyond its completion
 // but don't use WeakReference because it needs to be able to retain transaction in async case

@@ -132,16 +132,20 @@ class QueryDataMap {
             if (key == CHAINED_KEY) {
                 @Nullable
                 Object[] values = (/*@Nullable*/ Object[]) checkNotNull(existingTable[i + 1]);
-                for (int j = 0; j < values.length; j += 2) {
-                    Object chainedKey = values[j];
-                    if (chainedKey == null) {
-                        break;
-                    }
-                    putWithoutRehashCheck(chainedKey, values[j + 1]);
-                }
+                putChainedValues(values);
             } else {
                 putWithoutRehashCheck(key, existingTable[i + 1]);
             }
+        }
+    }
+
+    private void putChainedValues(/*@Nullable*/ Object[] values) {
+        for (int j = 0; j < values.length; j += 2) {
+            Object chainedKey = values[j];
+            if (chainedKey == null) {
+                break;
+            }
+            putWithoutRehashCheck(chainedKey, values[j + 1]);
         }
     }
 }

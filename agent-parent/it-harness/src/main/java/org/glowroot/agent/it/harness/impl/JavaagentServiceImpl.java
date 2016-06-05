@@ -27,14 +27,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.MainEntryPoint;
+import org.glowroot.agent.fat.init.GlowrootFatAgentInit;
 import org.glowroot.agent.init.AgentModule;
+import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Threads;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc.JavaagentService;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.AppUnderTestClassName;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.Void;
 
-public class JavaagentServiceImpl implements JavaagentService {
+class JavaagentServiceImpl implements JavaagentService {
 
     private static final Logger logger = LoggerFactory.getLogger(JavaagentServiceImpl.class);
 
@@ -110,9 +112,13 @@ public class JavaagentServiceImpl implements JavaagentService {
     @Override
     public void resetConfig(Void request, StreamObserver<Void> responseObserver) {
         try {
-            AgentModule agentModule = MainEntryPoint.getGlowrootAgentInit().getAgentModule();
-            agentModule.getConfigService().resetAllConfig();
+            GlowrootAgentInit glowrootAgentInit = MainEntryPoint.getGlowrootAgentInit();
+            AgentModule agentModule = glowrootAgentInit.getAgentModule();
+            agentModule.getConfigService().resetConfig();
             agentModule.getLiveWeavingService().reweave("");
+            if (glowrootAgentInit instanceof GlowrootFatAgentInit) {
+                ((GlowrootFatAgentInit) glowrootAgentInit).resetConfig();
+            }
         } catch (Throwable t) {
             logger.error(t.getMessage(), t);
             responseObserver.onError(t);
@@ -164,7 +170,7 @@ public class JavaagentServiceImpl implements JavaagentService {
         });
     }
 
-    public void setServerCloseable(Callable<java.lang.Void> serverCloseable) {
+    void setServerCloseable(Callable<java.lang.Void> serverCloseable) {
         this.serverCloseable = serverCloseable;
     }
 }

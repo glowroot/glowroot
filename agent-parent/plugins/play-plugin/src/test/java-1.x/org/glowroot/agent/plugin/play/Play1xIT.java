@@ -158,7 +158,7 @@ public class Play1xIT {
         static {
             try {
                 port = getAvailablePort();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
             Play.init(new File("target/test-classes/application"), "test");
@@ -179,7 +179,7 @@ public class Play1xIT {
             Play.start();
         }
 
-        private static int getAvailablePort() throws IOException {
+        private static int getAvailablePort() throws Exception {
             ServerSocket serverSocket = new ServerSocket(0);
             int port = serverSocket.getLocalPort();
             serverSocket.close();

@@ -19,18 +19,20 @@ import javax.annotation.Nullable;
 
 public class AppServerDetection {
 
+    private AppServerDetection() {}
+
     public static boolean isJBossModules() {
         String command = getCommand();
         return command != null && (command.equals("org.jboss.modules.Main")
                 || command.endsWith("jboss-modules.jar"));
     }
 
-    public static boolean isOldJBoss() {
+    static boolean isOldJBoss() {
         String command = getCommand();
         return command != null && command.equals("org.jboss.Main");
     }
 
-    public static boolean isGlassfish() {
+    static boolean isGlassfish() {
         String command = getCommand();
         return command != null && command.equals("com.sun.enterprise.glassfish.bootstrap.ASMain");
     }

@@ -80,8 +80,7 @@ public class TimerImpl implements Timer, CommonTimerImpl {
     private @MonotonicNonNull TimerImpl headChild;
     private final @Nullable TimerImpl nextSibling;
 
-    public static TimerImpl createRootTimer(ThreadContextImpl threadContext,
-            TimerNameImpl timerName) {
+    static TimerImpl createRootTimer(ThreadContextImpl threadContext, TimerNameImpl timerName) {
         return new TimerImpl(threadContext, null, null, timerName);
     }
 
@@ -153,7 +152,7 @@ public class TimerImpl implements Timer, CommonTimerImpl {
         return extend(ticker.read());
     }
 
-    public void end(long endTick) {
+    void end(long endTick) {
         if (--selfNestingLevel == 0) {
             endInternal(endTick);
         }
@@ -242,7 +241,7 @@ public class TimerImpl implements Timer, CommonTimerImpl {
     }
 
     // only called by transaction thread
-    public TimerImpl startNestedTimer(TimerName timerName, long startTick) {
+    TimerImpl startNestedTimer(TimerName timerName, long startTick) {
         // timer names are guaranteed one instance per name so pointer equality can be used
         if (this.timerName == timerName) {
             selfNestingLevel++;
@@ -251,7 +250,7 @@ public class TimerImpl implements Timer, CommonTimerImpl {
         return startNestedTimerInternal(timerName, startTick);
     }
 
-    public TimerImpl extend(long startTick) {
+    TimerImpl extend(long startTick) {
         TimerImpl currentTimer = threadContext.getCurrentTimer();
         if (currentTimer == null) {
             logger.warn("extend() transaction currentTimer is null");
@@ -281,10 +280,6 @@ public class TimerImpl implements Timer, CommonTimerImpl {
         this.startTick = startTick;
         selfNestingLevel++;
         threadContext.setCurrentTimer(this);
-    }
-
-    ThreadContextImpl getThreadContext() {
-        return threadContext;
     }
 
     private void endInternal(long endTick) {

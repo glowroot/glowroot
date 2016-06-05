@@ -46,9 +46,9 @@ import org.glowroot.storage.repo.helper.Gauges;
 import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
-import static org.glowroot.agent.fat.storage.util.Checkers.castUntainted;
+import static org.glowroot.agent.util.Checkers.castUntainted;
 
-public class GaugeValueDao implements GaugeValueRepository {
+class GaugeValueDao implements GaugeValueRepository {
 
     private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
             ImmutableColumn.of("gauge_id", ColumnType.BIGINT),

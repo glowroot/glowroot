@@ -23,6 +23,8 @@ class HttpJspPages {
     // 002d is hex encoding for illegal class name character '-'
     private static final String WEB_INF = "WEB_002dINF";
 
+    private HttpJspPages() {}
+
     static String getFilename(Class<?> jspClass) {
         String name = jspClass.getName();
         if (name.startsWith(ORG_APACHE_JSP)) {

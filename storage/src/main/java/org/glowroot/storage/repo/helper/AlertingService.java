@@ -95,6 +95,9 @@ public class AlertingService {
     }
 
     public void checkGaugeAlerts(String agentId, long endTime) throws Exception {
+        if (configRepository.getSmtpConfig().host().isEmpty()) {
+            return;
+        }
         try {
             for (String agentRollup : AgentRollups.getAgentRollups(agentId)) {
                 for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollup)) {
@@ -223,7 +226,8 @@ public class AlertingService {
         sb.append(" minutes was ");
         sb.append(transactionCount);
         sb.append(".");
-        sendAlert(alertConfig.getEmailAddressList(), subject, sb.toString());
+        sendEmail(alertConfig.getEmailAddressList(), subject, sb.toString(),
+                configRepository.getSmtpConfig(), configRepository, mailService);
     }
 
     private void sendGaugeAlert(String agentRollup, AlertConfig alertConfig, double average,
@@ -248,12 +252,13 @@ public class AlertingService {
             sb.append(unit);
         }
         sb.append(".\n\n");
-        sendAlert(alertConfig.getEmailAddressList(), subject, sb.toString());
+        sendEmail(alertConfig.getEmailAddressList(), subject, sb.toString(),
+                configRepository.getSmtpConfig(), configRepository, mailService);
     }
 
-    private void sendAlert(List<String> emailAddresses, String subject, String messageText)
+    public static void sendEmail(List<String> emailAddresses, String subject, String messageText,
+            SmtpConfig smtpConfig, ConfigRepository configRepository, MailService mailService)
             throws Exception {
-        SmtpConfig smtpConfig = configRepository.getSmtpConfig();
         Session session = createMailSession(smtpConfig, configRepository.getSecretKey());
         Message message = new MimeMessage(session);
         String fromEmailAddress = smtpConfig.fromEmailAddress();
@@ -273,27 +278,6 @@ public class AlertingService {
         message.setRecipients(Message.RecipientType.TO, emailAddrs);
         message.setSubject(subject);
         message.setText(messageText);
-        mailService.send(message);
-    }
-
-    public static void sendTestEmails(String testEmailRecipient, SmtpConfig smtpConfig,
-            ConfigRepository configRepository, MailService mailService) throws Exception {
-        Session session = createMailSession(smtpConfig, configRepository.getSecretKey());
-        Message message = new MimeMessage(session);
-        String fromEmailAddress = smtpConfig.fromEmailAddress();
-        if (fromEmailAddress.isEmpty()) {
-            String localServerName = InetAddress.getLocalHost().getHostName();
-            fromEmailAddress = "glowroot@" + localServerName;
-        }
-        String fromDisplayName = smtpConfig.fromDisplayName();
-        if (fromDisplayName.isEmpty()) {
-            fromDisplayName = "Glowroot";
-        }
-        message.setFrom(new InternetAddress(fromEmailAddress, fromDisplayName));
-        InternetAddress to = new InternetAddress(testEmailRecipient);
-        message.setRecipient(Message.RecipientType.TO, to);
-        message.setSubject("Test email from Glowroot");
-        message.setText("");
         mailService.send(message);
     }
 

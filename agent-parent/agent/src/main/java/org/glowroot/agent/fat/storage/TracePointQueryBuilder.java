@@ -181,10 +181,6 @@ class TracePointQueryBuilder {
 
         abstract @Untainted String sql();
         abstract ImmutableList<Object> args();
-
-        Object[] argsAsArray() {
-            return args().toArray(new Object[args().size()]);
-        }
     }
 
     private static class ParameterizedSqlBuilder {

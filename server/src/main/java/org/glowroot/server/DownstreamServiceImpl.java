@@ -80,8 +80,7 @@ public class DownstreamServiceImpl implements DownstreamService {
 
     @Override
     public StreamObserver<ClientResponse> connect(StreamObserver<ServerRequest> requestObserver) {
-        ConnectedAgent connectedAgent = new ConnectedAgent(requestObserver);
-        return connectedAgent.responseObserver;
+        return new ConnectedAgent(requestObserver);
     }
 
     public void updateAgentConfig(String agentId, AgentConfig agentConfig) throws Exception {
@@ -257,7 +256,7 @@ public class DownstreamServiceImpl implements DownstreamService {
         return connectedAgent.getFullTrace(traceId);
     }
 
-    private class ConnectedAgent {
+    private class ConnectedAgent implements StreamObserver<ClientResponse> {
 
         private final AtomicLong nextRequestId = new AtomicLong(1);
 
@@ -266,57 +265,60 @@ public class DownstreamServiceImpl implements DownstreamService {
                 .expireAfterWrite(1, HOURS)
                 .build();
 
-        private final StreamObserver<ClientResponse> responseObserver =
-                new StreamObserver<ClientResponse>() {
-                    private volatile @MonotonicNonNull String agentId;
-                    @Override
-                    public void onNext(ClientResponse value) {
-                        if (value.getMessageCase() == MessageCase.HELLO) {
-                            agentId = value.getHello().getAgentId();
-                            connectedAgents.put(agentId, ConnectedAgent.this);
-                            requestObserver.onNext(ServerRequest.newBuilder()
-                                    .setHelloAck(HelloAck.getDefaultInstance())
-                                    .build());
-                            return;
-                        }
-                        long requestId = value.getRequestId();
-                        ResponseHolder responseHolder = responseHolders.getIfPresent(requestId);
-                        responseHolders.invalidate(requestId);
-                        if (responseHolder == null) {
-                            logger.error("no response holder for request id: {}", requestId);
-                            return;
-                        }
-                        try {
-                            // this shouldn't timeout since it is the other side of the exchange
-                            // that is waiting
-                            responseHolder.response.exchange(value, 1, MINUTES);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            logger.error(e.getMessage(), e);
-                        } catch (TimeoutException e) {
-                            logger.error(e.getMessage(), e);
-                        }
-                    }
-                    @Override
-                    public void onError(Throwable t) {
-                        logger.error(t.getMessage(), t);
-                        if (agentId != null) {
-                            connectedAgents.remove(agentId, ConnectedAgent.this);
-                        }
-                    }
-                    @Override
-                    public void onCompleted() {
-                        requestObserver.onCompleted();
-                        if (agentId != null) {
-                            connectedAgents.remove(agentId, ConnectedAgent.this);
-                        }
-                    }
-                };
+        private volatile @MonotonicNonNull String agentId;
 
         private final StreamObserver<ServerRequest> requestObserver;
 
         private ConnectedAgent(StreamObserver<ServerRequest> requestObserver) {
             this.requestObserver = requestObserver;
+        }
+
+        @Override
+        public void onNext(ClientResponse value) {
+            if (value.getMessageCase() == MessageCase.HELLO) {
+                agentId = value.getHello().getAgentId();
+                connectedAgents.put(agentId, ConnectedAgent.this);
+                synchronized (requestObserver) {
+                    requestObserver.onNext(ServerRequest.newBuilder()
+                            .setHelloAck(HelloAck.getDefaultInstance())
+                            .build());
+                }
+                return;
+            }
+            long requestId = value.getRequestId();
+            ResponseHolder responseHolder = responseHolders.getIfPresent(requestId);
+            responseHolders.invalidate(requestId);
+            if (responseHolder == null) {
+                logger.error("no response holder for request id: {}", requestId);
+                return;
+            }
+            try {
+                // this shouldn't timeout since it is the other side of the exchange that is waiting
+                responseHolder.response.exchange(value, 1, MINUTES);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error(e.getMessage(), e);
+            } catch (TimeoutException e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            logger.error(t.getMessage(), t);
+            if (agentId != null) {
+                connectedAgents.remove(agentId, ConnectedAgent.this);
+            }
+        }
+
+        @Override
+        public void onCompleted() {
+            synchronized (requestObserver) {
+                requestObserver.onCompleted();
+            }
+            if (agentId != null) {
+                connectedAgents.remove(agentId, ConnectedAgent.this);
+            }
         }
 
         private void updateAgentConfig(AgentConfig agentConfig) throws Exception {
@@ -521,7 +523,10 @@ public class DownstreamServiceImpl implements DownstreamService {
         private ClientResponse sendRequest(ServerRequest request) throws Exception {
             ResponseHolder responseHolder = new ResponseHolder();
             responseHolders.put(request.getRequestId(), responseHolder);
-            requestObserver.onNext(request);
+            // synchronization required since individual StreamObservers are not thread-safe
+            synchronized (requestObserver) {
+                requestObserver.onNext(request);
+            }
             // timeout is in case agent never responds
             // passing ClientResponse.getDefaultInstance() is just dummy (non-null) value
             ClientResponse response = responseHolder.response
@@ -541,8 +546,8 @@ public class DownstreamServiceImpl implements DownstreamService {
     }
 
     @SuppressWarnings("serial")
-    public static class AgentException extends Exception {}
+    private static class AgentException extends Exception {}
 
     @SuppressWarnings("serial")
-    public static class OutdatedAgentException extends Exception {}
+    private static class OutdatedAgentException extends Exception {}
 }

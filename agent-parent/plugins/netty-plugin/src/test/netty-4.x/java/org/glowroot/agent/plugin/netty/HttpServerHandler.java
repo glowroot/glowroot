@@ -38,6 +38,7 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof HttpRequest) {
+            @SuppressWarnings("deprecation")
             String uri = ((HttpRequest) msg).getUri();
             if (uri.equals("/exception")) {
                 throw new Exception("Test");

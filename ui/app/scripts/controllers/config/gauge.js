@@ -248,7 +248,7 @@ glowroot.controller('ConfigGaugeCtrl', [
         version: $scope.config.version
       };
       var agentId = $scope.agentId;
-      $http.post('backend/config/gauges/remove?agent-id=' + agentId, postData)
+      $http.post('backend/config/gauges/remove?agent-id=' + encodeURIComponent(agentId), postData)
           .success(function () {
             removeConfirmIfHasChangesListener();
             if (agentId) {

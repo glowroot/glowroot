@@ -55,7 +55,7 @@ import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.glowroot.agent.fat.storage.util.Checkers.castInitialized;
+import static org.glowroot.agent.util.Checkers.castInitialized;
 
 public class ThreadContextImpl implements ThreadContextPlus {
 
@@ -115,7 +115,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         rootTimer = TimerImpl.createRootTimer(castInitialized(this), (TimerNameImpl) rootTimerName);
         rootTimer.start(startTick);
         traceEntryComponent = new TraceEntryComponent(castInitialized(this), messageSupplier,
-                rootTimer, startTick, ticker);
+                rootTimer, startTick);
         this.parentThreadContextPriorEntry = parentThreadContextPriorEntry;
         threadId = Thread.currentThread().getId();
         threadStatsComponent =
@@ -131,11 +131,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     @Nullable
-    TraceEntryImpl getParentTraceEntry() {
-        return parentTraceEntry;
-    }
-
-    @Nullable
     TraceEntryImpl getParentThreadContextPriorEntry() {
         return parentThreadContextPriorEntry;
     }
@@ -144,7 +139,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         return traceEntryComponent.getRootEntry();
     }
 
-    public TimerImpl getRootTimer() {
+    TimerImpl getRootTimer() {
         return rootTimer;
     }
 
@@ -163,7 +158,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         return traceEntryComponent.isCompleted();
     }
 
-    public boolean isCompleted(long captureTick) {
+    private boolean isCompleted(long captureTick) {
         if (!traceEntryComponent.isCompleted()) {
             return false;
         }
@@ -190,7 +185,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.currentNestingGroupId = nestingGroupId;
     }
 
-    public void mergeQueriesInto(QueryCollector queries) {
+    void mergeQueriesInto(QueryCollector queries) {
         QueryData curr = headQueryData;
         while (curr != null) {
             queries.mergeQuery(curr.getQueryType(), curr.getQueryText(),
@@ -200,7 +195,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
     }
 
-    public void mergeServiceCallsInto(ServiceCallCollector serviceCalls) {
+    void mergeServiceCallsInto(ServiceCallCollector serviceCalls) {
         QueryData curr = headServiceCallData;
         while (curr != null) {
             serviceCalls.mergeServiceCall(curr.getQueryType(), curr.getQueryText(),
@@ -209,7 +204,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
     }
 
-    public boolean getCaptureThreadStats() {
+    boolean getCaptureThreadStats() {
         return threadStatsComponent != null;
     }
 
@@ -446,6 +441,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @Override
     public AsyncTraceEntry startAsyncTraceEntry(MessageSupplier messageSupplier,
             TimerName timerName) {
+        if (messageSupplier == null) {
+            logger.error("startAsyncTraceEntry(): argument 'messageSupplier' must be non-null");
+            return NopAsyncTraceEntry.INSTANCE;
+        }
         if (timerName == null) {
             logger.error("startAsyncTraceEntry(): argument 'timerName' must be non-null");
             return NopAsyncTraceEntry.INSTANCE;

@@ -31,7 +31,7 @@
   </developers>
 
   <prerequisites>
-    <maven>3.1.0</maven>
+    <maven>3.2.2</maven>
   </prerequisites>
 
   <modules>
@@ -67,10 +67,10 @@
     <module>agent-parent/plugins/spring-plugin</module>
     <module>agent-parent/plugins/struts-plugin</module>
     <module>agent-parent/benchmarks</module>
-    <module>agent-parent/webdriver-tests</module>
     <module>agent-parent/ui-sandbox</module>
     <module>agent-parent/dist-maven-plugin</module>
     <module>agent-parent/distribution</module>
+    <module>webdriver-tests</module>
   </modules>
 
   <scm>
@@ -449,6 +449,10 @@
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>2.10.3</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-plugin-plugin</artifactId>
+          <version>3.4</version>
         </plugin>
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>

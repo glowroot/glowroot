@@ -17,6 +17,8 @@ package org.glowroot.agent.plugin.httpclient;
 
 class Uris {
 
+    private Uris() {}
+
     static String stripQueryString(String uri) {
         int index = uri.indexOf('?');
         if (index == -1) {

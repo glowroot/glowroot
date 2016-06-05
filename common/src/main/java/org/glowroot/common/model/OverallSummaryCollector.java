@@ -15,8 +15,7 @@
  */
 package org.glowroot.common.model;
 
-import org.glowroot.common.live.ImmutableOverallSummary;
-import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
+import org.immutables.value.Value;
 
 public class OverallSummaryCollector {
 
@@ -40,5 +39,12 @@ public class OverallSummaryCollector {
         this.totalDurationNanos += totalDurationNanos;
         this.transactionCount += transactionCount;
         lastCaptureTime = Math.max(lastCaptureTime, captureTime);
+    }
+
+    @Value.Immutable
+    public interface OverallSummary {
+        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+        double totalDurationNanos();
+        long transactionCount();
     }
 }

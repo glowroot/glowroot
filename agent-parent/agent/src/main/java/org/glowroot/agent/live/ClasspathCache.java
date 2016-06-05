@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -194,7 +194,7 @@ class ClasspathCache {
         }
         for (String path : Splitter.on(File.pathSeparatorChar).split(javaClassPath)) {
             File file = new File(path);
-            Location location = getLocation(file);
+            Location location = getLocationFromFile(file);
             if (location != null && !classpathLocations.contains(location)) {
                 loadClassNames(location, newClassNameLocations);
                 classpathLocations.add(location);
@@ -211,7 +211,7 @@ class ClasspathCache {
         }
         for (String path : Splitter.on(File.pathSeparatorChar).split(bootClassPath)) {
             File file = new File(path);
-            Location location = getLocation(file);
+            Location location = getLocationFromFile(file);
             if (location != null && !classpathLocations.contains(location)) {
                 loadClassNames(location, newClassNameLocations);
                 classpathLocations.add(location);
@@ -284,34 +284,21 @@ class ClasspathCache {
             } catch (Exception e) {
                 logger.warn(e.getMessage(), e);
             }
-        } else {
-            try {
-                URI uri = url.toURI();
-                if (uri.getScheme().equals("file")) {
-                    return getLocation(new File(uri));
-                } else if (uri.getScheme().equals("jar")) {
-                    String f = uri.getSchemeSpecificPart();
-                    if (f.startsWith("file:")) {
-                        int index = f.indexOf("!/");
-                        File jarFile = new File(f.substring(5, index));
-                        String nestedJarFilePath = f.substring(index + 2);
-                        if (nestedJarFilePath.isEmpty()) {
-                            // the jar file itself
-                            return ImmutableLocation.builder().jarFile(jarFile).build();
-                        }
-                        // strip off trailing !/
-                        nestedJarFilePath =
-                                nestedJarFilePath.substring(0, nestedJarFilePath.length() - 2);
-                        return ImmutableLocation.builder()
-                                .jarFile(jarFile)
-                                .nestedJarFilePath(nestedJarFilePath)
-                                .build();
-                    }
+            return null;
+        }
+        try {
+            URI uri = url.toURI();
+            if (uri.getScheme().equals("file")) {
+                return getLocationFromFile(new File(uri));
+            } else if (uri.getScheme().equals("jar")) {
+                String f = uri.getSchemeSpecificPart();
+                if (f.startsWith("file:")) {
+                    return getLocationFromJarFile(f);
                 }
-            } catch (URISyntaxException e) {
-                // log exception at debug level
-                logger.debug(e.getMessage(), e);
             }
+        } catch (URISyntaxException e) {
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
         }
         return null;
     }
@@ -414,7 +401,7 @@ class ClasspathCache {
 
     private static void loadClassNamesFromNestedJarFile(File jarFile, String nestedJarFilePath,
             Location location, Multimap<String, Location> newClassNameLocations)
-                    throws IOException {
+            throws IOException {
         URI uri;
         try {
             uri = new URI("jar", "file:" + jarFile.getPath() + "!/" + nestedJarFilePath, "");
@@ -447,7 +434,7 @@ class ClasspathCache {
         URI baseUri = jarFile.toURI();
         for (String path : Splitter.on(' ').omitEmptyStrings().split(classpath)) {
             File file = new File(baseUri.resolve(path));
-            Location location = getLocation(file);
+            Location location = getLocationFromFile(file);
             if (location != null) {
                 loadClassNames(location, newClassNameLocations);
             }
@@ -481,7 +468,7 @@ class ClasspathCache {
         String name = (String) Reflections.invoke(getNameMethod, virtualFile);
         checkNotNull(name, "org.jboss.vfs.VirtualFile.getName() returned null");
         File file = new File(physicalFile.getParentFile(), name);
-        return getLocation(file);
+        return getLocationFromFile(file);
     }
 
     @Value.Immutable(prehash = true)
@@ -561,7 +548,7 @@ class ClasspathCache {
         }
     }
 
-    private static @Nullable Location getLocation(File file) {
+    private static @Nullable Location getLocationFromFile(File file) {
         if (!file.exists()) {
             return null;
         } else if (file.isDirectory()) {
@@ -571,6 +558,23 @@ class ClasspathCache {
         } else {
             return null;
         }
+    }
+
+    private static Location getLocationFromJarFile(String f) {
+        int index = f.indexOf("!/");
+        File jarFile = new File(f.substring(5, index));
+        String nestedJarFilePath = f.substring(index + 2);
+        if (nestedJarFilePath.isEmpty()) {
+            // the jar file itself
+            return ImmutableLocation.builder().jarFile(jarFile).build();
+        }
+        // strip off trailing !/
+        nestedJarFilePath =
+                nestedJarFilePath.substring(0, nestedJarFilePath.length() - 2);
+        return ImmutableLocation.builder()
+                .jarFile(jarFile)
+                .nestedJarFilePath(nestedJarFilePath)
+                .build();
     }
 
     private static byte[] getBytes(Location location, String className) throws IOException {
@@ -583,47 +587,56 @@ class ClasspathCache {
         } else if (jarFile != null) {
             String nestedJarFilePath = location.nestedJarFilePath();
             if (nestedJarFilePath == null) {
-                String path = jarFile.getPath();
-                URI uri;
-                try {
-                    uri = new URI("jar", "file:" + path + "!/" + name, "");
-                } catch (URISyntaxException e) {
-                    // this is a programmatic error
-                    throw new RuntimeException(e);
-                }
-                return Resources.toByteArray(uri.toURL());
+                return getBytesFromJarFile(name, jarFile);
             } else {
-                String path = jarFile.getPath();
-                URI uri;
-                try {
-                    uri = new URI("jar", "file:" + path + "!/" + nestedJarFilePath, "");
-                } catch (URISyntaxException e) {
-                    // this is a programmatic error
-                    throw new RuntimeException(e);
-                }
-                Closer closer = Closer.create();
-                InputStream s = uri.toURL().openStream();
-                JarInputStream jarIn = closer.register(new JarInputStream(s));
-                try {
-                    JarEntry jarEntry;
-                    while ((jarEntry = jarIn.getNextJarEntry()) != null) {
-                        if (jarEntry.isDirectory()) {
-                            continue;
-                        }
-                        if (jarEntry.getName().equals(name)) {
-                            return ByteStreams.toByteArray(jarIn);
-                        }
-                    }
-                } catch (Throwable t) {
-                    throw closer.rethrow(t);
-                } finally {
-                    closer.close();
-                }
-                throw new UnsupportedOperationException();
+                return getBytesFromNestedJarFile(name, jarFile, nestedJarFilePath);
             }
         } else {
             throw new AssertionError("Both Location directory() and jarFile() are null");
         }
+    }
+
+    private static byte[] getBytesFromJarFile(String name, File jarFile) throws IOException {
+        String path = jarFile.getPath();
+        URI uri;
+        try {
+            uri = new URI("jar", "file:" + path + "!/" + name, "");
+        } catch (URISyntaxException e) {
+            // this is a programmatic error
+            throw new RuntimeException(e);
+        }
+        return Resources.toByteArray(uri.toURL());
+    }
+
+    private static byte[] getBytesFromNestedJarFile(String name, File jarFile,
+            String nestedJarFilePath) throws IOException {
+        String path = jarFile.getPath();
+        URI uri;
+        try {
+            uri = new URI("jar", "file:" + path + "!/" + nestedJarFilePath, "");
+        } catch (URISyntaxException e) {
+            // this is a programmatic error
+            throw new RuntimeException(e);
+        }
+        Closer closer = Closer.create();
+        InputStream s = uri.toURL().openStream();
+        JarInputStream jarIn = closer.register(new JarInputStream(s));
+        try {
+            JarEntry jarEntry;
+            while ((jarEntry = jarIn.getNextJarEntry()) != null) {
+                if (jarEntry.isDirectory()) {
+                    continue;
+                }
+                if (jarEntry.getName().equals(name)) {
+                    return ByteStreams.toByteArray(jarIn);
+                }
+            }
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
+        } finally {
+            closer.close();
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Value.Immutable

@@ -88,34 +88,6 @@ public interface LiveAggregateRepository {
     }
 
     @Value.Immutable
-    public interface OverallSummary {
-        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
-        double totalDurationNanos();
-        long transactionCount();
-    }
-
-    @Value.Immutable
-    public interface TransactionSummary {
-        String transactionName();
-        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
-        double totalDurationNanos();
-        long transactionCount();
-    }
-
-    @Value.Immutable
-    public interface OverallErrorSummary {
-        long errorCount();
-        long transactionCount();
-    }
-
-    @Value.Immutable
-    public interface TransactionErrorSummary {
-        String transactionName();
-        long errorCount();
-        long transactionCount();
-    }
-
-    @Value.Immutable
     public interface OverviewAggregate {
         long captureTime();
         // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
@@ -164,14 +136,6 @@ public interface LiveAggregateRepository {
         public long revisedTo() {
             return revisedTo;
         }
-    }
-
-    public enum SummarySortOrder {
-        TOTAL_TIME, AVERAGE_TIME, THROUGHPUT
-    }
-
-    public enum ErrorSummarySortOrder {
-        ERROR_COUNT, ERROR_RATE
     }
 
     public static class LiveAggregateRepositoryNop implements LiveAggregateRepository {

@@ -31,13 +31,13 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.live.ImmutableOverallQuery;
 import org.glowroot.common.live.ImmutableTransactionQuery;
-import org.glowroot.common.live.LiveAggregateRepository.ErrorSummarySortOrder;
-import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
+import org.glowroot.common.model.OverallErrorSummaryCollector.OverallErrorSummary;
 import org.glowroot.common.model.Result;
+import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
+import org.glowroot.common.model.TransactionErrorSummaryCollector.TransactionErrorSummary;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;

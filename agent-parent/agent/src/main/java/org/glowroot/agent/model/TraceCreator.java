@@ -53,10 +53,8 @@ public class TraceCreator {
     public static Trace.Header createPartialTraceHeader(Transaction transaction, long captureTime,
             long captureTick) throws IOException {
         int entryCount = transaction.getEntriesProtobuf(captureTick).size();
-        long mainThreadProfileSampleCount =
-                getProfileSampleCount(transaction.getMainThreadProfileProtobuf());
-        long auxThreadProfileSampleCount =
-                getProfileSampleCount(transaction.getAuxThreadProfileProtobuf());
+        long mainThreadProfileSampleCount = transaction.getMainThreadProfileSampleCount();
+        long auxThreadProfileSampleCount = transaction.getAuxThreadProfileSampleCount();
         // only slow transactions reach this point, so setting slow=true (second arg below)
         return createTraceHeader(transaction, true, true, captureTime, captureTick, entryCount,
                 mainThreadProfileSampleCount, auxThreadProfileSampleCount);
@@ -65,10 +63,8 @@ public class TraceCreator {
     public static Trace.Header createCompletedTraceHeader(Transaction transaction)
             throws IOException {
         int entryCount = transaction.getEntriesProtobuf(transaction.getEndTick()).size();
-        long mainProfileSampleCount =
-                getProfileSampleCount(transaction.getMainThreadProfileProtobuf());
-        long auxProfileSampleCount =
-                getProfileSampleCount(transaction.getAuxThreadProfileProtobuf());
+        long mainProfileSampleCount = transaction.getMainThreadProfileSampleCount();
+        long auxProfileSampleCount = transaction.getAuxThreadProfileSampleCount();
         // only slow transactions reach this point, so setting slow=true (second arg below)
         return createTraceHeader(transaction, true, false, transaction.getCaptureTime(),
                 transaction.getEndTick(), entryCount, mainProfileSampleCount,

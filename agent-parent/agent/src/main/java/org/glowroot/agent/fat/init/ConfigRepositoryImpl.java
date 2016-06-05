@@ -28,8 +28,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +42,7 @@ import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.config.TransactionConfig;
 import org.glowroot.agent.config.UiConfig;
 import org.glowroot.agent.config.UserRecordingConfig;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Versions;
 import org.glowroot.storage.config.FatStorageConfig;
 import org.glowroot.storage.config.ImmutableFatStorageConfig;
@@ -60,7 +59,7 @@ import org.glowroot.storage.config.StorageConfig;
 import org.glowroot.storage.config.UserConfig;
 import org.glowroot.storage.config.WebConfig;
 import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.util.Encryption;
+import org.glowroot.storage.util.LazySecretKey;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 
@@ -72,11 +71,12 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     private final ConfigService configService;
     private final PluginCache pluginCache;
-    private final File secretFile;
-
-    private final Object writeLock = new Object();
 
     private final ImmutableList<RollupConfig> rollupConfigs;
+
+    private final LazySecretKey secretKey;
+
+    private final Object writeLock = new Object();
 
     private volatile ImmutableList<UserConfig> userConfigs;
     private volatile ImmutableList<RoleConfig> roleConfigs;
@@ -84,9 +84,6 @@ class ConfigRepositoryImpl implements ConfigRepository {
     private volatile FatStorageConfig storageConfig;
     private volatile SmtpConfig smtpConfig;
     private volatile LdapConfig ldapConfig;
-
-    // volatile not needed as access is guarded by secretFile
-    private @MonotonicNonNull SecretKey secretKey;
 
     static ConfigRepository create(File baseDir, ConfigService configService,
             PluginCache pluginCache) {
@@ -106,8 +103,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
             PluginCache pluginCache) {
         this.configService = configService;
         this.pluginCache = pluginCache;
-        secretFile = new File(baseDir, "secret");
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
+        secretKey = new LazySecretKey(new File(baseDir, "secret"));
 
         List<ImmutableUserConfig> userConfigs = configService.getAdminConfig(USERS_KEY,
                 new TypeReference<List<ImmutableUserConfig>>() {});
@@ -119,7 +116,6 @@ class ConfigRepositoryImpl implements ConfigRepository {
         if (this.userConfigs.isEmpty()) {
             this.userConfigs = ImmutableList.<UserConfig>of(ImmutableUserConfig.builder()
                     .username("anonymous")
-                    .passwordHash("")
                     .addRoles("Administrator")
                     .build());
         }
@@ -810,17 +806,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     // lazy create secret file only when needed
     @Override
     public SecretKey getSecretKey() throws Exception {
-        synchronized (secretFile) {
-            if (secretKey == null) {
-                if (secretFile.exists()) {
-                    secretKey = Encryption.loadKey(secretFile);
-                } else {
-                    secretKey = Encryption.generateNewKey();
-                    Files.write(secretKey.getEncoded(), secretFile);
-                }
-            }
-            return secretKey;
-        }
+        return secretKey.get();
     }
 
     private PluginDescriptor getPluginDescriptor(String pluginId) {
@@ -837,6 +823,24 @@ class ConfigRepositoryImpl implements ConfigRepository {
         if (!version.equals(priorVersion)) {
             throw new OptimisticLockException();
         }
+    }
+
+    @OnlyUsedByTests
+    public void resetAdminConfig() throws IOException {
+        userConfigs = ImmutableList.<UserConfig>of(ImmutableUserConfig.builder()
+                .username("anonymous")
+                .addRoles("Administrator")
+                .build());
+        roleConfigs = ImmutableList.<RoleConfig>of(ImmutableRoleConfig.builder()
+                .name("Administrator")
+                .addPermissions("agent:view", "agent:tool", "agent:config:view",
+                        "agent:config:edit", "admin")
+                .build());
+        webConfig = ImmutableWebConfig.builder().build();
+        storageConfig = ImmutableFatStorageConfig.builder().build();
+        smtpConfig = ImmutableSmtpConfig.builder().build();
+        ldapConfig = ImmutableLdapConfig.builder().build();
+        writeAll();
     }
 
     private void writeAll() throws IOException {

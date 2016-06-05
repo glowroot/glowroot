@@ -17,6 +17,7 @@ package org.glowroot.ui;
 
 import java.io.StringWriter;
 import java.net.InetAddress;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -24,6 +25,7 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -212,8 +214,10 @@ class AdminJsonService {
     void sendTestEmail(@BindRequest SmtpConfigDto configDto) throws Exception {
         String testEmailRecipient = configDto.testEmailRecipient();
         checkNotNull(testEmailRecipient);
-        AlertingService.sendTestEmails(testEmailRecipient, configDto.convert(configRepository),
-                configRepository, mailService);
+        List<String> emailAddresses =
+                Splitter.on(',').trimResults().splitToList(testEmailRecipient);
+        AlertingService.sendEmail(emailAddresses, "Test email from Glowroot", "",
+                configDto.convert(configRepository), configRepository, mailService);
     }
 
     @POST(path = "/backend/admin/test-ldap-connection", permission = "admin:edit:ldap")

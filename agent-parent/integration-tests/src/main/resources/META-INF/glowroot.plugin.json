@@ -1,0 +1,150 @@
+{
+  "name": "Integration Tests Plugin",
+  "id": "glowroot-integration-tests",
+  "properties": [
+    {
+      "name": "starredHeadline",
+      "type": "boolean",
+      "label": "Starred headline",
+      "checkboxLabel": "Add asterisk to end of headline"
+    },
+    {
+      "name": "alternateHeadline",
+      "type": "string",
+      "label": "Alternate headline"
+    },
+    {
+      "name": "hasDefaultVal",
+      "type": "string",
+      "default": "one",
+      "label": "Has default val"
+    },
+    {
+      "name": "captureTraceEntryStackTraces",
+      "type": "boolean",
+      "label": "Stack trace",
+      "checkboxLabel": "Capture stack trace at pauseOneMillisecond() trace entry"
+    },
+    {
+      "name": "levelFiveEnabled",
+      "type": "boolean",
+      "label": "LevelFive",
+      "checkboxLabel": "Capture timers for LevelFive.call()"
+    },
+    {
+      "name": "levelFiveEntryEnabled",
+      "type": "boolean",
+      "label": "LevelFive trace entries",
+      "checkboxLabel": "Capture trace entries for LevelFive.call()",
+      "description": "LevelFive property above must be enabled also in order to capture trace entries."
+    },
+    {
+      "name": "anumber",
+      "type": "double",
+      "label": "A number"
+    },
+    {
+      "name": "anumberWithDefaultValue",
+      "type": "double",
+      "default": 22,
+      "label": "A number with default value"
+    },
+    {
+      "name": "anumberWithExplicitNullDefaultValue",
+      "type": "double",
+      "default": null,
+      "label": "A number with explicit null default value"
+    }
+  ],
+  "instrumentation": [
+    {
+      "className": "org.glowroot.agent.tests.app.LevelFour",
+      "methodName": "call",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.String"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "level four",
+      "traceEntryMessageTemplate": "Level Four: {{0}}, {{1}}"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.LevelFive",
+      "methodName": "call",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.String"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "level five",
+      "traceEntryMessageTemplate": "Level Five: {{0}}, {{1}}",
+      "enabledProperty": "levelFiveEnabled",
+      "traceEntryEnabledProperty": "levelFiveEntryEnabled"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ExceptionalClass",
+      "methodName": "aMethodThatThrowsAnException",
+      "methodParameterTypes": [
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "exceptional",
+      "traceEntryMessageTemplate": "Exceptional entry"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.AAA",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        "java.lang.String",
+        ".."
+      ],
+      "captureKind": "other",
+      "transactionNameTemplate": "{{0}} {{1.nested.name}}",
+      "transactionUserTemplate": "u{{1.nested.name}}",
+      "transactionAttributeTemplates": {
+        "View": "v{{0}}",
+        "Z": "z{{0}}"
+      }
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.CoverAllTypes",
+      "methodName": "get*",
+      "methodParameterTypes": [],
+      "captureKind": "trace-entry",
+      "timerName": "coverage",
+      "traceEntryMessageTemplate": "Coverage get: {{_}}"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.CoverAllTypes",
+      "methodName": "put*",
+      "methodParameterTypes": [
+        "*"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "coverage",
+      "traceEntryMessageTemplate": "Coverage put: {{0}}"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.StackOverflowTester",
+      "methodName": "recurse5",
+      "methodParameterTypes": [
+      ],
+      "captureKind": "trace-entry",
+      "traceEntryCaptureSelfNested": true,
+      "timerName": "recurse",
+      "traceEntryMessageTemplate": "Recurse"
+    }
+  ],
+  "aspects": [
+    "org.glowroot.agent.tests.plugin.LevelOneAspect",
+    "org.glowroot.agent.tests.plugin.LevelTwoAspect",
+    "org.glowroot.agent.tests.plugin.LevelThreeAspect",
+    "org.glowroot.agent.tests.plugin.LogErrorAspect",
+    "org.glowroot.agent.tests.plugin.LogCauseAspect",
+    "org.glowroot.agent.tests.plugin.PauseAspect",
+    "org.glowroot.agent.tests.plugin.MockDriverAspect",
+    "org.glowroot.agent.tests.plugin.TraceGeneratorAspect",
+    "org.glowroot.agent.tests.plugin.MixinAspect",
+    "org.glowroot.agent.tests.plugin.MatchAllTypesAspect",
+    "org.glowroot.agent.tests.plugin.BeanDescriptorAspect"
+  ]
+}

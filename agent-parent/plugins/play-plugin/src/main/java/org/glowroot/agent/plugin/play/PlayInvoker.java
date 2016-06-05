@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
+import org.glowroot.agent.plugin.api.util.Reflection;
 import org.glowroot.agent.plugin.play.Play2xAspect.HandlerDef;
 
 public class PlayInvoker {
@@ -33,18 +34,19 @@ public class PlayInvoker {
 
     public PlayInvoker(Class<?> clazz) {
         Class<?> handlerDefClass = getHandlerDefClass(clazz);
-        pathMethod = Invokers.getMethod(handlerDefClass, "path");
+        pathMethod = Reflection.getMethod(handlerDefClass, "path");
         Class<?> requestClass = getRequestClass(clazz);
-        actionField = Invokers.getDeclaredField(requestClass, "action");
+        actionField = Reflection.getDeclaredField(requestClass, "action");
     }
 
-    public @Nullable String path(HandlerDef handlerDef) {
-        return Invokers.invoke(pathMethod, handlerDef);
+    @Nullable
+    String path(HandlerDef handlerDef) {
+        return Reflection.invoke(pathMethod, handlerDef);
     }
 
     @Nullable
     String getAction(Object request) {
-        return (String) Invokers.get(actionField, request);
+        return (String) Reflection.getFieldValue(actionField, request);
     }
 
     private static @Nullable Class<?> getHandlerDefClass(Class<?> clazz) {

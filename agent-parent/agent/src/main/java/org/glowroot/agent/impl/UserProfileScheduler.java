@@ -80,6 +80,30 @@ public class UserProfileScheduler {
         transaction.setUserProfileRunnable(userProfileRunnable);
     }
 
+    public static void captureStackTraces(List<ThreadContextImpl> threadContexts,
+            ConfigService configService) {
+        if (threadContexts.isEmpty()) {
+            // critical not to call ThreadMXBean.getThreadInfo() with empty id list
+            // see https://bugs.openjdk.java.net/browse/JDK-8074368
+            return;
+        }
+        long[] threadIds = new long[threadContexts.size()];
+        for (int i = 0; i < threadContexts.size(); i++) {
+            threadIds[i] = threadContexts.get(i).getThreadId();
+        }
+        @Nullable
+        ThreadInfo[] threadInfos =
+                ManagementFactory.getThreadMXBean().getThreadInfo(threadIds, Integer.MAX_VALUE);
+        int limit = configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction();
+        for (int i = 0; i < threadContexts.size(); i++) {
+            ThreadContextImpl threadContext = threadContexts.get(i);
+            ThreadInfo threadInfo = threadInfos[i];
+            if (threadInfo != null) {
+                threadContext.captureStackTrace(threadInfo, limit);
+            }
+        }
+    }
+
     @VisibleForTesting
     class UserProfileRunnable implements Runnable, Cancellable {
 
@@ -142,30 +166,7 @@ public class UserProfileScheduler {
                 activeThreadContexts.add(mainThreadContext);
             }
             activeThreadContexts.addAll(transaction.getActiveAuxThreadContexts());
-            captureStackTraces(activeThreadContexts);
-        }
-
-        private void captureStackTraces(List<ThreadContextImpl> threadContexts) {
-            if (threadContexts.isEmpty()) {
-                // critical not to call ThreadMXBean.getThreadInfo() with empty id list
-                // see https://bugs.openjdk.java.net/browse/JDK-8074368
-                return;
-            }
-            long[] threadIds = new long[threadContexts.size()];
-            for (int i = 0; i < threadContexts.size(); i++) {
-                threadIds[i] = threadContexts.get(i).getThreadId();
-            }
-            @Nullable
-            ThreadInfo[] threadInfos =
-                    ManagementFactory.getThreadMXBean().getThreadInfo(threadIds, Integer.MAX_VALUE);
-            int limit = configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction();
-            for (int i = 0; i < threadContexts.size(); i++) {
-                ThreadContextImpl threadContext = threadContexts.get(i);
-                ThreadInfo threadInfo = threadInfos[i];
-                if (threadInfo != null) {
-                    threadContext.captureStackTrace(threadInfo, limit);
-                }
-            }
+            captureStackTraces(activeThreadContexts, configService);
         }
     }
 }

@@ -37,10 +37,20 @@ import org.rauschig.jarchivelib.CompressionType;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-// see copy of this class in glowroot-agent-cassandra-plugin
+// see copies of this class in glowroot-agent-cassandra-plugin and glowroot-webdriver-tests
 class CassandraWrapper {
 
-    private static final String CASSANDRA_VERSION = "2.0.14";
+    private static final String CASSANDRA_VERSION;
+
+    static {
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            // Cassandra 2.1 has issues on Windows
+            // see https://issues.apache.org/jira/browse/CASSANDRA-10673
+            CASSANDRA_VERSION = "2.2.6";
+        } else {
+            CASSANDRA_VERSION = "2.1.14";
+        }
+    }
 
     private static Process process;
     private static ExecutorService consolePipeExecutorService;
@@ -74,7 +84,7 @@ class CassandraWrapper {
     private static void downloadAndExtract(File baseDir) throws MalformedURLException, IOException {
         // using System.out to make sure user sees why there is a big delay here
         System.out.print("Downloading Cassandra " + CASSANDRA_VERSION + " ...");
-        URL url = new URL("http://archive.apache.org/dist/cassandra/" + CASSANDRA_VERSION
+        URL url = new URL("http://www.apache.org/dist/cassandra/" + CASSANDRA_VERSION
                 + "/apache-cassandra-" + CASSANDRA_VERSION + "-bin.tar.gz");
         InputStream in = url.openStream();
         File archiveFile = File.createTempFile("cassandra-" + CASSANDRA_VERSION + "-", ".tar.gz");
@@ -87,19 +97,10 @@ class CassandraWrapper {
 
         File cassandraDir = new File(baseDir, "apache-cassandra-" + CASSANDRA_VERSION);
         File confDir = new File(cassandraDir, "conf");
-        File yamlFile = new File(confDir, "cassandra.yaml");
-        String yaml = Files.toString(yamlFile, Charsets.UTF_8);
-        yaml = yaml.replace("/var/lib/cassandra",
-                cassandraDir.getAbsolutePath().replace('\\', '/'));
-        Files.asCharSink(yamlFile, Charsets.UTF_8).write(yaml);
-
-        File log4jFile = new File(confDir, "log4j-server.properties");
-        String log4j = Files.toString(log4jFile, Charsets.UTF_8);
-        log4j = log4j.replace("/var/log/cassandra",
-                cassandraDir.getAbsolutePath().replace('\\', '/'));
-        // don't log to stdout
-        log4j = log4j.replace("log4j.rootLogger=INFO,stdout,R", "log4j.rootLogger=INFO,R");
-        Files.asCharSink(log4jFile, Charsets.UTF_8).write(log4j);
+        File logbackXmlFile = new File(confDir, "logback.xml");
+        String contents = Files.toString(logbackXmlFile, Charsets.UTF_8);
+        contents = contents.replace("<root level=\"INFO\">", "<root level=\"WARN\">");
+        Files.asCharSink(logbackXmlFile, Charsets.UTF_8).write(contents);
     }
 
     private static List<String> buildCommandLine(File cassandraDir) {
@@ -109,19 +110,21 @@ class CassandraWrapper {
         command.add(javaExecutable);
         command.add("-cp");
         command.add(buildClasspath(cassandraDir));
-        command.add("-javaagent:" + cassandraDir.getAbsolutePath() + "/lib/jamm-0.2.5.jar");
-        command.add("-Dlog4j.configuration=log4j-server.properties");
-        command.add("-Dlog4j.defaultInitOverride=true");
+        command.add("-javaagent:" + cassandraDir.getAbsolutePath() + "/lib/jamm-0.3.0.jar");
+        command.add("-Dlogback.configurationFile=logback.xml");
         command.add("-Dcassandra.jmx.local.port=7199");
+        command.add("-Dcassandra");
         command.add("-Dcassandra-foreground=yes");
-        command.add(
-                "-Dcassandra.data_file_directories=" + cassandraDir.getAbsolutePath() + "/data");
+        command.add("-Dcassandra.logdir=" + cassandraDir.getAbsolutePath() + "/log");
+        command.add("-Dcassandra.storagedir=" + cassandraDir.getAbsolutePath() + "/data");
         // this is used inside low-entropy docker containers
         String sourceOfRandomness = System.getProperty("java.security.egd");
         if (sourceOfRandomness != null) {
             command.add("-Djava.security.egd=" + sourceOfRandomness);
         }
-        command.add("-Xmx" + Runtime.getRuntime().maxMemory());
+        command.add("-Xmx256m");
+        // leave as much memory as possible to old gen
+        command.add("-XX:NewRatio=20");
         command.add("org.apache.cassandra.service.CassandraDaemon");
         return command;
     }

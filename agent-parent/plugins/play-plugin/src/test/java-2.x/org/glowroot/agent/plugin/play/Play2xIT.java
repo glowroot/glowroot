@@ -259,7 +259,7 @@ public class Play2xIT {
         static {
             try {
                 port = getAvailablePort();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
 
@@ -324,7 +324,7 @@ public class Play2xIT {
             return testServerConstructor.newInstance(port, app);
         }
 
-        private static int getAvailablePort() throws IOException {
+        private static int getAvailablePort() throws Exception {
             ServerSocket serverSocket = new ServerSocket(0);
             int port = serverSocket.getLocalPort();
             serverSocket.close();

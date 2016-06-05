@@ -82,7 +82,7 @@ public class RoleDao {
         }
     }
 
-    public List<RoleConfig> read() {
+    List<RoleConfig> read() {
         ResultSet results = session.execute(readPS.bind());
         List<RoleConfig> users = Lists.newArrayList();
         for (Row row : results) {
@@ -91,18 +91,19 @@ public class RoleDao {
         return users;
     }
 
-    public @Nullable RoleConfig read(String name) {
+    @Nullable
+    RoleConfig read(String name) {
         return cache.getUnchecked(name).orNull();
     }
 
-    public void delete(String name) throws Exception {
+    void delete(String name) throws Exception {
         BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, name);
         session.execute(boundStatement);
         cache.invalidate(name);
     }
 
-    public void insert(RoleConfig userConfig) throws Exception {
+    void insert(RoleConfig userConfig) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
         boundStatement.setString(i++, userConfig.name());

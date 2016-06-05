@@ -43,7 +43,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc;
 import org.glowroot.wire.api.model.Proto;
 
-public class GrpcServer {
+class GrpcServer {
 
     private static final int GRPC_MAX_MESSAGE_SIZE_MB =
             Integer.getInteger("grpc.max.message.size.mb", 100);
@@ -60,7 +60,7 @@ public class GrpcServer {
 
     private final ServerImpl server;
 
-    public GrpcServer(int port, AgentDao agentDao, AggregateRepository aggregateRepository,
+    GrpcServer(int port, AgentDao agentDao, AggregateRepository aggregateRepository,
             GaugeValueRepository gaugeValueRepository, TraceRepository traceRepository,
             AlertingService alertingService) throws IOException {
         this.agentDao = agentDao;

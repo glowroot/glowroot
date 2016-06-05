@@ -16,7 +16,6 @@
 package org.glowroot.agent.plugin.grails;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Collection;
 import java.util.List;
@@ -183,7 +182,7 @@ public class GrailsIT {
 
         protected abstract void doTest(int port) throws Exception;
 
-        private static int getAvailablePort() throws IOException {
+        private static int getAvailablePort() throws Exception {
             ServerSocket serverSocket = new ServerSocket(0);
             int port = serverSocket.getLocalPort();
             serverSocket.close();

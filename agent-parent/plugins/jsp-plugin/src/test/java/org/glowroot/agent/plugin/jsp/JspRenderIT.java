@@ -133,7 +133,7 @@ public class JspRenderIT {
             tomcat.destroy();
         }
 
-        private static int getAvailablePort() throws IOException {
+        private static int getAvailablePort() throws Exception {
             ServerSocket serverSocket = new ServerSocket(0);
             int port = serverSocket.getLocalPort();
             serverSocket.close();

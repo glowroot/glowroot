@@ -50,10 +50,6 @@ public class LogbackAspect {
         @Nullable
         Level glowroot$getLevel();
         @Nullable
-        String getMessage();
-        @Nullable
-        Object /*@Nullable*/ [] getArgumentArray();
-        @Nullable
         String getFormattedMessage();
         @Nullable
         String getLoggerName();
@@ -124,7 +120,7 @@ public class LogbackAspect {
         }
     }
 
-    // this is for logback 0.9.15 and prior
+    // this is for logback prior to 0.9.16
     @Pointcut(className = "ch.qos.logback.classic.Logger", methodName = "callAppenders",
             methodParameterTypes = {"ch.qos.logback.classic.spi.LoggingEvent"},
             nestingGroup = "logging", timerName = TIMER_NAME)

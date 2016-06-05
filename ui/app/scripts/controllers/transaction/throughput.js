@@ -36,7 +36,7 @@ glowroot.controller('TransactionThroughputCtrl', [
       charts.refreshData('backend/transaction/throughput', chartState, $scope, undefined, onRefreshData);
     }
 
-    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function (newval, oldval) {
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function () {
       refreshData();
     });
 

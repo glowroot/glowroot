@@ -49,10 +49,10 @@ class IndexHtmlHttpService implements HttpService {
         }
     }
 
-    private final LayoutService layoutJsonService;
+    private final LayoutService layoutService;
 
-    IndexHtmlHttpService(LayoutService layoutJsonService) {
-        this.layoutJsonService = layoutJsonService;
+    IndexHtmlHttpService(LayoutService layoutService) {
+        this.layoutService = layoutService;
     }
 
     @Override
@@ -66,7 +66,7 @@ class IndexHtmlHttpService implements HttpService {
             throws Exception {
         URL url = Resources.getResource("org/glowroot/ui/app-dist/index.html");
         String indexHtml = Resources.toString(url, Charsets.UTF_8);
-        String layout = layoutJsonService.getLayout();
+        String layout = layoutService.getLayout();
         indexHtml = indexHtml.replaceFirst("<base href=\"/\">",
                 "<base href=\"" + BASE_HREF + "\"><script>var layout=" + layout + "</script>");
         // this is to work around an issue with IE10-11 (IE9 is OK)

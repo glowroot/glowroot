@@ -58,7 +58,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class GrpcServerWrapper {
+class GrpcServerWrapper {
 
     private static final Logger logger = LoggerFactory.getLogger(GrpcServerWrapper.class);
 
@@ -71,7 +71,7 @@ public class GrpcServerWrapper {
 
     private volatile @MonotonicNonNull AgentConfig agentConfig;
 
-    public GrpcServerWrapper(Collector collector, int port) throws IOException {
+    GrpcServerWrapper(Collector collector, int port) throws IOException {
         bossEventLoopGroup = EventLoopGroups.create("Glowroot-grpc-boss-ELG");
         workerEventLoopGroup = EventLoopGroups.create("Glowroot-grpc-worker-ELG");
         executor = Executors.newCachedThreadPool(
@@ -110,7 +110,7 @@ public class GrpcServerWrapper {
         return downstreamService.reweave();
     }
 
-    public void close() throws InterruptedException {
+    void close() throws InterruptedException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(SECONDS) < 10 && !downstreamService.closedByAgent) {
             Thread.sleep(10);
@@ -250,47 +250,47 @@ public class GrpcServerWrapper {
 
         private volatile boolean closedByAgent;
 
-        private void updateAgentConfig(AgentConfig agentConfig) throws Exception {
-            while (requestObserver == null) {
-                Thread.sleep(10);
-            }
-            long requestId = nextRequestId.getAndIncrement();
-            ResponseHolder responseHolder = new ResponseHolder();
-            responseHolders.put(requestId, responseHolder);
-            requestObserver.onNext(
-                    ServerRequest.newBuilder()
-                            .setRequestId(requestId)
-                            .setAgentConfigUpdateRequest(AgentConfigUpdateRequest.newBuilder()
-                                    .setAgentConfig(agentConfig))
-                            .build());
-            // timeout is in case agent never responds
-            // passing ClientResponse.getDefaultInstance() is just dummy (non-null) value
-            responseHolder.response.exchange(ClientResponse.getDefaultInstance(), 1, MINUTES);
-        }
-
-        private int reweave() throws Exception {
-            while (requestObserver == null) {
-                Thread.sleep(10);
-            }
-            long requestId = nextRequestId.getAndIncrement();
-            ResponseHolder responseHolder = new ResponseHolder();
-            responseHolders.put(requestId, responseHolder);
-            requestObserver.onNext(
-                    ServerRequest.newBuilder()
-                            .setRequestId(requestId)
-                            .setReweaveRequest(ReweaveRequest.getDefaultInstance())
-                            .build());
-            // timeout is in case agent never responds
-            // passing ClientResponse.getDefaultInstance() is just dummy (non-null) value
-            return responseHolder.response.exchange(ClientResponse.getDefaultInstance(), 1, MINUTES)
-                    .getReweaveResponse().getClassUpdateCount();
-        }
-
         @Override
         public StreamObserver<ClientResponse> connect(
                 StreamObserver<ServerRequest> requestObserver) {
             this.requestObserver = requestObserver;
             return responseObserver;
+        }
+
+        private void updateAgentConfig(AgentConfig agentConfig) throws Exception {
+            sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setAgentConfigUpdateRequest(AgentConfigUpdateRequest.newBuilder()
+                            .setAgentConfig(agentConfig))
+                    .build());
+        }
+
+        private int reweave() throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setReweaveRequest(ReweaveRequest.getDefaultInstance())
+                    .build());
+            return response.getReweaveResponse().getClassUpdateCount();
+        }
+
+        private ClientResponse sendRequest(ServerRequest request) throws Exception {
+            ResponseHolder responseHolder = new ResponseHolder();
+            responseHolders.put(request.getRequestId(), responseHolder);
+            while (requestObserver == null) {
+                Thread.sleep(10);
+            }
+            requestObserver.onNext(request);
+            // timeout is in case agent never responds
+            // passing ClientResponse.getDefaultInstance() is just dummy (non-null) value
+            ClientResponse response = responseHolder.response
+                    .exchange(ClientResponse.getDefaultInstance(), 1, MINUTES);
+            if (response.getMessageCase() == MessageCase.UNKNOWN_REQUEST_RESPONSE) {
+                throw new IllegalStateException();
+            }
+            if (response.getMessageCase() == MessageCase.EXCEPTION_RESPONSE) {
+                throw new IllegalStateException();
+            }
+            return response;
         }
     }
 

@@ -228,11 +228,11 @@
               <shadeSourcesContent>true</shadeSourcesContent>
               <artifactSet>
                 <includes>
-                  <include>org.glowroot:glowroot-agent-it-harness</include>
-                  <!-- includes removes the artifacts from dependency reduced pom, while filters
-                    below keep them from being bundled since they already exist in shaded agent -->
+                  <!-- includes removes these artifacts from dependency reduced pom -->
                   <include>org.glowroot:glowroot-wire-api</include>
                   <include>org.glowroot:glowroot-common</include>
+                  <!-- includes removes the artifacts from dependency reduced pom, while filters
+                    below keep them from being bundled since they already exist in shaded agent -->
                   <include>io.netty:*</include>
                   <include>io.grpc:*</include>
                 </includes>

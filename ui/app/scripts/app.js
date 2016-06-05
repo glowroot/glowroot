@@ -197,10 +197,9 @@ glowroot.run([
       $navbarCollapse.removeClass('in');
       $navbarCollapse.addClass('collapse');
       $http.post('backend/sign-out')
-          .success(function () {
-            if ($rootScope.layout.redirectToLogin) {
-              login.goToLogin('You have been signed out', true);
-            } else {
+          .success(function (data) {
+            $rootScope.setLayout(data);
+            if (!$rootScope.layout.redirectToLogin) {
               $rootScope.displaySignOutMessage = true;
               $timeout(function () {
                 $rootScope.displaySignOutMessage = false;

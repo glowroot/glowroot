@@ -25,11 +25,11 @@ import javax.annotation.Nullable;
 
 import com.google.common.io.CharSource;
 
-public abstract class ChunkSource {
+abstract class ChunkSource {
 
     public abstract ChunkCopier getCopier(Writer writer) throws IOException;
 
-    public static ChunkSource from(final CharSource charSource) {
+    static ChunkSource from(final CharSource charSource) {
         return new ChunkSource() {
             @Override
             public ChunkCopier getCopier(Writer writer) throws IOException {
@@ -38,7 +38,7 @@ public abstract class ChunkSource {
         };
     }
 
-    public static ChunkSource wrap(final String str) {
+    static ChunkSource wrap(final String str) {
         return new ChunkSource() {
             @Override
             public ChunkCopier getCopier(Writer writer) throws IOException {
@@ -47,7 +47,7 @@ public abstract class ChunkSource {
         };
     }
 
-    public static ChunkSource concat(final List<ChunkSource> chunkSources) {
+    static ChunkSource concat(final List<ChunkSource> chunkSources) {
         return new ChunkSource() {
             @Override
             public ChunkCopier getCopier(Writer writer) throws IOException {
@@ -56,7 +56,7 @@ public abstract class ChunkSource {
         };
     }
 
-    public interface ChunkCopier {
+    interface ChunkCopier {
 
         // returns false when nothing left to copy
         boolean copyNext() throws IOException;

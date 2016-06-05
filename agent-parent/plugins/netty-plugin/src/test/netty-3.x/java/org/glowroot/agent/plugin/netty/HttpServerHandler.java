@@ -81,7 +81,7 @@ public class HttpServerHandler extends SimpleChannelUpstreamHandler {
             httpHeadersClass.getMethod("add", String.class, Object.class).invoke(headers, name,
                     value);
         } catch (Exception e) {
-            // netty 3.7.x and prior
+            // netty prior to 3.8.0
             HttpResponse.class.getMethod("addHeader", String.class, Object.class).invoke(response,
                     name, value);
         }

@@ -34,7 +34,7 @@ import org.glowroot.agent.config.UserRecordingConfig;
 import org.glowroot.wire.api.Collector.AgentConfigUpdater;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
-public class ConfigUpdateService implements AgentConfigUpdater {
+class ConfigUpdateService implements AgentConfigUpdater {
 
     private final ConfigService configService;
     private final PluginCache pluginCache;

@@ -50,7 +50,7 @@ public abstract class PropertyDescriptor {
     }
 
     @JsonIgnore
-    public PropertyValue getValidatedNonNullDefaultValue() {
+    PropertyValue getValidatedNonNullDefaultValue() {
         PropertyValue defaultValue = defaultValue();
         if (defaultValue == null) {
             return PropertyValue.getDefaultValue(type());

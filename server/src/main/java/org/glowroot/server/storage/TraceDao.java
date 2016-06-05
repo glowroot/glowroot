@@ -923,7 +923,7 @@ public class TraceDao implements TraceRepository {
         return true;
     }
 
-    static String lowerSixBytesHex(long startTime) {
+    private static String lowerSixBytesHex(long startTime) {
         long mask = 1L << 48;
         return Long.toHexString(mask | (startTime & (mask - 1))).substring(1);
     }

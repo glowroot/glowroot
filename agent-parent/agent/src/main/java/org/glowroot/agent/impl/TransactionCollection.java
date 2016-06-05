@@ -40,7 +40,7 @@ public class TransactionCollection implements Iterable<Transaction> {
     // TODO implement lock free structure
     private final Object lock = new Object();
 
-    public TransactionEntry add(Transaction transaction) {
+    TransactionEntry add(Transaction transaction) {
         TransactionEntry newTailEntry = new TransactionEntry(transaction, queue);
         synchronized (lock) {
             expungeStaleEntries();

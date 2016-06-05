@@ -15,13 +15,9 @@
  */
 package org.glowroot.agent.init;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -30,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.TransactionRegistry;
+import org.glowroot.agent.impl.UserProfileScheduler;
 import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
@@ -144,30 +141,7 @@ class StackTraceCollector {
                 }
                 activeThreadContexts.addAll(transaction.getActiveAuxThreadContexts());
             }
-            captureStackTraces(activeThreadContexts);
-        }
-
-        private void captureStackTraces(List<ThreadContextImpl> threadContexts) {
-            if (threadContexts.isEmpty()) {
-                // critical not to call ThreadMXBean.getThreadInfo() with empty id list
-                // see https://bugs.openjdk.java.net/browse/JDK-8074368
-                return;
-            }
-            long[] threadIds = new long[threadContexts.size()];
-            for (int i = 0; i < threadContexts.size(); i++) {
-                threadIds[i] = threadContexts.get(i).getThreadId();
-            }
-            @Nullable
-            ThreadInfo[] threadInfos =
-                    ManagementFactory.getThreadMXBean().getThreadInfo(threadIds, Integer.MAX_VALUE);
-            int limit = configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction();
-            for (int i = 0; i < threadContexts.size(); i++) {
-                ThreadContextImpl threadContext = threadContexts.get(i);
-                ThreadInfo threadInfo = threadInfos[i];
-                if (threadInfo != null) {
-                    threadContext.captureStackTrace(threadInfo, limit);
-                }
-            }
+            UserProfileScheduler.captureStackTraces(activeThreadContexts, configService);
         }
     }
 }

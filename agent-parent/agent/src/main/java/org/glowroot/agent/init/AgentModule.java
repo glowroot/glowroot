@@ -60,7 +60,7 @@ import org.glowroot.agent.util.Tickers;
 import org.glowroot.agent.weaving.AnalyzedWorld;
 import org.glowroot.agent.weaving.ExtraBootResourceFinder;
 import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
-import org.glowroot.agent.weaving.WeaverImpl;
+import org.glowroot.agent.weaving.Weaver;
 import org.glowroot.agent.weaving.WeavingClassFileTransformer;
 import org.glowroot.agent.weaving.WeavingTimerService;
 import org.glowroot.common.live.LiveAggregateRepository;
@@ -85,7 +85,6 @@ public class AgentModule {
     private static final long ROLLUP_0_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.0.intervalMillis", 60 * 1000);
 
-    private final PluginCache pluginCache;
     private final ConfigService configService;
     private final AnalyzedWorld analyzedWorld;
     private final TransactionRegistry transactionRegistry;
@@ -116,7 +115,6 @@ public class AgentModule {
             @Nullable Instrumentation instrumentation, File baseDir) throws Exception {
 
         Ticker ticker = nullableTicker == null ? Tickers.getTicker() : nullableTicker;
-        this.pluginCache = pluginCache;
         this.configService = configService;
         transactionRegistry = new TransactionRegistry();
 
@@ -132,8 +130,8 @@ public class AgentModule {
         weavingTimerService =
                 new WeavingTimerServiceImpl(transactionRegistry, configService, timerNameCache);
 
-        WeaverImpl weaver =
-                new WeaverImpl(adviceCache.getAdvisorsSupplier(), adviceCache.getShimTypes(),
+        Weaver weaver =
+                new Weaver(adviceCache.getAdvisorsSupplier(), adviceCache.getShimTypes(),
                         adviceCache.getMixinTypes(), analyzedWorld, weavingTimerService);
 
         if (instrumentation == null) {
@@ -229,10 +227,6 @@ public class AgentModule {
         return configService;
     }
 
-    public AdviceCache getAdviceCache() {
-        return adviceCache;
-    }
-
     public LazyPlatformMBeanServer getLazyPlatformMBeanServer() {
         return lazyPlatformMBeanServer;
     }
@@ -251,14 +245,6 @@ public class AgentModule {
 
     public LiveJvmService getLiveJvmService() {
         return liveJvmService;
-    }
-
-    public WeavingTimerService getWeavingTimerService() {
-        return weavingTimerService;
-    }
-
-    public List<PluginDescriptor> getPluginDescriptors() {
-        return pluginCache.pluginDescriptors();
     }
 
     private static @Nullable ExtraBootResourceFinder createExtraBootResourceFinder(

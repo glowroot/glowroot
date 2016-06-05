@@ -28,25 +28,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class RoleDaoIT {
 
+    private static Cluster cluster;
     private static Session session;
     private static RoleDao roleDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        CassandraWrapper.start();
-        Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
+        SharedSetupRunListener.startCassandra();
+        cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
         session = cluster.newSession();
-        session.execute("create keyspace if not exists glowroot with replication ="
+        session.execute("create keyspace if not exists glowroot_unit_tests with replication ="
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
-        session.execute("use glowroot");
+        session.execute("use glowroot_unit_tests");
 
-        roleDao = new RoleDao(session, cluster.getMetadata().getKeyspace("glowroot"));
+        roleDao = new RoleDao(session, cluster.getMetadata().getKeyspace("glowroot_unit_tests"));
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         session.close();
-        CassandraWrapper.stop();
+        cluster.close();
+        SharedSetupRunListener.stopCassandra();
     }
 
     @Test

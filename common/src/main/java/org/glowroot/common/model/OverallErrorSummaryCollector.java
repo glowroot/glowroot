@@ -15,8 +15,7 @@
  */
 package org.glowroot.common.model;
 
-import org.glowroot.common.live.ImmutableOverallErrorSummary;
-import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
+import org.immutables.value.Value;
 
 public class OverallErrorSummaryCollector {
 
@@ -40,5 +39,11 @@ public class OverallErrorSummaryCollector {
         this.errorCount += errorCount;
         this.transactionCount += transactionCount;
         lastCaptureTime = Math.max(lastCaptureTime, captureTime);
+    }
+
+    @Value.Immutable
+    public interface OverallErrorSummary {
+        long errorCount();
+        long transactionCount();
     }
 }

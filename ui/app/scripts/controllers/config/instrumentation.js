@@ -315,11 +315,12 @@ glowroot.controller('ConfigInstrumentationCtrl', [
           $scope.config.version
         ]
       };
-      $http.post('backend/config/instrumentation/remove?agent-id=' + encodeURIComponent($scope.agentId), postData)
+      var agentId = $scope.agentId;
+      $http.post('backend/config/instrumentation/remove?agent-id=' + encodeURIComponent(agentId), postData)
           .success(function () {
             removeConfirmIfHasChangesListener();
-            if (postData.agentId) {
-              $location.url('config/instrumentation-list?agent-id=' + encodeURIComponent(postData.agentId)).replace();
+            if (agentId) {
+              $location.url('config/instrumentation-list?agent-id=' + encodeURIComponent(agentId)).replace();
             } else {
               $location.url('config/instrumentation-list').replace();
             }

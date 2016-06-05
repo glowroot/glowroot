@@ -168,13 +168,7 @@ class JvmJsonService {
         } catch (IOException e) {
             logger.debug(e.getMessage(), e);
             // this is for specific common errors, e.g. "Directory doesn't exist"
-            StringBuilder sb = new StringBuilder();
-            JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-            jg.writeStartObject();
-            jg.writeStringField("error", e.getMessage());
-            jg.writeEndObject();
-            jg.close();
-            return sb.toString();
+            return buildErrorResponse(e);
         }
     }
 
@@ -187,14 +181,7 @@ class JvmJsonService {
             heapDumpFileInfo = liveJvmService.heapDump(agentId, request.directory());
         } catch (IOException e) {
             logger.debug(e.getMessage(), e);
-            // this is for specific common errors, e.g. "Directory doesn't exist"
-            StringBuilder sb = new StringBuilder();
-            JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-            jg.writeStartObject();
-            jg.writeStringField("error", e.getMessage());
-            jg.writeEndObject();
-            jg.close();
-            return sb.toString();
+            return buildErrorResponse(e);
         }
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
@@ -384,6 +371,16 @@ class JvmJsonService {
         }
     }
 
+    private static String buildErrorResponse(IOException e) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeStringField("error", e.getMessage());
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
     @Value.Immutable
     interface HeapDumpRequest {
         String directory();
@@ -399,7 +396,7 @@ class JvmJsonService {
         String objectName();
     }
 
-    interface MBeanTreeNode {
+    private interface MBeanTreeNode {
         String getNodeName();
     }
 
@@ -421,7 +418,7 @@ class JvmJsonService {
 
         private final Map<String, MBeanTreeInnerNode> innerNodes = Maps.newHashMap();
 
-        public MBeanTreeInnerNode(String name) {
+        private MBeanTreeInnerNode(String name) {
             this.name = name;
         }
 
@@ -436,7 +433,7 @@ class JvmJsonService {
             return ordering.sortedCopy(childNodes);
         }
 
-        public MBeanTreeInnerNode getOrCreateNode(String name) {
+        private MBeanTreeInnerNode getOrCreateNode(String name) {
             MBeanTreeInnerNode innerNode = innerNodes.get(name);
             if (innerNode == null) {
                 innerNode = new MBeanTreeInnerNode(name);
@@ -446,7 +443,7 @@ class JvmJsonService {
             return innerNode;
         }
 
-        public void addLeafNode(MBeanTreeLeafNode leafNode) {
+        private void addLeafNode(MBeanTreeLeafNode leafNode) {
             childNodes.add(leafNode);
         }
     }
@@ -459,7 +456,7 @@ class JvmJsonService {
         private final boolean expanded;
         private final @Nullable Map<String, /*@Nullable*/ Object> attributeMap;
 
-        public MBeanTreeLeafNode(String nodeName, String objectName, boolean expanded,
+        private MBeanTreeLeafNode(String nodeName, String objectName, boolean expanded,
                 @Nullable Map<String, /*@Nullable*/ Object> attributeMap) {
             this.nodeName = nodeName;
             this.objectName = objectName;

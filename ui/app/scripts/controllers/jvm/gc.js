@@ -30,7 +30,7 @@ glowroot.controller('JvmGcCtrl', [
 
     $scope.gc = function (deferred) {
       $http.post('backend/jvm/gc?agent-id=' + encodeURIComponent($scope.agentId))
-          .success(function (data) {
+          .success(function () {
             deferred.resolve('Success');
           })
           .error(httpErrors.handler($scope, deferred));

@@ -23,10 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
-
-import org.glowroot.common.live.ImmutableTransactionSummary;
-import org.glowroot.common.live.LiveAggregateRepository.SummarySortOrder;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
+import org.immutables.value.Value;
 
 public class TransactionSummaryCollector {
 
@@ -75,14 +72,6 @@ public class TransactionSummaryCollector {
         return lastCaptureTime;
     }
 
-    public void mergeTransactionSummaries(List<TransactionSummary> transactionSummaries,
-            long lastCaptureTime) {
-        for (TransactionSummary transactionSummary : transactionSummaries) {
-            collect(transactionSummary.transactionName(), transactionSummary.totalDurationNanos(),
-                    transactionSummary.transactionCount(), lastCaptureTime);
-        }
-    }
-
     public Result<TransactionSummary> getResult(SummarySortOrder sortOrder, int limit) {
         List<TransactionSummary> summaries = Lists.newArrayList();
         for (Map.Entry<String, MutableTransactionSummary> entry : transactionSummaries.entrySet()) {
@@ -112,6 +101,18 @@ public class TransactionSummaryCollector {
             default:
                 throw new AssertionError("Unexpected sort order: " + sortOrder);
         }
+    }
+
+    public enum SummarySortOrder {
+        TOTAL_TIME, AVERAGE_TIME, THROUGHPUT
+    }
+
+    @Value.Immutable
+    public interface TransactionSummary {
+        String transactionName();
+        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+        double totalDurationNanos();
+        long transactionCount();
     }
 
     private static class MutableTransactionSummary {

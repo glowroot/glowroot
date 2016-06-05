@@ -17,10 +17,6 @@ package org.glowroot.agent.model;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Ticker;
-
-import org.glowroot.agent.util.Tickers;
-
 // TODO update this comment that was copied from TimerImpl
 //
 // instances are updated by a single thread, but can be read by other threads
@@ -40,9 +36,7 @@ import org.glowroot.agent.util.Tickers;
 // in-flight (e.g. partial traces and active traces displayed in the UI) may not be visible
 //
 // all timing data is in nanoseconds
-public class QueryData {
-
-    private static final Ticker ticker = Tickers.getTicker();
+class QueryData {
 
     private final String queryType;
     private final String queryText;
@@ -66,11 +60,11 @@ public class QueryData {
         this.nextQueryData = nextQueryData;
     }
 
-    public String getQueryType() {
+    String getQueryType() {
         return queryType;
     }
 
-    public String getQueryText() {
+    String getQueryText() {
         return queryText;
     }
 
@@ -79,16 +73,10 @@ public class QueryData {
         return nextQueryData;
     }
 
-    public void start(long startTick, long batchSize) {
+    void start(long startTick, long batchSize) {
         if (selfNestingLevel++ == 0) {
             this.startTick = startTick;
             executionCount += batchSize;
-        }
-    }
-
-    public void stop() {
-        if (--selfNestingLevel == 0) {
-            endInternal(ticker.read());
         }
     }
 
@@ -107,22 +95,22 @@ public class QueryData {
         totalRows += inc;
     }
 
-    public long getTotalDurationNanos() {
+    long getTotalDurationNanos() {
         return totalDurationNanos;
     }
 
     // only called after transaction completion
-    public long getExecutionCount() {
+    long getExecutionCount() {
         return executionCount;
     }
 
     // only called after transaction completion
-    public boolean isRowNavigationAttempted() {
+    boolean isRowNavigationAttempted() {
         return rowNavigationAttempted;
     }
 
     // only called after transaction completion
-    public long getTotalRows() {
+    long getTotalRows() {
         return totalRows;
     }
 

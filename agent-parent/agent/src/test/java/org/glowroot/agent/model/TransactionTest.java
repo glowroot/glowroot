@@ -22,12 +22,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TransactionTest {
 
     @Test
-    public void traceIdShouldBeThirtyTwoCharacters() {
+    public void traceIdShouldBeThirtyTwoCharactersAndLowerCase() {
         // given
         // when
         String traceId = Transaction.buildTraceId(System.currentTimeMillis());
         // then
         assertThat(traceId).hasSize(32);
+        assertThat(traceId.toLowerCase()).isEqualTo(traceId);
     }
 
     @Test

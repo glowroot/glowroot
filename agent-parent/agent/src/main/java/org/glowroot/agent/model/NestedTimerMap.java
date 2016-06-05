@@ -37,6 +37,7 @@ class NestedTimerMap {
         int bucket = (key.specialHashCode() & (capacity - 1)) << 1;
         Object keyAtBucket = table[bucket];
         Object value = table[bucket + 1];
+        // ok to use "==" because TimerNameImpl instances are always unique
         if (keyAtBucket == key) {
             return (TimerImpl) value;
         }
@@ -58,6 +59,7 @@ class NestedTimerMap {
         @Nullable
         Object[] chainedTable = (/*@Nullable*/ Object[]) value;
         for (int i = 0; i < chainedTable.length; i += 2) {
+            // ok to use "==" because TimerNameImpl instances are always unique
             if (chainedTable[i] == key) {
                 return (TimerImpl) chainedTable[i + 1];
             }
@@ -123,16 +125,20 @@ class NestedTimerMap {
             if (key == CHAINED_KEY) {
                 @Nullable
                 Object[] values = (/*@Nullable*/ Object[]) checkNotNull(existingTable[i + 1]);
-                for (int j = 0; j < values.length; j += 2) {
-                    Object chainedKey = values[j];
-                    if (chainedKey == null) {
-                        break;
-                    }
-                    putWithoutRehashCheck((TimerNameImpl) chainedKey, values[j + 1]);
-                }
+                putChainedValues(values);
             } else {
                 putWithoutRehashCheck((TimerNameImpl) key, existingTable[i + 1]);
             }
+        }
+    }
+
+    private void putChainedValues(/*@Nullable*/ Object[] values) {
+        for (int j = 0; j < values.length; j += 2) {
+            Object chainedKey = values[j];
+            if (chainedKey == null) {
+                break;
+            }
+            putWithoutRehashCheck((TimerNameImpl) chainedKey, values[j + 1]);
         }
     }
 }

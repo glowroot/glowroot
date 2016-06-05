@@ -32,8 +32,6 @@ public class ExpensiveCall {
 
     private static final Logger logger = LoggerFactory.getLogger(ExpensiveCall.class);
 
-    private static final AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-
     private static final Random random = new Random();
 
     private final int maxTimeMillis;
@@ -103,12 +101,15 @@ public class ExpensiveCall {
     private void execute4() throws InterruptedException {
         expensive();
         execute5();
+        AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
         try {
             asyncHttpClient.prepareGet("http://example.org").execute().get();
         } catch (ExecutionException e) {
             logger.error(e.getMessage(), e);
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
+        } finally {
+            asyncHttpClient.close();
         }
     }
 

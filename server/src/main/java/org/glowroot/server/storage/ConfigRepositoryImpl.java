@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
@@ -31,15 +32,10 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
+import com.google.common.collect.Sets;
 import com.google.protobuf.InvalidProtocolBufferException;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.util.Versions;
-import org.glowroot.server.DownstreamServiceImpl;
 import org.glowroot.storage.config.FatStorageConfig;
 import org.glowroot.storage.config.ImmutableFatStorageConfig;
 import org.glowroot.storage.config.ImmutableLdapConfig;
@@ -54,7 +50,7 @@ import org.glowroot.storage.config.StorageConfig;
 import org.glowroot.storage.config.UserConfig;
 import org.glowroot.storage.config.WebConfig;
 import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.util.Encryption;
+import org.glowroot.storage.util.LazySecretKey;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -67,15 +63,11 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.Transaction
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 public class ConfigRepositoryImpl implements ConfigRepository {
 
     // TODO this needs to be in sync with agents, so have agents pick up value from server
     private static final long GAUGE_COLLECTION_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.gaugeCollectionIntervalMillis", 5000);
-
-    private static final Logger logger = LoggerFactory.getLogger(ConfigRepositoryImpl.class);
 
     private final ServerConfigDao serverConfigDao;
     private final AgentDao agentDao;
@@ -84,12 +76,9 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private final ImmutableList<RollupConfig> rollupConfigs;
 
-    private final File secretFile;
+    private final LazySecretKey secretKey;
 
-    private volatile @MonotonicNonNull DownstreamServiceImpl downstreamService;
-
-    // volatile not needed as access is guarded by secretFile
-    private @MonotonicNonNull SecretKey secretKey;
+    private final Set<ConfigListener> configListeners = Sets.newCopyOnWriteArraySet();
 
     // TODO use optimistic locking with retry instead of synchronization in order to work across
     // cluster
@@ -114,11 +103,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         this.userDao = userDao;
         this.roleDao = roleDao;
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
-        secretFile = new File("secret");
-    }
-
-    public void setDownstreamService(DownstreamServiceImpl downstreamService) {
-        this.downstreamService = downstreamService;
+        secretKey = new LazySecretKey(new File("secret"));
     }
 
     @Override
@@ -333,7 +318,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId, updatedAgentConfig);
         }
     }
 
@@ -350,7 +335,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId, updatedAgentConfig);
         }
     }
 
@@ -386,7 +371,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId, updatedAgentConfig);
         }
     }
 
@@ -417,7 +402,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId, updatedAgentConfig);
         }
     }
 
@@ -434,7 +419,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId, updatedAgentConfig);
         }
     }
 
@@ -466,7 +451,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId, updatedAgentConfig);
         }
     }
 
@@ -497,7 +482,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId, updatedAgentConfig);
         }
     }
 
@@ -518,7 +503,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId, updatedAgentConfig);
         }
     }
 
@@ -555,7 +540,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId, updatedAgentConfig);
         }
     }
 
@@ -574,7 +559,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId, updatedAgentConfig);
         }
     }
 
@@ -606,7 +591,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId, updatedAgentConfig);
         }
     }
 
@@ -639,7 +624,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId, updatedAgentConfig);
         }
     }
 
@@ -664,7 +649,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId, updatedAgentConfig);
         }
     }
 
@@ -685,7 +670,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId, updatedAgentConfig);
         }
     }
 
@@ -706,7 +691,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            sendUpdatedAgentConfig(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId, updatedAgentConfig);
         }
     }
 
@@ -849,31 +834,25 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     // lazy create secret file only when needed
     @Override
     public SecretKey getSecretKey() throws Exception {
-        synchronized (secretFile) {
-            if (secretKey == null) {
-                if (secretFile.exists()) {
-                    secretKey = Encryption.loadKey(secretFile);
-                } else {
-                    secretKey = Encryption.generateNewKey();
-                    Files.write(secretKey.getEncoded(), secretFile);
-                }
-            }
-            return secretKey;
-        }
+        return secretKey.get();
     }
 
-    public void updateAgentConfig(String agentId, AgentConfig agentConfig) throws IOException {
-        synchronized (agentConfigLocks.getUnchecked(agentId)) {
-            agentDao.storeAgentConfig(agentId, agentConfig);
-        }
+    public @Nullable AgentConfig getAgentConfig(String agentId)
+            throws InvalidProtocolBufferException {
+        return agentDao.readAgentConfig(agentId);
     }
 
-    private void sendUpdatedAgentConfig(String agentId, AgentConfig agentConfig) throws Exception {
-        checkNotNull(downstreamService);
-        try {
-            downstreamService.updateAgentConfig(agentId, agentConfig);
-        } catch (AgentNotConnectedException e) {
-            logger.debug(e.getMessage(), e);
+    public void addConfigListener(ConfigListener listener) {
+        configListeners.add(listener);
+    }
+
+    // the updated config is not passed to the listeners to avoid the race condition of multiple
+    // config updates being sent out of order, instead listeners must call get*Config() which will
+    // never return the updates out of order (at worst it may return the most recent update twice
+    // which is ok)
+    private void notifyConfigListeners(String agentId, AgentConfig agentConfig) throws Exception {
+        for (ConfigListener configListener : configListeners) {
+            configListener.onChange(agentId, agentConfig);
         }
     }
 
@@ -966,5 +945,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             correctedList.add(defaultList.get(i));
         }
         return ImmutableList.copyOf(correctedList);
+    }
+
+    public interface ConfigListener {
+
+        // the new config is not passed to onChange so that the receiver has to get the latest,
+        // this avoids race condition worries that two updates may get sent to the receiver in the
+        // wrong order
+        void onChange(String agentId, AgentConfig agentConfig) throws Exception;
     }
 }

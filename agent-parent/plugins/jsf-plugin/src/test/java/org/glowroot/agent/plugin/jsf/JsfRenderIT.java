@@ -16,7 +16,6 @@
 package org.glowroot.agent.plugin.jsf;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -165,7 +164,7 @@ public class JsfRenderIT {
 
         protected abstract void doTest(int port) throws Exception;
 
-        private static int getAvailablePort() throws IOException {
+        private static int getAvailablePort() throws Exception {
             ServerSocket serverSocket = new ServerSocket(0);
             int port = serverSocket.getLocalPort();
             serverSocket.close();

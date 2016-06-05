@@ -50,11 +50,9 @@ import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
 import org.glowroot.common.live.ImmutableThroughputAggregate;
 import org.glowroot.common.live.ImmutableTransactionQuery;
-import org.glowroot.common.live.LiveAggregateRepository.ErrorSummarySortOrder;
 import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.SummarySortOrder;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.LazyHistogram;
@@ -66,7 +64,9 @@ import org.glowroot.common.model.ProfileCollector;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.model.TransactionErrorSummaryCollector;
+import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector;
+import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Styles;
 import org.glowroot.server.util.ByteBufferInputStream;
@@ -609,7 +609,8 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private void rollupLevel(int rollupLevel, List<Integer> ttls) throws Exception {
-        ListMultimap<RollupKey, RollupCaptureTime> needsRollup = getNeedsRollup(rollupLevel);
+        ListMultimap<RollupKey, RollupCaptureTime> needsRollup =
+                getNeedsRollup(rollupLevel, readNeedsRollup, session);
         long rollupIntervalMillis =
                 configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
         for (Entry<RollupKey, RollupCaptureTime> entry : needsRollup.entries()) {
@@ -618,43 +619,15 @@ public class AggregateDao implements AggregateRepository {
             RollupParams rollupParams =
                     getRollupParams(rollupKey.agentRollup(), rollupLevel, ttls.get(rollupLevel));
             long captureTime = rollupCaptureTime.captureTime();
-            UUID lastUpdate = rollupCaptureTime.lastUpdate();
             rollupOne(rollupParams, rollupKey.key(),
                     captureTime - rollupIntervalMillis, captureTime);
             BoundStatement boundStatement = deleteNeedsRollup.get(rollupLevel - 1).bind();
             boundStatement.setString(0, rollupKey.agentRollup());
             boundStatement.setString(1, rollupKey.key());
             boundStatement.setTimestamp(2, new Date(captureTime));
-            boundStatement.setUUID(3, lastUpdate);
+            boundStatement.setUUID(3, rollupCaptureTime.lastUpdate());
             session.execute(boundStatement);
         }
-    }
-
-    private ListMultimap<RollupKey, RollupCaptureTime> getNeedsRollup(int rollupLevel) {
-        BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind();
-        ResultSet results = session.execute(boundStatement);
-        ListMultimap<RollupKey, RollupCaptureTime> needsRollup = ArrayListMultimap.create();
-        for (Row row : results) {
-            String agentRollup = checkNotNull(row.getString(0));
-            String transactionType = checkNotNull(row.getString(1));
-            long captureTime = checkNotNull(row.getTimestamp(2)).getTime();
-            UUID lastUpdate = row.getUUID(3);
-            needsRollup.put(ImmutableRollupKey.of(agentRollup, transactionType),
-                    ImmutableRollupCaptureTime.builder()
-                            .captureTime(captureTime)
-                            .lastUpdate(lastUpdate)
-                            .build());
-        }
-        // copy of key set is required since removing a key's last remaining value from a
-        // multimap removes the key itself which then triggers ConcurrentModificationException
-        for (RollupKey rollupKey : ImmutableList.copyOf(needsRollup.keySet())) {
-            List<RollupCaptureTime> list = needsRollup.get(rollupKey);
-            // don't roll up the most recent one since it is likely still being added, this is
-            // mostly to avoid rolling up this data twice, but also currently the UI assumes
-            // when it finds a 1-min rollup it doesn't check for non-rolled up 1-min aggregates
-            list.remove(list.size() - 1);
-        }
-        return needsRollup;
     }
 
     private void rollupOne(RollupParams rollup, String transactionType, long from, long to)
@@ -1374,6 +1347,34 @@ public class AggregateDao implements AggregateRepository {
         return rollupInfo.build();
     }
 
+    static ListMultimap<RollupKey, RollupCaptureTime> getNeedsRollup(int rollupLevel,
+            List<PreparedStatement> readNeedsRollup, Session session) {
+        BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind();
+        ResultSet results = session.execute(boundStatement);
+        ListMultimap<RollupKey, RollupCaptureTime> needsRollup = ArrayListMultimap.create();
+        for (Row row : results) {
+            String agentRollup = checkNotNull(row.getString(0));
+            String transactionType = checkNotNull(row.getString(1));
+            long captureTime = checkNotNull(row.getTimestamp(2)).getTime();
+            UUID lastUpdate = row.getUUID(3);
+            needsRollup.put(ImmutableRollupKey.of(agentRollup, transactionType),
+                    ImmutableRollupCaptureTime.builder()
+                            .captureTime(captureTime)
+                            .lastUpdate(lastUpdate)
+                            .build());
+        }
+        // copy of key set is required since removing a key's last remaining value from a
+        // multimap removes the key itself which then triggers ConcurrentModificationException
+        for (RollupKey rollupKey : ImmutableList.copyOf(needsRollup.keySet())) {
+            List<RollupCaptureTime> list = needsRollup.get(rollupKey);
+            // don't roll up the most recent one since it is likely still being added, this is
+            // mostly to avoid rolling up this data twice, but also currently the UI assumes
+            // when it finds a 1-min rollup it doesn't check for non-rolled up 1-min aggregates
+            list.remove(list.size() - 1);
+        }
+        return needsRollup;
+    }
+
     private static void bindQuery(BoundStatement boundStatement, String agentRollup,
             OverallQuery query) {
         int i = 0;
@@ -1467,14 +1468,7 @@ public class AggregateDao implements AggregateRepository {
     private static String readForRollupPS(Table table, boolean transaction, int i) {
         StringBuilder sb = new StringBuilder();
         sb.append("select ");
-        boolean addSeparator = false;
-        for (Column column : table.columns()) {
-            if (addSeparator) {
-                sb.append(", ");
-            }
-            sb.append(column.name());
-            addSeparator = true;
-        }
+        appendColumnNames(sb, table.columns());
         sb.append(" from ");
         sb.append(getTableName(table.partialName(), transaction, i));
         sb.append(" where agent_rollup = ? and transaction_type = ?");
@@ -1577,14 +1571,7 @@ public class AggregateDao implements AggregateRepository {
         if (transaction) {
             sb.append("transaction_name, ");
         }
-        boolean addSeparator = false;
-        for (Column column : table.columns()) {
-            if (addSeparator) {
-                sb.append(", ");
-            }
-            sb.append(column.name());
-            addSeparator = true;
-        }
+        appendColumnNames(sb, table.columns());
         sb.append(" from ");
         sb.append(getTableName(table.partialName(), transaction, i));
         sb.append(" where agent_rollup = ? and transaction_type = ? and capture_time >");
@@ -1604,6 +1591,17 @@ public class AggregateDao implements AggregateRepository {
         sb.append("_rollup_");
         sb.append(i);
         return sb.toString();
+    }
+
+    private static void appendColumnNames(StringBuilder sb, List<Column> columns) {
+        boolean addSeparator = false;
+        for (Column column : columns) {
+            if (addSeparator) {
+                sb.append(", ");
+            }
+            sb.append(column.name());
+            addSeparator = true;
+        }
     }
 
     private static ByteBuffer toByteBuffer(AbstractMessage message) {

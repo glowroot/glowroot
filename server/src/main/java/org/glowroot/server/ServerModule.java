@@ -22,6 +22,8 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
 
+import javax.annotation.Nullable;
+
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Session;
@@ -44,6 +46,7 @@ import org.glowroot.common.util.Version;
 import org.glowroot.server.storage.AgentDao;
 import org.glowroot.server.storage.AggregateDao;
 import org.glowroot.server.storage.ConfigRepositoryImpl;
+import org.glowroot.server.storage.ConfigRepositoryImpl.ConfigListener;
 import org.glowroot.server.storage.GaugeValueDao;
 import org.glowroot.server.storage.RoleDao;
 import org.glowroot.server.storage.RollupService;
@@ -52,17 +55,20 @@ import org.glowroot.server.storage.TraceDao;
 import org.glowroot.server.storage.TransactionTypeDao;
 import org.glowroot.server.storage.TriggeredAlertDao;
 import org.glowroot.server.storage.UserDao;
+import org.glowroot.storage.config.ImmutableWebConfig;
+import org.glowroot.storage.config.WebConfig;
 import org.glowroot.storage.repo.RepoAdmin;
 import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.storage.util.MailService;
 import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.UiModule;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class ServerModule {
+class ServerModule {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerModule.class);
 
@@ -86,7 +92,7 @@ public class ServerModule {
             Clock clock = Clock.systemClock();
             String version = Version.getVersion(Bootstrap.class);
 
-            ServerConfiguration serverConfig = getCassandraContactPoints();
+            ServerConfiguration serverConfig = getServerConfiguration();
             Stopwatch stopwatch = Stopwatch.createStarted();
             boolean waitingForCassandraLogged = false;
             NoHostAvailableException lastException = null;
@@ -128,6 +134,15 @@ public class ServerModule {
             RoleDao roleDao = new RoleDao(session, keyspace);
             ConfigRepositoryImpl configRepository =
                     new ConfigRepositoryImpl(serverConfigDao, agentDao, userDao, roleDao);
+            Integer uiPortOverride = serverConfig.uiPortOverride();
+            if (uiPortOverride != null) {
+                // TODO supplying ui.port in glowroot-server.properties should make the port
+                // non-editable in admin UI
+                WebConfig webConfig = configRepository.getWebConfig();
+                WebConfig updatedWebConfig =
+                        ImmutableWebConfig.copyOf(webConfig).withPort(uiPortOverride);
+                configRepository.updateWebConfig(updatedWebConfig, webConfig.version());
+            }
             serverConfigDao.setConfigRepository(configRepository);
             agentDao.setConfigRepository(configRepository);
 
@@ -146,13 +161,19 @@ public class ServerModule {
 
             server = new GrpcServer(serverConfig.grpcPort(), agentDao, aggregateDao,
                     gaugeValueDao, traceDao, alertingService);
-            configRepository.setDownstreamService(server.getDownstreamService());
+            DownstreamServiceImpl downstreamService = server.getDownstreamService();
+            configRepository.addConfigListener(new ConfigListener() {
+                @Override
+                public void onChange(String agentId, AgentConfig agentConfig) throws Exception {
+                    downstreamService.updateAgentConfig(agentId, agentConfig);
+                }
+            });
 
             uiModule = new CreateUiModuleBuilder()
                     .fat(false)
                     .clock(clock)
                     .logDir(new File("."))
-                    .liveJvmService(new LiveJvmServiceImpl(server.getDownstreamService()))
+                    .liveJvmService(new LiveJvmServiceImpl(downstreamService))
                     .configRepository(configRepository)
                     .agentRepository(agentDao)
                     .transactionTypeRepository(transactionTypeDao)
@@ -161,9 +182,9 @@ public class ServerModule {
                     .gaugeValueRepository(gaugeValueDao)
                     .repoAdmin(new NopRepoAdmin())
                     .rollupLevelService(rollupLevelService)
-                    .liveTraceRepository(new LiveTraceRepositoryImpl(server.getDownstreamService()))
+                    .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService))
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
-                    .liveWeavingService(new LiveWeavingServiceImpl(server.getDownstreamService()))
+                    .liveWeavingService(new LiveWeavingServiceImpl(downstreamService))
                     .bindAddress("0.0.0.0")
                     .numWorkerThreads(50)
                     .version(version)
@@ -204,7 +225,7 @@ public class ServerModule {
         cluster.close();
     }
 
-    private static ServerConfiguration getCassandraContactPoints() throws IOException {
+    private static ServerConfiguration getServerConfiguration() throws IOException {
         ImmutableServerConfiguration.Builder builder = ImmutableServerConfiguration.builder();
         File propFile = new File("glowroot-server.properties");
         if (!propFile.exists()) {
@@ -230,6 +251,10 @@ public class ServerModule {
         if (!Strings.isNullOrEmpty(grpcPortText)) {
             builder.grpcPort(Integer.parseInt(grpcPortText));
         }
+        String uiPortText = props.getProperty("ui.port");
+        if (!Strings.isNullOrEmpty(uiPortText)) {
+            builder.uiPortOverride(Integer.parseInt(uiPortText));
+        }
         return builder.build();
     }
 
@@ -248,6 +273,7 @@ public class ServerModule {
         int grpcPort() {
             return 8181;
         }
+        abstract @Nullable Integer uiPortOverride();
     }
 
     private static class NopRepoAdmin implements RepoAdmin {

@@ -21,6 +21,7 @@ import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
+import org.glowroot.agent.plugin.api.util.Reflection;
 
 public class OkHttpClientCallInvoker {
 
@@ -37,7 +38,7 @@ public class OkHttpClientCallInvoker {
         if (originalRequestField == null) {
             return null;
         }
-        return Invokers.get(originalRequestField, call);
+        return Reflection.getFieldValue(originalRequestField, call);
     }
 
     private static @Nullable Field getRequestField(Class<?> clazz) {

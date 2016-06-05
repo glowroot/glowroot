@@ -16,13 +16,11 @@
 package org.glowroot.agent.fat.init;
 
 import java.io.File;
-import java.util.List;
 
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
-import org.glowroot.agent.config.PluginDescriptor;
 
 class ViewerAgentModule {
 
@@ -36,9 +34,5 @@ class ViewerAgentModule {
 
     ConfigService getConfigService() {
         return configService;
-    }
-
-    List<PluginDescriptor> getPluginDescriptors() {
-        return pluginCache.pluginDescriptors();
     }
 }

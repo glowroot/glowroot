@@ -193,30 +193,18 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         currentChannel.set(channel);
         Subject subject = buildSubject(request);
         try {
-            final FullHttpResponse response =
-                    subject.execute(new Callable</*@Nullable*/ FullHttpResponse>() {
-                        @Override
-                        public @Nullable FullHttpResponse call() throws Exception {
-                            return handleRequest(ctx, request);
-                        }
-                    });
-            if (response != null) {
-                if (subject.getPrincipal() == null) {
-                    // just signed out
-                    subject = buildAnonymousSubject();
-                }
-                subject.execute(new Callable</*@Nullable*/ Object>() {
-                    @Override
-                    public @Nullable Object call() throws Exception {
-                        // TODO report checker framework issue that occurs without checkNotNull
-                        checkNotNull(response);
+            subject.execute(new Callable</*@Nullable*/ Void>() {
+                @Override
+                public @Nullable Void call() throws Exception {
+                    FullHttpResponse response = handleRequest(ctx, request);
+                    if (response != null) {
                         sendFullResponse(ctx, request, response);
-                        return null;
                     }
-                });
-            }
+                    return null;
+                }
+            });
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("error handling request {}: {}", request.uri(), e.getMessage(), e);
             sendExceptionResponse(ctx, e);
         } finally {
             currentChannel.remove();
@@ -253,11 +241,13 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                     && !response.headers().contains("Set-Cookie")) {
                 sessionHelper.deleteSessionCookie(response);
             }
-            if (!request.uri().equals("/backend/layout")) {
+            if (request.uri().startsWith("/backend/") && !request.uri().equals("/backend/layout")
+                    && !request.uri().equals("/backend/login")
+                    && !request.uri().equals("/backend/sign-out")) {
                 response.headers().add("Glowroot-Layout-Version", layoutService.getLayoutVersion());
             }
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("error handling request {}: {}", request.uri(), e.getMessage(), e);
             sendExceptionResponse(ctx, e);
             return;
         }
@@ -328,9 +318,22 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             return sessionHelper.login(credentials.username(), credentials.password());
         }
         if (path.equals("/backend/sign-out")) {
-            return sessionHelper.signOut();
+            return signOut();
         }
         return null;
+    }
+
+    FullHttpResponse signOut() throws Exception {
+        SecurityUtils.getSubject().logout();
+        String anonymousLayout = buildAnonymousSubject().execute(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                return layoutService.getLayout();
+            }
+        });
+        FullHttpResponse response = HttpServices.createJsonResponse(anonymousLayout, OK);
+        sessionHelper.deleteSessionCookie(response);
+        return response;
     }
 
     private @Nullable HttpService getHttpService(String path) throws Exception {
@@ -351,7 +354,10 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             return httpService.handleRequest(ctx, request);
         }
         Subject subject = SecurityUtils.getSubject();
-        if (!subject.isPermitted(permission)) {
+        QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+        List<String> values = decoder.parameters().get("agent-id");
+        String agentId = values == null ? "" : values.get(0);
+        if (!isPermitted(subject, agentId, permission)) {
             if (subject.isAuthenticated()) {
                 return handleNotAuthorized();
             } else {

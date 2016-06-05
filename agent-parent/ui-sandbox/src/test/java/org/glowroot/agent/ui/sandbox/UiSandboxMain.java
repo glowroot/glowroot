@@ -55,7 +55,7 @@ public class UiSandboxMain {
                     configFile, Charsets.UTF_8);
         }
         if (useJavaagent) {
-            container = new JavaagentContainer(baseDir, true, false, ImmutableList.<String>of());
+            container = new JavaagentContainer(baseDir, true, ImmutableList.<String>of());
         } else if (useGlowrootServer) {
             container = new LocalContainer(baseDir, true,
                     ImmutableMap.of("glowroot.agent.id", "UI Sandbox",

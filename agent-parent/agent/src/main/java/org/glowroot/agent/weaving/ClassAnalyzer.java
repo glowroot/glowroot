@@ -181,14 +181,6 @@ class ClassAnalyzer {
         return matchedMixinTypes;
     }
 
-    List<AnalyzedClass> getSuperAnalyzedClasses() {
-        return superAnalyzedClasses;
-    }
-
-    Set<String> getSuperClassNames() {
-        return superClassNames;
-    }
-
     Map<String, List<Advice>> getMethodAdvisors() {
         return checkNotNull(methodAdvisors);
     }

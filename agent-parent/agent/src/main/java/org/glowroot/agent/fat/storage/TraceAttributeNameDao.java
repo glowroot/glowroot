@@ -67,10 +67,6 @@ class TraceAttributeNameDao {
         }
     }
 
-    void deleteAll() throws Exception {
-        dataSource.update("truncate table trace_attribute_name");
-    }
-
     void deleteBefore(long captureTime) throws Exception {
         dataSource.update("delete from trace_attribute_name where last_capture_time < ?",
                 captureTime);

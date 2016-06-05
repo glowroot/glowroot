@@ -66,7 +66,7 @@ public class Vertx1xIT {
         assertThat(trace.getHeader().getHeadline()).isEqualTo("GET /abc?xyz=123");
     }
 
-    private static int getAvailablePort() throws IOException {
+    private static int getAvailablePort() throws Exception {
         ServerSocket serverSocket = new ServerSocket(0);
         int port = serverSocket.getLocalPort();
         serverSocket.close();

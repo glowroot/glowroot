@@ -16,6 +16,7 @@
 package org.glowroot.agent.fat.init;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -63,6 +64,14 @@ public class GlowrootFatAgentInit implements GlowrootAgentInit {
     @OnlyUsedByTests
     public AgentModule getAgentModule() {
         return checkNotNull(fatAgentModule).getAgentModule();
+    }
+
+    @OnlyUsedByTests
+    public void resetConfig() throws IOException {
+        FatAgentModule fatAgentModule = checkNotNull(this.fatAgentModule);
+        fatAgentModule.getAgentModule().getConfigService().resetConfig();
+        ((ConfigRepositoryImpl) fatAgentModule.getSimpleRepoModule().getConfigRepository())
+                .resetAdminConfig();
     }
 
     @Override

@@ -22,18 +22,17 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
 
-public class SizeLimitBypassingParser<MessageType extends MessageLite>
-        extends AbstractParser<MessageType> {
+public class SizeLimitBypassingParser<T extends MessageLite> extends AbstractParser<T> {
 
-    private final Parser<MessageType> parser;
+    private final Parser<T> parser;
 
-    public SizeLimitBypassingParser(Parser<MessageType> parser) {
+    public SizeLimitBypassingParser(Parser<T> parser) {
         this.parser = parser;
     }
 
     @Override
-    public MessageType parsePartialFrom(CodedInputStream input,
-            ExtensionRegistryLite extensionRegistry) throws InvalidProtocolBufferException {
+    public T parsePartialFrom(CodedInputStream input, ExtensionRegistryLite extensionRegistry)
+            throws InvalidProtocolBufferException {
         input.setSizeLimit(Integer.MAX_VALUE);
         return parser.parsePartialFrom(input, extensionRegistry);
     }

@@ -31,11 +31,11 @@ import org.glowroot.common.live.ImmutableOverallQuery;
 import org.glowroot.common.live.ImmutableTransactionQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.SummarySortOrder;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
-import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.model.Result;
 import org.glowroot.common.model.TransactionSummaryCollector;
+import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
+import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
 import org.glowroot.common.util.Styles;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.ConfigRepository;
@@ -50,6 +50,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+// this is not an integration test (*IT.java) since then it would run against shaded agent and fail
+// due to shading issues
 @Styles.Private
 public class AggregateDaoTest {
 
