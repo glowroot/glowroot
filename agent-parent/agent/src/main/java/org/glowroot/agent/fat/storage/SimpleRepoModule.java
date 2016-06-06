@@ -105,7 +105,7 @@ public class SimpleRepoModule {
         gaugeValueDao = new GaugeValueDao(dataSource, gaugeNameDao, clock);
 
         repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
-                configRepository);
+                configRepository, agentDao);
 
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
         alertingService = new AlertingService(configRepository, triggeredAlertDao, aggregateDao,

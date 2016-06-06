@@ -21,6 +21,7 @@ import org.glowroot.agent.fat.storage.util.CappedDatabase;
 import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.RepoAdmin;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 
 class RepoAdminImpl implements RepoAdmin {
 
@@ -28,18 +29,25 @@ class RepoAdminImpl implements RepoAdmin {
     private final List<CappedDatabase> rollupCappedDatabases;
     private final CappedDatabase traceCappedDatabase;
     private final ConfigRepository configRepository;
+    private final AgentDao agentDao;
 
     RepoAdminImpl(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
-            CappedDatabase traceCappedDatabase, ConfigRepository configRepository) {
+            CappedDatabase traceCappedDatabase, ConfigRepository configRepository,
+            AgentDao agentDao) {
         this.dataSource = dataSource;
         this.rollupCappedDatabases = rollupCappedDatabases;
         this.traceCappedDatabase = traceCappedDatabase;
         this.configRepository = configRepository;
+        this.agentDao = agentDao;
     }
 
     @Override
     public void deleteAllData() throws Exception {
+        SystemInfo systemInfo = agentDao.readSystemInfo("");
         dataSource.deleteAll();
+        if (systemInfo != null) {
+            agentDao.store(systemInfo);
+        }
     }
 
     @Override
