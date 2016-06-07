@@ -30,21 +30,25 @@ class RepoAdminImpl implements RepoAdmin {
     private final CappedDatabase traceCappedDatabase;
     private final ConfigRepository configRepository;
     private final AgentDao agentDao;
+    private final GaugeValueDao gaugeValueDao;
 
     RepoAdminImpl(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
             CappedDatabase traceCappedDatabase, ConfigRepository configRepository,
-            AgentDao agentDao) {
+            AgentDao agentDao, GaugeValueDao gaugeValueDao) {
         this.dataSource = dataSource;
         this.rollupCappedDatabases = rollupCappedDatabases;
         this.traceCappedDatabase = traceCappedDatabase;
         this.configRepository = configRepository;
         this.agentDao = agentDao;
+        this.gaugeValueDao = gaugeValueDao;
     }
 
     @Override
     public void deleteAllData() throws Exception {
         SystemInfo systemInfo = agentDao.readSystemInfo("");
         dataSource.deleteAll();
+        agentDao.reinitAfterDeletingDatabase();
+        gaugeValueDao.reinitAfterDeletingDatabase();
         if (systemInfo != null) {
             agentDao.store(systemInfo);
         }

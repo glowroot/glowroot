@@ -48,12 +48,7 @@ public class AgentDao implements AgentRepository {
     AgentDao(DataSource dataSource) throws Exception {
         this.dataSource = dataSource;
         dataSource.syncTable("agent", columns);
-        long rowCount = dataSource.queryForLong("select count(*) from agent");
-        if (rowCount == 0) {
-            dataSource.execute("insert into agent (system_info) values (null)");
-        } else {
-            checkState(rowCount == 1);
-        }
+        init(dataSource);
     }
 
     @Override
@@ -71,6 +66,19 @@ public class AgentDao implements AgentRepository {
     @Override
     public @Nullable SystemInfo readSystemInfo(String agentId) throws Exception {
         return dataSource.queryAtMostOne(new SystemInfoRowMapper());
+    }
+
+    void reinitAfterDeletingDatabase() throws Exception {
+        init(dataSource);
+    }
+
+    private static void init(DataSource dataSource) throws SQLException {
+        long rowCount = dataSource.queryForLong("select count(*) from agent");
+        if (rowCount == 0) {
+            dataSource.execute("insert into agent (system_info) values (null)");
+        } else {
+            checkState(rowCount == 1);
+        }
     }
 
     private static class SystemInfoBinder implements JdbcUpdate {

@@ -88,22 +88,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
         dataSource.syncTable("gauge_value_last_rollup_times", columns);
 
-        List<String> columnNames = Lists.newArrayList();
-        for (int i = 1; i <= rollupConfigs.size(); i++) {
-            columnNames.add("last_rollup_" + i + "_time");
-        }
-        Joiner joiner = Joiner.on(", ");
-        String selectClause = castUntainted(joiner.join(columnNames));
-        long[] lastRollupTimes = dataSource.query(new LastRollupTimesQuery(selectClause));
-        if (lastRollupTimes == null) {
-            long[] values = new long[rollupConfigs.size()];
-            String valueClause = castUntainted(joiner.join(Longs.asList(values)));
-            dataSource.update("insert into gauge_value_last_rollup_times (" + selectClause
-                    + ") values (" + valueClause + ")");
-            this.lastRollupTimes = new AtomicLongArray(values);
-        } else {
-            this.lastRollupTimes = new AtomicLongArray(lastRollupTimes);
-        }
+        lastRollupTimes = initData(rollupConfigs, dataSource);
 
         // TODO initial rollup in case store is not called in a reasonable time
     }
@@ -175,6 +160,13 @@ public class GaugeValueDao implements GaugeValueRepository {
         dataSource.deleteBefore("gauge_value_rollup_" + castUntainted(rollupLevel), captureTime);
     }
 
+    void reinitAfterDeletingDatabase() throws Exception {
+        AtomicLongArray lastRollupTimes = initData(rollupConfigs, dataSource);
+        for (int i = 0; i < lastRollupTimes.length(); i++) {
+            this.lastRollupTimes.set(i, lastRollupTimes.get(i));
+        }
+    }
+
     private void rollup(long lastRollupTime, long safeRollupTime, long fixedIntervalMillis,
             int toRollupLevel, int fromRollupLevel) throws Exception {
         // need ".0" to force double result
@@ -187,6 +179,26 @@ public class GaugeValueDao implements GaugeValueRepository {
                 + castUntainted(fromRollupLevel) + " gp where gp.capture_time > ?"
                 + " and gp.capture_time <= ? group by gp.gauge_id, ceil_capture_time",
                 lastRollupTime, safeRollupTime);
+    }
+
+    private static AtomicLongArray initData(ImmutableList<RollupConfig> rollupConfigs,
+            DataSource dataSource) throws Exception {
+        List<String> columnNames = Lists.newArrayList();
+        for (int i = 1; i <= rollupConfigs.size(); i++) {
+            columnNames.add("last_rollup_" + i + "_time");
+        }
+        Joiner joiner = Joiner.on(", ");
+        String selectClause = castUntainted(joiner.join(columnNames));
+        long[] lastRollupTimes = dataSource.query(new LastRollupTimesQuery(selectClause));
+        if (lastRollupTimes == null) {
+            long[] values = new long[rollupConfigs.size()];
+            String valueClause = castUntainted(joiner.join(Longs.asList(values)));
+            dataSource.update("insert into gauge_value_last_rollup_times (" + selectClause
+                    + ") values (" + valueClause + ")");
+            return new AtomicLongArray(values);
+        } else {
+            return new AtomicLongArray(lastRollupTimes);
+        }
     }
 
     private class GaugeValuesBinder implements JdbcUpdate {
