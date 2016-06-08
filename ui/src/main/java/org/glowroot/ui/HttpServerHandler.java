@@ -66,6 +66,7 @@ import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.mgt.SecurityManager;
+import org.apache.shiro.session.Session;
 import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
 import org.h2.api.ErrorCode;
@@ -218,7 +219,10 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             Subject subject = new Subject.Builder(securityManager)
                     .sessionId(sessionId)
                     .buildSubject();
-            if (subject.isAuthenticated()) {
+            Session session = subject.getSession(false);
+            if (session != null) {
+                // session hasn't expired
+                session.touch();
                 return subject;
             }
         }
