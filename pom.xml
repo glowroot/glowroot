@@ -82,11 +82,11 @@
   <properties>
     <grpc.version>0.14.0</grpc.version>
     <protobuf.version>3.0.0-beta-3</protobuf.version>
-    <netty.version>4.1.0.Final</netty.version>
+    <netty.version>4.1.1.Final</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
-    <jackson.version>2.6.6</jackson.version>
+    <jackson.version>2.6.7</jackson.version>
     <logback.version>1.1.7</logback.version>
-    <immutables.version>2.2.1</immutables.version>
+    <immutables.version>2.2.6</immutables.version>
     <javax.mail.version>1.5.5</javax.mail.version>
     <jmh.version>1.12</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -492,7 +492,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.7.6.201602180812</version>
+          <version>0.7.7.201606060606</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.m2e</groupId>

@@ -60,6 +60,7 @@ public class Spring {
         for (int i = 0; i <= 6; i++) {
             run("4.2." + i + ".RELEASE");
         }
+        run("4.3.0.RELEASE");
     }
 
     private static void run(String version, String... profiles) throws Exception {

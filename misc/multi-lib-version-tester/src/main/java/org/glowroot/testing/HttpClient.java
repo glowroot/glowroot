@@ -209,6 +209,7 @@ public class HttpClient {
             updateLibVersion("spring.version", "4.2." + i + ".RELEASE");
             runTest(test);
         }
+        updateLibVersion("spring.version", "4.3.0.RELEASE");
     }
 
     private static void updateLibVersion(String property, String version) throws IOException {

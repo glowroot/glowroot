@@ -43,9 +43,8 @@ public class Hibernate {
         for (int i = 0; i <= 9; i++) {
             run("5.0." + i + ".Final");
         }
-        for (int i = 0; i <= 0; i++) {
-            run("5.1." + i + ".Final");
-        }
+        run("5.1.0.Final");
+        run("5.2.0.Final");
     }
 
     private static void run(String version, String annotationsVersion, String... profiles)
