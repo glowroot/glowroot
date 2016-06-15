@@ -111,7 +111,7 @@ public class AgentModule {
     // accepts @Nullable Ticker to deal with shading issues when called from GlowrootModule
     public AgentModule(Clock clock, @Nullable Ticker nullableTicker, final PluginCache pluginCache,
             final ConfigService configService,
-            Supplier<ScheduledExecutorService> scheduledExecutorSupplier, Collector collector,
+            Supplier<ScheduledExecutorService> backgroundExecutorSupplier, Collector collector,
             @Nullable Instrumentation instrumentation, File baseDir) throws Exception {
 
         Ticker ticker = nullableTicker == null ? Tickers.getTicker() : nullableTicker;
@@ -160,18 +160,17 @@ public class AgentModule {
         }
 
         // now that instrumentation is set up, it is safe to create scheduled executor
-        ScheduledExecutorService scheduledExecutor = scheduledExecutorSupplier.get();
+        ScheduledExecutorService backgroundExecutor = backgroundExecutorSupplier.get();
 
-        aggregator = new Aggregator(scheduledExecutor, collector, configService,
-                ROLLUP_0_INTERVAL_MILLIS, clock);
-        transactionCollector = new TransactionCollector(scheduledExecutor, configService, collector,
-                aggregator, clock, ticker);
+        aggregator = new Aggregator(collector, configService, ROLLUP_0_INTERVAL_MILLIS, clock);
+        transactionCollector =
+                new TransactionCollector(configService, collector, aggregator, clock, ticker);
 
         OptionalService<ThreadAllocatedBytes> threadAllocatedBytes = ThreadAllocatedBytes.create();
 
         Random random = new Random();
         UserProfileScheduler userProfileScheduler =
-                new UserProfileScheduler(scheduledExecutor, configService, random);
+                new UserProfileScheduler(backgroundExecutor, configService, random);
         GlowrootService glowrootService = new GlowrootServiceImpl(transactionRegistry);
         TransactionServiceImpl.create(transactionRegistry, transactionCollector, configService,
                 timerNameCache, threadAllocatedBytes.getService(), userProfileScheduler, ticker,
@@ -198,9 +197,9 @@ public class AgentModule {
                 MILLISECONDS);
         stackTraceCollector = new StackTraceCollector(transactionRegistry, configService, random);
 
-        immedateTraceStoreWatcher = new ImmediateTraceStoreWatcher(scheduledExecutor,
+        immedateTraceStoreWatcher = new ImmediateTraceStoreWatcher(backgroundExecutor,
                 transactionRegistry, transactionCollector, configService, ticker);
-        immedateTraceStoreWatcher.scheduleWithFixedDelay(scheduledExecutor, 0,
+        immedateTraceStoreWatcher.scheduleWithFixedDelay(backgroundExecutor, 0,
                 ImmediateTraceStoreWatcher.PERIOD_MILLIS, MILLISECONDS);
 
         liveTraceRepository = new LiveTraceRepositoryImpl(transactionRegistry, transactionCollector,
@@ -276,6 +275,7 @@ public class AgentModule {
     @OnlyUsedByTests
     public void close() throws InterruptedException {
         immedateTraceStoreWatcher.cancel();
+        transactionCollector.close();
         aggregator.close();
         gaugeCollector.close();
         stackTraceCollector.close();

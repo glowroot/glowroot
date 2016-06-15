@@ -19,12 +19,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-
-import javax.annotation.concurrent.GuardedBy;
+import java.util.concurrent.Executors;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.RateLimiter;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,38 +31,44 @@ import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.TraceCreator;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
+import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TransactionCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionCollector.class);
 
+    // back pressure on trace collection
     private static final int PENDING_LIMIT = 100;
 
-    private final ExecutorService executor;
+    private final ExecutorService dedicatedExecutor;
     private final Collector collector;
     private final Aggregator aggregator;
     private final Clock clock;
     private final Ticker ticker;
     private final Set<Transaction> pendingTransactions = Sets.newCopyOnWriteArraySet();
 
-    private final RateLimiter warningRateLimiter = RateLimiter.create(1.0 / 60);
-    @GuardedBy("warningRateLimiter")
-    private int countSinceLastWarning;
+    private final RateLimitedLogger backPressureLogger = new RateLimitedLogger();
 
     private volatile long defaultSlowThresholdNanos;
 
-    public TransactionCollector(ExecutorService executor, final ConfigService configService,
-            Collector collector, Aggregator aggregator, Clock clock, Ticker ticker) {
-        this.executor = executor;
+    public TransactionCollector(final ConfigService configService, Collector collector,
+            Aggregator aggregator, Clock clock, Ticker ticker) {
         this.collector = collector;
         this.aggregator = aggregator;
         this.clock = clock;
         this.ticker = ticker;
+        dedicatedExecutor = Executors.newSingleThreadExecutor(
+                new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .setNameFormat("Glowroot-Trace-Collector")
+                        .build());
         configService.addConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
@@ -97,6 +102,14 @@ public class TransactionCollector {
         return pendingTransactions;
     }
 
+    @OnlyUsedByTests
+    public void close() throws InterruptedException {
+        dedicatedExecutor.shutdown();
+        if (!dedicatedExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate executor");
+        }
+    }
+
     void onCompletedTransaction(final Transaction transaction) {
         // capture time is calculated by the aggregator because it depends on monotonically
         // increasing capture times so it can flush aggregates without concern for new data
@@ -109,7 +122,8 @@ public class TransactionCollector {
         // limit doesn't apply to transactions that were already (partially) stored to make sure
         // they don't get left out in case they cause an avalanche of slowness
         if (pendingTransactions.size() >= PENDING_LIMIT && !transaction.isPartiallyStored()) {
-            logPendingLimitWarning();
+            backPressureLogger.warn("not storing a trace because of an excessive backlog of {}"
+                    + " traces already waiting to be stored", PENDING_LIMIT);
             return;
         }
         pendingTransactions.add(transaction);
@@ -117,7 +131,9 @@ public class TransactionCollector {
         // this need to be called inside the transaction thread
         transaction.onCompleteWillStoreTrace(captureTime);
 
-        Runnable command = new Runnable() {
+        // transaction is ended, so Executor Plugin won't tie this async work to the transaction
+        // (which is good)
+        dedicatedExecutor.execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -129,10 +145,7 @@ public class TransactionCollector {
                     pendingTransactions.remove(transaction);
                 }
             }
-        };
-        // transaction is ended, so Executor Plugin won't tie this async work to the transaction
-        // (which is good)
-        executor.execute(command);
+        });
     }
 
     // no need to throttle partial trace storage since throttling is handled upstream by using a
@@ -148,20 +161,6 @@ public class TransactionCollector {
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-        }
-    }
-
-    private void logPendingLimitWarning() {
-        synchronized (warningRateLimiter) {
-            if (warningRateLimiter.tryAcquire(0, MILLISECONDS)) {
-                logger.warn("not storing a trace because of an excessive backlog of {} traces"
-                        + " already waiting to be stored (this warning will appear at most once a"
-                        + " minute, there were {} additional traces not stored since the last"
-                        + " warning)", PENDING_LIMIT, countSinceLastWarning);
-                countSinceLastWarning = 0;
-            } else {
-                countSinceLastWarning++;
-            }
         }
     }
 

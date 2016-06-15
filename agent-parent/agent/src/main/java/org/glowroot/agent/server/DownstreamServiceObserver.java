@@ -95,12 +95,12 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
 
     private final AtomicBoolean hasInitialConnection = new AtomicBoolean();
     private final AtomicBoolean inMaybeConnectionFailure = new AtomicBoolean();
-    private final AtomicBoolean inConnectionFailure = new AtomicBoolean();
+    private final AtomicBoolean inConnectionFailure;
 
     DownstreamServiceObserver(ServerConnection serverConnection,
             AgentConfigUpdater agentConfigUpdater, LiveJvmService liveJvmService,
             LiveWeavingService liveWeavingService, LiveTraceRepository liveTraceRepository,
-            String agentId) throws Exception {
+            String agentId, AtomicBoolean inConnectionFailure) throws Exception {
         this.serverConnection = serverConnection;
         downstreamServiceStub = DownstreamServiceGrpc.newStub(serverConnection.getChannel())
                 .withCompression("gzip");
@@ -109,6 +109,7 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
         this.liveWeavingService = liveWeavingService;
         this.liveTraceRepository = liveTraceRepository;
         this.agentId = agentId;
+        this.inConnectionFailure = inConnectionFailure;
     }
 
     @Override

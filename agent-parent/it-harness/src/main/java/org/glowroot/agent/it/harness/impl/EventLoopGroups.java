@@ -35,7 +35,7 @@ class EventLoopGroups {
     static EventLoopGroup create(String name) {
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
                 .setDaemon(true)
-                .setNameFormat(name + "-%d")
+                .setNameFormat(name)
                 .build();
         final ExecutorService executor = Executors.newSingleThreadExecutor(threadFactory);
         NioEventLoopGroup nioEventLoopGroup = new NioEventLoopGroup(1, executor);

@@ -74,9 +74,9 @@ class GaugeCollector extends ScheduledRunnable {
     private final Set<String> pendingLoggedMBeanGauges = Sets.newConcurrentHashSet();
     private final Set<String> loggedMBeanGauges = Sets.newConcurrentHashSet();
 
-    // gauges have their own dedicated scheduled executor to make sure their collection is not
-    // hampered by other glowroot threads
-    private final ScheduledExecutorService dedicatedScheduledExecutor;
+    // gauges have their own dedicated executor to make sure their collection is not hampered by
+    // other glowroot background work
+    private final ScheduledExecutorService dedicatedExecutor;
 
     // since gauges have their own dedicated thread, don't need to worry about thread safety of
     // priorRawCounterValues (except can't initialize here outside of the dedicated thread)
@@ -92,9 +92,9 @@ class GaugeCollector extends ScheduledRunnable {
         startTimeMillis = clock.currentTimeMillis();
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
                 .setDaemon(true)
-                .setNameFormat("Glowroot-Gauge-Collector-%d")
+                .setNameFormat("Glowroot-Gauge-Collector")
                 .build();
-        dedicatedScheduledExecutor = Executors.newScheduledThreadPool(1, threadFactory);
+        dedicatedExecutor = Executors.newSingleThreadScheduledExecutor(threadFactory);
         lazyPlatformMBeanServer.addInitListener(new InitListener() {
             @Override
             public void postInit(MBeanServer mbeanServer) {
@@ -131,12 +131,12 @@ class GaugeCollector extends ScheduledRunnable {
     }
 
     void scheduleWithFixedDelay(long initialDelay, long period, TimeUnit unit) {
-        scheduleWithFixedDelay(dedicatedScheduledExecutor, initialDelay, period, unit);
+        scheduleWithFixedDelay(dedicatedExecutor, initialDelay, period, unit);
     }
 
     void close() throws InterruptedException {
-        dedicatedScheduledExecutor.shutdown();
-        if (!dedicatedScheduledExecutor.awaitTermination(10, SECONDS)) {
+        dedicatedExecutor.shutdown();
+        if (!dedicatedExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate gauge collector");
         }
     }

@@ -66,10 +66,14 @@ class HttpServer {
 
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
 
-        ThreadFactory bossThreadFactory = new ThreadFactoryBuilder().setDaemon(true)
-                .setNameFormat("Glowroot-Http-Boss-%d").build();
-        ThreadFactory workerThreadFactory = new ThreadFactoryBuilder().setDaemon(true)
-                .setNameFormat("Glowroot-Http-Worker-%d").build();
+        ThreadFactory bossThreadFactory = new ThreadFactoryBuilder()
+                .setDaemon(true)
+                .setNameFormat("Glowroot-Http-Boss")
+                .build();
+        ThreadFactory workerThreadFactory = new ThreadFactoryBuilder()
+                .setDaemon(true)
+                .setNameFormat("Glowroot-Http-Worker-%d")
+                .build();
         bossGroup = new NioEventLoopGroup(1, bossThreadFactory);
         workerGroup = new NioEventLoopGroup(numWorkerThreads, workerThreadFactory);
 
@@ -140,7 +144,7 @@ class HttpServer {
         } catch (Exception e) {
             throw new PortChangeFailedException(e);
         } finally {
-            executor.shutdownNow();
+            executor.shutdown();
         }
         previousServerChannel.close();
         handler.closeAllButCurrent();

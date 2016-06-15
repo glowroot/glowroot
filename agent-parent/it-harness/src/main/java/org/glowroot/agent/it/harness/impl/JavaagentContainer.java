@@ -155,11 +155,11 @@ public class JavaagentContainer implements Container {
         consolePipeExecutor.submit(consoleOutputPipe);
         this.process = process;
 
-        eventLoopGroup = EventLoopGroups.create("Glowroot-grpc-worker-ELG");
+        eventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
         executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
                         .setDaemon(true)
-                        .setNameFormat("Glowroot-grpc-executor-%d")
+                        .setNameFormat("Glowroot-GRPC-Executor-%d")
                         .build());
         channel = NettyChannelBuilder.forAddress("localhost", javaagentServicePort)
                 .eventLoopGroup(eventLoopGroup)
@@ -276,11 +276,11 @@ public class JavaagentContainer implements Container {
 
     private void cleanup() throws Exception {
         process.waitFor();
-        consolePipeExecutor.shutdownNow();
+        consolePipeExecutor.shutdown();
         if (!consolePipeExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
         }
-        heartbeatListenerExecutor.shutdownNow();
+        heartbeatListenerExecutor.shutdown();
         if (!heartbeatListenerExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
         }

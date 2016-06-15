@@ -82,8 +82,8 @@ public class Threads {
             // Glowroot-Background-1
             // H2 Log Writer GLOWROOT
             // H2 File Lock Watchdog <lock db file>
-            // Glowroot-grpc-worker-ELG-0
-            // Glowroot-grpc-executor-0
+            // Glowroot-GRPC-Worker-ELG-0
+            // Glowroot-GRPC-Executor-0
             // Generate Seed
             // threadDeathWatcher-2-1
             // grpc-shared-destroyer-0
@@ -144,7 +144,7 @@ public class Threads {
         currentThreads.removeAll(preExistingThreads);
         for (Iterator<Thread> i = currentThreads.iterator(); i.hasNext();) {
             String threadName = i.next().getName();
-            if (threadName.startsWith("Glowroot-grpc-")) {
+            if (threadName.startsWith("Glowroot-GRPC-")) {
                 i.remove();
             }
             if (threadName.equals("grpc-shared-destroyer-0")) {

@@ -58,7 +58,7 @@ class FatAgentModule {
     private final Ticker ticker;
     private final Clock clock;
     // only null in viewer mode
-    private final @Nullable ScheduledExecutorService scheduledExecutor;
+    private final @Nullable ScheduledExecutorService backgroundExecutor;
     private final SimpleRepoModule simpleRepoModule;
     private final @Nullable AgentModule agentModule;
     private final @Nullable ViewerAgentModule viewerAgentModule;
@@ -97,12 +97,12 @@ class FatAgentModule {
         PluginCache pluginCache = PluginCache.create(glowrootJarFile, false);
         if (viewerMode) {
             viewerAgentModule = new ViewerAgentModule(baseDir, glowrootJarFile);
-            scheduledExecutor = null;
+            backgroundExecutor = null;
             agentModule = null;
             ConfigRepository configRepository = ConfigRepositoryImpl.create(baseDir,
                     viewerAgentModule.getConfigService(), pluginCache);
             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
-                    configRepository, null, true);
+                    configRepository, null);
         } else {
             // trace module needs to be started as early as possible, so that weaving will be
             // applied to as many classes as possible
@@ -114,19 +114,19 @@ class FatAgentModule {
                     ConfigService.create(baseDir, pluginCache.pluginDescriptors());
 
             // need to delay creation of the scheduled executor until instrumentation is set up
-            Supplier<ScheduledExecutorService> scheduledExecutorSupplier =
-                    GlowrootThinAgentInit.createScheduledExecutorSupplier();
+            Supplier<ScheduledExecutorService> backgroundExecutorSupplier =
+                    GlowrootThinAgentInit.createBackgroundExecutorSupplier();
 
             agentModule = new AgentModule(clock, null, pluginCache, configService,
-                    scheduledExecutorSupplier, collectorProxy, instrumentation, baseDir);
+                    backgroundExecutorSupplier, collectorProxy, instrumentation, baseDir);
 
-            scheduledExecutor = scheduledExecutorSupplier.get();
+            backgroundExecutor = backgroundExecutorSupplier.get();
 
             PreInitializeStorageShutdownClasses.preInitializeClasses();
             ConfigRepository configRepository = ConfigRepositoryImpl.create(baseDir,
                     agentModule.getConfigService(), pluginCache);
             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
-                    configRepository, scheduledExecutor, false);
+                    configRepository, backgroundExecutor);
             simpleRepoModule.registerMBeans(
                     new PlatformMBeanServerLifecycleImpl(agentModule.getLazyPlatformMBeanServer()));
 
@@ -243,11 +243,11 @@ class FatAgentModule {
             agentModule.close();
         }
         simpleRepoModule.close();
-        if (scheduledExecutor != null) {
-            // close scheduled executor last to prevent exceptions due to above modules attempting
+        if (backgroundExecutor != null) {
+            // close background executor last to prevent exceptions due to above modules attempting
             // to use a shutdown executor
-            scheduledExecutor.shutdown();
-            if (!scheduledExecutor.awaitTermination(10, SECONDS)) {
+            backgroundExecutor.shutdown();
+            if (!backgroundExecutor.awaitTermination(10, SECONDS)) {
                 throw new IllegalStateException("Could not terminate executor");
             }
         }

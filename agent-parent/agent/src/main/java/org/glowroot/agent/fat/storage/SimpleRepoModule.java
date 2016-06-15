@@ -77,8 +77,8 @@ public class SimpleRepoModule {
     private volatile boolean unregisterMBeans;
 
     public SimpleRepoModule(DataSource dataSource, File dataDir, Clock clock, Ticker ticker,
-            ConfigRepository configRepository, @Nullable ScheduledExecutorService scheduledExecutor,
-            boolean reaperDisabled) throws Exception {
+            ConfigRepository configRepository,
+            @Nullable ScheduledExecutorService backgroundExecutor) throws Exception {
         if (!dataDir.exists() && !dataDir.mkdir()) {
             throw new IOException("Could not create directory: " + dataDir.getAbsolutePath());
         }
@@ -110,14 +110,12 @@ public class SimpleRepoModule {
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
         alertingService = new AlertingService(configRepository, triggeredAlertDao, aggregateDao,
                 gaugeValueDao, rollupLevelService, new MailService());
-        if (reaperDisabled) {
+        if (backgroundExecutor == null) {
             reaperRunnable = null;
         } else {
-            // scheduledExecutor must be non-null when enabling reaper
-            checkNotNull(scheduledExecutor);
             reaperRunnable = new ReaperRunnable(configRepository, aggregateDao, traceDao,
                     gaugeValueDao, gaugeNameDao, transactionTypeDao, clock);
-            reaperRunnable.scheduleWithFixedDelay(scheduledExecutor, 0,
+            reaperRunnable.scheduleWithFixedDelay(backgroundExecutor, 0,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }
     }

@@ -16,32 +16,43 @@
 package org.glowroot.agent.impl;
 
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.Transaction;
+import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.Collector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Aggregator {
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionProcessor.class);
 
+    // back pressure on transaction collection
+    private static final int TRANSACTION_PENDING_LIMIT = 500;
+    // back pressure on aggregate flushing
+    private static final int AGGREGATE_PENDING_LIMIT = 5;
+
     private volatile AggregateIntervalCollector activeIntervalCollector;
     private final List<AggregateIntervalCollector> pendingIntervalCollectors =
             Lists.newCopyOnWriteArrayList();
 
-    private final ScheduledExecutorService scheduledExecutor;
+    private final ExecutorService processingExecutor;
+    private final ExecutorService flushingExecutor;
     private final Collector collector;
     private final ConfigService configService;
     private final Clock clock;
@@ -54,27 +65,34 @@ public class Aggregator {
     // tail is non-volatile since only accessed under lock
     private PendingTransaction tail = head;
     private final Object queueLock = new Object();
+    @GuardedBy("queueLock")
+    private int queueLength;
 
-    private final Thread processingThread;
+    private final RateLimitedLogger backPressureLogger = new RateLimitedLogger();
 
-    public Aggregator(ScheduledExecutorService scheduledExecutor, Collector collector,
-            ConfigService configService, long aggregateIntervalMillis, Clock clock) {
-        this.scheduledExecutor = scheduledExecutor;
+    public Aggregator(Collector collector, ConfigService configService,
+            long aggregateIntervalMillis, Clock clock) {
         this.collector = collector;
         this.configService = configService;
         this.clock = clock;
         this.aggregateIntervalMillis = aggregateIntervalMillis;
+        processingExecutor = Executors.newSingleThreadExecutor(
+                new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .setNameFormat("Glowroot-Aggregate-Processing")
+                        .build());
+        flushingExecutor = Executors.newSingleThreadExecutor(
+                new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .setNameFormat("Glowroot-Aggregate-Flushing")
+                        .build());
         activeIntervalCollector =
                 new AggregateIntervalCollector(clock.currentTimeMillis(), aggregateIntervalMillis,
                         configService.getAdvancedConfig()
                                 .maxAggregateTransactionsPerType(),
                         configService.getAdvancedConfig().maxAggregateQueriesPerType(),
                         configService.getAdvancedConfig().maxAggregateServiceCallsPerType(), clock);
-        // dedicated thread to aggregating transaction data
-        processingThread = new Thread(new TransactionProcessor());
-        processingThread.setDaemon(true);
-        processingThread.setName("Glowroot-Aggregate-Collector");
-        processingThread.start();
+        processingExecutor.execute(new TransactionProcessor());
     }
 
     // from is non-inclusive
@@ -102,9 +120,16 @@ public class Aggregator {
         long captureTime;
         synchronized (queueLock) {
             captureTime = clock.currentTimeMillis();
+            if (queueLength >= TRANSACTION_PENDING_LIMIT) {
+                backPressureLogger.warn("not aggregating a transaction because of an excessive"
+                        + " backlog of {} transactions already waiting to be aggregated",
+                        TRANSACTION_PENDING_LIMIT);
+                return captureTime;
+            }
             newTail.captureTime = captureTime;
             tail.next = newTail;
             tail = newTail;
+            queueLength++;
         }
         return captureTime;
     }
@@ -126,8 +151,16 @@ public class Aggregator {
     }
 
     @OnlyUsedByTests
-    public void close() {
-        processingThread.interrupt();
+    public void close() throws InterruptedException {
+        // shutdownNow() is needed here to send interrupt to TransactionProcessor thread
+        processingExecutor.shutdownNow();
+        if (!processingExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate executor");
+        }
+        flushingExecutor.shutdown();
+        if (!flushingExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate executor");
+        }
     }
 
     private class TransactionProcessor implements Runnable {
@@ -171,10 +204,10 @@ public class Aggregator {
                 if (next == null) {
                     tail = head;
                 }
+                queueLength--;
             }
             if (pendingTransaction.captureTime > activeIntervalCollector.getCaptureTime()) {
-                // flush in separate thread to avoid pending transactions from piling up quickly
-                scheduledExecutor.execute(new IntervalFlusher(activeIntervalCollector));
+                flushActiveIntervalCollector();
                 activeIntervalCollector = new AggregateIntervalCollector(
                         pendingTransaction.captureTime, aggregateIntervalMillis,
                         configService.getAdvancedConfig()
@@ -196,8 +229,7 @@ public class Aggregator {
                 if (head.next != null) {
                     // something just crept into the queue, possibly still something from active
                     // interval, it will get picked up right away and if it is in next interval it
-                    // will
-                    // force active aggregate to be flushed anyways
+                    // will force active aggregate to be flushed anyways
                     return;
                 }
                 currentTime = clock.currentTimeMillis();
@@ -206,9 +238,7 @@ public class Aggregator {
             if (safeToFlush) {
                 // safe to flush, no other pending transactions can enter queue with later time
                 // (since the check above was done under same lock used to add to queue)
-                //
-                // flush in separate thread to avoid pending transactions from piling up quickly
-                scheduledExecutor.execute(new IntervalFlusher(activeIntervalCollector));
+                flushActiveIntervalCollector();
                 activeIntervalCollector = new AggregateIntervalCollector(currentTime,
                         aggregateIntervalMillis,
                         configService.getAdvancedConfig()
@@ -217,31 +247,32 @@ public class Aggregator {
                         configService.getAdvancedConfig().maxAggregateServiceCallsPerType(), clock);
             }
         }
-    }
 
-    private class IntervalFlusher implements Runnable {
-
-        private final AggregateIntervalCollector intervalCollector;
-
-        private IntervalFlusher(AggregateIntervalCollector intervalCollector) {
-            this.intervalCollector = intervalCollector;
-            pendingIntervalCollectors.add(intervalCollector);
-        }
-
-        @Override
-        public void run() {
-            // this synchronized block is to ensure visibility of updates to this particular
-            // activeIntervalCollector
-            synchronized (intervalCollector) {
-                try {
-                    intervalCollector.flush(collector);
-                } catch (Throwable t) {
-                    // log and terminate successfully
-                    logger.error(t.getMessage(), t);
-                } finally {
-                    pendingIntervalCollectors.remove(intervalCollector);
-                }
+        private void flushActiveIntervalCollector() {
+            if (pendingIntervalCollectors.size() >= AGGREGATE_PENDING_LIMIT) {
+                logger.warn("not storing an aggregate because of an excessive backlog of {}"
+                        + " aggregates already waiting to be stored", AGGREGATE_PENDING_LIMIT);
+                return;
             }
+            final AggregateIntervalCollector intervalCollector = activeIntervalCollector;
+            pendingIntervalCollectors.add(intervalCollector);
+            // flush in separate thread to avoid pending transactions from piling up quickly
+            flushingExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    // this synchronized block is to ensure visibility of updates to this particular
+                    // interval collector
+                    synchronized (intervalCollector) {
+                        try {
+                            intervalCollector.flush(collector);
+                        } catch (Throwable t) {
+                            logger.error(t.getMessage(), t);
+                        } finally {
+                            pendingIntervalCollectors.remove(intervalCollector);
+                        }
+                    }
+                }
+            });
         }
     }
 

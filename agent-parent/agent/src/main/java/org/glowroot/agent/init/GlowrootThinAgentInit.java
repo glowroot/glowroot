@@ -52,7 +52,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
     private @MonotonicNonNull AgentModule agentModule;
     private @MonotonicNonNull ServerCollectorImpl serverCollector;
 
-    private @MonotonicNonNull ScheduledExecutorService scheduledExecutor;
+    private @MonotonicNonNull ScheduledExecutorService backgroundExecutor;
 
     @Override
     public void init(final File baseDir, final @Nullable String collectorHost,
@@ -80,13 +80,13 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         attachAppender(collectorLogbackAppender);
 
         // need to delay creation of the scheduled executor until instrumentation is set up
-        Supplier<ScheduledExecutorService> scheduledExecutorSupplier =
-                createScheduledExecutorSupplier();
+        Supplier<ScheduledExecutorService> backgroundExecutorSupplier =
+                createBackgroundExecutorSupplier();
 
         final AgentModule agentModule = new AgentModule(clock, ticker, pluginCache, configService,
-                scheduledExecutorSupplier, collectorProxy, instrumentation, baseDir);
+                backgroundExecutorSupplier, collectorProxy, instrumentation, baseDir);
 
-        final ScheduledExecutorService scheduledExecutor = scheduledExecutorSupplier.get();
+        final ScheduledExecutorService backgroundExecutor = backgroundExecutorSupplier.get();
 
         final AgentConfigUpdater agentConfigUpdater =
                 new ConfigUpdateService(configService, pluginCache);
@@ -98,8 +98,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                 if (customCollector == null) {
                     serverCollector = new ServerCollectorImpl(properties, collectorHost,
                             agentModule.getLiveJvmService(), agentModule.getLiveWeavingService(),
-                            agentModule.getLiveTraceRepository(), scheduledExecutor,
-                            agentConfigUpdater);
+                            agentModule.getLiveTraceRepository(), agentConfigUpdater);
                     collector = serverCollector;
                 } else {
                     collector = customCollector;
@@ -111,7 +110,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
             }
         });
         this.agentModule = agentModule;
-        this.scheduledExecutor = scheduledExecutor;
+        this.backgroundExecutor = backgroundExecutor;
     }
 
     @Override
@@ -127,9 +126,9 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         if (serverCollector != null) {
             serverCollector.close();
         }
-        checkNotNull(scheduledExecutor);
-        scheduledExecutor.shutdown();
-        if (!scheduledExecutor.awaitTermination(10, SECONDS)) {
+        checkNotNull(backgroundExecutor);
+        backgroundExecutor.shutdown();
+        if (!backgroundExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate agent scheduled executor");
         }
     }
@@ -142,7 +141,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         }
     }
 
-    public static Supplier<ScheduledExecutorService> createScheduledExecutorSupplier() {
+    public static Supplier<ScheduledExecutorService> createBackgroundExecutorSupplier() {
         return Suppliers.memoize(new Supplier<ScheduledExecutorService>() {
             @Override
             public ScheduledExecutorService get() {

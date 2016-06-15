@@ -150,7 +150,7 @@ public class TraceThreadStatsIT {
             // the time spent waiting on lock here is the thread blocked time
             synchronized (lock) {
             }
-            executor.shutdownNow();
+            executor.shutdown();
             if (!executor.awaitTermination(10, SECONDS)) {
                 throw new IllegalStateException("Could not terminate executor");
             }

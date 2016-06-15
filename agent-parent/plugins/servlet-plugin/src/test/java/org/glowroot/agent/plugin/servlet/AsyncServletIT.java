@@ -207,7 +207,7 @@ public class AsyncServletIT {
 
         @Override
         public void destroy() {
-            executor.shutdownNow();
+            executor.shutdown();
         }
 
         @Override
@@ -241,7 +241,7 @@ public class AsyncServletIT {
 
         @Override
         public void destroy() {
-            executor.shutdownNow();
+            executor.shutdown();
         }
 
         @Override
@@ -275,7 +275,7 @@ public class AsyncServletIT {
 
         @Override
         public void destroy() {
-            executor.shutdownNow();
+            executor.shutdown();
         }
 
         @Override

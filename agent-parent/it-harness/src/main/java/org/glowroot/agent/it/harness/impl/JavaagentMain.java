@@ -55,15 +55,15 @@ class JavaagentMain {
 
         int javaagentServicePort = Integer.parseInt(args[1]);
         JavaagentServiceImpl javaagentService = new JavaagentServiceImpl();
-        final EventLoopGroup bossEventLoopGroup = EventLoopGroups.create("Glowroot-grpc-boss-ELG");
+        final EventLoopGroup bossEventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Boss-ELG");
         final EventLoopGroup workerEventLoopGroup =
-                EventLoopGroups.create("Glowroot-grpc-worker-ELG");
+                EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
         // need at least 2 threads, one for executeApp(), and another for handling interruptApp() at
         // the same time
         final ExecutorService executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
                         .setDaemon(true)
-                        .setNameFormat("Glowroot-grpc-executor-%d")
+                        .setNameFormat("Glowroot-GRPC-Executor-%d")
                         .build());
         final Server server = NettyServerBuilder.forPort(javaagentServicePort)
                 .bossEventLoopGroup(bossEventLoopGroup)

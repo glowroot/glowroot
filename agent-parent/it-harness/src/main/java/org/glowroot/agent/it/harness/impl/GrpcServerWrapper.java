@@ -72,12 +72,12 @@ class GrpcServerWrapper {
     private volatile @MonotonicNonNull AgentConfig agentConfig;
 
     GrpcServerWrapper(Collector collector, int port) throws IOException {
-        bossEventLoopGroup = EventLoopGroups.create("Glowroot-grpc-boss-ELG");
-        workerEventLoopGroup = EventLoopGroups.create("Glowroot-grpc-worker-ELG");
+        bossEventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Boss-ELG");
+        workerEventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
         executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
                         .setDaemon(true)
-                        .setNameFormat("Glowroot-grpc-executor-%d")
+                        .setNameFormat("Glowroot-GRPC-Executor-%d")
                         .build());
         downstreamService = new DownstreamServiceImpl();
         server = NettyServerBuilder.forPort(port)

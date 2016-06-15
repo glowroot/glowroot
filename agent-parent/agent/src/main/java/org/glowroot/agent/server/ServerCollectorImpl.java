@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 
@@ -64,8 +64,8 @@ public class ServerCollectorImpl implements Collector {
 
     public ServerCollectorImpl(Map<String, String> properties, @Nullable String collectorHost,
             LiveJvmService liveJvmService, LiveWeavingService liveWeavingService,
-            LiveTraceRepository liveTraceRepository, ScheduledExecutorService scheduledExecutor,
-            AgentConfigUpdater agentConfigUpdater) throws Exception {
+            LiveTraceRepository liveTraceRepository, AgentConfigUpdater agentConfigUpdater)
+            throws Exception {
 
         String agentId = properties.get("glowroot.agent.id");
         if (Strings.isNullOrEmpty(agentId)) {
@@ -84,12 +84,13 @@ public class ServerCollectorImpl implements Collector {
         checkNotNull(collectorHost);
         this.agentId = agentId;
 
-        serverConnection = new ServerConnection(collectorHost, collectorPort, scheduledExecutor);
+        AtomicBoolean inConnectionFailure = new AtomicBoolean();
+        serverConnection = new ServerConnection(collectorHost, collectorPort, inConnectionFailure);
         collectorServiceStub = CollectorServiceGrpc.newStub(serverConnection.getChannel())
                 .withCompression("gzip");
         downstreamServiceObserver = new DownstreamServiceObserver(serverConnection,
                 agentConfigUpdater, liveJvmService, liveWeavingService, liveTraceRepository,
-                agentId);
+                agentId, inConnectionFailure);
         downstreamServiceObserver.connectAsync();
     }
 

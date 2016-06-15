@@ -34,6 +34,7 @@ import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class GuavaListenableFutureIT {
@@ -143,6 +144,7 @@ public class GuavaListenableFutureIT {
             }, executor);
             Thread.sleep(200);
             executor.shutdown();
+            executor.awaitTermination(10, SECONDS);
         }
     }
 
@@ -172,6 +174,7 @@ public class GuavaListenableFutureIT {
             }, executor);
             Thread.sleep(100);
             executor.shutdown();
+            executor.awaitTermination(10, SECONDS);
         }
     }
 
@@ -202,6 +205,7 @@ public class GuavaListenableFutureIT {
             }, MoreExecutors.directExecutor());
             Thread.sleep(200);
             executor.shutdown();
+            executor.awaitTermination(10, SECONDS);
         }
     }
 
@@ -232,6 +236,7 @@ public class GuavaListenableFutureIT {
             }, MoreExecutors.directExecutor());
             Thread.sleep(100);
             executor.shutdown();
+            executor.awaitTermination(10, SECONDS);
         }
     }
 

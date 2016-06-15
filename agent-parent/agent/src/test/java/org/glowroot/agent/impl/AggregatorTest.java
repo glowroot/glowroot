@@ -17,11 +17,8 @@ package org.glowroot.agent.impl;
 
 import java.io.File;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.ImmutableAdvancedConfig;
@@ -39,8 +36,6 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -49,21 +44,12 @@ public class AggregatorTest {
     @Test
     public void shouldFlushWithTrace() throws InterruptedException {
         // given
-        ScheduledExecutorService scheduledExecutorService = mock(ScheduledExecutorService.class);
-        doAnswer(new Answer<Void>() {
-            @Override
-            public Void answer(InvocationOnMock invocation) throws Throwable {
-                Runnable runnable = (Runnable) invocation.getArguments()[0];
-                runnable.run();
-                return null;
-            }
-        }).when(scheduledExecutorService).execute(any(Runnable.class));
         MockCollector aggregateCollector = new MockCollector();
         ConfigService configService = mock(ConfigService.class);
         when(configService.getAdvancedConfig())
                 .thenReturn(ImmutableAdvancedConfig.builder().build());
-        Aggregator aggregator = new Aggregator(scheduledExecutorService, aggregateCollector,
-                configService, 1000, Clock.systemClock());
+        Aggregator aggregator =
+                new Aggregator(aggregateCollector, configService, 1000, Clock.systemClock());
 
         // when
         int count = 0;

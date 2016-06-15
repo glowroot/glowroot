@@ -36,6 +36,7 @@ import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 class Util {
 
@@ -103,6 +104,7 @@ class Util {
         consolePipeExecutorService.submit(consoleOutputPipe);
         int exit = process.waitFor();
         consolePipeExecutorService.shutdown();
+        consolePipeExecutorService.awaitTermination(10, SECONDS);
         if (exit != 0) {
             report.println("FAIL");
         }

@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.Clock;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class RollupService implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(RollupService.class);
@@ -44,9 +46,13 @@ public class RollupService implements Runnable {
         executor.execute(castInitialized(this));
     }
 
-    public void close() {
+    public void close() throws InterruptedException {
         stopped = true;
+        // shutdownNow() is needed here to send interrupt to RollupService thread
         executor.shutdownNow();
+        if (!executor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate executor");
+        }
     }
 
     @Override

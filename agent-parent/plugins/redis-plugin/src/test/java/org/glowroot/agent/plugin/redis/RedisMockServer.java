@@ -27,6 +27,8 @@ import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 class RedisMockServer implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(RedisMockServer.class);
@@ -57,9 +59,10 @@ class RedisMockServer implements Runnable {
         return port;
     }
 
-    void close() {
+    void close() throws InterruptedException {
         stop = true;
-        executor.shutdownNow();
+        executor.shutdown();
+        executor.awaitTermination(10, SECONDS);
     }
 
     private void runInternal() throws IOException {

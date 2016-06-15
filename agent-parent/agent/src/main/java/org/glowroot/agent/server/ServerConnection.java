@@ -19,6 +19,9 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -30,6 +33,7 @@ import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -37,6 +41,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 class ServerConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerConnection.class);
+
+    // back pressure on server connection
+    private static final int PENDING_LIMIT = 100;
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private final ThreadLocal<Boolean> suppressLogCollector = new ThreadLocal<Boolean>() {
@@ -47,29 +54,41 @@ class ServerConnection {
     };
 
     private final EventLoopGroup eventLoopGroup;
-    private final ExecutorService executor;
+    private final ExecutorService channelExecutor;
     private final ManagedChannel channel;
 
-    private final ScheduledExecutorService scheduledExecutor;
+    private final ScheduledExecutorService retryExecutor;
+
+    private final AtomicBoolean inConnectionFailure;
 
     private final Random random = new Random();
 
+    private final RateLimitedLogger backPressureLogger = new RateLimitedLogger();
+    @GuardedBy("backPressureLogger")
+    private int pendingRequestCount;
+
+    private final RateLimitedLogger connectionErrorLogger = new RateLimitedLogger();
+
     private volatile boolean closed;
 
-    ServerConnection(String collectorHost, int collectorPort,
-            ScheduledExecutorService scheduledExecutor) {
-        eventLoopGroup = EventLoopGroups.create("Glowroot-grpc-worker-ELG");
-        executor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
+    ServerConnection(String collectorHost, int collectorPort, AtomicBoolean inConnectionFailure) {
+        eventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
+        channelExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                 .setDaemon(true)
-                .setNameFormat("Glowroot-grpc-executor-%d")
+                .setNameFormat("Glowroot-GRPC-Executor")
                 .build());
         channel = NettyChannelBuilder
                 .forAddress(collectorHost, collectorPort)
                 .eventLoopGroup(eventLoopGroup)
-                .executor(executor)
+                .executor(channelExecutor)
                 .negotiationType(NegotiationType.PLAINTEXT)
                 .build();
-        this.scheduledExecutor = scheduledExecutor;
+        retryExecutor = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .setNameFormat("Glowroot-Server-Retry")
+                        .build());
+        this.inConnectionFailure = inConnectionFailure;
     }
 
     boolean suppressLogCollector() {
@@ -84,6 +103,17 @@ class ServerConnection {
     <T extends /*@NonNull*/ Object> void callWithAFewRetries(GrpcCall<T> call) {
         if (closed) {
             return;
+        }
+        if (inConnectionFailure.get()) {
+            return;
+        }
+        synchronized (backPressureLogger) {
+            if (pendingRequestCount >= PENDING_LIMIT) {
+                backPressureLogger.warn("not sending data to server because of an excessive backlog"
+                        + " of {} requests in progress", PENDING_LIMIT);
+                return;
+            }
+            pendingRequestCount++;
         }
         // TODO revisit retry/backoff after next grpc version
 
@@ -100,6 +130,8 @@ class ServerConnection {
         if (closed) {
             return;
         }
+        // important here not to check inConnectionFailure, since need this to succeed if/when
+        // connection is re-established
         call.call(new RetryingStreamObserver<T>(call, 15, -1));
     }
 
@@ -116,16 +148,20 @@ class ServerConnection {
     @OnlyUsedByTests
     void close() {
         closed = true;
+        retryExecutor.shutdown();
         channel.shutdown();
     }
 
     @OnlyUsedByTests
     void awaitClose() throws InterruptedException {
+        if (!retryExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate executor");
+        }
         if (!channel.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate gRPC channel");
         }
-        executor.shutdown();
-        if (!executor.awaitTermination(10, SECONDS)) {
+        channelExecutor.shutdown();
+        if (!channelExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate gRPC executor");
         }
         if (!eventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
@@ -151,8 +187,8 @@ class ServerConnection {
         private RetryingStreamObserver(GrpcCall<T> grpcCall, int maxSingleDelayInSeconds,
                 int maxTotalInSeconds) {
             this.grpcCall = grpcCall;
-            this.maxTotalInSeconds = maxTotalInSeconds;
             this.maxSingleDelayInSeconds = maxSingleDelayInSeconds;
+            this.maxTotalInSeconds = maxTotalInSeconds;
         }
 
         @Override
@@ -165,6 +201,9 @@ class ServerConnection {
             if (closed) {
                 return;
             }
+            if (inConnectionFailure.get()) {
+                return;
+            }
             suppressLogCollector(new Runnable() {
                 @Override
                 public void run() {
@@ -172,12 +211,14 @@ class ServerConnection {
                 }
             });
             if (maxTotalInSeconds != -1 && stopwatch.elapsed(SECONDS) > maxTotalInSeconds) {
-                // no logging since DownstreamServiceObserver handles logging glowroot server
-                // connectivity
+                connectionErrorLogger.warn("error sending data to server: {}", t.getMessage(), t);
+                synchronized (backPressureLogger) {
+                    pendingRequestCount--;
+                }
                 return;
             }
             // TODO revisit retry/backoff after next grpc version
-            scheduledExecutor.schedule(new Runnable() {
+            retryExecutor.schedule(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -201,6 +242,10 @@ class ServerConnection {
         }
 
         @Override
-        public void onCompleted() {}
+        public void onCompleted() {
+            synchronized (backPressureLogger) {
+                pendingRequestCount--;
+            }
+        }
     }
 }

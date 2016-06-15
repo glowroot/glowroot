@@ -44,13 +44,13 @@ public class UserProfileScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(UserProfileRunnable.class);
 
-    private final ScheduledExecutorService scheduledExecutor;
+    private final ScheduledExecutorService backgroundExecutor;
     private final ConfigService configService;
     private final Random random;
 
-    public UserProfileScheduler(ScheduledExecutorService scheduledExecutor,
+    public UserProfileScheduler(ScheduledExecutorService backgroundExecutor,
             ConfigService configService, Random random) {
-        this.scheduledExecutor = scheduledExecutor;
+        this.backgroundExecutor = backgroundExecutor;
         this.configService = configService;
         this.random = random;
     }
@@ -148,13 +148,13 @@ public class UserProfileScheduler {
         private void scheduleFirst() {
             long randomDelayFromIntervalStart = (long) (random.nextFloat() * intervalMillis);
             currentFuture =
-                    scheduledExecutor.schedule(this, randomDelayFromIntervalStart, MILLISECONDS);
+                    backgroundExecutor.schedule(this, randomDelayFromIntervalStart, MILLISECONDS);
             remainingInInterval = intervalMillis - randomDelayFromIntervalStart;
         }
 
         private void scheduleNext() {
             long randomDelayFromIntervalStart = (long) (random.nextFloat() * intervalMillis);
-            scheduledExecutor.schedule(this, remainingInInterval + randomDelayFromIntervalStart,
+            backgroundExecutor.schedule(this, remainingInInterval + randomDelayFromIntervalStart,
                     MILLISECONDS);
             remainingInInterval = intervalMillis - randomDelayFromIntervalStart;
         }

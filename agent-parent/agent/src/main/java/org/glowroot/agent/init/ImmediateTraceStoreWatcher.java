@@ -39,16 +39,16 @@ class ImmediateTraceStoreWatcher extends ScheduledRunnable {
 
     static final int PERIOD_MILLIS = 1000;
 
-    private final ScheduledExecutorService scheduledExecutor;
+    private final ScheduledExecutorService backgroundExecutor;
     private final TransactionRegistry transactionRegistry;
     private final TransactionCollector transactionCollector;
     private final ConfigService configService;
     private final Ticker ticker;
 
-    ImmediateTraceStoreWatcher(ScheduledExecutorService scheduledExecutor,
+    ImmediateTraceStoreWatcher(ScheduledExecutorService backgroundExecutor,
             TransactionRegistry transactionRegistry, TransactionCollector transactionCollector,
             ConfigService configService, Ticker ticker) {
-        this.scheduledExecutor = scheduledExecutor;
+        this.backgroundExecutor = backgroundExecutor;
         this.transactionRegistry = transactionRegistry;
         this.transactionCollector = transactionCollector;
         this.configService = configService;
@@ -78,7 +78,7 @@ class ImmediateTraceStoreWatcher extends ScheduledRunnable {
                                 - NANOSECONDS.toMillis(transaction.getDurationNanos()));
                 ScheduledRunnable immediateTraceStoreRunnable =
                         new ImmediateTraceStoreRunnable(transaction, transactionCollector);
-                immediateTraceStoreRunnable.scheduleWithFixedDelay(scheduledExecutor,
+                immediateTraceStoreRunnable.scheduleWithFixedDelay(backgroundExecutor,
                         initialDelayMillis, SECONDS.toMillis(immediatePartialStoreThresholdSeconds),
                         MILLISECONDS);
                 transaction.setImmediateTraceStoreRunnable(immediateTraceStoreRunnable);
