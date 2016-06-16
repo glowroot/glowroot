@@ -72,18 +72,20 @@ public class UserDao {
 
         boolean createAnonymousUser = keyspaceMetadata.getTable("user") == null;
 
-        session.execute("create table if not exists user (username varchar, password_hash varchar,"
-                + " roles set<varchar>, primary key (username)) " + WITH_LCS);
+        session.execute("create table if not exists user (username varchar, ldap boolean,"
+                + " password_hash varchar, roles set<varchar>, primary key (username)) "
+                + WITH_LCS);
 
-        readPS = session.prepare("select username, password_hash, roles from user");
-        insertPS = session
-                .prepare("insert into user (username, password_hash, roles) values (?, ?, ?)");
+        readPS = session.prepare("select username, ldap, password_hash, roles from user");
+        insertPS = session.prepare(
+                "insert into user (username, ldap, password_hash, roles) values (?, ?, ?, ?)");
         deletePS = session.prepare("delete from user where username = ?");
 
         if (createAnonymousUser) {
             BoundStatement boundStatement = insertPS.bind();
             int i = 0;
             boundStatement.setString(i++, "anonymous");
+            boundStatement.setBool(i++, false);
             boundStatement.setString(i++, "");
             boundStatement.setSet(i++, ImmutableSet.of("Administrator"));
             session.execute(boundStatement);
@@ -122,6 +124,7 @@ public class UserDao {
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
         boundStatement.setString(i++, userConfig.username());
+        boundStatement.setBool(i++, userConfig.ldap());
         boundStatement.setString(i++, userConfig.passwordHash());
         boundStatement.setSet(i++, userConfig.roles());
         session.execute(boundStatement);
@@ -159,6 +162,7 @@ public class UserDao {
         int i = 0;
         return ImmutableUserConfig.builder()
                 .username(checkNotNull(row.getString(i++)))
+                .ldap(row.getBool(i++))
                 .passwordHash(checkNotNull(row.getString(i++)))
                 .roles(row.getSet(i++, String.class))
                 .build();
