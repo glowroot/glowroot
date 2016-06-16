@@ -162,6 +162,15 @@ glowroot.controller('AdminUserCtrl', [
     // delete user deserves confirmation dialog (as opposed to other deletes), since it cannot be undone without
     // re-creating user password which may be unknown to administrator
     $scope.displayDeleteConfirmationModal = function () {
+      if ($scope.username === $scope.layout.username) {
+        // this helps ensure there is always a user left in the system with admin privileges
+        var $buttonMessage = $('.gt-form-buttons .gt-button-message');
+        $buttonMessage.text('You cannot delete yourself!');
+        $buttonMessage.removeClass('gt-button-message-success');
+        $buttonMessage.addClass('gt-button-message-error');
+        $buttonMessage.removeClass('hide');
+        return;
+      }
       modals.display('#deleteConfirmationModal', true);
     };
 
