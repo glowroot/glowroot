@@ -30,8 +30,6 @@ import org.glowroot.storage.config.RoleConfig;
 import org.glowroot.storage.config.UserConfig;
 import org.glowroot.storage.repo.ConfigRepository;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 class GlowrootRealm extends AuthorizingRealm {
 
     private static final String GLOWROOT_REALM = "Glowroot";
@@ -53,7 +51,10 @@ class GlowrootRealm extends AuthorizingRealm {
     protected @Nullable AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
         String username = (String) principals.getPrimaryPrincipal();
         UserConfig userConfig = configRepository.getUserConfigCaseInsensitive(username);
-        checkNotNull(userConfig);
+        if (userConfig == null) {
+            // this happens when user is anonymous, but there is no anonymous user configured
+            return null;
+        }
         SimpleAuthorizationInfo authorizationInfo = new SimpleAuthorizationInfo(userConfig.roles());
         for (String roleName : userConfig.roles()) {
             RoleConfig roleConfig = configRepository.getRoleConfig(roleName);
