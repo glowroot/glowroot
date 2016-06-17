@@ -96,6 +96,7 @@ public class SprayIT {
                     } catch (Exception e) {
                         lastException = e;
                     }
+                    Thread.sleep(100);
                 }
                 throw lastException;
             } finally {
