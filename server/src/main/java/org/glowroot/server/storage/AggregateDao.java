@@ -22,7 +22,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
@@ -32,10 +36,8 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Strings;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
@@ -273,17 +275,16 @@ public class AggregateDao implements AggregateRepository {
         List<PreparedStatement> deleteNeedsRollup = Lists.newArrayList();
         for (int i = 1; i < count; i++) {
             session.execute("create table if not exists aggregate_needs_rollup_" + i
-                    + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
-                    + " last_update timeuuid, primary key (agent_rollup, transaction_type,"
-                    + " capture_time)) " + WITH_LCS);
+                    + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
+                    + " transaction_types set<varchar>, primary key (agent_rollup, capture_time,"
+                    + " uniqueness)) " + WITH_LCS);
             insertNeedsRollup.add(session.prepare("insert into aggregate_needs_rollup_" + i
-                    + " (agent_rollup, transaction_type, capture_time, last_update) values"
+                    + " (agent_rollup, capture_time, uniqueness, transaction_types) values"
                     + " (?, ?, ?, ?)"));
-            readNeedsRollup.add(session.prepare("select agent_rollup, transaction_type,"
-                    + " capture_time, last_update from aggregate_needs_rollup_" + i));
+            readNeedsRollup.add(session.prepare("select agent_rollup, capture_time, uniqueness,"
+                    + " transaction_types from aggregate_needs_rollup_" + i));
             deleteNeedsRollup.add(session.prepare("delete from aggregate_needs_rollup_" + i
-                    + " where agent_rollup = ? and transaction_type = ? and capture_time = ?"
-                    + " if last_update = ?"));
+                    + " where agent_rollup = ? and capture_time = ? and uniqueness = ?"));
         }
         this.insertNeedsRollup = insertNeedsRollup;
         this.readNeedsRollup = readNeedsRollup;
@@ -314,23 +315,24 @@ public class AggregateDao implements AggregateRepository {
             transactionTypeDao.maybeUpdateLastCaptureTime(agentId, transactionType, futures);
         }
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
-        for (AggregatesByType aggregatesByType : aggregatesByTypeList) {
-            for (int i = 1; i < rollupConfigs.size(); i++) {
-                String transactionType = aggregatesByType.getTransactionType();
-                // TEMPORARY UNTIL ROLL OUT AGENT 0.9.0
-                if (transactionType.equals("Servlet")) {
-                    transactionType = "Web";
-                }
-                // END TEMPORARY
-                long intervalMillis = rollupConfigs.get(i).intervalMillis();
-                long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, intervalMillis);
-                BoundStatement boundStatement = insertNeedsRollup.get(i - 1).bind();
-                boundStatement.setString(0, agentId);
-                boundStatement.setString(1, transactionType);
-                boundStatement.setTimestamp(2, new Date(rollupCaptureTime));
-                boundStatement.setUUID(3, UUIDs.timeBased());
-                futures.add(session.executeAsync(boundStatement));
-            }
+        // TODO report checker framework issue that occurs without this suppression
+        @SuppressWarnings("assignment.type.incompatible")
+        Set<String> transactionTypes = aggregatesByTypeList.stream()
+                .map(AggregatesByType::getTransactionType).collect(Collectors.toSet());
+        // TEMPORARY UNTIL ROLL OUT AGENT 0.9.0
+        if (transactionTypes.remove("Servlet")) {
+            transactionTypes.add("Web");
+        }
+        // END TEMPORARY
+        for (int i = 1; i < rollupConfigs.size(); i++) {
+            long intervalMillis = rollupConfigs.get(i).intervalMillis();
+            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, intervalMillis);
+            BoundStatement boundStatement = insertNeedsRollup.get(i - 1).bind();
+            boundStatement.setString(0, agentId);
+            boundStatement.setTimestamp(1, new Date(rollupCaptureTime));
+            boundStatement.setUUID(2, UUIDs.timeBased());
+            boundStatement.setSet(3, transactionTypes);
+            futures.add(session.executeAsync(boundStatement));
         }
         Futures.allAsList(futures).get();
     }
@@ -609,24 +611,26 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private void rollupLevel(int rollupLevel, List<Integer> ttls) throws Exception {
-        ListMultimap<RollupKey, RollupCaptureTime> needsRollup =
+        Map<RollupKey, RollupContent> needsRollup =
                 getNeedsRollup(rollupLevel, readNeedsRollup, session);
-        long rollupIntervalMillis =
-                configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
-        for (Entry<RollupKey, RollupCaptureTime> entry : needsRollup.entries()) {
+        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+        long rollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
+        Long nextRollupIntervalMillis = null;
+        if (rollupLevel + 1 < rollupConfigs.size()) {
+            nextRollupIntervalMillis = rollupConfigs.get(rollupLevel + 1).intervalMillis();
+        }
+        for (Entry<RollupKey, RollupContent> entry : needsRollup.entrySet()) {
             RollupKey rollupKey = entry.getKey();
-            RollupCaptureTime rollupCaptureTime = entry.getValue();
+            RollupContent rollupContent = entry.getValue();
             RollupParams rollupParams =
                     getRollupParams(rollupKey.agentRollup(), rollupLevel, ttls.get(rollupLevel));
-            long captureTime = rollupCaptureTime.captureTime();
-            rollupOne(rollupParams, rollupKey.key(),
-                    captureTime - rollupIntervalMillis, captureTime);
-            BoundStatement boundStatement = deleteNeedsRollup.get(rollupLevel - 1).bind();
-            boundStatement.setString(0, rollupKey.agentRollup());
-            boundStatement.setString(1, rollupKey.key());
-            boundStatement.setTimestamp(2, new Date(captureTime));
-            boundStatement.setUUID(3, rollupCaptureTime.lastUpdate());
-            session.execute(boundStatement);
+            long captureTime = rollupKey.captureTime();
+            long from = captureTime - rollupIntervalMillis;
+            for (String transactionType : rollupContent.keys()) {
+                rollupOne(rollupParams, transactionType, from, captureTime);
+            }
+            postRollup(rollupLevel, rollupKey, rollupContent, nextRollupIntervalMillis,
+                    insertNeedsRollup, deleteNeedsRollup, session);
         }
     }
 
@@ -1347,32 +1351,64 @@ public class AggregateDao implements AggregateRepository {
         return rollupInfo.build();
     }
 
-    static ListMultimap<RollupKey, RollupCaptureTime> getNeedsRollup(int rollupLevel,
+    static Map<RollupKey, RollupContent> getNeedsRollup(int rollupLevel,
             List<PreparedStatement> readNeedsRollup, Session session) {
         BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind();
         ResultSet results = session.execute(boundStatement);
-        ListMultimap<RollupKey, RollupCaptureTime> needsRollup = ArrayListMultimap.create();
+        Map<RollupKey, RollupContent> needsRollup = Maps.newHashMap();
+        Map<String, Long> lastCaptureTimes = Maps.newHashMap();
         for (Row row : results) {
             String agentRollup = checkNotNull(row.getString(0));
-            String transactionType = checkNotNull(row.getString(1));
-            long captureTime = checkNotNull(row.getTimestamp(2)).getTime();
-            UUID lastUpdate = row.getUUID(3);
-            needsRollup.put(ImmutableRollupKey.of(agentRollup, transactionType),
-                    ImmutableRollupCaptureTime.builder()
-                            .captureTime(captureTime)
-                            .lastUpdate(lastUpdate)
-                            .build());
+            long captureTime = checkNotNull(row.getTimestamp(1)).getTime();
+            UUID uniqueness = row.getUUID(2);
+            Set<String> keys = checkNotNull(row.getSet(3, String.class));
+            RollupKey rollupKey = ImmutableRollupKey.of(agentRollup, captureTime);
+            ImmutableRollupContent.Builder rollupContent = ImmutableRollupContent.builder();
+            RollupContent existingRollupContent = needsRollup.get(rollupKey);
+            if (existingRollupContent != null) {
+                rollupContent.from(existingRollupContent);
+            }
+            needsRollup.put(rollupKey, rollupContent
+                    .addAllKeys(keys)
+                    .addUniquenessKeysForDeletion(uniqueness)
+                    .build());
+            lastCaptureTimes.put(agentRollup, captureTime);
         }
-        // copy of key set is required since removing a key's last remaining value from a
-        // multimap removes the key itself which then triggers ConcurrentModificationException
-        for (RollupKey rollupKey : ImmutableList.copyOf(needsRollup.keySet())) {
-            List<RollupCaptureTime> list = needsRollup.get(rollupKey);
-            // don't roll up the most recent one since it is likely still being added, this is
-            // mostly to avoid rolling up this data twice, but also currently the UI assumes
-            // when it finds a 1-min rollup it doesn't check for non-rolled up 1-min aggregates
-            list.remove(list.size() - 1);
+        // don't roll up the most recent time for each agent since it is likely still being added,
+        // this is mostly to avoid rolling up this data twice, but also currently the UI assumes
+        // when it finds a 1-min rollup it doesn't check for non-rolled up 1-min aggregates
+        for (Entry<String, Long> entry : lastCaptureTimes.entrySet()) {
+            needsRollup.remove(ImmutableRollupKey.of(entry.getKey(), entry.getValue()));
         }
         return needsRollup;
+    }
+
+    // it is important that the insert into next gauge_needs_rollup happens after present
+    // rollup and before deleting present rollup
+    // if insert before present rollup then possible for the next rollup to occur before
+    // present rollup has completed
+    // if insert after deleting present rollup then possible for error to occur in between
+    // and insert would never happen
+    static void postRollup(int rollupLevel, RollupKey rollupKey, RollupContent rollupContent,
+            @Nullable Long nextRollupIntervalMillis, List<PreparedStatement> insertNeedsRollup,
+            List<PreparedStatement> deleteNeedsRollup, Session session) {
+        if (nextRollupIntervalMillis != null) {
+            long rollupCaptureTime =
+                    Utils.getRollupCaptureTime(rollupKey.captureTime(), nextRollupIntervalMillis);
+            BoundStatement boundStatement = insertNeedsRollup.get(rollupLevel).bind();
+            boundStatement.setString(0, rollupKey.agentRollup());
+            boundStatement.setTimestamp(1, new Date(rollupCaptureTime));
+            boundStatement.setUUID(2, UUIDs.timeBased());
+            boundStatement.setSet(3, rollupContent.keys());
+            session.execute(boundStatement);
+        }
+        for (UUID uniqueness : rollupContent.uniquenessKeysForDeletion()) {
+            BoundStatement boundStatement = deleteNeedsRollup.get(rollupLevel - 1).bind();
+            boundStatement.setString(0, rollupKey.agentRollup());
+            boundStatement.setTimestamp(1, new Date(rollupKey.captureTime()));
+            boundStatement.setUUID(2, uniqueness);
+            session.execute(boundStatement);
+        }
     }
 
     private static void bindQuery(BoundStatement boundStatement, String agentRollup,
@@ -1638,13 +1674,13 @@ public class AggregateDao implements AggregateRepository {
     @Styles.AllParameters
     interface RollupKey {
         String agentRollup();
-        String key();
+        long captureTime();
     }
 
     @Value.Immutable
-    interface RollupCaptureTime {
-        long captureTime();
-        UUID lastUpdate();
+    interface RollupContent {
+        Set<String> keys(); // transaction types or gauge names
+        Set<UUID> uniquenessKeysForDeletion();
     }
 
     private static class MutableSummary {
