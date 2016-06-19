@@ -93,7 +93,7 @@ public class ServiceCallCollector {
         }
     }
 
-    public void mergeServiceCall(String type, String text, long totalDurationNanos,
+    public void mergeServiceCall(String type, String text, double totalDurationNanos,
             long executionCount) {
         Map<String, MutableServiceCall> serviceCallsForType = serviceCalls.get(type);
         if (serviceCallsForType == null) {
@@ -118,7 +118,7 @@ public class ServiceCallCollector {
         aggregateServiceCall.addToExecutionCount(serviceCall.getExecutionCount());
     }
 
-    private void mergeServiceCall(String text, long totalDurationNanos, long executionCount,
+    private void mergeServiceCall(String text, double totalDurationNanos, long executionCount,
             Map<String, MutableServiceCall> serviceCallsForType) {
         MutableServiceCall aggregateServiceCall = serviceCallsForType.get(text);
         if (aggregateServiceCall == null) {

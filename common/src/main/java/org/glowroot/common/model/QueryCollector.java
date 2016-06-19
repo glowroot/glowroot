@@ -88,11 +88,12 @@ public class QueryCollector {
             queries.put(queryType, queriesForType);
         }
         for (Aggregate.Query query : toBeMergedQueries.getQueryList()) {
-            mergeQuery(query, queriesForType);
+            mergeQuery(query.getText(), query.getTotalDurationNanos(), query.getExecutionCount(),
+                    query.getTotalRows().getValue(), query.hasTotalRows(), queriesForType);
         }
     }
 
-    public void mergeQuery(String queryType, String queryText, long totalDurationNanos,
+    public void mergeQuery(String queryType, String queryText, double totalDurationNanos,
             long executionCount, boolean rowNavigationAttempted, long totalRows) {
         Map<String, MutableQuery> queriesForType = queries.get(queryType);
         if (queriesForType == null) {
@@ -103,24 +104,7 @@ public class QueryCollector {
                 queriesForType);
     }
 
-    private void mergeQuery(Aggregate.Query query, Map<String, MutableQuery> queriesForType) {
-        MutableQuery aggregateQuery = queriesForType.get(query.getText());
-        if (aggregateQuery == null) {
-            if (maxMultiplierWhileBuilding != 0
-                    && queriesForType.size() >= limit * maxMultiplierWhileBuilding) {
-                return;
-            }
-            aggregateQuery = new MutableQuery(query.getText());
-            queriesForType.put(query.getText(), aggregateQuery);
-        }
-        aggregateQuery.addToTotalDurationNanos(query.getTotalDurationNanos());
-        aggregateQuery.addToExecutionCount(query.getExecutionCount());
-        if (query.hasTotalRows()) {
-            aggregateQuery.addToTotalRows(true, query.getTotalRows().getValue());
-        }
-    }
-
-    private void mergeQuery(String queryText, long totalDurationNanos, long executionCount,
+    private void mergeQuery(String queryText, double totalDurationNanos, long executionCount,
             long totalRows, boolean rowNavigationAttempted,
             Map<String, MutableQuery> queriesForType) {
         MutableQuery aggregateQuery = queriesForType.get(queryText);
