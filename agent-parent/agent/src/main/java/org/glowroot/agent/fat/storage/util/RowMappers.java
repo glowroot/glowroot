@@ -37,6 +37,16 @@ public class RowMappers {
         }
     }
 
+    public static @Nullable Double getDouble(ResultSet resultSet, int columnIndex)
+            throws SQLException {
+        double value = resultSet.getDouble(columnIndex);
+        if (value == 0 && resultSet.wasNull()) {
+            return null;
+        } else {
+            return value;
+        }
+    }
+
     public static void setLong(PreparedStatement preparedStatement, int columnIndex,
             @Nullable Long value) throws SQLException {
         if (value == null) {

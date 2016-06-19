@@ -100,6 +100,38 @@ public class MutableAggregate {
         mergeRootTimers(toBeMergedRootTimers, asyncTimers);
     }
 
+    public void addMainThreadTotalCpuNanos(@Nullable Double totalCpuNanos) {
+        mainThreadStats.addTotalCpuNanos(totalCpuNanos);
+    }
+
+    public void addMainThreadTotalBlockedNanos(@Nullable Double totalBlockedNanos) {
+        mainThreadStats.addTotalBlockedNanos(totalBlockedNanos);
+    }
+
+    public void addMainThreadTotalWaitedNanos(@Nullable Double totalWaitedNanos) {
+        mainThreadStats.addTotalWaitedNanos(totalWaitedNanos);
+    }
+
+    public void addMainThreadTotalAllocatedBytes(@Nullable Double totalAllocatedBytes) {
+        mainThreadStats.addTotalAllocatedBytes(totalAllocatedBytes);
+    }
+
+    public void addAuxThreadTotalCpuNanos(@Nullable Double totalCpuNanos) {
+        auxThreadStats.addTotalCpuNanos(totalCpuNanos);
+    }
+
+    public void addAuxThreadTotalBlockedNanos(@Nullable Double totalBlockedNanos) {
+        auxThreadStats.addTotalBlockedNanos(totalBlockedNanos);
+    }
+
+    public void addAuxThreadTotalWaitedNanos(@Nullable Double totalWaitedNanos) {
+        auxThreadStats.addTotalWaitedNanos(totalWaitedNanos);
+    }
+
+    public void addAuxThreadTotalAllocatedBytes(@Nullable Double totalAllocatedBytes) {
+        auxThreadStats.addTotalAllocatedBytes(totalAllocatedBytes);
+    }
+
     public void mergeMainThreadStats(@Nullable Aggregate.ThreadStats threadStats) {
         mainThreadStats.addThreadStats(threadStats);
     }

@@ -74,10 +74,12 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedCon
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.QueriesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.ServiceCallsByType;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.ThreadStats;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.Timer;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
+import org.glowroot.wire.api.model.Proto.OptionalDouble;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.agent.util.Checkers.castUntainted;
@@ -101,8 +103,14 @@ class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("main_thread_root_timers", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("aux_thread_root_timers", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("async_root_timers", ColumnType.VARBINARY), // protobuf
-                    ImmutableColumn.of("main_thread_stats", ColumnType.VARBINARY), // protobuf
-                    ImmutableColumn.of("aux_thread_stats", ColumnType.VARBINARY), // protobuf
+                    ImmutableColumn.of("main_thread_total_cpu_nanos", ColumnType.DOUBLE), // nullable
+                    ImmutableColumn.of("main_thread_total_blocked_nanos", ColumnType.DOUBLE), // nullable
+                    ImmutableColumn.of("main_thread_total_waited_nanos", ColumnType.DOUBLE), // nullable
+                    ImmutableColumn.of("main_thread_total_allocated_bytes", ColumnType.DOUBLE), // nullable
+                    ImmutableColumn.of("aux_thread_total_cpu_nanos", ColumnType.DOUBLE), // nullable
+                    ImmutableColumn.of("aux_thread_total_blocked_nanos", ColumnType.DOUBLE), // nullable
+                    ImmutableColumn.of("aux_thread_total_waited_nanos", ColumnType.DOUBLE), // nullable
+                    ImmutableColumn.of("aux_thread_total_allocated_bytes", ColumnType.DOUBLE), // nullable
                     ImmutableColumn.of("duration_nanos_histogram", ColumnType.VARBINARY)); // protobuf
 
     private static final ImmutableList<Column> transactionAggregateColumns =
@@ -121,8 +129,14 @@ class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("main_thread_root_timers", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("aux_thread_root_timers", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("async_root_timers", ColumnType.VARBINARY), // protobuf
-                    ImmutableColumn.of("main_thread_stats", ColumnType.VARBINARY), // protobuf
-                    ImmutableColumn.of("aux_thread_stats", ColumnType.VARBINARY), // protobuf
+                    ImmutableColumn.of("main_thread_total_cpu_nanos", ColumnType.DOUBLE), // nullable
+                    ImmutableColumn.of("main_thread_total_blocked_nanos", ColumnType.DOUBLE), // nullable
+                    ImmutableColumn.of("main_thread_total_waited_nanos", ColumnType.DOUBLE), // nullable
+                    ImmutableColumn.of("main_thread_total_allocated_bytes", ColumnType.DOUBLE), // nullable
+                    ImmutableColumn.of("aux_thread_total_cpu_nanos", ColumnType.DOUBLE), // nullable
+                    ImmutableColumn.of("aux_thread_total_blocked_nanos", ColumnType.DOUBLE), // nullable
+                    ImmutableColumn.of("aux_thread_total_waited_nanos", ColumnType.DOUBLE), // nullable
+                    ImmutableColumn.of("aux_thread_total_allocated_bytes", ColumnType.DOUBLE), // nullable
                     ImmutableColumn.of("duration_nanos_histogram", ColumnType.VARBINARY)); // protobuf
 
     // this index includes all columns needed for the overall aggregate query so h2 can return
@@ -414,8 +428,14 @@ class AggregateDao implements AggregateRepository {
         byte[] mainThreadRootTimers = resultSet.getBytes(i++);
         byte[] auxThreadRootTimers = resultSet.getBytes(i++);
         byte[] asyncTimers = resultSet.getBytes(i++);
-        byte[] mainThreadStats = resultSet.getBytes(i++);
-        byte[] auxThreadStats = resultSet.getBytes(i++);
+        Double mainThreadTotalCpuNanos = RowMappers.getDouble(resultSet, i++);
+        Double mainThreadTotalBlockedNanos = RowMappers.getDouble(resultSet, i++);
+        Double mainThreadTotalWaitedNanos = RowMappers.getDouble(resultSet, i++);
+        Double mainThreadTotalAllocatedBytes = RowMappers.getDouble(resultSet, i++);
+        Double auxThreadTotalCpuNanos = RowMappers.getDouble(resultSet, i++);
+        Double auxThreadTotalBlockedNanos = RowMappers.getDouble(resultSet, i++);
+        Double auxThreadTotalWaitedNanos = RowMappers.getDouble(resultSet, i++);
+        Double auxThreadTotalAllocatedBytes = RowMappers.getDouble(resultSet, i++);
         byte[] durationNanosHistogram = checkNotNull(resultSet.getBytes(i++));
 
         mergedAggregate.addTotalDurationNanos(totalDurationNanos);
@@ -433,16 +453,14 @@ class AggregateDao implements AggregateRepository {
         if (asyncTimers != null) {
             mergedAggregate.mergeAsyncTimers(readMessages(asyncTimers, Aggregate.Timer.parser()));
         }
-        if (mainThreadStats == null) {
-            mergedAggregate.mergeMainThreadStats(null);
-        } else {
-            mergedAggregate.mergeMainThreadStats(Aggregate.ThreadStats.parseFrom(mainThreadStats));
-        }
-        if (auxThreadStats == null) {
-            mergedAggregate.mergeAuxThreadStats(null);
-        } else {
-            mergedAggregate.mergeAuxThreadStats(Aggregate.ThreadStats.parseFrom(auxThreadStats));
-        }
+        mergedAggregate.addMainThreadTotalCpuNanos(mainThreadTotalCpuNanos);
+        mergedAggregate.addMainThreadTotalBlockedNanos(mainThreadTotalBlockedNanos);
+        mergedAggregate.addMainThreadTotalWaitedNanos(mainThreadTotalWaitedNanos);
+        mergedAggregate.addMainThreadTotalAllocatedBytes(mainThreadTotalAllocatedBytes);
+        mergedAggregate.addAuxThreadTotalCpuNanos(auxThreadTotalCpuNanos);
+        mergedAggregate.addAuxThreadTotalBlockedNanos(auxThreadTotalBlockedNanos);
+        mergedAggregate.addAuxThreadTotalWaitedNanos(auxThreadTotalWaitedNanos);
+        mergedAggregate.addAuxThreadTotalAllocatedBytes(auxThreadTotalAllocatedBytes);
         mergedAggregate
                 .mergeDurationNanosHistogram(Aggregate.Histogram.parseFrom(durationNanosHistogram));
         if (queriesCappedId != null) {
@@ -547,8 +565,14 @@ class AggregateDao implements AggregateRepository {
         private final byte /*@Nullable*/[] mainThreadRootTimers;
         private final byte /*@Nullable*/[] auxThreadRootTimers;
         private final byte /*@Nullable*/[] asyncTimers;
-        private final byte /*@Nullable*/[] mainThreadStats;
-        private final byte /*@Nullable*/[] auxThreadStats;
+        private final @Nullable Double mainThreadTotalCpuNanos;
+        private final @Nullable Double mainThreadTotalBlockedNanos;
+        private final @Nullable Double mainThreadTotalWaitedNanos;
+        private final @Nullable Double mainThreadTotalAllocatedBytes;
+        private final @Nullable Double auxThreadTotalCpuNanos;
+        private final @Nullable Double auxThreadTotalBlockedNanos;
+        private final @Nullable Double auxThreadTotalWaitedNanos;
+        private final @Nullable Double auxThreadTotalAllocatedBytes;
         private final byte[] durationNanosHistogramBytes;
 
         private final int rollupLevel;
@@ -619,15 +643,47 @@ class AggregateDao implements AggregateRepository {
                 }
                 this.asyncTimers = baos.toByteArray();
             }
-            if (aggregate.hasMainThreadStats()) {
-                this.mainThreadStats = aggregate.getMainThreadStats().toByteArray();
+            ThreadStats mainThreadStats = aggregate.getMainThreadStats();
+            if (mainThreadStats.hasTotalCpuNanos()) {
+                mainThreadTotalCpuNanos = mainThreadStats.getTotalCpuNanos().getValue();
             } else {
-                this.mainThreadStats = null;
+                mainThreadTotalCpuNanos = null;
             }
-            if (aggregate.hasAuxThreadStats()) {
-                this.auxThreadStats = aggregate.getAuxThreadStats().toByteArray();
+            if (mainThreadStats.hasTotalBlockedNanos()) {
+                mainThreadTotalBlockedNanos = mainThreadStats.getTotalBlockedNanos().getValue();
             } else {
-                this.auxThreadStats = null;
+                mainThreadTotalBlockedNanos = null;
+            }
+            if (mainThreadStats.hasTotalWaitedNanos()) {
+                mainThreadTotalWaitedNanos = mainThreadStats.getTotalWaitedNanos().getValue();
+            } else {
+                mainThreadTotalWaitedNanos = null;
+            }
+            if (mainThreadStats.hasTotalAllocatedBytes()) {
+                mainThreadTotalAllocatedBytes = mainThreadStats.getTotalAllocatedBytes().getValue();
+            } else {
+                mainThreadTotalAllocatedBytes = null;
+            }
+            ThreadStats auxThreadStats = aggregate.getAuxThreadStats();
+            if (auxThreadStats.hasTotalCpuNanos()) {
+                auxThreadTotalCpuNanos = auxThreadStats.getTotalCpuNanos().getValue();
+            } else {
+                auxThreadTotalCpuNanos = null;
+            }
+            if (auxThreadStats.hasTotalBlockedNanos()) {
+                auxThreadTotalBlockedNanos = auxThreadStats.getTotalBlockedNanos().getValue();
+            } else {
+                auxThreadTotalBlockedNanos = null;
+            }
+            if (auxThreadStats.hasTotalWaitedNanos()) {
+                auxThreadTotalWaitedNanos = auxThreadStats.getTotalWaitedNanos().getValue();
+            } else {
+                auxThreadTotalWaitedNanos = null;
+            }
+            if (auxThreadStats.hasTotalAllocatedBytes()) {
+                auxThreadTotalAllocatedBytes = auxThreadStats.getTotalAllocatedBytes().getValue();
+            } else {
+                auxThreadTotalAllocatedBytes = null;
             }
             durationNanosHistogramBytes = aggregate.getDurationNanosHistogram().toByteArray();
         }
@@ -651,12 +707,16 @@ class AggregateDao implements AggregateRepository {
                     + " async_transactions, queries_capped_id, service_calls_capped_id,"
                     + " main_thread_profile_capped_id, aux_thread_profile_capped_id,"
                     + " main_thread_root_timers, aux_thread_root_timers, async_root_timers,"
-                    + " main_thread_stats, aux_thread_stats, duration_nanos_histogram) key"
-                    + " (transaction_type");
+                    + " main_thread_total_cpu_nanos, main_thread_total_blocked_nanos,"
+                    + " main_thread_total_waited_nanos, main_thread_total_allocated_bytes,"
+                    + " aux_thread_total_cpu_nanos, aux_thread_total_blocked_nanos,"
+                    + " aux_thread_total_waited_nanos, aux_thread_total_allocated_bytes,"
+                    + " duration_nanos_histogram) key (transaction_type");
             if (transactionName != null) {
                 sb.append(", transaction_name");
             }
-            sb.append(", capture_time) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?");
+            sb.append(", capture_time) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
+                    + " ?, ?, ?, ?, ?");
             if (transactionName != null) {
                 sb.append(", ?");
             }
@@ -696,15 +756,45 @@ class AggregateDao implements AggregateRepository {
             } else {
                 preparedStatement.setBytes(i++, asyncTimers);
             }
-            if (mainThreadStats == null) {
-                preparedStatement.setNull(i++, Types.VARBINARY);
+            if (mainThreadTotalCpuNanos == null) {
+                preparedStatement.setNull(i++, Types.DOUBLE);
             } else {
-                preparedStatement.setBytes(i++, mainThreadStats);
+                preparedStatement.setDouble(i++, mainThreadTotalCpuNanos);
             }
-            if (auxThreadStats == null) {
-                preparedStatement.setNull(i++, Types.VARBINARY);
+            if (mainThreadTotalBlockedNanos == null) {
+                preparedStatement.setNull(i++, Types.DOUBLE);
             } else {
-                preparedStatement.setBytes(i++, auxThreadStats);
+                preparedStatement.setDouble(i++, mainThreadTotalBlockedNanos);
+            }
+            if (mainThreadTotalWaitedNanos == null) {
+                preparedStatement.setNull(i++, Types.DOUBLE);
+            } else {
+                preparedStatement.setDouble(i++, mainThreadTotalWaitedNanos);
+            }
+            if (mainThreadTotalAllocatedBytes == null) {
+                preparedStatement.setNull(i++, Types.DOUBLE);
+            } else {
+                preparedStatement.setDouble(i++, mainThreadTotalAllocatedBytes);
+            }
+            if (auxThreadTotalCpuNanos == null) {
+                preparedStatement.setNull(i++, Types.DOUBLE);
+            } else {
+                preparedStatement.setDouble(i++, auxThreadTotalCpuNanos);
+            }
+            if (auxThreadTotalBlockedNanos == null) {
+                preparedStatement.setNull(i++, Types.DOUBLE);
+            } else {
+                preparedStatement.setDouble(i++, auxThreadTotalBlockedNanos);
+            }
+            if (auxThreadTotalWaitedNanos == null) {
+                preparedStatement.setNull(i++, Types.DOUBLE);
+            } else {
+                preparedStatement.setDouble(i++, auxThreadTotalWaitedNanos);
+            }
+            if (auxThreadTotalAllocatedBytes == null) {
+                preparedStatement.setNull(i++, Types.DOUBLE);
+            } else {
+                preparedStatement.setDouble(i++, auxThreadTotalAllocatedBytes);
             }
             preparedStatement.setBytes(i++, durationNanosHistogramBytes);
         }
@@ -956,7 +1046,11 @@ class AggregateDao implements AggregateRepository {
             String transactionNameCriteria = getTransactionNameCriteria(query);
             return "select capture_time, total_duration_nanos, transaction_count,"
                     + " async_transactions, main_thread_root_timers, aux_thread_root_timers,"
-                    + " async_root_timers, main_thread_stats, aux_thread_stats from " + tableName
+                    + " async_root_timers, main_thread_total_cpu_nanos,"
+                    + " main_thread_total_blocked_nanos, main_thread_total_waited_nanos,"
+                    + " main_thread_total_allocated_bytes, aux_thread_total_cpu_nanos,"
+                    + " aux_thread_total_blocked_nanos, aux_thread_total_waited_nanos,"
+                    + " aux_thread_total_allocated_bytes from " + tableName
                     + " where transaction_type = ?" + transactionNameCriteria
                     + " and capture_time >= ? and capture_time <= ? order by capture_time";
         }
@@ -988,15 +1082,45 @@ class AggregateDao implements AggregateRepository {
             if (asyncTimers != null) {
                 builder.asyncTimers(readMessages(asyncTimers, Aggregate.Timer.parser()));
             }
-            byte[] mainThreadStats = resultSet.getBytes(i++);
+            ThreadStats mainThreadStats = buildThreadStats(RowMappers.getDouble(resultSet, i++),
+                    RowMappers.getDouble(resultSet, i++), RowMappers.getDouble(resultSet, i++),
+                    RowMappers.getDouble(resultSet, i++));
             if (mainThreadStats != null) {
-                builder.mainThreadStats(Aggregate.ThreadStats.parseFrom(mainThreadStats));
+                builder.mainThreadStats(mainThreadStats);
             }
-            byte[] auxThreadStats = resultSet.getBytes(i++);
+            ThreadStats auxThreadStats = buildThreadStats(RowMappers.getDouble(resultSet, i++),
+                    RowMappers.getDouble(resultSet, i++), RowMappers.getDouble(resultSet, i++),
+                    RowMappers.getDouble(resultSet, i++));
             if (auxThreadStats != null) {
-                builder.auxThreadStats(Aggregate.ThreadStats.parseFrom(auxThreadStats));
+                builder.auxThreadStats(auxThreadStats);
             }
             return builder.build();
+        }
+
+        private static @Nullable Aggregate.ThreadStats buildThreadStats(
+                @Nullable Double totalCpuNanos, @Nullable Double totalBlockedNanos,
+                @Nullable Double totalWaitedNanos, @Nullable Double totalAllocatedBytes) {
+            if (totalCpuNanos == null && totalBlockedNanos == null && totalWaitedNanos == null
+                    && totalAllocatedBytes == null) {
+                return null;
+            }
+            Aggregate.ThreadStats.Builder threadStats = Aggregate.ThreadStats.newBuilder();
+            if (totalCpuNanos != null) {
+                threadStats.setTotalCpuNanos(OptionalDouble.newBuilder().setValue(totalCpuNanos));
+            }
+            if (totalBlockedNanos != null) {
+                threadStats.setTotalBlockedNanos(
+                        OptionalDouble.newBuilder().setValue(totalBlockedNanos));
+            }
+            if (totalWaitedNanos != null) {
+                threadStats.setTotalWaitedNanos(
+                        OptionalDouble.newBuilder().setValue(totalWaitedNanos));
+            }
+            if (totalAllocatedBytes != null) {
+                threadStats.setTotalAllocatedBytes(
+                        OptionalDouble.newBuilder().setValue(totalAllocatedBytes));
+            }
+            return threadStats.build();
         }
     }
 
@@ -1091,9 +1215,13 @@ class AggregateDao implements AggregateRepository {
                     + " async_transactions, queries_capped_id, service_calls_capped_id,"
                     + " main_thread_profile_capped_id, aux_thread_profile_capped_id,"
                     + " main_thread_root_timers, aux_thread_root_timers, async_root_timers,"
-                    + " main_thread_stats, aux_thread_stats, duration_nanos_histogram"
-                    + " from aggregate_tt_rollup_" + castUntainted(fromRollupLevel)
-                    + " where capture_time > ? and capture_time <= ? order by transaction_type";
+                    + " main_thread_total_cpu_nanos, main_thread_total_blocked_nanos,"
+                    + " main_thread_total_waited_nanos, main_thread_total_allocated_bytes,"
+                    + " aux_thread_total_cpu_nanos, aux_thread_total_blocked_nanos,"
+                    + " aux_thread_total_waited_nanos, aux_thread_total_allocated_bytes,"
+                    + " duration_nanos_histogram from aggregate_tt_rollup_"
+                    + castUntainted(fromRollupLevel) + " where capture_time > ?"
+                    + " and capture_time <= ? order by transaction_type";
         }
 
         @Override
@@ -1157,10 +1285,14 @@ class AggregateDao implements AggregateRepository {
                     + " transaction_count, error_count, async_transactions, queries_capped_id,"
                     + " service_calls_capped_id, main_thread_profile_capped_id,"
                     + " aux_thread_profile_capped_id, main_thread_root_timers,"
-                    + " aux_thread_root_timers, async_root_timers, main_thread_stats,"
-                    + " aux_thread_stats, duration_nanos_histogram from aggregate_tn_rollup_"
-                    + castUntainted(fromRollupLevel) + " where capture_time > ?"
-                    + " and capture_time <= ? order by transaction_type, transaction_name";
+                    + " aux_thread_root_timers, async_root_timers, main_thread_total_cpu_nanos,"
+                    + " main_thread_total_blocked_nanos, main_thread_total_waited_nanos,"
+                    + " main_thread_total_allocated_bytes, aux_thread_total_cpu_nanos,"
+                    + " aux_thread_total_blocked_nanos, aux_thread_total_waited_nanos,"
+                    + " aux_thread_total_allocated_bytes, duration_nanos_histogram"
+                    + " from aggregate_tn_rollup_" + castUntainted(fromRollupLevel)
+                    + " where capture_time > ? and capture_time <= ? order by transaction_type,"
+                    + " transaction_name";
         }
 
         @Override

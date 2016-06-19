@@ -53,6 +53,40 @@ public class MutableThreadStats {
         return totalAllocatedBytes;
     }
 
+    public void addTotalCpuNanos(@Nullable Double totalCpuNanos) {
+        if (totalCpuNanos != null) {
+            this.totalCpuNanos = NotAvailableAware.add(this.totalCpuNanos, totalCpuNanos);
+        } else {
+            this.totalCpuNanos = NotAvailableAware.NA;
+        }
+    }
+
+    public void addTotalBlockedNanos(@Nullable Double totalBlockedNanos) {
+        if (totalBlockedNanos != null) {
+            this.totalBlockedNanos =
+                    NotAvailableAware.add(this.totalBlockedNanos, totalBlockedNanos);
+        } else {
+            this.totalBlockedNanos = NotAvailableAware.NA;
+        }
+    }
+
+    public void addTotalWaitedNanos(@Nullable Double totalWaitedNanos) {
+        if (totalWaitedNanos != null) {
+            this.totalWaitedNanos = NotAvailableAware.add(this.totalWaitedNanos, totalWaitedNanos);
+        } else {
+            this.totalWaitedNanos = NotAvailableAware.NA;
+        }
+    }
+
+    public void addTotalAllocatedBytes(@Nullable Double totalAllocatedBytes) {
+        if (totalAllocatedBytes != null) {
+            this.totalAllocatedBytes =
+                    NotAvailableAware.add(this.totalAllocatedBytes, totalAllocatedBytes);
+        } else {
+            this.totalAllocatedBytes = NotAvailableAware.NA;
+        }
+    }
+
     public void addThreadStats(@Nullable Aggregate.ThreadStats threadStats) {
         if (threadStats == null) {
             totalCpuNanos = NotAvailableAware.NA;
