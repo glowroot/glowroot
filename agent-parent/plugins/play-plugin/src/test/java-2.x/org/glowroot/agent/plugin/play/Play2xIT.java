@@ -16,7 +16,6 @@
 package org.glowroot.agent.plugin.play;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
@@ -25,6 +24,7 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.ByteStreams;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -55,7 +55,7 @@ public class Play2xIT {
         // -Dlogger.resource is needed to configure play logging (at least on 2.0.8)
         container = JavaagentContainer
                 .createWithExtraJvmArgs(ImmutableList.of("-Dlogger.resource=logback-test.xml"));
-        // need one warmup to avoid capturing rendering of views.html.defaultpages.todo during
+        // need warmup to avoid capturing rendering of views.html.defaultpages.todo during
         // play.mvc.Results static initializer (at least on play 2.3.10)
         container.execute(GetIndex.class);
     }
@@ -82,12 +82,9 @@ public class Play2xIT {
             assertThat(trace.getHeader().getTransactionName()).isEqualTo("/");
         }
         List<Trace.Entry> entries = trace.getEntryList();
-        for (int i = 0; i < entries.size() - 2; i++) {
-            assertThat(entries.get(i).getMessage()).isEqualTo("auxiliary thread");
-        }
-        assertThat(entries.get(entries.size() - 2).getMessage())
-                .isEqualTo("trace entry marker / CreateTraceEntry");
-        assertThat(entries.get(entries.size() - 1).getMessage()).isEqualTo("play render: index");
+        assertThat(entries).hasSize(2);
+        assertThat(entries.get(0).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entries.get(1).getMessage()).isEqualTo("play render: index");
         assertThat(trace.getHeader().hasError()).isFalse();
     }
 
@@ -100,12 +97,9 @@ public class Play2xIT {
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("HomeController#index");
         List<Trace.Entry> entries = trace.getEntryList();
-        for (int i = 0; i < entries.size() - 2; i++) {
-            assertThat(entries.get(i).getMessage()).isEqualTo("auxiliary thread");
-        }
-        assertThat(entries.get(entries.size() - 2).getMessage())
-                .isEqualTo("trace entry marker / CreateTraceEntry");
-        assertThat(entries.get(entries.size() - 1).getMessage()).isEqualTo("play render: index");
+        assertThat(entries).hasSize(2);
+        assertThat(entries.get(0).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entries.get(1).getMessage()).isEqualTo("play render: index");
         assertThat(trace.getHeader().hasError()).isFalse();
     }
 
@@ -121,11 +115,8 @@ public class Play2xIT {
             assertThat(trace.getHeader().getTransactionName()).isEqualTo("/message");
         }
         List<Trace.Entry> entries = trace.getEntryList();
-        for (int i = 0; i < entries.size() - 1; i++) {
-            assertThat(entries.get(i).getMessage()).isEqualTo("auxiliary thread");
-        }
-        assertThat(entries.get(entries.size() - 1).getMessage())
-                .isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entries).hasSize(1);
+        assertThat(entries.get(0).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
         assertThat(trace.getHeader().hasError()).isFalse();
     }
 
@@ -141,11 +132,8 @@ public class Play2xIT {
             assertThat(trace.getHeader().getTransactionName()).isEqualTo("/stream");
         }
         List<Trace.Entry> entries = trace.getEntryList();
-        for (int i = 0; i < entries.size() - 1; i++) {
-            assertThat(entries.get(i).getMessage()).isEqualTo("auxiliary thread");
-        }
-        assertThat(entries.get(entries.size() - 1).getMessage())
-                .isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entries).hasSize(1);
+        assertThat(entries.get(0).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
         assertThat(trace.getHeader().hasError()).isFalse();
     }
 
@@ -248,6 +236,10 @@ public class Play2xIT {
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != 200) {
                 throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
+            int len = ByteStreams.toByteArray(response.getEntity().getContent()).length;
+            if (len != 10) {
+                throw new IllegalStateException("Unexpected content length: " + len);
             }
         }
     }

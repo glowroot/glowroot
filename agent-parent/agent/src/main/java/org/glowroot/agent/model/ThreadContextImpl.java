@@ -59,6 +59,9 @@ import static org.glowroot.agent.util.Checkers.castInitialized;
 
 public class ThreadContextImpl implements ThreadContextPlus {
 
+    static final MessageSupplier DETACHED_MESSAGE_SUPPLIER = MessageSupplier
+            .from("this auxiliary thread was still running when the transaction ended");
+
     private static final Logger logger = LoggerFactory.getLogger(ThreadContextImpl.class);
 
     private final Transaction transaction;
@@ -798,6 +801,12 @@ public class ThreadContextImpl implements ThreadContextPlus {
             }
             entry = entry.getNextTraceEntry();
             entryIsRoot = false;
+        }
+        if (detachedTime != null && !traceEntryComponent.isEmpty()) {
+            TraceEntryImpl rootEntry = getRootEntry();
+            parentChildMap.put(rootEntry,
+                    new TraceEntryImpl(this, rootEntry, DETACHED_MESSAGE_SUPPLIER,
+                            null, 0, transaction.getEndTick(), null, null));
         }
     }
 

@@ -77,12 +77,14 @@ public class ExecutorAspect {
     // that extend java.lang.Runnable and/or java.util.concurrent.Callable
     public interface SuppressedRunnableEtcMixin {}
 
-    // no nesting group in order to capture sometimes wrapped runnable passed to delegate executor
-    @Pointcut(className = "java.util.concurrent.Executor|java.util.concurrent.ExecutorService"
-            + "|java.util.concurrent.ForkJoinPool|org.springframework.core.task.AsyncTaskExecutor"
-            + "|org.springframework.core.task.AsyncListenableTaskExecutor"
-            + "|akka.jsr166y.ForkJoinPool",
-            methodName = "execute|submit|invoke|submitListenable", methodParameterTypes = {".."})
+    @Pointcut(
+            className = "java.util.concurrent.Executor|java.util.concurrent.ExecutorService"
+                    + "|java.util.concurrent.ForkJoinPool"
+                    + "|org.springframework.core.task.AsyncTaskExecutor"
+                    + "|org.springframework.core.task.AsyncListenableTaskExecutor"
+                    + "|akka.jsr166y.ForkJoinPool",
+            methodName = "execute|submit|invoke|submitListenable",
+            methodParameterTypes = {".."}, nestingGroup = "executor-execute")
     public static class ExecuteAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object runnableEtc) {
@@ -98,10 +100,27 @@ public class ExecutorAspect {
         }
     }
 
-    // no nesting group in order to capture sometimes wrapped runnable passed to delegate executor
-    @Pointcut(className = "java.util.concurrent.ExecutorService|java.util.concurrent.ForkJoinPool"
-            + "|akka.jsr166y.ForkJoinPool",
-            methodName = "invokeAll|invokeAny", methodParameterTypes = {"java.util.Collection"})
+    @Pointcut(className = "com.google.common.util.concurrent.ListenableFuture",
+            methodName = "addListener",
+            methodParameterTypes = {"java.lang.Runnable", "java.util.concurrent.Executor"},
+            nestingGroup = "executor-add-listener")
+    public static class AddListenerAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindParameter Object runnableEtc) {
+            return ExecuteAdvice.isEnabled(runnableEtc);
+        }
+        @OnBefore
+        public static void onBefore(ThreadContext context, @BindParameter Object runnableEtc) {
+            ExecuteAdvice.onBefore(context, runnableEtc);
+        }
+    }
+
+    @Pointcut(
+            className = "java.util.concurrent.ExecutorService|java.util.concurrent.ForkJoinPool"
+                    + "|akka.jsr166y.ForkJoinPool",
+            methodName = "invokeAll|invokeAny",
+            methodParameterTypes = {"java.util.Collection", ".."},
+            nestingGroup = "executor-execute")
     public static class InvokeAnyAllAdvice {
         @OnBefore
         public static void onBefore(ThreadContext context, @BindParameter Collection<?> callables) {
@@ -120,9 +139,8 @@ public class ExecutorAspect {
         }
     }
 
-    // no nesting group in order to capture sometimes wrapped runnable passed to delegate executor
     @Pointcut(className = "java.util.concurrent.ScheduledExecutorService", methodName = "schedule",
-            methodParameterTypes = {".."})
+            methodParameterTypes = {".."}, nestingGroup = "executor-execute")
     public static class ScheduleAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object runnableEtc) {
@@ -138,10 +156,10 @@ public class ExecutorAspect {
         }
     }
 
-    // no nesting group in order to capture sometimes wrapped runnable passed to delegate executor
     @Pointcut(className = "akka.actor.Scheduler", methodName = "scheduleOnce",
             methodParameterTypes = {"scala.concurrent.duration.FiniteDuration",
-                    "java.lang.Runnable", ".."})
+                    "java.lang.Runnable", ".."},
+            nestingGroup = "executor-execute")
     public static class ScheduleOnceAdvice {
         @IsEnabled
         public static boolean isEnabled(@SuppressWarnings("unused") @BindParameter Object duration,
@@ -160,9 +178,8 @@ public class ExecutorAspect {
         }
     }
 
-    // no nesting group in order to capture sometimes wrapped runnable passed to delegate executor
     @Pointcut(className = "java.util.Timer", methodName = "schedule",
-            methodParameterTypes = {"java.util.TimerTask", ".."})
+            methodParameterTypes = {"java.util.TimerTask", ".."}, nestingGroup = "executor-execute")
     public static class TimerScheduleAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object runnableEtc) {
@@ -182,7 +199,7 @@ public class ExecutorAspect {
     // this method uses submit() and returns Future, but none of the callers use/wait on the Future
     @Pointcut(className = "net.sf.ehcache.store.disk.DiskStorageFactory", methodName = "schedule",
             methodParameterTypes = {"java.util.concurrent.Callable"},
-            nestingGroup = "executor-submit")
+            nestingGroup = "executor-execute")
     public static class EhcacheDiskStorageScheduleAdvice {}
 
     @Pointcut(className = "javax.servlet.AsyncContext", methodName = "start",
@@ -221,7 +238,10 @@ public class ExecutorAspect {
         }
     }
 
-    @Pointcut(className = "java.lang.Runnable", methodName = "run", methodParameterTypes = {})
+    // the nesting group only starts applying once auxiliary thread context is started (it does not
+    // apply to OptionalThreadContext that miss)
+    @Pointcut(className = "java.lang.Runnable", methodName = "run", methodParameterTypes = {},
+            nestingGroup = "executor-run")
     public static class RunnableAdvice {
         @OnBefore
         public static @Nullable TraceEntry onBefore(@BindReceiver Runnable runnable) {
@@ -252,8 +272,10 @@ public class ExecutorAspect {
         }
     }
 
+    // the nesting group only starts applying once auxiliary thread context is started (it does not
+    // apply to OptionalThreadContext that miss)
     @Pointcut(className = "java.util.concurrent.Callable", methodName = "call",
-            methodParameterTypes = {})
+            methodParameterTypes = {}, nestingGroup = "executor-run")
     public static class CallableAdvice {
         @OnBefore
         public static @Nullable TraceEntry onBefore(@BindReceiver Callable<?> callable) {
@@ -277,15 +299,17 @@ public class ExecutorAspect {
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler TraceEntry traceEntry) {
+                @BindTraveler @Nullable TraceEntry traceEntry) {
             if (traceEntry != null) {
                 traceEntry.endWithError(t);
             }
         }
     }
 
+    // the nesting group only starts applying once auxiliary thread context is started (it does not
+    // apply to OptionalThreadContext that miss)
     @Pointcut(className = "java.util.concurrent.ForkJoinTask|akka.jsr166y.ForkJoinTask",
-            methodName = "exec", methodParameterTypes = {})
+            methodName = "exec", methodParameterTypes = {}, nestingGroup = "executor-run")
     public static class ExecAdvice {
         @OnBefore
         public static @Nullable TraceEntry onBefore(@BindReceiver Object task) {

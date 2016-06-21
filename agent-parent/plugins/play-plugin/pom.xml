@@ -122,6 +122,18 @@
           <id>typesafe</id>
           <url>https://repo.typesafe.com/typesafe/releases</url>
         </repository>
+        <repository>
+          <!-- this repo is referenced by com.codahale.jerkson_2.9.1 (which is transitive dependency
+            of play:play_2.9.1) inside typesafe repo, but is no longer available -->
+          <id>repo.codahale.com</id>
+          <url>http://repo.codahale.com</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </repository>
       </repositories>
       <build>
         <plugins>

@@ -18,6 +18,7 @@ package org.glowroot.agent.model;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -400,15 +401,7 @@ public class Transaction {
         }
         List<Trace.Entry> entries = Lists.newArrayList();
         addProtobufChildEntries(mainThreadContext.getRootEntry(), parentChildMap, startTick,
-                captureTick, 0, entries);
-        // FIXME
-        // if (detachedTime != null) {
-        // entries.add(Trace.Entry.newBuilder()
-        // .setStartOffsetNanos(detachedTime)
-        // .setMessage(
-        // "this auxiliary thread was still running when the transaction ended")
-        // .build());
-        // }
+                captureTick, 0, entries, async);
         return entries;
     }
 
@@ -749,21 +742,31 @@ public class Transaction {
 
     private static void addProtobufChildEntries(TraceEntryImpl entry,
             Multimap<TraceEntryImpl, TraceEntryImpl> parentChildMap, long transactionStartTick,
-            long captureTick, int depth, List<Trace.Entry> entries) {
+            long captureTick, int depth, List<Trace.Entry> entries, boolean removeSingleAuxEntry) {
         if (!parentChildMap.containsKey(entry)) {
             return;
         }
         Collection<TraceEntryImpl> childEntries = parentChildMap.get(entry);
-        for (TraceEntryImpl childEntry : childEntries) {
+        Iterator<TraceEntryImpl> i = childEntries.iterator();
+        while (i.hasNext()) {
+            TraceEntryImpl childEntry = i.next();
             if (childEntry.getStartTick() > captureTick) {
-                continue;
+                i.remove();
+            } else if (isEmptyAuxThreadRoot(childEntry, parentChildMap)) {
+                i.remove();
             }
-            if (isEmptyAuxThreadRoot(childEntry, parentChildMap)) {
-                continue;
+        }
+        for (TraceEntryImpl childEntry : childEntries) {
+            boolean singleAuxEntry = childEntries.size() == 1 && childEntry.isAuxThreadRoot();
+            if (singleAuxEntry
+                    && (removeSingleAuxEntry || isRemovableAuxEntry(childEntry, parentChildMap))) {
+                addProtobufChildEntries(childEntry, parentChildMap, transactionStartTick,
+                        captureTick, depth, entries, removeSingleAuxEntry);
+            } else {
+                entries.add(childEntry.toProto(depth, transactionStartTick, captureTick));
+                addProtobufChildEntries(childEntry, parentChildMap, transactionStartTick,
+                        captureTick, depth + 1, entries, false);
             }
-            entries.add(childEntry.toProto(depth, transactionStartTick, captureTick));
-            addProtobufChildEntries(childEntry, parentChildMap, transactionStartTick,
-                    captureTick, depth + 1, entries);
         }
     }
 
@@ -772,9 +775,21 @@ public class Transaction {
         if (!entry.isAuxThreadRoot()) {
             return false;
         }
-        Collection<TraceEntryImpl> childEntries = parentChildMap.get(entry);
-        for (TraceEntryImpl childEntry : childEntries) {
+        for (TraceEntryImpl childEntry : parentChildMap.get(entry)) {
             if (!isEmptyAuxThreadRoot(childEntry, parentChildMap)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isRemovableAuxEntry(TraceEntryImpl entry,
+            Multimap<TraceEntryImpl, TraceEntryImpl> parentChildMap) {
+        if (!entry.isAuxThreadRoot()) {
+            return false;
+        }
+        for (TraceEntryImpl childEntry : parentChildMap.get(entry)) {
+            if (!childEntry.isAuxThreadRoot()) {
                 return false;
             }
         }

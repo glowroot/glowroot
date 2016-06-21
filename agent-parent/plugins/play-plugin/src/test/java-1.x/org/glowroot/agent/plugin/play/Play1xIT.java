@@ -67,13 +67,9 @@ public class Play1xIT {
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("Application#index");
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(3);
-        for (int i = 0; i < entries.size() - 2; i++) {
-            assertThat(entries.get(i).getMessage()).isEqualTo("auxiliary thread");
-        }
-        assertThat(entries.get(entries.size() - 2).getMessage()).isEqualTo("play action invoker");
-        assertThat(entries.get(entries.size() - 1).getMessage())
-                .isEqualTo("play render: Application/index.html");
+        assertThat(entries).hasSize(2);
+        assertThat(entries.get(0).getMessage()).isEqualTo("play action invoker");
+        assertThat(entries.get(1).getMessage()).isEqualTo("play render: Application/index.html");
     }
 
     @Test
@@ -84,13 +80,9 @@ public class Play1xIT {
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("Application#index");
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(3);
-        for (int i = 0; i < entries.size() - 2; i++) {
-            assertThat(entries.get(i).getMessage()).isEqualTo("auxiliary thread");
-        }
-        assertThat(entries.get(entries.size() - 2).getMessage()).isEqualTo("play action invoker");
-        assertThat(entries.get(entries.size() - 1).getMessage())
-                .isEqualTo("play render: Application/index.html");
+        assertThat(entries).hasSize(2);
+        assertThat(entries.get(0).getMessage()).isEqualTo("play action invoker");
+        assertThat(entries.get(1).getMessage()).isEqualTo("play render: Application/index.html");
     }
 
     @Test
@@ -101,12 +93,9 @@ public class Play1xIT {
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("Application#calculate");
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(3);
-        for (int i = 0; i < entries.size() - 2; i++) {
-            assertThat(entries.get(i).getMessage()).isEqualTo("auxiliary thread");
-        }
-        assertThat(entries.get(entries.size() - 2).getMessage()).isEqualTo("play action invoker");
-        assertThat(entries.get(entries.size() - 1).getMessage())
+        assertThat(entries).hasSize(2);
+        assertThat(entries.get(0).getMessage()).isEqualTo("play action invoker");
+        assertThat(entries.get(1).getMessage())
                 .isEqualTo("play render: Application/calculate.html");
     }
 

@@ -257,6 +257,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.model.ThreadContextPlus");
         types.add("org.glowroot.agent.model.TimerImpl");
         types.add("org.glowroot.agent.model.TimerNameImpl");
+        types.add("org.glowroot.agent.plugin.api.MessageSupplier");
+        types.add("org.glowroot.agent.plugin.api.MessageSupplier$1");
         types.add("org.glowroot.agent.plugin.api.OptionalThreadContext");
         types.add("org.glowroot.agent.plugin.api.ThreadContext");
         types.add("org.glowroot.agent.plugin.api.Timer");

@@ -152,6 +152,8 @@ public class OkHttpClientPluginIT {
                 }
             });
             latch.await();
+            // need to wait just a bit longer to ensure auxiliary thread capture completes
+            Thread.sleep(100);
         }
     }
 
@@ -179,6 +181,8 @@ public class OkHttpClientPluginIT {
                 }
             });
             latch.await();
+            // need to wait just a bit longer to ensure auxiliary thread capture completes
+            Thread.sleep(100);
         }
     }
 

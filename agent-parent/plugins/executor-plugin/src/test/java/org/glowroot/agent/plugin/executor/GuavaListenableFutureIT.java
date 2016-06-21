@@ -24,6 +24,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -43,14 +44,18 @@ public class GuavaListenableFutureIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        // tests only work with javaagent container because they need to weave bootstrap classes
-        // that implement Executor and ExecutorService
-        container = Containers.createJavaagent();
+        // unshaded doesn't work because glowroot loads guava classes before the Weaver is
+        // registered, so the guava classes don't have a chance to get woven
+        Assume.assumeTrue(isShaded());
+        container = Containers.create();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.close();
+        // need null check in case assumption is false in setUp()
+        if (container != null) {
+            container.close();
+        }
     }
 
     @After
@@ -64,13 +69,11 @@ public class GuavaListenableFutureIT {
         // when
         Trace trace = container.execute(AddListenerBeforeComplete.class);
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(3);
+        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
         assertThat(trace.getEntry(0).getDepth()).isEqualTo(0);
         assertThat(trace.getEntry(0).getMessage()).isEqualTo("auxiliary thread");
         assertThat(trace.getEntry(1).getDepth()).isEqualTo(1);
-        assertThat(trace.getEntry(1).getMessage()).isEqualTo("auxiliary thread");
-        assertThat(trace.getEntry(2).getDepth()).isEqualTo(2);
-        assertThat(trace.getEntry(2).getMessage())
+        assertThat(trace.getEntry(1).getMessage())
                 .isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
@@ -81,12 +84,8 @@ public class GuavaListenableFutureIT {
         Trace trace = container.execute(AddListenerAfterComplete.class);
         // then
         List<Trace.Entry> entries = trace.getEntryList();
-        // on jdk 7, sometimes this ends up being 2 nested auxiliary threads
-        for (int i = 0; i < entries.size() - 1; i++) {
-            assertThat(entries.get(i).getMessage()).isEqualTo("auxiliary thread");
-        }
-        assertThat(entries.get(entries.size() - 1).getMessage())
-                .isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entries.get(0).getMessage()).isEqualTo("auxiliary thread");
+        assertThat(entries.get(1).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     @Test
@@ -110,12 +109,8 @@ public class GuavaListenableFutureIT {
         Trace trace = container.execute(AddSameExecutorListenerAfterComplete.class);
         // then
         List<Trace.Entry> entries = trace.getEntryList();
-        // on jdk 7, sometimes this ends up being 2 nested auxiliary threads
-        for (int i = 0; i < entries.size() - 1; i++) {
-            assertThat(entries.get(i).getMessage()).isEqualTo("auxiliary thread");
-        }
-        assertThat(entries.get(entries.size() - 1).getMessage())
-                .isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(entries.get(0).getMessage()).isEqualTo("auxiliary thread");
+        assertThat(entries.get(1).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
     }
 
     public static class AddListenerBeforeComplete implements AppUnderTest, TransactionMarker {
@@ -202,7 +197,7 @@ public class GuavaListenableFutureIT {
                 public void run() {
                     new CreateTraceEntry().traceEntryMarker();
                 }
-            }, MoreExecutors.directExecutor());
+            }, executor);
             Thread.sleep(200);
             executor.shutdown();
             executor.awaitTermination(10, SECONDS);
@@ -233,7 +228,7 @@ public class GuavaListenableFutureIT {
                 public void run() {
                     new CreateTraceEntry().traceEntryMarker();
                 }
-            }, MoreExecutors.directExecutor());
+            }, executor);
             Thread.sleep(100);
             executor.shutdown();
             executor.awaitTermination(10, SECONDS);
@@ -243,5 +238,14 @@ public class GuavaListenableFutureIT {
     private static class CreateTraceEntry implements TraceEntryMarker {
         @Override
         public void traceEntryMarker() {}
+    }
+
+    static boolean isShaded() {
+        try {
+            Class.forName("org.glowroot.agent.shaded.slf4j.Logger");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 }

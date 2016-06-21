@@ -62,9 +62,12 @@ public class ApacheHttpAsyncClientPluginIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(trace.getHeader().getAsyncTimer(0).getActive()).isFalse();
         assertThat(entries).hasSize(3);
+        assertThat(entries.get(0).getDepth()).isEqualTo(0);
         assertThat(entries.get(0).getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello1");
+        assertThat(entries.get(1).getDepth()).isEqualTo(1);
         assertThat(entries.get(1).getMessage()).matches("auxiliary thread");
+        assertThat(entries.get(2).getDepth()).isEqualTo(2);
         assertThat(entries.get(2).getMessage()).matches("trace entry marker / CreateTraceEntry");
     }
 
@@ -74,9 +77,12 @@ public class ApacheHttpAsyncClientPluginIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(trace.getHeader().getAsyncTimer(0).getActive()).isFalse();
         assertThat(entries).hasSize(3);
+        assertThat(entries.get(0).getDepth()).isEqualTo(0);
         assertThat(entries.get(0).getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello2");
+        assertThat(entries.get(1).getDepth()).isEqualTo(1);
         assertThat(entries.get(1).getMessage()).matches("auxiliary thread");
+        assertThat(entries.get(2).getDepth()).isEqualTo(2);
         assertThat(entries.get(2).getMessage()).matches("trace entry marker / CreateTraceEntry");
     }
 
@@ -86,9 +92,12 @@ public class ApacheHttpAsyncClientPluginIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(trace.getHeader().getAsyncTimer(0).getActive()).isFalse();
         assertThat(entries).hasSize(3);
+        assertThat(entries.get(0).getDepth()).isEqualTo(0);
         assertThat(entries.get(0).getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello3");
+        assertThat(entries.get(1).getDepth()).isEqualTo(1);
         assertThat(entries.get(1).getMessage()).matches("auxiliary thread");
+        assertThat(entries.get(2).getDepth()).isEqualTo(2);
         assertThat(entries.get(2).getMessage()).matches("trace entry marker / CreateTraceEntry");
     }
 
@@ -98,9 +107,12 @@ public class ApacheHttpAsyncClientPluginIT {
         List<Trace.Entry> entries = trace.getEntryList();
         assertThat(trace.getHeader().getAsyncTimer(0).getActive()).isFalse();
         assertThat(entries).hasSize(3);
+        assertThat(entries.get(0).getDepth()).isEqualTo(0);
         assertThat(entries.get(0).getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello4");
+        assertThat(entries.get(1).getDepth()).isEqualTo(1);
         assertThat(entries.get(1).getMessage()).matches("auxiliary thread");
+        assertThat(entries.get(2).getDepth()).isEqualTo(2);
         assertThat(entries.get(2).getMessage()).matches("trace entry marker / CreateTraceEntry");
     }
 

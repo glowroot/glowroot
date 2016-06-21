@@ -20,11 +20,13 @@ import javax.annotation.Nullable;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.OptionalThreadContext;
+import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
+import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
@@ -95,7 +97,10 @@ public class SprayAspect {
             } else {
                 message = methodObj.toString() + " " + uri;
             }
-            return context.startTransaction("Web", path, MessageSupplier.from(message), timerName);
+            TraceEntry traceEntry =
+                    context.startTransaction("Web", path, MessageSupplier.from(message), timerName);
+            context.setAsyncTransaction();
+            return traceEntry;
         }
 
         @OnReturn
@@ -126,6 +131,15 @@ public class SprayAspect {
                 }
             }
             return path;
+        }
+    }
+
+    @Pointcut(className = "spray.*", methodName = "renderResponsePartRenderingContext",
+            methodParameterTypes = {".."})
+    public static class RenderResponseAdvice {
+        @OnAfter
+        public static void onAfter(ThreadContext context) {
+            context.completeAsyncTransaction();
         }
     }
 }

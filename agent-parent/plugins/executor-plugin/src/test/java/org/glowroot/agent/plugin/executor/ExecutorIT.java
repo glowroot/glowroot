@@ -15,15 +15,18 @@
  */
 package org.glowroot.agent.plugin.executor;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -195,6 +198,24 @@ public class ExecutorIT {
         checkTrace(trace, true, false);
     }
 
+    @Test
+    public void shouldCaptureNestedExecute() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(DoNestedExecuteRunnable.class);
+        // then
+        checkTrace(trace, false, false);
+    }
+
+    @Test
+    public void shouldCaptureDelegatingExecutor() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(DoDelegatingExecutor.class);
+        // then
+        checkTrace(trace, false, false);
+    }
+
     private static void checkTrace(Trace trace, boolean isAny, boolean withFuture) {
         Trace.Header header = trace.getHeader();
         if (withFuture) {
@@ -224,6 +245,15 @@ public class ExecutorIT {
         assertThat(header.getAuxThreadRootTimer(0).getChildTimer(0).getName())
                 .isEqualTo("mock trace entry marker");
         List<Trace.Entry> entries = trace.getEntryList();
+        if (isAny) {
+            entries = Lists.newArrayList(entries);
+            for (Iterator<Trace.Entry> i = entries.iterator(); i.hasNext();) {
+                if (i.next().getMessage().equals(
+                        "this auxiliary thread was still running when the transaction ended")) {
+                    i.remove();
+                }
+            }
+        }
         if (isAny) {
             assertThat(entries.size()).isBetween(2, 6);
         } else {
@@ -577,7 +607,97 @@ public class ExecutorIT {
                     return null;
                 }
             });
-            executor.invokeAll(callables, 10, SECONDS);
+            executor.invokeAny(callables, 10, SECONDS);
+        }
+    }
+
+    public static class DoNestedExecuteRunnable implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            MoreExecutors.directExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    ExecutorService executor = createExecutorService();
+                    final CountDownLatch latch = new CountDownLatch(3);
+                    executor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            new CreateTraceEntry().traceEntryMarker();
+                            latch.countDown();
+                        }
+                    });
+                    executor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            new CreateTraceEntry().traceEntryMarker();
+                            latch.countDown();
+                        }
+                    });
+                    executor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            new CreateTraceEntry().traceEntryMarker();
+                            latch.countDown();
+                        }
+                    });
+                    try {
+                        latch.await();
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    executor.shutdown();
+                    try {
+                        executor.awaitTermination(10, SECONDS);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+        }
+    }
+
+    public static class DoDelegatingExecutor implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
+            DelegatingExecutor delegatingExecutor = new DelegatingExecutor(executor);
+            final CountDownLatch latch = new CountDownLatch(3);
+            delegatingExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                }
+            });
+            delegatingExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                }
+            });
+            delegatingExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                }
+            });
+            latch.await();
+            executor.shutdown();
+            executor.awaitTermination(10, SECONDS);
         }
     }
 
@@ -606,6 +726,34 @@ public class ExecutorIT {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
             }
+        }
+    }
+
+    private static class DelegatingExecutor implements Executor {
+
+        private final Executor executor;
+
+        private DelegatingExecutor(Executor executor) {
+            this.executor = executor;
+        }
+
+        @Override
+        public void execute(Runnable command) {
+            executor.execute(new DelegatingRunnable(command));
+        }
+    }
+
+    private static class DelegatingRunnable implements Runnable {
+
+        private final Runnable runnable;
+
+        private DelegatingRunnable(Runnable runnable) {
+            this.runnable = runnable;
+        }
+
+        @Override
+        public void run() {
+            runnable.run();
         }
     }
 }

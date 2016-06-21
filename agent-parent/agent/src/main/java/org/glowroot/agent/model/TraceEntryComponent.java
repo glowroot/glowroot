@@ -114,6 +114,10 @@ class TraceEntryComponent {
         return tailEntry;
     }
 
+    boolean isEmpty() {
+        return rootEntry == tailEntry;
+    }
+
     private void popEntrySafe(TraceEntryImpl entry) {
         if (activeEntry != entry) {
             // somehow(?) a pop was missed (or maybe too many pops), this is just damage control
