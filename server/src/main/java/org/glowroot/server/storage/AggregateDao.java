@@ -171,7 +171,6 @@ public class AggregateDao implements AggregateRepository {
             .addColumns(ImmutableColumn.of("service_call_text", "varchar"))
             .addColumns(ImmutableColumn.of("total_duration_nanos", "double"))
             .addColumns(ImmutableColumn.of("execution_count", "bigint"))
-            .addColumns(ImmutableColumn.of("total_rows", "bigint"))
             .addClusterKey("service_call_type")
             .addClusterKey("service_call_text")
             .summary(false)
