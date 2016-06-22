@@ -9,7 +9,7 @@
   <appender name="FILE" class="org.glowroot.agent.shaded.qos.logback.core.rolling.RollingFileAppender">
     <rollingPolicy class="org.glowroot.agent.shaded.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <fileNamePattern>${glowroot.base.dir}/glowroot.%d{yyyy-MM-dd}.log</fileNamePattern>
-      <maxHistory>14</maxHistory>
+      <maxHistory>7</maxHistory>
     </rollingPolicy>
     <!-- prudent is needed when multiple JVMs use the same (e.g. default) glowroot.base.dir -->
     <prudent>true</prudent>
