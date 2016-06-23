@@ -127,7 +127,7 @@ public class TransactionCollection implements Iterable<Transaction> {
         private final @Nullable WeakReference<Transaction> transactionRef; // only null for head
 
         // prev is non-volatile since only accessed under lock
-        private @Nullable TransactionEntry prevEntry;
+        private @Nullable TransactionEntry prevEntry; // only null for head and removed
 
         // next is volatile since accessed by iterator outside of lock
         private volatile @Nullable TransactionEntry nextEntry;
@@ -143,7 +143,10 @@ public class TransactionCollection implements Iterable<Transaction> {
 
         public void remove() {
             synchronized (lock) {
-                expungeStaleEntries();
+                if (prevEntry == null) {
+                    // already removed
+                    return;
+                }
                 TransactionEntry localPrevEntry = checkNotNull(prevEntry);
                 localPrevEntry.nextEntry = nextEntry;
                 if (nextEntry != null) {
@@ -152,6 +155,7 @@ public class TransactionCollection implements Iterable<Transaction> {
                 if (this == tailEntry) {
                     tailEntry = localPrevEntry;
                 }
+                prevEntry = null;
             }
         }
 

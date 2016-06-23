@@ -43,7 +43,7 @@ public class Aggregator {
     private static final Logger logger = LoggerFactory.getLogger(TransactionProcessor.class);
 
     // back pressure on transaction collection
-    private static final int TRANSACTION_PENDING_LIMIT = 500;
+    private static final int TRANSACTION_PENDING_LIMIT = 1000;
     // back pressure on aggregate flushing
     private static final int AGGREGATE_PENDING_LIMIT = 5;
 
@@ -124,6 +124,7 @@ public class Aggregator {
                 backPressureLogger.warn("not aggregating a transaction because of an excessive"
                         + " backlog of {} transactions already waiting to be aggregated",
                         TRANSACTION_PENDING_LIMIT);
+                transaction.removeFromActiveTransactions();
                 return captureTime;
             }
             newTail.captureTime = captureTime;
@@ -210,8 +211,7 @@ public class Aggregator {
                 flushActiveIntervalCollector();
                 activeIntervalCollector = new AggregateIntervalCollector(
                         pendingTransaction.captureTime, aggregateIntervalMillis,
-                        configService.getAdvancedConfig()
-                                .maxAggregateTransactionsPerType(),
+                        configService.getAdvancedConfig().maxAggregateTransactionsPerType(),
                         configService.getAdvancedConfig().maxAggregateQueriesPerType(),
                         configService.getAdvancedConfig().maxAggregateServiceCallsPerType(), clock);
             }
