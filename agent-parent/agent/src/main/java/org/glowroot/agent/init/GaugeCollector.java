@@ -19,9 +19,9 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -76,7 +76,8 @@ class GaugeCollector extends ScheduledRunnable {
 
     // gauges have their own dedicated executor to make sure their collection is not hampered by
     // other glowroot background work
-    private final ScheduledExecutorService dedicatedExecutor;
+    private final ScheduledExecutorService collectionExecutor;
+    private final ExecutorService flushingExecutor;
 
     // since gauges have their own dedicated thread, don't need to worry about thread safety of
     // priorRawCounterValues (except can't initialize here outside of the dedicated thread)
@@ -90,11 +91,16 @@ class GaugeCollector extends ScheduledRunnable {
         this.clock = clock;
         this.ticker = ticker;
         startTimeMillis = clock.currentTimeMillis();
-        ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setDaemon(true)
-                .setNameFormat("Glowroot-Gauge-Collector")
-                .build();
-        dedicatedExecutor = Executors.newSingleThreadScheduledExecutor(threadFactory);
+        collectionExecutor = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .setNameFormat("Glowroot-Gauge-Collection")
+                        .build());
+        flushingExecutor = Executors.newSingleThreadExecutor(
+                new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .setNameFormat("Glowroot-Gauge-Flushing")
+                        .build());
         lazyPlatformMBeanServer.addInitListener(new InitListener() {
             @Override
             public void postInit(MBeanServer mbeanServer) {
@@ -114,7 +120,7 @@ class GaugeCollector extends ScheduledRunnable {
 
     @Override
     protected void runInternal() throws Exception {
-        List<GaugeValue> gaugeValues = Lists.newArrayList();
+        final List<GaugeValue> gaugeValues = Lists.newArrayList();
         if (priorRawCounterValues == null) {
             // wait to now to initialize priorGaugeValues inside of the dedicated thread
             priorRawCounterValues = Maps.newHashMap();
@@ -122,22 +128,31 @@ class GaugeCollector extends ScheduledRunnable {
         for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
             gaugeValues.addAll(collectGaugeValues(gaugeConfig));
         }
-        try {
-            collector.collectGaugeValues(gaugeValues);
-        } catch (Throwable t) {
-            // log and terminate successfully
-            logger.error(t.getMessage(), t);
-        }
+        flushingExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    collector.collectGaugeValues(gaugeValues);
+                } catch (Throwable t) {
+                    // log and terminate successfully
+                    logger.error(t.getMessage(), t);
+                }
+            }
+        });
     }
 
     void scheduleWithFixedDelay(long initialDelay, long period, TimeUnit unit) {
-        scheduleWithFixedDelay(dedicatedExecutor, initialDelay, period, unit);
+        scheduleWithFixedDelay(collectionExecutor, initialDelay, period, unit);
     }
 
     void close() throws InterruptedException {
-        dedicatedExecutor.shutdown();
-        if (!dedicatedExecutor.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate gauge collector");
+        collectionExecutor.shutdown();
+        if (!collectionExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate executor");
+        }
+        flushingExecutor.shutdown();
+        if (!flushingExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate executor");
         }
     }
 
