@@ -118,17 +118,17 @@ class GrpcServerWrapper {
         checkState(downstreamService.closedByAgent);
         server.shutdown();
         if (!server.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate gRPC channel");
+            throw new IllegalStateException("Could not terminate channel");
         }
         executor.shutdown();
         if (!executor.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate gRPC executor");
+            throw new IllegalStateException("Could not terminate executor");
         }
         if (!bossEventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate gRPC boss event loop group");
+            throw new IllegalStateException("Could not terminate event loop group");
         }
         if (!workerEventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate gRPC worker event loop group");
+            throw new IllegalStateException("Could not terminate event loop group");
         }
     }
 

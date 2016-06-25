@@ -93,35 +93,8 @@ class ServerModule {
             String version = Version.getVersion(Bootstrap.class);
 
             ServerConfiguration serverConfig = getServerConfiguration();
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            boolean waitingForCassandraLogged = false;
-            NoHostAvailableException lastException = null;
-            while (stopwatch.elapsed(MINUTES) < 10) {
-                try {
-                    cluster = Cluster.builder()
-                            .addContactPoints(
-                                    serverConfig.cassandraContactPoint().toArray(new String[0]))
-                            // aggressive reconnect policy seems ok since not many clients
-                            .withReconnectionPolicy(new ConstantReconnectionPolicy(1000))
-                            .build();
-                    session = cluster.connect();
-                    break;
-                } catch (NoHostAvailableException e) {
-                    logger.debug(e.getMessage(), e);
-                    lastException = e;
-                    if (!waitingForCassandraLogged) {
-                        logger.info("waiting for cassandra ({}) ...",
-                                Joiner.on(",").join(serverConfig.cassandraContactPoint()));
-                    }
-                    waitingForCassandraLogged = true;
-                    Thread.sleep(1000);
-                }
-            }
-            if (cluster == null) {
-                checkNotNull(lastException);
-                throw lastException;
-            }
-            checkNotNull(session);
+            session = connect(serverConfig);
+            cluster = session.getCluster();
             session.execute("create keyspace if not exists " + serverConfig.cassandraKeyspace()
                     + " with replication = {'class': 'SimpleStrategy', 'replication_factor': 1}");
             session.execute("use " + serverConfig.cassandraKeyspace());
@@ -215,6 +188,34 @@ class ServerModule {
         this.rollupService = rollupService;
         this.server = server;
         this.uiModule = uiModule;
+    }
+
+    private static Session connect(ServerConfiguration serverConfig) throws InterruptedException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        boolean waitingForCassandraLogged = false;
+        NoHostAvailableException lastException = null;
+        while (stopwatch.elapsed(MINUTES) < 10) {
+            try {
+                Cluster cluster = Cluster.builder()
+                        .addContactPoints(
+                                serverConfig.cassandraContactPoint().toArray(new String[0]))
+                        // aggressive reconnect policy seems ok since not many clients
+                        .withReconnectionPolicy(new ConstantReconnectionPolicy(1000))
+                        .build();
+                return cluster.connect();
+            } catch (NoHostAvailableException e) {
+                logger.debug(e.getMessage(), e);
+                lastException = e;
+                if (!waitingForCassandraLogged) {
+                    logger.info("waiting for cassandra ({}) ...",
+                            Joiner.on(",").join(serverConfig.cassandraContactPoint()));
+                }
+                waitingForCassandraLogged = true;
+                Thread.sleep(1000);
+            }
+        }
+        checkNotNull(lastException);
+        throw lastException;
     }
 
     void close() throws InterruptedException {

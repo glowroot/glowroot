@@ -77,11 +77,11 @@ class JavaagentMain {
             public @Nullable Void call() throws Exception {
                 server.shutdown();
                 if (!server.awaitTermination(10, SECONDS)) {
-                    throw new IllegalStateException("Could not terminate gRPC channel");
+                    throw new IllegalStateException("Could not terminate channel");
                 }
                 executor.shutdown();
                 if (!executor.awaitTermination(10, SECONDS)) {
-                    throw new IllegalStateException("Could not terminate gRPC executor");
+                    throw new IllegalStateException("Could not terminate executor");
                 }
                 if (!bossEventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
                     throw new IllegalStateException(

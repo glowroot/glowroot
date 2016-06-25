@@ -121,41 +121,7 @@ public class SimpleRepoModule {
     }
 
     public void registerMBeans(PlatformMBeanServerLifecycle platformMBeanServerLifecycle) {
-        platformMBeanServerLifecycle.addInitListener(new InitListener() {
-            @Override
-            public void doWithPlatformMBeanServer(MBeanServer mbeanServer) throws Exception {
-                checkNotNull(traceCappedDatabase);
-                try {
-                    for (int i = 0; i < rollupCappedDatabases.size(); i++) {
-                        mbeanServer.registerMBean(
-                                new RollupCappedDatabaseStats(rollupCappedDatabases.get(i)),
-                                new ObjectName("org.glowroot:type=RollupCappedDatabase" + i));
-                    }
-                    mbeanServer.registerMBean(new TraceCappedDatabaseStats(traceCappedDatabase),
-                            new ObjectName("org.glowroot:type=TraceCappedDatabase"));
-                    mbeanServer.registerMBean(new H2DatabaseStats(dataSource),
-                            new ObjectName("org.glowroot:type=H2Database"));
-                    unregisterMBeans = true;
-                } catch (InstanceAlreadyExistsException e) {
-                    // this happens during unit tests when a non-shared local container is used
-                    // (so that then there are two local containers in the same jvm)
-                    //
-                    // log exception at debug level
-                    logger.debug(e.getMessage(), e);
-                } catch (NotCompliantMBeanException e) {
-                    if (e.getStackTrace()[0].getClassName()
-                            .equals("org.jboss.mx.metadata.MBeanCapability")) {
-                        // this happens in jboss 4.2.3 because it doesn't know about Java 6 "MXBean"
-                        // naming convention
-                        // it's not really that important if these diagnostic mbeans aren't
-                        // registered
-                        logger.debug(e.getMessage(), e);
-                    } else {
-                        throw e;
-                    }
-                }
-            }
-        });
+        platformMBeanServerLifecycle.addInitListener(new RegisterStorageMBeans());
     }
 
     public AgentDao getAgentDao() {
@@ -213,5 +179,40 @@ public class SimpleRepoModule {
         }
         traceCappedDatabase.close();
         dataSource.close();
+    }
+
+    private class RegisterStorageMBeans implements InitListener {
+        @Override
+        public void doWithPlatformMBeanServer(MBeanServer mbeanServer) throws Exception {
+            checkNotNull(traceCappedDatabase);
+            try {
+                for (int i = 0; i < rollupCappedDatabases.size(); i++) {
+                    mbeanServer.registerMBean(
+                            new RollupCappedDatabaseStats(rollupCappedDatabases.get(i)),
+                            new ObjectName("org.glowroot:type=RollupCappedDatabase" + i));
+                }
+                mbeanServer.registerMBean(new TraceCappedDatabaseStats(traceCappedDatabase),
+                        new ObjectName("org.glowroot:type=TraceCappedDatabase"));
+                mbeanServer.registerMBean(new H2DatabaseStats(dataSource),
+                        new ObjectName("org.glowroot:type=H2Database"));
+                unregisterMBeans = true;
+            } catch (InstanceAlreadyExistsException e) {
+                // this happens during unit tests when a non-shared local container is used
+                // (so that then there are two local containers in the same jvm)
+                //
+                // log exception at debug level
+                logger.debug(e.getMessage(), e);
+            } catch (NotCompliantMBeanException e) {
+                if (e.getStackTrace()[0].getClassName()
+                        .equals("org.jboss.mx.metadata.MBeanCapability")) {
+                    // this happens in jboss 4.2.3 because it doesn't know about Java 6 "MXBean"
+                    // naming convention
+                    // it's not really that important if these diagnostic mbeans aren't registered
+                    logger.debug(e.getMessage(), e);
+                } else {
+                    throw e;
+                }
+            }
+        }
     }
 }

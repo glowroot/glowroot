@@ -259,14 +259,14 @@ public class JavaagentContainer implements Container {
         javaagentService.kill(Void.getDefaultInstance());
         channel.shutdown();
         if (!channel.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate gRPC channel");
+            throw new IllegalStateException("Could not terminate channel");
         }
         executor.shutdown();
         if (!executor.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate gRPC executor");
+            throw new IllegalStateException("Could not terminate executor");
         }
         if (!eventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate gRPC event loop group");
+            throw new IllegalStateException("Could not terminate event loop group");
         }
         if (server != null) {
             server.close();

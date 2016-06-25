@@ -73,10 +73,11 @@ class ServerConnection {
 
     ServerConnection(String collectorHost, int collectorPort, AtomicBoolean inConnectionFailure) {
         eventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
-        channelExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
-                .setDaemon(true)
-                .setNameFormat("Glowroot-GRPC-Executor")
-                .build());
+        channelExecutor = Executors.newSingleThreadExecutor(
+                new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .setNameFormat("Glowroot-GRPC-Executor")
+                        .build());
         channel = NettyChannelBuilder
                 .forAddress(collectorHost, collectorPort)
                 .eventLoopGroup(eventLoopGroup)
@@ -158,14 +159,14 @@ class ServerConnection {
             throw new IllegalStateException("Could not terminate executor");
         }
         if (!channel.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate gRPC channel");
+            throw new IllegalStateException("Could not terminate channel");
         }
         channelExecutor.shutdown();
         if (!channelExecutor.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate gRPC executor");
+            throw new IllegalStateException("Could not terminate executor");
         }
         if (!eventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate gRPC event loop group");
+            throw new IllegalStateException("Could not terminate event loop group");
         }
     }
 

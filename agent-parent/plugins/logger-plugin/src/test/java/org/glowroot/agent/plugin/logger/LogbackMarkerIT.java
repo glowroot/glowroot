@@ -57,6 +57,7 @@ public class LogbackMarkerIT {
 
     @AfterClass
     public static void tearDown() throws Exception {
+        // need null check in case assumption is false in setUp()
         if (container != null) {
             container.close();
         }

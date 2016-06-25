@@ -46,9 +46,7 @@ public class Log4j2xMarkerIT {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        if (container != null) {
-            container.close();
-        }
+        container.close();
     }
 
     @After

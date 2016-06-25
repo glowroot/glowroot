@@ -129,7 +129,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         checkNotNull(backgroundExecutor);
         backgroundExecutor.shutdown();
         if (!backgroundExecutor.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate agent scheduled executor");
+            throw new IllegalStateException("Could not terminate executor");
         }
     }
 
@@ -146,13 +146,14 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
             @Override
             public ScheduledExecutorService get() {
                 final ThreadFactory backingThreadFactory = new ThreadFactoryBuilder()
-                        .setDaemon(true).setNameFormat("Glowroot-Background-%d").build();
+                        .setDaemon(true)
+                        .setNameFormat("Glowroot-Background-%d")
+                        .build();
                 ThreadFactory threadFactory = new ThreadFactory() {
                     @Override
                     public Thread newThread(Runnable r) {
                         Thread thread = backingThreadFactory.newThread(r);
-                        thread.setContextClassLoader(
-                                GlowrootThinAgentInit.class.getClassLoader());
+                        thread.setContextClassLoader(GlowrootThinAgentInit.class.getClassLoader());
                         return thread;
                     }
                 };

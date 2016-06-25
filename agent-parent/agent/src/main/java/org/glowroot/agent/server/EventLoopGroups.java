@@ -17,7 +17,6 @@ package org.glowroot.agent.server;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.channel.EventLoopGroup;
@@ -33,11 +32,11 @@ class EventLoopGroups {
 
     // copy of io.grpc.netty.Utils.DefaultEventLoopGroupResource with some modification
     static EventLoopGroup create(String name) {
-        ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setDaemon(true)
-                .setNameFormat(name)
-                .build();
-        final ExecutorService executor = Executors.newSingleThreadExecutor(threadFactory);
+        final ExecutorService executor = Executors.newSingleThreadExecutor(
+                new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .setNameFormat(name)
+                        .build());
         NioEventLoopGroup nioEventLoopGroup = new NioEventLoopGroup(1, executor);
         nioEventLoopGroup.terminationFuture()
                 .addListener(new GenericFutureListener<Future<Object>>() {

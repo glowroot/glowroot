@@ -45,9 +45,7 @@ public class Log4j2xIT {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        if (container != null) {
-            container.close();
-        }
+        container.close();
     }
 
     @After
