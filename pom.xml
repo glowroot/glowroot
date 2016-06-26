@@ -80,7 +80,7 @@
   </scm>
 
   <properties>
-    <grpc.version>0.14.0</grpc.version>
+    <grpc.version>0.14.1</grpc.version>
     <protobuf.version>3.0.0-beta-3</protobuf.version>
     <netty.version>4.1.1.Final</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->

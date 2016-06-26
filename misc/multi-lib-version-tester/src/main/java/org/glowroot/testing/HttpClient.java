@@ -34,57 +34,79 @@ public class HttpClient {
     private static void apacheHttpClient() throws Exception {
         final String test = "ApacheHttpClientPluginIT";
         updateLibVersion("apache.httpclient.version", "4.0");
+        updateLibVersion("apache.httpcore.version", "4.0.1");
         runTest(test, "apache-httpclient-pre-4.2");
         for (int i = 1; i <= 3; i++) {
             updateLibVersion("apache.httpclient.version", "4.0." + i);
+            updateLibVersion("apache.httpcore.version", "4.0.1");
             runTest(test, "apache-httpclient-pre-4.2");
         }
         updateLibVersion("apache.httpclient.version", "4.1");
+        updateLibVersion("apache.httpcore.version", "4.1");
         runTest(test, "apache-httpclient-pre-4.2");
         for (int i = 1; i <= 3; i++) {
             updateLibVersion("apache.httpclient.version", "4.1." + i);
+            updateLibVersion("apache.httpcore.version", "4.1");
             runTest(test, "apache-httpclient-pre-4.2");
         }
         updateLibVersion("apache.httpclient.version", "4.2");
+        updateLibVersion("apache.httpcore.version", "4.2");
         runTest(test);
         for (int i = 1; i <= 6; i++) {
             updateLibVersion("apache.httpclient.version", "4.2." + i);
+            updateLibVersion("apache.httpcore.version", "4.2");
             runTest(test);
         }
         updateLibVersion("apache.httpclient.version", "4.3");
+        updateLibVersion("apache.httpcore.version", "4.3");
         runTest(test);
         for (int i = 1; i <= 6; i++) {
             updateLibVersion("apache.httpclient.version", "4.3." + i);
+            updateLibVersion("apache.httpcore.version", "4.3");
             runTest(test);
         }
         runTest(test);
         updateLibVersion("apache.httpclient.version", "4.4");
+        updateLibVersion("apache.httpcore.version", "4.4");
         runTest(test);
         updateLibVersion("apache.httpclient.version", "4.4.1");
+        updateLibVersion("apache.httpcore.version", "4.4.1");
         runTest(test);
         updateLibVersion("apache.httpclient.version", "4.5");
+        updateLibVersion("apache.httpcore.version", "4.4.1");
         runTest(test);
         updateLibVersion("apache.httpclient.version", "4.5.1");
+        updateLibVersion("apache.httpcore.version", "4.4.3");
         runTest(test);
         updateLibVersion("apache.httpclient.version", "4.5.2");
+        updateLibVersion("apache.httpcore.version", "4.4.4");
         runTest(test);
     }
 
     private static void apacheHttpAsyncClient() throws Exception {
         final String test = "ApacheHttpAsyncClientPluginIT";
         updateLibVersion("apache.httpasyncclient.version", "4.0");
+        updateLibVersion("apache.httpcore.version", "4.3");
         updateLibVersion("apache.httpclient.version", "4.3.1");
         runTest(test);
         updateLibVersion("apache.httpasyncclient.version", "4.0.1");
+        updateLibVersion("apache.httpcore.version", "4.3.2");
         updateLibVersion("apache.httpclient.version", "4.3.2");
         runTest(test);
         updateLibVersion("apache.httpasyncclient.version", "4.0.2");
+        updateLibVersion("apache.httpcore.version", "4.3.2");
         updateLibVersion("apache.httpclient.version", "4.3.5");
         runTest(test);
         updateLibVersion("apache.httpasyncclient.version", "4.1");
+        updateLibVersion("apache.httpcore.version", "4.4.1");
         updateLibVersion("apache.httpclient.version", "4.4.1");
         runTest(test);
         updateLibVersion("apache.httpasyncclient.version", "4.1.1");
+        updateLibVersion("apache.httpcore.version", "4.4.4");
+        updateLibVersion("apache.httpclient.version", "4.5.1");
+        runTest(test);
+        updateLibVersion("apache.httpasyncclient.version", "4.1.2");
+        updateLibVersion("apache.httpcore.version", "4.4.5");
         updateLibVersion("apache.httpclient.version", "4.5.2");
         runTest(test);
     }

@@ -181,10 +181,10 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <!-- this is included to reflection against classes with missing optional dependencies -->
+      <!-- this is included to test reflection against classes with missing optional dependencies -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <version>4.2.6.RELEASE</version>
+      <version>4.3.0.RELEASE</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

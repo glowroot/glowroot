@@ -112,6 +112,8 @@ public class Struts {
         runTest(test);
         updateLibVersion("struts2.version", "2.5");
         runTest(test);
+        updateLibVersion("struts2.version", "2.5.1");
+        runTest(test);
     }
 
     private static void updateLibVersion(String property, String version) throws IOException {

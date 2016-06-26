@@ -42,6 +42,28 @@
       "traceEntryMessageTemplate": "hibernate rollback"
     },
     {
+      "className": "org.hibernate.Transaction",
+      "methodDeclaringClassName": "javax.persistence.EntityTransaction",
+      "methodName": "commit",
+      "methodParameterTypes": [
+      ],
+      "nestingGroup": "hibernate",
+      "captureKind": "trace-entry",
+      "timerName": "hibernate commit",
+      "traceEntryMessageTemplate": "hibernate commit"
+    },
+    {
+      "className": "org.hibernate.Transaction",
+      "methodDeclaringClassName": "javax.persistence.EntityTransaction",
+      "methodName": "rollback",
+      "methodParameterTypes": [
+      ],
+      "nestingGroup": "hibernate",
+      "captureKind": "trace-entry",
+      "timerName": "hibernate rollback",
+      "traceEntryMessageTemplate": "hibernate rollback"
+    },
+    {
       "className": "org.hibernate.Session",
       "methodName": "flush",
       "methodParameterTypes": [

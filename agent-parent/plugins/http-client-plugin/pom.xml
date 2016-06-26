@@ -18,8 +18,9 @@
   <properties>
     <!-- instrumented libraries -->
     <apache.httpclient.version>4.5.2</apache.httpclient.version>
-    <apache.httpasyncclient.version>4.1.1</apache.httpasyncclient.version>
+    <apache.httpasyncclient.version>4.1.2</apache.httpasyncclient.version>
     <apache.httpclient3x.version>3.1</apache.httpclient3x.version>
+    <apache.httpcore.version>4.4.5</apache.httpcore.version>
     <okhttpclient.version>2.7.5</okhttpclient.version>
     <cxf.version>3.1.6</cxf.version>
     <spring.version>4.3.0.RELEASE</spring.version>
@@ -116,6 +117,13 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-codec-http</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+      <version>${apache.httpcore.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

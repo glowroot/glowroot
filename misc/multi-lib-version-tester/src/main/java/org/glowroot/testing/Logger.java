@@ -149,6 +149,9 @@ public class Logger {
         runTest(test);
         updateLibVersion("log4j2x.version", "2.5");
         runTest(test);
+        // tests fail with log4j 2.6 due to https://github.com/apache/logging-log4j2/pull/31
+        updateLibVersion("log4j2x.version", "2.6.1");
+        runTest(test);
     }
 
     private static void updateLibVersion(String property, String version) throws IOException {
