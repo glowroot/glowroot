@@ -18,6 +18,9 @@ package org.glowroot.agent.fat.init;
 import java.io.File;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.glowroot.agent.fat.storage.AgentDao;
 import org.glowroot.storage.repo.AggregateRepository;
 import org.glowroot.storage.repo.GaugeValueRepository;
@@ -32,6 +35,8 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class CollectorImpl implements Collector {
+
+    private static final Logger logger = LoggerFactory.getLogger(CollectorImpl.class);
 
     private static final String AGENT_ID = "";
 
@@ -61,7 +66,11 @@ class CollectorImpl implements Collector {
     public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType)
             throws Exception {
         aggregateRepository.store(AGENT_ID, captureTime, aggregatesByType);
-        alertingService.checkTransactionAlerts(AGENT_ID, captureTime);
+        try {
+            alertingService.checkTransactionAlerts(AGENT_ID, captureTime, null);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     @Override
@@ -71,7 +80,11 @@ class CollectorImpl implements Collector {
         for (GaugeValue gaugeValue : gaugeValues) {
             maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
         }
-        alertingService.checkGaugeAlerts(AGENT_ID, maxCaptureTime);
+        try {
+            alertingService.checkGaugeAlerts(AGENT_ID, maxCaptureTime, null);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     @Override

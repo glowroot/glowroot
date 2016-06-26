@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
 
+import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 import javax.mail.Address;
 import javax.mail.Authenticator;
@@ -76,39 +77,43 @@ public class AlertingService {
         this.mailService = mailService;
     }
 
-    public void checkTransactionAlerts(String agentId, long endTime) throws Exception {
+    public void checkTransactionAlerts(String agentId, final long endTime,
+            @Nullable Class<? extends Exception> retryOnceOnException) throws Exception {
         if (configRepository.getSmtpConfig().host().isEmpty()) {
             return;
         }
-        try {
-            for (String agentRollup : AgentRollups.getAgentRollups(agentId)) {
-                for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollup)) {
-                    if (alertConfig.getKind() != AlertKind.TRANSACTION) {
-                        continue;
-                    }
-                    checkTransactionAlert(agentRollup, alertConfig, endTime);
+        for (final String agentRollup : AgentRollups.getAgentRollups(agentId)) {
+            for (final AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollup)) {
+                if (alertConfig.getKind() != AlertKind.TRANSACTION) {
+                    continue;
                 }
+                retryOnceOnException(new Retryable() {
+                    @Override
+                    public void execute() throws Exception {
+                        checkTransactionAlert(agentRollup, alertConfig, endTime);
+                    }
+                }, retryOnceOnException);
             }
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
         }
     }
 
-    public void checkGaugeAlerts(String agentId, long endTime) throws Exception {
+    public void checkGaugeAlerts(String agentId, final long endTime,
+            @Nullable Class<? extends Exception> retryOnceOnException) throws Exception {
         if (configRepository.getSmtpConfig().host().isEmpty()) {
             return;
         }
-        try {
-            for (String agentRollup : AgentRollups.getAgentRollups(agentId)) {
-                for (AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollup)) {
-                    if (alertConfig.getKind() != AlertKind.GAUGE) {
-                        continue;
-                    }
-                    checkGaugeAlert(agentRollup, alertConfig, endTime);
+        for (final String agentRollup : AgentRollups.getAgentRollups(agentId)) {
+            for (final AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollup)) {
+                if (alertConfig.getKind() != AlertKind.GAUGE) {
+                    continue;
                 }
+                retryOnceOnException(new Retryable() {
+                    @Override
+                    public void execute() throws Exception {
+                        checkGaugeAlert(agentRollup, alertConfig, endTime);
+                    }
+                }, retryOnceOnException);
             }
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
         }
     }
 
@@ -310,5 +315,30 @@ public class AlertingService {
             };
         }
         return Session.getInstance(props, authenticator);
+    }
+
+    private static void retryOnceOnException(Retryable retryable,
+            @Nullable Class<? extends Exception> retryOnceOnException) {
+        try {
+            retryable.execute();
+        } catch (Exception e) {
+            if (retryOnceOnException != null
+                    && retryOnceOnException.isAssignableFrom(e.getClass())) {
+                try {
+                    retryable.execute();
+                    // log initial exception at debug level only
+                    logger.debug(e.getMessage(), e);
+                } catch (Exception f) {
+                    // log initial exception at error level
+                    logger.error(e.getMessage(), e);
+                }
+            } else {
+                logger.error(e.getMessage(), e);
+            }
+        }
+    }
+
+    private interface Retryable {
+        void execute() throws Exception;
     }
 }

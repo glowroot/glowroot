@@ -17,6 +17,7 @@ package org.glowroot.server;
 
 import java.io.IOException;
 
+import com.datastax.driver.core.exceptions.ReadTimeoutException;
 import io.grpc.internal.ServerImpl;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -117,12 +118,17 @@ class GrpcServer {
             try {
                 aggregateRepository.store(request.getAgentId(), request.getCaptureTime(),
                         request.getAggregatesByTypeList());
-                alertingService.checkTransactionAlerts(request.getAgentId(),
-                        request.getCaptureTime());
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
+            }
+            try {
+                alertingService.checkTransactionAlerts(request.getAgentId(),
+                        request.getCaptureTime(), ReadTimeoutException.class);
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
+                // don't fail collectAggregates()
             }
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
@@ -131,17 +137,23 @@ class GrpcServer {
         @Override
         public void collectGaugeValues(GaugeValueMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
+            long maxCaptureTime = 0;
             try {
                 gaugeValueRepository.store(request.getAgentId(), request.getGaugeValuesList());
-                long maxCaptureTime = 0;
                 for (GaugeValue gaugeValue : request.getGaugeValuesList()) {
                     maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
                 }
-                alertingService.checkGaugeAlerts(request.getAgentId(), maxCaptureTime);
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
+            }
+            try {
+                alertingService.checkGaugeAlerts(request.getAgentId(), maxCaptureTime,
+                        ReadTimeoutException.class);
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
+                // don't fail collectGaugeValues()
             }
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
