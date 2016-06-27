@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -81,7 +80,7 @@ class CassandraWrapper {
         }
     }
 
-    private static void downloadAndExtract(File baseDir) throws MalformedURLException, IOException {
+    private static void downloadAndExtract(File baseDir) throws IOException {
         // using System.out to make sure user sees why there is a big delay here
         System.out.print("Downloading Cassandra " + CASSANDRA_VERSION + " ...");
         URL url = new URL("http://www.apache.org/dist/cassandra/" + CASSANDRA_VERSION
@@ -97,10 +96,20 @@ class CassandraWrapper {
 
         File cassandraDir = new File(baseDir, "apache-cassandra-" + CASSANDRA_VERSION);
         File confDir = new File(cassandraDir, "conf");
+        // reduce logging to stdout
         File logbackXmlFile = new File(confDir, "logback.xml");
-        String contents = Files.toString(logbackXmlFile, Charsets.UTF_8);
-        contents = contents.replace("<root level=\"INFO\">", "<root level=\"WARN\">");
-        Files.asCharSink(logbackXmlFile, Charsets.UTF_8).write(contents);
+        String xml = Files.toString(logbackXmlFile, Charsets.UTF_8);
+        xml = xml.replace("<root level=\"INFO\">", "<root level=\"ERROR\">");
+        xml = xml.replace("<logger name=\"org.apache.cassandra\" level=\"DEBUG\"/>", "");
+        Files.asCharSink(logbackXmlFile, Charsets.UTF_8).write(xml);
+        // longer timeout needed on slow travis ci machines
+        File yamlFile = new File(confDir, "cassandra.yaml");
+        String yaml = Files.toString(yamlFile, Charsets.UTF_8);
+        yaml = yaml.replaceAll("(?m)^read_request_timeout_in_ms: .*$",
+                "read_request_timeout_in_ms: 10000");
+        yaml = yaml.replaceAll("(?m)^write_request_timeout_in_ms: .*$",
+                "write_request_timeout_in_ms: 4000");
+        Files.asCharSink(yamlFile, Charsets.UTF_8).write(yaml);
     }
 
     private static List<String> buildCommandLine(File cassandraDir) {
