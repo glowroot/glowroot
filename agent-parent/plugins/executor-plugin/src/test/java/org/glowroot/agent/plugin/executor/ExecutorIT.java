@@ -23,7 +23,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -703,8 +702,6 @@ public class ExecutorIT {
 
     private static class RunnableAndCallableWork implements Runnable, Callable<Void> {
 
-        private final AtomicBoolean complete = new AtomicBoolean();
-
         @Override
         public Void call() {
             new CreateTraceEntry().traceEntryMarker();
@@ -714,7 +711,6 @@ public class ExecutorIT {
         @Override
         public void run() {
             new CreateTraceEntry().traceEntryMarker();
-            complete.set(true);
         }
     }
 

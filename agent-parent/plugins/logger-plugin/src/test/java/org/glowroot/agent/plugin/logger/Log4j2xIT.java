@@ -220,15 +220,6 @@ public class Log4j2xIT {
                 .getMethodName()).isEqualTo("transactionMarker");
     }
 
-    static boolean isShaded() {
-        try {
-            Class.forName("org.glowroot.agent.shaded.slf4j.Logger");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
-    }
-
     public static class ShouldLog implements AppUnderTest, TransactionMarker {
         private static final Logger logger = LogManager.getLogger(ShouldLog.class);
         @Override
