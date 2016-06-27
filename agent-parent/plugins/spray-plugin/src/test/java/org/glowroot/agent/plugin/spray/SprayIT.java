@@ -75,7 +75,7 @@ public class SprayIT {
         @Override
         public void executeApp() throws Exception {
             String port = Integer.toString(getAvailablePort());
-            Method method = Class.forName("org.example.Boot").getMethod("main", String[].class);
+            Method method = Class.forName("example.Boot").getMethod("main", String[].class);
             method.invoke(null, (Object) new String[] {port});
             int statusCode = executeMaybeWaitingForStartup(port);
             if (statusCode != 200) {
