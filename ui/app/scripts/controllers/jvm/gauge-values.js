@@ -45,6 +45,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     var gaugeGrouping = {};
 
     $scope.gaugeFilter = '';
+    $scope.useGaugeViewThresholdMultiplier = true;
 
     $scope.range = {};
 
@@ -118,10 +119,10 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       var now = moment().startOf('second').valueOf();
       var from = now - $scope.range.last;
       var to = now + $scope.range.last / 10;
-      var dataPointIntervalMillis = charts.getDataPointIntervalMillis(from, to);
+      var dataPointIntervalMillis = charts.getDataPointIntervalMillis(from, to, true);
       var revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
       var revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
-      var revisedDataPointIntervalMillis = charts.getDataPointIntervalMillis(revisedFrom, revisedTo);
+      var revisedDataPointIntervalMillis = charts.getDataPointIntervalMillis(revisedFrom, revisedTo, true);
       if (revisedDataPointIntervalMillis !== dataPointIntervalMillis) {
         // expanded out to larger rollup threshold so need to re-adjust
         // ok to use original from/to instead of revisedFrom/revisedTo
@@ -489,7 +490,9 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       tooltipOpts: {
         content: function (label, xval, yval, flotItem) {
           var rollupConfig0 = $scope.layout.rollupConfigs[0];
-          if (charts.getDataPointIntervalMillis($scope.range.chartFrom, $scope.range.chartTo) === rollupConfig0.intervalMillis
+          var dataPointIntervalMillis =
+              charts.getDataPointIntervalMillis($scope.range.chartFrom, $scope.range.chartTo, true);
+          if (dataPointIntervalMillis === rollupConfig0.intervalMillis
               && $scope.range.chartTo - $scope.range.chartFrom < rollupConfig0.viewThresholdMillis) {
             var nonScaledValue = yvalMaps[label][xval];
             var tooltip = '<table class="gt-chart-tooltip">';

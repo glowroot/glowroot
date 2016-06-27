@@ -45,6 +45,8 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordi
 
 public interface ConfigRepository {
 
+    public static final int GAUGE_VIEW_THRESHOLD_MULTIPLIER = 4;
+
     String USERS_KEY = "users";
     String ROLES_KEY = "roles";
     String WEB_KEY = "web";

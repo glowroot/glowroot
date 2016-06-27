@@ -57,12 +57,14 @@ public class RollupLevelService {
                 configRepository.getStorageConfig().rollupExpirationHours();
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         // gauge point rollup level 0 shares rollup level 1's expiration
-        if (millis < rollupConfigs.get(0).viewThresholdMillis()
+        long viewThresholdMillis = rollupConfigs.get(0).viewThresholdMillis();
+        if (millis < viewThresholdMillis * ConfigRepository.GAUGE_VIEW_THRESHOLD_MULTIPLIER
                 && HOURS.toMillis(rollupExpirationHours.get(0)) > timeAgoMillis) {
             return 0;
         }
         for (int i = 0; i < rollupConfigs.size() - 1; i++) {
-            if (millis < rollupConfigs.get(i + 1).viewThresholdMillis()
+            viewThresholdMillis = rollupConfigs.get(i + 1).viewThresholdMillis();
+            if (millis < viewThresholdMillis * ConfigRepository.GAUGE_VIEW_THRESHOLD_MULTIPLIER
                     && HOURS.toMillis(rollupExpirationHours.get(i)) > timeAgoMillis) {
                 return i + 1;
             }

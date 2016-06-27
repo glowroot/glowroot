@@ -19,13 +19,12 @@
 // common code shared between transaction.js and errors.js
 glowroot.factory('charts', [
   '$http',
-  '$location',
   '$rootScope',
   '$timeout',
   'keyedColorPools',
   'queryStrings',
   'httpErrors',
-  function ($http, $location, $rootScope, $timeout, keyedColorPools, queryStrings, httpErrors) {
+  function ($http, $rootScope, $timeout, keyedColorPools, queryStrings, httpErrors) {
 
     function createState() {
       return {
@@ -87,13 +86,14 @@ glowroot.factory('charts', [
         return;
       }
 
-      var dataPointIntervalMillis = getDataPointIntervalMillis(from, to);
+      var dataPointIntervalMillis = getDataPointIntervalMillis(from, to, $scope.useGaugeViewThresholdMultiplier);
       var revisedFrom;
       var revisedTo;
       if (zoomingOut || selectionNearestLarger) {
         revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
         revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
-        var revisedDataPointIntervalMillis = getDataPointIntervalMillis(revisedFrom, revisedTo);
+        var revisedDataPointIntervalMillis =
+            getDataPointIntervalMillis(revisedFrom, revisedTo, $scope.useGaugeViewThresholdMultiplier);
         if (revisedDataPointIntervalMillis !== dataPointIntervalMillis) {
           // expanded out to larger rollup threshold so need to re-adjust
           // ok to use original from/to instead of revisedFrom/revisedTo
@@ -155,7 +155,7 @@ glowroot.factory('charts', [
       }
     }
 
-    function getDataPointIntervalMillis(from, to) {
+    function getDataPointIntervalMillis(from, to, useGaugeViewThresholdMultiplier) {
       var millis = to - from;
       var timeAgoMillis = Date.now() - from;
       var i;
@@ -163,8 +163,11 @@ glowroot.factory('charts', [
       for (i = 0; i < rollupConfigs.length - 1; i++) {
         var currRollupConfig = rollupConfigs[i];
         var nextRollupConfig = rollupConfigs[i + 1];
-        if (millis < nextRollupConfig.viewThresholdMillis
-            && $rootScope.layout.rollupExpirationMillis[i] > timeAgoMillis) {
+        var viewThresholdMillis = nextRollupConfig.viewThresholdMillis;
+        if (useGaugeViewThresholdMultiplier) {
+          viewThresholdMillis *= 4;
+        }
+        if (millis < viewThresholdMillis && $rootScope.layout.rollupExpirationMillis[i] > timeAgoMillis) {
           return currRollupConfig.intervalMillis;
         }
       }
@@ -267,7 +270,8 @@ glowroot.factory('charts', [
             chartState.plot.getAxes().xaxis.options.max = chartTo;
             // data point interval calculation must match server-side calculation, so based on query.from/query.to
             // instead of chartFrom/chartTo
-            chartState.dataPointIntervalMillis = getDataPointIntervalMillis(query.from, query.to);
+            chartState.dataPointIntervalMillis =
+                getDataPointIntervalMillis(query.from, query.to, $scope.useGaugeViewThresholdMultiplier);
             var plotData = [];
             var labels = [];
             angular.forEach(data.dataSeries, function (dataSeries) {
