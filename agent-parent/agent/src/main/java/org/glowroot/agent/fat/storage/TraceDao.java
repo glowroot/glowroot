@@ -133,7 +133,7 @@ class TraceDao implements TraceRepository {
     }
 
     @Override
-    public void collect(final String agentId, final Trace trace) throws Exception {
+    public void store(final String agentId, final Trace trace) throws Exception {
         final Trace.Header header = trace.getHeader();
         dataSource.update(new TraceMerge(trace));
         if (header.getAttributeCount() > 0) {

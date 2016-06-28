@@ -47,7 +47,7 @@ public class TraceDaoPerformanceMain {
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (int i = 0; i < 1000; i++) {
             Trace trace = TraceTestData.createTrace();
-            traceDao.collect(AGENT_ID, trace);
+            traceDao.store(AGENT_ID, trace);
         }
         logger.info("elapsed time: {}", stopwatch.elapsed(MILLISECONDS));
     }

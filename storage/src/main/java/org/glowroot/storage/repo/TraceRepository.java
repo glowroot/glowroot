@@ -32,7 +32,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface TraceRepository {
 
-    void collect(String agentId, Trace trace) throws Exception;
+    void store(String agentId, Trace trace) throws Exception;
 
     List<String> readTraceAttributeNames(String agentRollup, String transactionType)
             throws Exception;

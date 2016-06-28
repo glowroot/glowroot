@@ -89,7 +89,7 @@ class CollectorImpl implements Collector {
 
     @Override
     public void collectTrace(Trace trace) throws Exception {
-        traceRepository.collect(AGENT_ID, trace);
+        traceRepository.store(AGENT_ID, trace);
     }
 
     @Override

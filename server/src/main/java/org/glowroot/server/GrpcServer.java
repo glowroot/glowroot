@@ -163,7 +163,7 @@ class GrpcServer {
         public void collectTrace(TraceMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
             try {
-                traceRepository.collect(request.getAgentId(), request.getTrace());
+                traceRepository.store(request.getAgentId(), request.getTrace());
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
                 responseObserver.onError(t);
