@@ -734,6 +734,8 @@ public class TraceDao implements TraceRepository {
                 .collect(Collectors.<ErrorMessagePoint>toList());
         List<ErrorMessageCount> counts = messageCounts.entrySet().stream()
                 .map(e -> ImmutableErrorMessageCount.of(e.getKey(), e.getValue().value))
+                // points above are already ordered by cassandra, but need to reverse sort counts
+                .sorted(Comparator.comparing(ErrorMessageCount::count).reversed())
                 // explicit type on this line is needed for Checker Framework
                 // see https://github.com/typetools/checker-framework/issues/531
                 .collect(Collectors.<ErrorMessageCount>toList());
