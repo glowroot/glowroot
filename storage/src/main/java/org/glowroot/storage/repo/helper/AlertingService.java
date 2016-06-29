@@ -190,6 +190,9 @@ public class AlertingService {
         int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
         List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollup,
                 alertConfig.getGaugeName(), startTime, endTime, rollupLevel);
+        if (gaugeValues.isEmpty()) {
+            return;
+        }
         double totalWeightedValue = 0;
         long totalWeight = 0;
         for (GaugeValue gaugeValue : gaugeValues) {
