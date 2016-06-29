@@ -62,7 +62,7 @@ class HttpServer {
 
     HttpServer(String bindAddress, int port, int numWorkerThreads, LayoutService layoutService,
             Map<Pattern, HttpService> httpServices, SecurityManager securityManager,
-            SessionHelper sessionHelper, List<Object> jsonServices) throws Exception {
+            SessionHelper sessionHelper, List<Object> jsonServices) throws SocketBindException {
 
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
 
@@ -102,25 +102,17 @@ class HttpServer {
                     bootstrap.bind(new InetSocketAddress(bindAddress, port)).sync().channel();
         } catch (Exception e) {
             // FailedChannelFuture.sync() is using UNSAFE to re-throw checked exceptions
-            try {
-                serverChannel =
-                        bootstrap.bind(new InetSocketAddress(bindAddress, 0)).sync().channel();
-            } catch (Exception f) {
-                // FailedChannelFuture.sync() is using UNSAFE to re-throw checked exceptions\
-
-                // clean up
-                bossGroup.shutdownGracefully(0, 0, SECONDS);
-                workerGroup.shutdownGracefully(0, 0, SECONDS);
-                throw f;
-            }
-            logger.error("error binding to port: {} (bound to port {} instead)", port,
-                    ((InetSocketAddress) serverChannel.localAddress()).getPort());
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
+            bossGroup.shutdownGracefully(0, 0, SECONDS);
+            workerGroup.shutdownGracefully(0, 0, SECONDS);
+            throw new SocketBindException(e);
         }
         this.serverChannel = serverChannel;
         this.port = ((InetSocketAddress) serverChannel.localAddress()).getPort();
         logger.debug("<init>(): http server bound");
+    }
+
+    String getBindAddress() {
+        return bindAddress;
     }
 
     int getPort() {
@@ -177,7 +169,14 @@ class HttpServer {
     }
 
     @SuppressWarnings("serial")
-    public static class PortChangeFailedException extends Exception {
+    static class SocketBindException extends Exception {
+        private SocketBindException(Exception cause) {
+            super(cause);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    static class PortChangeFailedException extends Exception {
         private PortChangeFailedException(Exception cause) {
             super(cause);
         }

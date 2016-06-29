@@ -26,9 +26,9 @@ import org.apache.shiro.mgt.SecurityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class LazyHttpServer {
+import org.glowroot.ui.HttpServer.SocketBindException;
 
-    private static final Logger logger = LoggerFactory.getLogger(LazyHttpServer.class);
+class LazyHttpServer {
 
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
@@ -70,13 +70,18 @@ class LazyHttpServer {
     }
 
     void init(AdminJsonService adminJsonService) {
-        HttpServer httpServer = build();
-        if (httpServer != null) {
-            this.httpServer = httpServer;
-            adminJsonService.setHttpServer(httpServer);
+        HttpServer httpServer;
+        try {
+            httpServer = build();
+        } catch (SocketBindException e) {
+            startupLogger.error(
+                    "Error binding socket to {}:{}, the user interface will not be available",
+                    bindAddress, port, e.getCause());
+            return;
         }
-        int port = httpServer != null ? httpServer.getPort() : -1;
-        startupLogger.info("Glowroot listening at http://localhost:{}", port);
+        this.httpServer = httpServer;
+        adminJsonService.setHttpServer(httpServer);
+        startupLogger.info("Glowroot UI listening on port {}", httpServer.getPort());
     }
 
     @Nullable
@@ -85,7 +90,7 @@ class LazyHttpServer {
     }
 
     // httpServer is only null if it could not even bind to port 0 (any available port)
-    private @Nullable HttpServer build() {
+    private HttpServer build() throws SocketBindException {
         Map<Pattern, HttpService> httpServices = Maps.newHashMap();
         // http services
         httpServices.put(Pattern.compile("^/$"), indexHtmlHttpService);
@@ -106,14 +111,7 @@ class LazyHttpServer {
         httpServices.put(Pattern.compile("^/backend/trace/aux-thread-profile$"),
                 traceDetailHttpService);
         httpServices.put(Pattern.compile("^/log$"), glowrootLogHttpService);
-        // services
-        try {
-            return new HttpServer(bindAddress, port, numWorkerThreads, layoutService, httpServices,
-                    securityManager, sessionHelper, jsonServices);
-        } catch (Exception e) {
-            // binding to the specified port failed and binding to port 0 (any port) failed
-            logger.error("error binding to any port, the user interface will not be available", e);
-            return null;
-        }
+        return new HttpServer(bindAddress, port, numWorkerThreads, layoutService, httpServices,
+                securityManager, sessionHelper, jsonServices);
     }
 }

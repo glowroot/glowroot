@@ -282,14 +282,10 @@ class AdminJsonService {
     @RequiresNonNull("httpServer")
     private String getWebConfig(boolean portChangeFailed) throws Exception {
         WebConfig config = configRepository.getWebConfig();
-        WebConfigDto configDto = ImmutableWebConfigDto.builder()
-                .port(config.port())
-                .sessionTimeoutMinutes(config.sessionTimeoutMinutes())
-                .version(config.version())
-                .build();
         return mapper.writeValueAsString(ImmutableWebConfigResponse.builder()
-                .config(configDto)
+                .config(WebConfigDto.create(config))
                 .activePort(httpServer.getPort())
+                .activeBindAddress(httpServer.getBindAddress())
                 .portChangeFailed(portChangeFailed)
                 .build());
     }
@@ -304,6 +300,7 @@ class AdminJsonService {
     interface WebConfigResponse {
         WebConfigDto config();
         int activePort();
+        String activeBindAddress();
         boolean portChangeFailed();
     }
 
@@ -317,13 +314,24 @@ class AdminJsonService {
     abstract static class WebConfigDto {
 
         abstract int port();
+        abstract String bindAddress();
         abstract int sessionTimeoutMinutes();
         abstract String version();
 
         private WebConfig convert() throws Exception {
             return ImmutableWebConfig.builder()
                     .port(port())
+                    .bindAddress(bindAddress())
                     .sessionTimeoutMinutes(sessionTimeoutMinutes())
+                    .build();
+        }
+
+        private static WebConfigDto create(WebConfig config) {
+            return ImmutableWebConfigDto.builder()
+                    .port(config.port())
+                    .bindAddress(config.bindAddress())
+                    .sessionTimeoutMinutes(config.sessionTimeoutMinutes())
+                    .version(config.version())
                     .build();
         }
     }

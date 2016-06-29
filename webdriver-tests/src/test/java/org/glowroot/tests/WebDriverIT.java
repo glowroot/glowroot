@@ -127,7 +127,8 @@ public abstract class WebDriverIT {
         resetUsers();
         resetRoles();
         resetAdminServerConfig("web", "{\"port\":" + getUiPort()
-                + ",\"sessionTimeoutMinutes\":30,"
+                + ",\"bindAddress\":\"0.0.0.0\","
+                + "\"sessionTimeoutMinutes\":30,"
                 + "\"version\":\"$version\"}");
         resetAdminServerConfig("storage", "{\"rollupExpirationHours\":[72,336,2160,17520],"
                 + "\"traceExpirationHours\":336,"

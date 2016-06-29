@@ -158,7 +158,6 @@ class ServerModule {
                     .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService))
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
                     .liveWeavingService(new LiveWeavingServiceImpl(downstreamService))
-                    .bindAddress("0.0.0.0")
                     .numWorkerThreads(50)
                     .version(version)
                     .build();

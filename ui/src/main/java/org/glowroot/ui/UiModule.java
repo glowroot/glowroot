@@ -72,7 +72,6 @@ public class UiModule {
             LiveTraceRepository liveTraceRepository,
             LiveAggregateRepository liveAggregateRepository,
             @Nullable LiveWeavingService liveWeavingService,
-            String bindAddress,
             int numWorkerThreads,
             String version) throws Exception {
 
@@ -149,6 +148,7 @@ public class UiModule {
         jsonServices.add(alertJsonService);
         jsonServices.add(adminJsonService);
 
+        String bindAddress = configRepository.getWebConfig().bindAddress();
         int port = configRepository.getWebConfig().port();
         LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, securityManager,
                 sessionHelper, indexHtmlHttpService, layoutHttpService, layoutService,

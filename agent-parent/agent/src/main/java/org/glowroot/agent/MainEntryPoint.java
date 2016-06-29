@@ -100,6 +100,7 @@ public class MainEntryPoint {
         String version;
         try {
             version = Version.getVersion(MainEntryPoint.class);
+            startupLogger.info("Glowroot version: {}", version);
             ImmutableMap<String, String> properties = getGlowrootProperties(baseDir);
             new GlowrootFatAgentInit().init(baseDir, null, null, properties, null, glowrootJarFile,
                     version, true);
@@ -110,7 +111,6 @@ public class MainEntryPoint {
             startupLogger.error("Glowroot cannot start: {}", t.getMessage(), t);
             return;
         }
-        startupLogger.info("Glowroot started (version {})", version);
         // Glowroot does not create any non-daemon threads, so need to block jvm from exiting when
         // running the viewer
         Thread.sleep(Long.MAX_VALUE);
@@ -146,6 +146,7 @@ public class MainEntryPoint {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion(MainEntryPoint.class);
+        startupLogger.info("Glowroot version: {}", version);
         String collectorHost = properties.get("glowroot.collector.host");
         if (Strings.isNullOrEmpty(collectorHost)) {
             collectorHost = System.getProperty("glowroot.collector.host");
@@ -161,7 +162,6 @@ public class MainEntryPoint {
         }
         glowrootAgentInit.init(baseDir, collectorHost, customCollector, properties, instrumentation,
                 glowrootJarFile, version, false);
-        startupLogger.info("Glowroot started (version {})", version);
     }
 
     private static ImmutableMap<String, String> getGlowrootProperties(File baseDir)

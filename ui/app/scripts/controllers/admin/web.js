@@ -36,6 +36,7 @@ glowroot.controller('AdminWebCtrl', [
       $scope.config = data.config;
       $scope.originalConfig = angular.copy(data.config);
       $scope.activePort = data.activePort;
+      $scope.activeBindAddress = data.activeBindAddress;
     }
 
     $scope.save = function (deferred) {

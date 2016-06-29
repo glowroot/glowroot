@@ -44,6 +44,22 @@
         </div>
       </div>
       <div gt-form-group
+           gt-label="Bind address"
+           gt-model="config.bindAddress"
+           gt-required="loaded"
+           gt-width="7em"
+           gt-col-class1="col-lg-4"
+           gt-col-class2="col-lg-8">
+        <div class="help-block">
+          <div class="gt-yellow"
+               ng-show="originalConfig.bindAddress !== activeBindAddress"
+               style="padding-bottom: 5px;">
+            This change requires JVM restart. Active value is <code>{{activeBindAddress}}</code>.
+          </div>
+          Address that the user interface listens on.
+        </div>
+      </div>
+      <div gt-form-group
            gt-label="Session timeout"
            gt-model="config.sessionTimeoutMinutes"
            gt-number="true"

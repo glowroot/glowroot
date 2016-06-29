@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
 import javax.management.MBeanServer;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.base.Strings;
 import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -66,7 +65,6 @@ class FatAgentModule {
 
     private final Closeable dataDirLockingCloseable;
 
-    private final String bindAddress;
     private final String version;
 
     private final boolean h2MemDb;
@@ -147,7 +145,6 @@ class FatAgentModule {
             viewerAgentModule = null;
         }
 
-        bindAddress = getBindAddress(properties);
         this.baseDir = baseDir;
         this.version = glowrootVersion;
     }
@@ -171,7 +168,6 @@ class FatAgentModule {
                     .liveTraceRepository(agentModule.getLiveTraceRepository())
                     .liveAggregateRepository(agentModule.getLiveAggregateRepository())
                     .liveWeavingService(agentModule.getLiveWeavingService())
-                    .bindAddress(bindAddress)
                     .numWorkerThreads(2)
                     .version(version)
                     .build();
@@ -194,20 +190,9 @@ class FatAgentModule {
                     .liveTraceRepository(new LiveTraceRepositoryNop())
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
                     .liveWeavingService(null)
-                    .bindAddress(bindAddress)
                     .numWorkerThreads(10)
                     .version(version)
                     .build();
-        }
-    }
-
-    private static String getBindAddress(Map<String, String> properties) {
-        // empty check to support parameterized script, e.g. -Dglowroot.ui.bind.address=${somevar}
-        String bindAddress = properties.get("glowroot.ui.bind.address");
-        if (Strings.isNullOrEmpty(bindAddress)) {
-            return "0.0.0.0";
-        } else {
-            return bindAddress;
         }
     }
 

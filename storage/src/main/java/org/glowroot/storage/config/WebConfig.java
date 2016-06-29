@@ -28,6 +28,11 @@ public abstract class WebConfig {
         return 4000;
     }
 
+    @Value.Default
+    public String bindAddress() {
+        return "0.0.0.0";
+    }
+
     // timeout 0 means sessions do not time out (except on jvm restart)
     @Value.Default
     public int sessionTimeoutMinutes() {
