@@ -110,7 +110,8 @@
         <!-- input-group needs to be in a sub-div so it doesn't try to fill the entire width,
              which would push the addon "milliseconds" label flush right -->
         <div class="input-group"
-             style="width: 100%; max-width: {{filterDurationComparator === 'between' ? 30 : 25}}em;">
+             style="width: 100%;"
+             ng-style="{'max-width': filterDurationComparator === 'between' ? '30em' : '25em'}">
           <div gt-input-group-dropdown
                gt-model="filterDurationComparator"
                gt-items="filterDurationComparatorOptions"
