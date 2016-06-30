@@ -297,8 +297,9 @@ public class AggregateDao implements AggregateRepository {
             insertNeedsRollup.add(session.prepare("insert into aggregate_needs_rollup_" + i
                     + " (agent_rollup, capture_time, uniqueness, transaction_types) values"
                     + " (?, ?, ?, ?)"));
+            // limit is just in case rollup falls way behind, to avoid massive memory consumption
             readNeedsRollup.add(session.prepare("select agent_rollup, capture_time, uniqueness,"
-                    + " transaction_types from aggregate_needs_rollup_" + i));
+                    + " transaction_types from aggregate_needs_rollup_" + i + " limit 100000"));
             deleteNeedsRollup.add(session.prepare("delete from aggregate_needs_rollup_" + i
                     + " where agent_rollup = ? and capture_time = ? and uniqueness = ?"));
         }
