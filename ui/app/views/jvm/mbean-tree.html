@@ -18,11 +18,12 @@
 <div ng-if="agentNotConnected" class="alert alert-danger">
   This feature is only available when the agent is running and connected
 </div>
-<div ng-if="loaded && !agentNotConnected">
+<!-- need ng-show instead of ng-if here so #mbeanTree can be populated during loading -->
+<div ng-show="loaded && !agentNotConnected">
   <div gt-button
        gt-label="Refresh"
        gt-click="refresh(deferred)"
        style="margin-bottom: 20px;">
   </div>
-  <div ng-repeat="(domain, node) in mbeanTree" ng-include="'template/gt-mbean-node.html'"></div>
+  <div id="mbeanTree"></div>
 </div>

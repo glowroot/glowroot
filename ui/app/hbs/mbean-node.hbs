@@ -1,0 +1,14 @@
+{{#if objectName}}
+  <div data-object-name="{{objectName}}"
+       style="margin-left: {{mbeanNodeIndentPx .}}px;">
+    {{#if expanded}}
+      {{> mbeanNodeExpanded}}
+    {{^}}
+      {{> mbeanNodeUnexpanded}}
+    {{/if}}
+  </div>
+{{^}}
+  <div style="margin-left: {{mbeanNodeIndentPx .}}px;">
+    {{nodeName}}
+  </div>
+{{/if}}

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular */
+/* global glowroot, JST, angular, Glowroot, Handlebars, $ */
 
 glowroot.controller('JvmMBeanTreeCtrl', [
   '$scope',
@@ -30,10 +30,31 @@ glowroot.controller('JvmMBeanTreeCtrl', [
       return;
     }
 
+    Handlebars.registerPartial('mbeanNodeExpanded', JST['mbean-node-expanded']);
+
+    Handlebars.registerPartial('mbeanNodeUnexpanded', JST['mbean-node-unexpanded']);
+
+    Handlebars.registerHelper('mbeanNodeIndentPx', function (mbeanNode) {
+      return 30 * mbeanNode.depth;
+    });
+
+    Handlebars.registerHelper('ifSimpleValue', function (value, options) {
+      if (!angular.isObject(value) && !angular.isArray(value)) {
+        return options.fn(this);
+      }
+      return options.inverse(this);
+    });
+
+    Handlebars.registerHelper('indentedJson', function (value) {
+      return JSON.stringify(value, null, 4);
+    });
+
     var expandedObjectNames = $location.search().expanded || [];
     if (!angular.isArray(expandedObjectNames)) {
       expandedObjectNames = [expandedObjectNames];
     }
+
+    var nodeMap = {};
 
     function updateLocation() {
       var query = {};
@@ -44,41 +65,21 @@ glowroot.controller('JvmMBeanTreeCtrl', [
       $location.search(query).replace();
     }
 
-    $scope.toggleMBean = function (node) {
-      if (node.expanded) {
-        var index = expandedObjectNames.indexOf(node.objectName);
-        expandedObjectNames.splice(index, 1);
-        updateLocation();
-        node.expanded = false;
-        node.attributeMap = undefined;
-        return;
+    function renderNext(mbeanNodes, start) {
+      // large numbers of mbean nodes (e.g. 20,000) render much faster when grouped into sub-divs
+      var batchSize = 500;
+      var i;
+      var html = '';
+      for (i = start; i < Math.min(start + batchSize, mbeanNodes.length); i++) {
+        html += JST['mbean-node'](mbeanNodes[i]);
       }
-      expandedObjectNames.push(node.objectName);
-      updateLocation();
-      node.loading = true;
-      node.expanded = true;
-      var queryData = {
-        agentId: $scope.agentId,
-        objectName: node.objectName
-      };
-      $http.get('backend/jvm/mbean-attribute-map' + queryStrings.encodeObject(queryData))
-          .success(function (data) {
-            node.loading = false;
-            node.attributeMap = data;
-          })
-          .error(function (data, status) {
-            node.loading = false;
-            httpErrors.handler($scope)(data, status);
-          });
-    };
-
-    $scope.isSimpleValue = function (value) {
-      return !angular.isObject(value) && !angular.isArray(value);
-    };
-
-    $scope.indentedJson = function (value) {
-      return JSON.stringify(value, null, 4);
-    };
+      $('#mbeanTree').append(html);
+      if (start + 100 < mbeanNodes.length) {
+        setTimeout(function () {
+          renderNext(mbeanNodes, start + batchSize);
+        }, 10);
+      }
+    }
 
     $scope.refresh = function (deferred) {
       var queryData = {
@@ -92,13 +93,79 @@ glowroot.controller('JvmMBeanTreeCtrl', [
             if ($scope.agentNotConnected) {
               return;
             }
-            $scope.mbeanTree = data;
+            var flattened = [];
+            function recurse(list, depth) {
+              angular.forEach(list, function (node) {
+                node.depth = depth;
+                if (node.objectName) {
+                  nodeMap[node.objectName] = node;
+                }
+                flattened.push(node);
+                if (node.childNodes) {
+                  recurse(node.childNodes, depth + 1);
+                }
+              });
+            }
+            recurse(data, 0);
+            $('#mbeanTree').empty();
+            renderNext(flattened, 0);
             if (deferred) {
               deferred.resolve('Refreshed');
             }
           })
           .error(httpErrors.handler($scope, deferred));
     };
+
+    function incNodeVersion(node) {
+      if (node.v) {
+        node.v++;
+      } else {
+        node.v = 1;
+      }
+    }
+
+    $('#mbeanTree').on('click', '.gt-mbean-expanded-content', function() {
+      var $parent = $(this).parent();
+      var objectName = $parent.data('object-name');
+      var index = expandedObjectNames.indexOf(objectName);
+      expandedObjectNames.splice(index, 1);
+      updateLocation();
+      var node = nodeMap[objectName];
+      incNodeVersion(node);
+      node.attributeMap = undefined;
+      $parent.html(JST['mbean-node-unexpanded'](node));
+    });
+
+    $('#mbeanTree').on('click', '.gt-mbean-unexpanded-content', function() {
+      var $parent = $(this).parent();
+      var objectName = $parent.data('object-name');
+      expandedObjectNames.push(objectName);
+      updateLocation();
+      var node = nodeMap[objectName];
+      incNodeVersion(node);
+      var v = node.v;
+      $parent.html(JST['mbean-node-loading'](node));
+      var $gtSpinner = $parent.find('.gt-spinner');
+      var spinner = Glowroot.showSpinner($gtSpinner);
+      var queryData = {
+        agentId: $scope.agentId,
+        objectName: node.objectName
+      };
+      $http.get('backend/jvm/mbean-attribute-map' + queryStrings.encodeObject(queryData))
+          .success(function (data) {
+            spinner.stop();
+            if (node.v !== v) {
+              // interrupted by close
+              return;
+            }
+            node.attributeMap = data;
+            $parent.html(JST['mbean-node-expanded'](node));
+          })
+          .error(function (data, status) {
+            spinner.stop();
+            httpErrors.handler($scope)(data, status);
+          });
+    });
 
     $scope.refresh();
   }

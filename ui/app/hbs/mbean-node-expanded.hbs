@@ -1,0 +1,33 @@
+<div class="gt-inline-block gt-mbean-expanded-content"
+     style="margin-left: -10px;">
+  <label>{{nodeName}}</label>
+  <table>
+    {{#each attributeMap}}
+      <tr>
+        <td valign="top">{{@key}}</td>
+        <td style="padding-left: 10px;">
+          {{#ifSimpleValue .}}
+            <div class="gt-break-word">
+              {{.}}
+            </div>
+          {{^}}
+            <div>
+              <pre class="gt-mbean-value-pre gt-break-word">{{indentedJson .}}</pre>
+            </div>
+          {{/ifSimpleValue}}
+        </td>
+      </tr>
+    {{/each}}
+    <!-- all the platform mbeans already expose ObjectName attribute -->
+    {{#unless attributes.ObjectName}}
+      <tr>
+        <td valign="top"><em>ObjectName</em></td>
+        <td style="padding-left: 10px;">
+          <div class="gt-break-word">
+            {{objectName}}
+          </div>
+        </td>
+      </tr>
+    {{/unless}}
+  </table>
+</div>

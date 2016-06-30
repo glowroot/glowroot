@@ -45,7 +45,6 @@ import org.glowroot.tests.jvm.JvmSidebar;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.openqa.selenium.By.xpath;
 
 public class BasicSmokeIT extends WebDriverIT {
 
@@ -267,12 +266,10 @@ public class BasicSmokeIT extends WebDriverIT {
         Utils.withWait(driver, By.xpath("//div[@ng-show='availableDiskSpaceBytes !== undefined']"));
 
         jvmSidebar.getMBeanTreeLink().click();
-        List<WebElement> elements = new WebDriverWait(driver, 30)
-                .until(ExpectedConditions.visibilityOfAllElementsLocatedBy(
-                        xpath("//span[@gt-smart-click='toggleMBean(node)']")));
-        // limiting to 20, expanding too many can cause browser to crash on travis-ci
-        for (int i = 0; i < Math.min(elements.size(), 20); i++) {
-            elements.get(i).click();
+        List<WebElement> elements = new WebDriverWait(driver, 30).until(ExpectedConditions
+                .visibilityOfAllElementsLocatedBy(By.className("gt-mbean-unexpanded-content")));
+        for (WebElement element : elements) {
+            element.click();
         }
         // test the refresh of opened items
         driver.navigate().refresh();
