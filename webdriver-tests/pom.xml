@@ -16,7 +16,7 @@
   <description>Glowroot WebDriver Tests</description>
 
   <properties>
-    <selenium.version>2.53.0</selenium.version>
+    <selenium.version>2.53.1</selenium.version>
   </properties>
 
   <dependencies>
@@ -159,6 +159,13 @@
       <groupId>com.datastax.cassandra</groupId>
       <artifactId>cassandra-driver-core</artifactId>
       <version>3.0.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.5.2</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

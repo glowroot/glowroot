@@ -45,6 +45,7 @@ public class Hibernate {
         }
         run("5.1.0.Final");
         run("5.2.0.Final");
+        run("5.2.1.Final");
     }
 
     private static void run(String version, String annotationsVersion, String... profiles)

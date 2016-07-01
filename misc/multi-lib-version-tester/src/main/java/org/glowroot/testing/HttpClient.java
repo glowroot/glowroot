@@ -135,7 +135,9 @@ public class HttpClient {
             updateLibVersion("asynchttpclient.version", "1.9." + i);
             runTest(test, "async-http-client-1.x");
         }
-        updateLibVersion("asynchttpclient.version", "2.0.0");
+        for (int i = 0; i <= 9; i++) {
+            updateLibVersion("asynchttpclient.version", "2.0." + i);
+        }
         runTest(test, "async-http-client-2.x");
     }
 
