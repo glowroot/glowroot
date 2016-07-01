@@ -80,8 +80,10 @@ public class AggregateDaoTest {
                 ImmutableRollupConfig.of(1000, 0), ImmutableRollupConfig.of(15000, 3600000),
                 ImmutableRollupConfig.of(900000000, 8 * 3600000));
         when(configRepository.getRollupConfigs()).thenReturn(rollupConfigs);
-        aggregateDao = new AggregateDao(dataSource, ImmutableList.<CappedDatabase>of(),
-                configRepository, mock(TransactionTypeDao.class));
+        aggregateDao = new AggregateDao(
+                dataSource, ImmutableList.<CappedDatabase>of(cappedDatabase, cappedDatabase,
+                        cappedDatabase, cappedDatabase),
+                configRepository, mock(TransactionTypeDao.class), mock(FullQueryTextDao.class));
     }
 
     @After
@@ -170,7 +172,8 @@ public class AggregateDaoTest {
                 .setOverallAggregate(overallAggregate)
                 .addAllTransactionAggregate(transactionAggregates)
                 .build();
-        aggregateDao.store(AGENT_ID, 10000, ImmutableList.of(aggregatesByType));
+        aggregateDao.store(AGENT_ID, 10000, ImmutableList.of(aggregatesByType),
+                ImmutableList.<String>of());
 
         List<TransactionAggregate> transactionAggregates2 = Lists.newArrayList();
         transactionAggregates2.add(TransactionAggregate.newBuilder()
@@ -205,7 +208,8 @@ public class AggregateDaoTest {
                 .setOverallAggregate(overallAggregate)
                 .addAllTransactionAggregate(transactionAggregates2)
                 .build();
-        aggregateDao.store(AGENT_ID, 20000, ImmutableList.of(aggregatesByType2));
+        aggregateDao.store(AGENT_ID, 20000, ImmutableList.of(aggregatesByType2),
+                ImmutableList.<String>of());
     }
 
     // used by TransactionCommonServiceTest

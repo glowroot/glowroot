@@ -16,11 +16,13 @@
 package org.glowroot.server.storage;
 
 import java.util.List;
+import java.util.Map;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SocketOptions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -33,6 +35,7 @@ import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
+import org.glowroot.common.model.MutableQuery;
 import org.glowroot.common.model.OverallErrorSummaryCollector;
 import org.glowroot.common.model.OverallErrorSummaryCollector.OverallErrorSummary;
 import org.glowroot.common.model.OverallSummaryCollector;
@@ -96,9 +99,10 @@ public class AggregateDaoIT {
     @Test
     public void shouldRollup() throws Exception {
         aggregateDao.truncateAll();
-        aggregateDao.store("one", 60000, createData());
-        aggregateDao.store("one", 120000, createData());
-        aggregateDao.store("one", 360000, createData());
+        List<String> sharedQueryText = ImmutableList.of("select 1");
+        aggregateDao.store("one", 60000, createData(), sharedQueryText);
+        aggregateDao.store("one", 120000, createData(), sharedQueryText);
+        aggregateDao.store("one", 360000, createData(), sharedQueryText);
 
         // check non-rolled up data
         OverallQuery overallQuery = ImmutableOverallQuery.builder()
@@ -173,14 +177,17 @@ public class AggregateDaoIT {
 
         QueryCollector queryCollector = new QueryCollector(1000, 0);
         aggregateDao.mergeInQueries("one", transactionQuery, queryCollector);
-        List<QueriesByType> queriesByType = queryCollector.toProto();
+        Map<String, List<MutableQuery>> queries = queryCollector.getSortedQueries();
+        assertThat(queries).hasSize(1);
+        List<MutableQuery> queriesByType = queries.get("sqlo");
         assertThat(queriesByType).hasSize(1);
-        assertThat(queriesByType.get(0).getType()).isEqualTo("sqlo");
-        assertThat(queriesByType.get(0).getQueryCount()).isEqualTo(1);
-        assertThat(queriesByType.get(0).getQuery(0).getText()).isEqualTo("select 1");
-        assertThat(queriesByType.get(0).getQuery(0).getTotalDurationNanos()).isEqualTo(14);
-        assertThat(queriesByType.get(0).getQuery(0).getTotalRows().getValue()).isEqualTo(10);
-        assertThat(queriesByType.get(0).getQuery(0).getExecutionCount()).isEqualTo(4);
+        MutableQuery query = queriesByType.get(0);
+        assertThat(query.getTruncatedQueryText()).isEqualTo("select 1");
+        assertThat(query.getFullQueryTextSha1()).isNull();
+        assertThat(query.getTotalDurationNanos()).isEqualTo(14);
+        assertThat(query.hasTotalRows()).isTrue();
+        assertThat(query.getTotalRows()).isEqualTo(10);
+        assertThat(query.getExecutionCount()).isEqualTo(4);
 
         // rollup
         aggregateDao.rollup();
@@ -245,14 +252,17 @@ public class AggregateDaoIT {
 
         queryCollector = new QueryCollector(1000, 0);
         aggregateDao.mergeInQueries("one", transactionQuery, queryCollector);
-        queriesByType = queryCollector.toProto();
+        queries = queryCollector.getSortedQueries();
+        assertThat(queries).hasSize(1);
+        queriesByType = queries.get("sqlo");
         assertThat(queriesByType).hasSize(1);
-        assertThat(queriesByType.get(0).getType()).isEqualTo("sqlo");
-        assertThat(queriesByType.get(0).getQueryCount()).isEqualTo(1);
-        assertThat(queriesByType.get(0).getQuery(0).getText()).isEqualTo("select 1");
-        assertThat(queriesByType.get(0).getQuery(0).getTotalDurationNanos()).isEqualTo(14);
-        assertThat(queriesByType.get(0).getQuery(0).getTotalRows().getValue()).isEqualTo(10);
-        assertThat(queriesByType.get(0).getQuery(0).getExecutionCount()).isEqualTo(4);
+        query = queriesByType.get(0);
+        assertThat(query.getTruncatedQueryText()).isEqualTo("select 1");
+        assertThat(query.getFullQueryTextSha1()).isNull();
+        assertThat(query.getTotalDurationNanos()).isEqualTo(14);
+        assertThat(query.hasTotalRows()).isTrue();
+        assertThat(query.getTotalRows()).isEqualTo(10);
+        assertThat(query.getExecutionCount()).isEqualTo(4);
     }
 
     private static List<AggregatesByType> createData() {
@@ -292,7 +302,7 @@ public class AggregateDaoIT {
                 .addQueriesByType(QueriesByType.newBuilder()
                         .setType("sqlo")
                         .addQuery(Query.newBuilder()
-                                .setText("select 1")
+                                .setSharedQueryTextIndex(0)
                                 .setTotalDurationNanos(7)
                                 .setTotalRows(OptionalInt64.newBuilder().setValue(5))
                                 .setExecutionCount(2)))
@@ -320,7 +330,7 @@ public class AggregateDaoIT {
                         .addQueriesByType(QueriesByType.newBuilder()
                                 .setType("sqlo")
                                 .addQuery(Query.newBuilder()
-                                        .setText("select 1")
+                                        .setSharedQueryTextIndex(0)
                                         .setTotalDurationNanos(7)
                                         .setTotalRows(OptionalInt64.newBuilder().setValue(5))
                                         .setExecutionCount(2))))

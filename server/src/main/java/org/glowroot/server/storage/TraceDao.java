@@ -43,6 +43,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.immutables.value.Value;
+import util.Messages;
 
 import org.glowroot.common.live.ImmutableTracePoint;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
@@ -50,7 +51,6 @@ import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.model.Result;
 import org.glowroot.common.util.Styles;
-import org.glowroot.server.util.Messages;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ImmutableErrorMessageCount;
 import org.glowroot.storage.repo.ImmutableErrorMessagePoint;

@@ -153,7 +153,7 @@ class GrpcServerWrapper {
                 StreamObserver<EmptyMessage> responseObserver) {
             try {
                 collector.collectAggregates(request.getCaptureTime(),
-                        request.getAggregatesByTypeList());
+                        request.getAggregatesByTypeList(), request.getSharedQueryTextList());
             } catch (Throwable t) {
                 responseObserver.onError(t);
                 return;

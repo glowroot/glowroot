@@ -121,11 +121,13 @@ public class ServerCollectorImpl implements Collector {
     }
 
     @Override
-    public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType) {
+    public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType,
+            List<String> sharedQueryTexts) {
         final AggregateMessage aggregateMessage = AggregateMessage.newBuilder()
                 .setAgentId(agentId)
                 .setCaptureTime(captureTime)
                 .addAllAggregatesByType(aggregatesByType)
+                .addAllSharedQueryText(sharedQueryTexts)
                 .build();
         serverConnection.callWithAFewRetries(new GrpcCall<EmptyMessage>() {
             @Override

@@ -132,6 +132,7 @@ public abstract class WebDriverIT {
                 + "\"version\":\"$version\"}");
         resetAdminServerConfig("storage", "{\"rollupExpirationHours\":[72,336,2160,17520],"
                 + "\"traceExpirationHours\":336,"
+                + "\"fullQueryTextExpirationHours\":336,"
                 + "\"version\":\"$version\"}");
         resetAdminServerConfig("smtp", "{\"fromEmailAddress\":\"\","
                 + "\"fromDisplayName\":\"\","

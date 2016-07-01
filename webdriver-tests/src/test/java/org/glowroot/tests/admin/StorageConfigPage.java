@@ -39,6 +39,10 @@ public class StorageConfigPage {
         return withWait(xpath("//div[@gt-model='page.traceExpirationDays']//input"));
     }
 
+    public WebElement getFullQueryTextExpirationTextField() {
+        return withWait(xpath("//div[@gt-model='page.fullQueryTextExpirationDays']//input"));
+    }
+
     public WebElement getRollupCappedDatabaseSizeTextField(int i) {
         return withWait(
                 xpath("//div[@gt-model='config.rollupCappedDatabaseSizesMb[" + i + "]']//input"));

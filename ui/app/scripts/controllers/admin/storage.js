@@ -48,6 +48,12 @@ glowroot.controller('AdminStorageCtrl', [
       }
     });
 
+    $scope.$watchCollection('page.fullQueryTextExpirationDays', function (newValue) {
+      if ($scope.config) {
+        $scope.config.fullQueryTextExpirationHours = newValue * 24;
+      }
+    });
+
     function onNewData(data) {
       $scope.loaded = true;
       $scope.config = data;
@@ -58,6 +64,7 @@ glowroot.controller('AdminStorageCtrl', [
         $scope.page.rollupExpirationDays.push(hours / 24);
       });
       $scope.page.traceExpirationDays = data.traceExpirationHours / 24;
+      $scope.page.fullQueryTextExpirationDays = data.fullQueryTextExpirationHours / 24;
     }
 
     $scope.save = function (deferred) {

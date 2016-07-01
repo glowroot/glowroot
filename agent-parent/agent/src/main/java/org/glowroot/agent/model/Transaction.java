@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.impl.QueryCollector;
 import org.glowroot.agent.impl.TransactionCollection.TransactionEntry;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionServiceImpl;
@@ -60,7 +61,6 @@ import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
-import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.Cancellable;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -340,13 +340,15 @@ public class Transaction {
         }
     }
 
-    public void mergeQueriesInto(QueryCollector queries) {
+    public void mergeQueriesInto(QueryCollector queries,
+            Map<String, Integer> sharedQueryTextIndexes, List<String> sharedQueryTexts) {
         memoryBarrierRead();
-        mainThreadContext.mergeQueriesInto(queries);
+        mainThreadContext.mergeQueriesInto(queries, sharedQueryTextIndexes, sharedQueryTexts);
         synchronized (mainThreadContext) {
             if (auxThreadContexts != null) {
                 for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
-                    auxThreadContext.mergeQueriesInto(queries);
+                    auxThreadContext.mergeQueriesInto(queries, sharedQueryTextIndexes,
+                            sharedQueryTexts);
                 }
             }
         }

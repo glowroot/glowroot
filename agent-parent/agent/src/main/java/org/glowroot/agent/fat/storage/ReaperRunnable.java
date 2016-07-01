@@ -30,17 +30,19 @@ class ReaperRunnable extends ScheduledRunnable {
     private final GaugeValueDao gaugeValueDao;
     private final GaugeNameDao gaugeNameDao;
     private final TransactionTypeDao transactionTypeDao;
+    private final FullQueryTextDao fullQueryTextDao;
     private final Clock clock;
 
     ReaperRunnable(ConfigRepository configService, AggregateDao aggregateDao, TraceDao traceDao,
             GaugeValueDao gaugeValueDao, GaugeNameDao gaugeNameDao,
-            TransactionTypeDao transactionTypeDao, Clock clock) {
+            TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao, Clock clock) {
         this.configRepository = configService;
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
         this.gaugeValueDao = gaugeValueDao;
         this.gaugeNameDao = gaugeNameDao;
         this.transactionTypeDao = transactionTypeDao;
+        this.fullQueryTextDao = fullQueryTextDao;
         this.clock = clock;
     }
 
@@ -66,5 +68,8 @@ class ReaperRunnable extends ScheduledRunnable {
         minCaptureTime = Math.min(minCaptureTime, traceCaptureTime);
 
         transactionTypeDao.deleteBefore(minCaptureTime);
+
+        fullQueryTextDao.deleteBefore(
+                currentTime - HOURS.toMillis(storageConfig.fullQueryTextExpirationHours()));
     }
 }

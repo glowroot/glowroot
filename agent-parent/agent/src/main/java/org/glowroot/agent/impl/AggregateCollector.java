@@ -42,7 +42,6 @@ import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.model.OverallErrorSummaryCollector;
 import org.glowroot.common.model.OverallSummaryCollector;
 import org.glowroot.common.model.ProfileCollector;
-import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.model.TransactionErrorSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector;
@@ -231,9 +230,10 @@ class AggregateCollector {
         return ImmutableThroughputAggregate.of(captureTime, transactionCount);
     }
 
-    void mergeInQueries(QueryCollector collector) throws IOException {
+    void mergeInQueries(org.glowroot.common.model.QueryCollector collector,
+            List<String> sharedQueryTexts) throws IOException {
         if (queries != null) {
-            collector.mergeQueries(queries.toProto());
+            queries.mergeInQueries(collector, sharedQueryTexts);
         }
     }
 

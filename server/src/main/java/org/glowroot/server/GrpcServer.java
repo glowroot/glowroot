@@ -117,7 +117,7 @@ class GrpcServer {
                 StreamObserver<EmptyMessage> responseObserver) {
             try {
                 aggregateRepository.store(request.getAgentId(), request.getCaptureTime(),
-                        request.getAggregatesByTypeList());
+                        request.getAggregatesByTypeList(), request.getSharedQueryTextList());
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
                 responseObserver.onError(t);

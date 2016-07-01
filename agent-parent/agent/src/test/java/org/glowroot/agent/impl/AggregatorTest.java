@@ -101,7 +101,8 @@ public class AggregatorTest {
                 AgentConfigUpdater agentConfigUpdater) {}
 
         @Override
-        public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType) {
+        public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType,
+                List<String> sharedQueryTexts) {
             // only capture first non-zero value
             if (totalDurationNanos == 0 && !aggregatesByType.isEmpty()) {
                 totalDurationNanos =

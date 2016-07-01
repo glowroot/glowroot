@@ -98,8 +98,9 @@ public class SimpleRepoModule {
         agentDao = new AgentDao(dataSource);
         transactionTypeDao = new TransactionTypeDao(dataSource);
         rollupLevelService = new RollupLevelService(configRepository, clock);
+        FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(dataSource);
         aggregateDao = new AggregateDao(dataSource, this.rollupCappedDatabases, configRepository,
-                transactionTypeDao);
+                transactionTypeDao, fullQueryTextDao);
         traceDao = new TraceDao(dataSource, traceCappedDatabase, transactionTypeDao);
         GaugeNameDao gaugeNameDao = new GaugeNameDao(dataSource);
         gaugeValueDao = new GaugeValueDao(dataSource, gaugeNameDao, clock);
@@ -114,7 +115,7 @@ public class SimpleRepoModule {
             reaperRunnable = null;
         } else {
             reaperRunnable = new ReaperRunnable(configRepository, aggregateDao, traceDao,
-                    gaugeValueDao, gaugeNameDao, transactionTypeDao, clock);
+                    gaugeValueDao, gaugeNameDao, transactionTypeDao, fullQueryTextDao, clock);
             reaperRunnable.scheduleWithFixedDelay(backgroundExecutor, 0,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }

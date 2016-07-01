@@ -794,6 +794,7 @@
                 <!-- checker.stubs.dir needs to be absolute path since relative path will be
                   interpreted from each module directory -->
                 <arg>-Astubs=${checker.stubs.dir}</arg>
+                <arg>-AskipDefs=^org\.glowroot\.agent\.fat\.storage\.model\.</arg>
               </compilerArgs>
             </configuration>
           </plugin>

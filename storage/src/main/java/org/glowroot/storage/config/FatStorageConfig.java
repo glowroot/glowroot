@@ -49,6 +49,13 @@ public abstract class FatStorageConfig implements StorageConfig {
         return 24 * 14;
     }
 
+    @Override
+    @Value.Default
+    public int fullQueryTextExpirationHours() {
+        // 2 weeks
+        return 24 * 14;
+    }
+
     @Value.Default
     @SuppressWarnings("immutables")
     public ImmutableList<Integer> rollupCappedDatabaseSizesMb() {

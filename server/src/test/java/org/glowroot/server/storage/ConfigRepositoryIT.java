@@ -508,6 +508,7 @@ public class ConfigRepositoryIT {
                 .addRollupExpirationHours(3)
                 .addRollupExpirationHours(4)
                 .traceExpirationHours(100)
+                .fullQueryTextExpirationHours(100)
                 .build();
 
         // when

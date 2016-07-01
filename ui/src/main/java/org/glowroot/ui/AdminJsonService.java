@@ -341,6 +341,7 @@ class AdminJsonService {
 
         abstract ImmutableList<Integer> rollupExpirationHours();
         abstract int traceExpirationHours();
+        abstract int fullQueryTextExpirationHours();
         abstract ImmutableList<Integer> rollupCappedDatabaseSizesMb();
         abstract int traceCappedDatabaseSizeMb();
         abstract String version();
@@ -349,6 +350,7 @@ class AdminJsonService {
             return ImmutableFatStorageConfig.builder()
                     .rollupExpirationHours(rollupExpirationHours())
                     .traceExpirationHours(traceExpirationHours())
+                    .fullQueryTextExpirationHours(fullQueryTextExpirationHours())
                     .rollupCappedDatabaseSizesMb(rollupCappedDatabaseSizesMb())
                     .traceCappedDatabaseSizeMb(traceCappedDatabaseSizeMb())
                     .build();
@@ -358,6 +360,7 @@ class AdminJsonService {
             return ImmutableFatStorageConfigDto.builder()
                     .addAllRollupExpirationHours(config.rollupExpirationHours())
                     .traceExpirationHours(config.traceExpirationHours())
+                    .fullQueryTextExpirationHours(config.fullQueryTextExpirationHours())
                     .addAllRollupCappedDatabaseSizesMb(config.rollupCappedDatabaseSizesMb())
                     .traceCappedDatabaseSizeMb(config.traceCappedDatabaseSizeMb())
                     .version(config.version())
@@ -370,12 +373,14 @@ class AdminJsonService {
 
         abstract ImmutableList<Integer> rollupExpirationHours();
         abstract int traceExpirationHours();
+        abstract int fullQueryTextExpirationHours();
         abstract String version();
 
         private ServerStorageConfig convert() {
             return ImmutableServerStorageConfig.builder()
                     .rollupExpirationHours(rollupExpirationHours())
                     .traceExpirationHours(traceExpirationHours())
+                    .fullQueryTextExpirationHours(fullQueryTextExpirationHours())
                     .build();
         }
 
@@ -383,6 +388,7 @@ class AdminJsonService {
             return ImmutableServerStorageConfigDto.builder()
                     .addAllRollupExpirationHours(config.rollupExpirationHours())
                     .traceExpirationHours(config.traceExpirationHours())
+                    .fullQueryTextExpirationHours(config.fullQueryTextExpirationHours())
                     .version(config.version())
                     .build();
         }

@@ -50,10 +50,10 @@ public class CollectorProxy implements Collector {
     }
 
     @Override
-    public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType)
-            throws Exception {
+    public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType,
+            List<String> sharedQueryTexts) throws Exception {
         if (instance != null) {
-            instance.collectAggregates(captureTime, aggregatesByType);
+            instance.collectAggregates(captureTime, aggregatesByType, sharedQueryTexts);
         }
     }
 

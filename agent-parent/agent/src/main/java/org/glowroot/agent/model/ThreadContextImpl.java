@@ -17,6 +17,7 @@ package org.glowroot.agent.model;
 
 import java.lang.management.ThreadInfo;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -32,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.impl.AuxThreadContextImpl;
+import org.glowroot.agent.impl.QueryCollector;
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
 import org.glowroot.agent.plugin.api.AsyncTraceEntry;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
@@ -50,7 +52,6 @@ import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.agent.util.Tickers;
-import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
@@ -188,12 +189,20 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.currentNestingGroupId = nestingGroupId;
     }
 
-    void mergeQueriesInto(QueryCollector queries) {
+    void mergeQueriesInto(QueryCollector queries, Map<String, Integer> sharedQueryTextIndexes,
+            List<String> sharedQueryTexts) {
         QueryData curr = headQueryData;
         while (curr != null) {
-            queries.mergeQuery(curr.getQueryType(), curr.getQueryText(),
-                    curr.getTotalDurationNanos(), curr.getExecutionCount(),
-                    curr.isRowNavigationAttempted(), curr.getTotalRows());
+            String queryText = curr.getQueryText();
+            Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(queryText);
+            if (sharedQueryTextIndex == null) {
+                sharedQueryTextIndex = sharedQueryTexts.size();
+                sharedQueryTexts.add(queryText);
+                sharedQueryTextIndexes.put(queryText, sharedQueryTextIndex);
+            }
+            queries.mergeQuery(curr.getQueryType(), sharedQueryTextIndex,
+                    curr.getTotalDurationNanos(), curr.getExecutionCount(), curr.hasTotalRows(),
+                    curr.getTotalRows());
             curr = curr.getNextQueryData();
         }
     }

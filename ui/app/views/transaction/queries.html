@@ -103,7 +103,7 @@
       <tr ng-repeat="query in queries | filter:{queryType: queryType} | orderBy:sortAttr:sortReverse">
         <td class="gt-query-text-column"
             ng-click="showQueryModal(query)">
-          {{query.queryText}}
+          {{query.truncatedQueryText}}
         </td>
         <td class="gt-query-total-column">
           {{query.totalDurationNanos / 1000000 | gtMillis}}
@@ -125,7 +125,7 @@
             ng-click="showQueryModal(query)"
             colspan="5"
             style="padding-bottom: 4px;">
-          {{query.queryText}}
+          {{query.truncatedQueryText}}
         </td>
       </tr>
       <tr ng-repeat-end>
@@ -161,6 +161,15 @@
 
   <div class="modal-dialog">
     <div class="modal-body">
+      <div gt-spinner
+           gt-show="showModalSpinner"
+           style="position: relative; display: inline-block; padding-left: 40px; padding-top: 60px;">
+      </div>
+      <div ng-if="queryExpired">
+        <strong>
+          The full text for this query has expired
+        </strong>
+      </div>
       <!-- display: inline-block is so that true width can be calculated and modal shrunk to fit if possible -->
       <!-- not using ng-show/hide here since need it to be visible for size calculation -->
       <pre class="gt-monospace"

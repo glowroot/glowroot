@@ -56,6 +56,24 @@ public class RowMappers {
         }
     }
 
+    public static void setDouble(PreparedStatement preparedStatement, int columnIndex,
+            @Nullable Double value) throws SQLException {
+        if (value == null) {
+            preparedStatement.setNull(columnIndex, Types.DOUBLE);
+        } else {
+            preparedStatement.setDouble(columnIndex, value);
+        }
+    }
+
+    public static void setBytes(PreparedStatement preparedStatement, int columnIndex,
+            byte /*@Nullable*/ [] value) throws SQLException {
+        if (value == null) {
+            preparedStatement.setNull(columnIndex, Types.VARBINARY);
+        } else {
+            preparedStatement.setBytes(columnIndex, value);
+        }
+    }
+
     public static Existence getExistence(ResultSet resultSet, int columnIndex,
             CappedDatabase cappedDatabase) throws SQLException {
         long cappedId = resultSet.getLong(columnIndex);

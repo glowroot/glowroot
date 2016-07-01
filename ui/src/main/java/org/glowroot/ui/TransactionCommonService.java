@@ -17,6 +17,9 @@ package org.glowroot.ui;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Nullable;
 
 import com.google.common.collect.Lists;
 
@@ -31,6 +34,7 @@ import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.MutableProfile;
+import org.glowroot.common.model.MutableQuery;
 import org.glowroot.common.model.OverallSummaryCollector;
 import org.glowroot.common.model.OverallSummaryCollector.OverallSummary;
 import org.glowroot.common.model.ProfileCollector;
@@ -258,8 +262,8 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    List<Aggregate.QueriesByType> getMergedQueries(String agentRollup, TransactionQuery query)
-            throws Exception {
+    Map<String, List<MutableQuery>> getMergedQueries(String agentRollup,
+            TransactionQuery query) throws Exception {
         int maxAggregateQueriesPerType = getMaxAggregateQueriesPerType(agentRollup);
         QueryCollector queryCollector = new QueryCollector(maxAggregateQueriesPerType, 0);
         long revisedFrom = query.from();
@@ -278,7 +282,19 @@ class TransactionCommonService {
                 break;
             }
         }
-        return queryCollector.toProto();
+        return queryCollector.getSortedQueries();
+    }
+
+    @Nullable
+    String readFullQueryText(String agentRollup, String fullQueryTextSha1) throws Exception {
+        // checking live data is not efficient since must perform many sha1 hashes
+        // so check repository first
+        String fullQueryText =
+                aggregateRepository.readFullQueryText(agentRollup, fullQueryTextSha1);
+        if (fullQueryText != null) {
+            return fullQueryText;
+        }
+        return liveAggregateRepository.readFullQueryText(agentRollup, fullQueryTextSha1);
     }
 
     // query.from() is non-inclusive

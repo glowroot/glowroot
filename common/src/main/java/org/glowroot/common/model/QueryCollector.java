@@ -15,31 +15,28 @@
  */
 package org.glowroot.common.model;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.primitives.Doubles;
+import javax.annotation.Nullable;
 
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+import com.google.common.base.MoreObjects;
+import com.google.common.collect.Maps;
 
 public class QueryCollector {
 
+    // first key is query type, second key is either full query text (if query text is relatively
+    // short) or sha1 of full query text (if query text is long)
     private final Map<String, Map<String, MutableQuery>> queries = Maps.newHashMap();
-    private final int limit;
+    private final int limitPerQueryType;
     private final int maxMultiplierWhileBuilding;
 
     // this is only used by UI
     private long lastCaptureTime;
 
-    public QueryCollector(int limit, int maxMultiplierWhileBuilding) {
-        this.limit = limit;
+    public QueryCollector(int limitPerQueryType, int maxMultiplierWhileBuilding) {
+        this.limitPerQueryType = limitPerQueryType;
         this.maxMultiplierWhileBuilding = maxMultiplierWhileBuilding;
     }
 
@@ -51,83 +48,46 @@ public class QueryCollector {
         return lastCaptureTime;
     }
 
-    public List<Aggregate.QueriesByType> toProto() {
-        if (queries.isEmpty()) {
-            return ImmutableList.of();
-        }
-        List<Aggregate.QueriesByType> queriesByType = Lists.newArrayList();
+    public Map<String, List<MutableQuery>> getSortedQueries() {
+        Map<String, List<MutableQuery>> sortedQueries = Maps.newHashMap();
         for (Entry<String, Map<String, MutableQuery>> entry : queries.entrySet()) {
-            List<Aggregate.Query> queries =
-                    Lists.newArrayListWithCapacity(entry.getValue().values().size());
-            for (MutableQuery query : entry.getValue().values()) {
-                queries.add(query.toProto());
+            List<MutableQuery> list =
+                    MutableQuery.byTotalDurationDesc.sortedCopy(entry.getValue().values());
+            if (list.size() > limitPerQueryType) {
+                list = list.subList(0, limitPerQueryType);
             }
-            if (queries.size() > limit) {
-                order(queries);
-                queries = queries.subList(0, limit);
-            }
-            queriesByType.add(Aggregate.QueriesByType.newBuilder()
-                    .setType(entry.getKey())
-                    .addAllQuery(queries)
-                    .build());
+            sortedQueries.put(entry.getKey(), list);
         }
-        return queriesByType;
+        return sortedQueries;
     }
 
-    public void mergeQueries(List<Aggregate.QueriesByType> toBeMergedQueries) throws IOException {
-        for (Aggregate.QueriesByType toBeMergedQueriesByType : toBeMergedQueries) {
-            mergeQueries(toBeMergedQueriesByType);
-        }
-    }
-
-    public void mergeQueries(Aggregate.QueriesByType toBeMergedQueries) {
-        String queryType = toBeMergedQueries.getType();
+    public void mergeQuery(String queryType, String truncatedQueryText,
+            @Nullable String fullQueryTextSha1, double totalDurationNanos, long executionCount,
+            boolean hasRows, long totalRows) {
         Map<String, MutableQuery> queriesForType = queries.get(queryType);
         if (queriesForType == null) {
             queriesForType = Maps.newHashMap();
             queries.put(queryType, queriesForType);
         }
-        for (Aggregate.Query query : toBeMergedQueries.getQueryList()) {
-            mergeQuery(query.getText(), query.getTotalDurationNanos(), query.getExecutionCount(),
-                    query.getTotalRows().getValue(), query.hasTotalRows(), queriesForType);
-        }
+        mergeQuery(truncatedQueryText, fullQueryTextSha1, totalDurationNanos, executionCount,
+                hasRows, totalRows, queriesForType);
     }
 
-    public void mergeQuery(String queryType, String queryText, double totalDurationNanos,
-            long executionCount, boolean rowNavigationAttempted, long totalRows) {
-        Map<String, MutableQuery> queriesForType = queries.get(queryType);
-        if (queriesForType == null) {
-            queriesForType = Maps.newHashMap();
-            queries.put(queryType, queriesForType);
-        }
-        mergeQuery(queryText, totalDurationNanos, executionCount, totalRows, rowNavigationAttempted,
-                queriesForType);
-    }
-
-    private void mergeQuery(String queryText, double totalDurationNanos, long executionCount,
-            long totalRows, boolean rowNavigationAttempted,
+    private void mergeQuery(String truncatedQueryText, @Nullable String fullQueryTextSha1,
+            double totalDurationNanos, long executionCount, boolean hasRows, long totalRows,
             Map<String, MutableQuery> queriesForType) {
-        MutableQuery aggregateQuery = queriesForType.get(queryText);
+        String queryKey = MoreObjects.firstNonNull(fullQueryTextSha1, truncatedQueryText);
+        MutableQuery aggregateQuery = queriesForType.get(queryKey);
         if (aggregateQuery == null) {
             if (maxMultiplierWhileBuilding != 0
-                    && queriesForType.size() >= limit * maxMultiplierWhileBuilding) {
+                    && queriesForType.size() >= limitPerQueryType * maxMultiplierWhileBuilding) {
                 return;
             }
-            aggregateQuery = new MutableQuery(queryText);
-            queriesForType.put(queryText, aggregateQuery);
+            aggregateQuery = new MutableQuery(truncatedQueryText, fullQueryTextSha1);
+            queriesForType.put(queryKey, aggregateQuery);
         }
         aggregateQuery.addToTotalDurationNanos(totalDurationNanos);
         aggregateQuery.addToExecutionCount(executionCount);
-        aggregateQuery.addToTotalRows(rowNavigationAttempted, totalRows);
-    }
-
-    private void order(List<Aggregate.Query> queries) {
-        // reverse sort by total
-        Collections.sort(queries, new Comparator<Aggregate.Query>() {
-            @Override
-            public int compare(Aggregate.Query left, Aggregate.Query right) {
-                return Doubles.compare(right.getTotalDurationNanos(), left.getTotalDurationNanos());
-            }
-        });
+        aggregateQuery.addToTotalRows(hasRows, totalRows);
     }
 }

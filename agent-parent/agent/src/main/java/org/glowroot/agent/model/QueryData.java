@@ -48,7 +48,7 @@ class QueryData {
 
     // this is needed to differentiate between queries that return no rows, and queries which don't
     // even have a concept of row (e.g. http client requests which are also tracked as queries)
-    private boolean rowNavigationAttempted;
+    private boolean hasTotalRows;
     private long totalRows;
 
     private long startTick;
@@ -86,12 +86,12 @@ class QueryData {
         }
     }
 
-    void setRowNavigationAttempted() {
-        rowNavigationAttempted = true;
+    void setHasTotalRows() {
+        hasTotalRows = true;
     }
 
     void incrementRowCount(long inc) {
-        rowNavigationAttempted = true;
+        hasTotalRows = true;
         totalRows += inc;
     }
 
@@ -105,8 +105,8 @@ class QueryData {
     }
 
     // only called after transaction completion
-    boolean isRowNavigationAttempted() {
-        return rowNavigationAttempted;
+    boolean hasTotalRows() {
+        return hasTotalRows;
     }
 
     // only called after transaction completion

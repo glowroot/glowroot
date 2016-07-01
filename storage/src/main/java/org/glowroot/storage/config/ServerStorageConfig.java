@@ -46,6 +46,13 @@ public abstract class ServerStorageConfig implements StorageConfig {
         return 24 * 14;
     }
 
+    @Override
+    @Value.Default
+    public int fullQueryTextExpirationHours() {
+        // 2 weeks
+        return 24 * 14;
+    }
+
     @Value.Derived
     @JsonIgnore
     public String version() {

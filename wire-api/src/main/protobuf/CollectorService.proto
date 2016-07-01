@@ -31,6 +31,8 @@ message AggregateMessage {
   string agent_id = 1;
   int64 capture_time = 2;
   repeated AggregatesByType aggregates_by_type = 3;
+  // shared query text across all aggregates to reduce payload, referenced by index
+  repeated string shared_query_text = 4;
 }
 
 message GaugeValueMessage {

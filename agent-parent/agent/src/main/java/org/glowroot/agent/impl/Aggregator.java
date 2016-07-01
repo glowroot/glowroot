@@ -215,11 +215,7 @@ public class Aggregator {
                         configService.getAdvancedConfig().maxAggregateQueriesPerType(),
                         configService.getAdvancedConfig().maxAggregateServiceCallsPerType(), clock);
             }
-            // the synchronized block is to ensure visibility of updates to this particular
-            // activeIntervalCollector
-            synchronized (activeIntervalCollector) {
-                activeIntervalCollector.add(transaction);
-            }
+            activeIntervalCollector.add(transaction);
         }
 
         private void maybeEndOfInterval() {
@@ -260,16 +256,12 @@ public class Aggregator {
             flushingExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    // this synchronized block is to ensure visibility of updates to this particular
-                    // interval collector
-                    synchronized (intervalCollector) {
-                        try {
-                            intervalCollector.flush(collector);
-                        } catch (Throwable t) {
-                            logger.error(t.getMessage(), t);
-                        } finally {
-                            pendingIntervalCollectors.remove(intervalCollector);
-                        }
+                    try {
+                        intervalCollector.flush(collector);
+                    } catch (Throwable t) {
+                        logger.error(t.getMessage(), t);
+                    } finally {
+                        pendingIntervalCollectors.remove(intervalCollector);
                     }
                 }
             });

@@ -108,7 +108,8 @@ class TraceCollector implements Collector {
             AgentConfigUpdater agentConfigUpdater) {}
 
     @Override
-    public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType) {}
+    public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType,
+            List<String> sharedQueryTexts) {}
 
     @Override
     public void collectGaugeValues(List<GaugeValue> gaugeValues) {}

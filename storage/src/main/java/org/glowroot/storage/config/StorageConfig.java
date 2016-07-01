@@ -19,6 +19,8 @@ import com.google.common.collect.ImmutableList;
 
 public interface StorageConfig {
 
+    int QUERY_TEXT_TRUNCATE = 120;
+
     // TODO revisit this comment
     //
     // currently aggregate expiration should be at least as big as trace expiration
@@ -26,4 +28,6 @@ public interface StorageConfig {
     ImmutableList<Integer> rollupExpirationHours();
 
     int traceExpirationHours();
+
+    int fullQueryTextExpirationHours();
 }

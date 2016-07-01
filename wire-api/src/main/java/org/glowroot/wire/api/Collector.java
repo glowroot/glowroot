@@ -31,8 +31,8 @@ public interface Collector {
     void init(File glowrootBaseDir, SystemInfo systemInfo, AgentConfig agentConfig,
             AgentConfigUpdater agentConfigUpdater) throws Exception;
 
-    void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType)
-            throws Exception;
+    void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType,
+            List<String> sharedQueryTexts) throws Exception;
 
     void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception;
 

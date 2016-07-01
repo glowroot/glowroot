@@ -21,6 +21,7 @@ import java.util.zip.DataFormatException;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
@@ -64,6 +65,74 @@ public class MutableAggregate {
     public MutableAggregate(int maxAggregateQueriesPerType, int maxAggregateServiceCallsPerType) {
         this.maxAggregateQueriesPerType = maxAggregateQueriesPerType;
         this.maxAggregateServiceCallsPerType = maxAggregateServiceCallsPerType;
+    }
+
+    public double getTotalDurationNanos() {
+        return totalDurationNanos;
+    }
+
+    public long getTransactionCount() {
+        return transactionCount;
+    }
+
+    public long getErrorCount() {
+        return errorCount;
+    }
+
+    public boolean isAsyncTransactions() {
+        return asyncTransactions;
+    }
+
+    public List<Aggregate.Timer> getMainThreadRootTimersProto() {
+        return toProto(mainThreadRootTimers);
+    }
+
+    public List<Aggregate.Timer> getAuxThreadRootTimersProto() {
+        return toProto(auxThreadRootTimers);
+    }
+
+    public List<Aggregate.Timer> getAsyncTimersProto() {
+        return toProto(asyncTimers);
+    }
+
+    public MutableThreadStats getMainThreadStats() {
+        return mainThreadStats;
+    }
+
+    public MutableThreadStats getAuxThreadStats() {
+        return auxThreadStats;
+    }
+
+    public LazyHistogram getDurationNanosHistogram() {
+        return durationNanosHistogram;
+    }
+
+    public @Nullable QueryCollector getQueries() {
+        return queries;
+    }
+
+    public List<Aggregate.ServiceCallsByType> getServiceCallsProto() {
+        if (serviceCalls == null) {
+            return ImmutableList.of();
+        } else {
+            return serviceCalls.toProto();
+        }
+    }
+
+    public @Nullable MutableProfile getMainThreadProfile() {
+        return mainThreadProfile;
+    }
+
+    public @Nullable MutableProfile getAuxThreadProfile() {
+        return auxThreadProfile;
+    }
+
+    public int getMaxAggregateQueriesPerType() {
+        return maxAggregateQueriesPerType;
+    }
+
+    public int getMaxAggregateServiceCallsPerType() {
+        return maxAggregateServiceCallsPerType;
     }
 
     public boolean isEmpty() {
@@ -145,37 +214,6 @@ public class MutableAggregate {
         durationNanosHistogram.merge(toBeMergedDurationNanosHistogram);
     }
 
-    public Aggregate toAggregate(ScratchBuffer scratchBuffer) throws IOException {
-        Aggregate.Builder builder = Aggregate.newBuilder()
-                .setTotalDurationNanos(totalDurationNanos)
-                .setTransactionCount(transactionCount)
-                .setErrorCount(errorCount)
-                .setAsyncTransactions(asyncTransactions)
-                .addAllMainThreadRootTimer(toProto(mainThreadRootTimers))
-                .addAllAuxThreadRootTimer(toProto(auxThreadRootTimers))
-                .addAllAsyncTimer(toProto(asyncTimers))
-                .setDurationNanosHistogram(durationNanosHistogram.toProto(scratchBuffer));
-        if (!mainThreadStats.isNA()) {
-            builder.setMainThreadStats(mainThreadStats.toProto());
-        }
-        if (!auxThreadStats.isNA()) {
-            builder.setAuxThreadStats(auxThreadStats.toProto());
-        }
-        if (queries != null) {
-            builder.addAllQueriesByType(queries.toProto());
-        }
-        if (serviceCalls != null) {
-            builder.addAllServiceCallsByType(serviceCalls.toProto());
-        }
-        if (mainThreadProfile != null) {
-            builder.setMainThreadProfile(mainThreadProfile.toProto());
-        }
-        if (auxThreadProfile != null) {
-            builder.setAuxThreadProfile(auxThreadProfile.toProto());
-        }
-        return builder.build();
-    }
-
     public OverviewAggregate toOverviewAggregate(long captureTime) throws IOException {
         ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
                 .captureTime(captureTime)
@@ -203,11 +241,14 @@ public class MutableAggregate {
                 .build();
     }
 
-    public void mergeQueries(List<Aggregate.QueriesByType> toBeMergedQueries) throws IOException {
+    public void mergeQuery(String queryType, String truncatedQueryText,
+            @Nullable String fullQueryTextSha1, double totalDurationNanos, long executionCount,
+            boolean hasTotalRows, long totalRows) {
         if (queries == null) {
             queries = new QueryCollector(maxAggregateQueriesPerType, 0);
         }
-        queries.mergeQueries(toBeMergedQueries);
+        queries.mergeQuery(queryType, truncatedQueryText, fullQueryTextSha1, totalDurationNanos,
+                executionCount, hasTotalRows, totalRows);
     }
 
     public void mergeServiceCalls(List<Aggregate.ServiceCallsByType> toBeMergedServiceCalls)

@@ -24,8 +24,8 @@ class MutableServiceCall {
     private double totalDurationNanos;
     private long executionCount;
 
-    MutableServiceCall(String queryText) {
-        this.serviceCallText = queryText;
+    MutableServiceCall(String serviceCallText) {
+        this.serviceCallText = serviceCallText;
     }
 
     void addToTotalDurationNanos(double totalDurationNanos) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,24 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.common.model;
+package org.glowroot.agent.impl;
 
-import javax.annotation.Nullable;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
-import com.google.common.collect.Ordering;
-import com.google.common.primitives.Doubles;
+class MutableQuery {
 
-public class MutableQuery {
-
-    public static final Ordering<MutableQuery> byTotalDurationDesc = new Ordering<MutableQuery>() {
-        @Override
-        public int compare(MutableQuery left, MutableQuery right) {
-            return Doubles.compare(right.getTotalDurationNanos(), left.getTotalDurationNanos());
-        }
-    };
-
-    private final String truncatedQueryText;
-    private final @Nullable String fullQueryTextSha1;
+    private final int sharedQueryTextIndex;
 
     private double totalDurationNanos;
     private long executionCount;
@@ -38,32 +28,27 @@ public class MutableQuery {
     private boolean hasTotalRows;
     private long totalRows;
 
-    MutableQuery(String truncatedQueryText, @Nullable String fullQueryTextSha1) {
-        this.truncatedQueryText = truncatedQueryText;
-        this.fullQueryTextSha1 = fullQueryTextSha1;
+    MutableQuery(int sharedQueryTextIndex) {
+        this.sharedQueryTextIndex = sharedQueryTextIndex;
     }
 
-    public String getTruncatedQueryText() {
-        return truncatedQueryText;
+    int getSharedQueryTextIndex() {
+        return sharedQueryTextIndex;
     }
 
-    public @Nullable String getFullQueryTextSha1() {
-        return fullQueryTextSha1;
-    }
-
-    public double getTotalDurationNanos() {
+    double getTotalDurationNanos() {
         return totalDurationNanos;
     }
 
-    public long getExecutionCount() {
+    long getExecutionCount() {
         return executionCount;
     }
 
-    public boolean hasTotalRows() {
+    boolean hasTotalRows() {
         return hasTotalRows;
     }
 
-    public long getTotalRows() {
+    long getTotalRows() {
         return totalRows;
     }
 
@@ -80,5 +65,16 @@ public class MutableQuery {
             this.hasTotalRows = true;
             this.totalRows += totalRows;
         }
+    }
+
+    Aggregate.Query toProto() {
+        Aggregate.Query.Builder builder = Aggregate.Query.newBuilder()
+                .setSharedQueryTextIndex(sharedQueryTextIndex)
+                .setTotalDurationNanos(totalDurationNanos)
+                .setExecutionCount(executionCount);
+        if (hasTotalRows) {
+            builder.setTotalRows(OptionalInt64.newBuilder().setValue(totalRows));
+        }
+        return builder.build();
     }
 }

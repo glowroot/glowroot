@@ -44,6 +44,7 @@ import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionQuery;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.MutableProfile;
+import org.glowroot.common.model.MutableQuery;
 import org.glowroot.common.model.OverallSummaryCollector.OverallSummary;
 import org.glowroot.common.model.Result;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
@@ -171,35 +172,46 @@ class TransactionJsonService {
     String getQueries(@BindAgentRollup String agentRollup,
             @BindRequest TransactionDataRequest request) throws Exception {
         TransactionQuery query = toQuery(request);
-        List<Aggregate.QueriesByType> queries =
+        Map<String, List<MutableQuery>> queries =
                 transactionCommonService.getMergedQueries(agentRollup, query);
         List<Query> queryList = Lists.newArrayList();
-        for (Aggregate.QueriesByType queriesByType : queries) {
-            for (Aggregate.Query aggQuery : queriesByType.getQueryList()) {
-                Long totalRows =
-                        aggQuery.hasTotalRows() ? aggQuery.getTotalRows().getValue() : null;
+        for (Entry<String, List<MutableQuery>> entry : queries.entrySet()) {
+            for (MutableQuery loopQuery : entry.getValue()) {
                 queryList.add(ImmutableQuery.builder()
-                        .queryType(queriesByType.getType())
-                        .queryText(aggQuery.getText())
-                        .totalDurationNanos(aggQuery.getTotalDurationNanos())
-                        .executionCount(aggQuery.getExecutionCount())
-                        .totalRows(totalRows)
+                        .queryType(entry.getKey())
+                        .truncatedQueryText(loopQuery.getTruncatedQueryText())
+                        .fullQueryTextSha1(loopQuery.getFullQueryTextSha1())
+                        .totalDurationNanos(loopQuery.getTotalDurationNanos())
+                        .executionCount(loopQuery.getExecutionCount())
+                        .totalRows(loopQuery.hasTotalRows() ? loopQuery.getTotalRows() : null)
                         .build());
             }
         }
-        Collections.sort(queryList, new Comparator<Query>() {
-            @Override
-            public int compare(Query left, Query right) {
-                // sort descending
-                return Doubles.compare(right.totalDurationNanos(), left.totalDurationNanos());
-            }
-        });
         if (queryList.isEmpty() && aggregateRepository.shouldHaveQueries(agentRollup, query)) {
             return "{\"overwritten\":true}";
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeObject(queryList);
+        jg.close();
+        return sb.toString();
+    }
+
+    @GET(path = "/backend/transaction/full-query-text",
+            permission = "agent:view:transaction:queries")
+    String getQueryText(@BindAgentRollup String agentRollup,
+            @BindRequest FullQueryTextRequest request) throws Exception {
+        String fullQueryText =
+                transactionCommonService.readFullQueryText(agentRollup, request.fullTextSha1());
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        if (fullQueryText == null) {
+            jg.writeBooleanField("expired", true);
+        } else {
+            jg.writeStringField("fullText", fullQueryText);
+        }
+        jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
@@ -634,6 +646,11 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
+    interface FullQueryTextRequest {
+        String fullTextSha1();
+    }
+
+    @Value.Immutable
     interface TransactionProfileRequest extends RequestBase {
         boolean auxiliary();
         // intentionally not plural since maps from query string
@@ -656,7 +673,9 @@ class TransactionJsonService {
     @Value.Immutable
     interface Query {
         String queryType();
-        String queryText();
+        String truncatedQueryText();
+        @Nullable
+        String fullQueryTextSha1();
         double totalDurationNanos();
         long executionCount();
         @Nullable

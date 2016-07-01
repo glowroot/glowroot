@@ -57,7 +57,15 @@ public class ExpensiveCallAspect {
             MessageSupplier messageSupplier =
                     getMessageSupplierWithDetail(expensiveCall, expensiveCallInvoker);
             char randomChar = (char) ('a' + random.nextInt(26));
-            String queryText = "this is a query " + randomChar;
+            String queryText;
+            if (random.nextBoolean()) {
+                queryText = "this is a short query " + randomChar;
+            } else {
+                queryText = "this is a long query " + randomChar
+                        + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz"
+                        + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz"
+                        + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz";
+            }
             return context.startQueryEntry("EQL", queryText, messageSupplier, timerName);
         }
         @OnAfter

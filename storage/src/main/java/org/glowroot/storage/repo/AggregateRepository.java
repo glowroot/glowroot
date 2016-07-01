@@ -17,6 +17,10 @@ package org.glowroot.storage.repo;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
+import org.immutables.value.Value;
+
 import org.glowroot.common.live.LiveAggregateRepository.OverallQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
@@ -31,12 +35,13 @@ import org.glowroot.common.model.TransactionErrorSummaryCollector;
 import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
+import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 
 public interface AggregateRepository {
 
-    void store(String agentId, long captureTime, List<AggregatesByType> aggregatesByType)
-            throws Exception;
+    void store(String agentId, long captureTime, List<AggregatesByType> aggregatesByType,
+            List<String> sharedQueryTexts) throws Exception;
 
     // query.from() is non-inclusive
     void mergeInOverallSummary(String agentRollup, OverallQuery query,
@@ -74,6 +79,9 @@ public interface AggregateRepository {
     List<ThroughputAggregate> readThroughputAggregates(String agentRollup, TransactionQuery query)
             throws Exception;
 
+    @Nullable
+    String readFullQueryText(String agentRollup, String fullQueryTextSha1) throws Exception;
+
     // query.from() is non-inclusive
     void mergeInQueries(String agentRollup, TransactionQuery query, QueryCollector collector)
             throws Exception;
@@ -105,4 +113,11 @@ public interface AggregateRepository {
 
     // query.from() is non-inclusive
     boolean shouldHaveAuxThreadProfile(String agentRollup, TransactionQuery query) throws Exception;
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface AllowRead {
+        boolean allow();
+        long lastCaptureTime();
+    }
 }

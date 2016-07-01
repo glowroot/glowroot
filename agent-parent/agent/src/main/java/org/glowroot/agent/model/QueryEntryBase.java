@@ -54,7 +54,7 @@ abstract class QueryEntryBase implements QueryEntry {
             if (queryData != null) {
                 // queryData can be null here if the aggregated query limit is exceeded
                 // (though typically query limit is larger than trace entry limit)
-                queryData.setRowNavigationAttempted();
+                queryData.setHasTotalRows();
             }
         }
     }

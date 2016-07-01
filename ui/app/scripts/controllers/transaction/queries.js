@@ -35,6 +35,7 @@ glowroot.controller('TransactionQueriesCtrl', [
 
     $scope.showQueries = false;
     $scope.showSpinner = 0;
+    $scope.showModalSpinner = 0;
 
     $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function () {
       refreshData();
@@ -48,7 +49,7 @@ glowroot.controller('TransactionQueriesCtrl', [
       }
     });
 
-    $scope.smallScreen = function() {
+    $scope.smallScreen = function () {
       // using innerWidth so it will match to screen media queries
       return window.innerWidth < 992;
     };
@@ -110,81 +111,107 @@ glowroot.controller('TransactionQueriesCtrl', [
       var $formattedQuery = $('#formattedQuery');
       $unformattedQuery.text('');
       $formattedQuery.html('');
-      $scope.unformattedQuery = query.queryText;
-      $scope.formattedQuery = '';
-      $scope.showFormatted = false;
-      $unformattedQuery.text($scope.unformattedQuery);
-      $unformattedQuery.show();
-      $formattedQuery.hide();
-
-      gtClipboard($clipboardIcon, function () {
-        return $scope.showFormatted ? $formattedQuery[0] : $unformattedQuery[0];
-      }, function () {
-        return $scope.showFormatted ? $scope.formattedQuery : $scope.unformattedQuery;
-      });
-
-      if (query.queryType !== 'SQL') {
-        modals.display('#queryModal');
-        return;
-      }
-
-      var formatted = SqlPrettyPrinter.format(query.queryText);
-      if (typeof formatted === 'object') {
-        // intentional console logging
-        // need conditional since console does not exist in IE9 unless dev tools is open
-        if (window.console) {
-          console.log(formatted.message);
-          console.log(query.queryText);
-        }
-        modals.display('#queryModal');
-        return;
-      }
-      $scope.formattedQuery = formatted;
-      $scope.showFormatted = true;
-      $formattedQuery.html($scope.formattedQuery);
-      $unformattedQuery.hide();
-      $formattedQuery.show();
       modals.display('#queryModal');
 
-      var width = Math.max($formattedQuery.width() + 80, 500);
-      // +141 is needed for IE9 (other browsers seemed ok at +140)
-      var height = $formattedQuery.height() + 141;
-      var horizontalScrolling = width > $(window).width() - 50;
-      if (horizontalScrolling) {
-        height += 17;
-      }
-      var verticalScrolling = height > $(window).height() - 50;
-      if (width < $modalDialog.width()) {
-        $modalDialog.css('width', width + 'px');
-        $modalDialog.css('left', '50%');
-        $modalDialog.css('margin-left', -width / 2 + 'px');
-        closeButton.css('right', 'auto');
-        closeButton.css('left', '50%');
-        var closeButtonLeftMargin = width / 2 - 46;
-        if (!verticalScrolling) {
-          closeButtonLeftMargin += 17;
+      function display(fullText) {
+        $scope.unformattedQuery = fullText;
+        $scope.formattedQuery = '';
+        $scope.showFormatted = false;
+        $scope.queryExpired = false;
+        $unformattedQuery.text($scope.unformattedQuery);
+        $unformattedQuery.show();
+        $formattedQuery.hide();
+
+        gtClipboard($clipboardIcon, function () {
+          return $scope.showFormatted ? $formattedQuery[0] : $unformattedQuery[0];
+        }, function () {
+          return $scope.showFormatted ? $scope.formattedQuery : $scope.unformattedQuery;
+        });
+
+        if (query.queryType !== 'SQL') {
+          return;
         }
-        closeButton.css('margin-left', closeButtonLeftMargin + 'px');
-        $clipboardIcon.css('right', 'auto');
-        $clipboardIcon.css('left', '50%');
-        $clipboardIcon.css('margin-left', (closeButtonLeftMargin - 3) + 'px');
+
+        var formatted = SqlPrettyPrinter.format(fullText);
+        if (typeof formatted === 'object') {
+          // intentional console logging
+          // need conditional since console does not exist in IE9 unless dev tools is open
+          if (window.console) {
+            console.log(formatted.message);
+            console.log(fullText);
+          }
+          return;
+        }
+        $scope.formattedQuery = formatted;
+        $scope.showFormatted = true;
+        $formattedQuery.html($scope.formattedQuery);
+        $unformattedQuery.hide();
+        $formattedQuery.show();
+
+        var width = Math.max($formattedQuery.width() + 80, 500);
+        // +141 is needed for IE9 (other browsers seemed ok at +140)
+        var height = $formattedQuery.height() + 141;
+        var horizontalScrolling = width > $(window).width() - 50;
+        if (horizontalScrolling) {
+          height += 17;
+        }
+        var verticalScrolling = height > $(window).height() - 50;
+        if (width < $modalDialog.width()) {
+          $modalDialog.css('width', width + 'px');
+          $modalDialog.css('left', '50%');
+          $modalDialog.css('margin-left', -width / 2 + 'px');
+          closeButton.css('right', 'auto');
+          closeButton.css('left', '50%');
+          var closeButtonLeftMargin = width / 2 - 46;
+          if (!verticalScrolling) {
+            closeButtonLeftMargin += 17;
+          }
+          closeButton.css('margin-left', closeButtonLeftMargin + 'px');
+          $clipboardIcon.css('right', 'auto');
+          $clipboardIcon.css('left', '50%');
+          $clipboardIcon.css('margin-left', (closeButtonLeftMargin - 3) + 'px');
+        }
+        if (!verticalScrolling) {
+          $modalDialog.css('overflow-y', 'auto');
+          $modalDialog.css('height', height + 'px');
+          $modalDialog.css('top', '50%');
+          $modalDialog.css('margin-top', -height / 2 + 'px');
+          $modalDialog.css('border-top-right-radius', '6px');
+          $modalDialog.css('border-bottom-right-radius', '6px');
+          closeButton.css('top', '50%');
+          closeButton.css('margin-top', -height / 2 + 10 + 'px');
+          $clipboardIcon.css('top', '50%');
+          $clipboardIcon.css('margin-top', -height / 2 + 34 + 'px');
+        }
+        if (horizontalScrolling) {
+          $modalDialog.css('border-bottom-left-radius', 0);
+          $modalDialog.css('border-bottom-right-radius', 0);
+        }
       }
-      if (!verticalScrolling) {
-        $modalDialog.css('overflow-y', 'auto');
-        $modalDialog.css('height', height + 'px');
-        $modalDialog.css('top', '50%');
-        $modalDialog.css('margin-top', -height / 2 + 'px');
-        $modalDialog.css('border-top-right-radius', '6px');
-        $modalDialog.css('border-bottom-right-radius', '6px');
-        closeButton.css('top', '50%');
-        closeButton.css('margin-top', -height / 2 + 10 + 'px');
-        $clipboardIcon.css('top', '50%');
-        $clipboardIcon.css('margin-top', -height / 2 + 34 + 'px');
+
+      if (!query.fullQueryTextSha1) {
+        display(query.truncatedQueryText);
+        return;
       }
-      if (horizontalScrolling) {
-        $modalDialog.css('border-bottom-left-radius', 0);
-        $modalDialog.css('border-bottom-right-radius', 0);
-      }
+
+      var q = {
+        agentRollup: $scope.agentRollup,
+        fullTextSha1: query.fullQueryTextSha1
+      };
+      $scope.showModalSpinner++;
+      $http.get('backend/transaction/full-query-text' + queryStrings.encodeObject(q))
+          .success(function (data) {
+            $scope.showModalSpinner--;
+            if (data.expired) {
+              $scope.queryExpired = true;
+              return;
+            }
+            display(data.fullText);
+          })
+          .error(function (data, status) {
+            $scope.loadingFullQueryText--;
+            httpErrors.handler($scope)(data, status);
+          });
     };
 
     $scope.toggleFormatted = function () {
@@ -208,7 +235,6 @@ glowroot.controller('TransactionQueriesCtrl', [
         from: $scope.range.chartFrom,
         to: $scope.range.chartTo
       };
-
       $scope.showSpinner++;
       $http.get('backend/transaction/queries' + queryStrings.encodeObject(query))
           .success(function (data) {

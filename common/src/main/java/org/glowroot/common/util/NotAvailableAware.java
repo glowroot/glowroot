@@ -15,6 +15,8 @@
  */
 package org.glowroot.common.util;
 
+import javax.annotation.Nullable;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class NotAvailableAware {
@@ -53,5 +55,9 @@ public class NotAvailableAware {
 
     public static boolean isNA(double value) {
         return value == NA;
+    }
+
+    public static @Nullable Double orNull(double value) {
+        return value == NA ? null : value;
     }
 }

@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package org_glowroot_agent_fat_storage_model;
+
+option java_package = "org.glowroot.agent.fat.storage.model";
+
+option java_outer_classname = "Stored";
+
+message QueriesByType {
+  // e.g. "SQL", "CQL"
+  string type = 1;
+  repeated Query query = 2;
+}
+
+message Query {
+  string truncated_query_text = 1;
+  string full_query_text_sha1 = 2;
+  double total_duration_nanos = 3;
+  int64 execution_count = 4;
+  OptionalInt64 total_rows = 5;
+}
+
+message OptionalInt64 {
+  int64 value = 1;
+}
