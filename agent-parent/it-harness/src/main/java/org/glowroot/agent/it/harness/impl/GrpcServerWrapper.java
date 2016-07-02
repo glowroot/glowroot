@@ -53,6 +53,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse.Me
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ServerRequest;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -241,7 +242,7 @@ class GrpcServerWrapper {
                     }
                     @Override
                     public void onCompleted() {
-                        requestObserver.onCompleted();
+                        checkNotNull(requestObserver).onCompleted();
                         closedByAgent = true;
                     }
                 };

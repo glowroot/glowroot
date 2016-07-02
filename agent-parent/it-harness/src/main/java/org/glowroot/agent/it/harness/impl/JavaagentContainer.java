@@ -121,7 +121,8 @@ public class JavaagentContainer implements Container {
             @Override
             public void run() {
                 try {
-                    Socket socket = heartbeatListenerSocket.accept();
+                    // TODO report checker framework issue that occurs without checkNotNull
+                    Socket socket = checkNotNull(heartbeatListenerSocket).accept();
                     ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
                     while (true) {
                         objectIn.readObject();

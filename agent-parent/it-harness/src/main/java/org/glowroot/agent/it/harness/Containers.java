@@ -17,6 +17,8 @@ package org.glowroot.agent.it.harness;
 
 import java.io.File;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
@@ -63,7 +65,7 @@ public class Containers {
     }
 
     // since baseDir is passed to the container, the container will not delete baseDir on close
-    private static Container create(File baseDir) throws Exception {
+    private static Container create(@Nullable File baseDir) throws Exception {
         switch (harness) {
             case JAVAAGENT:
                 // this is the most realistic way to run tests because it launches an external JVM

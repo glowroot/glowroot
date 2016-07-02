@@ -36,6 +36,8 @@ import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc.JavaagentService;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.AppUnderTestClassName;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.Void;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 class JavaagentServiceImpl implements JavaagentService {
 
     private static final Logger logger = LoggerFactory.getLogger(JavaagentServiceImpl.class);
@@ -112,7 +114,8 @@ class JavaagentServiceImpl implements JavaagentService {
     @Override
     public void resetConfig(Void request, StreamObserver<Void> responseObserver) {
         try {
-            GlowrootAgentInit glowrootAgentInit = MainEntryPoint.getGlowrootAgentInit();
+            GlowrootAgentInit glowrootAgentInit =
+                    checkNotNull(MainEntryPoint.getGlowrootAgentInit());
             AgentModule agentModule = glowrootAgentInit.getAgentModule();
             agentModule.getConfigService().resetConfig();
             agentModule.getLiveWeavingService().reweave("");
@@ -134,7 +137,7 @@ class JavaagentServiceImpl implements JavaagentService {
             if (checkThreads && preExistingThreads != null) {
                 Threads.preShutdownCheck(preExistingThreads);
             }
-            MainEntryPoint.getGlowrootAgentInit().close();
+            checkNotNull(MainEntryPoint.getGlowrootAgentInit()).close();
             if (checkThreads && preExistingThreads != null) {
                 Threads.postShutdownCheck(preExistingThreads);
             }
@@ -161,7 +164,7 @@ class JavaagentServiceImpl implements JavaagentService {
                     Thread.currentThread().interrupt();
                 }
                 try {
-                    serverCloseable.call();
+                    checkNotNull(serverCloseable).call();
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                 }

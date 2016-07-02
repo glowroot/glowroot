@@ -212,13 +212,14 @@ case "$1" in
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@Untainted\*/|/*@org.checkerframework.checker.tainting.qual.Untainted*/|g'
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@\([A-Za-z]*\)\*/|/*@org.checkerframework.checker.nullness.qual.\1*/|g'
 
-               # TODO find way to not omit these (especially it-harness)
-               # omitting wire-api and agent-parent/it-harness from checker framework validation since they contain protobuf generated code which does not pass
-               mvn clean install -am -pl wire-api,agent-parent/it-harness \
+               # omitting wire-api from checker framework validation since it contains large protobuf generated code which does not pass
+               # and even when using -AskipDefs, checker framework still runs on the code (even though it does not report errors)
+               # and it is so slow that it times out the travis ci build
+               mvn clean install -am -pl wire-api \
                                  -Dglowroot.ui.skip \
                                  -DskipTests \
                                  -B
-               mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/it-harness,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!agent-parent/distribution \
+               mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!agent-parent/distribution \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \
