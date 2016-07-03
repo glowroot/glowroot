@@ -412,6 +412,26 @@
               see http://immutables.github.io/getstarted.html -->
             <useIncrementalCompilation>false</useIncrementalCompilation>
           </configuration>
+          <dependencies>
+            <dependency>
+              <!-- need latest version for https://github.com/codehaus-plexus/plexus-compiler/issues/20 -->
+              <groupId>org.codehaus.plexus</groupId>
+              <artifactId>plexus-compiler-api</artifactId>
+              <version>2.8</version>
+            </dependency>
+            <dependency>
+              <!-- need latest version for https://github.com/codehaus-plexus/plexus-compiler/issues/20 -->
+              <groupId>org.codehaus.plexus</groupId>
+              <artifactId>plexus-compiler-manager</artifactId>
+              <version>2.8</version>
+            </dependency>
+            <dependency>
+              <!-- need latest version for https://github.com/codehaus-plexus/plexus-compiler/issues/20 -->
+              <groupId>org.codehaus.plexus</groupId>
+              <artifactId>plexus-compiler-javac</artifactId>
+              <version>2.8</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <artifactId>maven-deploy-plugin</artifactId>
@@ -733,13 +753,25 @@
       <properties>
         <checker.qual.group.id>org.checkerframework</checker.qual.group.id>
         <checker.qual.artifact.id>checker-qual</checker.qual.artifact.id>
-        <!-- IMPORTANT when updating version, also need to update version in travis-build.sh -->
         <checker.qual.version>2.0.0</checker.qual.version>
+        <annotatedJdk>${org.checkerframework:jdk8:jar}</annotatedJdk>
+        <typeAnnotationsJavac>${org.checkerframework:compiler:jar}</typeAnnotationsJavac>
       </properties>
       <dependencies>
         <dependency>
           <groupId>org.checkerframework</groupId>
           <artifactId>checker</artifactId>
+          <version>${checker.qual.version}</version>
+          <optional>true</optional>
+        </dependency>
+        <dependency>
+          <groupId>org.checkerframework</groupId>
+          <artifactId>compiler</artifactId>
+          <version>${checker.qual.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.checkerframework</groupId>
+          <artifactId>jdk8</artifactId>
           <version>${checker.qual.version}</version>
           <optional>true</optional>
         </dependency>
@@ -771,13 +803,23 @@
             </executions>
           </plugin>
           <plugin>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>properties</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
             <artifactId>maven-compiler-plugin</artifactId>
             <configuration>
               <source>1.8</source>
               <target>1.8</target>
               <verbose>true</verbose>
               <fork>true</fork>
-              <executable>${checker.install.dir}/checker/bin/javac</executable>
+              <maxmem>512m</maxmem>
               <annotationProcessors>
                 <annotationProcessor>
                   org.immutables.value.internal.$processor$.$Processor
@@ -792,10 +834,13 @@
                 </annotationProcessor>
               </annotationProcessors>
               <compilerArgs>
+                <arg>-J-Xbootclasspath/p:${typeAnnotationsJavac}</arg>
+                <arg>-Xbootclasspath/p:${annotatedJdk}</arg>
                 <!-- checker.stubs.dir needs to be absolute path since relative path will be
                   interpreted from each module directory -->
                 <arg>-Astubs=${checker.stubs.dir}</arg>
-                <arg>-AskipDefs=^org\.glowroot\.agent\.fat\.storage\.model\.|^org\.glowroot\.agent\.it\.harness\.grpc\.</arg>
+                <!-- not sure why, but \. doesn't work below in place of [.] -->
+                <arg>-AskipDefs=^org[.]glowroot[.]agent[.]fat[.]storage[.]model[.]|^org[.]glowroot[.]agent[.]it[.]harness[.]grpc[.]</arg>
               </compilerArgs>
             </configuration>
           </plugin>

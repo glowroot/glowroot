@@ -182,22 +182,7 @@ case "$1" in
                fi
                ;;
 
-    "checker") # pipe through sed to format checker errors so the source file locations
-               # turn into links when copied into eclipse's stack trace view
-               if [[ ! -d "$HOME/checker-framework" ]]
-               then
-                 # install checker framework
-                 curl -L http://types.cs.washington.edu/checker-framework/releases/2.0.0/checker-framework-2.0.0.zip > $HOME/checker-framework.zip
-                 unzip $HOME/checker-framework.zip -d $HOME
-                 # strip version from directory name
-                 mv $HOME/checker-framework-* $HOME/checker-framework
-                 # need to limit memory of all JVM forks for travis docker build
-                 # see https://github.com/travis-ci/travis-ci/issues/3396
-                 sed -i 's#/bin/sh#/bin/bash#' $HOME/checker-framework/checker/bin/javac
-                 sed -i 's#"java" "-jar" "${mydir}"/../dist/checker.jar ${args}#"java" "-Xmx512m" "-jar" "${mydir}"/../dist/checker.jar -J-Xmx512m ${args} 2>\&1 | tee /tmp/checker.out ; test ${PIPESTATUS[0]} -eq 0#' $HOME/checker-framework/checker/bin/javac
-               fi
-
-               set +e
+    "checker") set +e
                git diff --exit-code > /dev/null
                if [ $? -ne 0 ]
                then
@@ -219,6 +204,8 @@ case "$1" in
                                  -Dglowroot.ui.skip \
                                  -DskipTests \
                                  -B
+               # this is just to keep travis ci build from timing out due to "No output has been received in the last 10 minutes, ..."
+               while true; do sleep 60; echo ...; done &
                mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!agent-parent/distribution \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
@@ -230,11 +217,7 @@ case "$1" in
                # preserve exit status from mvn (needed because of pipe to sed)
                mvn_status=${PIPESTATUS[0]}
                git checkout -- .
-               if [ $mvn_status -ne 0 ]
-               then
-                 cat /tmp/checker.out
-                 exit $mvn_status
-               fi
+               exit $mvn_status
                ;;
 
   "saucelabs") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" == "false" ]]
