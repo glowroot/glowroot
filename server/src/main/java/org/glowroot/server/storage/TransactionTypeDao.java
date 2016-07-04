@@ -55,7 +55,8 @@ public class TransactionTypeDao implements TransactionTypeRepository {
 
     // 2-day expiration is just to periodically clean up cache
     private final LoadingCache<TransactionTypeKey, RateLimiter> rateLimiters =
-            CacheBuilder.newBuilder().expireAfterAccess(2, DAYS)
+            CacheBuilder.newBuilder()
+                    .expireAfterAccess(2, DAYS)
                     .build(new CacheLoader<TransactionTypeKey, RateLimiter>() {
                         @Override
                         public RateLimiter load(TransactionTypeKey key) throws Exception {

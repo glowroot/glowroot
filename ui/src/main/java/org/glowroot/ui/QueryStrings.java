@@ -37,12 +37,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 class QueryStrings {
 
     private static LoadingCache<Class<?>, Map<String, Method>> settersCache =
-            CacheBuilder.newBuilder().build(new CacheLoader<Class<?>, Map<String, Method>>() {
-                @Override
-                public Map<String, Method> load(Class<?> key) throws Exception {
-                    return loadSetters(key);
-                }
-            });
+            CacheBuilder.newBuilder()
+                    .build(new CacheLoader<Class<?>, Map<String, Method>>() {
+                        @Override
+                        public Map<String, Method> load(Class<?> key) throws Exception {
+                            return loadSetters(key);
+                        }
+                    });
 
     private QueryStrings() {}
 

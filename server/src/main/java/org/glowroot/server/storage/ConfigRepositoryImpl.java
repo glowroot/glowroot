@@ -82,8 +82,9 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     // TODO use optimistic locking with retry instead of synchronization in order to work across
     // cluster
-    private final LoadingCache<String, Object> agentConfigLocks =
-            CacheBuilder.newBuilder().weakValues().build(new CacheLoader<String, Object>() {
+    private final LoadingCache<String, Object> agentConfigLocks = CacheBuilder.newBuilder()
+            .weakValues()
+            .build(new CacheLoader<String, Object>() {
                 @Override
                 public Object load(String key) throws Exception {
                     return new Object();

@@ -40,12 +40,13 @@ public class ServiceRegistryImpl implements ServiceRegistry {
             final ConfigServiceFactory configServiceFactory) {
         this.glowrootService = glowrootService;
         this.timerNameCache = timerNameCache;
-        configServices = CacheBuilder.newBuilder().build(new CacheLoader<String, ConfigService>() {
-            @Override
-            public ConfigService load(String pluginId) {
-                return configServiceFactory.create(pluginId);
-            }
-        });
+        configServices = CacheBuilder.newBuilder()
+                .build(new CacheLoader<String, ConfigService>() {
+                    @Override
+                    public ConfigService load(String pluginId) {
+                        return configServiceFactory.create(pluginId);
+                    }
+                });
     }
 
     @Override

@@ -52,15 +52,16 @@ public class UserDao {
     private final PreparedStatement deletePS;
 
     private final LoadingCache<String, Optional<UserConfig>> upperCaseCache =
-            CacheBuilder.newBuilder().build(new CacheLoader<String, Optional<UserConfig>>() {
-                @Override
-                public Optional<UserConfig> load(String username) throws Exception {
-                    return Optional.fromNullable(readUpperCase(username));
-                }
-            });
+            CacheBuilder.newBuilder()
+                    .build(new CacheLoader<String, Optional<UserConfig>>() {
+                        @Override
+                        public Optional<UserConfig> load(String username) throws Exception {
+                            return Optional.fromNullable(readUpperCase(username));
+                        }
+                    });
 
-    private final LoadingCache<String, Boolean> namedUsersExist =
-            CacheBuilder.newBuilder().build(new CacheLoader<String, Boolean>() {
+    private final LoadingCache<String, Boolean> namedUsersExist = CacheBuilder.newBuilder()
+            .build(new CacheLoader<String, Boolean>() {
                 @Override
                 public Boolean load(String username) throws Exception {
                     return namedUsersExistInternal();

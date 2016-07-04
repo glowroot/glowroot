@@ -51,7 +51,8 @@ class GaugeNameDao {
 
     // 2-day expiration is just to periodically clean up cache
     private final LoadingCache<GaugeNameKey, RateLimiter> rateLimiters = CacheBuilder.newBuilder()
-            .expireAfterAccess(2, DAYS).build(new CacheLoader<GaugeNameKey, RateLimiter>() {
+            .expireAfterAccess(2, DAYS)
+            .build(new CacheLoader<GaugeNameKey, RateLimiter>() {
                 @Override
                 public RateLimiter load(GaugeNameKey key) throws Exception {
                     // 1 permit per 24 hours

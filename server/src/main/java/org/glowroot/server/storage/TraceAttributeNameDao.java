@@ -51,7 +51,8 @@ class TraceAttributeNameDao {
 
     // 2-day expiration is just to periodically clean up cache
     private final LoadingCache<TraceAttributeNameKey, RateLimiter> rateLimiters =
-            CacheBuilder.newBuilder().expireAfterAccess(2, DAYS)
+            CacheBuilder.newBuilder()
+                    .expireAfterAccess(2, DAYS)
                     .build(new CacheLoader<TraceAttributeNameKey, RateLimiter>() {
                         @Override
                         public RateLimiter load(TraceAttributeNameKey key) throws Exception {

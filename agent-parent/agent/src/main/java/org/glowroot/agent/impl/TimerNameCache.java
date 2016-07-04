@@ -34,8 +34,8 @@ public class TimerNameCache {
 
     private static final Logger logger = LoggerFactory.getLogger(TimerNameCache.class);
 
-    private final LoadingCache<String, TimerNameImpl> names =
-            CacheBuilder.newBuilder().build(new CacheLoader<String, TimerNameImpl>() {
+    private final LoadingCache<String, TimerNameImpl> names = CacheBuilder.newBuilder()
+            .build(new CacheLoader<String, TimerNameImpl>() {
                 @Override
                 public TimerNameImpl load(String name) {
                     return ImmutableTimerNameImpl.of(name, false);

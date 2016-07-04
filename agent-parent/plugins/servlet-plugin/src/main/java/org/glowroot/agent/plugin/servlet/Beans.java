@@ -57,7 +57,8 @@ class Beans {
     //
     // weak keys in loading cache to prevent Class retention
     private static final LoadingCache<Class<?>, ConcurrentMap<String, AccessibleObject>> getters =
-            CacheBuilder.newBuilder().weakKeys()
+            CacheBuilder.newBuilder()
+                    .weakKeys()
                     .build(new CacheLoader<Class<?>, ConcurrentMap<String, AccessibleObject>>() {
                         @Override
                         public ConcurrentMap<String, AccessibleObject> load(Class<?> clazz) {
@@ -70,7 +71,8 @@ class Beans {
     // all getters for an individual class are only needed to handle wildcards at the end of a
     // session attribute path, e.g. "user.*"
     private static final LoadingCache<Class<?>, ImmutableMap<String, Method>> wildcardGetters =
-            CacheBuilder.newBuilder().weakKeys()
+            CacheBuilder.newBuilder()
+                    .weakKeys()
                     .build(new CacheLoader<Class<?>, ImmutableMap<String, Method>>() {
                         @Override
                         public ImmutableMap<String, Method> load(Class<?> clazz) {

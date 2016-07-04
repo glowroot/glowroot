@@ -72,7 +72,8 @@ public class DataSource {
     private final Map</*@Untainted*/String, ImmutableList<Index>> indexes = Maps.newConcurrentMap();
 
     private final LoadingCache</*@Untainted*/ String, PreparedStatement> preparedStatementCache =
-            CacheBuilder.newBuilder().weakValues()
+            CacheBuilder.newBuilder()
+                    .weakValues()
                     .build(new CacheLoader</*@Untainted*/String, PreparedStatement>() {
                         @Override
                         public PreparedStatement load(@Untainted String sql) throws SQLException {
