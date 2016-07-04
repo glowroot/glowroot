@@ -32,9 +32,8 @@ public class DownstreamServiceNotConnectedTest {
     public ExpectedException thrown = ExpectedException.none();
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnUpdateAgentConfig() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.updateAgentConfig("a", AgentConfig.getDefaultInstance());
+    public void shouldNotThrowAgentNotConnectExceptionOnUpdateAgentConfig() throws Exception {
+        downstreamService.updateAgentConfigIfConnected("a", AgentConfig.getDefaultInstance());
     }
 
     @Test

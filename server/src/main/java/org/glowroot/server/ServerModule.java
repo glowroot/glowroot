@@ -138,7 +138,7 @@ class ServerModule {
             configRepository.addConfigListener(new ConfigListener() {
                 @Override
                 public void onChange(String agentId, AgentConfig agentConfig) throws Exception {
-                    downstreamService.updateAgentConfig(agentId, agentConfig);
+                    downstreamService.updateAgentConfigIfConnected(agentId, agentConfig);
                 }
             });
 

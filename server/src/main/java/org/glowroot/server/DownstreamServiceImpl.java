@@ -83,12 +83,12 @@ public class DownstreamServiceImpl implements DownstreamService {
         return new ConnectedAgent(requestObserver);
     }
 
-    public void updateAgentConfig(String agentId, AgentConfig agentConfig) throws Exception {
+    public void updateAgentConfigIfConnected(String agentId, AgentConfig agentConfig)
+            throws Exception {
         ConnectedAgent connectedAgent = connectedAgents.get(agentId);
-        if (connectedAgent == null) {
-            throw new AgentNotConnectedException();
+        if (connectedAgent != null) {
+            connectedAgent.updateAgentConfig(agentConfig);
         }
-        connectedAgent.updateAgentConfig(agentConfig);
     }
 
     boolean isAvailable(String agentId) {
@@ -542,7 +542,7 @@ public class DownstreamServiceImpl implements DownstreamService {
     }
 
     private static class ResponseHolder {
-        private final Exchanger<ClientResponse> response = new Exchanger<ClientResponse>();
+        private final Exchanger<ClientResponse> response = new Exchanger<>();
     }
 
     @SuppressWarnings("serial")
