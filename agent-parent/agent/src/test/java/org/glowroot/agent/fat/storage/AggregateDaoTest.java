@@ -113,8 +113,8 @@ public class AggregateDaoTest {
         TransactionSummaryCollector collector = new TransactionSummaryCollector();
         List<OverviewAggregate> overallAggregates =
                 aggregateDao.readOverviewAggregates(AGENT_ID, query);
-        aggregateDao.mergeInTransactionSummaries(AGENT_ID, query2, SummarySortOrder.TOTAL_TIME, 10,
-                collector);
+        aggregateDao.mergeTransactionSummariesInto(AGENT_ID, query2, SummarySortOrder.TOTAL_TIME,
+                10, collector);
         Result<TransactionSummary> queryResult =
                 collector.getResult(SummarySortOrder.TOTAL_TIME, 10);
         // then

@@ -89,7 +89,7 @@ public class QueryCollector {
                 hasTotalRows, queriesForType);
     }
 
-    void mergeInQueries(org.glowroot.common.model.QueryCollector collector,
+    void mergeQueriesInto(org.glowroot.common.model.QueryCollector collector,
             List<String> sharedQueryTexts) {
         for (Entry<String, Map<Integer, MutableQuery>> entry : queries.entrySet()) {
             for (MutableQuery query : entry.getValue().values()) {

@@ -248,14 +248,14 @@ class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInOverallSummary(String agentRollup, OverallQuery query,
+    public void mergeOverallSummaryInto(String agentRollup, OverallQuery query,
             OverallSummaryCollector collector) throws Exception {
         dataSource.query(new OverallSummaryQuery(collector, query));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInTransactionSummaries(String agentRollup, OverallQuery query,
+    public void mergeTransactionSummariesInto(String agentRollup, OverallQuery query,
             SummarySortOrder sortOrder, int limit, TransactionSummaryCollector collector)
             throws Exception {
         dataSource.query(
@@ -264,14 +264,14 @@ class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInOverallErrorSummary(String agentRollup, OverallQuery query,
+    public void mergeOverallErrorSummaryInto(String agentRollup, OverallQuery query,
             OverallErrorSummaryCollector collector) throws Exception {
         dataSource.query(new OverallErrorSummaryQuery(collector, query));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInTransactionErrorSummaries(String agentRollup, OverallQuery query,
+    public void mergeTransactionErrorSummariesInto(String agentRollup, OverallQuery query,
             ErrorSummarySortOrder sortOrder, int limit, TransactionErrorSummaryCollector collector)
             throws Exception {
         dataSource.query(new TransactionErrorSummaryQuery(query, sortOrder, limit,
@@ -307,8 +307,8 @@ class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInQueries(String agentRollup, TransactionQuery query, QueryCollector collector)
-            throws Exception {
+    public void mergeQueriesInto(String agentRollup, TransactionQuery query,
+            QueryCollector collector) throws Exception {
         // get list of capped ids first since that is done under the data source lock
         // then do the expensive part of reading and constructing the protobuf messages outside of
         // the data source lock
@@ -334,7 +334,7 @@ class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInServiceCalls(String agentRollup, TransactionQuery query,
+    public void mergeServiceCallsInto(String agentRollup, TransactionQuery query,
             ServiceCallCollector collector) throws Exception {
         // get list of capped ids first since that is done under the data source lock
         // then do the expensive part of reading and constructing the protobuf messages outside of
@@ -356,16 +356,16 @@ class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInMainThreadProfiles(String agentRollup, TransactionQuery query,
+    public void mergeMainThreadProfilesInto(String agentRollup, TransactionQuery query,
             ProfileCollector collector) throws Exception {
-        mergeInProfiles(collector, query, "main_thread_profile_capped_id");
+        mergeProfilesInto(collector, query, "main_thread_profile_capped_id");
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInAuxThreadProfiles(String agentRollup, TransactionQuery query,
+    public void mergeAuxThreadProfilesInto(String agentRollup, TransactionQuery query,
             ProfileCollector collector) throws Exception {
-        mergeInProfiles(collector, query, "aux_thread_profile_capped_id");
+        mergeProfilesInto(collector, query, "aux_thread_profile_capped_id");
     }
 
     // query.from() is non-inclusive
@@ -422,7 +422,7 @@ class AggregateDao implements AggregateRepository {
         }
     }
 
-    private void mergeInProfiles(ProfileCollector collector, TransactionQuery query,
+    private void mergeProfilesInto(ProfileCollector collector, TransactionQuery query,
             @Untainted String cappedIdColumnName) throws Exception {
         // get list of capped ids first since that is done under the data source lock
         // then do the expensive part of reading and constructing the protobuf messages outside of

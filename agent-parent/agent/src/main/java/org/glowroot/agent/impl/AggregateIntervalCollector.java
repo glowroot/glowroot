@@ -96,17 +96,17 @@ public class AggregateIntervalCollector {
         }
     }
 
-    public void mergeInOverallSummary(OverallSummaryCollector collector, String transactionType) {
+    public void mergeOverallSummaryInto(OverallSummaryCollector collector, String transactionType) {
         synchronized (lock) {
             IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
             if (typeCollector == null) {
                 return;
             }
-            typeCollector.overallAggregateCollector.mergeInOverallSummary(collector);
+            typeCollector.overallAggregateCollector.mergeOverallSummaryInto(collector);
         }
     }
 
-    public void mergeInTransactionSummaries(TransactionSummaryCollector collector,
+    public void mergeTransactionSummariesInto(TransactionSummaryCollector collector,
             String transactionType) {
         synchronized (lock) {
             IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
@@ -115,23 +115,23 @@ public class AggregateIntervalCollector {
             }
             for (AggregateCollector aggregateCollector : typeCollector.transactionAggregateCollectors
                     .values()) {
-                aggregateCollector.mergeInTransactionSummaries(collector);
+                aggregateCollector.mergeTransactionSummariesInto(collector);
             }
         }
     }
 
-    public void mergeInOverallErrorSummary(OverallErrorSummaryCollector collector,
+    public void mergeOverallErrorSummaryInto(OverallErrorSummaryCollector collector,
             String transactionType) {
         synchronized (lock) {
             IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
             if (typeCollector == null) {
                 return;
             }
-            typeCollector.overallAggregateCollector.mergeInOverallErrorSummary(collector);
+            typeCollector.overallAggregateCollector.mergeOverallErrorSummaryInto(collector);
         }
     }
 
-    public void mergeInTransactionErrorSummaries(TransactionErrorSummaryCollector collector,
+    public void mergeTransactionErrorSummariesInto(TransactionErrorSummaryCollector collector,
             String transactionType) {
         synchronized (lock) {
             IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
@@ -140,7 +140,7 @@ public class AggregateIntervalCollector {
             }
             for (AggregateCollector aggregateCollector : typeCollector.transactionAggregateCollectors
                     .values()) {
-                aggregateCollector.mergeInTransactionErrorSummaries(collector);
+                aggregateCollector.mergeTransactionErrorSummariesInto(collector);
             }
         }
     }
@@ -199,7 +199,7 @@ public class AggregateIntervalCollector {
         }
     }
 
-    public void mergeInQueries(QueryCollector collector, String transactionType,
+    public void mergeQueriesInto(QueryCollector collector, String transactionType,
             @Nullable String transactionName) throws IOException {
         synchronized (lock) {
             AggregateCollector aggregateCollector =
@@ -207,11 +207,11 @@ public class AggregateIntervalCollector {
             if (aggregateCollector == null) {
                 return;
             }
-            aggregateCollector.mergeInQueries(collector, sharedQueryTexts);
+            aggregateCollector.mergeQueriesInto(collector, sharedQueryTexts);
         }
     }
 
-    public void mergeInServiceCalls(ServiceCallCollector collector, String transactionType,
+    public void mergeServiceCallsInto(ServiceCallCollector collector, String transactionType,
             @Nullable String transactionName) throws IOException {
         synchronized (lock) {
             AggregateCollector aggregateCollector =
@@ -219,11 +219,11 @@ public class AggregateIntervalCollector {
             if (aggregateCollector == null) {
                 return;
             }
-            aggregateCollector.mergeInServiceCalls(collector);
+            aggregateCollector.mergeServiceCallsInto(collector);
         }
     }
 
-    public void mergeInMainThreadProfiles(ProfileCollector collector, String transactionType,
+    public void mergeMainThreadProfilesInto(ProfileCollector collector, String transactionType,
             @Nullable String transactionName) {
         synchronized (lock) {
             AggregateCollector aggregateCollector =
@@ -231,11 +231,11 @@ public class AggregateIntervalCollector {
             if (aggregateCollector == null) {
                 return;
             }
-            aggregateCollector.mergeInMainThreadProfiles(collector);
+            aggregateCollector.mergeMainThreadProfilesInto(collector);
         }
     }
 
-    public void mergeInAuxThreadProfiles(ProfileCollector collector, String transactionType,
+    public void mergeAuxThreadProfilesInto(ProfileCollector collector, String transactionType,
             @Nullable String transactionName) {
         synchronized (lock) {
             AggregateCollector aggregateCollector =
@@ -243,7 +243,7 @@ public class AggregateIntervalCollector {
             if (aggregateCollector == null) {
                 return;
             }
-            aggregateCollector.mergeInAuxThreadProfiles(collector);
+            aggregateCollector.mergeAuxThreadProfilesInto(collector);
         }
     }
 

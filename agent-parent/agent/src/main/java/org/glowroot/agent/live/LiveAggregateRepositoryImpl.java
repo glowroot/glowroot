@@ -48,7 +48,7 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
                 aggregator.getOrderedIntervalCollectorsInRange(query.from(), query.to());
         long revisedTo = query.to();
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-            intervalCollector.mergeInOverallSummary(collector, query.transactionType());
+            intervalCollector.mergeOverallSummaryInto(collector, query.transactionType());
             revisedTo = Math.min(revisedTo, intervalCollector.getCaptureTime() - 1);
         }
         return revisedTo;
@@ -61,7 +61,7 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
                 aggregator.getOrderedIntervalCollectorsInRange(query.from(), query.to());
         long revisedTo = query.to();
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-            intervalCollector.mergeInTransactionSummaries(collector, query.transactionType());
+            intervalCollector.mergeTransactionSummariesInto(collector, query.transactionType());
             revisedTo = Math.min(revisedTo, intervalCollector.getCaptureTime() - 1);
         }
         return revisedTo;
@@ -74,7 +74,7 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
                 aggregator.getOrderedIntervalCollectorsInRange(query.from(), query.to());
         long revisedTo = query.to();
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-            intervalCollector.mergeInOverallErrorSummary(collector, query.transactionType());
+            intervalCollector.mergeOverallErrorSummaryInto(collector, query.transactionType());
             revisedTo = Math.min(revisedTo, intervalCollector.getCaptureTime() - 1);
         }
         return revisedTo;
@@ -87,7 +87,8 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
                 aggregator.getOrderedIntervalCollectorsInRange(query.from(), query.to());
         long revisedTo = query.to();
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-            intervalCollector.mergeInTransactionErrorSummaries(collector, query.transactionType());
+            intervalCollector.mergeTransactionErrorSummariesInto(collector,
+                    query.transactionType());
             revisedTo = Math.min(revisedTo, intervalCollector.getCaptureTime() - 1);
         }
         return revisedTo;
@@ -176,7 +177,7 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
                 aggregator.getOrderedIntervalCollectorsInRange(query.from(), query.to());
         long revisedTo = query.to();
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-            intervalCollector.mergeInQueries(collector, query.transactionType(),
+            intervalCollector.mergeQueriesInto(collector, query.transactionType(),
                     query.transactionName());
             revisedTo = Math.min(revisedTo, intervalCollector.getCaptureTime() - 1);
         }
@@ -191,7 +192,7 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
                 aggregator.getOrderedIntervalCollectorsInRange(query.from(), query.to());
         long revisedTo = query.to();
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-            intervalCollector.mergeInServiceCalls(collector, query.transactionType(),
+            intervalCollector.mergeServiceCallsInto(collector, query.transactionType(),
                     query.transactionName());
             revisedTo = Math.min(revisedTo, intervalCollector.getCaptureTime() - 1);
         }
@@ -205,7 +206,7 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
                 aggregator.getOrderedIntervalCollectorsInRange(query.from(), query.to());
         long revisedTo = query.to();
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-            intervalCollector.mergeInMainThreadProfiles(collector, query.transactionType(),
+            intervalCollector.mergeMainThreadProfilesInto(collector, query.transactionType(),
                     query.transactionName());
             revisedTo = Math.min(revisedTo, intervalCollector.getCaptureTime() - 1);
         }
@@ -219,7 +220,7 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
                 aggregator.getOrderedIntervalCollectorsInRange(query.from(), query.to());
         long revisedTo = query.to();
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-            intervalCollector.mergeInAuxThreadProfiles(collector, query.transactionType(),
+            intervalCollector.mergeAuxThreadProfilesInto(collector, query.transactionType(),
                     query.transactionName());
             revisedTo = Math.min(revisedTo, intervalCollector.getCaptureTime() - 1);
         }

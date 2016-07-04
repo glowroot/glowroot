@@ -82,7 +82,7 @@ class TransactionCommonService {
                     .to(revisedTo)
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeInOverallSummary(agentRollup, revisedQuery, collector);
+            aggregateRepository.mergeOverallSummaryInto(agentRollup, revisedQuery, collector);
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {
@@ -106,7 +106,7 @@ class TransactionCommonService {
                     .to(revisedTo)
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeInTransactionSummaries(agentRollup, revisedQuery, sortOrder,
+            aggregateRepository.mergeTransactionSummariesInto(agentRollup, revisedQuery, sortOrder,
                     limit, collector);
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
@@ -275,7 +275,7 @@ class TransactionCommonService {
                     .to(revisedTo)
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeInQueries(agentRollup, revisedQuery, queryCollector);
+            aggregateRepository.mergeQueriesInto(agentRollup, revisedQuery, queryCollector);
             long lastRolledUpTime = queryCollector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {
@@ -315,7 +315,7 @@ class TransactionCommonService {
                     .to(revisedTo)
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeInServiceCalls(agentRollup, revisedQuery,
+            aggregateRepository.mergeServiceCallsInto(agentRollup, revisedQuery,
                     serviceCallCollector);
             long lastRolledUpTime = serviceCallCollector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
@@ -480,9 +480,11 @@ class TransactionCommonService {
                     .rollupLevel(rollupLevel)
                     .build();
             if (auxiliary) {
-                aggregateRepository.mergeInAuxThreadProfiles(agentRollup, revisedQuery, collector);
+                aggregateRepository.mergeAuxThreadProfilesInto(agentRollup, revisedQuery,
+                        collector);
             } else {
-                aggregateRepository.mergeInMainThreadProfiles(agentRollup, revisedQuery, collector);
+                aggregateRepository.mergeMainThreadProfilesInto(agentRollup, revisedQuery,
+                        collector);
             }
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);

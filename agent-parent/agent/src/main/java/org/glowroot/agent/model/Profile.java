@@ -42,10 +42,10 @@ public class Profile {
     @VisibleForTesting
     public Profile() {}
 
-    public void mergeIntoProfile(MutableProfile profile) {
+    public void mergeInto(MutableProfile profile) {
         synchronized (lock) {
             if (this.profile == null) {
-                mergeTheUnmergedIntoProfile(profile);
+                mergeTheUnmergedInto(profile);
             } else {
                 profile.merge(this.profile);
             }
@@ -56,7 +56,7 @@ public class Profile {
         synchronized (lock) {
             if (profile == null) {
                 profile = new MutableProfile();
-                mergeTheUnmergedIntoProfile(profile);
+                mergeTheUnmergedInto(profile);
                 unmergedStackTraces.clear();
                 unmergedStackTraceThreadStates.clear();
             }
@@ -86,7 +86,7 @@ public class Profile {
                 if (unmergedStackTraces.size() >= 10) {
                     // merged stack tree takes up less memory
                     profile = new MutableProfile();
-                    mergeTheUnmergedIntoProfile(profile);
+                    mergeTheUnmergedInto(profile);
                     unmergedStackTraces.clear();
                     unmergedStackTraceThreadStates.clear();
                 }
@@ -97,7 +97,7 @@ public class Profile {
         }
     }
 
-    private void mergeTheUnmergedIntoProfile(MutableProfile profile) {
+    private void mergeTheUnmergedInto(MutableProfile profile) {
         for (int i = 0; i < unmergedStackTraces.size(); i++) {
             List<StackTraceElement> stackTrace = unmergedStackTraces.get(i);
             Thread.State threadState = unmergedStackTraceThreadStates.get(i);

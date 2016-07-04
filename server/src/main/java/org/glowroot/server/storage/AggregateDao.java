@@ -380,7 +380,7 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInOverallSummary(String agentRollup, OverallQuery query,
+    public void mergeOverallSummaryInto(String agentRollup, OverallQuery query,
             OverallSummaryCollector collector) {
         // currently have to do aggregation client-site (don't want to require Cassandra 2.2 yet)
         ResultSet results = createBoundStatement(agentRollup, query, summaryTable);
@@ -399,7 +399,7 @@ public class AggregateDao implements AggregateRepository {
     //
     // query.from() is non-inclusive
     @Override
-    public void mergeInTransactionSummaries(String agentRollup, OverallQuery query,
+    public void mergeTransactionSummariesInto(String agentRollup, OverallQuery query,
             SummarySortOrder sortOrder, int limit, TransactionSummaryCollector collector) {
         // currently have to do group by / sort / limit client-side
         BoundStatement boundStatement =
@@ -418,7 +418,7 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInOverallErrorSummary(String agentRollup, OverallQuery query,
+    public void mergeOverallErrorSummaryInto(String agentRollup, OverallQuery query,
             OverallErrorSummaryCollector collector) {
         // currently have to do aggregation client-site (don't want to require Cassandra 2.2 yet)
         ResultSet results = createBoundStatement(agentRollup, query, errorSummaryTable);
@@ -437,7 +437,7 @@ public class AggregateDao implements AggregateRepository {
     //
     // query.from() is non-inclusive
     @Override
-    public void mergeInTransactionErrorSummaries(String agentRollup, OverallQuery query,
+    public void mergeTransactionErrorSummariesInto(String agentRollup, OverallQuery query,
             ErrorSummarySortOrder sortOrder, int limit,
             TransactionErrorSummaryCollector collector) {
         // currently have to do group by / sort / limit client-side
@@ -554,8 +554,8 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInQueries(String agentRollup, TransactionQuery query, QueryCollector collector)
-            throws IOException {
+    public void mergeQueriesInto(String agentRollup, TransactionQuery query,
+            QueryCollector collector) throws IOException {
         ResultSet results = executeQuery(agentRollup, query, queryTable);
         long captureTime = Long.MIN_VALUE;
         for (Row row : results) {
@@ -576,7 +576,7 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInServiceCalls(String agentRollup, TransactionQuery query,
+    public void mergeServiceCallsInto(String agentRollup, TransactionQuery query,
             ServiceCallCollector collector) throws IOException {
         ResultSet results = executeQuery(agentRollup, query, serviceCallTable);
         long captureTime = Long.MIN_VALUE;
@@ -595,16 +595,16 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInMainThreadProfiles(String agentRollup, TransactionQuery query,
+    public void mergeMainThreadProfilesInto(String agentRollup, TransactionQuery query,
             ProfileCollector collector) throws InvalidProtocolBufferException {
-        mergeInProfiles(agentRollup, query, mainThreadProfileTable, collector);
+        mergeProfilesInto(agentRollup, query, mainThreadProfileTable, collector);
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeInAuxThreadProfiles(String agentRollup, TransactionQuery query,
+    public void mergeAuxThreadProfilesInto(String agentRollup, TransactionQuery query,
             ProfileCollector collector) throws InvalidProtocolBufferException {
-        mergeInProfiles(agentRollup, query, auxThreadProfileTable, collector);
+        mergeProfilesInto(agentRollup, query, auxThreadProfileTable, collector);
     }
 
     // query.from() is non-inclusive
@@ -1491,7 +1491,7 @@ public class AggregateDao implements AggregateRepository {
         return session.execute(boundStatement);
     }
 
-    private void mergeInProfiles(String agentRollup, TransactionQuery query, Table profileTable,
+    private void mergeProfilesInto(String agentRollup, TransactionQuery query, Table profileTable,
             ProfileCollector collector) throws InvalidProtocolBufferException {
         ResultSet results = executeQuery(agentRollup, query, profileTable);
         long captureTime = Long.MIN_VALUE;

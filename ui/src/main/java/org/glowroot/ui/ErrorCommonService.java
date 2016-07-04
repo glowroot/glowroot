@@ -51,7 +51,7 @@ class ErrorCommonService {
                     .to(revisedTo)
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeInOverallErrorSummary(agentRollup, revisedQuery, collector);
+            aggregateRepository.mergeOverallErrorSummaryInto(agentRollup, revisedQuery, collector);
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {
@@ -75,7 +75,7 @@ class ErrorCommonService {
                     .to(revisedTo)
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeInTransactionErrorSummaries(agentRollup, revisedQuery,
+            aggregateRepository.mergeTransactionErrorSummariesInto(agentRollup, revisedQuery,
                     sortOrder, limit, collector);
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);

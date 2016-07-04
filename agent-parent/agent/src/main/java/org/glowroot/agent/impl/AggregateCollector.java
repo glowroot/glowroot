@@ -116,14 +116,14 @@ class AggregateCollector {
         if (mainThreadProfile == null) {
             mainThreadProfile = new MutableProfile();
         }
-        toBeMergedProfile.mergeIntoProfile(mainThreadProfile);
+        toBeMergedProfile.mergeInto(mainThreadProfile);
     }
 
     void mergeAuxThreadProfile(Profile toBeMergedProfile) {
         if (auxThreadProfile == null) {
             auxThreadProfile = new MutableProfile();
         }
-        toBeMergedProfile.mergeIntoProfile(auxThreadProfile);
+        toBeMergedProfile.mergeInto(auxThreadProfile);
     }
 
     QueryCollector getQueryCollector() {
@@ -179,20 +179,20 @@ class AggregateCollector {
         return builder.build();
     }
 
-    void mergeInOverallSummary(OverallSummaryCollector collector) {
+    void mergeOverallSummaryInto(OverallSummaryCollector collector) {
         collector.mergeSummary(totalDurationNanos, transactionCount, 0);
     }
 
-    void mergeInTransactionSummaries(TransactionSummaryCollector collector) {
+    void mergeTransactionSummariesInto(TransactionSummaryCollector collector) {
         checkNotNull(transactionName);
         collector.collect(transactionName, totalDurationNanos, transactionCount, 0);
     }
 
-    void mergeInOverallErrorSummary(OverallErrorSummaryCollector collector) {
+    void mergeOverallErrorSummaryInto(OverallErrorSummaryCollector collector) {
         collector.mergeErrorSummary(errorCount, transactionCount, 0);
     }
 
-    void mergeInTransactionErrorSummaries(TransactionErrorSummaryCollector collector) {
+    void mergeTransactionErrorSummariesInto(TransactionErrorSummaryCollector collector) {
         checkNotNull(transactionName);
         if (errorCount != 0) {
             collector.collect(transactionName, errorCount, transactionCount, 0);
@@ -230,26 +230,26 @@ class AggregateCollector {
         return ImmutableThroughputAggregate.of(captureTime, transactionCount);
     }
 
-    void mergeInQueries(org.glowroot.common.model.QueryCollector collector,
+    void mergeQueriesInto(org.glowroot.common.model.QueryCollector collector,
             List<String> sharedQueryTexts) throws IOException {
         if (queries != null) {
-            queries.mergeInQueries(collector, sharedQueryTexts);
+            queries.mergeQueriesInto(collector, sharedQueryTexts);
         }
     }
 
-    void mergeInServiceCalls(ServiceCallCollector collector) throws IOException {
+    void mergeServiceCallsInto(ServiceCallCollector collector) throws IOException {
         if (serviceCalls != null) {
             collector.mergeServiceCalls(serviceCalls.toProto());
         }
     }
 
-    void mergeInMainThreadProfiles(ProfileCollector collector) {
+    void mergeMainThreadProfilesInto(ProfileCollector collector) {
         if (mainThreadProfile != null) {
             collector.mergeProfile(mainThreadProfile.toProto());
         }
     }
 
-    void mergeInAuxThreadProfiles(ProfileCollector collector) {
+    void mergeAuxThreadProfilesInto(ProfileCollector collector) {
         if (auxThreadProfile != null) {
             collector.mergeProfile(auxThreadProfile.toProto());
         }
