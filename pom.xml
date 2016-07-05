@@ -87,7 +87,7 @@
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.7</jackson.version>
     <logback.version>1.1.7</logback.version>
-    <immutables.version>2.2.6</immutables.version>
+    <immutables.version>2.2.10</immutables.version>
     <javax.mail.version>1.5.5</javax.mail.version>
     <jmh.version>1.12</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -508,7 +508,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
-          <version>1.10</version>
+          <version>1.11</version>
         </plugin>
         <plugin>
           <groupId>org.jacoco</groupId>

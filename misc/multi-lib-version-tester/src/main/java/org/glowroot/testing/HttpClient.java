@@ -137,8 +137,8 @@ public class HttpClient {
         }
         for (int i = 0; i <= 9; i++) {
             updateLibVersion("asynchttpclient.version", "2.0." + i);
+            runTest(test, "async-http-client-2.x");
         }
-        runTest(test, "async-http-client-2.x");
     }
 
     private static void okHttpClient() throws Exception {
@@ -229,11 +229,12 @@ public class HttpClient {
             updateLibVersion("spring.version", "4.1." + i + ".RELEASE");
             runTest(test);
         }
-        for (int i = 0; i <= 6; i++) {
+        for (int i = 0; i <= 7; i++) {
             updateLibVersion("spring.version", "4.2." + i + ".RELEASE");
             runTest(test);
         }
         updateLibVersion("spring.version", "4.3.0.RELEASE");
+        updateLibVersion("spring.version", "4.3.1.RELEASE");
     }
 
     private static void updateLibVersion(String property, String version) throws IOException {

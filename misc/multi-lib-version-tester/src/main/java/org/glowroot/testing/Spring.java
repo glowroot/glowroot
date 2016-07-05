@@ -57,10 +57,11 @@ public class Spring {
         for (int i = 0; i <= 9; i++) {
             run("4.1." + i + ".RELEASE");
         }
-        for (int i = 0; i <= 6; i++) {
+        for (int i = 0; i <= 7; i++) {
             run("4.2." + i + ".RELEASE");
         }
         run("4.3.0.RELEASE");
+        run("4.3.1.RELEASE");
     }
 
     private static void run(String version, String... profiles) throws Exception {
