@@ -264,6 +264,7 @@ public class AggregateIntervalCollector {
                 }
                 aggregatesByTypeList.add(aggregatesByType.build());
             }
+            // collecting even when no aggregates since collection triggers transaction-based alerts
             collector.collectAggregates(captureTime, aggregatesByTypeList, sharedQueryTexts);
         }
     }

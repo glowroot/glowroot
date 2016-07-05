@@ -16,6 +16,7 @@
 package org.glowroot.server;
 
 import java.io.IOException;
+import java.util.List;
 
 import com.datastax.driver.core.exceptions.ReadTimeoutException;
 import io.grpc.internal.ServerImpl;
@@ -30,6 +31,7 @@ import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorService;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
@@ -115,13 +117,16 @@ class GrpcServer {
         @Override
         public void collectAggregates(AggregateMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
-            try {
-                aggregateRepository.store(request.getAgentId(), request.getCaptureTime(),
-                        request.getAggregatesByTypeList(), request.getSharedQueryTextList());
-            } catch (Throwable t) {
-                logger.error(t.getMessage(), t);
-                responseObserver.onError(t);
-                return;
+            List<AggregatesByType> aggregatesByTypeList = request.getAggregatesByTypeList();
+            if (!aggregatesByTypeList.isEmpty()) {
+                try {
+                    aggregateRepository.store(request.getAgentId(), request.getCaptureTime(),
+                            aggregatesByTypeList, request.getSharedQueryTextList());
+                } catch (Throwable t) {
+                    logger.error(t.getMessage(), t);
+                    responseObserver.onError(t);
+                    return;
+                }
             }
             try {
                 alertingService.checkTransactionAlerts(request.getAgentId(),
