@@ -170,6 +170,10 @@
           The full text for this query has expired
         </strong>
       </div>
+      <div ng-if="queryError"
+           class="gt-red">
+          An error occurred retrieving the query
+      </div>
       <!-- display: inline-block is so that true width can be calculated and modal shrunk to fit if possible -->
       <!-- not using ng-show/hide here since need it to be visible for size calculation -->
       <pre class="gt-monospace"

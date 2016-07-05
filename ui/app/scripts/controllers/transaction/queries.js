@@ -97,23 +97,110 @@ glowroot.controller('TransactionQueriesCtrl', [
         $scope.sortAttr = '-rowsPerExecution';
       }
       $scope.queryType = $location.search()['query-type'];
+
+      var modalQueryType = $location.search()['modal-query-type'];
+      var modalQueryText = $location.search()['modal-query-text'];
+      var modalQueryTextSha1 = $location.search()['modal-query-text-sha1'];
+      if (modalQueryText || modalQueryTextSha1) {
+        $('#queryModal').data('location-query', [
+          'modal-query-type',
+          'modal-query-text',
+          'modal-query-text-sha1'
+        ]);
+        displayModal(modalQueryType, modalQueryText, modalQueryTextSha1);
+      } else {
+        $('#queryModal').modal('hide');
+      }
     });
 
     $scope.showQueryModal = function (query) {
-      // clear previous styling and content
-      var $modalDialog = $('#queryModal .modal-dialog');
-      $modalDialog.removeAttr('style');
-      var closeButton = $('#queryModal button.close');
-      closeButton.removeAttr('style');
-      var $clipboardIcon = $('#queryModal .fa-clipboard');
-      $clipboardIcon.removeAttr('style');
+      $location.search('modal-query-type', query.queryType);
+      if (query.fullQueryTextSha1) {
+        $location.search('modal-query-text-sha1', query.fullQueryTextSha1);
+      } else {
+        $location.search('modal-query-text', query.truncatedQueryText);
+      }
+    };
+
+    function displayModal(modalQueryType, modalQueryText, modalQueryTextSha1) {
+      // clear previous content
       var $unformattedQuery = $('#unformattedQuery');
       var $formattedQuery = $('#formattedQuery');
       $unformattedQuery.text('');
       $formattedQuery.html('');
-      modals.display('#queryModal');
+      $scope.unformattedQuery = '';
+      $scope.formattedQuery = '';
+      $scope.showFormatted = false;
+      $scope.queryExpired = false;
+      $scope.queryError = false;
+
+      var $modalDialog = $('#queryModal .modal-dialog');
+      var $closeButton = $('#queryModal button.close');
+      var $clipboardIcon = $('#queryModal .fa-clipboard');
+
+      function clearCss() {
+        $modalDialog.removeAttr('style');
+        $closeButton.removeAttr('style');
+        $clipboardIcon.removeAttr('style');
+      }
+
+      function applyCss(loading) {
+        var width = Math.max($formattedQuery.width() + 80, 500);
+        // +141 is needed for IE9 (other browsers seemed ok at +140)
+        var height = $formattedQuery.height() + 141;
+        if (loading) {
+          height = 200;
+        }
+        var horizontalScrolling = width > $(window).width() - 50;
+        if (horizontalScrolling) {
+          height += 17;
+        }
+        var verticalScrolling = height > $(window).height() - 50;
+        if (width < $modalDialog.width()) {
+          $modalDialog.css('width', width + 'px');
+          $modalDialog.css('left', '50%');
+          $modalDialog.css('margin-left', -width / 2 + 'px');
+          $closeButton.css('right', 'auto');
+          $closeButton.css('left', '50%');
+          var closeButtonLeftMargin = width / 2 - 46;
+          if (!verticalScrolling) {
+            closeButtonLeftMargin += 17;
+          }
+          $closeButton.css('margin-left', closeButtonLeftMargin + 'px');
+          $clipboardIcon.css('right', 'auto');
+          $clipboardIcon.css('left', '50%');
+          $clipboardIcon.css('margin-left', (closeButtonLeftMargin - 3) + 'px');
+        }
+        if (!verticalScrolling) {
+          $modalDialog.css('overflow-y', 'auto');
+          $modalDialog.css('height', height + 'px');
+          $modalDialog.css('top', '50%');
+          $modalDialog.css('margin-top', -height / 2 + 'px');
+          $modalDialog.css('border-top-right-radius', '6px');
+          $modalDialog.css('border-bottom-right-radius', '6px');
+          $closeButton.css('top', '50%');
+          $closeButton.css('margin-top', -height / 2 + 10 + 'px');
+          $clipboardIcon.css('top', '50%');
+          $clipboardIcon.css('margin-top', -height / 2 + 34 + 'px');
+        }
+        if (horizontalScrolling) {
+          $modalDialog.css('border-bottom-left-radius', 0);
+          $modalDialog.css('border-bottom-right-radius', 0);
+        }
+      }
+
+      // delay is to avoid flashing content when displaying blank modal briefly before full text has loaded
+      var timer = $timeout(function () {
+        clearCss();
+        modals.display('#queryModal');
+        applyCss(true);
+      }, 200);
 
       function display(fullText) {
+        if ($timeout.cancel(timer)) {
+          modals.display('#queryModal');
+        }
+        clearCss();
         $scope.unformattedQuery = fullText;
         $scope.formattedQuery = '';
         $scope.showFormatted = false;
@@ -128,10 +215,16 @@ glowroot.controller('TransactionQueriesCtrl', [
           return $scope.showFormatted ? $scope.formattedQuery : $scope.unformattedQuery;
         });
 
-        if (query.queryType !== 'SQL') {
+        if (modalQueryType !== 'SQL') {
           return;
         }
 
+        var comment = '';
+        if (fullText.lastIndexOf('/*', 0) === 0) {
+          var endOfComment = fullText.indexOf('*/') + 2;
+          comment = fullText.substring(0, endOfComment) + '\n';
+          fullText = fullText.substring(endOfComment).trim();
+        }
         var formatted = SqlPrettyPrinter.format(fullText);
         if (typeof formatted === 'object') {
           // intentional console logging
@@ -142,61 +235,22 @@ glowroot.controller('TransactionQueriesCtrl', [
           }
           return;
         }
-        $scope.formattedQuery = formatted;
+        $scope.formattedQuery = comment + formatted;
         $scope.showFormatted = true;
         $formattedQuery.html($scope.formattedQuery);
         $unformattedQuery.hide();
         $formattedQuery.show();
-
-        var width = Math.max($formattedQuery.width() + 80, 500);
-        // +141 is needed for IE9 (other browsers seemed ok at +140)
-        var height = $formattedQuery.height() + 141;
-        var horizontalScrolling = width > $(window).width() - 50;
-        if (horizontalScrolling) {
-          height += 17;
-        }
-        var verticalScrolling = height > $(window).height() - 50;
-        if (width < $modalDialog.width()) {
-          $modalDialog.css('width', width + 'px');
-          $modalDialog.css('left', '50%');
-          $modalDialog.css('margin-left', -width / 2 + 'px');
-          closeButton.css('right', 'auto');
-          closeButton.css('left', '50%');
-          var closeButtonLeftMargin = width / 2 - 46;
-          if (!verticalScrolling) {
-            closeButtonLeftMargin += 17;
-          }
-          closeButton.css('margin-left', closeButtonLeftMargin + 'px');
-          $clipboardIcon.css('right', 'auto');
-          $clipboardIcon.css('left', '50%');
-          $clipboardIcon.css('margin-left', (closeButtonLeftMargin - 3) + 'px');
-        }
-        if (!verticalScrolling) {
-          $modalDialog.css('overflow-y', 'auto');
-          $modalDialog.css('height', height + 'px');
-          $modalDialog.css('top', '50%');
-          $modalDialog.css('margin-top', -height / 2 + 'px');
-          $modalDialog.css('border-top-right-radius', '6px');
-          $modalDialog.css('border-bottom-right-radius', '6px');
-          closeButton.css('top', '50%');
-          closeButton.css('margin-top', -height / 2 + 10 + 'px');
-          $clipboardIcon.css('top', '50%');
-          $clipboardIcon.css('margin-top', -height / 2 + 34 + 'px');
-        }
-        if (horizontalScrolling) {
-          $modalDialog.css('border-bottom-left-radius', 0);
-          $modalDialog.css('border-bottom-right-radius', 0);
-        }
+        applyCss();
       }
 
-      if (!query.fullQueryTextSha1) {
-        display(query.truncatedQueryText);
+      if (!modalQueryTextSha1) {
+        display(modalQueryText);
         return;
       }
 
       var q = {
         agentRollup: $scope.agentRollup,
-        fullTextSha1: query.fullQueryTextSha1
+        fullTextSha1: modalQueryTextSha1
       };
       $scope.showModalSpinner++;
       $http.get('backend/transaction/full-query-text' + queryStrings.encodeObject(q))
@@ -208,11 +262,11 @@ glowroot.controller('TransactionQueriesCtrl', [
             }
             display(data.fullText);
           })
-          .error(function (data, status) {
-            $scope.loadingFullQueryText--;
-            httpErrors.handler($scope)(data, status);
+          .error(function () {
+            $scope.showModalSpinner--;
+            $scope.queryError = true;
           });
-    };
+    }
 
     $scope.toggleFormatted = function () {
       $scope.showFormatted = !$scope.showFormatted;
