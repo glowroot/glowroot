@@ -15,26 +15,19 @@
  */
 package org.glowroot.agent.impl;
 
+import java.util.List;
+import java.util.Map;
+
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
 class MutableQuery {
-
-    private final int sharedQueryTextIndex;
 
     private double totalDurationNanos;
     private long executionCount;
 
     private boolean hasTotalRows;
     private long totalRows;
-
-    MutableQuery(int sharedQueryTextIndex) {
-        this.sharedQueryTextIndex = sharedQueryTextIndex;
-    }
-
-    int getSharedQueryTextIndex() {
-        return sharedQueryTextIndex;
-    }
 
     double getTotalDurationNanos() {
         return totalDurationNanos;
@@ -67,7 +60,14 @@ class MutableQuery {
         }
     }
 
-    Aggregate.Query toProto() {
+    Aggregate.Query toProto(String queryText, List<String> sharedQueryTexts,
+            Map<String, Integer> sharedQueryTextIndexes) {
+        Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(queryText);
+        if (sharedQueryTextIndex == null) {
+            sharedQueryTextIndex = sharedQueryTexts.size();
+            sharedQueryTexts.add(queryText);
+            sharedQueryTextIndexes.put(queryText, sharedQueryTextIndex);
+        }
         Aggregate.Query.Builder builder = Aggregate.Query.newBuilder()
                 .setSharedQueryTextIndex(sharedQueryTextIndex)
                 .setTotalDurationNanos(totalDurationNanos)

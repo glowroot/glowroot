@@ -17,6 +17,7 @@ package org.glowroot.agent.impl;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -148,7 +149,8 @@ class AggregateCollector {
         return serviceCalls;
     }
 
-    Aggregate build(ScratchBuffer scratchBuffer) throws IOException {
+    Aggregate build(List<String> sharedQueryTexts, Map<String, Integer> sharedQueryTextIndexes,
+            ScratchBuffer scratchBuffer) throws IOException {
         Aggregate.Builder builder = Aggregate.newBuilder()
                 .setTotalDurationNanos(totalDurationNanos)
                 .setTransactionCount(transactionCount)
@@ -165,7 +167,7 @@ class AggregateCollector {
             builder.setAuxThreadStats(auxThreadStats.toProto());
         }
         if (queries != null) {
-            builder.addAllQueriesByType(queries.toProto());
+            builder.addAllQueriesByType(queries.toProto(sharedQueryTexts, sharedQueryTextIndexes));
         }
         if (serviceCalls != null) {
             builder.addAllServiceCallsByType(serviceCalls.toProto());
@@ -230,10 +232,17 @@ class AggregateCollector {
         return ImmutableThroughputAggregate.of(captureTime, transactionCount);
     }
 
-    void mergeQueriesInto(org.glowroot.common.model.QueryCollector collector,
-            List<String> sharedQueryTexts) throws IOException {
+    @Nullable
+    String getFullQueryText(String fullQueryTextSha1) {
+        if (queries == null) {
+            return null;
+        }
+        return queries.getFullQueryText(fullQueryTextSha1);
+    }
+
+    void mergeQueriesInto(org.glowroot.common.model.QueryCollector collector) throws IOException {
         if (queries != null) {
-            queries.mergeQueriesInto(collector, sharedQueryTexts);
+            queries.mergeQueriesInto(collector);
         }
     }
 

@@ -158,11 +158,11 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
     }
 
     @Override
-    public @Nullable String readFullQueryText(String agentRollup, String fullQueryTextSha1) {
+    public @Nullable String getFullQueryText(String agentRollup, String fullQueryTextSha1) {
         List<AggregateIntervalCollector> intervalCollectors =
                 aggregator.getOrderedIntervalCollectorsInRange(0, Long.MAX_VALUE);
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-            String fullQueryText = intervalCollector.readFullQueryText(fullQueryTextSha1);
+            String fullQueryText = intervalCollector.getFullQueryText(fullQueryTextSha1);
             if (fullQueryText != null) {
                 return fullQueryText;
             }

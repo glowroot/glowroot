@@ -56,7 +56,7 @@ public interface LiveAggregateRepository {
     LiveResult<ThroughputAggregate> getThroughputAggregates(String agentId, TransactionQuery query);
 
     @Nullable
-    String readFullQueryText(String agentRollup, String fullQueryTextSha1);
+    String getFullQueryText(String agentRollup, String fullQueryTextSha1);
 
     long mergeInQueries(String agentId, TransactionQuery query, QueryCollector collector)
             throws IOException;
@@ -186,7 +186,7 @@ public interface LiveAggregateRepository {
         }
 
         @Override
-        public @Nullable String readFullQueryText(String agentRollup, String fullQueryTextSha1) {
+        public @Nullable String getFullQueryText(String agentRollup, String fullQueryTextSha1) {
             return null;
         }
 

@@ -24,10 +24,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.hash.Hashing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +43,6 @@ import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.model.TransactionErrorSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.util.Clock;
-import org.glowroot.storage.config.StorageConfig;
 import org.glowroot.storage.repo.Utils;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -66,10 +63,6 @@ public class AggregateIntervalCollector {
 
     @GuardedBy("lock")
     private final Map<String, IntervalTypeCollector> typeCollectors = Maps.newHashMap();
-    @GuardedBy("lock")
-    private final List<String> sharedQueryTexts = Lists.newArrayList();
-    @GuardedBy("lock")
-    private final Map<String, Integer> sharedQueryTextIndexes = Maps.newHashMap();
 
     private final Object lock = new Object();
 
@@ -184,14 +177,11 @@ public class AggregateIntervalCollector {
         }
     }
 
-    public @Nullable String readFullQueryText(String fullQueryTextSha1) {
+    public @Nullable String getFullQueryText(String fullQueryTextSha1) {
         synchronized (lock) {
-            for (String fullQueryText : sharedQueryTexts) {
-                if (fullQueryText.length() <= StorageConfig.QUERY_TEXT_TRUNCATE) {
-                    continue;
-                }
-                String sha1 = Hashing.sha1().hashString(fullQueryText, Charsets.UTF_8).toString();
-                if (fullQueryTextSha1.equals(sha1)) {
+            for (IntervalTypeCollector typeCollector : typeCollectors.values()) {
+                String fullQueryText = typeCollector.getFullQueryText(fullQueryTextSha1);
+                if (fullQueryText != null) {
                     return fullQueryText;
                 }
             }
@@ -207,7 +197,7 @@ public class AggregateIntervalCollector {
             if (aggregateCollector == null) {
                 return;
             }
-            aggregateCollector.mergeQueriesInto(collector, sharedQueryTexts);
+            aggregateCollector.mergeQueriesInto(collector);
         }
     }
 
@@ -249,6 +239,8 @@ public class AggregateIntervalCollector {
 
     void flush(Collector collector) throws Exception {
         synchronized (lock) {
+            List<String> sharedQueryTexts = Lists.newArrayList();
+            Map<String, Integer> sharedQueryTextIndexes = Maps.newHashMap();
             List<AggregatesByType> aggregatesByTypeList = Lists.newArrayList();
             ScratchBuffer scratchBuffer = new ScratchBuffer();
             for (Entry<String, IntervalTypeCollector> e : typeCollectors.entrySet()) {
@@ -256,11 +248,13 @@ public class AggregateIntervalCollector {
                 AggregatesByType.Builder aggregatesByType = AggregatesByType.newBuilder()
                         .setTransactionType(e.getKey())
                         .setOverallAggregate(buildOverallAggregate(
-                                intervalTypeCollector.overallAggregateCollector, scratchBuffer));
+                                intervalTypeCollector.overallAggregateCollector, sharedQueryTexts,
+                                sharedQueryTextIndexes, scratchBuffer));
                 for (Entry<String, AggregateCollector> f : intervalTypeCollector.transactionAggregateCollectors
                         .entrySet()) {
                     aggregatesByType.addTransactionAggregate(
-                            buildTransactionAggregate(f.getKey(), f.getValue(), scratchBuffer));
+                            buildTransactionAggregate(f.getKey(), f.getValue(), sharedQueryTexts,
+                                    sharedQueryTextIndexes, scratchBuffer));
                 }
                 aggregatesByTypeList.add(aggregatesByType.build());
             }
@@ -286,15 +280,19 @@ public class AggregateIntervalCollector {
     }
 
     private Aggregate buildOverallAggregate(AggregateCollector aggregateCollector,
+            List<String> sharedQueryTexts, Map<String, Integer> sharedQueryTextIndexes,
             ScratchBuffer scratchBuffer) throws IOException {
-        return aggregateCollector.build(scratchBuffer);
+        return aggregateCollector.build(sharedQueryTexts, sharedQueryTextIndexes, scratchBuffer);
     }
 
     private TransactionAggregate buildTransactionAggregate(String transactionName,
-            AggregateCollector aggregateCollector, ScratchBuffer scratchBuffer) throws IOException {
+            AggregateCollector aggregateCollector, List<String> sharedQueryTexts,
+            Map<String, Integer> sharedQueryTextIndexes, ScratchBuffer scratchBuffer)
+            throws IOException {
         return TransactionAggregate.newBuilder()
                 .setTransactionName(transactionName)
-                .setAggregate(aggregateCollector.build(scratchBuffer))
+                .setAggregate(aggregateCollector.build(sharedQueryTexts, sharedQueryTextIndexes,
+                        scratchBuffer))
                 .build();
     }
 
@@ -353,8 +351,7 @@ public class AggregateIntervalCollector {
                     .mergeRootTimer(transaction.getMainThreadRootTimer());
             transaction.mergeAuxThreadTimersInto(aggregateCollector.getAuxThreadRootTimers());
             transaction.mergeAsyncTimersInto(aggregateCollector.getAsyncTimers());
-            transaction.mergeQueriesInto(aggregateCollector.getQueryCollector(),
-                    sharedQueryTextIndexes, sharedQueryTexts);
+            transaction.mergeQueriesInto(aggregateCollector.getQueryCollector());
             transaction.mergeServiceCallsInto(aggregateCollector.getServiceCallCollector());
             Profile mainThreadProfile = transaction.getMainThreadProfile();
             if (mainThreadProfile != null) {
@@ -364,6 +361,20 @@ public class AggregateIntervalCollector {
             if (auxThreadProfile != null) {
                 aggregateCollector.mergeAuxThreadProfile(auxThreadProfile);
             }
+        }
+
+        private @Nullable String getFullQueryText(String fullQueryTextSha1) {
+            String fullQueryText = overallAggregateCollector.getFullQueryText(fullQueryTextSha1);
+            if (fullQueryText != null) {
+                return fullQueryText;
+            }
+            for (AggregateCollector aggregateCollector : transactionAggregateCollectors.values()) {
+                fullQueryText = aggregateCollector.getFullQueryText(fullQueryTextSha1);
+                if (fullQueryText != null) {
+                    return fullQueryText;
+                }
+            }
+            return null;
         }
     }
 }

@@ -17,7 +17,6 @@ package org.glowroot.agent.model;
 
 import java.lang.management.ThreadInfo;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -189,18 +188,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.currentNestingGroupId = nestingGroupId;
     }
 
-    void mergeQueriesInto(QueryCollector queries, Map<String, Integer> sharedQueryTextIndexes,
-            List<String> sharedQueryTexts) {
+    void mergeQueriesInto(QueryCollector queries) {
         QueryData curr = headQueryData;
         while (curr != null) {
-            String queryText = curr.getQueryText();
-            Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(queryText);
-            if (sharedQueryTextIndex == null) {
-                sharedQueryTextIndex = sharedQueryTexts.size();
-                sharedQueryTexts.add(queryText);
-                sharedQueryTextIndexes.put(queryText, sharedQueryTextIndex);
-            }
-            queries.mergeQuery(curr.getQueryType(), sharedQueryTextIndex,
+            queries.mergeQuery(curr.getQueryType(), curr.getQueryText(),
                     curr.getTotalDurationNanos(), curr.getExecutionCount(), curr.hasTotalRows(),
                     curr.getTotalRows());
             curr = curr.getNextQueryData();

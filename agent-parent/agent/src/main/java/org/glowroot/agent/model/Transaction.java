@@ -340,15 +340,13 @@ public class Transaction {
         }
     }
 
-    public void mergeQueriesInto(QueryCollector queries,
-            Map<String, Integer> sharedQueryTextIndexes, List<String> sharedQueryTexts) {
+    public void mergeQueriesInto(QueryCollector queries) {
         memoryBarrierRead();
-        mainThreadContext.mergeQueriesInto(queries, sharedQueryTextIndexes, sharedQueryTexts);
+        mainThreadContext.mergeQueriesInto(queries);
         synchronized (mainThreadContext) {
             if (auxThreadContexts != null) {
                 for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
-                    auxThreadContext.mergeQueriesInto(queries, sharedQueryTextIndexes,
-                            sharedQueryTexts);
+                    auxThreadContext.mergeQueriesInto(queries);
                 }
             }
         }

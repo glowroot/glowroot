@@ -294,7 +294,7 @@ class TransactionCommonService {
         if (fullQueryText != null) {
             return fullQueryText;
         }
-        return liveAggregateRepository.readFullQueryText(agentRollup, fullQueryTextSha1);
+        return liveAggregateRepository.getFullQueryText(agentRollup, fullQueryTextSha1);
     }
 
     // query.from() is non-inclusive

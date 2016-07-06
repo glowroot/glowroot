@@ -21,23 +21,41 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
 import com.google.common.hash.Hashing;
 import com.google.common.primitives.Doubles;
+import org.immutables.value.Value;
 
+import org.glowroot.common.util.Styles;
 import org.glowroot.storage.config.StorageConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 public class QueryCollector {
 
-    // first key is query type, second key is shared query text index (which uniquely identifies
-    // the query text inside a given AggregateIntervalCollector)
-    private final Map<String, Map<Integer, MutableQuery>> queries = Maps.newHashMap();
+    private static final Ordering<Entry<String, MutableQuery>> bySmallestTotalDuration =
+            new Ordering<Entry<String, MutableQuery>>() {
+                @Override
+                public int compare(Entry<String, MutableQuery> left,
+                        Entry<String, MutableQuery> right) {
+                    return Doubles.compare(left.getValue().getTotalDurationNanos(),
+                            right.getValue().getTotalDurationNanos());
+                }
+            };
+
+    private static final int REMOVE_SMALLEST_N = 10;
+
+    // first key is query type, second key is query text
+    private final Map<String, Map<String, MutableQuery>> queries = Maps.newHashMap();
     private final int limit;
     private final int maxMultiplierWhileBuilding;
+
+    private final Map<String, MinQuery> minQueryPerType = Maps.newHashMap();
 
     // this is only used by UI
     private long lastCaptureTime;
@@ -55,45 +73,46 @@ public class QueryCollector {
         return lastCaptureTime;
     }
 
-    List<Aggregate.QueriesByType> toProto() {
+    List<Aggregate.QueriesByType> toProto(List<String> sharedQueryTexts,
+            Map<String, Integer> sharedQueryTextIndexes) {
         if (queries.isEmpty()) {
             return ImmutableList.of();
         }
         List<Aggregate.QueriesByType> queriesByType = Lists.newArrayList();
-        for (Entry<String, Map<Integer, MutableQuery>> entry : queries.entrySet()) {
+        for (Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
             List<Aggregate.Query> queries =
-                    Lists.newArrayListWithCapacity(entry.getValue().values().size());
-            for (MutableQuery query : entry.getValue().values()) {
-                queries.add(query.toProto());
+                    Lists.newArrayListWithCapacity(outerEntry.getValue().values().size());
+            for (Entry<String, MutableQuery> entry : outerEntry.getValue().entrySet()) {
+                queries.add(entry.getValue().toProto(entry.getKey(), sharedQueryTexts,
+                        sharedQueryTextIndexes));
             }
             if (queries.size() > limit) {
                 order(queries);
                 queries = queries.subList(0, limit);
             }
             queriesByType.add(Aggregate.QueriesByType.newBuilder()
-                    .setType(entry.getKey())
+                    .setType(outerEntry.getKey())
                     .addAllQuery(queries)
                     .build());
         }
         return queriesByType;
     }
 
-    public void mergeQuery(String queryType, int sharedQueryTextIndex, double totalDurationNanos,
+    public void mergeQuery(String queryType, String queryText, double totalDurationNanos,
             long executionCount, boolean hasTotalRows, long totalRows) {
-        Map<Integer, MutableQuery> queriesForType = queries.get(queryType);
+        Map<String, MutableQuery> queriesForType = queries.get(queryType);
         if (queriesForType == null) {
             queriesForType = Maps.newHashMap();
             queries.put(queryType, queriesForType);
         }
-        mergeQuery(sharedQueryTextIndex, totalDurationNanos, executionCount, totalRows,
+        mergeQuery(queryType, queryText, totalDurationNanos, executionCount, totalRows,
                 hasTotalRows, queriesForType);
     }
 
-    void mergeQueriesInto(org.glowroot.common.model.QueryCollector collector,
-            List<String> sharedQueryTexts) {
-        for (Entry<String, Map<Integer, MutableQuery>> entry : queries.entrySet()) {
-            for (MutableQuery query : entry.getValue().values()) {
-                String fullQueryText = sharedQueryTexts.get(query.getSharedQueryTextIndex());
+    void mergeQueriesInto(org.glowroot.common.model.QueryCollector collector) {
+        for (Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
+            for (Entry<String, MutableQuery> entry : outerEntry.getValue().entrySet()) {
+                String fullQueryText = entry.getKey();
                 String truncatedQueryText;
                 String fullQueryTextSha1;
                 if (fullQueryText.length() > StorageConfig.QUERY_TEXT_TRUNCATE) {
@@ -105,28 +124,63 @@ public class QueryCollector {
                     truncatedQueryText = fullQueryText;
                     fullQueryTextSha1 = null;
                 }
-                collector.mergeQuery(entry.getKey(), truncatedQueryText, fullQueryTextSha1,
+                MutableQuery query = entry.getValue();
+                collector.mergeQuery(outerEntry.getKey(), truncatedQueryText, fullQueryTextSha1,
                         query.getTotalDurationNanos(), query.getExecutionCount(),
                         query.hasTotalRows(), query.getTotalRows());
             }
         }
     }
 
-    private void mergeQuery(int sharedQueryTextIndex, double totalDurationNanos,
+    @Nullable
+    String getFullQueryText(String fullQueryTextSha1) {
+        for (Entry<String, Map<String, MutableQuery>> entry : queries.entrySet()) {
+            for (String fullQueryText : entry.getValue().keySet()) {
+                if (fullQueryText.length() <= StorageConfig.QUERY_TEXT_TRUNCATE) {
+                    continue;
+                }
+                String sha1 = Hashing.sha1().hashString(fullQueryText, Charsets.UTF_8).toString();
+                if (fullQueryTextSha1.equals(sha1)) {
+                    return fullQueryText;
+                }
+            }
+        }
+        return null;
+    }
+
+    private void mergeQuery(String queryType, String queryText, double totalDurationNanos,
             long executionCount, long totalRows, boolean hasTotalRows,
-            Map<Integer, MutableQuery> queriesForType) {
-        MutableQuery aggregateQuery = queriesForType.get(sharedQueryTextIndex);
+            Map<String, MutableQuery> queriesForType) {
+        MutableQuery aggregateQuery = queriesForType.get(queryText);
+        boolean truncateAndRecalculateMinQuery = false;
         if (aggregateQuery == null) {
             if (maxMultiplierWhileBuilding != 0
                     && queriesForType.size() >= limit * maxMultiplierWhileBuilding) {
-                return;
+                MinQuery minQuery = minQueryPerType.get(queryType);
+                if (minQuery != null && totalDurationNanos < minQuery.totalDurationNanos()) {
+                    return;
+                }
+                truncateAndRecalculateMinQuery = true;
             }
-            aggregateQuery = new MutableQuery(sharedQueryTextIndex);
-            queriesForType.put(sharedQueryTextIndex, aggregateQuery);
+            aggregateQuery = new MutableQuery();
+            queriesForType.put(queryText, aggregateQuery);
         }
         aggregateQuery.addToTotalDurationNanos(totalDurationNanos);
         aggregateQuery.addToExecutionCount(executionCount);
         aggregateQuery.addToTotalRows(hasTotalRows, totalRows);
+        if (truncateAndRecalculateMinQuery) {
+            // TODO report checker framework issue that occurs without this suppression
+            @SuppressWarnings("assignment.type.incompatible")
+            List<Entry<String, MutableQuery>> sortedEntries =
+                    bySmallestTotalDuration.sortedCopy(queriesForType.entrySet());
+            // remove smallest N (instead of just smallest 1) to avoid re-sort again so quickly
+            for (int i = 0; i < REMOVE_SMALLEST_N; i++) {
+                queriesForType.remove(sortedEntries.get(i).getKey());
+            }
+            MutableQuery lastQuery = sortedEntries.get(REMOVE_SMALLEST_N).getValue();
+            minQueryPerType.put(queryType,
+                    ImmutableMinQuery.of(lastQuery, lastQuery.getTotalDurationNanos()));
+        }
     }
 
     private static void order(List<Aggregate.Query> queries) {
@@ -137,5 +191,12 @@ public class QueryCollector {
                 return Doubles.compare(right.getTotalDurationNanos(), left.getTotalDurationNanos());
             }
         });
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface MinQuery {
+        MutableQuery query();
+        double totalDurationNanos();
     }
 }
