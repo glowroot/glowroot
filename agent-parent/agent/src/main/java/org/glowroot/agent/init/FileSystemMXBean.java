@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.fat.storage;
+package org.glowroot.agent.init;
 
-// this is needed when simple repo is used inside the agent since sometimes it's not safe to use the
-// PlatformMBeanServer too early (e.g. jboss/wildfly)
-public interface PlatformMBeanServerLifecycle {
+public interface FileSystemMXBean {
 
-    void lazyRegisterMBean(Object object, String name);
+    long getTotalSpace();
+    long getFreeSpace();
+    double getPercentFull();
 }

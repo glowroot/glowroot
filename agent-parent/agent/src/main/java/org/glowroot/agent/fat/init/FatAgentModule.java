@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Nullable;
-import javax.management.MBeanServer;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
@@ -249,14 +248,8 @@ class FatAgentModule {
         }
 
         @Override
-        public void addInitListener(final InitListener listener) {
-            lazyPlatformMBeanServer.addInitListener(
-                    new org.glowroot.agent.util.LazyPlatformMBeanServer.InitListener() {
-                        @Override
-                        public void postInit(MBeanServer mbeanServer) throws Exception {
-                            listener.doWithPlatformMBeanServer(mbeanServer);
-                        }
-                    });
+        public void lazyRegisterMBean(Object object, String name) {
+            lazyPlatformMBeanServer.lazyRegisterMBean(object, name);
         }
     }
 }

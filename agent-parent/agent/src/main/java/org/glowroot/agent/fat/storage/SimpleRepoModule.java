@@ -17,23 +17,15 @@ package org.glowroot.agent.fat.storage;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Nullable;
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanServer;
-import javax.management.NotCompliantMBeanException;
-import javax.management.ObjectName;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.fat.storage.PlatformMBeanServerLifecycle.InitListener;
 import org.glowroot.agent.fat.storage.util.CappedDatabase;
 import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.agent.fat.storage.util.H2DatabaseStats;
@@ -50,14 +42,11 @@ import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.storage.util.MailService;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class SimpleRepoModule {
 
     private static final long SNAPSHOT_REAPER_PERIOD_MINUTES = 5;
-
-    private static final Logger logger = LoggerFactory.getLogger(SimpleRepoModule.class);
 
     private final DataSource dataSource;
     private final ImmutableList<CappedDatabase> rollupCappedDatabases;
@@ -72,9 +61,6 @@ public class SimpleRepoModule {
     private final RollupLevelService rollupLevelService;
     private final AlertingService alertingService;
     private final @Nullable ReaperRunnable reaperRunnable;
-
-    @OnlyUsedByTests
-    private volatile boolean unregisterMBeans;
 
     public SimpleRepoModule(DataSource dataSource, File dataDir, Clock clock, Ticker ticker,
             ConfigRepository configRepository,
@@ -122,7 +108,16 @@ public class SimpleRepoModule {
     }
 
     public void registerMBeans(PlatformMBeanServerLifecycle platformMBeanServerLifecycle) {
-        platformMBeanServerLifecycle.addInitListener(new RegisterStorageMBeans());
+        for (int i = 0; i < rollupCappedDatabases.size(); i++) {
+            platformMBeanServerLifecycle.lazyRegisterMBean(
+                    new RollupCappedDatabaseStats(rollupCappedDatabases.get(i)),
+                    "org.glowroot:type=RollupCappedDatabase" + i);
+        }
+        platformMBeanServerLifecycle.lazyRegisterMBean(
+                new TraceCappedDatabaseStats(traceCappedDatabase),
+                "org.glowroot:type=TraceCappedDatabase");
+        platformMBeanServerLifecycle.lazyRegisterMBean(new H2DatabaseStats(dataSource),
+                "org.glowroot:type=H2Database");
     }
 
     public AgentDao getAgentDao() {
@@ -163,15 +158,6 @@ public class SimpleRepoModule {
 
     @OnlyUsedByTests
     public void close() throws Exception {
-        MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-        if (unregisterMBeans) {
-            for (int i = 0; i < rollupCappedDatabases.size(); i++) {
-                mbeanServer.unregisterMBean(
-                        new ObjectName("org.glowroot:type=RollupCappedDatabase" + i));
-            }
-            mbeanServer.unregisterMBean(new ObjectName("org.glowroot:type=TraceCappedDatabase"));
-            mbeanServer.unregisterMBean(new ObjectName("org.glowroot:type=H2Database"));
-        }
         if (reaperRunnable != null) {
             reaperRunnable.cancel();
         }
@@ -180,40 +166,5 @@ public class SimpleRepoModule {
         }
         traceCappedDatabase.close();
         dataSource.close();
-    }
-
-    private class RegisterStorageMBeans implements InitListener {
-        @Override
-        public void doWithPlatformMBeanServer(MBeanServer mbeanServer) throws Exception {
-            checkNotNull(traceCappedDatabase);
-            try {
-                for (int i = 0; i < rollupCappedDatabases.size(); i++) {
-                    mbeanServer.registerMBean(
-                            new RollupCappedDatabaseStats(rollupCappedDatabases.get(i)),
-                            new ObjectName("org.glowroot:type=RollupCappedDatabase" + i));
-                }
-                mbeanServer.registerMBean(new TraceCappedDatabaseStats(traceCappedDatabase),
-                        new ObjectName("org.glowroot:type=TraceCappedDatabase"));
-                mbeanServer.registerMBean(new H2DatabaseStats(dataSource),
-                        new ObjectName("org.glowroot:type=H2Database"));
-                unregisterMBeans = true;
-            } catch (InstanceAlreadyExistsException e) {
-                // this happens during unit tests when a non-shared local container is used
-                // (so that then there are two local containers in the same jvm)
-                //
-                // log exception at debug level
-                logger.debug(e.getMessage(), e);
-            } catch (NotCompliantMBeanException e) {
-                if (e.getStackTrace()[0].getClassName()
-                        .equals("org.jboss.mx.metadata.MBeanCapability")) {
-                    // this happens in jboss 4.2.3 because it doesn't know about Java 6 "MXBean"
-                    // naming convention
-                    // it's not really that important if these diagnostic mbeans aren't registered
-                    logger.debug(e.getMessage(), e);
-                } else {
-                    throw e;
-                }
-            }
-        }
     }
 }

@@ -62,6 +62,10 @@ public class Gauges {
                 "milliseconds"));
         patterns.add(new UnitPattern("sun.management:type=HotspotRuntime:TotalSafepointTime",
                 "milliseconds"));
+        patterns.add(
+                new UnitPattern("org.glowroot:type=FileSystem,name=.*:(Total|Free)Space", "bytes"));
+        patterns.add(
+                new UnitPattern("org.glowroot:type=FileSystem,name=.*:PercentFull", "percent"));
         unitPatterns = ImmutableList.copyOf(patterns);
     }
 

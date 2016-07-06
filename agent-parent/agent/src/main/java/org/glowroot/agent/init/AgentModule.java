@@ -187,6 +187,18 @@ public class AgentModule {
         ServiceRegistryImpl.init(glowrootService, timerNameCache, configServiceFactory);
 
         lazyPlatformMBeanServer = new LazyPlatformMBeanServer();
+        File[] roots = File.listRoots();
+        if (roots != null) {
+            for (File root : roots) {
+                String name = root.getCanonicalPath();
+                if (name.length() > 1 && (name.endsWith("/") || name.endsWith("\\"))) {
+                    name = name.substring(0, name.length() - 1);
+                }
+                name = name.replaceAll(":", "");
+                lazyPlatformMBeanServer.lazyRegisterMBean(new FileSystem(root),
+                        "org.glowroot:type=FileSystem,name=" + name);
+            }
+        }
         gaugeCollector = new GaugeCollector(configService, collector, lazyPlatformMBeanServer,
                 clock, ticker);
         // using fixed rate to keep gauge collections close to on the second mark
@@ -273,11 +285,12 @@ public class AgentModule {
     }
 
     @OnlyUsedByTests
-    public void close() throws InterruptedException {
+    public void close() throws Exception {
         immedateTraceStoreWatcher.cancel();
         transactionCollector.close();
         aggregator.close();
         gaugeCollector.close();
         stackTraceCollector.close();
+        lazyPlatformMBeanServer.close();
     }
 }
