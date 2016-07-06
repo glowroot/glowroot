@@ -197,6 +197,12 @@ class GaugeCollector extends ScheduledRunnable {
                     String[] path = mbeanAttributeName.split("\\/");
                     attributeValue = lazyPlatformMBeanServer.getAttribute(objectName, path[0]);
                     CompositeData compositeData = (CompositeData) attributeValue;
+                    if (compositeData == null) {
+                        // this is valid, e.g. attribute LastGcInfo on mbean
+                        // java.lang:type=GarbageCollector,name=*
+                        // prior to first GC, this attribute value is null
+                        continue;
+                    }
                     attributeValue = compositeData.get(path[1]);
                 } else {
                     attributeValue =

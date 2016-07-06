@@ -45,6 +45,13 @@ glowroot.controller('JvmMBeanTreeCtrl', [
       return options.inverse(this);
     });
 
+    Handlebars.registerHelper('ifNull', function (value, options) {
+      if (value === null) {
+        return options.fn(this);
+      }
+      return options.inverse(this);
+    });
+
     Handlebars.registerHelper('indentedJson', function (value) {
       return JSON.stringify(value, null, 4);
     });

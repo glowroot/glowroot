@@ -6,15 +6,19 @@
       <tr>
         <td valign="top">{{@key}}</td>
         <td style="padding-left: 10px;">
-          {{#ifSimpleValue .}}
-            <div class="gt-break-word">
-              {{.}}
-            </div>
+          {{#ifNull .}}
+            <div>null</div>
           {{^}}
-            <div>
-              <pre class="gt-mbean-value-pre gt-break-word">{{indentedJson .}}</pre>
-            </div>
-          {{/ifSimpleValue}}
+            {{#ifSimpleValue .}}
+              <div class="gt-break-word">
+                {{.}}
+              </div>
+            {{^}}
+              <div>
+                <pre class="gt-mbean-value-pre gt-break-word">{{indentedJson .}}</pre>
+              </div>
+            {{/ifSimpleValue}}
+          {{/ifNull}}
         </td>
       </tr>
     {{/each}}
