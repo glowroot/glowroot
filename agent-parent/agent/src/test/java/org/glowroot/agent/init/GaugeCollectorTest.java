@@ -21,6 +21,7 @@ import java.util.List;
 
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
+import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 import com.google.common.base.Ticker;
@@ -44,7 +45,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -92,8 +92,8 @@ public class GaugeCollectorTest {
         // then
         assertThat(gaugeValues).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));
-        verify(logger).warn(eq("error accessing mbean {}: {}"), eq("invalid mbean object name"),
-                startsWith(""));
+        verify(logger).warn(eq("error accessing mbean: {}"), eq("invalid mbean object name"),
+                any(MalformedObjectNameException.class));
     }
 
     @Test
@@ -180,8 +180,8 @@ public class GaugeCollectorTest {
         gaugeCollector.collectGaugeValues(gaugeConfig);
         // then
         verify(logger, times(10)).debug(anyString(), any(Exception.class));
-        verify(logger).warn("mbean attribute {} not found: {}", "ccc", "xyz:aaa=bbb");
-        verify(logger).warn("mbean attribute {} not found: {}", "ddd", "xyz:aaa=bbb");
+        verify(logger).warn("mbean attribute {} not found in {}", "ccc", "xyz:aaa=bbb");
+        verify(logger).warn("mbean attribute {} not found in {}", "ddd", "xyz:aaa=bbb");
     }
 
     @Test
@@ -202,10 +202,10 @@ public class GaugeCollectorTest {
         gaugeCollector.collectGaugeValues(gaugeConfig);
         // then
         verify(logger, times(10)).debug(anyString(), any(Exception.class));
-        verify(logger).warn("error accessing mbean attribute {} {}: {}", "xyz:aaa=bbb", "ccc",
-                "java.lang.RuntimeException: A msg");
-        verify(logger).warn("error accessing mbean attribute {} {}: {}", "xyz:aaa=bbb", "ddd",
-                "java.lang.RuntimeException: A msg");
+        verify(logger).warn(eq("error accessing mbean attribute: {} {}"), eq("xyz:aaa=bbb"),
+                eq("ccc"), any(RuntimeException.class));
+        verify(logger).warn(eq("error accessing mbean attribute: {} {}"), eq("xyz:aaa=bbb"),
+                eq("ddd"), any(RuntimeException.class));
     }
 
     @Test

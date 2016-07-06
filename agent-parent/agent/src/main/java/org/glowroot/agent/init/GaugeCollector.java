@@ -24,7 +24,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Nullable;
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
@@ -165,8 +164,7 @@ class GaugeCollector extends ScheduledRunnable {
             objectName = ObjectName.getInstance(mbeanObjectName);
         } catch (MalformedObjectNameException e) {
             logger.debug(e.getMessage(), e);
-            // using toString() instead of getMessage() in order to capture exception class name
-            logFirstTimeMBeanException(mbeanObjectName, e.toString());
+            logFirstTimeMBeanException(mbeanObjectName, e);
             return ImmutableList.of();
         }
         if (!objectName.isPattern()) {
@@ -216,8 +214,7 @@ class GaugeCollector extends ScheduledRunnable {
                 continue;
             } catch (Exception e) {
                 logger.debug(e.getMessage(), e);
-                // using toString() instead of getMessage() in order to capture exception class name
-                logFirstTimeMBeanAttributeError(mbeanObjectName, mbeanAttributeName, e.toString());
+                logFirstTimeMBeanAttributeError(mbeanObjectName, mbeanAttributeName, e);
                 continue;
             }
             Double value = null;
@@ -290,26 +287,33 @@ class GaugeCollector extends ScheduledRunnable {
         }
     }
 
-    // relatively common, so nice message
     private void logFirstTimeMBeanAttributeNotFound(String mbeanObjectName,
             String mbeanAttributeName) {
         if (loggedMBeanGauges.add(mbeanObjectName + "/" + mbeanAttributeName)) {
-            logger.warn("mbean attribute {} not found: {}", mbeanAttributeName, mbeanObjectName);
+            // relatively common, so nice message
+            logger.warn("mbean attribute {} not found in {}", mbeanAttributeName, mbeanObjectName);
         }
     }
 
-    private void logFirstTimeMBeanException(String mbeanObjectName, @Nullable String message) {
+    private void logFirstTimeMBeanException(String mbeanObjectName, Exception e) {
         if (loggedMBeanGauges.add(mbeanObjectName)) {
-            // using toString() instead of getMessage() in order to capture exception class name
-            logger.warn("error accessing mbean {}: {}", mbeanObjectName, message);
+            logger.warn("error accessing mbean: {}", mbeanObjectName, e);
         }
     }
 
     private void logFirstTimeMBeanAttributeError(String mbeanObjectName, String mbeanAttributeName,
-            @Nullable String message) {
+            String message) {
         if (loggedMBeanGauges.add(mbeanObjectName + "/" + mbeanAttributeName)) {
             logger.warn("error accessing mbean attribute {} {}: {}", mbeanObjectName,
                     mbeanAttributeName, message);
+        }
+    }
+
+    private void logFirstTimeMBeanAttributeError(String mbeanObjectName, String mbeanAttributeName,
+            Exception e) {
+        if (loggedMBeanGauges.add(mbeanObjectName + "/" + mbeanAttributeName)) {
+            logger.warn("error accessing mbean attribute: {} {}", mbeanObjectName,
+                    mbeanAttributeName, e);
         }
     }
 
