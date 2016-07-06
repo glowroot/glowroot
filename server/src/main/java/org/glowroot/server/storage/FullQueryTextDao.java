@@ -67,18 +67,20 @@ class FullQueryTextDao {
 
         // intentionally using default size-tiered compaction strategy
         session.execute("create table if not exists full_query_text_check (agent_rollup varchar,"
-                + " full_text_sha1 varchar, primary key (agent_rollup, full_text_sha1))");
-        session.execute("create table if not exists full_query_text (full_text_sha1 varchar,"
-                + " full_text varchar, primary key (full_text_sha1))");
+                + " full_query_text_sha1 varchar, primary key (agent_rollup,"
+                + " full_query_text_sha1))");
+        session.execute("create table if not exists full_query_text (full_query_text_sha1 varchar,"
+                + " full_query_text varchar, primary key (full_query_text_sha1))");
 
         insertCheckPS = session.prepare("insert into full_query_text_check (agent_rollup,"
-                + " full_text_sha1) values (?, ?) using ttl ?");
+                + " full_query_text_sha1) values (?, ?) using ttl ?");
         readCheckPS = session.prepare("select agent_rollup from full_query_text_check"
-                + " where agent_rollup = ? and full_text_sha1 = ?");
+                + " where agent_rollup = ? and full_query_text_sha1 = ?");
 
-        insertPS = session.prepare("insert into full_query_text (full_text_sha1, full_text)"
-                + " values (?, ?) using ttl ?");
-        readPS = session.prepare("select full_text from full_query_text where full_text_sha1 = ?");
+        insertPS = session.prepare("insert into full_query_text (full_query_text_sha1,"
+                + " full_query_text) values (?, ?) using ttl ?");
+        readPS = session.prepare(
+                "select full_query_text from full_query_text where full_query_text_sha1 = ?");
     }
 
     @Nullable
