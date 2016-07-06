@@ -31,8 +31,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.RateLimiter;
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.Styles;
 import org.glowroot.storage.repo.ConfigRepository;
@@ -43,6 +46,8 @@ import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 public class TransactionTypeDao implements TransactionTypeRepository {
+
+    private static final Logger logger = LoggerFactory.getLogger(TransactionTypeDao.class);
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -107,8 +112,9 @@ public class TransactionTypeDao implements TransactionTypeRepository {
 
     void maybeUpdateLastCaptureTime(String agentRollup, String transactionType,
             List<ResultSetFuture> futures) {
-        RateLimiter rateLimiter = rateLimiters
-                .getUnchecked(ImmutableTransactionTypeKey.of(agentRollup, transactionType));
+        TransactionTypeKey rateLimiterKey =
+                ImmutableTransactionTypeKey.of(agentRollup, transactionType);
+        RateLimiter rateLimiter = rateLimiters.getUnchecked(rateLimiterKey);
         if (!rateLimiter.tryAcquire()) {
             return;
         }
@@ -117,7 +123,27 @@ public class TransactionTypeDao implements TransactionTypeRepository {
         boundStatement.setString(i++, agentRollup);
         boundStatement.setString(i++, transactionType);
         boundStatement.setInt(i++, getMaxTTL());
-        futures.add(session.executeAsync(boundStatement));
+        futures.add(executeAsyncUnderRateLimiter(session, boundStatement, rateLimiters,
+                rateLimiterKey));
+    }
+
+    static <T extends /*@NonNull*/ Object> ResultSetFuture executeAsyncUnderRateLimiter(
+            Session session, BoundStatement boundStatement,
+            LoadingCache<T, RateLimiter> rateLimiters, T rateLimiterKey) {
+        ResultSetFuture future = session.executeAsync(boundStatement);
+        future.addListener(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    future.getUninterruptibly();
+                } catch (Exception e) {
+                    logger.debug(e.getMessage(), e);
+                    // insert was unsuccessful so important to return rate limiter token
+                    rateLimiters.invalidate(rateLimiterKey);
+                }
+            }
+        }, MoreExecutors.directExecutor());
+        return future;
     }
 
     private int getMaxTTL() {

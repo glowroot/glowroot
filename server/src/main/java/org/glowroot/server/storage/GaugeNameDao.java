@@ -85,8 +85,8 @@ class GaugeNameDao {
 
     void maybeUpdateLastCaptureTime(String agentRollup, String gaugeName,
             List<ResultSetFuture> futures) {
-        RateLimiter rateLimiter =
-                rateLimiters.getUnchecked(ImmutableGaugeNameKey.of(agentRollup, gaugeName));
+        final GaugeNameKey rateLimiterKey = ImmutableGaugeNameKey.of(agentRollup, gaugeName);
+        RateLimiter rateLimiter = rateLimiters.getUnchecked(rateLimiterKey);
         if (!rateLimiter.tryAcquire()) {
             return;
         }
@@ -95,7 +95,8 @@ class GaugeNameDao {
         boundStatement.setString(i++, agentRollup);
         boundStatement.setString(i++, gaugeName);
         boundStatement.setInt(i++, getMaxTTL());
-        futures.add(session.executeAsync(boundStatement));
+        futures.add(TransactionTypeDao.executeAsyncUnderRateLimiter(session, boundStatement,
+                rateLimiters, rateLimiterKey));
     }
 
     private int getMaxTTL() {

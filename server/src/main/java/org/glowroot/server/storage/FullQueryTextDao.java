@@ -120,7 +120,8 @@ class FullQueryTextDao {
         boundStatement.setString(i++, fullTextSha1);
         boundStatement.setString(i++, fullText);
         boundStatement.setInt(i++, getTTL());
-        futures.add(session.executeAsync(boundStatement));
+        futures.add(TransactionTypeDao.executeAsyncUnderRateLimiter(session, boundStatement,
+                rateLimiters, fullTextSha1));
         return fullTextSha1;
     }
 

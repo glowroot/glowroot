@@ -89,8 +89,9 @@ class TraceAttributeNameDao {
 
     void maybeUpdateLastCaptureTime(String agentRollup, String transactionType,
             String traceAttributeName, List<ResultSetFuture> futures) {
-        RateLimiter rateLimiter = rateLimiters.getUnchecked(ImmutableTraceAttributeNameKey
-                .of(agentRollup, transactionType, traceAttributeName));
+        TraceAttributeNameKey rateLimiterKey =
+                ImmutableTraceAttributeNameKey.of(agentRollup, transactionType, traceAttributeName);
+        RateLimiter rateLimiter = rateLimiters.getUnchecked(rateLimiterKey);
         if (!rateLimiter.tryAcquire()) {
             return;
         }
@@ -100,7 +101,8 @@ class TraceAttributeNameDao {
         boundStatement.setString(i++, transactionType);
         boundStatement.setString(i++, traceAttributeName);
         boundStatement.setInt(i++, getMaxTTL());
-        futures.add(session.executeAsync(boundStatement));
+        futures.add(TransactionTypeDao.executeAsyncUnderRateLimiter(session, boundStatement,
+                rateLimiters, rateLimiterKey));
     }
 
     private int getMaxTTL() {
