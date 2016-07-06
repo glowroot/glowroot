@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.Clock;
+import org.glowroot.storage.repo.AgentRepository.AgentRollup;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -30,6 +31,7 @@ public class RollupService implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(RollupService.class);
 
+    private final AgentDao agentDao;
     private final AggregateDao aggregateDao;
     private final GaugeValueDao gaugeValueDao;
     private final Clock clock;
@@ -38,7 +40,9 @@ public class RollupService implements Runnable {
 
     private volatile boolean stopped;
 
-    public RollupService(AggregateDao aggregateDao, GaugeValueDao gaugeValueDao, Clock clock) {
+    public RollupService(AgentDao agentDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,
+            Clock clock) {
+        this.agentDao = agentDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
         this.clock = clock;
@@ -60,8 +64,13 @@ public class RollupService implements Runnable {
         while (true) {
             try {
                 Thread.sleep(millisUntilNextRollup(clock.currentTimeMillis()));
-                aggregateDao.rollup();
-                gaugeValueDao.rollup();
+                for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
+                    // rollup one agent at a time, mostly to avoid single large query on
+                    // gauge_needs_rollup_1 that times out due to use of Cassandra queue
+                    // anti-pattern (and lots of tombstones)
+                    aggregateDao.rollup(agentRollup.name());
+                    gaugeValueDao.rollup(agentRollup.name());
+                }
             } catch (InterruptedException e) {
                 if (stopped) {
                     return;

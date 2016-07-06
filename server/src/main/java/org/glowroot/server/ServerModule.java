@@ -130,7 +130,7 @@ class ServerModule {
             AlertingService alertingService = new AlertingService(configRepository,
                     triggeredAlertDao, aggregateDao, gaugeValueDao, rollupLevelService,
                     new MailService());
-            rollupService = new RollupService(aggregateDao, gaugeValueDao, clock);
+            rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao, clock);
 
             server = new GrpcServer(serverConfig.grpcPort(), agentDao, aggregateDao,
                     gaugeValueDao, traceDao, alertingService);

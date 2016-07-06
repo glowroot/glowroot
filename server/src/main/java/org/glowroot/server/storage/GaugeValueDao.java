@@ -17,7 +17,6 @@ package org.glowroot.server.storage;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -37,8 +36,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.Futures;
 
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.server.storage.AggregateDao.RollupContent;
-import org.glowroot.server.storage.AggregateDao.RollupKey;
+import org.glowroot.server.storage.AggregateDao.NeedsRollup;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
 import org.glowroot.storage.repo.GaugeValueRepository;
@@ -114,8 +112,8 @@ public class GaugeValueDao implements GaugeValueRepository {
                     + " (agent_rollup, capture_time, uniqueness, gauge_names) values"
                     + " (?, ?, ?, ?)"));
             // limit is just in case rollup falls way behind, to avoid massive memory consumption
-            readNeedsRollup.add(session.prepare("select agent_rollup, capture_time, uniqueness,"
-                    + " gauge_names from gauge_needs_rollup_" + i + " limit 100000"));
+            readNeedsRollup.add(session.prepare("select capture_time, uniqueness, gauge_names"
+                    + " from gauge_needs_rollup_" + i + " where agent_rollup = ?"));
             deleteNeedsRollup.add(session.prepare("delete from gauge_needs_rollup_" + i
                     + " where agent_rollup = ? and capture_time = ? and uniqueness = ?"));
         }
@@ -186,32 +184,31 @@ public class GaugeValueDao implements GaugeValueRepository {
         return gaugeValues;
     }
 
-    void rollup() throws Exception {
+    void rollup(String agentRollup) throws Exception {
         List<Integer> ttls = getTTLs();
         for (int rollupLevel = 1; rollupLevel <= configRepository.getRollupConfigs()
                 .size(); rollupLevel++) {
-            rollupLevel(rollupLevel, ttls);
+            rollupLevel(agentRollup, rollupLevel, ttls);
         }
     }
 
-    private void rollupLevel(int rollupLevel, List<Integer> ttls) throws Exception {
-        Map<RollupKey, RollupContent> needsRollup =
-                AggregateDao.getNeedsRollup(rollupLevel, readNeedsRollup, session);
+    private void rollupLevel(String agentRollup, int rollupLevel, List<Integer> ttls)
+            throws Exception {
+        List<NeedsRollup> needsRollupList =
+                AggregateDao.getNeedsRollupList(agentRollup, rollupLevel, readNeedsRollup, session);
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long rollupIntervalMillis = rollupConfigs.get(rollupLevel - 1).intervalMillis();
         Long nextRollupIntervalMillis = null;
         if (rollupLevel < rollupConfigs.size()) {
             nextRollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
         }
-        for (Entry<RollupKey, RollupContent> entry : needsRollup.entrySet()) {
-            RollupKey rollupKey = entry.getKey();
-            RollupContent rollupContent = entry.getValue();
-            long captureTime = rollupKey.captureTime();
-            long from = captureTime - rollupIntervalMillis;
-            for (String gaugeName : rollupContent.keys()) {
-                rollupOne(rollupLevel, rollupKey.agentRollup(), gaugeName, from, captureTime, ttls);
+        for (NeedsRollup needsRollup : needsRollupList) {
+            long from = needsRollup.getCaptureTime() - rollupIntervalMillis;
+            for (String gaugeName : needsRollup.getKeys()) {
+                rollupOne(rollupLevel, agentRollup, gaugeName, from, needsRollup.getCaptureTime(),
+                        ttls);
             }
-            AggregateDao.postRollup(rollupLevel, rollupKey, rollupContent, nextRollupIntervalMillis,
+            AggregateDao.postRollup(agentRollup, rollupLevel, needsRollup, nextRollupIntervalMillis,
                     insertNeedsRollup, deleteNeedsRollup, session);
         }
     }
@@ -233,10 +230,11 @@ public class GaugeValueDao implements GaugeValueRepository {
     private void rollupOne(int rollupLevel, String agentRollup, String gaugeName, long from,
             long to, List<Integer> ttls) throws Exception {
         BoundStatement boundStatement = readValueForRollupPS.get(rollupLevel - 1).bind();
-        boundStatement.setString(0, agentRollup);
-        boundStatement.setString(1, gaugeName);
-        boundStatement.setTimestamp(2, new Date(from));
-        boundStatement.setTimestamp(3, new Date(to));
+        int i = 0;
+        boundStatement.setString(i++, agentRollup);
+        boundStatement.setString(i++, gaugeName);
+        boundStatement.setTimestamp(i++, new Date(from));
+        boundStatement.setTimestamp(i++, new Date(to));
         ResultSet results = session.execute(boundStatement);
         double totalWeightedValue = 0;
         long totalWeight = 0;
@@ -247,7 +245,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             totalWeight += weight;
         }
         boundStatement = insertValuePS.get(rollupLevel).bind();
-        int i = 0;
+        i = 0;
         boundStatement.setString(i++, agentRollup);
         boundStatement.setString(i++, gaugeName);
         boundStatement.setTimestamp(i++, new Date(to));

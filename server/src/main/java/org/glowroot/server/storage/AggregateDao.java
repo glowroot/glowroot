@@ -39,6 +39,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.Futures;
 import com.google.protobuf.AbstractMessage;
@@ -306,9 +307,8 @@ public class AggregateDao implements AggregateRepository {
             insertNeedsRollup.add(session.prepare("insert into aggregate_needs_rollup_" + i
                     + " (agent_rollup, capture_time, uniqueness, transaction_types) values"
                     + " (?, ?, ?, ?)"));
-            // limit is just in case rollup falls way behind, to avoid massive memory consumption
-            readNeedsRollup.add(session.prepare("select agent_rollup, capture_time, uniqueness,"
-                    + " transaction_types from aggregate_needs_rollup_" + i + " limit 100000"));
+            readNeedsRollup.add(session.prepare("select capture_time, uniqueness, transaction_types"
+                    + " from aggregate_needs_rollup_" + i + " where agent_rollup = ?"));
             deleteNeedsRollup.add(session.prepare("delete from aggregate_needs_rollup_" + i
                     + " where agent_rollup = ? and capture_time = ? and uniqueness = ?"));
         }
@@ -660,34 +660,32 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    void rollup() throws Exception {
+    void rollup(String agentRollup) throws Exception {
         List<Integer> ttls = getTTLs();
         for (int rollupLevel = 1; rollupLevel < configRepository.getRollupConfigs()
                 .size(); rollupLevel++) {
-            rollupLevel(rollupLevel, ttls);
+            rollupLevel(agentRollup, rollupLevel, ttls);
         }
     }
 
-    private void rollupLevel(int rollupLevel, List<Integer> ttls) throws Exception {
-        Map<RollupKey, RollupContent> needsRollup =
-                getNeedsRollup(rollupLevel, readNeedsRollup, session);
+    private void rollupLevel(String agentRollup, int rollupLevel, List<Integer> ttls)
+            throws Exception {
+        List<NeedsRollup> needsRollupList =
+                getNeedsRollupList(agentRollup, rollupLevel, readNeedsRollup, session);
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long rollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
         Long nextRollupIntervalMillis = null;
         if (rollupLevel + 1 < rollupConfigs.size()) {
             nextRollupIntervalMillis = rollupConfigs.get(rollupLevel + 1).intervalMillis();
         }
-        for (Entry<RollupKey, RollupContent> entry : needsRollup.entrySet()) {
-            RollupKey rollupKey = entry.getKey();
-            RollupContent rollupContent = entry.getValue();
+        for (NeedsRollup rollupContent : needsRollupList) {
             RollupParams rollupParams =
-                    getRollupParams(rollupKey.agentRollup(), rollupLevel, ttls.get(rollupLevel));
-            long captureTime = rollupKey.captureTime();
-            long from = captureTime - rollupIntervalMillis;
-            for (String transactionType : rollupContent.keys()) {
-                rollupOne(rollupParams, transactionType, from, captureTime);
+                    getRollupParams(agentRollup, rollupLevel, ttls.get(rollupLevel));
+            long from = rollupContent.getCaptureTime() - rollupIntervalMillis;
+            for (String transactionType : rollupContent.getKeys()) {
+                rollupOne(rollupParams, transactionType, from, rollupContent.getCaptureTime());
             }
-            postRollup(rollupLevel, rollupKey, rollupContent, nextRollupIntervalMillis,
+            postRollup(agentRollup, rollupLevel, rollupContent, nextRollupIntervalMillis,
                     insertNeedsRollup, deleteNeedsRollup, session);
         }
     }
@@ -1515,13 +1513,13 @@ public class AggregateDao implements AggregateRepository {
         return ttls;
     }
 
-    private RollupParams getRollupParams(String agentId, int rollupLevel, int ttl)
+    private RollupParams getRollupParams(String agentRollup, int rollupLevel, int ttl)
             throws IOException {
         ImmutableRollupParams.Builder rollupInfo = ImmutableRollupParams.builder()
-                .agentRollup(agentId)
+                .agentRollup(agentRollup)
                 .rollupLevel(rollupLevel)
                 .ttl(ttl);
-        AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(agentId);
+        AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(agentRollup);
         if (advancedConfig != null && advancedConfig.hasMaxAggregateQueriesPerType()) {
             rollupInfo.maxAggregateQueriesPerType(
                     advancedConfig.getMaxAggregateQueriesPerType().getValue());
@@ -1538,36 +1536,34 @@ public class AggregateDao implements AggregateRepository {
         return rollupInfo.build();
     }
 
-    static Map<RollupKey, RollupContent> getNeedsRollup(int rollupLevel,
+    static List<NeedsRollup> getNeedsRollupList(String agentRollup, int rollupLevel,
             List<PreparedStatement> readNeedsRollup, Session session) {
         BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind();
+        boundStatement.setString(0, agentRollup);
         ResultSet results = session.execute(boundStatement);
-        Map<RollupKey, RollupContent> needsRollup = Maps.newHashMap();
-        Map<String, Long> lastCaptureTimes = Maps.newHashMap();
+        Map<Long, NeedsRollup> needsRollupMap = Maps.newLinkedHashMap();
         for (Row row : results) {
-            String agentRollup = checkNotNull(row.getString(0));
-            long captureTime = checkNotNull(row.getTimestamp(1)).getTime();
-            UUID uniqueness = row.getUUID(2);
-            Set<String> keys = checkNotNull(row.getSet(3, String.class));
-            RollupKey rollupKey = ImmutableRollupKey.of(agentRollup, captureTime);
-            ImmutableRollupContent.Builder rollupContent = ImmutableRollupContent.builder();
-            RollupContent existingRollupContent = needsRollup.get(rollupKey);
-            if (existingRollupContent != null) {
-                rollupContent.from(existingRollupContent);
+            int i = 0;
+            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            UUID uniqueness = row.getUUID(i++);
+            Set<String> keys = checkNotNull(row.getSet(i++, String.class));
+            NeedsRollup needsRollup = needsRollupMap.get(captureTime);
+            if (needsRollup == null) {
+                needsRollup = new NeedsRollup(captureTime);
+                needsRollupMap.put(captureTime, needsRollup);
             }
-            needsRollup.put(rollupKey, rollupContent
-                    .addAllKeys(keys)
-                    .addUniquenessKeysForDeletion(uniqueness)
-                    .build());
-            lastCaptureTimes.put(agentRollup, captureTime);
+            needsRollup.keys.addAll(keys);
+            needsRollup.uniquenessKeysForDeletion.add(uniqueness);
         }
+        if (needsRollupMap.isEmpty()) {
+            return ImmutableList.of();
+        }
+        List<NeedsRollup> needsRollupList = Lists.newArrayList(needsRollupMap.values());
         // don't roll up the most recent time for each agent since it is likely still being added,
         // this is mostly to avoid rolling up this data twice, but also currently the UI assumes
         // when it finds a 1-min rollup it doesn't check for non-rolled up 1-min aggregates
-        for (Entry<String, Long> entry : lastCaptureTimes.entrySet()) {
-            needsRollup.remove(ImmutableRollupKey.of(entry.getKey(), entry.getValue()));
-        }
-        return needsRollup;
+        needsRollupList.remove(needsRollupList.size() - 1);
+        return needsRollupList;
     }
 
     // it is important that the insert into next gauge_needs_rollup happens after present
@@ -1576,24 +1572,26 @@ public class AggregateDao implements AggregateRepository {
     // present rollup has completed
     // if insert after deleting present rollup then possible for error to occur in between
     // and insert would never happen
-    static void postRollup(int rollupLevel, RollupKey rollupKey, RollupContent rollupContent,
+    static void postRollup(String agentRollup, int rollupLevel, NeedsRollup needsRollup,
             @Nullable Long nextRollupIntervalMillis, List<PreparedStatement> insertNeedsRollup,
             List<PreparedStatement> deleteNeedsRollup, Session session) {
         if (nextRollupIntervalMillis != null) {
-            long rollupCaptureTime =
-                    Utils.getRollupCaptureTime(rollupKey.captureTime(), nextRollupIntervalMillis);
+            long rollupCaptureTime = Utils.getRollupCaptureTime(needsRollup.getCaptureTime(),
+                    nextRollupIntervalMillis);
             BoundStatement boundStatement = insertNeedsRollup.get(rollupLevel).bind();
-            boundStatement.setString(0, rollupKey.agentRollup());
-            boundStatement.setTimestamp(1, new Date(rollupCaptureTime));
-            boundStatement.setUUID(2, UUIDs.timeBased());
-            boundStatement.setSet(3, rollupContent.keys());
+            int i = 0;
+            boundStatement.setString(i++, agentRollup);
+            boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
+            boundStatement.setUUID(i++, UUIDs.timeBased());
+            boundStatement.setSet(i++, needsRollup.getKeys());
             session.execute(boundStatement);
         }
-        for (UUID uniqueness : rollupContent.uniquenessKeysForDeletion()) {
+        for (UUID uniqueness : needsRollup.getUniquenessKeysForDeletion()) {
             BoundStatement boundStatement = deleteNeedsRollup.get(rollupLevel - 1).bind();
-            boundStatement.setString(0, rollupKey.agentRollup());
-            boundStatement.setTimestamp(1, new Date(rollupKey.captureTime()));
-            boundStatement.setUUID(2, uniqueness);
+            int i = 0;
+            boundStatement.setString(i++, agentRollup);
+            boundStatement.setTimestamp(i++, new Date(needsRollup.getCaptureTime()));
+            boundStatement.setUUID(i++, uniqueness);
             session.execute(boundStatement);
         }
     }
@@ -1886,17 +1884,27 @@ public class AggregateDao implements AggregateRepository {
         int maxAggregateServiceCallsPerType();
     }
 
-    @Value.Immutable
-    @Styles.AllParameters
-    interface RollupKey {
-        String agentRollup();
-        long captureTime();
-    }
+    static class NeedsRollup {
 
-    @Value.Immutable
-    interface RollupContent {
-        Set<String> keys(); // transaction types or gauge names
-        Set<UUID> uniquenessKeysForDeletion();
+        private final long captureTime;
+        private final Set<String> keys = Sets.newHashSet(); // transaction types or gauge names
+        private final Set<UUID> uniquenessKeysForDeletion = Sets.newHashSet();
+
+        private NeedsRollup(long captureTime) {
+            this.captureTime = captureTime;
+        }
+
+        long getCaptureTime() {
+            return captureTime;
+        }
+
+        Set<String> getKeys() {
+            return keys;
+        }
+
+        Set<UUID> getUniquenessKeysForDeletion() {
+            return uniquenessKeysForDeletion;
+        }
     }
 
     private static class MutableSummary {

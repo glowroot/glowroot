@@ -191,10 +191,10 @@ public class AggregateDaoIT {
         assertThat(query.getExecutionCount()).isEqualTo(4);
 
         // rollup
-        aggregateDao.rollup();
-        aggregateDao.rollup();
-        aggregateDao.rollup();
-        aggregateDao.rollup();
+        aggregateDao.rollup("one");
+        aggregateDao.rollup("one");
+        aggregateDao.rollup("one");
+        aggregateDao.rollup("one");
 
         // check rolled-up data after rollup
         overallQuery = ImmutableOverallQuery.builder()
