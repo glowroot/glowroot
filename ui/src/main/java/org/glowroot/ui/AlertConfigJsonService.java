@@ -140,6 +140,7 @@ class AlertConfigJsonService {
         abstract @Nullable String gaugeName();
         abstract @Nullable Double gaugeThreshold();
         abstract @Nullable String gaugeDisplay(); // only used in response
+        abstract List<String> gaugeDisplayPath(); // only used in response
         abstract @Nullable String gaugeUnit(); // only used in response
         abstract @Nullable String gaugeGrouping(); // only used in response
         abstract int timePeriodSeconds();
@@ -210,8 +211,11 @@ class AlertConfigJsonService {
             if (alertConfig.hasGaugeThreshold()) {
                 builder.gaugeThreshold(alertConfig.getGaugeThreshold().getValue());
             }
-            return builder.gaugeDisplay(gauge == null ? "" : gauge.display())
-                    .gaugeUnit(gauge == null ? "" : gauge.unit())
+            if (gauge != null) {
+                builder.gaugeDisplay(gauge.display())
+                        .gaugeDisplayPath(gauge.displayPath());
+            }
+            return builder.gaugeUnit(gauge == null ? "" : gauge.unit())
                     .gaugeGrouping(gauge == null ? "" : gauge.grouping())
                     .timePeriodSeconds(alertConfig.getTimePeriodSeconds())
                     .addAllEmailAddresses(alertConfig.getEmailAddressList())

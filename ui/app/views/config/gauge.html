@@ -101,7 +101,7 @@
                   <input type="checkbox"
                          ng-model="mbeanAttribute.checked"
                          ng-disabled="!agentPermissions.config.edit.gauge">
-                  {{mbeanAttribute.name}}
+                  {{mbeanAttribute.name.replace('/', ' / ')}}
                   <span ng-show="!mbeanAttribute.available && !mbeanUnavailable && !mbeanUnmatched"
                         class="gt-red"
                         style="padding-left: 10px;">

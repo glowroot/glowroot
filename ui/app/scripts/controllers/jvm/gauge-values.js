@@ -327,18 +327,19 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     }
 
     function createShortDataSeriesNames(gauges) {
+      var GAUGE_PATH_SEPARATOR = ' / ';
       var splitGaugeNames = [];
       angular.forEach(gauges, function (gauge) {
-        splitGaugeNames.push(gauge.display.split('/'));
+        splitGaugeNames.push(gauge.displayPath);
       });
       var minRequiredForUniqueName;
       var i, j;
       for (i = 0; i < gauges.length; i++) {
         var splitGaugeName = splitGaugeNames[i];
         var gaugeName = gauges[i].name;
-        var separator = gaugeName.lastIndexOf(':');
+        var separator = gaugeName.lastIndexOf(GAUGE_PATH_SEPARATOR);
         // at least include the last step in the mbean object name
-        minRequiredForUniqueName = gaugeName.substring(separator + 1).split('/').length + 1;
+        minRequiredForUniqueName = gaugeName.substring(separator + 1).split(GAUGE_PATH_SEPARATOR).length + 1;
         for (j = 0; j < gauges.length; j++) {
           if (j === i) {
             continue;
@@ -347,7 +348,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           minRequiredForUniqueName = Math.max(minRequiredForUniqueName,
               numSamePartsStartingAtEnd(splitGaugeName, splitGaugeName2) + 1);
         }
-        gauges[i].shortDisplay = splitGaugeName.slice(-minRequiredForUniqueName).join('/');
+        gauges[i].shortDisplay = splitGaugeName.slice(-minRequiredForUniqueName).join(GAUGE_PATH_SEPARATOR);
       }
     }
 

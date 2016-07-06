@@ -39,7 +39,7 @@ public class GaugeConfigIT extends WebDriverIT {
         configSidebar.getGaugesLink().click();
 
         // when
-        Utils.withWait(driver, linkText("java.lang/Memory")).click();
+        Utils.withWait(driver, linkText("java.lang / Memory")).click();
         Utils.withWait(driver, linkText("Return to list")).click();
     }
 
@@ -59,7 +59,7 @@ public class GaugeConfigIT extends WebDriverIT {
         createGauge();
 
         // then
-        Utils.withWait(driver, linkText("java.lang/ClassLoading")).click();
+        Utils.withWait(driver, linkText("java.lang / ClassLoading")).click();
         assertThat(gaugePage.getMBeanObjectNameTextField().getAttribute("value"))
                 .isEqualTo("java.lang:type=ClassLoading");
         assertThat(gaugePage.getMBeanAttributeCheckBox("LoadedClassCount").isSelected()).isTrue();
@@ -83,7 +83,7 @@ public class GaugeConfigIT extends WebDriverIT {
 
         // when
         createGauge();
-        Utils.withWait(driver, linkText("java.lang/ClassLoading")).click();
+        Utils.withWait(driver, linkText("java.lang / ClassLoading")).click();
         gaugePage.getMBeanAttributeCheckBox("LoadedClassCount").click();
         gaugePage.clickSaveButton();
         // wait for save to finish
@@ -91,7 +91,7 @@ public class GaugeConfigIT extends WebDriverIT {
         driver.findElement(linkText("Return to list")).click();
 
         // then
-        Utils.withWait(driver, linkText("java.lang/ClassLoading")).click();
+        Utils.withWait(driver, linkText("java.lang / ClassLoading")).click();
         assertThat(gaugePage.getMBeanObjectNameTextField().getAttribute("value"))
                 .isEqualTo("java.lang:type=ClassLoading");
         assertThat(gaugePage.getMBeanAttributeCheckBox("LoadedClassCount").isSelected()).isFalse();
@@ -115,14 +115,14 @@ public class GaugeConfigIT extends WebDriverIT {
 
         // when
         createGauge();
-        Utils.withWait(driver, linkText("java.lang/ClassLoading")).click();
+        Utils.withWait(driver, linkText("java.lang / ClassLoading")).click();
         gaugePage.getDeleteButton().click();
 
         // then
-        Utils.withWait(driver, linkText("java.lang/Memory"));
+        Utils.withWait(driver, linkText("java.lang / Memory"));
         boolean notFound = false;
         try {
-            driver.findElement(linkText("java.lang/ClassLoading"));
+            driver.findElement(linkText("java.lang / ClassLoading"));
         } catch (NoSuchElementException e) {
             notFound = true;
         }

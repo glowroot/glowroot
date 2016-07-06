@@ -20,6 +20,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -54,8 +55,10 @@ class GaugeConfigJsonService {
     private static final Ordering<GaugeConfig> orderingByName = new Ordering<GaugeConfig>() {
         @Override
         public int compare(GaugeConfig left, GaugeConfig right) {
-            return Gauges.display(left.getMbeanObjectName())
-                    .compareToIgnoreCase(Gauges.display(right.getMbeanObjectName()));
+            Joiner joiner = Joiner.on('/');
+            return joiner.join(Gauges.displayPath(left.getMbeanObjectName()))
+                    .compareToIgnoreCase(
+                            joiner.join(Gauges.displayPath(right.getMbeanObjectName())));
         }
     };
 
@@ -234,6 +237,7 @@ class GaugeConfigJsonService {
 
         abstract Optional<String> agentId(); // only used in request
         abstract @Nullable String display(); // only used in response
+        abstract List<String> displayPath(); // only used in response
         abstract String mbeanObjectName();
         abstract ImmutableList<ImmutableMBeanAttributeDto> mbeanAttributes();
         abstract Optional<String> version(); // absent for insert operations
@@ -248,8 +252,11 @@ class GaugeConfigJsonService {
         }
 
         private static GaugeConfigDto create(GaugeConfig gaugeConfig) {
+            List<String> displayPath = Gauges.displayPath(gaugeConfig.getMbeanObjectName());
+            String display = Joiner.on(Gauges.DISPLAY_PATH_SEPARATOR).join(displayPath);
             ImmutableGaugeConfigDto.Builder builder = ImmutableGaugeConfigDto.builder()
-                    .display(Gauges.display(gaugeConfig.getMbeanObjectName()))
+                    .display(display)
+                    .displayPath(displayPath)
                     .mbeanObjectName(gaugeConfig.getMbeanObjectName());
             for (MBeanAttribute mbeanAttribute : gaugeConfig.getMbeanAttributeList()) {
                 builder.addMbeanAttributes(MBeanAttributeDto.create(mbeanAttribute));

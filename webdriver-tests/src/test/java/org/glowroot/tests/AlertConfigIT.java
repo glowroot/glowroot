@@ -77,7 +77,7 @@ public class AlertConfigIT extends WebDriverIT {
         createGaugeAlert();
 
         // then
-        Utils.withWait(driver, linkText("Gauge - java.lang/Memory/HeapMemoryUsage/used"
+        Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
                 + " - average over a 1 minute period exceeds 2.0 KB")).click();
         assertThat(alertPage.getKindGaugeRadioButton().isSelected()).isTrue();
         assertThat(alertPage.getGaugeNameSelect().getFirstSelectedOption().getAttribute("value"))
@@ -130,7 +130,7 @@ public class AlertConfigIT extends WebDriverIT {
 
         // when
         createGaugeAlert();
-        Utils.withWait(driver, linkText("Gauge - java.lang/Memory/HeapMemoryUsage/used"
+        Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
                 + " - average over a 1 minute period exceeds 2.0 KB")).click();
         alertPage.getTimePeriodMinutesTextField().clear();
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
@@ -140,7 +140,7 @@ public class AlertConfigIT extends WebDriverIT {
         driver.findElement(linkText("Return to list")).click();
 
         // then
-        Utils.withWait(driver, linkText("Gauge - java.lang/Memory/HeapMemoryUsage/used"
+        Utils.withWait(driver, linkText("Gauge - java.lang / Memory / HeapMemoryUsage / used"
                 + " - average over a 2 minute period exceeds 2.0 KB")).click();
     }
 

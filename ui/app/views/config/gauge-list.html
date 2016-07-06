@@ -33,7 +33,7 @@
           </div>
           <div ng-repeat="mbeanAttribute in gauge.config.mbeanAttributes | orderBy:'name'"
                style="margin-left: 40px;">
-            {{mbeanAttribute.name}}
+            {{mbeanAttribute.name.replace('/', ' / ')}}
           </div>
         </div>
         <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly

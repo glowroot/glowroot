@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -27,6 +28,8 @@ import org.glowroot.storage.repo.GaugeValueRepository.Gauge;
 import org.glowroot.storage.repo.ImmutableGauge;
 
 public class Gauges {
+
+    public static final String DISPLAY_PATH_SEPARATOR = " / ";
 
     private static final ImmutableList<UnitPattern> unitPatterns;
 
@@ -80,29 +83,46 @@ public class Gauges {
             mbeanAttributeName = mbeanAttributeName.substring(0,
                     mbeanAttributeName.length() - "[counter]".length());
         }
-        String display = display(mbeanObjectName) + '/' + mbeanAttributeName;
+        mbeanAttributeName = mbeanAttributeName.replaceAll("/", DISPLAY_PATH_SEPARATOR);
+        List<String> displayPath = displayPath(mbeanObjectName);
+        displayPath.addAll(Splitter.on('/').splitToList(mbeanAttributeName));
+        String display = Joiner.on(DISPLAY_PATH_SEPARATOR).join(displayPath);
         String unit = unit(gaugeName);
+        ImmutableGauge.Builder gauge = ImmutableGauge.builder()
+                .name(gaugeName)
+                .display(display)
+                .displayPath(displayPath)
+                .counter(counter)
+                .grouping(unit);
         if (unit.startsWith(GROUPING_PREFIX)) {
             if (unit.endsWith(" per second")) {
-                return ImmutableGauge.of(gaugeName, display, counter, "per second", unit);
+                return gauge.unit("per second").build();
             } else {
-                return ImmutableGauge.of(gaugeName, display, counter, "", unit);
+                return gauge.unit("").build();
             }
         } else {
-            return ImmutableGauge.of(gaugeName, display, counter, unit, unit);
+            return gauge.unit(unit).build();
         }
     }
 
-    public static String display(String mbeanObjectName) {
+    public static List<String> displayPath(String mbeanObjectName) {
         // e.g. java.lang:name=PS Eden Space,type=MemoryPool
         List<String> parts = Splitter.on(CharMatcher.anyOf(":,")).splitToList(mbeanObjectName);
-        StringBuilder name = new StringBuilder();
-        name.append(parts.get(0));
+        List<String> display = Lists.newArrayList();
+        display.add(parts.get(0));
         for (int i = 1; i < parts.size(); i++) {
-            name.append('/');
-            name.append(parts.get(i).split("=")[1]);
+            String part = parts.get(i).split("=")[1];
+            if (part.startsWith("\"") && part.endsWith("\"")) {
+                part = part.substring(1, part.length() - 1);
+            }
+            if (part.contains("/")) {
+                // special case since this is also the display path separator
+                display.add("\"" + part + "\"");
+            } else {
+                display.add(part);
+            }
         }
-        return name.toString();
+        return display;
     }
 
     private static String unit(String gaugeName) {
