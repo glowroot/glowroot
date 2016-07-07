@@ -320,7 +320,7 @@ public class AggregateDao implements AggregateRepository {
     @Override
     public void store(String agentId, long captureTime, List<AggregatesByType> aggregatesByTypeList,
             List<String> sharedQueryTexts) throws Exception {
-        List<Integer> ttls = getTTLs();
+        int adjustedTTL = GaugeValueDao.getAdjustedTTL(getTTLs().get(0), captureTime);
         List<ResultSetFuture> futures = Lists.newArrayList();
         List<SharedQueryTextAndSha1> sharedQueries = Lists.newArrayList();
         for (String fullQueryText : sharedQueryTexts) {
@@ -346,12 +346,12 @@ public class AggregateDao implements AggregateRepository {
             // END TEMPORARY
             Aggregate overallAggregate = aggregatesByType.getOverallAggregate();
             futures.addAll(storeOverallAggregate(agentId, transactionType, captureTime,
-                    overallAggregate, sharedQueries, ttls.get(0)));
+                    overallAggregate, sharedQueries, adjustedTTL));
             for (TransactionAggregate transactionAggregate : aggregatesByType
                     .getTransactionAggregateList()) {
                 futures.addAll(storeTransactionAggregate(agentId, transactionType,
                         transactionAggregate.getTransactionName(), captureTime,
-                        transactionAggregate.getAggregate(), sharedQueries, ttls.get(0)));
+                        transactionAggregate.getAggregate(), sharedQueries, adjustedTTL));
             }
             transactionTypeDao.maybeUpdateLastCaptureTime(agentId, transactionType, futures);
         }
@@ -664,12 +664,12 @@ public class AggregateDao implements AggregateRepository {
         List<Integer> ttls = getTTLs();
         for (int rollupLevel = 1; rollupLevel < configRepository.getRollupConfigs()
                 .size(); rollupLevel++) {
-            rollupLevel(agentRollup, rollupLevel, ttls);
+            int ttl = ttls.get(rollupLevel);
+            rollupLevel(agentRollup, rollupLevel, ttl);
         }
     }
 
-    private void rollupLevel(String agentRollup, int rollupLevel, List<Integer> ttls)
-            throws Exception {
+    private void rollupLevel(String agentRollup, int rollupLevel, int ttl) throws Exception {
         List<NeedsRollup> needsRollupList =
                 getNeedsRollupList(agentRollup, rollupLevel, readNeedsRollup, session);
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
@@ -679,11 +679,12 @@ public class AggregateDao implements AggregateRepository {
             nextRollupIntervalMillis = rollupConfigs.get(rollupLevel + 1).intervalMillis();
         }
         for (NeedsRollup rollupContent : needsRollupList) {
-            RollupParams rollupParams =
-                    getRollupParams(agentRollup, rollupLevel, ttls.get(rollupLevel));
-            long from = rollupContent.getCaptureTime() - rollupIntervalMillis;
+            long captureTime = rollupContent.getCaptureTime();
+            int adjustedTTL = GaugeValueDao.getAdjustedTTL(ttl, captureTime);
+            RollupParams rollupParams = getRollupParams(agentRollup, rollupLevel, adjustedTTL);
+            long from = captureTime - rollupIntervalMillis;
             for (String transactionType : rollupContent.getKeys()) {
-                rollupOne(rollupParams, transactionType, from, rollupContent.getCaptureTime());
+                rollupOne(rollupParams, transactionType, from, captureTime);
             }
             postRollup(agentRollup, rollupLevel, rollupContent, nextRollupIntervalMillis,
                     insertNeedsRollup, deleteNeedsRollup, session);
@@ -752,7 +753,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setTimestamp(i++, new Date(query.to()));
         boundStatement.setDouble(i++, totalDurationNanos);
         boundStatement.setLong(i++, transactionCount);
-        boundStatement.setInt(i++, rollup.ttl());
+        boundStatement.setInt(i++, rollup.adjustedTTL());
         return ImmutableList.of(session.executeAsync(boundStatement));
     }
 
@@ -782,7 +783,7 @@ public class AggregateDao implements AggregateRepository {
         }
         boundStatement.setLong(i++, errorCount);
         boundStatement.setLong(i++, transactionCount);
-        boundStatement.setInt(i++, rollup.ttl());
+        boundStatement.setInt(i++, rollup.adjustedTTL());
         return ImmutableList.of(session.executeAsync(boundStatement));
     }
 
@@ -856,7 +857,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setDouble(i++, auxThreadStats.getTotalBlockedNanos());
         boundStatement.setDouble(i++, auxThreadStats.getTotalWaitedNanos());
         boundStatement.setDouble(i++, auxThreadStats.getTotalAllocatedBytes());
-        boundStatement.setInt(i++, rollup.ttl());
+        boundStatement.setInt(i++, rollup.adjustedTTL());
         return ImmutableList.of(session.executeAsync(boundStatement));
     }
 
@@ -892,7 +893,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setDouble(i++, totalDurationNanos);
         boundStatement.setLong(i++, transactionCount);
         boundStatement.setBytes(i++, toByteBuffer(durationNanosHistogram.toProto(scratchBuffer)));
-        boundStatement.setInt(i++, rollup.ttl());
+        boundStatement.setInt(i++, rollup.adjustedTTL());
         return ImmutableList.of(session.executeAsync(boundStatement));
     }
 
@@ -920,7 +921,7 @@ public class AggregateDao implements AggregateRepository {
         }
         boundStatement.setTimestamp(i++, new Date(query.to()));
         boundStatement.setLong(i++, transactionCount);
-        boundStatement.setInt(i++, rollup.ttl());
+        boundStatement.setInt(i++, rollup.adjustedTTL());
         return ImmutableList.of(session.executeAsync(boundStatement));
     }
 
@@ -945,7 +946,7 @@ public class AggregateDao implements AggregateRepository {
         }
         return insertQueries(collector.getSortedQueries(), rollup.rollupLevel(),
                 rollup.agentRollup(), query.transactionType(), query.transactionName(), query.to(),
-                rollup.ttl());
+                rollup.adjustedTTL());
     }
 
     private List<ResultSetFuture> rollupServiceCalls(RollupParams rollup, TransactionQuery query)
@@ -966,7 +967,7 @@ public class AggregateDao implements AggregateRepository {
                     executionCount);
         }
         return insertServiceCalls(collector.toProto(), rollup.rollupLevel(), rollup.agentRollup(),
-                query.transactionType(), query.transactionName(), query.to(), rollup.ttl());
+                query.transactionType(), query.transactionName(), query.to(), rollup.adjustedTTL());
     }
 
     private List<ResultSetFuture> rollupThreadProfile(RollupParams rollup, TransactionQuery query,
@@ -994,7 +995,7 @@ public class AggregateDao implements AggregateRepository {
         }
         boundStatement.setTimestamp(i++, new Date(query.to()));
         boundStatement.setBytes(i++, toByteBuffer(profile.toProto()));
-        boundStatement.setInt(i++, rollup.ttl());
+        boundStatement.setInt(i++, rollup.adjustedTTL());
         return ImmutableList.of(session.executeAsync(boundStatement));
     }
 
@@ -1031,7 +1032,7 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setString(i++, entry.getKey());
             boundStatement.setDouble(i++, summary.totalDurationNanos);
             boundStatement.setLong(i++, summary.transactionCount);
-            boundStatement.setInt(i++, rollup.ttl());
+            boundStatement.setInt(i++, rollup.adjustedTTL());
             futures.add(session.executeAsync(boundStatement));
         }
         return ImmutableList.copyOf(summaries.keySet());
@@ -1071,7 +1072,7 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setString(i++, entry.getKey());
             boundStatement.setLong(i++, summary.errorCount);
             boundStatement.setLong(i++, summary.transactionCount);
-            boundStatement.setInt(i++, rollup.ttl());
+            boundStatement.setInt(i++, rollup.adjustedTTL());
             futures.add(session.executeAsync(boundStatement));
         }
         return futures;
@@ -1079,7 +1080,7 @@ public class AggregateDao implements AggregateRepository {
 
     private List<ResultSetFuture> storeOverallAggregate(String agentRollup, String transactionType,
             long captureTime, Aggregate aggregate, List<SharedQueryTextAndSha1> sharedQueries,
-            int ttl) throws Exception {
+            int adjustedTTL) throws Exception {
 
         final int rollupLevel = 0;
 
@@ -1091,7 +1092,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setTimestamp(i++, new Date(captureTime));
         boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
         boundStatement.setLong(i++, aggregate.getTransactionCount());
-        boundStatement.setInt(i++, ttl);
+        boundStatement.setInt(i++, adjustedTTL);
         futures.add(session.executeAsync(boundStatement));
 
         if (aggregate.getErrorCount() > 0) {
@@ -1102,7 +1103,7 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setTimestamp(i++, new Date(captureTime));
             boundStatement.setLong(i++, aggregate.getErrorCount());
             boundStatement.setLong(i++, aggregate.getTransactionCount());
-            boundStatement.setInt(i++, ttl);
+            boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
 
@@ -1111,7 +1112,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setString(i++, agentRollup);
         boundStatement.setString(i++, transactionType);
         boundStatement.setTimestamp(i++, new Date(captureTime));
-        bindAggregate(boundStatement, aggregate, i++, ttl);
+        bindAggregate(boundStatement, aggregate, i++, adjustedTTL);
         futures.add(session.executeAsync(boundStatement));
 
         boundStatement = getInsertOverallPS(histogramTable, rollupLevel).bind();
@@ -1122,7 +1123,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
         boundStatement.setLong(i++, aggregate.getTransactionCount());
         boundStatement.setBytes(i++, toByteBuffer(aggregate.getDurationNanosHistogram()));
-        boundStatement.setInt(i++, ttl);
+        boundStatement.setInt(i++, adjustedTTL);
         futures.add(session.executeAsync(boundStatement));
 
         boundStatement = getInsertOverallPS(throughputTable, rollupLevel).bind();
@@ -1131,7 +1132,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setString(i++, transactionType);
         boundStatement.setTimestamp(i++, new Date(captureTime));
         boundStatement.setLong(i++, aggregate.getTransactionCount());
-        boundStatement.setInt(i++, ttl);
+        boundStatement.setInt(i++, adjustedTTL);
         futures.add(session.executeAsync(boundStatement));
 
         if (aggregate.hasMainThreadProfile()) {
@@ -1142,7 +1143,7 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setString(i++, transactionType);
             boundStatement.setTimestamp(i++, new Date(captureTime));
             boundStatement.setBytes(i++, toByteBuffer(profile));
-            boundStatement.setInt(i++, ttl);
+            boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
         if (aggregate.hasAuxThreadProfile()) {
@@ -1153,19 +1154,19 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setString(i++, transactionType);
             boundStatement.setTimestamp(i++, new Date(captureTime));
             boundStatement.setBytes(i++, toByteBuffer(profile));
-            boundStatement.setInt(i++, ttl);
+            boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
         futures.addAll(insertQueries(aggregate.getQueriesByTypeList(), sharedQueries, rollupLevel,
-                agentRollup, transactionType, null, captureTime, ttl));
+                agentRollup, transactionType, null, captureTime, adjustedTTL));
         futures.addAll(insertServiceCalls(aggregate.getServiceCallsByTypeList(), rollupLevel,
-                agentRollup, transactionType, null, captureTime, ttl));
+                agentRollup, transactionType, null, captureTime, adjustedTTL));
         return futures;
     }
 
     private List<ResultSetFuture> storeTransactionAggregate(String agentRollup,
             String transactionType, String transactionName, long captureTime, Aggregate aggregate,
-            List<SharedQueryTextAndSha1> sharedQueries, int ttl) throws IOException {
+            List<SharedQueryTextAndSha1> sharedQueries, int adjustedTTL) throws IOException {
 
         final int rollupLevel = 0;
 
@@ -1178,7 +1179,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setString(i++, transactionName);
         boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
         boundStatement.setLong(i++, aggregate.getTransactionCount());
-        boundStatement.setInt(i++, ttl);
+        boundStatement.setInt(i++, adjustedTTL);
         futures.add(session.executeAsync(boundStatement));
 
         if (aggregate.getErrorCount() > 0) {
@@ -1190,7 +1191,7 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setString(i++, transactionName);
             boundStatement.setLong(i++, aggregate.getErrorCount());
             boundStatement.setLong(i++, aggregate.getTransactionCount());
-            boundStatement.setInt(i++, ttl);
+            boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
 
@@ -1200,7 +1201,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setString(i++, transactionType);
         boundStatement.setString(i++, transactionName);
         boundStatement.setTimestamp(i++, new Date(captureTime));
-        bindAggregate(boundStatement, aggregate, i++, ttl);
+        bindAggregate(boundStatement, aggregate, i++, adjustedTTL);
         futures.add(session.executeAsync(boundStatement));
 
         boundStatement = getInsertTransactionPS(histogramTable, rollupLevel).bind();
@@ -1212,7 +1213,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
         boundStatement.setLong(i++, aggregate.getTransactionCount());
         boundStatement.setBytes(i++, toByteBuffer(aggregate.getDurationNanosHistogram()));
-        boundStatement.setInt(i++, ttl);
+        boundStatement.setInt(i++, adjustedTTL);
         futures.add(session.executeAsync(boundStatement));
 
         boundStatement = getInsertTransactionPS(throughputTable, rollupLevel).bind();
@@ -1222,7 +1223,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setString(i++, transactionName);
         boundStatement.setTimestamp(i++, new Date(captureTime));
         boundStatement.setLong(i++, aggregate.getTransactionCount());
-        boundStatement.setInt(i++, ttl);
+        boundStatement.setInt(i++, adjustedTTL);
         futures.add(session.executeAsync(boundStatement));
 
         if (aggregate.hasMainThreadProfile()) {
@@ -1234,7 +1235,7 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setString(i++, transactionName);
             boundStatement.setTimestamp(i++, new Date(captureTime));
             boundStatement.setBytes(i++, toByteBuffer(profile));
-            boundStatement.setInt(i++, ttl);
+            boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
         if (aggregate.hasAuxThreadProfile()) {
@@ -1246,19 +1247,20 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setString(i++, transactionName);
             boundStatement.setTimestamp(i++, new Date(captureTime));
             boundStatement.setBytes(i++, toByteBuffer(profile));
-            boundStatement.setInt(i++, ttl);
+            boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
         futures.addAll(insertQueries(aggregate.getQueriesByTypeList(), sharedQueries, rollupLevel,
-                agentRollup, transactionType, transactionName, captureTime, ttl));
+                agentRollup, transactionType, transactionName, captureTime, adjustedTTL));
         futures.addAll(insertServiceCalls(aggregate.getServiceCallsByTypeList(), rollupLevel,
-                agentRollup, transactionType, transactionName, captureTime, ttl));
+                agentRollup, transactionType, transactionName, captureTime, adjustedTTL));
         return futures;
     }
 
     private List<ResultSetFuture> insertQueries(List<QueriesByType> queriesByTypeList,
             List<SharedQueryTextAndSha1> sharedQueries, int rollupLevel, String agentRollup,
-            String transactionType, @Nullable String transactionName, long captureTime, int ttl) {
+            String transactionType, @Nullable String transactionName, long captureTime,
+            int adjustedTTL) {
         List<ResultSetFuture> futures = Lists.newArrayList();
         for (QueriesByType queriesByType : queriesByTypeList) {
             for (Aggregate.Query query : queriesByType.getQueryList()) {
@@ -1306,7 +1308,7 @@ public class AggregateDao implements AggregateRepository {
                 } else {
                     boundStatement.setToNull(i++);
                 }
-                boundStatement.setInt(i++, ttl);
+                boundStatement.setInt(i++, adjustedTTL);
                 futures.add(session.executeAsync(boundStatement));
             }
         }
@@ -1315,7 +1317,7 @@ public class AggregateDao implements AggregateRepository {
 
     private List<ResultSetFuture> insertQueries(Map<String, List<MutableQuery>> map,
             int rollupLevel, String agentRollup, String transactionType,
-            @Nullable String transactionName, long captureTime, int ttl) {
+            @Nullable String transactionName, long captureTime, int adjustedTTL) {
         List<ResultSetFuture> futures = Lists.newArrayList();
         for (Entry<String, List<MutableQuery>> entry : map.entrySet()) {
             for (MutableQuery query : entry.getValue()) {
@@ -1342,7 +1344,7 @@ public class AggregateDao implements AggregateRepository {
                 } else {
                     boundStatement.setToNull(i++);
                 }
-                boundStatement.setInt(i++, ttl);
+                boundStatement.setInt(i++, adjustedTTL);
                 futures.add(session.executeAsync(boundStatement));
             }
         }
@@ -1351,7 +1353,8 @@ public class AggregateDao implements AggregateRepository {
 
     private List<ResultSetFuture> insertServiceCalls(
             List<ServiceCallsByType> serviceCallsByTypeList, int rollupLevel, String agentRollup,
-            String transactionType, @Nullable String transactionName, long captureTime, int ttl) {
+            String transactionType, @Nullable String transactionName, long captureTime,
+            int adjustedTTL) {
         List<ResultSetFuture> futures = Lists.newArrayList();
         for (ServiceCallsByType serviceCallsByType : serviceCallsByTypeList) {
             for (Aggregate.ServiceCall serviceCall : serviceCallsByType.getServiceCallList()) {
@@ -1372,7 +1375,7 @@ public class AggregateDao implements AggregateRepository {
                 boundStatement.setString(i++, serviceCall.getText());
                 boundStatement.setDouble(i++, serviceCall.getTotalDurationNanos());
                 boundStatement.setLong(i++, serviceCall.getExecutionCount());
-                boundStatement.setInt(i++, ttl);
+                boundStatement.setInt(i++, adjustedTTL);
                 futures.add(session.executeAsync(boundStatement));
             }
         }
@@ -1388,7 +1391,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private void bindAggregate(BoundStatement boundStatement, Aggregate aggregate, int startIndex,
-            int ttl) throws IOException {
+            int adjustedTTL) throws IOException {
         int i = startIndex;
         boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
         boundStatement.setLong(i++, aggregate.getTransactionCount());
@@ -1453,7 +1456,7 @@ public class AggregateDao implements AggregateRepository {
         } else {
             boundStatement.setToNull(i++);
         }
-        boundStatement.setInt(i++, ttl);
+        boundStatement.setInt(i++, adjustedTTL);
     }
 
     private ResultSet createBoundStatement(String agentRollup, OverallQuery query, Table table) {
@@ -1513,12 +1516,12 @@ public class AggregateDao implements AggregateRepository {
         return ttls;
     }
 
-    private RollupParams getRollupParams(String agentRollup, int rollupLevel, int ttl)
+    private RollupParams getRollupParams(String agentRollup, int rollupLevel, int adjustedTTL)
             throws IOException {
         ImmutableRollupParams.Builder rollupInfo = ImmutableRollupParams.builder()
                 .agentRollup(agentRollup)
                 .rollupLevel(rollupLevel)
-                .ttl(ttl);
+                .adjustedTTL(adjustedTTL);
         AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(agentRollup);
         if (advancedConfig != null && advancedConfig.hasMaxAggregateQueriesPerType()) {
             rollupInfo.maxAggregateQueriesPerType(
@@ -1879,7 +1882,7 @@ public class AggregateDao implements AggregateRepository {
     interface RollupParams {
         String agentRollup();
         int rollupLevel();
-        int ttl();
+        int adjustedTTL();
         int maxAggregateQueriesPerType();
         int maxAggregateServiceCallsPerType();
     }

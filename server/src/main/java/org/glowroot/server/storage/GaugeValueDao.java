@@ -46,6 +46,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class GaugeValueDao implements GaugeValueRepository {
 
@@ -127,17 +128,18 @@ public class GaugeValueDao implements GaugeValueRepository {
         if (gaugeValues.isEmpty()) {
             return;
         }
-        List<Integer> ttls = getTTLs();
+        int ttl = getTTLs().get(0);
         List<ResultSetFuture> futures = Lists.newArrayList();
         for (GaugeValue gaugeValue : gaugeValues) {
             BoundStatement boundStatement = insertValuePS.get(0).bind();
             int i = 0;
             boundStatement.setString(i++, agentId);
             boundStatement.setString(i++, gaugeValue.getGaugeName());
-            boundStatement.setTimestamp(i++, new Date(gaugeValue.getCaptureTime()));
+            long captureTime = gaugeValue.getCaptureTime();
+            boundStatement.setTimestamp(i++, new Date(captureTime));
             boundStatement.setDouble(i++, gaugeValue.getValue());
             boundStatement.setLong(i++, gaugeValue.getWeight());
-            boundStatement.setInt(i++, ttls.get(0));
+            boundStatement.setInt(i++, getAdjustedTTL(ttl, captureTime));
             futures.add(session.executeAsync(boundStatement));
             gaugeNameDao.maybeUpdateLastCaptureTime(agentId, gaugeValue.getGaugeName(), futures);
         }
@@ -188,12 +190,12 @@ public class GaugeValueDao implements GaugeValueRepository {
         List<Integer> ttls = getTTLs();
         for (int rollupLevel = 1; rollupLevel <= configRepository.getRollupConfigs()
                 .size(); rollupLevel++) {
-            rollupLevel(agentRollup, rollupLevel, ttls);
+            int ttl = ttls.get(rollupLevel);
+            rollupLevel(agentRollup, rollupLevel, ttl);
         }
     }
 
-    private void rollupLevel(String agentRollup, int rollupLevel, List<Integer> ttls)
-            throws Exception {
+    private void rollupLevel(String agentRollup, int rollupLevel, int ttl) throws Exception {
         List<NeedsRollup> needsRollupList =
                 AggregateDao.getNeedsRollupList(agentRollup, rollupLevel, readNeedsRollup, session);
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
@@ -203,10 +205,11 @@ public class GaugeValueDao implements GaugeValueRepository {
             nextRollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
         }
         for (NeedsRollup needsRollup : needsRollupList) {
-            long from = needsRollup.getCaptureTime() - rollupIntervalMillis;
+            long captureTime = needsRollup.getCaptureTime();
+            long from = captureTime - rollupIntervalMillis;
             for (String gaugeName : needsRollup.getKeys()) {
-                rollupOne(rollupLevel, agentRollup, gaugeName, from, needsRollup.getCaptureTime(),
-                        ttls);
+                int adjustedTTL = getAdjustedTTL(ttl, captureTime);
+                rollupOne(rollupLevel, agentRollup, gaugeName, from, captureTime, adjustedTTL);
             }
             AggregateDao.postRollup(agentRollup, rollupLevel, needsRollup, nextRollupIntervalMillis,
                     insertNeedsRollup, deleteNeedsRollup, session);
@@ -228,7 +231,7 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     // from is non-inclusive
     private void rollupOne(int rollupLevel, String agentRollup, String gaugeName, long from,
-            long to, List<Integer> ttls) throws Exception {
+            long to, int adjustedTTL) throws Exception {
         BoundStatement boundStatement = readValueForRollupPS.get(rollupLevel - 1).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollup);
@@ -251,7 +254,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         boundStatement.setTimestamp(i++, new Date(to));
         boundStatement.setDouble(i++, totalWeightedValue / totalWeight);
         boundStatement.setLong(i++, totalWeight);
-        boundStatement.setInt(i++, ttls.get(rollupLevel));
+        boundStatement.setInt(i++, adjustedTTL);
         session.execute(boundStatement);
     }
 
@@ -275,5 +278,12 @@ public class GaugeValueDao implements GaugeValueRepository {
             session.execute("truncate gauge_needs_rollup_" + i);
         }
         session.execute("truncate gauge_name");
+    }
+
+    static int getAdjustedTTL(int ttl, long captureTime) {
+        int captureTimeAgoSeconds = Ints
+                .saturatedCast(MILLISECONDS.toSeconds(System.currentTimeMillis() - captureTime));
+        // max is just a safety guard (primarily used for unit tests)
+        return Math.max(ttl - captureTimeAgoSeconds, 60);
     }
 }
