@@ -16,6 +16,7 @@
     </encoder>
   </appender>
   <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
+  <logger name="org.apache.shiro" level="warn" />
   <root level="info">
     <appender-ref ref="FILE" />
   </root>
