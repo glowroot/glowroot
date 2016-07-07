@@ -76,6 +76,14 @@
       {{data.process.startTime | date:'medium'}}
     </div>
   </div>
+  <div class="row gt-jvm-general-row">
+    <div>
+      <label class="col-md-3" style="text-align: right;">Uptime</label>
+    </div>
+    <div class="col-md-9">
+      {{uptime | gtDuration}}
+    </div>
+  </div>
 </fieldset>
 <fieldset style="padding-bottom: 17px;">
   <legend style="margin-bottom: 10px;">Java</legend>

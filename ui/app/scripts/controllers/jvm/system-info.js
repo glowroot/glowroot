@@ -51,6 +51,7 @@ glowroot.controller('JvmSystemInfoCtrl', [
         .success(function (data) {
           $scope.loaded = true;
           $scope.data = data;
+          $scope.uptime = Date.now() - data.process.startTime;
         })
         .error(httpErrors.handler($scope));
   }
