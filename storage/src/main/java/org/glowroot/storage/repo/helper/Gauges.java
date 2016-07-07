@@ -38,7 +38,7 @@ public class Gauges {
     static {
         List<UnitPattern> patterns = Lists.newArrayList();
         patterns.add(new UnitPattern(
-                "java.lang:type=Memory:(Non)?HeapMemoryUsage\\/(init|used|committed|max)",
+                "java.lang:type=Memory:(Non)?HeapMemoryUsage\\.(init|used|committed|max)",
                 "bytes"));
         patterns.add(new UnitPattern(
                 "java.lang:type=OperatingSystem:(Free|Total)(Physical|Swap)MemorySize", "bytes"));
@@ -49,9 +49,9 @@ public class Gauges {
         patterns.add(new UnitPattern("java.lang:type=Threading:CurrentThread(Cpu|User)Time",
                 "nanoseconds"));
         patterns.add(new UnitPattern("java.lang:type=MemoryPool,name=[a-zA-Z0-9 ]+:(Peak)?Usage"
-                + "\\/(init|used|committed|max)", "bytes"));
+                + "\\.(init|used|committed|max)", "bytes"));
         patterns.add(new UnitPattern(
-                "java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+:LastGcInfo\\/duration",
+                "java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+:LastGcInfo\\.duration",
                 "milliseconds"));
         patterns.add(
                 new UnitPattern("java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+:CollectionTime",
@@ -83,9 +83,9 @@ public class Gauges {
             mbeanAttributeName = mbeanAttributeName.substring(0,
                     mbeanAttributeName.length() - "[counter]".length());
         }
-        mbeanAttributeName = mbeanAttributeName.replaceAll("/", DISPLAY_PATH_SEPARATOR);
+        mbeanAttributeName = mbeanAttributeName.replaceAll("\\.", DISPLAY_PATH_SEPARATOR);
         List<String> displayPath = displayPath(mbeanObjectName);
-        displayPath.addAll(Splitter.on('/').splitToList(mbeanAttributeName));
+        displayPath.addAll(Splitter.on('.').splitToList(mbeanAttributeName));
         String display = Joiner.on(DISPLAY_PATH_SEPARATOR).join(displayPath);
         String unit = unit(gaugeName);
         ImmutableGauge.Builder gauge = ImmutableGauge.builder()

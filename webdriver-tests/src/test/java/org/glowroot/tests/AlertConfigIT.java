@@ -81,7 +81,7 @@ public class AlertConfigIT extends WebDriverIT {
                 + " - average over a 1 minute period exceeds 2.0 KB")).click();
         assertThat(alertPage.getKindGaugeRadioButton().isSelected()).isTrue();
         assertThat(alertPage.getGaugeNameSelect().getFirstSelectedOption().getAttribute("value"))
-                .isEqualTo("java.lang:type=Memory:HeapMemoryUsage/used");
+                .isEqualTo("java.lang:type=Memory:HeapMemoryUsage.used");
         assertThat(alertPage.getGaugeThresholdTextField().getAttribute("value")).isEqualTo("2000");
         assertThat(alertPage.getTimePeriodMinutesTextField().getAttribute("value")).isEqualTo("1");
         assertThat(alertPage.getEmailAddressesTextField().getAttribute("value"))
@@ -195,7 +195,7 @@ public class AlertConfigIT extends WebDriverIT {
         getNewAlertButton().click();
         AlertConfigPage alertPage = new AlertConfigPage(driver);
         alertPage.getKindGaugeRadioButton().click();
-        alertPage.getGaugeNameSelect().selectByValue("java.lang:type=Memory:HeapMemoryUsage/used");
+        alertPage.getGaugeNameSelect().selectByValue("java.lang:type=Memory:HeapMemoryUsage.used");
         alertPage.getGaugeThresholdTextField().sendKeys("2000");
         alertPage.getTimePeriodMinutesTextField().sendKeys("1");
         alertPage.getEmailAddressesTextField().sendKeys("noone@example.org,example@example.org");

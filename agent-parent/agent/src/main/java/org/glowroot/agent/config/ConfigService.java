@@ -364,7 +364,7 @@ public class ConfigService {
         List<GaugeConfig> defaultGaugeConfigs = Lists.newArrayList();
         defaultGaugeConfigs.add(ImmutableGaugeConfig.builder()
                 .mbeanObjectName("java.lang:type=Memory")
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("HeapMemoryUsage/used", false))
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("HeapMemoryUsage.used", false))
                 .build());
         defaultGaugeConfigs.add(ImmutableGaugeConfig.builder()
                 .mbeanObjectName("java.lang:type=GarbageCollector,name=*")
@@ -373,7 +373,7 @@ public class ConfigService {
                 .build());
         defaultGaugeConfigs.add(ImmutableGaugeConfig.builder()
                 .mbeanObjectName("java.lang:type=MemoryPool,name=*")
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("Usage/used", false))
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("Usage.used", false))
                 .build());
         ImmutableGaugeConfig.Builder operatingSystemMBean = ImmutableGaugeConfig.builder()
                 .mbeanObjectName("java.lang:type=OperatingSystem")

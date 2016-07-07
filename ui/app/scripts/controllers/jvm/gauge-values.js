@@ -31,7 +31,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
 
     $scope.$parent.heading = 'Gauges';
 
-    var DEFAULT_GAUGES = ['java.lang:type=Memory:HeapMemoryUsage/used'];
+    var DEFAULT_GAUGES = ['java.lang:type=Memory:HeapMemoryUsage.used'];
 
     var chartState = charts.createState();
 
@@ -40,6 +40,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     var gaugeScales = {};
     var emptyGaugeNames = {};
 
+    var allGaugeNames = [];
     var gaugeShortDisplayMap = {};
     var gaugeUnits = {};
     var gaugeGrouping = {};
@@ -170,7 +171,15 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       } else if (!location.last) {
         location.last = 4 * 60 * 60 * 1000;
       }
-      location.gaugeNames = $location.search()['gauge-name'] || angular.copy(DEFAULT_GAUGES);
+      location.gaugeNames = $location.search()['gauge-name'];
+      if (!location.gaugeNames) {
+        location.gaugeNames = [];
+        angular.forEach(DEFAULT_GAUGES, function (defaultGauge) {
+          if (allGaugeNames.indexOf(defaultGauge) !== -1) {
+            location.gaugeNames.push(defaultGauge);
+          }
+        });
+      }
       if (!angular.isArray(location.gaugeNames)) {
         location.gaugeNames = [location.gaugeNames];
       }
@@ -190,7 +199,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
             $scope.loaded = true;
             $scope.allGauges = data;
             createShortDataSeriesNames(data);
-            var allGaugeNames = [];
+            allGaugeNames = [];
             gaugeShortDisplayMap = {};
             gaugeUnits = {};
             gaugeGrouping = {};
@@ -208,6 +217,13 @@ glowroot.controller('JvmGaugeValuesCtrl', [
                 gaugeGrouping[gauge.name] = gauge.name;
               }
             });
+            if (!$scope.gaugeNames.length) {
+              angular.forEach(DEFAULT_GAUGES, function (defaultGauge) {
+                if (allGaugeNames.indexOf(defaultGauge) !== -1) {
+                  $scope.gaugeNames.push(defaultGauge);
+                }
+              });
+            }
             refreshData();
           })
           .error(httpErrors.handler($scope));

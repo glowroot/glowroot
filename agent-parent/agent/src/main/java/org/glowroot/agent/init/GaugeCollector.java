@@ -193,8 +193,8 @@ class GaugeCollector extends ScheduledRunnable {
             String mbeanAttributeName = mbeanAttribute.name();
             Object attributeValue;
             try {
-                if (mbeanAttributeName.contains("/")) {
-                    String[] path = mbeanAttributeName.split("\\/");
+                if (mbeanAttributeName.contains(".")) {
+                    String[] path = mbeanAttributeName.split("\\.");
                     attributeValue = lazyPlatformMBeanServer.getAttribute(objectName, path[0]);
                     CompositeData compositeData = (CompositeData) attributeValue;
                     if (compositeData == null) {
@@ -295,7 +295,7 @@ class GaugeCollector extends ScheduledRunnable {
 
     private void logFirstTimeMBeanAttributeNotFound(String mbeanObjectName,
             String mbeanAttributeName) {
-        if (loggedMBeanGauges.add(mbeanObjectName + "/" + mbeanAttributeName)) {
+        if (loggedMBeanGauges.add(mbeanObjectName + ":" + mbeanAttributeName)) {
             // relatively common, so nice message
             logger.warn("mbean attribute {} not found in {}", mbeanAttributeName, mbeanObjectName);
         }
@@ -309,7 +309,7 @@ class GaugeCollector extends ScheduledRunnable {
 
     private void logFirstTimeMBeanAttributeError(String mbeanObjectName, String mbeanAttributeName,
             String message) {
-        if (loggedMBeanGauges.add(mbeanObjectName + "/" + mbeanAttributeName)) {
+        if (loggedMBeanGauges.add(mbeanObjectName + ":" + mbeanAttributeName)) {
             logger.warn("error accessing mbean attribute {} {}: {}", mbeanObjectName,
                     mbeanAttributeName, message);
         }
@@ -317,7 +317,7 @@ class GaugeCollector extends ScheduledRunnable {
 
     private void logFirstTimeMBeanAttributeError(String mbeanObjectName, String mbeanAttributeName,
             Exception e) {
-        if (loggedMBeanGauges.add(mbeanObjectName + "/" + mbeanAttributeName)) {
+        if (loggedMBeanGauges.add(mbeanObjectName + ":" + mbeanAttributeName)) {
             logger.warn("error accessing mbean attribute: {} {}", mbeanObjectName,
                     mbeanAttributeName, e);
         }

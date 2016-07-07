@@ -445,13 +445,13 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                 continue;
             }
             if (Number.class.isAssignableFrom(clazz)) {
-                attributeNames.add(attribute.getName() + '/' + itemName);
+                attributeNames.add(attribute.getName() + '.' + itemName);
             } else if (clazz == String.class && compositeData instanceof CompositeData) {
                 Object val = ((CompositeData) compositeData).get(itemName);
                 if (val instanceof String) {
                     try {
                         Double.parseDouble((String) val);
-                        attributeNames.add(attribute.getName() + '/' + itemName);
+                        attributeNames.add(attribute.getName() + '.' + itemName);
                     } catch (NumberFormatException e) {
                         // log exception at debug level
                         logger.debug(e.getMessage(), e);

@@ -56,9 +56,8 @@ class GaugeConfigJsonService {
         @Override
         public int compare(GaugeConfig left, GaugeConfig right) {
             Joiner joiner = Joiner.on('/');
-            return joiner.join(Gauges.displayPath(left.getMbeanObjectName()))
-                    .compareToIgnoreCase(
-                            joiner.join(Gauges.displayPath(right.getMbeanObjectName())));
+            return joiner.join(Gauges.displayPath(left.getMbeanObjectName())).compareToIgnoreCase(
+                    joiner.join(Gauges.displayPath(right.getMbeanObjectName())));
         }
     };
 

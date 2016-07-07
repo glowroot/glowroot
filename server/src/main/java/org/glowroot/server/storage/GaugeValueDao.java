@@ -134,14 +134,21 @@ public class GaugeValueDao implements GaugeValueRepository {
             BoundStatement boundStatement = insertValuePS.get(0).bind();
             int i = 0;
             boundStatement.setString(i++, agentId);
-            boundStatement.setString(i++, gaugeValue.getGaugeName());
+            String gaugeName = gaugeValue.getGaugeName();
+            // TEMPORARY UNTIL ROLL OUT AGENT 0.9.1
+            int index = gaugeName.lastIndexOf(':');
+            String mbeanObjectName = gaugeName.substring(0, index);
+            String mbeanAttributeName = gaugeName.substring(index + 1);
+            gaugeName = mbeanObjectName + ':' + mbeanAttributeName.replace('/', '.');
+            // END TEMPORARY
+            boundStatement.setString(i++, gaugeName);
             long captureTime = gaugeValue.getCaptureTime();
             boundStatement.setTimestamp(i++, new Date(captureTime));
             boundStatement.setDouble(i++, gaugeValue.getValue());
             boundStatement.setLong(i++, gaugeValue.getWeight());
             boundStatement.setInt(i++, getAdjustedTTL(ttl, captureTime));
             futures.add(session.executeAsync(boundStatement));
-            gaugeNameDao.maybeUpdateLastCaptureTime(agentId, gaugeValue.getGaugeName(), futures);
+            gaugeNameDao.maybeUpdateLastCaptureTime(agentId, gaugeName, futures);
         }
         // insert into gauge_needs_rollup_1
         SetMultimap<Long, String> rollupCaptureTimes = getRollupCaptureTimes(gaugeValues);
