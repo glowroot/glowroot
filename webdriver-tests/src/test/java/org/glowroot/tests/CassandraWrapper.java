@@ -102,13 +102,13 @@ class CassandraWrapper {
         xml = xml.replace("<root level=\"INFO\">", "<root level=\"ERROR\">");
         xml = xml.replace("<logger name=\"org.apache.cassandra\" level=\"DEBUG\"/>", "");
         Files.asCharSink(logbackXmlFile, Charsets.UTF_8).write(xml);
-        // longer timeout needed on slow travis ci machines
+        // long timeouts needed on slow travis ci machines
         File yamlFile = new File(confDir, "cassandra.yaml");
         String yaml = Files.toString(yamlFile, Charsets.UTF_8);
         yaml = yaml.replaceAll("(?m)^read_request_timeout_in_ms: .*$",
-                "read_request_timeout_in_ms: 10000");
+                "read_request_timeout_in_ms: 30000");
         yaml = yaml.replaceAll("(?m)^write_request_timeout_in_ms: .*$",
-                "write_request_timeout_in_ms: 4000");
+                "write_request_timeout_in_ms: 30000");
         Files.asCharSink(yamlFile, Charsets.UTF_8).write(yaml);
     }
 
