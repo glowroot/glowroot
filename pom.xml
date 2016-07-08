@@ -448,6 +448,9 @@
             <systemPropertyVariables>
               <glowroot.test.fileLoggingOnly>true</glowroot.test.fileLoggingOnly>
             </systemPropertyVariables>
+            <!-- the default of trimming stack trace to only lines within the test
+              makes it difficult to diagnose sporadic travis build failures -->
+            <trimStackTrace>false</trimStackTrace>
           </configuration>
         </plugin>
         <plugin>
@@ -498,6 +501,9 @@
             <systemPropertyVariables>
               <glowroot.test.fileLoggingOnly>true</glowroot.test.fileLoggingOnly>
             </systemPropertyVariables>
+            <!-- the default of trimming stack trace to only lines within the test
+              makes it difficult to diagnose sporadic travis build failures -->
+            <trimStackTrace>false</trimStackTrace>
           </configuration>
         </plugin>
         <plugin>
