@@ -58,23 +58,31 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       charts.refreshData('backend/jvm/gauges', chartState, $scope, addToQuery, onRefreshData);
     }
 
-    function watchListener(newValues, oldValues) {
-      if (newValues !== oldValues) {
-        $location.search($scope.buildQueryObject());
-        if ($scope.gaugeNames.length) {
-          refreshData();
-        } else {
-          // ideally wouldn't need to refreshData here, but this seems a rare condition (to de-select all gauges)
-          // and need some way to clear the last gauge from the chart, and this is easy
-          refreshData();
-          $scope.chartNoData = true;
-        }
+    function watchListener() {
+      $location.search($scope.buildQueryObject());
+      if ($scope.gaugeNames.length) {
+        refreshData();
+      } else {
+        // ideally wouldn't need to refreshData here, but this seems a rare condition (to de-select all gauges)
+        // and need some way to clear the last gauge from the chart, and this is easy
+        refreshData();
+        $scope.chartNoData = true;
       }
     }
 
-    $scope.$watchGroup(['range.last', 'range.chartFrom', 'range.chartTo', 'range.chartRefresh'], watchListener);
+    $scope.$watchGroup(['range.last', 'range.chartFrom', 'range.chartTo', 'range.chartRefresh'],
+        function (newValues, oldValues) {
+          if (newValues !== oldValues) {
+            watchListener();
+          }
+        }
+    );
 
-    $scope.$watchCollection('gaugeNames', watchListener);
+    $scope.$watchCollection('gaugeNames', function (newValue, oldValue) {
+      if (newValue !== oldValue || newValue.length) {
+        watchListener();
+      }
+    });
 
     $scope.$watch('seriesLabels', function (newValues, oldValues) {
       if (newValues !== oldValues) {
@@ -88,7 +96,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       }
     });
 
-    $scope.smallScreen = function() {
+    $scope.smallScreen = function () {
       // using innerWidth so it will match to screen media queries
       return window.innerWidth < 768;
     };
@@ -224,7 +232,6 @@ glowroot.controller('JvmGaugeValuesCtrl', [
                 }
               });
             }
-            refreshData();
           })
           .error(httpErrors.handler($scope));
     }
