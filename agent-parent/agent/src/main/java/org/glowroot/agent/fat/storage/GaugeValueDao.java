@@ -78,14 +78,17 @@ class GaugeValueDao implements GaugeValueRepository {
         for (int i = 0; i <= rollupConfigs.size(); i++) {
             dataSource.syncTable("gauge_value_rollup_" + castUntainted(i), columns);
             dataSource.syncIndexes("gauge_value_rollup_" + castUntainted(i),
-                    ImmutableList.<Index>of(ImmutableIndex.of(
-                            "gauge_value_rollup_" + castUntainted(i) + "_idx",
-                            ImmutableList.of("gauge_id", "capture_time", "value", "weight"))));
-            // this index is used by rollup query
-            dataSource.syncIndexes("gauge_value_rollup_" + castUntainted(i),
-                    ImmutableList.<Index>of(ImmutableIndex.of(
-                            "gauge_value_rollup_" + castUntainted(i) + "_by_capture_time_idx",
-                            ImmutableList.of("capture_time", "gauge_id", "value", "weight"))));
+                    ImmutableList.<Index>of(
+                            ImmutableIndex.of(
+                                    "gauge_value_rollup_" + castUntainted(i) + "_idx",
+                                    ImmutableList.of("gauge_id", "capture_time", "value",
+                                            "weight")),
+                            // this index is used by rollup query
+                            ImmutableIndex.of(
+                                    "gauge_value_rollup_" + castUntainted(i)
+                                            + "_by_capture_time_idx",
+                                    ImmutableList.of("capture_time", "gauge_id", "value",
+                                            "weight"))));
         }
         List<Column> columns = Lists.newArrayList();
         for (int i = 1; i <= rollupConfigs.size(); i++) {
