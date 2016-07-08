@@ -109,7 +109,7 @@ glowroot.factory('charts', [
           revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
         }
       }
-      var now = new Date().getTime();
+      var now = Date.now();
       // need to compare original 'to' in case it was revised below 'now'
       if (revisedTo > now || to > now) {
         if (!zoomingOut && !selection && $scope.range.last) {
