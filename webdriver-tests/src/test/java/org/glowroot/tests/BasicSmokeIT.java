@@ -300,7 +300,8 @@ public class BasicSmokeIT extends WebDriverIT {
         Utils.withWait(driver,
                 By.xpath("//div[starts-with(normalize-space(.),'jdbc execution:')]"));
         Utils.withWait(driver, By.className("gt-main-thread-profile-toggle")).click();
-        Utils.withWait(driver, By.xpath("//span[text()='TIMED_WAITING']"));
+        // wait for profile to open
+        Thread.sleep(500);
 
         Pattern pattern = Pattern.compile("modal-trace-id=([0-9a-f]*)");
         Matcher matcher = pattern.matcher(driver.getCurrentUrl());
