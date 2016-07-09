@@ -30,7 +30,8 @@ matrix:
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=chrome SAUCELABS_BROWSER_VERSION=
       # firefox
     - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=firefox SAUCELABS_BROWSER_VERSION=
+      # having trouble with latest firefox (47) on saucelabs
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=firefox SAUCELABS_BROWSER_VERSION=46
       # internet explorer
     - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=11
