@@ -125,7 +125,7 @@
                 <input type="checkbox" ng-checked="gaugeNames.indexOf(gauge.name) !== -1"
                        ng-click="clickGaugeName(gauge.name)"
                        id="{{gauge.name}}">
-                {{lineBreakableGaugeName(gauge.display)}}
+                {{gauge.display}}
               </label>
             </div>
           </td>
@@ -158,7 +158,7 @@
                 <input type="checkbox" ng-checked="gaugeNames.indexOf(gauge.name) !== -1"
                        ng-click="clickGaugeName(gauge.name)"
                        id="{{gauge.name}}">
-                {{lineBreakableGaugeName(gauge.display)}}
+                {{gauge.display}}
               </label>
             </div>
           </td>

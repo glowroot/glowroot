@@ -28,10 +28,6 @@ glowroot.controller('ConfigGaugeListCtrl', [
       return;
     }
 
-    $scope.display = function (gauge) {
-      return gauge.config.display.replace(/\//g, '\u200b/');
-    };
-
     $scope.gaugeQueryString = function (gauge) {
       var query = {};
       if ($scope.agentId) {

@@ -40,10 +40,6 @@ glowroot.controller('ConfigGaugeCtrl', [
 
       if (data.config.mbeanObjectName) {
         $scope.heading = data.config.display;
-        // \u200b is zero width space and \u00a0 is non-breaking space
-        // these are used to change wrapping behavior on smaller screens (or larger mbean names)
-        $scope.heading = $scope.heading.replace(/\//g, '\u200b/');
-        $scope.heading = $scope.heading.replace(/ /g, '\u00a0');
         $scope.selectedMBeanObjectName = data.config.mbeanObjectName;
         $scope.mbeanUnavailable = data.mbeanUnavailable;
         $scope.mbeanUnmatched = data.mbeanUnmatched;
@@ -208,8 +204,8 @@ glowroot.controller('ConfigGaugeCtrl', [
     };
 
     $scope.saveDisabled = function () {
-      return !$scope.config || !$scope.config.mbeanAttributes.length || $scope.formCtrl.$invalid || $scope.mbeanUnavailable
-          || $scope.mbeanUnmatched || $scope.duplicateMBean;
+      return !$scope.config || !$scope.config.mbeanAttributes.length || $scope.formCtrl.$invalid
+          || $scope.mbeanUnavailable || $scope.mbeanUnmatched || $scope.duplicateMBean;
     };
 
     $scope.save = function (deferred) {

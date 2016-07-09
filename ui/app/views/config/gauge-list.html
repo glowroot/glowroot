@@ -29,7 +29,7 @@
         <div ng-repeat="gauge in gauges"
              style="padding-bottom: 8px;">
           <div>
-            <a ng-href="config/gauge{{gaugeQueryString(gauge)}}">{{display(gauge)}}</a>
+            <a ng-href="config/gauge{{gaugeQueryString(gauge)}}">{{gauge.config.display}}</a>
           </div>
           <div ng-repeat="mbeanAttribute in gauge.config.mbeanAttributes | orderBy:'name'"
                style="margin-left: 40px;">

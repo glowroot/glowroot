@@ -385,14 +385,6 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       return k;
     }
 
-    $scope.lineBreakableGaugeName = function (gaugeName) {
-      // \u200b is zero width space and \u00a0 is non-breaking space
-      // these are used to change wrapping behavior on smaller screens (or larger mbean names)
-      gaugeName = gaugeName.replace(/\//g, '\u200b/');
-      gaugeName = gaugeName.replace(/ /g, '\u00a0');
-      return gaugeName;
-    };
-
     $scope.gaugeNameStyle = function (gaugeName) {
       if ($scope.gaugeNames.indexOf(gaugeName) === -1) {
         return {

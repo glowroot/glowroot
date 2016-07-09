@@ -43,10 +43,6 @@ glowroot.controller('ConfigAlertCtrl', [
         }
         if (data.kind === 'gauge') {
           $scope.heading = data.gaugeDisplay + ' - average over a ' + data.timePeriodSeconds / 60 + ' minute period';
-          // \u200b is zero width space and \u00a0 is non-breaking space
-          // these are used to change wrapping behavior on smaller screens (or larger mbean names)
-          $scope.heading = $scope.heading.replace(/\//g, '\u200b/');
-          $scope.heading = $scope.heading.replace(/ /g, '\u00a0');
         }
         $scope.emailAddresses = data.emailAddresses.join(', ');
       } else {
