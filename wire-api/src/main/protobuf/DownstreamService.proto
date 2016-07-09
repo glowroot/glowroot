@@ -275,6 +275,7 @@ message ThreadDump {
 
   message Thread {
     string name = 1;
+    int64 id = 5;
     string state = 2;
     string lock_name = 3;
     repeated StackTraceElement stack_trace_element = 4;

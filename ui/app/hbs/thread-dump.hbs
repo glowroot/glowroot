@@ -2,19 +2,19 @@
 {{#each transactions}}{{#if transactionType}}<strong>Transaction type: </strong>{{transactionType}}
 <strong>Transaction name:</strong> {{transactionName}}
 <strong>Transaction duration:</strong> {{nanosToMillis totalDurationNanos}} milliseconds {{#if traceId}}<a href="jvm/thread-dump?{{#agentIdQueryString}}{{/agentIdQueryString}}modal-trace-id={{traceId}}&modal-check-live-traces=true">view trace</a>{{/if}}
-{{/if}}{{#each threads}}"{{name}}"
+{{/if}}{{#each threads}}"{{name}}" tid={{id}}
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{state}}
 {{#ifBlocked state}}        - blocked on {{lockName}}
 {{/ifBlocked}}{{#ifWaiting state}}{{#if lockName}}        - waiting on {{lockName}}
 {{/if}}{{/ifWaiting}}{{#each stackTraceElements}}        {{.}}
 {{/each}}{{/each}}<br>{{/each}}{{/if}}{{#if unmatchedThreads}}<strong>Unmatched threads</strong> (this may possibly include currently executing transactions that just started or just ended):<br>
-{{#each unmatchedThreads}}"{{name}}"
+{{#each unmatchedThreads}}"{{name}}" tid={{id}}
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{state}}
 {{#ifBlocked state}}        - blocked on {{lockName}}
 {{/ifBlocked}}{{#ifWaiting state}}{{#if lockName}}        - waiting on {{lockName}}
 {{/if}}{{/ifWaiting}}{{#each stackTraceElements}}        {{.}}
 {{/each}}<br>{{/each}}{{/if}}{{#if threadDumpingThread}}<strong>Thread dumping thread</strong> (producing this thread dump):<br>
-"{{threadDumpingThread/name}}"
+"{{threadDumpingThread/name}}" tid={{threadDumpingThread/id}}
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{threadDumpingThread/state}}
 {{#ifBlocked threadDumpingThread/state}}        - blocked on {{threadDumpingThread/lockName}}
 {{/ifBlocked}}{{#ifWaiting threadDumpingThread/state}}{{#if threadDumpingThread/lockName}}        - waiting on {{threadDumpingThread/lockName}}

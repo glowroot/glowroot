@@ -311,6 +311,7 @@ class JvmJsonService {
     private static void writeThread(ThreadDump.Thread thread, JsonGenerator jg) throws IOException {
         jg.writeStartObject();
         jg.writeStringField("name", thread.getName());
+        jg.writeStringField("id", "0x" + String.format("%016x", thread.getId()));
         jg.writeStringField("state", thread.getState());
         jg.writeStringField("lockName", thread.getLockName());
         jg.writeArrayFieldStart("stackTraceElements");

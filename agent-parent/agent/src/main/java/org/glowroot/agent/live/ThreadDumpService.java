@@ -141,10 +141,11 @@ class ThreadDumpService {
     }
 
     private ThreadDump.Thread createProtobuf(ThreadInfo threadInfo) {
-        ThreadDump.Thread.Builder builder = ThreadDump.Thread.newBuilder();
-        builder.setName(threadInfo.getThreadName());
-        builder.setState(threadInfo.getThreadState().name());
-        builder.setLockName(Strings.nullToEmpty(threadInfo.getLockName()));
+        ThreadDump.Thread.Builder builder = ThreadDump.Thread.newBuilder()
+                .setName(threadInfo.getThreadName())
+                .setId(threadInfo.getThreadId())
+                .setState(threadInfo.getThreadState().name())
+                .setLockName(Strings.nullToEmpty(threadInfo.getLockName()));
         for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
             builder.addStackTraceElement(ThreadDump.StackTraceElement.newBuilder()
                     .setClassName(stackTraceElement.getClassName())
