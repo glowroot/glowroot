@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular */
+/* global glowroot, angular, $ */
 
 glowroot.controller('AdminLdapCtrl', [
   '$scope',
@@ -23,6 +23,9 @@ glowroot.controller('AdminLdapCtrl', [
   'httpErrors',
   function ($scope, $http, confirmIfHasChanges, httpErrors) {
 
+    // initialize page binding object
+    $scope.page = {};
+
     $scope.hasChanges = function () {
       return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
     };
@@ -30,14 +33,54 @@ glowroot.controller('AdminLdapCtrl', [
 
     function onNewData(data) {
       $scope.loaded = true;
-      $scope.config = data;
-      $scope.originalConfig = angular.copy(data);
+      $scope.config = data.config;
+      $scope.originalConfig = angular.copy(data.config);
+      if (data.config.passwordExists) {
+        $scope.password = '********';
+      }
+      $scope.allGlowrootRoles = data.allGlowrootRoles;
+      $scope.page.roleMappingBlocks = [];
+      angular.forEach($scope.config.roleMappings, function (value, key) {
+        $scope.page.roleMappingBlocks.push({
+          ldapGroupDn: key,
+          glowrootRoles: angular.copy(value)
+        });
+      });
     }
 
+    $scope.onPasswordChange = function () {
+      $scope.config.newPassword = $scope.password;
+      $scope.config.passwordExists = $scope.password !== '';
+    };
+
+    $scope.onPasswordClick = function () {
+      $('#password').select();
+    };
+
+    $scope.addRoleMappingBlock = function () {
+      $scope.page.roleMappingBlocks.push({
+        ldapGroupDn: '',
+        glowrootRoles: []
+      });
+    };
+
+    $scope.$watch('page.roleMappingBlocks', function (blocks) {
+      if (!$scope.config) {
+        return;
+      }
+      $scope.config.roleMappings = {};
+      angular.forEach(blocks, function (block) {
+        $scope.config.roleMappings[block.ldapGroupDn] = block.glowrootRoles;
+      });
+    }, true);
+
+    $scope.removeRoleMappingBlock = function (roleMappingBlock) {
+      var index = $scope.page.roleMappingBlocks.indexOf(roleMappingBlock);
+      $scope.page.roleMappingBlocks.splice(index, 1);
+    };
+
     $scope.save = function (deferred) {
-      // another copy to modify for the http post data
-      var postData = angular.copy($scope.config);
-      $http.post('backend/admin/ldap', postData)
+      $http.post('backend/admin/ldap', $scope.config)
           .success(function (data) {
             deferred.resolve('Saved');
             onNewData(data);
@@ -46,16 +89,23 @@ glowroot.controller('AdminLdapCtrl', [
     };
 
     $scope.testConnection = function (deferred) {
-      // another copy to modify for the http post data
+      // copy to modify for the http post data
       var postData = angular.copy($scope.config);
-      postData.testLdapUsername = $scope.testLdapUsername;
-      postData.testLdapPassword = $scope.testLdapPassword;
+      postData.authTestUsername = $scope.page.authTestUsername;
+      postData.authTestPassword = $scope.page.authTestPassword;
       $http.post('backend/admin/test-ldap-connection', postData)
           .success(function (data) {
             if (data.error) {
               deferred.reject(data.message);
+            } else if (data.glowrootRoles.length) {
+              deferred.resolve('Success, assigned to Glowroot roles: ' + data.glowrootRoles.join(', '));
+            } else if (data.ldapGroupDns.length) {
+              deferred.reject('Authentication succeeded, but the LDAP group query did not find any groups for this user'
+                  + ' that have been mapped to Glowroot roles above. The LDAP groups query found the following groups:'
+                  + '\n\n' + data.ldapGroupDns.join('\n\n'));
             } else {
-              deferred.resolve('Success');
+              deferred.reject(
+                  'Authentication succeeded, but the LDAP group query did not find any groups for this user');
             }
           })
           .error(httpErrors.handler($scope, deferred));

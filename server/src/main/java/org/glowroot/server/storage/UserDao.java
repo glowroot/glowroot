@@ -63,7 +63,7 @@ public class UserDao {
     private final LoadingCache<String, Boolean> namedUsersExist = CacheBuilder.newBuilder()
             .build(new CacheLoader<String, Boolean>() {
                 @Override
-                public Boolean load(String username) throws Exception {
+                public Boolean load(String dummy) throws Exception {
                     return namedUsersExistInternal();
                 }
             });

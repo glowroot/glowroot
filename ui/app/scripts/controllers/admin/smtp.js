@@ -48,25 +48,25 @@ glowroot.controller('AdminSmtpCtrl', [
       $('#password').select();
     };
 
-    $scope.openTestEmailModal = function () {
-      modals.display('#sendTestEmailModal', true);
+    $scope.save = function (deferred) {
+      $http.post('backend/admin/smtp', $scope.config)
+          .success(function (data) {
+            onNewData(data);
+            deferred.resolve('Saved');
+          })
+          .error(httpErrors.handler($scope, deferred));
     };
 
     $scope.sendTestEmail = function (deferred) {
       var postData = angular.copy($scope.config);
       postData.testEmailRecipient = $scope.testEmailRecipient;
       $http.post('backend/admin/send-test-email', postData)
-          .success(function () {
-            deferred.resolve('Sent');
-          })
-          .error(httpErrors.handler($scope, deferred));
-    };
-
-    $scope.save = function (deferred) {
-      $http.post('backend/admin/smtp', $scope.config)
           .success(function (data) {
-            onNewData(data);
-            deferred.resolve('Saved');
+            if (data.error) {
+              deferred.reject(data.message);
+            } else {
+              deferred.resolve('Sent');
+            }
           })
           .error(httpErrors.handler($scope, deferred));
     };

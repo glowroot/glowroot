@@ -19,20 +19,14 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpRequest;
@@ -46,13 +40,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.Clock;
+import org.glowroot.storage.config.LdapConfig;
 import org.glowroot.storage.config.RoleConfig;
+import org.glowroot.storage.config.RoleConfig.SimplePermission;
 import org.glowroot.storage.config.UserConfig;
 import org.glowroot.storage.repo.ConfigRepository;
+import org.glowroot.ui.LdapAuthentication.AuthenticationException;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 class HttpSessionManager {
@@ -76,33 +71,42 @@ class HttpSessionManager {
     }
 
     FullHttpResponse login(String username, String password) throws Exception {
-        if (username.toLowerCase(Locale.ENGLISH).equals("anonymous")) {
-            String text = "{\"incorrectLogin\":true}";
-            return HttpServices.createJsonResponse(text, OK);
+        if (username.equalsIgnoreCase("anonymous")) {
+            return buildIncorrectLoginResponse();
         }
+        Authentication authentication = null;
         UserConfig userConfig = getUserConfigCaseInsensitive(username);
-        if (userConfig == null) {
-            String text = "{\"incorrectLogin\":true}";
-            return HttpServices.createJsonResponse(text, OK);
+        if (userConfig == null || userConfig.ldap()) {
+            Set<String> roles;
+            try {
+                roles = authenticateAgainstLdapAndGetGlowrootRoles(username, password);
+            } catch (AuthenticationException e) {
+                logger.debug(e.getMessage(), e);
+                return buildIncorrectLoginResponse();
+            }
+            if (userConfig != null) {
+                roles = Sets.newHashSet(roles);
+                roles.addAll(userConfig.roles());
+            }
+            if (!roles.isEmpty()) {
+                authentication = getAuthentication(username, roles, true);
+            }
+        } else if (userConfig != null && validatePassword(password, userConfig.passwordHash())) {
+            authentication = getAuthentication(userConfig.username(), userConfig.roles(), false);
         }
-        boolean success;
-        String existingPasswordHash = userConfig.passwordHash();
-        try {
-            success = validatePassword(password, existingPasswordHash);
-        } catch (GeneralSecurityException e) {
-            logger.error(e.getMessage(), e);
-            return new DefaultFullHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
-        }
-        if (success) {
-            Authentication authentication = getAuthentication(userConfig);
+        if (authentication == null) {
+            return buildIncorrectLoginResponse();
+        } else {
             String text = layoutJsonService.getLayout(authentication);
             FullHttpResponse response = HttpServices.createJsonResponse(text, OK);
-            createSession(response, username);
+            createSession(response, authentication);
             return response;
-        } else {
-            String text = "{\"incorrectLogin\":true}";
-            return HttpServices.createJsonResponse(text, OK);
         }
+    }
+
+    private FullHttpResponse buildIncorrectLoginResponse() {
+        String text = "{\"incorrectLogin\":true}";
+        return HttpServices.createJsonResponse(text, OK);
     }
 
     void signOut(HttpRequest request) {
@@ -139,12 +143,7 @@ class HttpSessionManager {
             return getAnonymousAuthentication();
         }
         session.touch(currentTimeMillis);
-        UserConfig userConfig = getUserConfigCaseInsensitive(session.username);
-        if (userConfig == null) {
-            // user must have been just deleted
-            return getAnonymousAuthentication();
-        }
-        return getAuthentication(userConfig);
+        return session.authentication;
     }
 
     @Nullable
@@ -168,15 +167,17 @@ class HttpSessionManager {
             return ImmutableAuthentication.builder()
                     .fat(fat)
                     .anonymous(true)
-                    .username("anonymous")
+                    .ldap(false)
+                    .usernameCaseAmbiguous("anonymous")
                     .build();
         }
-        return getAuthentication(userConfig);
+        return getAuthentication(userConfig.username(), userConfig.roles(), false);
     }
 
-    private void createSession(HttpResponse response, String username) throws Exception {
+    private void createSession(HttpResponse response, Authentication authentication)
+            throws Exception {
         String sessionId = new BigInteger(130, secureRandom).toString(32);
-        sessions.put(sessionId, new Session(username));
+        sessions.put(sessionId, new Session(authentication));
         Cookie cookie = new DefaultCookie("GLOWROOT_SESSION_ID", sessionId);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
@@ -185,23 +186,15 @@ class HttpSessionManager {
         purgeExpiredSessions();
     }
 
-    private Authentication getAuthentication(UserConfig userConfig) {
-        Set<String> permissions = Sets.newHashSet();
-        for (String roleName : userConfig.roles()) {
-            RoleConfig roleConfig = configRepository.getRoleConfig(roleName);
-            if (roleConfig == null) {
-                continue;
-            }
-            permissions.addAll(roleConfig.permissions());
-        }
-        ImmutableAuthentication.Builder authentication = ImmutableAuthentication.builder()
+    private Authentication getAuthentication(String username, Set<String> roles, boolean ldap) {
+        return ImmutableAuthentication.builder()
                 .fat(fat)
-                .anonymous(userConfig.username().equalsIgnoreCase("anonymous"))
-                .username(userConfig.username());
-        for (String permission : permissions) {
-            authentication.addPermissions(new SimplePermission(permission));
-        }
-        return authentication.build();
+                .anonymous(username.equalsIgnoreCase("anonymous"))
+                .ldap(ldap)
+                .usernameCaseAmbiguous(username)
+                .roles(roles)
+                .configRepository(configRepository)
+                .build();
     }
 
     private @Nullable UserConfig getUserConfigCaseInsensitive(String username) {
@@ -227,6 +220,18 @@ class HttpSessionManager {
         return MINUTES.toMillis(configRepository.getWebConfig().sessionTimeoutMinutes());
     }
 
+    private Set<String> authenticateAgainstLdapAndGetGlowrootRoles(String username, String password)
+            throws Exception {
+        LdapConfig ldapConfig = configRepository.getLdapConfig();
+        String host = ldapConfig.host();
+        if (host.isEmpty()) {
+            throw new AuthenticationException("LDAP is not configured");
+        }
+        Set<String> ldapGroupDns = LdapAuthentication.authenticateAndGetLdapGroupDns(username,
+                password, ldapConfig, configRepository.getSecretKey());
+        return LdapAuthentication.getGlowrootRoles(ldapGroupDns, ldapConfig);
+    }
+
     private static boolean validatePassword(String password, String passwordHash)
             throws GeneralSecurityException {
         if (passwordHash.isEmpty()) {
@@ -239,11 +244,11 @@ class HttpSessionManager {
 
     private class Session {
 
-        private final String username;
+        private final Authentication authentication;
         private volatile long lastRequest;
 
-        private Session(String username) {
-            this.username = username;
+        private Session(Authentication authentication) {
+            this.authentication = authentication;
             lastRequest = clock.currentTimeMillis();
         }
 
@@ -261,8 +266,11 @@ class HttpSessionManager {
 
         abstract boolean fat();
         abstract boolean anonymous();
-        abstract String username();
-        abstract Set<SimplePermission> permissions();
+        abstract boolean ldap();
+        abstract String usernameCaseAmbiguous(); // the case is exactly as user entered during login
+        abstract Set<String> roles();
+
+        abstract ConfigRepository configRepository();
 
         boolean isPermitted(String agentId, String permission) {
             if (agentId.isEmpty()) {
@@ -273,43 +281,13 @@ class HttpSessionManager {
         }
 
         boolean isPermitted(String permission) {
-            SimplePermission p = new SimplePermission(permission);
-            for (SimplePermission perm : permissions()) {
-                if (perm.implies(p)) {
+            SimplePermission p = SimplePermission.create(permission);
+            for (RoleConfig roleConfig : configRepository().getRoleConfigs()) {
+                if (roles().contains(roleConfig.name()) && roleConfig.isPermitted(p)) {
                     return true;
                 }
             }
             return false;
-        }
-    }
-
-    static class SimplePermission {
-
-        private final ImmutableList<String> parts;
-
-        @VisibleForTesting
-        SimplePermission(String permission) {
-            parts = ImmutableList.copyOf(Splitter.on(':').splitToList(permission));
-        }
-
-        @VisibleForTesting
-        boolean implies(SimplePermission other) {
-            List<String> otherParts = other.parts;
-            if (otherParts.size() < parts.size()) {
-                return false;
-            }
-            for (int i = 0; i < parts.size(); i++) {
-                String part = parts.get(i);
-                String otherPart = otherParts.get(i);
-                if (!implies(part, otherPart)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private static boolean implies(String part, String otherPart) {
-            return part.equals(otherPart) || part.equals("*");
         }
     }
 }

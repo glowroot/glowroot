@@ -78,7 +78,7 @@ public class AlertingServiceTest {
                 .host("localhost")
                 .ssl(true)
                 .username("u")
-                .encryptedPassword(Encryption.encrypt("test", secretKey))
+                .password(Encryption.encrypt("test", secretKey))
                 .putAdditionalProperties("a", "x")
                 .putAdditionalProperties("b", "y")
                 .build();

@@ -157,7 +157,8 @@ class LayoutService {
                     .agentRollups(agentRollups)
                     .showNavbarConfig(showNavbarConfig)
                     .admin(authentication.isPermitted("admin"))
-                    .username(authentication.username())
+                    .loggedIn(!authentication.anonymous())
+                    .ldap(authentication.ldap())
                     .redirectToLogin(false)
                     .build();
         } else {
@@ -168,7 +169,8 @@ class LayoutService {
                     .gaugeCollectionIntervalMillis(0)
                     .showNavbarConfig(false)
                     .admin(false)
-                    .username(authentication.username())
+                    .loggedIn(!authentication.anonymous())
+                    .ldap(authentication.ldap())
                     .redirectToLogin(true)
                     .build();
         }
@@ -220,7 +222,8 @@ class LayoutService {
         abstract ImmutableMap<String, AgentRollupLayout> agentRollups();
         abstract boolean showNavbarConfig();
         abstract boolean admin();
-        abstract String username();
+        abstract boolean loggedIn();
+        abstract boolean ldap();
         abstract boolean redirectToLogin();
 
         @Value.Derived

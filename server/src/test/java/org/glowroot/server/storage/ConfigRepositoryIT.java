@@ -524,15 +524,15 @@ public class ConfigRepositoryIT {
         // given
         SmtpConfig config = configRepository.getSmtpConfig();
         SmtpConfig updatedConfig = ImmutableSmtpConfig.builder()
-                .fromEmailAddress("a")
-                .fromDisplayName("b")
-                .host("c")
+                .host("a")
                 .port(555)
                 .ssl(true)
-                .username("d")
-                .encryptedPassword("e")
+                .username("b")
+                .password("c")
                 .putAdditionalProperties("f", "g")
                 .putAdditionalProperties("h", "i")
+                .fromEmailAddress("d")
+                .fromDisplayName("e")
                 .build();
 
         // when
@@ -548,9 +548,14 @@ public class ConfigRepositoryIT {
         // given
         LdapConfig config = configRepository.getLdapConfig();
         LdapConfig updatedConfig = ImmutableLdapConfig.builder()
-                .url("a")
-                .userDnTemplate("b")
-                .authenticationMechanism("c")
+                .host("a")
+                .port(1234)
+                .username("b")
+                .password("c")
+                .userBaseDn("d")
+                .userSearchFilter("e")
+                .groupBaseDn("f")
+                .groupSearchFilter("g")
                 .build();
 
         // when

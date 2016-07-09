@@ -122,7 +122,7 @@
                gt-display=""
                gt-item-name="gears"
                gt-url="{{gearIconUrl()}}"
-               ng-if="layout.admin || layout.fat && layout.showNavbarConfig || !isAnonymous()">
+               ng-if="layout.admin || layout.fat && layout.showNavbarConfig || layout.loggedIn && !layout.ldap">
             <i title="{{gearIconNavbarTitle()}}"
                class="fa fa-gears"
                style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -1px;"></i>

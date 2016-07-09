@@ -15,16 +15,22 @@
  */
 package org.glowroot.ui;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
@@ -45,6 +51,7 @@ import org.glowroot.storage.config.ImmutableSmtpConfig;
 import org.glowroot.storage.config.ImmutableUserConfig;
 import org.glowroot.storage.config.ImmutableWebConfig;
 import org.glowroot.storage.config.LdapConfig;
+import org.glowroot.storage.config.RoleConfig;
 import org.glowroot.storage.config.ServerStorageConfig;
 import org.glowroot.storage.config.SmtpConfig;
 import org.glowroot.storage.config.UserConfig;
@@ -56,6 +63,7 @@ import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.storage.util.Encryption;
 import org.glowroot.storage.util.MailService;
 import org.glowroot.ui.HttpServer.PortChangeFailedException;
+import org.glowroot.ui.LdapAuthentication.AuthenticationException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
@@ -91,9 +99,10 @@ class AdminJsonService {
 
     // all users have permission to change their own password
     @POST(path = "/backend/change-password", permission = "")
-    String changePassword(@BindRequest ChangePassword changePassword, @BindUsername String username)
-            throws Exception {
-        UserConfig userConfig = configRepository.getUserConfig(username);
+    String changePassword(@BindRequest ChangePassword changePassword,
+            @BindCaseAmbiguousUsername String caseAmbiguousUsername) throws Exception {
+        UserConfig userConfig =
+                configRepository.getUserConfigCaseInsensitive(caseAmbiguousUsername);
         checkNotNull(userConfig, "user no longer exists");
         if (!PasswordHash.validatePassword(changePassword.currentPassword(),
                 userConfig.passwordHash())) {
@@ -136,7 +145,15 @@ class AdminJsonService {
 
     @GET(path = "/backend/admin/ldap", permission = "admin:view:ldap")
     String getLdapConfig() throws Exception {
-        return mapper.writeValueAsString(LdapConfigDto.create(configRepository.getLdapConfig()));
+        List<String> allGlowrootRoles = Lists.newArrayList();
+        for (RoleConfig roleConfig : configRepository.getRoleConfigs()) {
+            allGlowrootRoles.add(roleConfig.name());
+        }
+        allGlowrootRoles = Ordering.natural().sortedCopy(allGlowrootRoles);
+        return mapper.writeValueAsString(ImmutableLdapConfigResponse.builder()
+                .config(LdapConfigDto.create(configRepository.getLdapConfig()))
+                .allGlowrootRoles(allGlowrootRoles)
+                .build());
     }
 
     @POST(path = "/backend/admin/web", permission = "admin:edit:web")
@@ -192,7 +209,8 @@ class AdminJsonService {
     @POST(path = "/backend/admin/ldap", permission = "admin:edit:ldap")
     String updateLdapConfig(@BindRequest LdapConfigDto configDto) throws Exception {
         try {
-            configRepository.updateLdapConfig(configDto.convert(), configDto.version());
+            configRepository.updateLdapConfig(configDto.convert(configRepository),
+                    configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -200,40 +218,43 @@ class AdminJsonService {
     }
 
     @POST(path = "/backend/admin/send-test-email", permission = "admin:edit:smtp")
-    void sendTestEmail(@BindRequest SmtpConfigDto configDto) throws Exception {
+    String sendTestEmail(@BindRequest SmtpConfigDto configDto) throws IOException {
         String testEmailRecipient = configDto.testEmailRecipient();
         checkNotNull(testEmailRecipient);
         List<String> emailAddresses =
                 Splitter.on(',').trimResults().splitToList(testEmailRecipient);
-        AlertingService.sendEmail(emailAddresses, "Test email from Glowroot", "",
-                configDto.convert(configRepository), configRepository, mailService);
+        try {
+            AlertingService.sendEmail(emailAddresses, "Test email from Glowroot", "",
+                    configDto.convert(configRepository), configRepository, mailService);
+        } catch (Exception e) {
+            logger.debug(e.getMessage(), e);
+            return createErrorResponse(e.getMessage());
+        }
+        return "{}";
     }
 
     @POST(path = "/backend/admin/test-ldap-connection", permission = "admin:edit:ldap")
     String testLdapConnection(@BindRequest LdapConfigDto configDto) throws Exception {
-        /*
-        JndiLdapRealm jndiLdapRealm = new JndiLdapRealm();
-        GlowrootLdapRealm.init(jndiLdapRealm, configDto.convert());
+        LdapConfig config = configDto.convert(configRepository);
+        String authTestUsername = checkNotNull(configDto.authTestUsername());
+        String authTestPassword = checkNotNull(configDto.authTestPassword());
+        Set<String> ldapGroupDns;
         try {
-            jndiLdapRealm.getAuthenticationInfo(
-                    new UsernamePasswordToken(checkNotNull(configDto.testLdapUsername()),
-                            checkNotNull(configDto.testLdapPassword())));
+            ldapGroupDns = LdapAuthentication.authenticateAndGetLdapGroupDns(authTestUsername,
+                    authTestPassword, config, configRepository.getSecretKey());
         } catch (AuthenticationException e) {
             logger.debug(e.getMessage(), e);
-            Throwable cause = e.getCause();
-            String message =
-                    cause == null ? e.getMessage() : "Authentication failed " + cause.getMessage();
-            StringWriter sw = new StringWriter();
-            JsonGenerator jg = mapper.getFactory().createGenerator(sw);
-            jg.writeStartObject();
-            jg.writeBooleanField("error", true);
-            jg.writeStringField("message", message);
-            jg.writeEndObject();
-            jg.close();
-            return sw.toString();
+            return createErrorResponse(e.getMessage());
         }
-        */
-        return "{}";
+        Set<String> glowrootRoles = LdapAuthentication.getGlowrootRoles(ldapGroupDns, config);
+        StringWriter sw = new StringWriter();
+        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        jg.writeStartObject();
+        jg.writeObjectField("ldapGroupDns", ldapGroupDns);
+        jg.writeObjectField("glowrootRoles", glowrootRoles);
+        jg.writeEndObject();
+        jg.close();
+        return sw.toString();
     }
 
     @POST(path = "/backend/admin/delete-all-stored-data", permission = "admin:edit:storage")
@@ -281,6 +302,17 @@ class AdminJsonService {
                 .build());
     }
 
+    private static String createErrorResponse(@Nullable String message) throws IOException {
+        StringWriter sw = new StringWriter();
+        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        jg.writeStartObject();
+        jg.writeBooleanField("error", true);
+        jg.writeStringField("message", message);
+        jg.writeEndObject();
+        jg.close();
+        return sw.toString();
+    }
+
     @Value.Immutable
     interface ChangePassword {
         String currentPassword();
@@ -299,6 +331,12 @@ class AdminJsonService {
     interface SmtpConfigResponse {
         SmtpConfigDto config();
         String localServerName();
+    }
+
+    @Value.Immutable
+    interface LdapConfigResponse {
+        LdapConfigDto config();
+        List<String> allGlowrootRoles();
     }
 
     @Value.Immutable
@@ -388,56 +426,55 @@ class AdminJsonService {
     @Value.Immutable
     abstract static class SmtpConfigDto {
 
-        abstract String fromEmailAddress();
-        abstract String fromDisplayName();
         abstract String host();
         abstract @Nullable Integer port();
         abstract boolean ssl();
         abstract String username();
         abstract boolean passwordExists();
-        abstract Map<String, String> additionalProperties();
         @Value.Default
         String newPassword() { // only used in request
             return "";
         }
+        abstract Map<String, String> additionalProperties();
+        abstract String fromEmailAddress();
+        abstract String fromDisplayName();
         abstract @Nullable String testEmailRecipient(); // only used in request
         abstract String version();
 
         private SmtpConfig convert(ConfigRepository configRepository) throws Exception {
             ImmutableSmtpConfig.Builder builder = ImmutableSmtpConfig.builder()
-                    .fromEmailAddress(fromEmailAddress())
-                    .fromDisplayName(fromDisplayName())
                     .host(host())
                     .port(port())
                     .ssl(ssl())
                     .username(username())
-                    .putAllAdditionalProperties(additionalProperties());
+                    .putAllAdditionalProperties(additionalProperties())
+                    .fromEmailAddress(fromEmailAddress())
+                    .fromDisplayName(fromDisplayName());
             if (!passwordExists()) {
                 // clear password
-                builder.encryptedPassword("");
+                builder.password("");
             } else if (passwordExists() && !newPassword().isEmpty()) {
                 // change password
-                String newEncryptedPassword =
+                String newPassword =
                         Encryption.encrypt(newPassword(), configRepository.getSecretKey());
-                builder.encryptedPassword(newEncryptedPassword);
+                builder.password(newPassword);
             } else {
                 // keep existing password
-                SmtpConfig priorConfig = configRepository.getSmtpConfig();
-                builder.encryptedPassword(priorConfig.encryptedPassword());
+                builder.password(configRepository.getSmtpConfig().password());
             }
             return builder.build();
         }
 
         private static SmtpConfigDto create(SmtpConfig config) {
             return ImmutableSmtpConfigDto.builder()
-                    .fromEmailAddress(config.fromEmailAddress())
-                    .fromDisplayName(config.fromDisplayName())
                     .host(config.host())
                     .port(config.port())
                     .ssl(config.ssl())
                     .username(config.username())
-                    .passwordExists(!config.encryptedPassword().isEmpty())
+                    .passwordExists(!config.password().isEmpty())
                     .putAllAdditionalProperties(config.additionalProperties())
+                    .fromEmailAddress(config.fromEmailAddress())
+                    .fromDisplayName(config.fromDisplayName())
                     .version(config.version())
                     .build();
         }
@@ -446,26 +483,62 @@ class AdminJsonService {
     @Value.Immutable
     abstract static class LdapConfigDto {
 
-        abstract String url();
-        abstract String userDnTemplate();
-        abstract String authenticationMechanism();
-        abstract @Nullable String testLdapUsername(); // only used in request
-        abstract @Nullable String testLdapPassword(); // only used in request
+        abstract String host();
+        abstract @Nullable Integer port();
+        abstract boolean ssl();
+        abstract String username();
+        abstract boolean passwordExists();
+        @Value.Default
+        String newPassword() { // only used in request
+            return "";
+        }
+        abstract String userBaseDn();
+        abstract String userSearchFilter();
+        abstract String groupBaseDn();
+        abstract String groupSearchFilter();
+        abstract Map<String, List<String>> roleMappings();
+        abstract @Nullable String authTestUsername(); // only used in request
+        abstract @Nullable String authTestPassword(); // only used in request
         abstract String version();
 
-        private LdapConfig convert() throws Exception {
-            return ImmutableLdapConfig.builder()
-                    .url(url())
-                    .userDnTemplate(userDnTemplate())
-                    .authenticationMechanism(authenticationMechanism())
-                    .build();
+        private LdapConfig convert(ConfigRepository configRepository) throws Exception {
+            ImmutableLdapConfig.Builder builder = ImmutableLdapConfig.builder()
+                    .host(host())
+                    .port(port())
+                    .ssl(ssl())
+                    .username(username())
+                    .userBaseDn(userBaseDn())
+                    .userSearchFilter(userSearchFilter())
+                    .groupBaseDn(groupBaseDn())
+                    .groupSearchFilter(groupSearchFilter())
+                    .roleMappings(roleMappings());
+            if (!passwordExists()) {
+                // clear password
+                builder.password("");
+            } else if (passwordExists() && !newPassword().isEmpty()) {
+                // change password
+                String newPassword =
+                        Encryption.encrypt(newPassword(), configRepository.getSecretKey());
+                builder.password(newPassword);
+            } else {
+                // keep existing password
+                builder.password(configRepository.getLdapConfig().password());
+            }
+            return builder.build();
         }
 
         private static LdapConfigDto create(LdapConfig config) {
             return ImmutableLdapConfigDto.builder()
-                    .url(config.url())
-                    .userDnTemplate(config.userDnTemplate())
-                    .authenticationMechanism(config.authenticationMechanism())
+                    .host(config.host())
+                    .port(config.port())
+                    .ssl(config.ssl())
+                    .username(config.username())
+                    .passwordExists(!config.password().isEmpty())
+                    .userBaseDn(config.userBaseDn())
+                    .userSearchFilter(config.userSearchFilter())
+                    .groupBaseDn(config.groupBaseDn())
+                    .groupSearchFilter(config.groupSearchFilter())
+                    .roleMappings(config.roleMappings())
                     .version(config.version())
                     .build();
         }

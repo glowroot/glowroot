@@ -42,6 +42,8 @@ public class RoleDao {
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
+    private static final String ALL_ROLES_SINGLE_CACHE_KEY = "x";
+
     private final Session session;
 
     private final PreparedStatement readPS;
@@ -55,6 +57,14 @@ public class RoleDao {
                 @Override
                 public Optional<RoleConfig> load(String name) throws Exception {
                     return Optional.fromNullable(readInternal(name));
+                }
+            });
+
+    private final LoadingCache<String, List<RoleConfig>> allRolesCache = CacheBuilder.newBuilder()
+            .build(new CacheLoader<String, List<RoleConfig>>() {
+                @Override
+                public List<RoleConfig> load(String dummy) throws Exception {
+                    return readInternal();
                 }
             });
 
@@ -83,12 +93,7 @@ public class RoleDao {
     }
 
     List<RoleConfig> read() {
-        ResultSet results = session.execute(readPS.bind());
-        List<RoleConfig> users = Lists.newArrayList();
-        for (Row row : results) {
-            users.add(buildRole(row));
-        }
-        return users;
+        return allRolesCache.getUnchecked(ALL_ROLES_SINGLE_CACHE_KEY);
     }
 
     @Nullable
@@ -101,6 +106,7 @@ public class RoleDao {
         boundStatement.setString(0, name);
         session.execute(boundStatement);
         cache.invalidate(name);
+        allRolesCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
     }
 
     void insert(RoleConfig userConfig) throws Exception {
@@ -110,6 +116,16 @@ public class RoleDao {
         boundStatement.setSet(i++, userConfig.permissions());
         session.execute(boundStatement);
         cache.invalidate(userConfig.name());
+        allRolesCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
+    }
+
+    private List<RoleConfig> readInternal() {
+        ResultSet results = session.execute(readPS.bind());
+        List<RoleConfig> users = Lists.newArrayList();
+        for (Row row : results) {
+            users.add(buildRole(row));
+        }
+        return users;
     }
 
     private @Nullable RoleConfig readInternal(String name) {

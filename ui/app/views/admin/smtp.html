@@ -28,23 +28,7 @@
          name="formCtrl"
          style="padding-top: 15px;">
       <div gt-form-group
-           gt-label="From email address"
-           gt-model="config.fromEmailAddress"
-           gt-width="20em">
-        <div class="help-block">
-          Defaults to <em>glowroot@&lt;server name&gt;</em> (currently glowroot@{{localServerName}}).
-        </div>
-      </div>
-      <div gt-form-group
-           gt-label="From display name"
-           gt-model="config.fromDisplayName"
-           gt-width="20em">
-        <div class="help-block">
-          Defaults to <em>Glowroot</em>.
-        </div>
-      </div>
-      <div gt-form-group
-           gt-label="SMTP host"
+           gt-label="Host"
            gt-model="config.host"
            gt-width="20em">
         <div class="help-block">
@@ -52,7 +36,7 @@
         </div>
       </div>
       <div gt-form-group
-           gt-label="SMTP port"
+           gt-label="Port"
            gt-model="config.port"
            gt-number="true"
            gt-pattern="pattern.integer"
@@ -79,7 +63,6 @@
                for="password">
           Password
         </label>
-
         <div class="col-lg-9">
           <input type="password"
                  class="form-control"
@@ -89,6 +72,22 @@
                  ng-change="onPasswordChange()"
                  ng-click="onPasswordClick()"
                  style="max-width: 20em; display: inline-block">
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="From email address"
+           gt-model="config.fromEmailAddress"
+           gt-width="20em">
+        <div class="help-block">
+          Defaults to <em>glowroot@&lt;server name&gt;</em> (currently glowroot@{{localServerName}}).
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="From display name"
+           gt-model="config.fromDisplayName"
+           gt-width="20em">
+        <div class="help-block">
+          Defaults to <em>Glowroot</em>.
         </div>
       </div>
       <div class="form-group gt-form-buttons">
@@ -109,14 +108,12 @@
         <label class="col-lg-3 control-label" for="testEmailRecipient">
           Test email recipient
         </label>
-
         <div class="col-lg-9">
           <input type="text"
                  class="form-control"
                  ng-model="testEmailRecipient"
                  id="testEmailRecipient"
                  style="max-width: 25em; float: left; vertical-align: top; margin-right: 10px; margin-bottom: 10px;">
-
           <div gt-button
                gt-btn-class="btn-default"
                gt-label="Send test email"

@@ -128,7 +128,7 @@
     </ul>
   </div>
   <div class="panel panel-default"
-       ng-if="activeNavbarItem === 'gears' && !isAnonymous()">
+       ng-if="activeNavbarItem === 'gears' && layout.loggedIn && !layout.ldap">
     <ul class="list-group">
       <div gt-sidebar-item
            gt-display="Change {{layout.admin ? 'my' : ''}} password"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,11 @@ import org.glowroot.tests.Utils;
 
 import static org.openqa.selenium.By.xpath;
 
-public class SmtpConfigPage {
+public class LdapConfigPage {
 
     private final WebDriver driver;
 
-    public SmtpConfigPage(WebDriver driver) {
+    public LdapConfigPage(WebDriver driver) {
         this.driver = driver;
     }
 
@@ -51,12 +51,20 @@ public class SmtpConfigPage {
         return withWait(xpath("//input[@ng-model='password']"));
     }
 
-    public WebElement getFromEmailAddressTextField() {
-        return withWait(xpath("//div[@gt-label='From email address']//input"));
+    public WebElement getUserBaseDnTextField() {
+        return withWait(xpath("//div[@gt-label='User base DN']//input"));
     }
 
-    public WebElement getFromDisplayNameTextField() {
-        return withWait(xpath("//div[@gt-label='From display name']//input"));
+    public WebElement getUserSearchFilterTextField() {
+        return withWait(xpath("//div[@gt-label='User search filter']//input"));
+    }
+
+    public WebElement getGroupBaseDnTextField() {
+        return withWait(xpath("//div[@gt-label='Group base DN']//input"));
+    }
+
+    public WebElement getGroupSearchFilterTextField() {
+        return withWait(xpath("//div[@gt-label='Group search filter']//input"));
     }
 
     public void clickSaveButton() {

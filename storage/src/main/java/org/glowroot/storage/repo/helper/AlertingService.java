@@ -306,10 +306,10 @@ public class AlertingService {
             props.put(entry.getKey(), entry.getValue());
         }
         Authenticator authenticator = null;
-        if (!smtpConfig.encryptedPassword().isEmpty()) {
+        if (!smtpConfig.password().isEmpty()) {
             props.put("mail.smtp.auth", "true");
             final String username = smtpConfig.username();
-            final String password = Encryption.decrypt(smtpConfig.encryptedPassword(), secretKey);
+            final String password = Encryption.decrypt(smtpConfig.password(), secretKey);
             authenticator = new Authenticator() {
                 @Override
                 protected PasswordAuthentication getPasswordAuthentication() {

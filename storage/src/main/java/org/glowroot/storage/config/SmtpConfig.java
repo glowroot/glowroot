@@ -31,18 +31,6 @@ public abstract class SmtpConfig {
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
-    public String fromEmailAddress() {
-        return "";
-    }
-
-    @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
-    public String fromDisplayName() {
-        return "";
-    }
-
-    @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
     public String host() {
         return "";
     }
@@ -66,12 +54,24 @@ public abstract class SmtpConfig {
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
-    public String encryptedPassword() {
+    public String password() {
         return "";
     }
 
     @JsonInclude(value = Include.NON_EMPTY)
     public abstract Map<String, String> additionalProperties();
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String fromEmailAddress() {
+        return "";
+    }
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String fromDisplayName() {
+        return "";
+    }
 
     @Value.Derived
     @JsonIgnore

@@ -19,6 +19,7 @@ import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
+import org.glowroot.tests.admin.LdapConfigPage;
 import org.glowroot.tests.admin.SmtpConfigPage;
 import org.glowroot.tests.admin.StorageConfigPage;
 import org.glowroot.tests.config.AdvancedConfigPage;
@@ -228,19 +229,19 @@ public class ConfigIT extends WebDriverIT {
         configSidebar.getSmtpLink().click();
 
         // when
-        page.getFromEmailAddressTextField().clear();
-        page.getFromEmailAddressTextField().sendKeys("user1234@example.org");
-        page.getFromDisplayNameTextField().clear();
-        page.getFromDisplayNameTextField().sendKeys("User 1234");
-        page.getSmtpHostTextField().clear();
-        page.getSmtpHostTextField().sendKeys("example.org");
-        page.getSmtpPortTextField().clear();
-        page.getSmtpPortTextField().sendKeys("5678");
+        page.getHostTextField().clear();
+        page.getHostTextField().sendKeys("example.org");
+        page.getPortTextField().clear();
+        page.getPortTextField().sendKeys("5678");
         page.getUseSslCheckbox().click();
         page.getUsernameTextField().clear();
         page.getUsernameTextField().sendKeys("user1234");
         page.getPasswordTextField().clear();
         page.getPasswordTextField().sendKeys("p");
+        page.getFromEmailAddressTextField().clear();
+        page.getFromEmailAddressTextField().sendKeys("user1234@example.org");
+        page.getFromDisplayNameTextField().clear();
+        page.getFromDisplayNameTextField().sendKeys("User 1234");
         page.clickSaveButton();
         // wait for save to finish
         Thread.sleep(500);
@@ -249,14 +250,63 @@ public class ConfigIT extends WebDriverIT {
         app.open();
         globalNavbar.getAdminConfigLink().click();
         configSidebar.getSmtpLink().click();
-        assertThat(page.getFromEmailAddressTextField().getAttribute("value"))
-                .isEqualTo("user1234@example.org");
-        assertThat(page.getFromDisplayNameTextField().getAttribute("value")).isEqualTo("User 1234");
-        assertThat(page.getSmtpHostTextField().getAttribute("value")).isEqualTo("example.org");
-        assertThat(page.getSmtpPortTextField().getAttribute("value")).isEqualTo("5678");
+        assertThat(page.getHostTextField().getAttribute("value")).isEqualTo("example.org");
+        assertThat(page.getPortTextField().getAttribute("value")).isEqualTo("5678");
         assertThat(page.getUseSslCheckbox().isSelected()).isTrue();
         assertThat(page.getUsernameTextField().getAttribute("value")).isEqualTo("user1234");
         assertThat(page.getPasswordTextField().getAttribute("value")).isEqualTo("********");
+        assertThat(page.getFromEmailAddressTextField().getAttribute("value"))
+                .isEqualTo("user1234@example.org");
+        assertThat(page.getFromDisplayNameTextField().getAttribute("value")).isEqualTo("User 1234");
+    }
+
+    @Test
+    public void shouldUpdateLdapConfig() throws Exception {
+        // given
+        App app = app();
+        GlobalNavbar globalNavbar = globalNavbar();
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        LdapConfigPage page = new LdapConfigPage(driver);
+
+        app.open();
+        globalNavbar.getAdminConfigLink().click();
+        configSidebar.getLdapLink().click();
+
+        // when
+        page.getHostTextField().clear();
+        page.getHostTextField().sendKeys("example.org");
+        page.getPortTextField().clear();
+        page.getPortTextField().sendKeys("5678");
+        page.getUseSslCheckbox().click();
+        page.getUsernameTextField().clear();
+        page.getUsernameTextField().sendKeys("user1234");
+        page.getPasswordTextField().clear();
+        page.getPasswordTextField().sendKeys("p");
+        page.getUserBaseDnTextField().clear();
+        page.getUserBaseDnTextField().sendKeys("x");
+        page.getUserSearchFilterTextField().clear();
+        page.getUserSearchFilterTextField().sendKeys("xf");
+        page.getGroupBaseDnTextField().clear();
+        page.getGroupBaseDnTextField().sendKeys("y");
+        page.getGroupSearchFilterTextField().clear();
+        page.getGroupSearchFilterTextField().sendKeys("yf");
+        page.clickSaveButton();
+        // wait for save to finish
+        Thread.sleep(500);
+
+        // then
+        app.open();
+        globalNavbar.getAdminConfigLink().click();
+        configSidebar.getLdapLink().click();
+        assertThat(page.getHostTextField().getAttribute("value")).isEqualTo("example.org");
+        assertThat(page.getPortTextField().getAttribute("value")).isEqualTo("5678");
+        assertThat(page.getUseSslCheckbox().isSelected()).isTrue();
+        assertThat(page.getUsernameTextField().getAttribute("value")).isEqualTo("user1234");
+        assertThat(page.getPasswordTextField().getAttribute("value")).isEqualTo("********");
+        assertThat(page.getUserBaseDnTextField().getAttribute("value")).isEqualTo("x");
+        assertThat(page.getUserSearchFilterTextField().getAttribute("value")).isEqualTo("xf");
+        assertThat(page.getGroupBaseDnTextField().getAttribute("value")).isEqualTo("y");
+        assertThat(page.getGroupSearchFilterTextField().getAttribute("value")).isEqualTo("yf");
     }
 
     @Test

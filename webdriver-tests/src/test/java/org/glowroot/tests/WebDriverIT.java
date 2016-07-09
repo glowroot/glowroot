@@ -134,18 +134,24 @@ public abstract class WebDriverIT {
                 + "\"traceExpirationHours\":336,"
                 + "\"fullQueryTextExpirationHours\":336,"
                 + "\"version\":\"$version\"}");
-        resetAdminServerConfig("smtp", "{\"fromEmailAddress\":\"\","
-                + "\"fromDisplayName\":\"\","
-                + "\"host\":\"\","
+        resetAdminServerConfig("smtp", "{\"host\":\"\","
                 + "\"ssl\":false,"
                 + "\"username\":\"\","
                 + "\"passwordExists\":false,"
-                + "\"additionalProperties\":{},"
                 + "\"newPassword\":\"\","
+                + "\"additionalProperties\":{},"
+                + "\"fromEmailAddress\":\"\","
+                + "\"fromDisplayName\":\"\","
                 + "\"version\":\"$version\"}");
-        resetAdminServerConfig("ldap", "{\"url\":\"\","
-                + "\"userDnTemplate\":\"\","
-                + "\"authenticationMechanism\":\"\","
+        resetAdminServerConfig("ldap", "{\"host\":\"\","
+                + "\"ssl\":false,"
+                + "\"username\":\"\","
+                + "\"passwordExists\":false,"
+                + "\"newPassword\":\"\","
+                + "\"userBaseDn\":\"\","
+                + "\"userSearchFilter\":\"\","
+                + "\"groupBaseDn\":\"\","
+                + "\"groupSearchFilter\":\"\","
                 + "\"version\":\"$version\"}");
     }
 

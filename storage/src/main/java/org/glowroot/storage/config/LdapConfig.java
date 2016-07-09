@@ -15,6 +15,11 @@
  */
 package org.glowroot.storage.config;
 
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -27,25 +32,75 @@ public abstract class LdapConfig {
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
-    public String url() {
+    public String host() {
+        return "";
+    }
+
+    // need to write zero since it is treated different from null
+    // (although in this case zero is not a valid value)
+    @JsonInclude(value = Include.NON_NULL)
+    public abstract @Nullable Integer port();
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public boolean ssl() {
+        return false;
+    }
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String username() {
         return "";
     }
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
-    public String userDnTemplate() {
+    public String password() {
         return "";
     }
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
-    public String authenticationMechanism() {
+    public String userBaseDn() {
         return "";
     }
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String userSearchFilter() {
+        return "";
+    }
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String groupBaseDn() {
+        return "";
+    }
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String groupSearchFilter() {
+        return "";
+    }
+
+    @JsonInclude(value = Include.NON_EMPTY)
+    public abstract Map<String, List<String>> roleMappings();
 
     @Value.Derived
     @JsonIgnore
     public String version() {
         return Versions.getJsonVersion(this);
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    public String url() {
+        String url = ssl() ? "ldaps://" : "ldap://";
+        url += host();
+        Integer port = port();
+        if (port != null) {
+            url += ":" + port;
+        }
+        return url;
     }
 }

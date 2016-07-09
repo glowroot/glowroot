@@ -47,12 +47,12 @@ public class AdminJsonServiceTest {
     public void testWithoutDefaults() throws Exception {
         // given
         SmtpConfigDto configDto = ImmutableSmtpConfigDto.builder()
-                .fromEmailAddress("from@example.org")
-                .fromDisplayName("From Example")
                 .host("localhost")
                 .ssl(false)
                 .username("")
                 .passwordExists(false)
+                .fromEmailAddress("from@example.org")
+                .fromDisplayName("From Example")
                 .version("1234")
                 .testEmailRecipient("to@example.org")
                 .build();
@@ -71,12 +71,12 @@ public class AdminJsonServiceTest {
     public void testWithDefaultFrom() throws Exception {
         // given
         SmtpConfigDto configDto = ImmutableSmtpConfigDto.builder()
-                .fromEmailAddress("")
-                .fromDisplayName("From Example")
                 .host("localhost")
                 .ssl(false)
                 .username("")
                 .passwordExists(false)
+                .fromEmailAddress("")
+                .fromDisplayName("From Example")
                 .version("1234")
                 .testEmailRecipient("to@example.org")
                 .build();
@@ -97,12 +97,12 @@ public class AdminJsonServiceTest {
     public void testWithDefaultFromAndDefaultDisplayName() throws Exception {
         // given
         SmtpConfigDto configDto = ImmutableSmtpConfigDto.builder()
-                .fromEmailAddress("")
-                .fromDisplayName("")
                 .host("localhost")
                 .ssl(false)
                 .username("")
                 .passwordExists(false)
+                .fromEmailAddress("")
+                .fromDisplayName("")
                 .version("1234")
                 .testEmailRecipient("to@example.org")
                 .build();

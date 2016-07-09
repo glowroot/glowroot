@@ -176,11 +176,11 @@ glowroot.run([
     };
 
     $rootScope.showSignIn = function () {
-      return $rootScope.layout && $rootScope.layout.username === 'anonymous' && !$rootScope.layout.hideLogin;
+      return $rootScope.layout && !$rootScope.layout.loggedIn && !$rootScope.layout.hideLogin;
     };
 
     $rootScope.showSignOut = function () {
-      return $rootScope.layout && $rootScope.layout.username && $rootScope.layout.username !== 'anonymous';
+      return $rootScope.layout && $rootScope.layout.loggedIn;
     };
 
     $rootScope.goToLogin = function (event) {
