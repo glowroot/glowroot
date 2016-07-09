@@ -27,8 +27,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.shiro.SecurityUtils;
-import org.apache.shiro.subject.Subject;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.ObjectMappers;
@@ -38,6 +36,7 @@ import org.glowroot.storage.repo.AgentRepository.AgentRollup;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
 import org.glowroot.storage.repo.TransactionTypeRepository;
+import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -65,26 +64,24 @@ class LayoutService {
         this.transactionTypeRepository = transactionTypeRepository;
     }
 
-    String getLayout() throws Exception {
-        Layout layout = buildLayout();
+    String getLayout(Authentication authentication) throws Exception {
+        Layout layout = buildLayout(authentication);
         return mapper.writeValueAsString(layout);
     }
 
-    String getLayoutVersion() throws Exception {
-        Layout layout = buildLayout();
+    String getLayoutVersion(Authentication authentication) throws Exception {
+        Layout layout = buildLayout(authentication);
         return layout.version();
     }
 
-    private Layout buildLayout() throws Exception {
-        Subject subject = SecurityUtils.getSubject();
-
+    private Layout buildLayout(Authentication authentication) throws Exception {
         // linked hash map to preserve ordering
         Map<String, AgentRollupLayout> agentRollups = Maps.newLinkedHashMap();
         Map<String, List<String>> transactionTypesMap =
                 transactionTypeRepository.readTransactionTypes();
         boolean showNavbarConfig = false;
         boolean hasSomeAccess = false;
-        if (fat && isPermitted(subject, AGENT_ID, "agent:view")) {
+        if (fat && authentication.isPermitted(AGENT_ID, "agent:view")) {
             hasSomeAccess = true;
             // a couple of special cases for fat agent
             UiConfig uiConfig = checkNotNull(configRepository.getUiConfig(AGENT_ID));
@@ -97,7 +94,7 @@ class LayoutService {
             }
             transactionTypes.add(defaultDisplayedTransactionType);
 
-            Permissions permissions = getPermissions(subject, AGENT_ID);
+            Permissions permissions = getPermissions(authentication, AGENT_ID);
             agentRollups.put(AGENT_ID, ImmutableAgentRollupLayout.builder()
                     .leaf(true)
                     .permissions(permissions)
@@ -107,9 +104,9 @@ class LayoutService {
                     .build());
             showNavbarConfig = checkNotNull(permissions.config()).view();
         } else if (!fat) {
-            hasSomeAccess = subject.isPermitted("admin");
+            hasSomeAccess = authentication.isPermitted("admin");
             for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
-                if (!isPermitted(subject, agentRollup.name(), "agent:view")) {
+                if (!authentication.isPermitted(agentRollup.name(), "agent:view")) {
                     continue;
                 }
                 hasSomeAccess = true;
@@ -129,7 +126,7 @@ class LayoutService {
                 ImmutableAgentRollupLayout.Builder builder = ImmutableAgentRollupLayout.builder()
                         .leaf(leaf);
                 if (leaf) {
-                    Permissions permissions = getPermissions(subject, agentRollup.name());
+                    Permissions permissions = getPermissions(authentication, agentRollup.name());
                     builder.permissions(permissions);
                     showNavbarConfig = showNavbarConfig || permissions.config().view();
                 }
@@ -144,7 +141,6 @@ class LayoutService {
                 agentRollups.put(agentRollup.name(), builder.build());
             }
         }
-        String username = (String) checkNotNull(subject.getPrincipal());
         if (hasSomeAccess) {
             List<Long> rollupExpirationMillis = Lists.newArrayList();
             for (long hours : configRepository.getStorageConfig().rollupExpirationHours()) {
@@ -160,8 +156,8 @@ class LayoutService {
                             configRepository.getGaugeCollectionIntervalMillis())
                     .agentRollups(agentRollups)
                     .showNavbarConfig(showNavbarConfig)
-                    .admin(subject.isPermitted("admin"))
-                    .username(username)
+                    .admin(authentication.isPermitted("admin"))
+                    .username(authentication.username())
                     .redirectToLogin(false)
                     .build();
         } else {
@@ -172,49 +168,44 @@ class LayoutService {
                     .gaugeCollectionIntervalMillis(0)
                     .showNavbarConfig(false)
                     .admin(false)
-                    .username(username)
+                    .username(authentication.username())
                     .redirectToLogin(true)
                     .build();
         }
     }
 
-    private Permissions getPermissions(Subject subject, String agentRollup) {
+    private Permissions getPermissions(Authentication authentication, String agentRollup) {
         return ImmutablePermissions.builder()
                 .tool(ImmutableToolPermissions.builder()
-                        .threadDump(isPermitted(subject, agentRollup, "agent:tool:threadDump"))
-                        .heapDump(isPermitted(subject, agentRollup, "agent:tool:heapDump"))
-                        .gc(isPermitted(subject, agentRollup, "agent:tool:gc"))
-                        .mbeanTree(isPermitted(subject, agentRollup, "agent:tool:mbeanTree"))
-                        .capabilities(isPermitted(subject, agentRollup, "agent:tool:capabilities"))
+                        .threadDump(
+                                authentication.isPermitted(agentRollup, "agent:tool:threadDump"))
+                        .heapDump(authentication.isPermitted(agentRollup, "agent:tool:heapDump"))
+                        .gc(authentication.isPermitted(agentRollup, "agent:tool:gc"))
+                        .mbeanTree(authentication.isPermitted(agentRollup, "agent:tool:mbeanTree"))
+                        .capabilities(
+                                authentication.isPermitted(agentRollup, "agent:tool:capabilities"))
                         .build())
                 .config(ImmutableConfigPermissions.builder()
-                        .view(isPermitted(subject, agentRollup,
-                                "agent:config:view"))
+                        .view(authentication.isPermitted(agentRollup, "agent:config:view"))
                         .edit(ImmutableEditConfigPermissions.builder()
-                                .transaction(isPermitted(subject, agentRollup,
+                                .transaction(authentication.isPermitted(agentRollup,
                                         "agent:config:edit:transaction"))
-                                .gauge(isPermitted(subject, agentRollup, "agent:config:edit:gauge"))
-                                .alert(isPermitted(subject, agentRollup, "agent:config:edit:alert"))
-                                .ui(isPermitted(subject, agentRollup, "agent:config:edit:ui"))
-                                .plugin(isPermitted(subject, agentRollup,
+                                .gauge(authentication.isPermitted(agentRollup,
+                                        "agent:config:edit:gauge"))
+                                .alert(authentication.isPermitted(agentRollup,
+                                        "agent:config:edit:alert"))
+                                .ui(authentication.isPermitted(agentRollup, "agent:config:edit:ui"))
+                                .plugin(authentication.isPermitted(agentRollup,
                                         "agent:config:edit:plugin"))
-                                .instrumentation(isPermitted(subject, agentRollup,
+                                .instrumentation(authentication.isPermitted(agentRollup,
                                         "agent:config:edit:instrumentation"))
-                                .advanced(isPermitted(subject, agentRollup,
+                                .advanced(authentication.isPermitted(agentRollup,
                                         "agent:config:edit:advanced"))
-                                .userRecording(isPermitted(subject, agentRollup,
+                                .userRecording(authentication.isPermitted(agentRollup,
                                         "agent:config:edit:userRecording"))
                                 .build())
                         .build())
                 .build();
-    }
-
-    private static boolean isPermitted(Subject subject, String agentId, String permission) {
-        if (agentId.isEmpty()) {
-            return subject.isPermitted(permission);
-        } else {
-            return subject.isPermitted("agent:" + agentId + permission.substring(5));
-        }
     }
 
     @Value.Immutable

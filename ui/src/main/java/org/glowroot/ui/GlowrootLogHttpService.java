@@ -37,6 +37,8 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.QueryStringDecoder;
 
+import org.glowroot.ui.HttpSessionManager.Authentication;
+
 import static io.netty.handler.codec.http.HttpResponseStatus.FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -64,8 +66,8 @@ class GlowrootLogHttpService implements HttpService {
     }
 
     @Override
-    public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
-            throws Exception {
+    public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request,
+            Authentication authentication) throws Exception {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         List<String> maxLinesParams = decoder.parameters().get("max-lines");
         if (maxLinesParams == null) {

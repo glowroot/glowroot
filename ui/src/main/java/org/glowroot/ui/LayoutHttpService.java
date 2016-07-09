@@ -19,6 +19,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpRequest;
 
+import org.glowroot.ui.HttpSessionManager.Authentication;
+
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 class LayoutHttpService implements HttpService {
@@ -36,8 +38,8 @@ class LayoutHttpService implements HttpService {
     }
 
     @Override
-    public FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
-            throws Exception {
-        return HttpServices.createJsonResponse(layoutService.getLayout(), OK);
+    public FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request,
+            Authentication authentication) throws Exception {
+        return HttpServices.createJsonResponse(layoutService.getLayout(authentication), OK);
     }
 }

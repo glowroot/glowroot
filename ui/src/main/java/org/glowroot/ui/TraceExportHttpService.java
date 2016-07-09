@@ -45,6 +45,7 @@ import io.netty.handler.stream.ChunkedInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.ui.TraceCommonService.TraceExport;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -70,8 +71,8 @@ class TraceExportHttpService implements HttpService {
     }
 
     @Override
-    public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
-            throws Exception {
+    public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request,
+            Authentication authentication) throws Exception {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         List<String> agentIds = decoder.parameters().get("agent-id");
         if (agentIds == null) {

@@ -369,7 +369,6 @@ public class JavaagentContainer implements Container {
                     || name.matches("mailapi-.*\\.jar")
                     || name.matches("netty-.*\\.jar")
                     || name.matches("protobuf-java-.*\\.jar")
-                    || name.matches("shiro-core-.*\\.jar")
                     || name.matches("slf4j-api-.*\\.jar")
                     || name.matches("smtp-.*\\.jar")
                     || name.matches("value-.*\\.jar")) {

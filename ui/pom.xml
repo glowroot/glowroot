@@ -89,11 +89,6 @@
       <artifactId>jackson-annotations</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.shiro</groupId>
-      <artifactId>shiro-core</artifactId>
-      <version>1.2.5</version>
-    </dependency>
-    <dependency>
       <groupId>${checker.qual.group.id}</groupId>
       <artifactId>${checker.qual.artifact.id}</artifactId>
       <version>${checker.qual.version}</version>
@@ -132,17 +127,6 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <!-- transitive dependency of shiro-core -->
-        <groupId>commons-beanutils</groupId>
-        <artifactId>commons-beanutils</artifactId>
-        <version>1.9.2</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <build>
     <resources>

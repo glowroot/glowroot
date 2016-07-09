@@ -33,6 +33,8 @@ import io.netty.handler.codec.http.QueryStringDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.ui.HttpSessionManager.Authentication;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
@@ -54,8 +56,8 @@ class TraceDetailHttpService implements HttpService {
     }
 
     @Override
-    public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
-            throws Exception {
+    public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request,
+            Authentication authentication) throws Exception {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         String path = decoder.path();
         String traceComponent = path.substring(path.lastIndexOf('/') + 1);

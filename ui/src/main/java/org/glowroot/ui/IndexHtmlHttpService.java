@@ -30,6 +30,8 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpRequest;
 
+import org.glowroot.ui.HttpSessionManager.Authentication;
+
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
@@ -62,11 +64,11 @@ class IndexHtmlHttpService implements HttpService {
     }
 
     @Override
-    public FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
-            throws Exception {
+    public FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request,
+            Authentication authentication) throws Exception {
         URL url = Resources.getResource("org/glowroot/ui/app-dist/index.html");
         String indexHtml = Resources.toString(url, Charsets.UTF_8);
-        String layout = layoutService.getLayout();
+        String layout = layoutService.getLayout(authentication);
         indexHtml = indexHtml.replaceFirst("<base href=\"/\">",
                 "<base href=\"" + BASE_HREF + "\"><script>var layout=" + layout + "</script>");
         // this is to work around an issue with IE10-11 (IE9 is OK)

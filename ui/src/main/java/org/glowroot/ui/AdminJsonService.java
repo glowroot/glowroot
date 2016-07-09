@@ -15,14 +15,12 @@
  */
 package org.glowroot.ui;
 
-import java.io.StringWriter;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
@@ -31,11 +29,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
-import org.apache.shiro.authc.AuthenticationException;
-import org.apache.shiro.authc.UsernamePasswordToken;
-import org.apache.shiro.authc.credential.PasswordService;
-import org.apache.shiro.realm.ldap.JndiLdapRealm;
-import org.apache.shiro.subject.Subject;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
@@ -80,19 +73,16 @@ class AdminJsonService {
     private final RepoAdmin repoAdmin;
     private final LiveAggregateRepository liveAggregateRepository;
     private final MailService mailService;
-    private final PasswordService passwordService;
 
     private volatile @MonotonicNonNull HttpServer httpServer;
 
     AdminJsonService(boolean fat, ConfigRepository configRepository, RepoAdmin repoAdmin,
-            LiveAggregateRepository liveAggregateRepository, MailService mailService,
-            PasswordService passwordService) {
+            LiveAggregateRepository liveAggregateRepository, MailService mailService) {
         this.fat = fat;
         this.configRepository = configRepository;
         this.repoAdmin = repoAdmin;
         this.liveAggregateRepository = liveAggregateRepository;
         this.mailService = mailService;
-        this.passwordService = passwordService;
     }
 
     void setHttpServer(HttpServer httpServer) {
@@ -101,17 +91,16 @@ class AdminJsonService {
 
     // all users have permission to change their own password
     @POST(path = "/backend/change-password", permission = "")
-    String changePassword(@BindRequest ChangePassword changePassword, @BindSubject Subject subject)
+    String changePassword(@BindRequest ChangePassword changePassword, @BindUsername String username)
             throws Exception {
-        UserConfig userConfig =
-                configRepository.getUserConfig((String) checkNotNull(subject.getPrincipal()));
+        UserConfig userConfig = configRepository.getUserConfig(username);
         checkNotNull(userConfig, "user no longer exists");
-        if (!passwordService.passwordsMatch(changePassword.currentPassword(),
+        if (!PasswordHash.validatePassword(changePassword.currentPassword(),
                 userConfig.passwordHash())) {
             return "{\"currentPasswordIncorrect\":true}";
         }
         ImmutableUserConfig updatedUserConfig = ImmutableUserConfig.builder().copyFrom(userConfig)
-                .passwordHash(passwordService.encryptPassword(changePassword.newPassword()))
+                .passwordHash(PasswordHash.createHash(changePassword.newPassword()))
                 .build();
         configRepository.updateUserConfig(updatedUserConfig, userConfig.version());
         return "";
@@ -222,6 +211,7 @@ class AdminJsonService {
 
     @POST(path = "/backend/admin/test-ldap-connection", permission = "admin:edit:ldap")
     String testLdapConnection(@BindRequest LdapConfigDto configDto) throws Exception {
+        /*
         JndiLdapRealm jndiLdapRealm = new JndiLdapRealm();
         GlowrootLdapRealm.init(jndiLdapRealm, configDto.convert());
         try {
@@ -242,6 +232,7 @@ class AdminJsonService {
             jg.close();
             return sw.toString();
         }
+        */
         return "{}";
     }
 

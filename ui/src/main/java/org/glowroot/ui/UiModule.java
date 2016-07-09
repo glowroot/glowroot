@@ -21,15 +21,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.apache.shiro.authc.credential.PasswordMatcher;
-import org.apache.shiro.authc.credential.PasswordService;
-import org.apache.shiro.mgt.DefaultSecurityManager;
-import org.apache.shiro.mgt.DefaultSubjectDAO;
-import org.apache.shiro.realm.Realm;
-import org.apache.shiro.session.mgt.DefaultSessionManager;
-import org.apache.shiro.subject.Subject;
 import org.immutables.builder.Builder;
 
 import org.glowroot.common.live.LiveAggregateRepository;
@@ -47,8 +39,6 @@ import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.TransactionTypeRepository;
 import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.storage.util.MailService;
-
-import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class UiModule {
 
@@ -75,32 +65,10 @@ public class UiModule {
             int numWorkerThreads,
             String version) throws Exception {
 
-        GlowrootRealm glowrootRealm = new GlowrootRealm(configRepository);
-        glowrootRealm.setAuthorizationCachingEnabled(false);
-        PasswordMatcher passwordMatcher = new PasswordMatcher();
-        glowrootRealm.setCredentialsMatcher(passwordMatcher);
-        PasswordService passwordService = passwordMatcher.getPasswordService();
-        GlowrootLdapRealm glowrootLdapRealm = new GlowrootLdapRealm(configRepository);
         LayoutService layoutService = new LayoutService(fat, version, configRepository,
                 agentRepository, transactionTypeRepository);
-        DefaultSecurityManager securityManager = new DefaultSecurityManager(
-                ImmutableList.<Realm>of(glowrootRealm, glowrootLdapRealm));
-        // overriding default subject dao to prevent session from being created for anonymous users
-        securityManager.setSubjectDAO(new DefaultSubjectDAO() {
-            @Override
-            protected void mergePrincipals(Subject subject) {
-                if (subject.isAuthenticated()) {
-                    super.mergePrincipals(subject);
-                }
-            }
-        });
-        securityManager.setSessionManager(new DefaultSessionManager() {
-            @Override
-            public long getGlobalSessionTimeout() {
-                return MINUTES.toMillis(configRepository.getWebConfig().sessionTimeoutMinutes());
-            }
-        });
-        SessionHelper sessionHelper = new SessionHelper(configRepository, layoutService);
+        HttpSessionManager httpSessionManager =
+                new HttpSessionManager(fat, configRepository, clock, layoutService);
         IndexHtmlHttpService indexHtmlHttpService = new IndexHtmlHttpService(layoutService);
         LayoutHttpService layoutHttpService = new LayoutHttpService(layoutService);
         TransactionCommonService transactionCommonService = new TransactionCommonService(
@@ -126,7 +94,7 @@ public class UiModule {
                 gaugeValueRepository, rollupLevelService, configRepository);
         AlertConfigJsonService alertJsonService = new AlertConfigJsonService(configRepository);
         AdminJsonService adminJsonService = new AdminJsonService(fat, configRepository, repoAdmin,
-                liveAggregateRepository, new MailService(), passwordService);
+                liveAggregateRepository, new MailService());
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(transactionJsonService);
@@ -134,7 +102,7 @@ public class UiModule {
         jsonServices.add(traceJsonService);
         jsonServices.add(errorJsonService);
         jsonServices.add(configJsonService);
-        jsonServices.add(new UserConfigJsonService(configRepository, passwordService));
+        jsonServices.add(new UserConfigJsonService(configRepository));
         jsonServices.add(new RoleConfigJsonService(fat, configRepository, agentRepository));
         jsonServices.add(gaugeValueJsonService);
         jsonServices.add(new JvmJsonService(agentRepository, liveJvmService));
@@ -150,10 +118,9 @@ public class UiModule {
 
         String bindAddress = configRepository.getWebConfig().bindAddress();
         int port = configRepository.getWebConfig().port();
-        LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, securityManager,
-                sessionHelper, indexHtmlHttpService, layoutHttpService, layoutService,
-                traceDetailHttpService, traceExportHttpService, glowrootLogHttpService,
-                jsonServices, numWorkerThreads);
+        LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, httpSessionManager,
+                indexHtmlHttpService, layoutHttpService, layoutService, traceDetailHttpService,
+                traceExportHttpService, glowrootLogHttpService, jsonServices, numWorkerThreads);
 
         lazyHttpServer.init(adminJsonService);
         return new UiModule(lazyHttpServer);

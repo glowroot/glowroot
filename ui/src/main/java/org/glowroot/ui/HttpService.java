@@ -21,10 +21,13 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpRequest;
 
+import org.glowroot.ui.HttpSessionManager.Authentication;
+
 interface HttpService {
 
     String getPermission();
 
     @Nullable
-    FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request) throws Exception;
+    FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request,
+            Authentication authentication) throws Exception;
 }

@@ -27,7 +27,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -64,17 +63,13 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import org.apache.shiro.SecurityUtils;
-import org.apache.shiro.mgt.SecurityManager;
-import org.apache.shiro.session.Session;
-import org.apache.shiro.subject.SimplePrincipalCollection;
-import org.apache.shiro.subject.Subject;
 import org.h2.api.ErrorCode;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.ui.HttpSessionManager.Authentication;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -130,19 +125,16 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     private final LayoutService layoutService;
     private final ImmutableMap<Pattern, HttpService> httpServices;
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
-    private final SecurityManager securityManager;
-    private final SessionHelper sessionHelper;
+    private final HttpSessionManager httpSessionManager;
 
     private final ThreadLocal</*@Nullable*/ Channel> currentChannel =
             new ThreadLocal</*@Nullable*/ Channel>();
 
     HttpServerHandler(LayoutService layoutService, Map<Pattern, HttpService> httpServices,
-            SecurityManager securityManager, SessionHelper sessionHelper,
-            List<Object> jsonServices) {
+            HttpSessionManager httpSessionManager, List<Object> jsonServices) {
         this.layoutService = layoutService;
         this.httpServices = ImmutableMap.copyOf(httpServices);
-        this.securityManager = securityManager;
-        this.sessionHelper = sessionHelper;
+        this.httpSessionManager = httpSessionManager;
         List<JsonServiceMapping> jsonServiceMappings = Lists.newArrayList();
         for (Object jsonService : jsonServices) {
             for (Method method : jsonService.getClass().getDeclaredMethods()) {
@@ -187,23 +179,25 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, Object msg) throws Exception {
-        final FullHttpRequest request = (FullHttpRequest) msg;
-        logger.debug("messageReceived(): request.uri={}", request.uri());
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        FullHttpRequest request = (FullHttpRequest) msg;
+        logger.debug("channelRead(): request.uri={}", request.uri());
         Channel channel = ctx.channel();
         currentChannel.set(channel);
-        Subject subject = buildSubject(request);
         try {
-            subject.execute(new Callable</*@Nullable*/ Void>() {
-                @Override
-                public @Nullable Void call() throws Exception {
-                    FullHttpResponse response = handleRequest(ctx, request);
-                    if (response != null) {
-                        sendFullResponse(ctx, request, response);
-                    }
-                    return null;
-                }
-            });
+            QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+            String path = decoder.path();
+            logger.debug("handleRequest(): path={}", path);
+            FullHttpResponse response = handleIfLoginOrLogoutRequest(path, request);
+            if (response != null) {
+                sendFullResponse(ctx, request, response, HttpUtil.isKeepAlive(request));
+                return;
+            }
+            Authentication authentication = httpSessionManager.getAuthentication(request);
+            response = handleRequest(path, ctx, request, authentication);
+            if (response != null) {
+                sendFullResponse(ctx, request, response, authentication);
+            }
         } catch (Exception e) {
             logger.error("error handling request {}: {}", request.uri(), e.getMessage(), e);
             sendExceptionResponse(ctx, e);
@@ -213,48 +207,16 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private Subject buildSubject(FullHttpRequest request) {
-        String sessionId = sessionHelper.getSessionId(request);
-        if (sessionId != null) {
-            Subject subject = new Subject.Builder(securityManager)
-                    .sessionId(sessionId)
-                    .buildSubject();
-            Session session = subject.getSession(false);
-            if (session != null) {
-                // session hasn't expired
-                session.touch();
-                return subject;
-            }
-        }
-        return buildAnonymousSubject();
-    }
-
-    private Subject buildAnonymousSubject() {
-        return new Subject.Builder(securityManager)
-                .principals(new SimplePrincipalCollection("anonymous", ""))
-                .buildSubject();
-    }
-
-    @SuppressWarnings("argument.type.incompatible")
     private void sendFullResponse(ChannelHandlerContext ctx, FullHttpRequest request,
-            FullHttpResponse response) throws Exception {
-        boolean keepAlive = HttpUtil.isKeepAlive(request);
-        try {
-            if (sessionHelper.getSessionId(request) != null
-                    && !SecurityUtils.getSubject().isAuthenticated()
-                    && !response.headers().contains("Set-Cookie")) {
-                sessionHelper.deleteSessionCookie(response);
-            }
-            if (request.uri().startsWith("/backend/") && !request.uri().equals("/backend/layout")
-                    && !request.uri().equals("/backend/login")
-                    && !request.uri().equals("/backend/sign-out")) {
-                response.headers().add("Glowroot-Layout-Version", layoutService.getLayoutVersion());
-            }
-        } catch (Exception e) {
-            logger.error("error handling request {}: {}", request.uri(), e.getMessage(), e);
-            sendExceptionResponse(ctx, e);
-            return;
+            FullHttpResponse response, Authentication authentication) throws Exception {
+        if (httpSessionManager.getSessionId(request) != null && authentication.anonymous()) {
+            httpSessionManager.deleteSessionCookie(response);
         }
+        if (request.uri().startsWith("/backend/") && !request.uri().equals("/backend/layout")) {
+            response.headers().add("Glowroot-Layout-Version",
+                    layoutService.getLayoutVersion(authentication));
+        }
+        boolean keepAlive = HttpUtil.isKeepAlive(request);
         if (response.headers().contains("Glowroot-Port-Changed")) {
             // current connection is the only open channel on the old port, keepAlive=false will add
             // the listener below to close the channel after the response completes
@@ -264,6 +226,12 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             response.headers().add("Connection", "close");
             keepAlive = false;
         }
+        sendFullResponse(ctx, request, response, keepAlive);
+    }
+
+    @SuppressWarnings("argument.type.incompatible")
+    private void sendFullResponse(ChannelHandlerContext ctx, FullHttpRequest request,
+            FullHttpResponse response, boolean keepAlive) {
         response.headers().add(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
         if (keepAlive && !request.protocolVersion().isKeepAliveDefault()) {
             response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
@@ -293,23 +261,15 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         ctx.close();
     }
 
-    private @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx,
-            FullHttpRequest request) throws Exception {
-        logger.debug("handleRequest(): request.uri={}", request.uri());
-        QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-        String path = decoder.path();
-        logger.debug("handleRequest(): path={}", path);
-        FullHttpResponse response = handleIfLoginOrLogoutRequest(path, request);
-        if (response != null) {
-            return response;
-        }
+    private @Nullable FullHttpResponse handleRequest(String path, ChannelHandlerContext ctx,
+            FullHttpRequest request, Authentication authentication) throws Exception {
         HttpService httpService = getHttpService(path);
         if (httpService != null) {
-            return handleHttpService(ctx, request, httpService);
+            return handleHttpService(ctx, request, httpService, authentication);
         }
         JsonServiceMapping jsonServiceMapping = getJsonServiceMapping(request, path);
         if (jsonServiceMapping != null) {
-            return handleJsonServiceMappings(request, jsonServiceMapping);
+            return handleJsonServiceMappings(request, jsonServiceMapping, authentication);
         }
         return handleStaticResource(path, request);
     }
@@ -319,25 +279,17 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         if (path.equals("/backend/login")) {
             String content = request.content().toString(Charsets.ISO_8859_1);
             Credentials credentials = mapper.readValue(content, ImmutableCredentials.class);
-            return sessionHelper.login(credentials.username(), credentials.password());
+            return httpSessionManager.login(credentials.username(), credentials.password());
         }
         if (path.equals("/backend/sign-out")) {
-            return signOut();
+            httpSessionManager.signOut(request);
+            Authentication authentication = httpSessionManager.getAnonymousAuthentication();
+            String anonymousLayout = layoutService.getLayout(authentication);
+            FullHttpResponse response = HttpServices.createJsonResponse(anonymousLayout, OK);
+            httpSessionManager.deleteSessionCookie(response);
+            return response;
         }
         return null;
-    }
-
-    FullHttpResponse signOut() throws Exception {
-        SecurityUtils.getSubject().logout();
-        String anonymousLayout = buildAnonymousSubject().execute(new Callable<String>() {
-            @Override
-            public String call() throws Exception {
-                return layoutService.getLayout();
-            }
-        });
-        FullHttpResponse response = HttpServices.createJsonResponse(anonymousLayout, OK);
-        sessionHelper.deleteSessionCookie(response);
-        return response;
     }
 
     private @Nullable HttpService getHttpService(String path) throws Exception {
@@ -351,24 +303,24 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private @Nullable FullHttpResponse handleHttpService(ChannelHandlerContext ctx,
-            FullHttpRequest request, HttpService httpService) throws Exception {
+            FullHttpRequest request, HttpService httpService, Authentication authentication)
+            throws Exception {
         String permission = httpService.getPermission();
         if (permission.equals("")) {
             // service does not require any permission
-            return httpService.handleRequest(ctx, request);
+            return httpService.handleRequest(ctx, request, authentication);
         }
-        Subject subject = SecurityUtils.getSubject();
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         List<String> values = decoder.parameters().get("agent-id");
         String agentId = values == null ? "" : values.get(0);
-        if (!isPermitted(subject, agentId, permission)) {
-            if (subject.isAuthenticated()) {
-                return handleNotAuthorized();
-            } else {
+        if (!authentication.isPermitted(agentId, permission)) {
+            if (authentication.anonymous()) {
                 return handleNotAuthenticated(request);
+            } else {
+                return handleNotAuthorized();
             }
         }
-        return httpService.handleRequest(ctx, request);
+        return httpService.handleRequest(ctx, request, authentication);
     }
 
     private @Nullable JsonServiceMapping getJsonServiceMapping(FullHttpRequest request,
@@ -385,12 +337,11 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private FullHttpResponse handleJsonServiceMappings(FullHttpRequest request,
-            JsonServiceMapping jsonServiceMapping) throws Exception {
+            JsonServiceMapping jsonServiceMapping, Authentication authentication) throws Exception {
         List<Class<?>> parameterTypes = Lists.newArrayList();
         List<Object> parameters = Lists.newArrayList();
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         Map<String, List<String>> queryParameters = decoder.parameters();
-        Subject subject = SecurityUtils.getSubject();
         boolean permitted;
         if (jsonServiceMapping.bindAgentId()) {
             List<String> values = queryParameters.get("agent-id");
@@ -401,7 +352,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             parameterTypes.add(String.class);
             parameters.add(agentId);
             queryParameters.remove("agent-id");
-            permitted = isPermitted(subject, agentId, jsonServiceMapping.permission());
+            permitted = authentication.isPermitted(agentId, jsonServiceMapping.permission());
         } else if (jsonServiceMapping.bindAgentRollup()) {
             List<String> values = queryParameters.get("agent-rollup");
             if (values == null) {
@@ -411,22 +362,22 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             parameterTypes.add(String.class);
             parameters.add(agentRollup);
             queryParameters.remove("agent-rollup");
-            permitted = isPermitted(subject, agentRollup, jsonServiceMapping.permission());
+            permitted = authentication.isPermitted(agentRollup, jsonServiceMapping.permission());
         } else {
             permitted = jsonServiceMapping.permission().isEmpty()
-                    || subject.isPermitted(jsonServiceMapping.permission());
+                    || authentication.isPermitted(jsonServiceMapping.permission());
         }
         if (!permitted) {
-            if (subject.isAuthenticated()) {
-                return handleNotAuthorized();
-            } else {
+            if (authentication.anonymous()) {
                 return handleNotAuthenticated(request);
+            } else {
+                return handleNotAuthorized();
             }
         }
         Object responseObject;
         try {
             responseObject = callMethod(jsonServiceMapping, parameterTypes, parameters,
-                    queryParameters, subject, request);
+                    queryParameters, authentication.username(), request);
         } catch (Exception e) {
             return newHttpResponseFromException(e);
         }
@@ -453,7 +404,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private FullHttpResponse handleNotAuthenticated(HttpRequest request) {
-        if (sessionHelper.getSessionId(request) != null) {
+        if (httpSessionManager.getSessionId(request) != null) {
             return HttpServices.createJsonResponse("{\"timedOut\":true}", UNAUTHORIZED);
         } else {
             return new DefaultFullHttpResponse(HTTP_1_1, UNAUTHORIZED);
@@ -499,20 +450,12 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         return response;
     }
 
-    private static boolean isPermitted(Subject subject, String agentId, String permission) {
-        if (agentId.isEmpty()) {
-            return subject.isPermitted(permission);
-        } else {
-            return subject.isPermitted("agent:" + agentId + permission.substring(5));
-        }
-    }
-
     private static ImmutableJsonServiceMapping build(HttpMethod httpMethod, String path,
             String permission, Object jsonService, Method method) {
         boolean bindAgentId = false;
         boolean bindAgentRollup = false;
         Class<?> bindRequest = null;
-        boolean bindSubject = false;
+        boolean bindUsername = false;
         for (int i = 0; i < method.getParameterAnnotations().length; i++) {
             Annotation[] parameterAnnotations = method.getParameterAnnotations()[i];
             for (Annotation annotation : parameterAnnotations) {
@@ -522,8 +465,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                     bindAgentRollup = true;
                 } else if (annotation.annotationType() == BindRequest.class) {
                     bindRequest = method.getParameterTypes()[i];
-                } else if (annotation.annotationType() == BindSubject.class) {
-                    bindSubject = true;
+                } else if (annotation.annotationType() == BindUsername.class) {
+                    bindUsername = true;
                 }
             }
         }
@@ -536,7 +479,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 .bindAgentId(bindAgentId)
                 .bindAgentRollup(bindAgentRollup)
                 .bindRequest(bindRequest)
-                .bindSubject(bindSubject)
+                .bindUsername(bindUsername)
                 .build();
     }
 
@@ -643,7 +586,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     private static @Nullable Object callMethod(JsonServiceMapping jsonServiceMapping,
             List<Class<?>> parameterTypes, List<Object> parameters,
-            Map<String, List<String>> queryParameters, Subject subject, FullHttpRequest request)
+            Map<String, List<String>> queryParameters, String username, FullHttpRequest request)
             throws Exception {
         Class<?> bindRequest = jsonServiceMapping.bindRequest();
         if (bindRequest != null) {
@@ -663,9 +606,9 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 }
             }
         }
-        if (jsonServiceMapping.bindSubject()) {
-            parameterTypes.add(Subject.class);
-            parameters.add(subject);
+        if (jsonServiceMapping.bindUsername()) {
+            parameterTypes.add(String.class);
+            parameters.add(username);
         }
         Object service = jsonServiceMapping.service();
         if (logger.isDebugEnabled()) {
@@ -694,7 +637,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         boolean bindAgentRollup();
         @Nullable
         Class<?> bindRequest();
-        boolean bindSubject();
+        boolean bindUsername();
     }
 
     enum HttpMethod {

@@ -479,21 +479,6 @@
                     <exclude>META-INF/LICENSE.txt</exclude>
                   </excludes>
                 </filter>
-                <filter>
-                  <artifact>org.apache.shiro:shiro-core</artifact>
-                  <excludes>
-                    <exclude>META-INF/DEPENDENCIES</exclude>
-                    <exclude>META-INF/LICENSE</exclude>
-                    <exclude>META-INF/NOTICE</exclude>
-                  </excludes>
-                </filter>
-                <filter>
-                  <artifact>commons-beanutils:commons-beanutils</artifact>
-                  <excludes>
-                    <exclude>META-INF/LICENSE.txt</exclude>
-                    <exclude>META-INF/NOTICE.txt</exclude>
-                  </excludes>
-                </filter>
               </filters>
               <relocations>
                 <!-- need to shade glowroot modules so they can be used in glowroot-central without
