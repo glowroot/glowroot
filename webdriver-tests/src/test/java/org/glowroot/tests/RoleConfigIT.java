@@ -75,7 +75,9 @@ public class RoleConfigIT extends WebDriverIT {
         assertThat(rolePage.getConfigEditPluginCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getConfigEditInstrumentationCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getConfigEditAdvancedCheckBox().isSelected()).isFalse();
-        assertThat(rolePage.getAdministrationCheckBox().isSelected()).isFalse();
+        assertThat(rolePage.getAdminCheckBox().isSelected()).isFalse();
+        assertThat(rolePage.getAdminViewCheckBox().isSelected()).isFalse();
+        assertThat(rolePage.getAdminEditCheckBox().isSelected()).isFalse();
     }
 
     @Test
@@ -93,7 +95,7 @@ public class RoleConfigIT extends WebDriverIT {
         // when
         createRole();
         Utils.withWait(driver, linkText("Test")).click();
-        rolePage.getAdministrationCheckBox().click();
+        rolePage.getAdminCheckBox().click();
         rolePage.clickSaveButton();
         // wait for save to finish
         Thread.sleep(500);
@@ -101,7 +103,7 @@ public class RoleConfigIT extends WebDriverIT {
 
         // then
         Utils.withWait(driver, linkText("Test")).click();
-        assertThat(rolePage.getAdministrationCheckBox().isSelected()).isTrue();
+        assertThat(rolePage.getAdminCheckBox().isSelected()).isTrue();
     }
 
     @Test

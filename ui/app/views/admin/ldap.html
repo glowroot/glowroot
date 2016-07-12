@@ -171,13 +171,14 @@
               </select>
             </div>
             <button class="gt-ldap-role-mapping-block-remove btn btn-default"
-                    ng-click="removeRoleMappingBlock(roleMappingBlock)">
+                    ng-click="removeRoleMappingBlock(roleMappingBlock)"
+                    ng-if="layout.adminEdit">
               Remove this role mapping
             </button>
           </div>
         </div>
       </fieldset>
-      <fieldset>
+      <fieldset ng-if="layout.adminEdit">
         <legend>Add {{page.roleMappingBlocks.length ? 'another' : 'a'}} role mapping</legend>
         <button class="btn btn-default"
                 ng-click="addRoleMappingBlock()"
@@ -185,7 +186,8 @@
           Add
         </button>
       </fieldset>
-      <div class="form-group gt-form-buttons">
+      <div class="form-group gt-form-buttons"
+           ng-if="layout.adminEdit">
         <div class="col-lg-offset-4 col-lg-8 gt-sometimes-legend-padding-storage">
           <div gt-button
                gt-label="Save changes"
@@ -196,6 +198,7 @@
       </div>
     </div>
     <div ng-form
+         ng-if="layout.adminEdit"
          class="form-horizontal"
          style="padding-top: 30px;">
       <fieldset style="padding-bottom: 30px;">

@@ -68,21 +68,24 @@
             </label>
           </div>
           <div class="checkbox">
-            <label style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.tool._}"
+                   style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.tool.threadDump"
                      ng-disabled="page.permissions.tool._">Thread dump
             </label>
           </div>
           <div class="checkbox">
-            <label style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.tool._}"
+                   style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.tool.heapDump"
                      ng-disabled="page.permissions.tool._">Heap dump
             </label>
           </div>
           <div class="checkbox">
-            <label style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.tool._}"
+                   style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.tool.mbeanTree"
                      ng-disabled="page.permissions.tool._">MBean tree
@@ -91,68 +94,102 @@
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="page.permissions.config.view">View configuration
+                     ng-model="page.permissions.config._">Configuration
             </label>
           </div>
           <div class="checkbox">
-            <label>
+            <label ng-class="{'gt-label-disabled': page.permissions.config._}"
+                   style="margin-left: 30px;">
               <input type="checkbox"
-                     ng-model="page.permissions.config.edit._">Edit configuration
+                     ng-model="page.permissions.config.view"
+                     ng-disabled="page.permissions.config._">
+              View (Transactions, Gauges, Alerts, UI, Plugins, Instrumentation, Advanced)
             </label>
           </div>
           <div class="checkbox">
-            <label style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._}"
+                   style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="page.permissions.config.edit._"
+                     ng-disabled="page.permissions.config._">Edit
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.transaction"
-                     ng-disabled="page.permissions.config.edit._">Transactions
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Transactions
             </label>
           </div>
           <div class="checkbox">
-            <label style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.gauge"
-                     ng-disabled="page.permissions.config.edit._">Gauges
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Gauges
             </label>
           </div>
           <div class="checkbox">
-            <label style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.alert"
-                     ng-disabled="page.permissions.config.edit._">Alerts
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Alerts
             </label>
           </div>
           <div class="checkbox">
-            <label style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.ui"
-                     ng-disabled="page.permissions.config.edit._">UI
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">UI
             </label>
           </div>
           <div class="checkbox">
-            <label style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.plugin"
-                     ng-disabled="page.permissions.config.edit._">Plugins
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Plugins
             </label>
           </div>
           <div class="checkbox">
-            <label style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.instrumentation"
-                     ng-disabled="page.permissions.config.edit._">Instrumentation
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Instrumentation
             </label>
           </div>
           <div class="checkbox">
-            <label style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.advanced"
-                     ng-disabled="page.permissions.config.edit._">Advanced
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Advanced
             </label>
           </div>
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="page.permissions.admin">Administration (view and edit Users, Roles, Web, Storage, SMTP)
+                     ng-model="page.permissions.admin._">Administration (Users, Roles, Web, Storage, SMTP, LDAP)
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': page.permissions.admin._}"
+                   style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="page.permissions.admin.view"
+                     ng-disabled="page.permissions.admin._">View
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': page.permissions.admin._}"
+                   style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="page.permissions.admin.edit"
+                     ng-disabled="page.permissions.admin._">Edit
             </label>
           </div>
         </div>
@@ -214,69 +251,80 @@
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="page.permissions.config.view">View configuration
+                     ng-model="page.permissions.config._">Configuration
             </label>
           </div>
           <div class="checkbox">
-            <label>
-              <input type="checkbox"
-                     ng-model="page.permissions.config.edit._">Edit configuration
-            </label>
-          </div>
-          <div class="checkbox">
-            <label ng-class="{'gt-label-disabled': page.permissions.config.edit._}"
+            <label ng-class="{'gt-label-disabled': page.permissions.config._}"
                    style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="page.permissions.config.view"
+                     ng-disabled="page.permissions.config._">
+              View (Transactions, Gauges, Alerts, UI, Plugins, Instrumentation, Advanced)
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._}"
+                   style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="page.permissions.config.edit._"
+                     ng-disabled="page.permissions.config._">Edit
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.transaction"
-                     ng-disabled="page.permissions.config.edit._">Transactions
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Transactions
             </label>
           </div>
           <div class="checkbox">
-            <label ng-class="{'gt-label-disabled': page.permissions.config.edit._}"
-                   style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.gauge"
-                     ng-disabled="page.permissions.config.edit._">Gauges
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Gauges
             </label>
           </div>
           <div class="checkbox">
-            <label ng-class="{'gt-label-disabled': page.permissions.config.edit._}"
-                   style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.alert"
-                     ng-disabled="page.permissions.config.edit._">Alerts
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Alerts
             </label>
           </div>
           <div class="checkbox">
-            <label ng-class="{'gt-label-disabled': page.permissions.config.edit._}"
-                   style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.ui"
-                     ng-disabled="page.permissions.config.edit._">UI
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">UI
             </label>
           </div>
           <div class="checkbox">
-            <label ng-class="{'gt-label-disabled': page.permissions.config.edit._}"
-                   style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.plugin"
-                     ng-disabled="page.permissions.config.edit._">Plugins
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Plugins
             </label>
           </div>
           <div class="checkbox">
-            <label ng-class="{'gt-label-disabled': page.permissions.config.edit._}"
-                   style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.instrumentation"
-                     ng-disabled="page.permissions.config.edit._">Instrumentation
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Instrumentation
             </label>
           </div>
           <div class="checkbox">
-            <label ng-class="{'gt-label-disabled': page.permissions.config.edit._}"
-                   style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': page.permissions.config._ || page.permissions.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.advanced"
-                     ng-disabled="page.permissions.config.edit._">Advanced
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Advanced
             </label>
           </div>
         </div>
@@ -288,7 +336,23 @@
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="page.permissions.admin">View and edit Users, Roles, Web, Storage, SMTP
+                     ng-model="page.permissions.admin._">Administration (Users, Roles, Web, Storage, SMTP, LDAP)
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': page.permissions.admin._}"
+                   style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="page.permissions.admin.view"
+                     ng-disabled="page.permissions.admin._">View
+            </label>
+          </div>
+          <div ng-class="{'gt-label-disabled': page.permissions.admin._}"
+               class="checkbox">
+            <label style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="page.permissions.admin.edit"
+                     ng-disabled="page.permissions.admin._">Edit
             </label>
           </div>
         </div>
@@ -350,78 +414,90 @@
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="permissionBlock.config.view">View configuration
+                     ng-model="permissionBlock.config._">Configuration
             </label>
           </div>
           <div class="checkbox">
-            <label>
-              <input type="checkbox"
-                     ng-model="permissionBlock.config.edit._">Edit configuration
-            </label>
-          </div>
-          <div class="checkbox">
-            <label ng-class="{'gt-label-disabled': permissionBlock.config.edit._}"
+            <label ng-class="{'gt-label-disabled': permissionBlock.config._}"
                    style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="permissionBlock.config.view"
+                     ng-disabled="permissionBlock.config._">
+              View (Transactions, Gauges, Alerts, UI, Plugins, Instrumentation, Advanced)
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': permissionBlock.config._}"
+                   style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="permissionBlock.config.edit._"
+                     ng-disabled="permissionBlock.config._">Edit
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': permissionBlock.config._ || permissionBlock.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.transaction"
-                     ng-disabled="permissionBlock.config.edit._">Transactions
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._">Transactions
             </label>
           </div>
           <div class="checkbox">
-            <label ng-class="{'gt-label-disabled': permissionBlock.config.edit._}"
-                   style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': permissionBlock.config._ || permissionBlock.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.gauge"
-                     ng-disabled="permissionBlock.config.edit._">Gauges
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._">Gauges
             </label>
           </div>
           <div class="checkbox">
-            <label ng-class="{'gt-label-disabled': permissionBlock.config.edit._}"
-                   style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': permissionBlock.config._ || permissionBlock.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.alert"
-                     ng-disabled="permissionBlock.config.edit._">Alerts
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._">Alerts
             </label>
           </div>
           <div class="checkbox">
-            <label ng-class="{'gt-label-disabled': permissionBlock.config.edit._}"
-                   style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': permissionBlock.config._ || permissionBlock.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.ui"
-                     ng-disabled="permissionBlock.config.edit._">UI
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._">UI
             </label>
           </div>
           <div class="checkbox">
-            <label ng-class="{'gt-label-disabled': permissionBlock.config.edit._}"
-                   style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': permissionBlock.config._ || permissionBlock.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.plugin"
-                     ng-disabled="permissionBlock.config.edit._">Plugins
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._">Plugins
             </label>
           </div>
           <div class="checkbox">
-            <label ng-class="{'gt-label-disabled': permissionBlock.config.edit._}"
-                   style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': permissionBlock.config._ || permissionBlock.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.instrumentation"
-                     ng-disabled="permissionBlock.config.edit._">Instrumentation
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._">Instrumentation
             </label>
           </div>
           <div class="checkbox gt-role-permission-block-last-checkbox">
-            <label ng-class="{'gt-label-disabled': permissionBlock.config.edit._}"
-                   style="margin-left: 30px;">
+            <label ng-class="{'gt-label-disabled': permissionBlock.config._ || permissionBlock.config.edit._}"
+                   style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.advanced"
-                     ng-disabled="permissionBlock.config.edit._">Advanced
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._">Advanced
             </label>
           </div>
           <button class="gt-role-permission-block-remove btn btn-default"
-                  ng-click="removePermissionBlock(permissionBlock)">
+                  ng-click="removePermissionBlock(permissionBlock)"
+                  ng-if="layout.adminEdit">
             Remove this agent specific permission block
           </button>
         </div>
       </fieldset>
-      <fieldset ng-if="!layout.fat">
+      <fieldset ng-if="!layout.fat && layout.adminEdit">
         <legend>Add {{page.permissionBlocks.length ? 'another' : 'an'}} agent specific permission block</legend>
         <button class="btn btn-default"
                 ng-click="addPermissionBlock()"
@@ -429,7 +505,8 @@
           Add
         </button>
       </fieldset>
-      <div class="form-group gt-form-buttons">
+      <div class="form-group gt-form-buttons"
+           ng-if="layout.adminEdit">
         <div class="col-lg-offset-3 col-lg-9"
              ng-class="{'gt-sometimes-legend-padding': !layout.fat}">
           <div gt-button-group>

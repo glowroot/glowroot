@@ -36,7 +36,7 @@
             {{mbeanAttribute.name.replace('/', ' / ')}}
           </div>
         </div>
-        <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
+        <!-- ng-if="loaded" is used to prevent jitter of seeing this section very briefly
              before it gets pushed down by existing gauges -->
         <div ng-if="loaded && agentPermissions.config.edit.gauge"
              style="margin-top: 30px;">

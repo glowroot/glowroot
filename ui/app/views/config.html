@@ -95,7 +95,7 @@
     </ul>
   </div>
   <div class="panel panel-default"
-       ng-if="(activeNavbarItem === 'gears' || layout.fat) && layout.admin">
+       ng-if="(activeNavbarItem === 'gears' || layout.fat) && layout.adminView">
     <ul class="list-group">
       <div gt-sidebar-item
            gt-display="Users"
@@ -131,7 +131,7 @@
        ng-if="activeNavbarItem === 'gears' && layout.loggedIn && !layout.ldap">
     <ul class="list-group">
       <div gt-sidebar-item
-           gt-display="Change {{layout.admin ? 'my' : ''}} password"
+           gt-display="Change {{layout.adminView ? 'my' : ''}} password"
            gt-url="change-password">
       </div>
     </ul>

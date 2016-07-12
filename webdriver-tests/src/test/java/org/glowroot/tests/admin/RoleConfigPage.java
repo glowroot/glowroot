@@ -91,8 +91,16 @@ public class RoleConfigPage {
         return withWait(xpath("//input[@ng-model='page.permissions.config.edit.advanced']"));
     }
 
-    public WebElement getAdministrationCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.admin']"));
+    public WebElement getAdminCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.admin._']"));
+    }
+
+    public WebElement getAdminViewCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.admin.view']"));
+    }
+
+    public WebElement getAdminEditCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.admin.edit']"));
     }
 
     public WebElement getAddButton() {

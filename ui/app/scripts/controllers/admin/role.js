@@ -43,12 +43,24 @@ glowroot.controller('AdminRoleCtrl', [
         $scope.heading = '<New>';
       }
       $scope.page.permissions = newPermissionBlock();
-      $scope.page.permissions.admin = false;
+      $scope.page.permissions.admin = {
+        _: false,
+        view: false,
+        edit: false
+      };
       $scope.page.permissionBlocks = [];
       var permissionBlocks = {};
       angular.forEach(data.config.permissions, function (permission) {
         if (permission === 'admin') {
-          $scope.page.permissions.admin = true;
+          $scope.page.permissions.admin._ = true;
+          return;
+        }
+        if (permission === 'admin:view') {
+          $scope.page.permissions.admin.view = true;
+          return;
+        }
+        if (permission === 'admin:edit') {
+          $scope.page.permissions.admin.edit = true;
           return;
         }
         var permissionBlock;
@@ -80,6 +92,8 @@ glowroot.controller('AdminRoleCtrl', [
           permissionBlock.tool.heapDump = true;
         } else if (permission === 'agent:tool:mbeanTree') {
           permissionBlock.tool.mbeanTree = true;
+        } else if (permission === 'agent:config') {
+          permissionBlock.config._ = true;
         } else if (permission === 'agent:config:view') {
           permissionBlock.config.view = true;
         } else if (permission === 'agent:config:edit') {
@@ -109,6 +123,18 @@ glowroot.controller('AdminRoleCtrl', [
         permissionsObj.tool.heapDump = false;
         permissionsObj.tool.mbeanTree = false;
       }
+      if (permissionsObj.config._) {
+        permissionsObj.config.view = false;
+        permissionsObj.config.edit._ = false;
+        permissionsObj.config.edit.transaction = false;
+        permissionsObj.config.edit.gauge = false;
+        permissionsObj.config.edit.alert = false;
+        permissionsObj.config.edit.ui = false;
+        permissionsObj.config.edit.plugin = false;
+        permissionsObj.config.edit.instrumentation = false;
+        permissionsObj.config.edit.reweave = false;
+        permissionsObj.config.edit.advanced = false;
+      }
       if (permissionsObj.config.edit._) {
         permissionsObj.config.edit.transaction = false;
         permissionsObj.config.edit.gauge = false;
@@ -119,18 +145,22 @@ glowroot.controller('AdminRoleCtrl', [
         permissionsObj.config.edit.reweave = false;
         permissionsObj.config.edit.advanced = false;
       }
+      if (permissionsObj.admin && permissionsObj.admin._) {
+        permissionsObj.admin.view = false;
+        permissionsObj.admin.edit = false;
+      }
       if ($scope.viewPermissionDisabled(permissionsObj)) {
         permissionsObj.view = true;
       }
     }
 
-    $scope.viewPermissionDisabled = function(permissionsObj) {
+    $scope.viewPermissionDisabled = function (permissionsObj) {
       if (!permissionsObj) {
         return false;
       }
       return permissionsObj.tool._ || permissionsObj.tool.threadDump || permissionsObj.tool.heapDump
-          || permissionsObj.tool.mbeanTree || permissionsObj.config.view || permissionsObj.config.edit._
-          || permissionsObj.config.edit.transaction || permissionsObj.config.edit.gauge
+          || permissionsObj.tool.mbeanTree || permissionsObj.config._ || permissionsObj.config.view
+          || permissionsObj.config.edit._ || permissionsObj.config.edit.transaction || permissionsObj.config.edit.gauge
           || permissionsObj.config.edit.alert || permissionsObj.config.edit.ui || permissionsObj.config.edit.plugin
           || permissionsObj.config.edit.instrumentation || permissionsObj.config.edit.reweave
           || permissionsObj.config.edit.advanced;
@@ -161,6 +191,9 @@ glowroot.controller('AdminRoleCtrl', [
       if (permissionsObj.tool.mbeanTree) {
         permissions.push('agent:' + agentIds + 'tool:mbeanTree');
       }
+      if (permissionsObj.config._) {
+        permissions.push('agent:' + agentIds + 'config');
+      }
       if (permissionsObj.config.view) {
         permissions.push('agent:' + agentIds + 'config:view');
       }
@@ -188,8 +221,14 @@ glowroot.controller('AdminRoleCtrl', [
       if (permissionsObj.config.edit.advanced) {
         permissions.push('agent:' + agentIds + 'config:edit:advanced');
       }
-      if (permissionsObj.admin) {
+      if (permissionsObj.admin && permissionsObj.admin._) {
         permissions.push('admin');
+      }
+      if (permissionsObj.admin && permissionsObj.admin.view) {
+        permissions.push('admin:view');
+      }
+      if (permissionsObj.admin && permissionsObj.admin.edit) {
+        permissions.push('admin:edit');
       }
       return permissions;
     }
@@ -224,6 +263,7 @@ glowroot.controller('AdminRoleCtrl', [
           mbeanTree: false
         },
         config: {
+          _: false,
           view: false,
           edit: {
             _: false,

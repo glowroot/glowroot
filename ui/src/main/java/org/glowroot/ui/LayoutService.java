@@ -156,7 +156,8 @@ class LayoutService {
                             configRepository.getGaugeCollectionIntervalMillis())
                     .agentRollups(agentRollups)
                     .showNavbarConfig(showNavbarConfig)
-                    .admin(authentication.isPermitted("admin"))
+                    .adminView(authentication.isPermitted("admin:view"))
+                    .adminEdit(authentication.isPermitted("admin:edit"))
                     .loggedIn(!authentication.anonymous())
                     .ldap(authentication.ldap())
                     .redirectToLogin(false)
@@ -168,7 +169,8 @@ class LayoutService {
                     .hideLogin(false)
                     .gaugeCollectionIntervalMillis(0)
                     .showNavbarConfig(false)
-                    .admin(false)
+                    .adminView(false)
+                    .adminEdit(false)
                     .loggedIn(!authentication.anonymous())
                     .ldap(authentication.ldap())
                     .redirectToLogin(true)
@@ -221,7 +223,8 @@ class LayoutService {
         abstract long gaugeCollectionIntervalMillis();
         abstract ImmutableMap<String, AgentRollupLayout> agentRollups();
         abstract boolean showNavbarConfig();
-        abstract boolean admin();
+        abstract boolean adminView();
+        abstract boolean adminEdit();
         abstract boolean loggedIn();
         abstract boolean ldap();
         abstract boolean redirectToLogin();

@@ -45,9 +45,10 @@ glowroot.controller('ConfigCtrl', [
       if (!$scope.layout) {
         return '';
       }
-      if ($scope.layout.fat && ($scope.agentPermissions && $scope.agentPermissions.config.view || $scope.layout.admin)) {
+      if ($scope.layout.fat
+          && ($scope.agentPermissions && $scope.agentPermissions.config.view || $scope.layout.adminView)) {
         return 'Configuration';
-      } else if (!$scope.layout.fat && $scope.layout.admin) {
+      } else if (!$scope.layout.fat && $scope.layout.adminView) {
         return 'Administration';
       } else {
         return 'Profile';

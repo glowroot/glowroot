@@ -28,9 +28,9 @@
           <span ng-if="user.roles.length" style="margin-left: 10px;">({{user.roles.join(', ')}})</span>
         </div>
       </div>
-      <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
+      <!-- ng-if="loaded" is used to prevent jitter of seeing this section very briefly
            before it gets pushed down by existing users -->
-      <div ng-show="loaded"
+      <div ng-if="loaded && layout.adminEdit"
            style="margin-top: 30px;">
         <a class="btn btn-primary"
            href="admin/user?new">

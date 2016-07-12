@@ -66,9 +66,10 @@ glowroot.controller('NavbarCtrl', [
       if (!$scope.layout) {
         return '';
       }
-      if ($scope.layout.fat && ($scope.agentPermissions && $scope.agentPermissions.config.view || $scope.layout.admin)) {
+      if ($scope.layout.fat
+          && ($scope.agentPermissions && $scope.agentPermissions.config.view || $scope.layout.adminView)) {
         return 'config/transaction';
-      } else if (!$scope.layout.fat && $scope.layout.admin) {
+      } else if (!$scope.layout.fat && $scope.layout.adminView) {
         return 'admin/user-list';
       } else {
         return 'change-password';
@@ -79,9 +80,10 @@ glowroot.controller('NavbarCtrl', [
       if (!$scope.layout) {
         return '';
       }
-      if ($scope.layout.fat && ($scope.agentPermissions && $scope.agentPermissions.config.view || $scope.layout.admin)) {
+      if ($scope.layout.fat
+          && ($scope.agentPermissions && $scope.agentPermissions.config.view || $scope.layout.adminView)) {
         return 'Configuration';
-      } else if (!$scope.layout.fat && $scope.layout.admin) {
+      } else if (!$scope.layout.fat && $scope.layout.adminView) {
         return 'Administration';
       } else {
         return 'Profile';

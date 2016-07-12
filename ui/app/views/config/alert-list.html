@@ -33,7 +33,7 @@
             {{alertText(alert)}}
           </a>
         </div>
-        <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
+        <!-- ng-if="loaded" is used to prevent jitter of seeing this section very briefly
              before it gets pushed down by existing alerts -->
         <div ng-if="loaded && agentPermissions.config.edit.alert"
              style="margin-top: 30px;">

@@ -42,9 +42,9 @@
             Feeling lucky? Try the red button.
           </span>
         </div>
-        <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
+        <!-- ng-if="loaded" is used to prevent jitter of seeing this section very briefly
              before it gets pushed down by existing instrumentation -->
-        <div ng-show="loaded && agentPermissions.config.edit.instrumentation"
+        <div ng-if="loaded && agentPermissions.config.edit.instrumentation"
              style="font-size: 16px; margin-top: 30px;">
           <!-- using gt-button-group even though only a single gt-button because otherwise the success message will be
                tied to the gt-button which will then get hidden due to ng-show="dirty" -->

@@ -29,7 +29,7 @@
       </div>
       <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
            before it gets pushed down by existing roles -->
-      <div ng-show="loaded"
+      <div ng-if="loaded && layout.adminEdit"
            style="margin-top: 30px;">
         <a class="btn btn-primary"
            href="admin/role?new">
