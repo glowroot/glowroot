@@ -329,7 +329,7 @@ class TraceDao implements TraceRepository {
             } else {
                 mainThreadProfileId = null;
             }
-            if (trace.hasMainThreadProfile()) {
+            if (trace.hasAuxThreadProfile()) {
                 auxThreadProfileId = traceCappedDatabase.writeMessage(trace.getAuxThreadProfile(),
                         TraceCappedDatabaseStats.TRACE_PROFILES);
             } else {
