@@ -56,7 +56,7 @@ import org.glowroot.agent.it.harness.ConfigService;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TempDirs;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc;
-import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc.JavaagentServiceBlockingClient;
+import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc.JavaagentServiceBlockingStub;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.AppUnderTestClassName;
 import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.Void;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -84,7 +84,7 @@ public class JavaagentContainer implements Container {
     private final ExecutorService executor;
     private final ManagedChannel channel;
     private final @Nullable TraceCollector traceCollector;
-    private final JavaagentServiceBlockingClient javaagentService;
+    private final JavaagentServiceBlockingStub javaagentService;
     private final ExecutorService consolePipeExecutor;
     private final Process process;
     private final ConsoleOutputPipe consoleOutputPipe;
@@ -172,7 +172,7 @@ public class JavaagentContainer implements Container {
         // this can take a while on slow travis ci build machines
         while (stopwatch.elapsed(SECONDS) < 30) {
             try {
-                JavaagentServiceBlockingClient javaagentService =
+                JavaagentServiceBlockingStub javaagentService =
                         JavaagentServiceGrpc.newBlockingStub(channel).withCompression("gzip");
                 javaagentService.ping(Void.getDefaultInstance());
                 break;
@@ -459,9 +459,9 @@ public class JavaagentContainer implements Container {
 
     private static class ShutdownHookThread extends Thread {
 
-        private final JavaagentServiceBlockingClient javaagentService;
+        private final JavaagentServiceBlockingStub javaagentService;
 
-        private ShutdownHookThread(JavaagentServiceBlockingClient javaagentService) {
+        private ShutdownHookThread(JavaagentServiceBlockingStub javaagentService) {
             this.javaagentService = javaagentService;
         }
 

@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamService;
+import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceImplBase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AuxThreadProfileRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpaceRequest;
@@ -72,7 +72,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class DownstreamServiceImpl implements DownstreamService {
+public class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
     private static final Logger logger = LoggerFactory.getLogger(DownstreamServiceImpl.class);
 

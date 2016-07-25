@@ -20,7 +20,7 @@ public class Grails {
     private static final String MODULE_PATH = "agent-parent/plugins/grails-plugin";
 
     public static void main(String[] args) throws Exception {
-        for (int i = 6; i <= 15; i++) {
+        for (int i = 6; i <= 17; i++) {
             if (i == 7 || i == 8) {
                 // there is no 3.0.7 or 3.0.8 in maven central
                 continue;
@@ -34,6 +34,8 @@ public class Grails {
             }
             run("3.1." + i);
         }
+        // there is no 3.1.8 in maven central
+        run("3.1.9");
     }
 
     private static void run(String version) throws Exception {

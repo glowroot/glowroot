@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,8 @@ public class JarFileShadingIT {
         acceptableEntries.add("org/glowroot/");
         acceptableEntries.add("org/glowroot/agent/.*");
         acceptableEntries.add("META-INF/");
+        acceptableEntries.add("META-INF/services/");
+        acceptableEntries.add("META-INF/services/org\\.glowroot\\..*");
         acceptableEntries.add("META-INF/maven/.*");
         acceptableEntries.add("META-INF/MANIFEST\\.MF");
         acceptableEntries.add("META-INF/LICENSE");

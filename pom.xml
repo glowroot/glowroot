@@ -80,16 +80,16 @@
   </scm>
 
   <properties>
-    <grpc.version>0.14.1</grpc.version>
-    <protobuf.version>3.0.0-beta-3</protobuf.version>
-    <!-- 4.1.2.Final does not work with grpc-java 0.14.1 -->
+    <grpc.version>0.15.0</grpc.version>
+    <protobuf.version>3.0.0-beta-4</protobuf.version>
+    <!-- 4.1.2.Final does not work with grpc-java 0.15.0 -->
     <netty.version>4.1.1.Final</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.7</jackson.version>
     <logback.version>1.1.7</logback.version>
     <immutables.version>2.2.10</immutables.version>
     <javax.mail.version>1.5.5</javax.mail.version>
-    <jmh.version>1.12</jmh.version>
+    <jmh.version>1.13</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
@@ -121,6 +121,11 @@
         <version>${protobuf.version}</version>
       </dependency>
       <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java-util</artifactId>
+        <version>${protobuf.version}</version>
+      </dependency>
+      <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
         <version>${grpc.version}</version>
@@ -143,7 +148,7 @@
       <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>2.6.2</version>
+        <version>2.7</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
@@ -269,7 +274,7 @@
         <groupId>com.ning</groupId>
         <artifactId>async-http-client</artifactId>
         <!-- async-http-client 1.9.0 requires JDK 7+ -->
-        <version>1.8.16</version>
+        <version>1.8.17</version>
       </dependency>
       <dependency>
         <groupId>org.hsqldb</groupId>
@@ -514,7 +519,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
-          <version>1.11</version>
+          <version>1.12</version>
         </plugin>
         <plugin>
           <groupId>org.jacoco</groupId>

@@ -36,8 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.CollectorServiceGrpc;
-import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorService;
+import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceImplBase;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
@@ -45,8 +44,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
-import org.glowroot.wire.api.model.DownstreamServiceGrpc;
-import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamService;
+import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceImplBase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse.MessageCase;
@@ -85,8 +83,8 @@ class GrpcServerWrapper {
                 .bossEventLoopGroup(bossEventLoopGroup)
                 .workerEventLoopGroup(workerEventLoopGroup)
                 .executor(executor)
-                .addService(CollectorServiceGrpc.bindService(new CollectorServiceImpl(collector)))
-                .addService(DownstreamServiceGrpc.bindService(downstreamService))
+                .addService(new CollectorServiceImpl(collector).bindService())
+                .addService(downstreamService.bindService())
                 .build()
                 .start();
     }
@@ -133,7 +131,7 @@ class GrpcServerWrapper {
         }
     }
 
-    private class CollectorServiceImpl implements CollectorService {
+    private class CollectorServiceImpl extends CollectorServiceImplBase {
 
         private final Collector collector;
 
@@ -202,7 +200,7 @@ class GrpcServerWrapper {
         }
     }
 
-    private static class DownstreamServiceImpl implements DownstreamService {
+    private static class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
         private final AtomicLong nextRequestId = new AtomicLong(1);
 

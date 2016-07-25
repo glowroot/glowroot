@@ -28,8 +28,6 @@ import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.EventLoopGroup;
 
-import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc;
-
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 class JavaagentMain {
@@ -69,7 +67,7 @@ class JavaagentMain {
                 .bossEventLoopGroup(bossEventLoopGroup)
                 .workerEventLoopGroup(workerEventLoopGroup)
                 .executor(executor)
-                .addService(JavaagentServiceGrpc.bindService(javaagentService))
+                .addService(javaagentService.bindService())
                 .build()
                 .start();
         javaagentService.setServerCloseable(new Callable</*@Nullable*/ Void>() {

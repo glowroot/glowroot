@@ -392,7 +392,8 @@ class InstrumentationConfigJsonService {
                     .transactionType(config.getTransactionType())
                     .transactionNameTemplate(config.getTransactionNameTemplate())
                     .transactionUserTemplate(config.getTransactionUserTemplate())
-                    .putAllTransactionAttributeTemplates(config.getTransactionAttributeTemplates());
+                    .putAllTransactionAttributeTemplates(
+                            config.getTransactionAttributeTemplatesMap());
             if (config.hasTransactionSlowThresholdMillis()) {
                 builder.transactionSlowThresholdMillis(
                         config.getTransactionSlowThresholdMillis().getValue());

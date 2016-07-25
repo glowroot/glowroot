@@ -127,15 +127,15 @@ public class HttpClient {
             updateLibVersion("asynchttpclient.version", "1.7." + i);
             runTest(test, "async-http-client-1.x");
         }
-        for (int i = 0; i <= 16; i++) {
+        for (int i = 0; i <= 17; i++) {
             updateLibVersion("asynchttpclient.version", "1.8." + i);
             runTest(test, "async-http-client-1.x");
         }
-        for (int i = 0; i <= 36; i++) {
+        for (int i = 0; i <= 38; i++) {
             updateLibVersion("asynchttpclient.version", "1.9." + i);
             runTest(test, "async-http-client-1.x");
         }
-        for (int i = 0; i <= 9; i++) {
+        for (int i = 0; i <= 11; i++) {
             updateLibVersion("asynchttpclient.version", "2.0." + i);
             runTest(test, "async-http-client-2.x");
         }

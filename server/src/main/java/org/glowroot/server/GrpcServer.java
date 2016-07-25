@@ -32,8 +32,7 @@ import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
-import org.glowroot.wire.api.model.CollectorServiceGrpc;
-import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorService;
+import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceImplBase;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
@@ -43,7 +42,6 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
-import org.glowroot.wire.api.model.DownstreamServiceGrpc;
 import org.glowroot.wire.api.model.Proto;
 
 class GrpcServer {
@@ -75,8 +73,8 @@ class GrpcServer {
         downstreamService = new DownstreamServiceImpl();
 
         server = NettyServerBuilder.forPort(port)
-                .addService(CollectorServiceGrpc.bindService(new CollectorServiceImpl()))
-                .addService(DownstreamServiceGrpc.bindService(downstreamService))
+                .addService(new CollectorServiceImpl().bindService())
+                .addService(downstreamService.bindService())
                 .maxMessageSize(1024 * 1024 * GRPC_MAX_MESSAGE_SIZE_MB)
                 .build()
                 .start();
@@ -90,7 +88,7 @@ class GrpcServer {
         server.shutdown();
     }
 
-    private class CollectorServiceImpl implements CollectorService {
+    private class CollectorServiceImpl extends CollectorServiceImplBase {
 
         @Override
         public void collectInit(InitMessage request,

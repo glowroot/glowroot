@@ -17,7 +17,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <grails.version>3.1.7</grails.version>
+    <grails.version>3.1.9</grails.version>
   </properties>
 
   <dependencies>
@@ -71,14 +71,58 @@
     </dependency>
     <dependency>
       <groupId>org.grails</groupId>
-      <artifactId>grails-dependencies</artifactId>
+      <artifactId>grails-web-boot</artifactId>
       <version>${grails.version}</version>
       <scope>test</scope>
-      <type>pom</type>
+    </dependency>
+    <dependency>
+      <!-- normally grails-plugin-* dependencies are pulled in by using
+        org.grails:grails-dependencies, but there is no grails-dependencies 3.1.9 in maven central
+        so just embedding grails-plugin-* dependencies directly -->
+      <groupId>org.grails</groupId>
+      <artifactId>grails-plugin-rest</artifactId>
+      <version>${grails.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.grails</groupId>
-      <artifactId>grails-web-boot</artifactId>
+      <artifactId>grails-plugin-databinding</artifactId>
+      <version>${grails.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.grails</groupId>
+      <artifactId>grails-plugin-i18n</artifactId>
+      <version>${grails.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.grails</groupId>
+      <artifactId>grails-plugin-gsp</artifactId>
+      <version>${grails.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.grails</groupId>
+      <artifactId>grails-plugin-services</artifactId>
+      <version>${grails.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.grails</groupId>
+      <artifactId>grails-plugin-url-mappings</artifactId>
+      <version>${grails.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.grails</groupId>
+      <artifactId>grails-plugin-interceptors</artifactId>
+      <version>${grails.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.grails</groupId>
+      <artifactId>grails-plugin-async</artifactId>
       <version>${grails.version}</version>
       <scope>test</scope>
     </dependency>

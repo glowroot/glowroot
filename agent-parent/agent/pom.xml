@@ -177,7 +177,7 @@
       <!-- this is included to test weaving against jdk 1.7 bytecode -->
       <groupId>io.undertow</groupId>
       <artifactId>undertow-core</artifactId>
-      <version>1.3.22.Final</version>
+      <version>1.3.23.Final</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -338,6 +338,11 @@
         </property>
       </activation>
       <build>
+        <resources>
+          <resource>
+            <directory>src/main/shaded-resources</directory>
+          </resource>
+        </resources>
         <plugins>
           <plugin>
             <artifactId>maven-remote-resources-plugin</artifactId>
@@ -395,6 +400,15 @@
                   <excludes>
                     <exclude>google/protobuf/*.proto</exclude>
                     <exclude>google/protobuf/compiler/*.proto</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <!-- this filter is needed until https://issues.apache.org/jira/browse/MSHADE-221
+                    or https://issues.apache.org/jira/browse/MSHADE-229, at which time can delete
+                    src/main/shaded-resource/META-INF/services/org.glowroot.agent.shaded.grpc.NameResolverProvider -->
+                  <artifact>io.grpc:grpc-core</artifact>
+                  <excludes>
+                    <exclude>META-INF/services/io.grpc.NameResolverProvider</exclude>
                   </excludes>
                 </filter>
                 <filter>

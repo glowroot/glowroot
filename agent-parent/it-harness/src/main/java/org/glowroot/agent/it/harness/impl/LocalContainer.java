@@ -29,6 +29,7 @@ import com.google.common.reflect.Reflection;
 
 import org.glowroot.agent.MainEntryPoint;
 import org.glowroot.agent.fat.init.GlowrootFatAgentInit;
+import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.ConfigService;
@@ -94,7 +95,7 @@ public class LocalContainer implements Container {
         Executors.newSingleThreadExecutor().submit(new Callable<Void>() {
             @Override
             public @Nullable Void call() throws Exception {
-                Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
+                AgentModule.isolatedWeavingClassLoader.set(isolatedWeavingClassLoader);
                 MainEntryPoint.start(properties);
                 return null;
             }

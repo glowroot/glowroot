@@ -42,6 +42,8 @@ public class Redis {
         run("2.7.3");
         run("2.8.0");
         run("2.8.1");
+        run("2.8.2");
+        run("2.9.0");
     }
 
     private static void run(String version) throws Exception {

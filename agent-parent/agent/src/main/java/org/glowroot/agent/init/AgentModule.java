@@ -85,6 +85,10 @@ public class AgentModule {
     private static final long ROLLUP_0_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.0.intervalMillis", 60 * 1000);
 
+    @OnlyUsedByTests
+    public static final ThreadLocal</*@Nullable*/ IsolatedWeavingClassLoader> isolatedWeavingClassLoader =
+            new ThreadLocal</*@Nullable*/ IsolatedWeavingClassLoader>();
+
     private final ConfigService configService;
     private final AnalyzedWorld analyzedWorld;
     private final TransactionRegistry transactionRegistry;
@@ -137,7 +141,7 @@ public class AgentModule {
         if (instrumentation == null) {
             // instrumentation is null when debugging with LocalContainer
             IsolatedWeavingClassLoader isolatedWeavingClassLoader =
-                    (IsolatedWeavingClassLoader) Thread.currentThread().getContextClassLoader();
+                    AgentModule.isolatedWeavingClassLoader.get();
             checkNotNull(isolatedWeavingClassLoader);
             isolatedWeavingClassLoader.setWeaver(weaver);
             jvmRetransformClassesSupported = false;
