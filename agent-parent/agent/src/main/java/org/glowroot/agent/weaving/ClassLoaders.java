@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.util.Collection;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -29,12 +30,16 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.Closer;
 import org.immutables.value.Value;
 import org.objectweb.asm.Type;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.util.Reflections;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class ClassLoaders {
+
+    private static final Logger logger = LoggerFactory.getLogger(ClassLoaders.class);
 
     private ClassLoaders() {}
 
@@ -52,6 +57,19 @@ public class ClassLoaders {
             closer.close();
         }
         instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(generatedJarFile));
+        // appendToBootstrapClassLoaderSearch() line above does not add to the bootstrap resource
+        // search path, only to the bootstrap class search path (this is different from
+        // appendToSystemClassLoaderSearch() which adds to both the system resource search path and
+        // the system class search path)
+        //
+        // adding the generated jar file to the bootstrap resource search path is probably needed
+        // more generally, but it is at least needed to support jboss 4.2.0 - 4.2.3 because
+        // org.jboss.mx.loading.LoadMgr3.beginLoadTask() checks that the class loader has the class
+        // as a resource before loading it, so without adding the generated jar file to the
+        // bootstrap resource search path, jboss ends up throwing ClassNotFoundException for the
+        // glowroot generated classes that have been added to the bootstrap class loader search path
+        // (see issue #101 for more info on this particular jboss issue)
+        appendToBootstrapResourcePath(generatedJarFile);
     }
 
     public static void defineClassesInClassLoader(Collection<LazyDefinedClass> lazyDefinedClasses,
@@ -122,6 +140,19 @@ public class ClassLoaders {
     private static void createDirectory(File dir) throws IOException {
         if (!dir.mkdirs()) {
             throw new IOException("Could not create directory: " + dir.getAbsolutePath());
+        }
+    }
+
+    private static void appendToBootstrapResourcePath(File generatedJarFile) {
+        try {
+            Class<?> launcherClass = Class.forName("sun.misc.Launcher", false, null);
+            Method getBootstrapClassPathMethod = launcherClass.getMethod("getBootstrapClassPath");
+            Class<?> urlClassPathClass = Class.forName("sun.misc.URLClassPath", false, null);
+            Method addUrlMethod = urlClassPathClass.getMethod("addURL", URL.class);
+            Object urlClassPath = getBootstrapClassPathMethod.invoke(null);
+            addUrlMethod.invoke(urlClassPath, generatedJarFile.toURI().toURL());
+        } catch (Exception e) {
+            logger.warn(e.getMessage(), e);
         }
     }
 
