@@ -38,8 +38,7 @@ public abstract class MixinType {
 
     private static final Logger logger = LoggerFactory.getLogger(MixinType.class);
 
-    public static MixinType from(Mixin mixin, Class<?> implementation,
-            @Nullable ExtraBootResourceFinder extraBootResourceFinder) throws IOException {
+    public static MixinType from(Mixin mixin, Class<?> implementation) throws IOException {
         ImmutableMixinType.Builder builder = ImmutableMixinType.builder();
         builder.addTargets(mixin.value());
         builder.implementation(Type.getType(implementation));
@@ -74,9 +73,6 @@ public abstract class MixinType {
             url = ClassLoader.getSystemResource(resourceName);
         } else {
             url = loader.getResource(resourceName);
-        }
-        if (url == null && extraBootResourceFinder != null) {
-            url = extraBootResourceFinder.findResource(resourceName);
         }
         checkNotNull(url, "Could not find resource: %s", resourceName);
         builder.implementationBytes(Resources.toByteArray(url));

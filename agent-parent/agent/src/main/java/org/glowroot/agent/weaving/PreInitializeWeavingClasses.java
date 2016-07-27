@@ -309,7 +309,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ClassLoaders");
         types.add("org.glowroot.agent.weaving.ClassLoaders$LazyDefinedClass");
         types.add("org.glowroot.agent.weaving.ClassNames");
-        types.add("org.glowroot.agent.weaving.ExtraBootResourceFinder");
         types.add("org.glowroot.agent.weaving.FelixOsgiHackClassVisitor");
         types.add("org.glowroot.agent.weaving.FelixOsgiHackClassVisitor"
                 + "$FelixOsgiHackMethodVisitor");

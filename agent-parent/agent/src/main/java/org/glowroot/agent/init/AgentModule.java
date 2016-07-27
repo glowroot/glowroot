@@ -16,9 +16,9 @@
 package org.glowroot.agent.init;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
+import java.net.Socket;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
@@ -58,7 +58,6 @@ import org.glowroot.agent.util.OptionalService;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.agent.weaving.AnalyzedWorld;
-import org.glowroot.agent.weaving.ExtraBootResourceFinder;
 import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
 import org.glowroot.agent.weaving.Weaver;
 import org.glowroot.agent.weaving.WeavingClassFileTransformer;
@@ -122,14 +121,15 @@ public class AgentModule {
         this.configService = configService;
         transactionRegistry = new TransactionRegistry();
 
-        ExtraBootResourceFinder extraBootResourceFinder =
-                createExtraBootResourceFinder(instrumentation, pluginCache.pluginJars());
-
+        if (instrumentation != null) {
+            for (File pluginJar : pluginCache.pluginJars()) {
+                instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(pluginJar));
+            }
+        }
         adviceCache = new AdviceCache(pluginCache.pluginDescriptors(), pluginCache.pluginJars(),
-                configService.getInstrumentationConfigs(), instrumentation, extraBootResourceFinder,
-                baseDir);
+                configService.getInstrumentationConfigs(), instrumentation, baseDir);
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
-                adviceCache.getShimTypes(), adviceCache.getMixinTypes(), extraBootResourceFinder);
+                adviceCache.getShimTypes(), adviceCache.getMixinTypes());
         final TimerNameCache timerNameCache = new TimerNameCache();
         weavingTimerService =
                 new WeavingTimerServiceImpl(transactionRegistry, configService, timerNameCache);
@@ -150,6 +150,7 @@ public class AgentModule {
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);
                 jvmRetransformClassesSupported = true;
+                instrumentation.retransformClasses(Socket.class);
             } else {
                 instrumentation.addTransformer(transformer);
                 jvmRetransformClassesSupported = false;
@@ -260,17 +261,6 @@ public class AgentModule {
 
     public LiveJvmService getLiveJvmService() {
         return liveJvmService;
-    }
-
-    private static @Nullable ExtraBootResourceFinder createExtraBootResourceFinder(
-            @Nullable Instrumentation instrumentation, List<File> pluginJars) throws IOException {
-        if (instrumentation == null) {
-            return null;
-        }
-        for (File pluginJar : pluginJars) {
-            instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(pluginJar));
-        }
-        return new ExtraBootResourceFinder(pluginJars);
     }
 
     // now init plugins to give them a chance to do something in their static initializer

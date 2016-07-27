@@ -843,7 +843,7 @@ public class WeaverTest {
         Supplier<List<Advice>> advisorsSupplier =
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
         AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisorsSupplier,
-                ImmutableList.<ShimType>of(), ImmutableList.<MixinType>of(), null);
+                ImmutableList.<ShimType>of(), ImmutableList.<MixinType>of());
         Weaver weaver = new Weaver(advisorsSupplier, ImmutableList.<ShimType>of(),
                 ImmutableList.<MixinType>of(), analyzedWorld, NopWeavingTimerService.INSTANCE);
         isolatedWeavingClassLoader.setWeaver(weaver);
@@ -1515,7 +1515,7 @@ public class WeaverTest {
         List<MixinType> mixinTypes = Lists.newArrayList();
         Mixin mixin = adviceOrShimOrMixinClass.getAnnotation(Mixin.class);
         if (mixin != null) {
-            mixinTypes.add(MixinType.from(mixin, adviceOrShimOrMixinClass, null));
+            mixinTypes.add(MixinType.from(mixin, adviceOrShimOrMixinClass));
         }
         List<ShimType> shimTypes = Lists.newArrayList();
         Shim shim = adviceOrShimOrMixinClass.getAnnotation(Shim.class);
@@ -1524,8 +1524,7 @@ public class WeaverTest {
         }
         Supplier<List<Advice>> advisorsSupplier =
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
-        AnalyzedWorld analyzedWorld =
-                new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes, null);
+        AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes);
         Weaver weaver = new Weaver(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
                 NopWeavingTimerService.INSTANCE);
         isolatedWeavingClassLoader.setWeaver(weaver);
@@ -1551,7 +1550,7 @@ public class WeaverTest {
         List<MixinType> mixinTypes = Lists.newArrayList();
         Mixin mixin = adviceOrShimOrMixinClass.getAnnotation(Mixin.class);
         if (mixin != null) {
-            mixinTypes.add(MixinType.from(mixin, adviceOrShimOrMixinClass, null));
+            mixinTypes.add(MixinType.from(mixin, adviceOrShimOrMixinClass));
         }
         List<ShimType> shimTypes = Lists.newArrayList();
         Shim shim = adviceOrShimOrMixinClass.getAnnotation(Shim.class);
@@ -1561,7 +1560,7 @@ public class WeaverTest {
         Supplier<List<Advice>> advisorsSupplier =
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
         AnalyzedWorld analyzedWorld =
-                new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes, null);
+                new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes);
         Weaver weaver = new Weaver(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
                 NopWeavingTimerService.INSTANCE);
         isolatedWeavingClassLoader.setWeaver(weaver);

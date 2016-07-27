@@ -90,14 +90,11 @@ public class AnalyzedWorld {
     private final ImmutableList<ShimType> shimTypes;
     private final ImmutableList<MixinType> mixinTypes;
 
-    private final @Nullable ExtraBootResourceFinder extraBootResourceFinder;
-
     public AnalyzedWorld(Supplier<List<Advice>> advisors, List<ShimType> shimTypes,
-            List<MixinType> mixinTypes, @Nullable ExtraBootResourceFinder extraBootResourceFinder) {
+            List<MixinType> mixinTypes) {
         this.advisors = advisors;
         this.shimTypes = ImmutableList.copyOf(shimTypes);
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
-        this.extraBootResourceFinder = extraBootResourceFinder;
     }
 
     public List<Class<?>> getClassesWithReweavableAdvice(boolean remove) {
@@ -309,9 +306,6 @@ public class AnalyzedWorld {
                     return parentLoaderAnalyzedClass;
                 }
             }
-        }
-        if (url == null && extraBootResourceFinder != null) {
-            url = extraBootResourceFinder.findResource(path);
         }
         if (url == null) {
             // what follows is just a best attempt in the sort-of-rare case when a custom class
