@@ -399,7 +399,7 @@ HandlebarsRendering = (function () {
             .done(function (data) {
               if (data.overwritten) {
                 $('#sps').append('<div style="padding: 1em;">The trace entries have expired, see' +
-                    ' <a href="config/storage#trace-capped-database-size">' +
+                    ' <a href="admin/storage#trace-capped-database-size">' +
                     'Configuration &gt; Storage &gt; Trace detail data</a></div>');
               } else if (data.expired) {
                 $('#sps').append('<div style="padding: 1em;">This trace has expired</div>');
@@ -526,7 +526,7 @@ HandlebarsRendering = (function () {
             .done(function (data) {
               if (data.overwritten) {
                 $selector.find('.gt-profile').html('<div style="padding: 1em;">The profile has expired, see' +
-                    ' <a href="config/storage#trace-capped-database-size">' +
+                    ' <a href="admin/storage#trace-capped-database-size">' +
                     'Configuration &gt; Storage &gt; Trace detail data</a></div>');
               } else if (data.expired) {
                 $selector.find('.gt-profile').html.append('<div style="padding: 1em;">This trace has expired</div>');
