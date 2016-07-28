@@ -99,6 +99,9 @@ public interface AggregateRepository {
             ProfileCollector collector) throws Exception;
 
     // query.from() is non-inclusive
+    boolean hasMainThreadProfile(String agentRollup, TransactionQuery query) throws Exception;
+
+    // query.from() is non-inclusive
     boolean hasAuxThreadProfile(String agentRollup, TransactionQuery query) throws Exception;
 
     // query.from() is non-inclusive

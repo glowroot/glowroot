@@ -212,6 +212,8 @@ public class AggregateDao implements AggregateRepository {
     private final Map<Table, List<PreparedStatement>> readTransactionPS;
     private final Map<Table, List<PreparedStatement>> readTransactionForRollupPS;
 
+    private final List<PreparedStatement> existsMainThreadProfileOverallPS;
+    private final List<PreparedStatement> existsMainThreadProfileTransactionPS;
     private final List<PreparedStatement> existsAuxThreadProfileOverallPS;
     private final List<PreparedStatement> existsAuxThreadProfileTransactionPS;
 
@@ -285,14 +287,22 @@ public class AggregateDao implements AggregateRepository {
         this.readTransactionPS = ImmutableMap.copyOf(readTransactionMap);
         this.readTransactionForRollupPS = ImmutableMap.copyOf(readTransactionForRollupMap);
 
+        List<PreparedStatement> existsMainThreadProfileOverallPS = Lists.newArrayList();
+        List<PreparedStatement> existsMainThreadProfileTransactionPS = Lists.newArrayList();
         List<PreparedStatement> existsAuxThreadProfileOverallPS = Lists.newArrayList();
         List<PreparedStatement> existsAuxThreadProfileTransactionPS = Lists.newArrayList();
         for (int i = 0; i < count; i++) {
+            existsMainThreadProfileOverallPS
+                    .add(session.prepare(existsPS(mainThreadProfileTable, false, i)));
+            existsMainThreadProfileTransactionPS
+                    .add(session.prepare(existsPS(mainThreadProfileTable, true, i)));
             existsAuxThreadProfileOverallPS
                     .add(session.prepare(existsPS(auxThreadProfileTable, false, i)));
             existsAuxThreadProfileTransactionPS
                     .add(session.prepare(existsPS(auxThreadProfileTable, true, i)));
         }
+        this.existsMainThreadProfileOverallPS = existsMainThreadProfileOverallPS;
+        this.existsMainThreadProfileTransactionPS = existsMainThreadProfileTransactionPS;
         this.existsAuxThreadProfileOverallPS = existsAuxThreadProfileOverallPS;
         this.existsAuxThreadProfileTransactionPS = existsAuxThreadProfileTransactionPS;
 
@@ -605,6 +615,18 @@ public class AggregateDao implements AggregateRepository {
     public void mergeAuxThreadProfilesInto(String agentRollup, TransactionQuery query,
             ProfileCollector collector) throws InvalidProtocolBufferException {
         mergeProfilesInto(agentRollup, query, auxThreadProfileTable, collector);
+    }
+
+    // query.from() is non-inclusive
+    @Override
+    public boolean hasMainThreadProfile(String agentRollup, TransactionQuery query)
+            throws Exception {
+        BoundStatement boundStatement = query.transactionName() == null
+                ? existsMainThreadProfileOverallPS.get(query.rollupLevel()).bind()
+                : existsMainThreadProfileTransactionPS.get(query.rollupLevel()).bind();
+        bindQuery(boundStatement, agentRollup, query);
+        ResultSet results = session.execute(boundStatement);
+        return results.one() != null;
     }
 
     // query.from() is non-inclusive

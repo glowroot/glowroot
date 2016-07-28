@@ -259,16 +259,29 @@ class TransactionJsonService {
         MutableProfile profile =
                 transactionCommonService.getMergedProfile(agentRollup, query, request.auxiliary(),
                         request.include(), request.exclude(), request.truncateBranchPercentage());
+        boolean hasUnfilteredMainThreadProfile;
         boolean hasUnfilteredAuxThreadProfile;
         if (request.auxiliary()) {
+            hasUnfilteredMainThreadProfile =
+                    transactionCommonService.hasMainThreadProfile(agentRollup, query);
             hasUnfilteredAuxThreadProfile = profile.getUnfilteredSampleCount() > 0;
         } else {
-            hasUnfilteredAuxThreadProfile =
-                    transactionCommonService.hasAuxThreadProfile(agentRollup, query);
+            if (profile.getUnfilteredSampleCount() == 0) {
+                hasUnfilteredMainThreadProfile = false;
+                // return and display aux profile instead
+                profile = transactionCommonService.getMergedProfile(agentRollup, query, true,
+                        request.include(), request.exclude(), request.truncateBranchPercentage());
+                hasUnfilteredAuxThreadProfile = profile.getUnfilteredSampleCount() > 0;
+            } else {
+                hasUnfilteredMainThreadProfile = true;
+                hasUnfilteredAuxThreadProfile =
+                        transactionCommonService.hasAuxThreadProfile(agentRollup, query);
+            }
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
+        jg.writeBooleanField("hasUnfilteredMainThreadProfile", hasUnfilteredMainThreadProfile);
         jg.writeBooleanField("hasUnfilteredAuxThreadProfile", hasUnfilteredAuxThreadProfile);
         if (profile.getUnfilteredSampleCount() == 0) {
             if (request.auxiliary()

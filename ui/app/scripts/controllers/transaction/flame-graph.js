@@ -22,8 +22,7 @@ glowroot.controller('TransactionFlameGraphCtrl', [
   '$http',
   'httpErrors',
   'queryStrings',
-    'auxiliary',
-  function ($scope, $location, $http, httpErrors, queryStrings, auxiliary) {
+  function ($scope, $location, $http, httpErrors, queryStrings) {
     // \u00b7 is &middot;
     document.title = 'Transactions \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'transaction';
@@ -33,6 +32,7 @@ glowroot.controller('TransactionFlameGraphCtrl', [
     $scope.from = Number($location.search().from);
     $scope.to = Number($location.search().to);
     $scope.last = Number($location.search().last);
+    $scope.auxiliary = $location.search().auxiliary || false;
     $scope.filter = $location.search().filter;
     // larger truncate-branch-percentage compared to tree view
     // because svg flame graph is very slow with finer grained leafs
@@ -62,7 +62,7 @@ glowroot.controller('TransactionFlameGraphCtrl', [
         transactionName: $scope.transactionName,
         from: $scope.from,
         to: $scope.to,
-        auxiliary: auxiliary,
+        auxiliary: $scope.auxiliary,
         include: parseResult.includes,
         exclude: parseResult.excludes,
         truncateBranchPercentage: $scope.truncateBranchPercentage

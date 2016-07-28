@@ -176,31 +176,12 @@ glowroot.config([
         }
       }
     });
-    $stateProvider.state('transaction.detail.mainThreadProfile', {
-      url: '/main-thread-profile?agent-id&transaction-type&transaction-name',
+    $stateProvider.state('transaction.detail.threadProfile', {
+      url: '/thread-profile?agent-id&transaction-type&transaction-name',
       views: {
         'main@transaction': {
           templateUrl: 'views/transaction/profile.html',
-          controller: 'TransactionProfileCtrl',
-          resolve: {
-            auxiliary: function () {
-              return false;
-            }
-          }
-        }
-      }
-    });
-    $stateProvider.state('transaction.detail.auxThreadProfile', {
-      url: '/aux-thread-profile?agent-id&transaction-type&transaction-name',
-      views: {
-        'main@transaction': {
-          templateUrl: 'views/transaction/profile.html',
-          controller: 'TransactionProfileCtrl',
-          resolve: {
-            auxiliary: function () {
-              return true;
-            }
-          }
+          controller: 'TransactionProfileCtrl'
         }
       }
     });
@@ -218,26 +199,11 @@ glowroot.config([
       $timeout(checkForD3, 100);
       return deferred.promise;
     }];
-    $stateProvider.state('transaction-main-thread-flame-graph', {
-      url: '/transaction/main-thread-flame-graph',
+    $stateProvider.state('transaction-thread-flame-graph', {
+      url: '/transaction/thread-flame-graph',
       templateUrl: 'views/transaction/flame-graph.html',
       controller: 'TransactionFlameGraphCtrl',
       resolve: {
-        auxiliary: function () {
-          return false;
-        },
-        waitForD3: waitForD3,
-        waitForLayout: waitForLayout(true)
-      }
-    });
-    $stateProvider.state('transaction-aux-thread-flame-graph', {
-      url: '/transaction/aux-thread-flame-graph',
-      templateUrl: 'views/transaction/flame-graph.html',
-      controller: 'TransactionFlameGraphCtrl',
-      resolve: {
-        auxiliary: function () {
-          return true;
-        },
         waitForD3: waitForD3,
         waitForLayout: waitForLayout(true)
       }

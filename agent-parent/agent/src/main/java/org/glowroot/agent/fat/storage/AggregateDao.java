@@ -370,6 +370,14 @@ class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
+    public boolean hasMainThreadProfile(String agentRollup, TransactionQuery query)
+            throws Exception {
+        return !dataSource.query(new CappedIdQuery("main_thread_profile_capped_id", query))
+                .isEmpty();
+    }
+
+    // query.from() is non-inclusive
+    @Override
     public boolean hasAuxThreadProfile(String agentRollup, TransactionQuery query)
             throws Exception {
         return !dataSource.query(new CappedIdQuery("aux_thread_profile_capped_id", query))

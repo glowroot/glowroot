@@ -23,8 +23,7 @@ glowroot.controller('TransactionProfileCtrl', [
   'locationChanges',
   'queryStrings',
   'httpErrors',
-  'auxiliary',
-  function ($scope, $http, $location, locationChanges, queryStrings, httpErrors, auxiliary) {
+  function ($scope, $http, $location, locationChanges, queryStrings, httpErrors) {
 
     $scope.$parent.activeTabItem = 'profile';
 
@@ -34,28 +33,36 @@ glowroot.controller('TransactionProfileCtrl', [
 
     var appliedFilter;
 
-    $scope.auxiliary = auxiliary;
     $scope.showProfile = false;
     $scope.showSpinner = 0;
 
-    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh'], function () {
+    $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'auxiliary'], function () {
       $location.search('filter', $scope.filter || null);
+      $location.search('auxiliary', $scope.auxiliary ? 'true' : null);
       refreshData();
     });
 
-    $scope.clickTopRadioButton = function (item) {
-      if (($scope.auxiliary && item === 'aux-thread-profile') || (!$scope.auxiliary && item === 'main-thread-profile')) {
+    $scope.tabQueryString = function (auxiliary) {
+      var query = $scope.buildQueryObject({});
+      if (auxiliary) {
+        query.auxiliary = true;
+      }
+      return queryStrings.encodeObject(query);
+    };
+
+    $scope.clickTopRadioButton = function (auxiliary) {
+      if (($scope.auxiliary && auxiliary) || (!$scope.auxiliary && !auxiliary)) {
         $scope.range.chartRefresh++;
       } else {
-        $location.url('transaction/' + item + $scope.tabQueryString());
+        $scope.auxiliary = auxiliary;
       }
     };
 
-    $scope.clickActiveTopLink = function (event, item) {
+    $scope.clickActiveTopLink = function (event, auxiliary) {
       if (event.ctrlKey) {
         return;
       }
-      if (($scope.auxiliary && item === 'aux-thread-profile') || (!$scope.auxiliary && item === 'main-thread-profile')) {
+      if (($scope.auxiliary && auxiliary) || (!$scope.auxiliary && !auxiliary)) {
         $scope.range.chartRefresh++;
         // suppress normal link
         event.preventDefault();
@@ -69,11 +76,10 @@ glowroot.controller('TransactionProfileCtrl', [
       if ($scope.filter) {
         query.filter = $scope.filter;
       }
-      if ($scope.auxiliary) {
-        return 'transaction/aux-thread-flame-graph' + queryStrings.encodeObject(query);
-      } else {
-        return 'transaction/main-thread-flame-graph' + queryStrings.encodeObject(query);
+      if ($scope.auxiliary || (!$scope.hasUnfilteredMainThreadProfile && $scope.hasUnfilteredAuxThreadProfile)) {
+        query.auxiliary = true;
       }
+      return 'transaction/thread-flame-graph' + queryStrings.encodeObject(query);
     };
 
     $scope.refresh = function () {
@@ -92,6 +98,7 @@ glowroot.controller('TransactionProfileCtrl', [
       }
       $scope.filter = appliedFilter;
       $scope.truncateBranchPercentage = $location.search()['truncate-branch-percentage'] || 0.1;
+      $scope.auxiliary = $location.search().auxiliary || false;
     });
 
     $('.gt-profile-text-filter').on('gtClearProfileFilter', function (event, response) {
@@ -129,6 +136,7 @@ glowroot.controller('TransactionProfileCtrl', [
           .success(function (data) {
             $scope.showSpinner--;
             $scope.showOverwrittenMessage = data.overwritten;
+            $scope.hasUnfilteredMainThreadProfile = data.hasUnfilteredMainThreadProfile;
             $scope.hasUnfilteredAuxThreadProfile = data.hasUnfilteredAuxThreadProfile;
             if ($scope.showOverwrittenMessage) {
               $scope.showProfile = false;

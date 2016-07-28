@@ -343,6 +343,19 @@ class TransactionCommonService {
         return profile;
     }
 
+    boolean hasMainThreadProfile(String agentRollup, TransactionQuery query) throws Exception {
+        for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
+            TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
+                    .copyFrom(query)
+                    .rollupLevel(rollupLevel)
+                    .build();
+            if (aggregateRepository.hasMainThreadProfile(agentRollup, revisedQuery)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     boolean hasAuxThreadProfile(String agentRollup, TransactionQuery query) throws Exception {
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
             TransactionQuery revisedQuery = ImmutableTransactionQuery.builder()
