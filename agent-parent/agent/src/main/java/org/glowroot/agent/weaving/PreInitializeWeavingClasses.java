@@ -284,7 +284,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.plugin.api.weaving.OnThrow");
         types.add("org.glowroot.agent.plugin.api.weaving.Pointcut");
         types.add("org.glowroot.agent.plugin.api.weaving.Shim");
-        types.add("org.glowroot.agent.util.Reflections");
         types.add("org.glowroot.agent.util.Tickers");
         types.add("org.glowroot.agent.util.Tickers$DummyTicker");
         types.add("org.glowroot.agent.weaving.Advice");

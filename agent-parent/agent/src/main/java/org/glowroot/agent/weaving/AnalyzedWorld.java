@@ -46,7 +46,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.advicegen.AdviceGenerator;
 import org.glowroot.agent.config.InstrumentationConfig;
-import org.glowroot.agent.util.Reflections;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.common.util.Styles;
 
@@ -58,8 +57,9 @@ public class AnalyzedWorld {
 
     static {
         try {
-            findLoadedClassMethod = Reflections.getDeclaredMethod(ClassLoader.class,
-                    "findLoadedClass", new Class[] {String.class});
+            findLoadedClassMethod = ClassLoader.class.getDeclaredMethod("findLoadedClass",
+                    new Class[] {String.class});
+            findLoadedClassMethod.setAccessible(true);
         } catch (Exception e) {
             // unrecoverable error
             throw new AssertionError(e);
@@ -274,7 +274,7 @@ public class AnalyzedWorld {
         // ClassLoader.findLoadClass()
         Class<?> clazz = null;
         try {
-            clazz = (Class<?>) Reflections.invoke(findLoadedClassMethod, loader, className);
+            clazz = (Class<?>) findLoadedClassMethod.invoke(loader, className);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }

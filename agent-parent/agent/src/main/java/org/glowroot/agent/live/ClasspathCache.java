@@ -63,7 +63,6 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.util.Reflections;
 import org.glowroot.agent.weaving.AnalyzedWorld;
 import org.glowroot.agent.weaving.ClassNames;
 
@@ -461,11 +460,11 @@ class ClasspathCache {
             throws Exception {
         Object virtualFile = url.openConnection().getContent();
         Class<?> virtualFileClass = loader.loadClass("org.jboss.vfs.VirtualFile");
-        Method getPhysicalFileMethod = Reflections.getMethod(virtualFileClass, "getPhysicalFile");
-        Method getNameMethod = Reflections.getMethod(virtualFileClass, "getName");
-        File physicalFile = (File) Reflections.invoke(getPhysicalFileMethod, virtualFile);
+        Method getPhysicalFileMethod = virtualFileClass.getMethod("getPhysicalFile");
+        Method getNameMethod = virtualFileClass.getMethod("getName");
+        File physicalFile = (File) getPhysicalFileMethod.invoke(virtualFile);
         checkNotNull(physicalFile, "org.jboss.vfs.VirtualFile.getPhysicalFile() returned null");
-        String name = (String) Reflections.invoke(getNameMethod, virtualFile);
+        String name = (String) getNameMethod.invoke(virtualFile);
         checkNotNull(name, "org.jboss.vfs.VirtualFile.getName() returned null");
         File file = new File(physicalFile.getParentFile(), name);
         return getLocationFromFile(file);

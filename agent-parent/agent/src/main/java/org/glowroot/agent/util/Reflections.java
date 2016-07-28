@@ -15,11 +15,8 @@
  */
 package org.glowroot.agent.util;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-
-import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,48 +27,38 @@ public class Reflections {
 
     private Reflections() {}
 
-    public static Method getMethod(Class<?> clazz, String name, Class<?>... parameterTypes)
-            throws Exception {
-        try {
-            Method method = clazz.getMethod(name, parameterTypes);
-            method.setAccessible(true);
-            return method;
-        } catch (NoClassDefFoundError e) {
-            // NoClassDefFoundError is thrown if any method signature in clazz references a missing
-            // class (see MissingOptionalDependenciesReflectionTest.java)
-            // seems best to treat same as NoSuchMethodException
-
-            // log exception at trace level
-            logger.trace(e.getMessage(), e);
-            throw new NoSuchMethodException();
-        }
-    }
-
-    public static Method getDeclaredMethod(Class<?> clazz, String name, Class<?>... parameterTypes)
-            throws Exception {
-        try {
-            Method method = clazz.getDeclaredMethod(name, parameterTypes);
-            method.setAccessible(true);
-            return method;
-        } catch (NoClassDefFoundError e) {
-            // NoClassDefFoundError is thrown if any method signature in clazz references a missing
-            // class (see MissingOptionalDependenciesReflectionTest.java)
-            // seems best to treat same as NoSuchMethodException
-
-            // log exception at trace level
-            logger.trace(e.getMessage(), e);
-            throw new NoSuchMethodException();
-        }
-    }
-
     public static Method getAnyMethod(Class<?> clazz, String name, Class<?>... parameterTypes)
             throws Exception {
         try {
-            return getMethod(clazz, name, parameterTypes);
+            Method method = clazz.getMethod(name, parameterTypes);
+            // even though getMethod() above only returns public method, still need to
+            // setAccessible() in case class is package-private
+            method.setAccessible(true);
+            return method;
         } catch (NoSuchMethodException e) {
             // log exception at trace level
             logger.trace(e.getMessage(), e);
             return getAnyDeclaredMethod(clazz, name, parameterTypes);
+        } catch (NoClassDefFoundError e) {
+            // NoClassDefFoundError is thrown if any method signature in clazz references a missing
+            // class (see MissingOptionalDependenciesReflectionTest.java)
+            // seems best to treat same as NoSuchMethodException
+
+            // log exception at trace level
+            logger.trace(e.getMessage(), e);
+            return getAnyDeclaredMethod(clazz, name, parameterTypes);
+        }
+    }
+
+    public static Field getAnyField(Class<?> clazz, String fieldName) throws Exception {
+        try {
+            Field field = clazz.getField(fieldName);
+            field.setAccessible(true);
+            return field;
+        } catch (NoSuchFieldException e) {
+            // log exception at trace level
+            logger.trace(e.getMessage(), e);
+            return getAnyDeclaredField(clazz, fieldName);
         }
     }
 
@@ -104,25 +91,6 @@ public class Reflections {
         }
     }
 
-    public static <T> Constructor<T> getConstructor(Class<T> clazz, Class<?>... parameterTypes)
-            throws Exception {
-        Constructor<T> constructor = clazz.getConstructor(parameterTypes);
-        constructor.setAccessible(true);
-        return constructor;
-    }
-
-    public static Field getAnyField(Class<?> clazz, String fieldName) throws Exception {
-        try {
-            Field field = clazz.getField(fieldName);
-            field.setAccessible(true);
-            return field;
-        } catch (NoSuchFieldException e) {
-            // log exception at trace level
-            logger.trace(e.getMessage(), e);
-            return getAnyDeclaredField(clazz, fieldName);
-        }
-    }
-
     private static Field getAnyDeclaredField(Class<?> clazz, String fieldName) throws Exception {
         try {
             Field field = clazz.getDeclaredField(fieldName);
@@ -137,19 +105,5 @@ public class Reflections {
             }
             return getAnyDeclaredField(superClass, fieldName);
         }
-    }
-
-    public static @Nullable Object invoke(Method method, Object obj, @Nullable Object... args)
-            throws Exception {
-        return method.invoke(obj, args);
-    }
-
-    public static <T> /*@NonNull*/ T invoke(Constructor<T> constructor, @Nullable Object... args)
-            throws Exception {
-        return constructor.newInstance(args);
-    }
-
-    public static @Nullable Object getFieldValue(Field field, Object obj) throws Exception {
-        return field.get(obj);
     }
 }

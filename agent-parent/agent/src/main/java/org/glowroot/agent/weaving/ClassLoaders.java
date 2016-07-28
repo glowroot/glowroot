@@ -33,8 +33,6 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.util.Reflections;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class ClassLoaders {
@@ -89,10 +87,11 @@ public class ClassLoaders {
     }
 
     static Class<?> defineClass(String name, byte[] bytes, ClassLoader loader) throws Exception {
-        Method defineClassMethod = Reflections.getDeclaredMethod(ClassLoader.class, "defineClass",
-                String.class, byte[].class, int.class, int.class);
-        Class<?> definedClass = (Class<?>) Reflections.invoke(defineClassMethod, loader, name,
-                bytes, 0, bytes.length);
+        Method defineClassMethod = ClassLoader.class.getDeclaredMethod("defineClass", String.class,
+                byte[].class, int.class, int.class);
+        defineClassMethod.setAccessible(true);
+        Class<?> definedClass =
+                (Class<?>) defineClassMethod.invoke(loader, name, bytes, 0, bytes.length);
         checkNotNull(definedClass);
         return definedClass;
     }

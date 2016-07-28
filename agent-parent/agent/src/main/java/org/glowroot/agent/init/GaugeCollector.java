@@ -50,7 +50,6 @@ import org.glowroot.agent.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.agent.config.ImmutableMBeanAttribute;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.LazyPlatformMBeanServer.InitListener;
-import org.glowroot.agent.util.Reflections;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ScheduledRunnable;
 import org.glowroot.common.util.Styles;
@@ -106,9 +105,9 @@ class GaugeCollector extends ScheduledRunnable {
                 try {
                     Class<?> sunManagementFactoryHelperClass =
                             Class.forName("sun.management.ManagementFactoryHelper");
-                    Method registerInternalMBeansMethod =
-                            Reflections.getDeclaredMethod(sunManagementFactoryHelperClass,
-                                    "registerInternalMBeans", MBeanServer.class);
+                    Method registerInternalMBeansMethod = sunManagementFactoryHelperClass
+                            .getDeclaredMethod("registerInternalMBeans", MBeanServer.class);
+                    registerInternalMBeansMethod.setAccessible(true);
                     registerInternalMBeansMethod.invoke(null, mbeanServer);
                 } catch (Exception e) {
                     logger.debug(e.getMessage(), e);

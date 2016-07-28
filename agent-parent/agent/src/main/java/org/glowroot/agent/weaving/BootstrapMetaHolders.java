@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.weaving;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +24,6 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.objectweb.asm.Type;
 
-import org.glowroot.agent.util.Reflections;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -153,9 +151,7 @@ public class BootstrapMetaHolders {
                 if (classMeta == null) {
                     Class<?> classMetaClass = getType(classMetaType);
                     Class<?> wovenClass = getType(type);
-                    Constructor<?> constructor =
-                            Reflections.getConstructor(classMetaClass, Class.class);
-                    classMeta = Reflections.invoke(constructor, wovenClass);
+                    classMeta = classMetaClass.getConstructor(Class.class).newInstance(wovenClass);
                 }
             }
             return classMeta;
@@ -193,9 +189,7 @@ public class BootstrapMetaHolders {
                     }
                     Method method =
                             methodOwnerClass.getDeclaredMethod(methodName, methodParameterClasses);
-                    Constructor<?> constructor =
-                            Reflections.getConstructor(methodMetaClass, Method.class);
-                    methodMeta = Reflections.invoke(constructor, method);
+                    methodMeta = methodMetaClass.getConstructor(Method.class).newInstance(method);
                 }
             }
             return methodMeta;

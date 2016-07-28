@@ -56,6 +56,7 @@ public class JarFileShadingIT {
                 unacceptableEntries.add(jarEntry.getName());
             }
         }
+        jarFile.close();
         assertThat(unacceptableEntries).isEmpty();
     }
 

@@ -54,11 +54,6 @@ public class MissingOptionalDependenciesReflectionTest {
     }
 
     @Test
-    public void testMissingOptionalDependencyConstructorReflectionStillWorks() throws Exception {
-        Reflections.getConstructor(DefaultContextCache.class);
-    }
-
-    @Test
     public void testNormal() {
         DefaultContextCache cache = new DefaultContextCache();
         cache.size();

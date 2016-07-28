@@ -93,7 +93,7 @@ public class LdapAuthentication {
         try {
             ldapContext = createLdapContext(systemUsername, systemPassword, ldapConfig);
         } catch (NamingException e) {
-            throw new AuthenticationException("System LDAP authentication failed", e.getCause());
+            throw new AuthenticationException("System LDAP authentication failed", e);
         }
         String userDn;
         try {

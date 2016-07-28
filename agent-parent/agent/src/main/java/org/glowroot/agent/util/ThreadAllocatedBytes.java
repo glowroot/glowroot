@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,9 +51,8 @@ public class ThreadAllocatedBytes {
                     + " (introduced in Oracle Java SE 6u25)");
         }
         Method isSupportedMethod =
-                Reflections.getMethod(sunThreadMXBeanClass, "isThreadAllocatedMemorySupported");
-        Boolean supported = (Boolean) Reflections.invoke(isSupportedMethod,
-                ManagementFactory.getThreadMXBean());
+                sunThreadMXBeanClass.getMethod("isThreadAllocatedMemorySupported");
+        Boolean supported = (Boolean) isSupportedMethod.invoke(ManagementFactory.getThreadMXBean());
         return createInternal(supported, sunThreadMXBeanClass);
     }
 
@@ -69,7 +68,7 @@ public class ThreadAllocatedBytes {
                     + ".isThreadAllocatedMemorySupported() returned false");
         }
         Method getThreadAllocatedBytesMethod =
-                Reflections.getMethod(sunThreadMXBeanClass, "getThreadAllocatedBytes", long.class);
+                sunThreadMXBeanClass.getMethod("getThreadAllocatedBytes", long.class);
         return OptionalService.available(new ThreadAllocatedBytes(getThreadAllocatedBytesMethod));
     }
 
@@ -83,8 +82,8 @@ public class ThreadAllocatedBytes {
             return -1;
         }
         try {
-            Long threadAllocatedBytes = (Long) Reflections.invoke(getThreadAllocatedBytesMethod,
-                    ManagementFactory.getThreadMXBean(), threadId);
+            Long threadAllocatedBytes = (Long) getThreadAllocatedBytesMethod
+                    .invoke(ManagementFactory.getThreadMXBean(), threadId);
             if (threadAllocatedBytes == null) {
                 logger.error("method unexpectedly returned null:"
                         + " com.sun.management.ThreadMXBean.getThreadAllocatedBytes()");

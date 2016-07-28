@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import javax.annotation.Nullable;
-
-import org.glowroot.agent.util.Reflections;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -84,10 +82,10 @@ class Accessor {
         switch (accessorType) {
             case METHOD:
                 checkNotNull(method);
-                return Reflections.invoke(method, object);
+                return method.invoke(object);
             case FIELD:
                 checkNotNull(field);
-                return Reflections.getFieldValue(field, object);
+                return field.get(object);
             case ARRAY_LENGTH:
                 return Array.getLength(object);
             default:
