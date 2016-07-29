@@ -119,7 +119,8 @@ public class ResultSetAspect {
         }
     }
 
-    @Pointcut(className = "com.datastax.driver.core.ResultSet", methodName = "iterator",
+    @Pointcut(className = "com.datastax.driver.core.ResultSet",
+            methodDeclaringClassName = "java.lang.Iterable", methodName = "iterator",
             methodParameterTypes = {})
     public static class IteratorAdvice {
         @OnReturn

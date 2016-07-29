@@ -131,7 +131,7 @@ public class HttpClient {
             updateLibVersion("asynchttpclient.version", "1.8." + i);
             runTest(test, "async-http-client-1.x");
         }
-        for (int i = 0; i <= 38; i++) {
+        for (int i = 0; i <= 39; i++) {
             updateLibVersion("asynchttpclient.version", "1.9." + i);
             runTest(test, "async-http-client-1.x");
         }
@@ -235,6 +235,7 @@ public class HttpClient {
         }
         updateLibVersion("spring.version", "4.3.0.RELEASE");
         updateLibVersion("spring.version", "4.3.1.RELEASE");
+        updateLibVersion("spring.version", "4.3.2.RELEASE");
     }
 
     private static void updateLibVersion(String property, String version) throws IOException {

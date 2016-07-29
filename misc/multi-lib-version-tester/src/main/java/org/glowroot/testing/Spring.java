@@ -62,6 +62,7 @@ public class Spring {
         }
         run("4.3.0.RELEASE");
         run("4.3.1.RELEASE");
+        run("4.3.2.RELEASE");
     }
 
     private static void run(String version, String... profiles) throws Exception {
