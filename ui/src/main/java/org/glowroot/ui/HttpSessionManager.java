@@ -169,6 +169,7 @@ class HttpSessionManager {
                     .anonymous(true)
                     .ldap(false)
                     .usernameCaseAmbiguous("anonymous")
+                    .configRepository(configRepository)
                     .build();
         }
         return getAuthentication(userConfig.username(), userConfig.roles(), false);
