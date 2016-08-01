@@ -149,7 +149,8 @@ class LayoutService {
             return ImmutableLayout.builder()
                     .fat(fat)
                     .footerMessage("Glowroot version " + version)
-                    .hideLogin(!configRepository.namedUsersExist())
+                    .hideLogin(!configRepository.namedUsersExist()
+                            && configRepository.getLdapConfig().host().isEmpty())
                     .addAllRollupConfigs(configRepository.getRollupConfigs())
                     .addAllRollupExpirationMillis(rollupExpirationMillis)
                     .gaugeCollectionIntervalMillis(
