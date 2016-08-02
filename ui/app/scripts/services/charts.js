@@ -76,7 +76,7 @@ glowroot.factory('charts', [
       });
     }
 
-    function updateRange($scope, from, to, zoomingOut, selection, selectionNearestLarger) {
+    function updateRange($scope, from, to, zoomingOut, selection, selectionNearestLarger, tracePoints) {
       // force chart refresh even if chartFrom/chartTo don't change (e.g. trying to zoom in beyond single interval)
       $scope.range.chartRefresh++;
 
@@ -86,14 +86,15 @@ glowroot.factory('charts', [
         return;
       }
 
-      var dataPointIntervalMillis = getDataPointIntervalMillis(from, to, $scope.useGaugeViewThresholdMultiplier);
+      var dataPointIntervalMillis =
+          getDataPointIntervalMillis(from, to, $scope.useGaugeViewThresholdMultiplier, tracePoints);
       var revisedFrom;
       var revisedTo;
       if (zoomingOut || selectionNearestLarger) {
         revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
         revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
         var revisedDataPointIntervalMillis =
-            getDataPointIntervalMillis(revisedFrom, revisedTo, $scope.useGaugeViewThresholdMultiplier);
+            getDataPointIntervalMillis(revisedFrom, revisedTo, $scope.useGaugeViewThresholdMultiplier, tracePoints);
         if (revisedDataPointIntervalMillis !== dataPointIntervalMillis) {
           // expanded out to larger rollup threshold so need to re-adjust
           // ok to use original from/to instead of revisedFrom/revisedTo
@@ -104,19 +105,41 @@ glowroot.factory('charts', [
         revisedFrom = Math.ceil(from / dataPointIntervalMillis) * dataPointIntervalMillis;
         revisedTo = Math.floor(to / dataPointIntervalMillis) * dataPointIntervalMillis;
         if (revisedTo <= revisedFrom) {
-          // selection is too small, so expand outward instead
-          revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
-          revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
+          // selection is too small, so expand outward to exactly one data point interval
+          if (to - revisedTo > revisedFrom - from) {
+            revisedTo += dataPointIntervalMillis;
+            revisedFrom = revisedTo - dataPointIntervalMillis;
+          } else {
+            revisedFrom -= dataPointIntervalMillis;
+            revisedTo = revisedFrom + dataPointIntervalMillis;
+          }
         }
       }
       var now = Date.now();
       // need to compare original 'to' in case it was revised below 'now'
-      if (revisedTo > now || to > now) {
+      if ((revisedTo > now || to > now) && (!tracePoints || revisedTo - revisedFrom >= 60000)) {
         if (!zoomingOut && !selection && $scope.range.last) {
+          if (tracePoints && $scope.range.last === 60000) {
+            $scope.range.chartTo = Math.ceil(now / 60000) * 60000;
+            $scope.range.chartFrom = $scope.range.chartTo - 60000;
+            $scope.range.last = 0;
+            return;
+          }
           // double-click or scrollwheel zooming in, need special case here, otherwise might zoom in a bit too much
           // due to shrinking the zoom to data point interval, which could result in strange 2 days --> 22 hours
           // instead of the more obvious 2 days --> 1 day
           $scope.range.last = roundUpLast($scope.range.last / 2);
+          $scope.applyLast();
+          return;
+        }
+        if (tracePoints && revisedTo - revisedFrom === 120000) {
+          $scope.range.last = 60000;
+          $scope.applyLast();
+          return;
+        }
+        if (tracePoints && now < revisedFrom) {
+          // this can happen after zooming in on RHS of chart until 1 second total chart width, then zooming out on LHS
+          $scope.range.last = 60000;
           $scope.applyLast();
           return;
         }
@@ -155,8 +178,11 @@ glowroot.factory('charts', [
       }
     }
 
-    function getDataPointIntervalMillis(from, to, useGaugeViewThresholdMultiplier) {
+    function getDataPointIntervalMillis(from, to, useGaugeViewThresholdMultiplier, tracePoints) {
       var millis = to - from;
+      if (tracePoints && millis < 120000) {
+        return 1000;
+      }
       var timeAgoMillis = Date.now() - from;
       var i;
       var rollupConfigs = $rootScope.layout.rollupConfigs;

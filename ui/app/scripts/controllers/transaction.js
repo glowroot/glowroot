@@ -92,7 +92,7 @@ glowroot.controller('TransactionCtrl', [
       return queryStrings.encodeObject(query);
     };
 
-    // TODO this is exact duplicate of same function in gauges.js
+    // TODO this is exact duplicate of same function in gauge-values.js
     $scope.applyLast = function () {
       if (!$scope.range.last) {
         return;
@@ -153,8 +153,7 @@ glowroot.controller('TransactionCtrl', [
       return queryStrings.encodeObject($scope.buildQueryObject({}));
     };
 
-    // TODO this is exact duplicate of same function in gauges.js
-    $scope.buildQueryObject = function (baseQuery) {
+    $scope.buildQueryObject = function (baseQuery, allowSeconds) {
       var query = baseQuery || angular.copy($location.search());
       if (!$scope.layout.fat) {
         var agentRollupObj = $scope.layout.agentRollups[$scope.agentRollup];
@@ -169,8 +168,13 @@ glowroot.controller('TransactionCtrl', [
       query['transaction-type'] = $scope.transactionType;
       query['transaction-name'] = $scope.transactionName;
       if (!$scope.range.last) {
-        query.from = $scope.range.chartFrom;
-        query.to = $scope.range.chartTo;
+        if (allowSeconds) {
+          query.from = $scope.range.chartFrom;
+          query.to = $scope.range.chartTo;
+        } else {
+          query.from = Math.floor($scope.range.chartFrom / 60000) * 60000;
+          query.to = Math.ceil($scope.range.chartTo / 60000) * 60000;
+        }
         delete query.last;
       } else if ($scope.range.last !== 4 * 60 * 60 * 1000) {
         query.last = $scope.range.last;

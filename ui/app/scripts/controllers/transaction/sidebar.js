@@ -96,8 +96,9 @@ glowroot.controller('TransactionSidebarCtrl', [
       var query = {
         agentRollup: $scope.agentRollup,
         transactionType: $scope.transactionType,
-        from: $scope.range.chartFrom,
-        to: $scope.range.chartTo,
+        // need floor/ceil when on trace point chart which allows second granularity
+        from: Math.floor($scope.range.chartFrom / 60000) * 60000,
+        to: Math.ceil($scope.range.chartTo / 60000) * 60000,
         sortOrder: $scope.summarySortOrder,
         limit: $scope.summaryLimit
       };

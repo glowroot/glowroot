@@ -71,14 +71,16 @@ glowroot.controller('ChartRangeCtrl', [
       if ($scope.range.last) {
         return $scope.lastDisplay($scope.range.last);
       }
-      var fromDate = fancyDate($scope.range.chartFrom);
-      var toDate = fancyDate($scope.range.chartTo);
+      // need floor/ceil when on trace point chart which allows second granularity
+      // this is so that time frame display matches sidebar time frame, which seems least confusing alternative
+      var from = Math.floor($scope.range.chartFrom / 60000) * 60000;
+      var to = Math.ceil($scope.range.chartTo / 60000) * 60000;
+      var fromDate = fancyDate(from);
+      var toDate = fancyDate(to);
       if (fromDate === toDate) {
-        return fromDate + ', ' + moment($scope.range.chartFrom).format('LT') + ' to '
-            + moment($scope.range.chartTo).format('LT');
+        return fromDate + ', ' + moment(from).format('LT') + ' to ' + moment(to).format('LT');
       } else {
-        return fromDate + ' ' + moment($scope.range.chartFrom).format('LT') + ' to ' + toDate + ' ' +
-            moment($scope.range.chartTo).format('LT');
+        return fromDate + ' ' + moment(from).format('LT') + ' to ' + toDate + ' ' + moment(to).format('LT');
       }
     };
 

@@ -44,8 +44,9 @@ glowroot.controller('NavbarCtrl', [
       var from = $location.search().from;
       var to = $location.search().to;
       if (from !== undefined && to !== undefined) {
-        query.from = from;
-        query.to = to;
+        // need floor/ceil when on trace point chart which allows second granularity
+        query.from = Math.floor(from / 60000) * 60000;
+        query.to = Math.ceil(to / 60000) * 60000;
       }
       return queryStrings.encodeObject(query);
     };

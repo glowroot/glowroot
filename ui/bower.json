@@ -8,7 +8,7 @@
     "bootstrap-select": "1.10.0",
     "d3-flame-graph": "trask/d3-flame-graph#glowroot-0.9.0",
     "eonasdan-bootstrap-datetimepicker": "4.17.37",
-    "flot": "trask/flot#d2bb4087f4d746aaecd8dab1e562d586673a93fa",
+    "flot": "trask/flot#f47193bba5cadeccdbb8f9ee4fb767d80afc43c9",
     "flot.tooltip": "trask/flot.tooltip#7a49825953a1430f19d37b27730eb6634d7ee76d",
     "fontawesome": "4.6.3",
     "handlebars": "4.0.5",
