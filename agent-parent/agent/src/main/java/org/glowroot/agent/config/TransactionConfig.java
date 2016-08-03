@@ -15,8 +15,6 @@
  */
 package org.glowroot.agent.config;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.immutables.value.Value;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -38,7 +36,8 @@ public abstract class TransactionConfig {
     }
 
     @Value.Default
-    @JsonInclude(value = Include.NON_EMPTY)
+    // do not use @JsonInclude NON_EMPTY
+    // need to always write this value to config.json since default value is true
     public boolean captureThreadStats() {
         return true;
     }
