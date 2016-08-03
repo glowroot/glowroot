@@ -69,7 +69,7 @@ public class Log4j2xAspect {
     public static class CallAppendersAdvice {
         private static final TimerName timerName = Agent.getTimerName(CallAppendersAdvice.class);
         @OnBefore
-        public static @Nullable LogAdviceTraveler onBefore(ThreadContext context,
+        public static LogAdviceTraveler onBefore(ThreadContext context,
                 @BindReceiver Logger logger,
                 @SuppressWarnings("unused") @BindParameter @Nullable String fqcn,
                 @BindParameter @Nullable Level level,
@@ -87,10 +87,7 @@ public class Log4j2xAspect {
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable LogAdviceTraveler traveler) {
-            if (traveler == null) {
-                return;
-            }
+        public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
             Throwable t = traveler.throwable;
             if (t != null) {
                 // intentionally not passing message since it is already the trace entry message

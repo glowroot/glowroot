@@ -17,6 +17,7 @@ package org.glowroot.agent.plugin.jdbc;
 
 import java.sql.PreparedStatement;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
@@ -398,14 +399,12 @@ public class StatementAspect {
             return preparedStatement.glowroot$hasStatementMirror();
         }
         @OnBefore
-        public static @Nullable QueryEntry onBefore(ThreadContext context,
+        public static QueryEntry onBefore(ThreadContext context,
                 @BindReceiver HasStatementMirror preparedStatement) {
+            @SuppressWarnings("nullness") // just checked above in isEnabled()
+            @Nonnull
             PreparedStatementMirror mirror =
                     (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
-            if (mirror == null) {
-                // this shouldn't happen since just checked hasGlowrootStatementMirror() above
-                return null;
-            }
             MessageSupplier messageSupplier;
             String queryText = mirror.getSql();
             if (captureBindParameters.value()) {
@@ -420,18 +419,14 @@ public class StatementAspect {
             return queryEntry;
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable QueryEntry queryEntry) {
-            if (queryEntry != null) {
-                queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
-                        MILLISECONDS);
-            }
+        public static void onReturn(@BindTraveler QueryEntry queryEntry) {
+            queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                    MILLISECONDS);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable QueryEntry queryEntry) {
-            if (queryEntry != null) {
-                queryEntry.endWithError(t);
-            }
+                @BindTraveler QueryEntry queryEntry) {
+            queryEntry.endWithError(t);
         }
     }
 
@@ -444,14 +439,14 @@ public class StatementAspect {
             return preparedStatement.glowroot$hasStatementMirror();
         }
         @OnBefore
-        public static @Nullable QueryEntry onBefore(ThreadContext context,
+        public static QueryEntry onBefore(ThreadContext context,
                 @BindReceiver HasStatementMirror preparedStatement) {
             return PreparedStatementExecuteAdvice.onBefore(context, preparedStatement);
         }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable HasStatementMirror resultSet,
                 @BindReceiver HasStatementMirror preparedStatement,
-                @BindTraveler @Nullable QueryEntry queryEntry) {
+                @BindTraveler QueryEntry queryEntry) {
             // PreparedStatement can always be retrieved from ResultSet.getStatement(), and
             // StatementMirror from that, but ResultSet.getStatement() is sometimes not super
             // duper fast due to ResultSet wrapping and other checks, so StatementMirror is
@@ -460,17 +455,13 @@ public class StatementAspect {
                 StatementMirror mirror = preparedStatement.glowroot$getStatementMirror();
                 resultSet.glowroot$setStatementMirror(mirror);
             }
-            if (queryEntry != null) {
-                queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
-                        MILLISECONDS);
-            }
+            queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                    MILLISECONDS);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable QueryEntry queryEntry) {
-            if (queryEntry != null) {
-                queryEntry.endWithError(t);
-            }
+                @BindTraveler QueryEntry queryEntry) {
+            queryEntry.endWithError(t);
         }
     }
 
@@ -483,25 +474,21 @@ public class StatementAspect {
             return preparedStatement.glowroot$hasStatementMirror();
         }
         @OnBefore
-        public static @Nullable QueryEntry onBefore(ThreadContext context,
+        public static QueryEntry onBefore(ThreadContext context,
                 @BindReceiver HasStatementMirror preparedStatement) {
             return PreparedStatementExecuteAdvice.onBefore(context, preparedStatement);
         }
         @OnReturn
         public static void onReturn(@BindReturn int rowCount,
-                @BindTraveler @Nullable QueryEntry queryEntry) {
-            if (queryEntry != null) {
-                queryEntry.setCurrRow(rowCount);
-                queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
-                        MILLISECONDS);
-            }
+                @BindTraveler QueryEntry queryEntry) {
+            queryEntry.setCurrRow(rowCount);
+            queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                    MILLISECONDS);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable QueryEntry queryEntry) {
-            if (queryEntry != null) {
-                queryEntry.endWithError(t);
-            }
+                @BindTraveler QueryEntry queryEntry) {
+            queryEntry.endWithError(t);
         }
     }
 
@@ -515,46 +502,34 @@ public class StatementAspect {
             return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
-        public static @Nullable QueryEntry onBefore(ThreadContext context,
+        public static QueryEntry onBefore(ThreadContext context,
                 @BindReceiver HasStatementMirror statement) {
+            @SuppressWarnings("nullness") // just checked above in isEnabled()
+            @Nonnull
+            StatementMirror mirror = statement.glowroot$getStatementMirror();
             if (statement instanceof PreparedStatement) {
-                PreparedStatementMirror mirror =
-                        (PreparedStatementMirror) statement.glowroot$getStatementMirror();
-                if (mirror == null) {
-                    // this shouldn't happen since just checked hasGlowrootStatementMirror() above
-                    return null;
-                }
-                return onBeforePreparedStatement(context, mirror);
+                return onBeforePreparedStatement(context, (PreparedStatementMirror) mirror);
             } else {
-                StatementMirror mirror = statement.glowroot$getStatementMirror();
-                if (mirror == null) {
-                    // this shouldn't happen since just checked hasGlowrootStatementMirror() above
-                    return null;
-                }
                 return onBeforeStatement(mirror, context);
             }
         }
         @OnReturn
         public static void onReturn(@BindReturn int[] rowCounts,
-                @BindTraveler @Nullable QueryEntry queryEntry) {
-            if (queryEntry != null) {
-                int totalRowCount = 0;
-                for (int rowCount : rowCounts) {
-                    totalRowCount += rowCount;
-                }
-                queryEntry.setCurrRow(totalRowCount);
-                queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
-                        MILLISECONDS);
+                @BindTraveler QueryEntry queryEntry) {
+            int totalRowCount = 0;
+            for (int rowCount : rowCounts) {
+                totalRowCount += rowCount;
             }
+            queryEntry.setCurrRow(totalRowCount);
+            queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                    MILLISECONDS);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable QueryEntry queryEntry) {
-            if (queryEntry != null) {
-                queryEntry.endWithError(t);
-            }
+                @BindTraveler QueryEntry queryEntry) {
+            queryEntry.endWithError(t);
         }
-        private static @Nullable QueryEntry onBeforePreparedStatement(ThreadContext context,
+        private static QueryEntry onBeforePreparedStatement(ThreadContext context,
                 PreparedStatementMirror mirror) {
             MessageSupplier messageSupplier;
             String queryText = mirror.getSql();
@@ -571,8 +546,7 @@ public class StatementAspect {
             mirror.clearBatch();
             return queryEntry;
         }
-        private static @Nullable QueryEntry onBeforeStatement(StatementMirror mirror,
-                ThreadContext context) {
+        private static QueryEntry onBeforeStatement(StatementMirror mirror, ThreadContext context) {
             MessageSupplier messageSupplier =
                     new BatchStatementMessageSupplier(mirror.getBatchedSql());
             QueryEntry queryEntry =

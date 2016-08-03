@@ -18,7 +18,7 @@ package org.glowroot.agent.plugin.jdbc;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import javax.annotation.Nullable;
+import javax.annotation.Nonnull;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Logger;
@@ -29,6 +29,7 @@ import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
+import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
@@ -45,13 +46,13 @@ public class ResultSetAspect {
     public static class NextAdvice {
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetNavigate");
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
+            return timerEnabled.value() && isEnabledCommon(resultSet);
+        }
         @OnBefore
-        public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
-            if (timerEnabled.value()) {
-                return onBeforeCommon(resultSet);
-            } else {
-                return null;
-            }
+        public static Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
+            return onBeforeCommon(resultSet);
         }
         @OnReturn
         public static void onReturn(@BindReturn boolean currentRowValid,
@@ -76,10 +77,8 @@ public class ResultSetAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Timer timer) {
-            if (timer != null) {
-                timer.stop();
-            }
+        public static void onAfter(@BindTraveler Timer timer) {
+            timer.stop();
         }
     }
 
@@ -89,13 +88,13 @@ public class ResultSetAspect {
     public static class NavigateAdvice {
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetNavigate");
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
+            return timerEnabled.value() && isEnabledCommon(resultSet);
+        }
         @OnBefore
-        public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
-            if (timerEnabled.value()) {
-                return onBeforeCommon(resultSet);
-            } else {
-                return null;
-            }
+        public static Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
+            return onBeforeCommon(resultSet);
         }
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror resultSet) {
@@ -117,10 +116,8 @@ public class ResultSetAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Timer timer) {
-            if (timer != null) {
-                timer.stop();
-            }
+        public static void onAfter(@BindTraveler Timer timer) {
+            timer.stop();
         }
     }
 
@@ -129,19 +126,17 @@ public class ResultSetAspect {
     public static class ValueAdvice {
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetGet");
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
+            return timerEnabled.value() && isEnabledCommon(resultSet);
+        }
         @OnBefore
-        public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
-            if (timerEnabled.value()) {
-                return onBeforeCommon(resultSet);
-            } else {
-                return null;
-            }
+        public static Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
+            return onBeforeCommon(resultSet);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Timer timer) {
-            if (timer != null) {
-                timer.stop();
-            }
+        public static void onAfter(@BindTraveler Timer timer) {
+            timer.stop();
         }
     }
 
@@ -150,32 +145,32 @@ public class ResultSetAspect {
     public static class ValueAdvice2 {
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetGet");
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
+            return timerEnabled.value() && isEnabledCommon(resultSet);
+        }
         @OnBefore
-        public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
-            if (timerEnabled.value()) {
-                return onBeforeCommon(resultSet);
-            } else {
-                return null;
-            }
+        public static Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
+            return onBeforeCommon(resultSet);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Timer timer) {
-            if (timer != null) {
-                timer.stop();
-            }
+        public static void onAfter(@BindTraveler Timer timer) {
+            timer.stop();
         }
     }
 
-    private static @Nullable Timer onBeforeCommon(HasStatementMirror resultSet) {
+    private static boolean isEnabledCommon(HasStatementMirror resultSet) {
         StatementMirror mirror = resultSet.glowroot$getStatementMirror();
-        if (mirror == null) {
-            // most likely implementation detail of a DatabaseMetaData method
-            return null;
-        }
+        return mirror != null && mirror.getLastQueryEntry() != null;
+    }
+
+    private static Timer onBeforeCommon(HasStatementMirror resultSet) {
+        @SuppressWarnings("nullness") // just checked above in isEnabledCommon()
+        @Nonnull
+        StatementMirror mirror = resultSet.glowroot$getStatementMirror();
+        @SuppressWarnings("nullness") // just checked above in isEnabledCommon()
+        @Nonnull
         QueryEntry lastQueryEntry = mirror.getLastQueryEntry();
-        if (lastQueryEntry == null) {
-            return null;
-        }
         return lastQueryEntry.extend();
     }
 }

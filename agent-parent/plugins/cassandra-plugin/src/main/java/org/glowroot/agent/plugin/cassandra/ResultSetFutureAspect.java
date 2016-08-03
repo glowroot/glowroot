@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.plugin.cassandra;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
@@ -24,6 +25,7 @@ import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
+import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.Mixin;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
@@ -97,13 +99,16 @@ public class ResultSetFutureAspect {
             methodDeclaringClassName = "java.util.concurrent.Future", methodName = "get",
             methodParameterTypes = {".."}, supersedes = "wait on future")
     public static class FutureGetAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver ResultSetFutureMixin resultSetFuture) {
+            return resultSetFuture.glowroot$getAsyncQueryEntry() != null;
+        }
         @OnBefore
-        public static @Nullable Timer onBefore(ThreadContext threadContext,
+        public static Timer onBefore(ThreadContext threadContext,
                 @BindReceiver ResultSetFutureMixin resultSetFuture) {
+            @SuppressWarnings("nullness") // just checked above in isEnabled()
+            @Nonnull
             AsyncQueryEntry asyncQueryEntry = resultSetFuture.glowroot$getAsyncQueryEntry();
-            if (asyncQueryEntry == null) {
-                return null;
-            }
             return asyncQueryEntry.extendSyncTimer(threadContext);
         }
         @OnReturn
@@ -117,10 +122,8 @@ public class ResultSetFutureAspect {
             resultSet.glowroot$setLastQueryEntry(asyncQueryEntry);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Timer timer) {
-            if (timer != null) {
-                timer.stop();
-            }
+        public static void onAfter(@BindTraveler Timer timer) {
+            timer.stop();
         }
     }
 
@@ -128,8 +131,12 @@ public class ResultSetFutureAspect {
     @Pointcut(className = "com.datastax.driver.core.ResultSetFuture",
             methodName = "getUninterruptibly", methodParameterTypes = {".."})
     public static class FutureGetUninterruptiblyAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver ResultSetFutureMixin resultSetFuture) {
+            return FutureGetAdvice.isEnabled(resultSetFuture);
+        }
         @OnBefore
-        public static @Nullable Timer onBefore(ThreadContext threadContext,
+        public static Timer onBefore(ThreadContext threadContext,
                 @BindReceiver ResultSetFutureMixin resultSetFuture) {
             return FutureGetAdvice.onBefore(threadContext, resultSetFuture);
         }
@@ -139,7 +146,7 @@ public class ResultSetFutureAspect {
             FutureGetAdvice.onReturn(resultSet, resultSetFuture);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Timer timer) {
+        public static void onAfter(@BindTraveler Timer timer) {
             FutureGetAdvice.onAfter(timer);
         }
     }

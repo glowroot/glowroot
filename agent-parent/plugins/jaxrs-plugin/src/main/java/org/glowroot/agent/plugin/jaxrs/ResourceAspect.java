@@ -24,6 +24,7 @@ import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
+import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindMethodMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
@@ -40,8 +41,8 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 public class ResourceAspect {
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
-    private static final ThreadLocal<RequestInfo> requestInfoHolder =
-            new ThreadLocal<RequestInfo>() {
+    private static final FastThreadLocal<RequestInfo> requestInfoHolder =
+            new FastThreadLocal<RequestInfo>() {
                 @Override
                 protected RequestInfo initialValue() {
                     return new RequestInfo();

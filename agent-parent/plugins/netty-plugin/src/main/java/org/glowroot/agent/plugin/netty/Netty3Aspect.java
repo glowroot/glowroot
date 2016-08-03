@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.plugin.netty;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
@@ -140,24 +141,27 @@ public class Netty3Aspect {
 
         private static final TimerName timerName = Agent.getTimerName(InboundAdvice.class);
 
-        @OnBefore
-        public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
-                @BindReceiver ChannelHandlerContext channelHandlerContext,
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver ChannelHandlerContext channelHandlerContext,
                 @BindParameter @Nullable Object channelEvent) {
+            return channelHandlerContext.glowroot$getChannel() != null && channelEvent != null
+                    && channelEvent instanceof MessageEvent
+                    && ((MessageEvent) channelEvent).getMessage() instanceof HttpRequest;
+        }
+
+        @OnBefore
+        public static TraceEntry onBefore(OptionalThreadContext context,
+                @BindReceiver ChannelHandlerContext channelHandlerContext,
+                // not null, just checked above in isEnabled()
+                @BindParameter Object channelEvent) {
+            @SuppressWarnings("nullness") // just checked above in isEnabled()
+            @Nonnull
             ChannelMixin channel = channelHandlerContext.glowroot$getChannel();
-            if (channel == null) {
-                return null;
-            }
-            if (channelEvent == null) {
-                return null;
-            }
-            if (!(channelEvent instanceof MessageEvent)) {
-                return null;
-            }
+            // just checked valid cast above in isEnabled()
+            @SuppressWarnings("nullness") // just checked above in isEnabled()
+            @Nonnull
             Object msg = ((MessageEvent) channelEvent).getMessage();
-            if (!(msg instanceof HttpRequest)) {
-                return null;
-            }
+            // just checked valid cast above in isEnabled()
             HttpRequest request = (HttpRequest) msg;
             HttpMethod method = request.glowroot$getMethod();
             String methodName = method == null ? null : method.getName();
@@ -167,18 +171,14 @@ public class Netty3Aspect {
         }
 
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.end();
-            }
+        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+            traceEntry.end();
         }
 
         @OnThrow
         public static void onThrow(@BindThrowable Throwable throwable,
-                @BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.endWithError(throwable);
-            }
+                @BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithError(throwable);
         }
     }
 
@@ -260,27 +260,26 @@ public class Netty3Aspect {
             methodName = "operationComplete",
             methodParameterTypes = {"org.jboss.netty.channel.ChannelFuture"})
     public static class OperationCompleteAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver ListenerMixin listener) {
+            return listener.glowroot$getAuxContext() != null;
+        }
         @OnBefore
-        public static @Nullable TraceEntry onBefore(@BindReceiver ListenerMixin listener) {
+        public static TraceEntry onBefore(@BindReceiver ListenerMixin listener) {
+            @SuppressWarnings("nullness") // just checked above in isEnabled()
+            @Nonnull
             AuxThreadContext auxContext = listener.glowroot$getAuxContext();
-            if (auxContext != null) {
-                listener.glowroot$setAuxContext(null);
-                return auxContext.start();
-            }
-            return null;
+            listener.glowroot$setAuxContext(null);
+            return auxContext.start();
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.end();
-            }
+        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+            traceEntry.end();
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.endWithError(t);
-            }
+                @BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithError(t);
         }
     }
 

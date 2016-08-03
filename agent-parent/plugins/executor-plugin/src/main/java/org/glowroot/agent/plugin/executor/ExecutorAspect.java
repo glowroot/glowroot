@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
@@ -243,32 +244,32 @@ public class ExecutorAspect {
     @Pointcut(className = "java.lang.Runnable", methodName = "run", methodParameterTypes = {},
             nestingGroup = "executor-run")
     public static class RunnableAdvice {
-        @OnBefore
-        public static @Nullable TraceEntry onBefore(@BindReceiver Runnable runnable) {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver Runnable runnable) {
             if (!(runnable instanceof RunnableEtcMixin)) {
                 // this class was loaded before class file transformer was added to jvm
-                return null;
+                return false;
             }
             RunnableEtcMixin runnableMixin = (RunnableEtcMixin) runnable;
+            return runnableMixin.glowroot$getAuxContext() != null;
+        }
+        @OnBefore
+        public static TraceEntry onBefore(@BindReceiver Runnable runnable) {
+            RunnableEtcMixin runnableMixin = (RunnableEtcMixin) runnable;
+            @SuppressWarnings("nullness") // just checked above in isEnabled()
+            @Nonnull
             AuxThreadContext auxContext = runnableMixin.glowroot$getAuxContext();
-            if (auxContext != null) {
-                runnableMixin.glowroot$setAuxContext(null);
-                return auxContext.start();
-            }
-            return null;
+            runnableMixin.glowroot$setAuxContext(null);
+            return auxContext.start();
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.end();
-            }
+        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+            traceEntry.end();
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.endWithError(t);
-            }
+                @BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithError(t);
         }
     }
 
@@ -277,32 +278,32 @@ public class ExecutorAspect {
     @Pointcut(className = "java.util.concurrent.Callable", methodName = "call",
             methodParameterTypes = {}, nestingGroup = "executor-run")
     public static class CallableAdvice {
-        @OnBefore
-        public static @Nullable TraceEntry onBefore(@BindReceiver Callable<?> callable) {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver Callable<?> callable) {
             if (!(callable instanceof RunnableEtcMixin)) {
                 // this class was loaded before class file transformer was added to jvm
-                return null;
+                return false;
             }
             RunnableEtcMixin callableMixin = (RunnableEtcMixin) callable;
+            return callableMixin.glowroot$getAuxContext() != null;
+        }
+        @OnBefore
+        public static TraceEntry onBefore(@BindReceiver Callable<?> callable) {
+            RunnableEtcMixin callableMixin = (RunnableEtcMixin) callable;
+            @SuppressWarnings("nullness") // just checked above in isEnabled()
+            @Nonnull
             AuxThreadContext auxContext = callableMixin.glowroot$getAuxContext();
-            if (auxContext != null) {
-                callableMixin.glowroot$setAuxContext(null);
-                return auxContext.start();
-            }
-            return null;
+            callableMixin.glowroot$setAuxContext(null);
+            return auxContext.start();
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.end();
-            }
+        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+            traceEntry.end();
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.endWithError(t);
-            }
+                @BindTraveler TraceEntry traceEntry) {
+            traceEntry.endWithError(t);
         }
     }
 
@@ -311,32 +312,32 @@ public class ExecutorAspect {
     @Pointcut(className = "java.util.concurrent.ForkJoinTask|akka.jsr166y.ForkJoinTask",
             methodName = "exec", methodParameterTypes = {}, nestingGroup = "executor-run")
     public static class ExecAdvice {
-        @OnBefore
-        public static @Nullable TraceEntry onBefore(@BindReceiver Object task) {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver Object task) {
             if (!(task instanceof RunnableEtcMixin)) {
                 // this class was loaded before class file transformer was added to jvm
-                return null;
+                return false;
             }
             RunnableEtcMixin taskMixin = (RunnableEtcMixin) task;
+            return taskMixin.glowroot$getAuxContext() != null;
+        }
+        @OnBefore
+        public static TraceEntry onBefore(@BindReceiver Object task) {
+            RunnableEtcMixin taskMixin = (RunnableEtcMixin) task;
+            @SuppressWarnings("nullness") // just checked above in isEnabled()
+            @Nonnull
             AuxThreadContext auxContext = taskMixin.glowroot$getAuxContext();
-            if (auxContext != null) {
-                taskMixin.glowroot$setAuxContext(null);
-                return auxContext.start();
-            }
-            return null;
+            taskMixin.glowroot$setAuxContext(null);
+            return auxContext.start();
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.end();
-            }
+        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+            traceEntry.end();
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.endWithError(t);
-            }
+            traceEntry.endWithError(t);
         }
     }
 
