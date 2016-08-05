@@ -77,7 +77,7 @@ public class ServerCollectorImpl implements Collector {
         }
         int collectorPort;
         if (Strings.isNullOrEmpty(collectorPortStr)) {
-            collectorPort = 80;
+            collectorPort = 8181;
         } else {
             collectorPort = Integer.parseInt(collectorPortStr);
         }
