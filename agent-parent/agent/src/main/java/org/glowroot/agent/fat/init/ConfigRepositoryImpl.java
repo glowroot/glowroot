@@ -130,7 +130,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
             this.roleConfigs = ImmutableList.<RoleConfig>of(ImmutableRoleConfig.builder()
                     .name("Administrator")
                     .addPermissions("agent:view", "agent:tool", "agent:config:view",
-                            "agent:config:edit", "admin")
+                            "agent:config:edit", "admin:view", "admin:edit")
                     .build());
         }
         WebConfig webConfig = configService.getAdminConfig(WEB_KEY, ImmutableWebConfig.class);

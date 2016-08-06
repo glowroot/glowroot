@@ -87,7 +87,7 @@ public class RoleDao {
             int i = 0;
             boundStatement.setString(i++, "Administrator");
             boundStatement.setSet(i++, ImmutableSet.of("agent:*:view", "agent:*:tool",
-                    "agent:*:config:view", "agent:*:config:edit", "admin"));
+                    "agent:*:config:view", "agent:*:config:edit", "admin:view", "admin:edit"));
             session.execute(boundStatement);
         }
     }

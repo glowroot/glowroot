@@ -145,9 +145,18 @@ glowroot.controller('AdminRoleCtrl', [
         permissionsObj.config.edit.reweave = false;
         permissionsObj.config.edit.advanced = false;
       }
+      if (permissionsObj.config.edit._ || permissionsObj.config.edit.transaction || permissionsObj.config.edit.gauge
+          || permissionsObj.config.edit.alert || permissionsObj.config.edit.ui || permissionsObj.config.edit.plugin
+          || permissionsObj.config.edit.instrumentation || permissionsObj.config.edit.reweave
+          || permissionsObj.config.edit.advanced) {
+        permissionsObj.config.view = true;
+      }
       if (permissionsObj.admin && permissionsObj.admin._) {
         permissionsObj.admin.view = false;
         permissionsObj.admin.edit = false;
+      }
+      if (permissionsObj.admin && permissionsObj.admin.edit) {
+        permissionsObj.admin.view = true;
       }
       if ($scope.viewPermissionDisabled(permissionsObj)) {
         permissionsObj.view = true;
@@ -161,6 +170,16 @@ glowroot.controller('AdminRoleCtrl', [
       return permissionsObj.tool._ || permissionsObj.tool.threadDump || permissionsObj.tool.heapDump
           || permissionsObj.tool.mbeanTree || permissionsObj.config._ || permissionsObj.config.view
           || permissionsObj.config.edit._ || permissionsObj.config.edit.transaction || permissionsObj.config.edit.gauge
+          || permissionsObj.config.edit.alert || permissionsObj.config.edit.ui || permissionsObj.config.edit.plugin
+          || permissionsObj.config.edit.instrumentation || permissionsObj.config.edit.reweave
+          || permissionsObj.config.edit.advanced;
+    };
+
+    $scope.viewConfigPermissionDisabled = function (permissionsObj) {
+      if (!permissionsObj) {
+        return false;
+      }
+      return permissionsObj.config.edit._ || permissionsObj.config.edit.transaction || permissionsObj.config.edit.gauge
           || permissionsObj.config.edit.alert || permissionsObj.config.edit.ui || permissionsObj.config.edit.plugin
           || permissionsObj.config.edit.instrumentation || permissionsObj.config.edit.reweave
           || permissionsObj.config.edit.advanced;

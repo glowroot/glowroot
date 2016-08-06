@@ -62,7 +62,7 @@ class GlowrootLogHttpService implements HttpService {
 
     @Override
     public String getPermission() {
-        return "admin";
+        return "admin:view:log";
     }
 
     @Override
