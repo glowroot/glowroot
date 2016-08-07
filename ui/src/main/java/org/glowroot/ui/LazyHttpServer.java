@@ -77,7 +77,8 @@ class LazyHttpServer {
         }
         this.httpServer = httpServer;
         adminJsonService.setHttpServer(httpServer);
-        startupLogger.info("Glowroot UI listening on port {}", httpServer.getPort());
+        startupLogger.info("Glowroot UI listening on {}:{}", httpServer.getBindAddress(),
+                httpServer.getPort());
     }
 
     @Nullable
