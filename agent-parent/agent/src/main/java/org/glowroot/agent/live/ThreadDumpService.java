@@ -15,7 +15,9 @@
  */
 package org.glowroot.agent.live;
 
+import java.lang.management.LockInfo;
 import java.lang.management.ManagementFactory;
+import java.lang.management.MonitorInfo;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.Collections;
@@ -29,7 +31,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
-import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,7 @@ import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
+import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
 class ThreadDumpService {
 
@@ -64,8 +66,8 @@ class ThreadDumpService {
             activeThreadContexts.addAll(transaction.getActiveAuxThreadContexts());
         }
         @Nullable
-        ThreadInfo[] threadInfos =
-                threadBean.getThreadInfo(threadBean.getAllThreadIds(), Integer.MAX_VALUE);
+        ThreadInfo[] threadInfos = threadBean.getThreadInfo(threadBean.getAllThreadIds(),
+                threadBean.isObjectMonitorUsageSupported(), false);
         long currentThreadId = Thread.currentThread().getId();
         Map<Long, ThreadInfo> unmatchedThreadInfos = Maps.newHashMap();
         ThreadInfo currentThreadInfo = null;
@@ -128,7 +130,7 @@ class ThreadDumpService {
 
         // sort descending by total time
         Collections.sort(transactions, new TransactionOrdering());
-        // sort descending by stack trace length
+        // sort descending by thread id (same as jstack)
         Collections.sort(unmatchedThreads, new UnmatchedThreadOrdering());
 
         ThreadDump.Builder builder = ThreadDump.newBuilder()
@@ -144,20 +146,38 @@ class ThreadDumpService {
         ThreadDump.Thread.Builder builder = ThreadDump.Thread.newBuilder()
                 .setName(threadInfo.getThreadName())
                 .setId(threadInfo.getThreadId())
-                .setState(threadInfo.getThreadState().name())
-                .setLockName(Strings.nullToEmpty(threadInfo.getLockName()));
+                .setState(threadInfo.getThreadState().name());
+        LockInfo lockInfo = threadInfo.getLockInfo();
+        if (lockInfo != null) {
+            builder.setLockInfo(ThreadDump.LockInfo.newBuilder()
+                    .setIdentityHashCode(lockInfo.getIdentityHashCode())
+                    .setClassName(lockInfo.getClassName()));
+            long lockOwnerId = threadInfo.getLockOwnerId();
+            if (lockOwnerId != -1) {
+                builder.setLockOwnerId(OptionalInt64.newBuilder().setValue(lockOwnerId));
+            }
+        }
+        List<ThreadDump.StackTraceElement.Builder> stackTraceElements = Lists.newArrayList();
         for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
-            builder.addStackTraceElement(ThreadDump.StackTraceElement.newBuilder()
+            stackTraceElements.add(ThreadDump.StackTraceElement.newBuilder()
                     .setClassName(stackTraceElement.getClassName())
                     .setMethodName(Strings.nullToEmpty(stackTraceElement.getMethodName()))
                     .setFileName(Strings.nullToEmpty(stackTraceElement.getFileName()))
                     .setLineNumber(stackTraceElement.getLineNumber()));
         }
+        for (MonitorInfo lockedMonitor : threadInfo.getLockedMonitors()) {
+            stackTraceElements.get(lockedMonitor.getLockedStackDepth())
+                    .addMonitorInfo(ThreadDump.LockInfo.newBuilder()
+                            .setClassName(lockedMonitor.getClassName())
+                            .setIdentityHashCode(lockedMonitor.getIdentityHashCode()));
+        }
+        for (ThreadDump.StackTraceElement.Builder stackTraceElement : stackTraceElements) {
+            builder.addStackTraceElement(stackTraceElement);
+        }
         return builder.build();
     }
 
     private static class TransactionOrdering extends Ordering<ThreadDump.Transaction> {
-
         @Override
         public int compare(ThreadDump.Transaction left, ThreadDump.Transaction right) {
             return Longs.compare(right.getTotalDurationNanos(), left.getTotalDurationNanos());
@@ -167,12 +187,7 @@ class ThreadDumpService {
     private static class UnmatchedThreadOrdering extends Ordering<ThreadDump.Thread> {
         @Override
         public int compare(ThreadDump.Thread left, ThreadDump.Thread right) {
-            int result = Ints.compare(right.getStackTraceElementCount(),
-                    left.getStackTraceElementCount());
-            if (result == 0) {
-                return left.getName().compareToIgnoreCase(right.getName());
-            }
-            return result;
+            return Longs.compare(right.getId(), left.getId());
         }
     }
 

@@ -16,6 +16,7 @@
 package org.glowroot.agent.ui.sandbox;
 
 import java.io.File;
+import java.util.concurrent.Executors;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
@@ -70,6 +71,8 @@ public class UiSandboxMain {
     public static class GenerateTraces implements AppUnderTest {
         @Override
         public void executeApp() throws Exception {
+            startDeadlockingThreads();
+            startDeadlockingThreads();
             while (true) {
                 Stopwatch stopwatch = Stopwatch.createStarted();
                 while (stopwatch.elapsed(SECONDS) < 300) {
@@ -85,6 +88,40 @@ public class UiSandboxMain {
                 new NestableCall(new NestableCall(5000, 50, 5000), 100, 50, 5000).execute();
                 Thread.sleep(1000);
             }
+        }
+        private void startDeadlockingThreads() {
+            final Object lock1 = new Object();
+            final Object lock2 = new Object();
+            Executors.newSingleThreadExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    synchronized (lock1) {
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                        synchronized (lock2) {
+                            // should never gets here
+                        }
+                    }
+                }
+            });
+            Executors.newSingleThreadExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    synchronized (lock2) {
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                        synchronized (lock1) {
+                            // should never gets here
+                        }
+                    }
+                }
+            });
         }
     }
 }

@@ -17,8 +17,12 @@ package org.glowroot.ui;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
 
 import javax.annotation.Nullable;
@@ -30,7 +34,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
+import com.google.common.primitives.Longs;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +56,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump.LockInfo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -121,21 +128,26 @@ class JvmJsonService {
             logger.debug(e.getMessage(), e);
             return "{\"agentNotConnected\":true}";
         }
+        List<ThreadDump.Thread> allThreads = Lists.newArrayList();
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
         jg.writeStartObject();
         jg.writeArrayFieldStart("transactions");
         for (ThreadDump.Transaction transaction : threadDump.getTransactionList()) {
             writeTransactionThread(transaction, jg);
+            allThreads.addAll(transaction.getThreadList());
         }
         jg.writeEndArray();
         jg.writeArrayFieldStart("unmatchedThreads");
         for (ThreadDump.Thread thread : threadDump.getUnmatchedThreadList()) {
             writeThread(thread, jg);
+            allThreads.add(thread);
         }
         jg.writeEndArray();
         jg.writeFieldName("threadDumpingThread");
         writeThread(threadDump.getThreadDumpingThread(), jg);
+        allThreads.add(threadDump.getThreadDumpingThread());
+        writeDeadlockedCycles(allThreads, jg);
         jg.writeEndObject();
         jg.close();
         return sw.toString();
@@ -311,22 +323,127 @@ class JvmJsonService {
     private static void writeThread(ThreadDump.Thread thread, JsonGenerator jg) throws IOException {
         jg.writeStartObject();
         jg.writeStringField("name", thread.getName());
-        jg.writeStringField("id", "0x" + String.format("%016x", thread.getId()));
+        jg.writeStringField("id", "" + thread.getId());
         jg.writeStringField("state", thread.getState());
-        jg.writeStringField("lockName", thread.getLockName());
         jg.writeArrayFieldStart("stackTraceElements");
+        boolean first = true;
         for (ThreadDump.StackTraceElement stackTraceElement : thread.getStackTraceElementList()) {
             writeStackTraceElement(stackTraceElement, jg);
+            if (first) {
+                if (thread.hasLockInfo()) {
+                    if (thread.getState().equals(Thread.State.BLOCKED.name())) {
+                        writeMonitorInfo("waiting to lock", thread.getLockInfo(), jg);
+                    } else {
+                        writeMonitorInfo("waiting on", thread.getLockInfo(), jg);
+                    }
+                } else {
+                    // this condition is for glowroot server when displaying thread dump from
+                    // glowroot agent prior to 0.9.2
+                    String lockName = thread.getLockName();
+                    if (!lockName.isEmpty()) {
+                        if (thread.getState().equals(Thread.State.BLOCKED.name())) {
+                            jg.writeString("- waiting to lock " + lockName);
+                        } else {
+                            jg.writeString("- waiting on " + lockName);
+                        }
+                    }
+                }
+            }
+            for (ThreadDump.LockInfo monitorInfo : stackTraceElement.getMonitorInfoList()) {
+                writeMonitorInfo("locked on", monitorInfo, jg);
+            }
+            first = false;
         }
         jg.writeEndArray();
         jg.writeEndObject();
     }
 
+    private static void writeDeadlockedCycles(List<ThreadDump.Thread> allThreads, JsonGenerator jg)
+            throws IOException {
+        Map<Long, ThreadDump.Thread> blockedThreads = Maps.newHashMap();
+        for (ThreadDump.Thread thread : allThreads) {
+            if (thread.hasLockOwnerId()) {
+                blockedThreads.put(thread.getId(), thread);
+            }
+        }
+        List<List<ThreadDump.Thread>> deadlockedCycles = findDeadlockedCycles(blockedThreads);
+        jg.writeArrayFieldStart("deadlockedCycles");
+        for (List<ThreadDump.Thread> deadlockedCycle : deadlockedCycles) {
+            jg.writeStartArray();
+            for (ThreadDump.Thread thread : deadlockedCycle) {
+                jg.writeStartObject();
+                jg.writeStringField("name", thread.getName());
+                LockInfo lockInfo = thread.getLockInfo();
+                jg.writeStringField("desc1", "waiting to lock " + lockInfo.getClassName() + "@"
+                        + Integer.toHexString(lockInfo.getIdentityHashCode()));
+                ThreadDump.Thread lockOwner =
+                        checkNotNull(blockedThreads.get(thread.getLockOwnerId().getValue()));
+                jg.writeStringField("desc2", "which is held by \"" + lockOwner.getName() + "\"");
+                jg.writeEndObject();
+            }
+            jg.writeEndArray();
+        }
+        jg.writeEndArray();
+    }
+
+    private static List<List<ThreadDump.Thread>> findDeadlockedCycles(
+            Map<Long, ThreadDump.Thread> blockedThreads) {
+        if (blockedThreads.isEmpty()) {
+            // optimized common case
+            return ImmutableList.of();
+        }
+        Map<Long, ThreadDump.Thread> remainingBlockedThreads = Maps.newHashMap(blockedThreads);
+        List<ThreadDump.Thread> cycleRoots = Lists.newArrayList();
+        while (!remainingBlockedThreads.isEmpty()) {
+            Iterator<Entry<Long, ThreadDump.Thread>> i =
+                    remainingBlockedThreads.entrySet().iterator();
+            Map.Entry<Long, ThreadDump.Thread> entry = i.next();
+            long currThreadId = entry.getKey();
+            ThreadDump.Thread currThread = entry.getValue();
+            i.remove();
+            Set<Long> seenThreadIds = Sets.newHashSet();
+            while (currThread != null) {
+                seenThreadIds.add(currThreadId);
+                currThreadId = currThread.getLockOwnerId().getValue();
+                if (seenThreadIds.contains(currThreadId)) {
+                    cycleRoots.add(currThread);
+                    break;
+                }
+                currThread = remainingBlockedThreads.remove(currThreadId);
+            }
+        }
+        if (cycleRoots.isEmpty()) {
+            // optimized common case
+            return ImmutableList.of();
+        }
+        List<List<ThreadDump.Thread>> cycles = Lists.newArrayList();
+        for (ThreadDump.Thread cycleRoot : cycleRoots) {
+            List<ThreadDump.Thread> cycle = Lists.newArrayList(cycleRoot);
+            ThreadDump.Thread cycleThread =
+                    checkNotNull(blockedThreads.get(cycleRoot.getLockOwnerId().getValue()));
+            while (cycleThread != cycleRoot) {
+                cycle.add(cycleThread);
+                cycleThread =
+                        checkNotNull(blockedThreads.get(cycleThread.getLockOwnerId().getValue()));
+            }
+            Collections.sort(cycle, new ThreadOrdering());
+            cycles.add(cycle);
+        }
+        Collections.sort(cycles, new DeadlockedCycleOrdering());
+        return cycles;
+    }
+
     private static void writeStackTraceElement(ThreadDump.StackTraceElement stackTraceElement,
             JsonGenerator jg) throws IOException {
-        jg.writeString(new StackTraceElement(stackTraceElement.getClassName(),
+        jg.writeString("at " + new StackTraceElement(stackTraceElement.getClassName(),
                 stackTraceElement.getMethodName(), stackTraceElement.getFileName(),
                 stackTraceElement.getLineNumber()).toString());
+    }
+
+    private static void writeMonitorInfo(String operation, ThreadDump.LockInfo monitorInfo,
+            JsonGenerator jg) throws IOException {
+        jg.writeString("- " + operation + " " + monitorInfo.getClassName() + "@"
+                + Integer.toHexString(monitorInfo.getIdentityHashCode()));
     }
 
     private static Map<String, /*@Nullable*/ Object> getSortedAttributeMap(
@@ -484,6 +601,20 @@ class JvmJsonService {
         @UsedByJsonSerialization
         public @Nullable Map<String, /*@Nullable*/ Object> getAttributeMap() {
             return attributeMap;
+        }
+    }
+
+    private static class ThreadOrdering extends Ordering<ThreadDump.Thread> {
+        @Override
+        public int compare(ThreadDump.Thread left, ThreadDump.Thread right) {
+            return Longs.compare(right.getId(), left.getId());
+        }
+    }
+
+    private static class DeadlockedCycleOrdering extends Ordering<List<ThreadDump.Thread>> {
+        @Override
+        public int compare(List<ThreadDump.Thread> left, List<ThreadDump.Thread> right) {
+            return Longs.compare(right.get(0).getId(), left.get(0).getId());
         }
     }
 }

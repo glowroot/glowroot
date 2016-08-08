@@ -3,6 +3,7 @@ syntax = "proto3";
 import "AgentConfig.proto";
 import "Trace.proto";
 import "Profile.proto";
+import "Common.proto";
 
 package org_glowroot_wire_api_model;
 
@@ -277,7 +278,9 @@ message ThreadDump {
     string name = 1;
     int64 id = 5;
     string state = 2;
-    string lock_name = 3;
+    string lock_name = 3; // deprecated in 0.9.2, replaced by lock_info
+    LockInfo lock_info = 6;
+    OptionalInt64 lock_owner_id = 7;
     repeated StackTraceElement stack_trace_element = 4;
   }
 
@@ -285,8 +288,14 @@ message ThreadDump {
     string class_name = 1;
     string method_name = 2;
     string file_name = 3;
-    // sint since can be negative
+    // sint since often negative
     sint32 line_number = 4;
+    repeated LockInfo monitor_info = 5;
+  }
+
+  message LockInfo {
+    string class_name = 1;
+    int32 identity_hash_code = 2;
   }
 }
 
