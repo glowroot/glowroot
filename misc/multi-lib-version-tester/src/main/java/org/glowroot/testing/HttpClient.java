@@ -197,7 +197,7 @@ public class HttpClient {
             updateLibVersion("cxf.version", "3.0." + i);
             runTest(test);
         }
-        for (int i = 0; i <= 6; i++) {
+        for (int i = 0; i <= 7; i++) {
             updateLibVersion("cxf.version", "3.1." + i);
             runTest(test);
         }

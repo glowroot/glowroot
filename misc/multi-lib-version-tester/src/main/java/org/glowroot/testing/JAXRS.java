@@ -56,6 +56,8 @@ public class JAXRS {
         run("2.22.1");
         run("2.22.2");
         run("2.23");
+        run("2.23.1");
+        run("2.23.2");
     }
 
     private static void run(String version) throws Exception {

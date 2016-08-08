@@ -81,14 +81,14 @@
 
   <properties>
     <grpc.version>0.15.0</grpc.version>
-    <protobuf.version>3.0.0-beta-4</protobuf.version>
+    <protobuf.version>3.0.0</protobuf.version>
     <!-- 4.1.2.Final does not work with grpc-java 0.15.0 -->
     <netty.version>4.1.1.Final</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.7</jackson.version>
     <logback.version>1.1.7</logback.version>
     <immutables.version>2.2.10</immutables.version>
-    <javax.mail.version>1.5.5</javax.mail.version>
+    <javax.mail.version>1.5.6</javax.mail.version>
     <jmh.version>1.13</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -464,6 +464,8 @@
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
+          <!-- not upgrading to later version currently due to
+            https://bugs.eclipse.org/bugs/show_bug.cgi?id=494583 -->
           <version>2.6</version>
           <configuration>
             <archive>
@@ -477,7 +479,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>2.10.3</version>
+          <version>2.10.4</version>
         </plugin>
         <plugin>
           <artifactId>maven-plugin-plugin</artifactId>
@@ -485,7 +487,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>2.7</version>
+          <version>3.0.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-shade-plugin</artifactId>
@@ -493,11 +495,11 @@
         </plugin>
         <plugin>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.5</version>
+          <version>3.5.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.0.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
@@ -514,7 +516,7 @@
         <plugin>
           <groupId>org.sonarsource.scanner.maven</groupId>
           <artifactId>sonar-maven-plugin</artifactId>
-          <version>3.0.1</version>
+          <version>3.0.2</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>

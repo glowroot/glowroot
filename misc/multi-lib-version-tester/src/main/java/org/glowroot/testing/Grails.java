@@ -36,6 +36,7 @@ public class Grails {
         }
         // there is no 3.1.8 in maven central
         run("3.1.9");
+        run("3.1.10");
     }
 
     private static void run(String version) throws Exception {
