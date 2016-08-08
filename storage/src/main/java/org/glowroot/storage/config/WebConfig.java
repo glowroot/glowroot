@@ -30,7 +30,7 @@ public abstract class WebConfig {
 
     @Value.Default
     public String bindAddress() {
-        return "0.0.0.0";
+        return "127.0.0.1";
     }
 
     // timeout 0 means sessions do not time out (except on jvm restart)

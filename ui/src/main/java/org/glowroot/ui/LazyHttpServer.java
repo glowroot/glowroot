@@ -77,8 +77,15 @@ class LazyHttpServer {
         }
         this.httpServer = httpServer;
         adminJsonService.setHttpServer(httpServer);
-        startupLogger.info("Glowroot UI listening on {}:{}", httpServer.getBindAddress(),
-                httpServer.getPort());
+        String bindAddress = httpServer.getBindAddress();
+        int port = httpServer.getPort();
+        if (bindAddress.equals("127.0.0.1")) {
+            startupLogger.info("Glowroot UI listening on {}:{} (to access Glowroot UI from remote"
+                    + " machines, change the bind address to 0.0.0.0, either under Glowroot UI >"
+                    + " Configuration > Web, or directly in admin.json)", bindAddress, port);
+        } else {
+            startupLogger.info("Glowroot UI listening on {}:{}", bindAddress, port);
+        }
     }
 
     @Nullable
