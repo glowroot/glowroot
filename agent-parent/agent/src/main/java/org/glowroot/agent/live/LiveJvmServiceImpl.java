@@ -17,9 +17,12 @@ package org.glowroot.agent.live;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -37,13 +40,16 @@ import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.OpenType;
 import javax.management.openmbean.TabularData;
+import javax.tools.ToolProvider;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
+import com.google.common.io.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +65,8 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class LiveJvmServiceImpl implements LiveJvmService {
 
     private static final Logger logger = LoggerFactory.getLogger(LiveJvmServiceImpl.class);
@@ -69,6 +77,12 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     private static final ImmutableSet<String> numericAttributeTypes =
             ImmutableSet.of("long", "int", "double", "float", "java.lang.Long", "java.lang.Integer",
                     "java.lang.Double", "java.lang.Float");
+
+    private static final @Nullable Long processId;
+
+    static {
+        processId = parseProcessId(ManagementFactory.getRuntimeMXBean().getName());
+    }
 
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
     private final ThreadDumpService threadDumpService;
@@ -90,6 +104,40 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     @Override
     public ThreadDump getThreadDump(String agentId) {
         return threadDumpService.getThreadDump();
+    }
+
+    @Override
+    public String getJstack(String agentId) throws Exception {
+        ClassLoader systemToolClassLoader = ToolProvider.getSystemToolClassLoader();
+        if (systemToolClassLoader == null) {
+            return "jstack is not available under JRE, must be running JDK";
+        }
+        Class<?> vmClass =
+                Class.forName("com.sun.tools.attach.VirtualMachine", true, systemToolClassLoader);
+        Method attachMethod = vmClass.getMethod("attach", String.class);
+        Method detachMethod = vmClass.getMethod("detach");
+        Class<?> hotSpotVmClass = Class.forName("sun.tools.attach.HotSpotVirtualMachine", true,
+                systemToolClassLoader);
+        Method remoteDataDumpMethod = hotSpotVmClass.getMethod("remoteDataDump", Object[].class);
+
+        long pid = checkNotNull(LiveJvmServiceImpl.getProcessId());
+        Object vm = attachMethod.invoke(null, Long.toString(pid));
+        try {
+            InputStream in = (InputStream) remoteDataDumpMethod.invoke(vm, (Object) new Object[0]);
+            checkNotNull(in);
+            // Closer is used to simulate Java 7 try-with-resources
+            Closer closer = Closer.create();
+            BufferedReader reader = closer.register(new BufferedReader(new InputStreamReader(in)));
+            try {
+                return CharStreams.toString(reader).trim();
+            } catch (Throwable t) {
+                throw closer.rethrow(t);
+            } finally {
+                closer.close();
+            }
+        } finally {
+            detachMethod.invoke(vm);
+        }
     }
 
     @Override
@@ -254,6 +302,26 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                     .build());
         }
         return attributes;
+    }
+
+    public static @Nullable Long getProcessId() {
+        return processId;
+    }
+
+    @VisibleForTesting
+    static @Nullable Long parseProcessId(String runtimeName) {
+        int index = runtimeName.indexOf('@');
+        if (index > 0) {
+            String pid = runtimeName.substring(0, index);
+            try {
+                return Long.parseLong(pid);
+            } catch (NumberFormatException e) {
+                logger.debug(e.getMessage(), e);
+                return null;
+            }
+        } else {
+            return null;
+        }
     }
 
     private static Throwable getRootCause(Throwable t) {

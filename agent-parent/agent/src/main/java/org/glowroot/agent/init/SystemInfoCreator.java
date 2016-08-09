@@ -33,6 +33,7 @@ import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.HostInfo;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.JavaInfo;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
@@ -77,7 +78,7 @@ public class SystemInfoCreator {
     }
 
     private static ProcessInfo createProcessInfo(RuntimeMXBean runtimeMXBean) {
-        Long processId = parseProcessId(ManagementFactory.getRuntimeMXBean().getName());
+        Long processId = LiveJvmServiceImpl.getProcessId();
         ProcessInfo.Builder processInfo = ProcessInfo.newBuilder();
         if (processId != null) {
             processInfo.setProcessId(OptionalInt64.newBuilder().setValue(processId).build());
@@ -107,22 +108,6 @@ public class SystemInfoCreator {
                 .setHeapDumpDefaultDir(heapDumpPath)
                 .setGlowrootAgentVersion(glowrootVersion)
                 .build();
-    }
-
-    @VisibleForTesting
-    static @Nullable Long parseProcessId(String runtimeName) {
-        int index = runtimeName.indexOf('@');
-        if (index > 0) {
-            String pid = runtimeName.substring(0, index);
-            try {
-                return Long.parseLong(pid);
-            } catch (NumberFormatException e) {
-                logger.debug(e.getMessage(), e);
-                return null;
-            }
-        } else {
-            return null;
-        }
     }
 
     @VisibleForTesting

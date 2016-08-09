@@ -83,6 +83,7 @@ glowroot.controller('JvmThreadDumpCtrl', [
             if ($scope.agentNotConnected) {
               return;
             }
+            $scope.jstackAvailable = data.jstackAvailable;
             // $.trim() is needed because this template is sensitive to surrounding spaces
             threadDumpHtml = $.trim(JST['thread-dump'](data));
             $('#threadDump').html('<br>' + threadDumpHtml);

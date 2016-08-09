@@ -243,6 +243,7 @@ public class BasicSmokeIT extends WebDriverIT {
         jvmSidebar.getSystemInfoLink().click();
 
         jvmSidebar.getThreadDumpLink().click();
+        Utils.withWait(driver, By.linkText("View jstack thread dump")).click();
 
         jvmSidebar.getHeapDumpLink().click();
         if (!WebDriverSetup.server) {

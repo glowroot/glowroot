@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
+import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.UsedByJsonSerialization;
 import org.glowroot.storage.repo.AgentRepository;
@@ -148,6 +149,30 @@ class JvmJsonService {
         writeThread(threadDump.getThreadDumpingThread(), jg);
         allThreads.add(threadDump.getThreadDumpingThread());
         writeDeadlockedCycles(allThreads, jg);
+        jg.writeBooleanField("jstackAvailable", threadDump.getJstackAvailable());
+        jg.writeEndObject();
+        jg.close();
+        return sw.toString();
+    }
+
+    @GET(path = "/backend/jvm/jstack", permission = "agent:tool:threadDump")
+    String getJstack(@BindAgentId String agentId) throws Exception {
+        checkNotNull(liveJvmService);
+        String jstack;
+        try {
+            jstack = liveJvmService.getJstack(agentId);
+        } catch (AgentNotConnectedException e) {
+            logger.debug(e.getMessage(), e);
+            return "{\"agentNotConnected\":true}";
+        } catch (AgentUnsupportedOperationException e) {
+            // this operation introduced in 0.9.2
+            logger.debug(e.getMessage(), e);
+            return getAgentUnsupportedOperationResponse(agentId);
+        }
+        StringWriter sw = new StringWriter();
+        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        jg.writeStartObject();
+        jg.writeStringField("jstack", jstack);
         jg.writeEndObject();
         jg.close();
         return sw.toString();
@@ -303,6 +328,24 @@ class JvmJsonService {
         jg.writeBooleanField("available", availability.getAvailable());
         jg.writeStringField("reason", availability.getReason());
         jg.writeEndObject();
+    }
+
+    private String getAgentUnsupportedOperationResponse(String agentId) throws Exception {
+        StringWriter sw = new StringWriter();
+        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        jg.writeStartObject();
+        jg.writeStringField("agentUnsupportedOperation", getAgentVersion(agentId));
+        jg.writeEndObject();
+        jg.close();
+        return sw.toString();
+    }
+
+    private String getAgentVersion(String agentId) throws Exception {
+        Environment environment = agentRepository.readEnvironment(agentId);
+        if (environment == null) {
+            return "unknown";
+        }
+        return environment.getJavaInfo().getGlowrootAgentVersion();
     }
 
     private static void writeTransactionThread(ThreadDump.Transaction transaction, JsonGenerator jg)

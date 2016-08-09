@@ -30,6 +30,8 @@ public interface LiveJvmService {
 
     ThreadDump getThreadDump(String agentId) throws Exception;
 
+    String getJstack(String agentId) throws Exception;
+
     long getAvailableDiskSpace(String agentId, String directory) throws Exception;
 
     HeapDumpFileInfo heapDump(String agentId, String directory) throws Exception;
@@ -48,4 +50,7 @@ public interface LiveJvmService {
 
     @SuppressWarnings("serial")
     public class AgentNotConnectedException extends Exception {}
+
+    @SuppressWarnings("serial")
+    public static class AgentUnsupportedOperationException extends Exception {}
 }

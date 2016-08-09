@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.init;
+package org.glowroot.agent.live;
 
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class JvmInfoCreatorTest {
+public class LiveJvmServiceImplTest {
 
     @Test
     public void testNonParseable() {
-        assertThat(SystemInfoCreator.parseProcessId("")).isNull();
-        assertThat(SystemInfoCreator.parseProcessId("x")).isNull();
-        assertThat(SystemInfoCreator.parseProcessId("x:y")).isNull();
-        assertThat(SystemInfoCreator.parseProcessId("@y")).isNull();
-        assertThat(SystemInfoCreator.parseProcessId("x@y")).isNull();
+        assertThat(LiveJvmServiceImpl.parseProcessId("")).isNull();
+        assertThat(LiveJvmServiceImpl.parseProcessId("x")).isNull();
+        assertThat(LiveJvmServiceImpl.parseProcessId("x:y")).isNull();
+        assertThat(LiveJvmServiceImpl.parseProcessId("@y")).isNull();
+        assertThat(LiveJvmServiceImpl.parseProcessId("x@y")).isNull();
     }
 
     @Test
     public void testParseable() {
-        assertThat(SystemInfoCreator.parseProcessId("123456@host")).isEqualTo(123456);
+        assertThat(LiveJvmServiceImpl.parseProcessId("123456@host")).isEqualTo(123456);
     }
 }

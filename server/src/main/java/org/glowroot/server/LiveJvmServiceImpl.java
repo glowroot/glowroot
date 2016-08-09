@@ -44,6 +44,11 @@ class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
+    public String getJstack(String agentId) throws Exception {
+        return downstreamService.jstack(agentId);
+    }
+
+    @Override
     public long getAvailableDiskSpace(String agentId, String directory) throws Exception {
         return downstreamService.availableDiskSpaceBytes(agentId, directory);
     }

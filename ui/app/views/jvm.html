@@ -61,7 +61,7 @@
       <div gt-sidebar-item
            gt-display="Thread dump"
            gt-url="jvm/thread-dump{{agentQueryString()}}"
-           gt-active="currentUrl() === 'jvm/thread-dump'"
+           gt-active="currentUrl() === 'jvm/thread-dump' || currentUrl() === 'jvm/jstack'"
            ng-if="agentPermissions.tool.threadDump">
       </div>
       <div gt-sidebar-item

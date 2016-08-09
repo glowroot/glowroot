@@ -21,6 +21,7 @@ message ServerRequest {
 
     // LiveJvmService
     ThreadDumpRequest thread_dump_request = 300;
+    JstackRequest jstack_request = 308;
     AvailableDiskSpaceRequest available_disk_space_request = 301;
     HeapDumpRequest heap_dump_request = 302;
     GcRequest gc_request = 303;
@@ -54,6 +55,7 @@ message ClientResponse {
 
     // LiveJvmService
     ThreadDumpResponse thread_dump_response = 300;
+    JstackResponse jstack_response = 308;
     AvailableDiskSpaceResponse available_disk_space_response = 301;
     HeapDumpResponse heap_dump_response = 302;
     GcResponse gc_response = 303;
@@ -101,6 +103,13 @@ message ThreadDumpRequest {
 
 message ThreadDumpResponse {
   ThreadDump thread_dump = 1;
+}
+
+message JstackRequest {
+}
+
+message JstackResponse {
+  string jstack = 1;
 }
 
 message AvailableDiskSpaceRequest {
@@ -263,6 +272,7 @@ message ThreadDump {
   repeated Transaction transaction = 1;
   repeated Thread unmatched_thread = 2;
   Thread thread_dumping_thread = 3;
+  bool jstack_available = 4;
 
   message Transaction {
     string transaction_type = 1;

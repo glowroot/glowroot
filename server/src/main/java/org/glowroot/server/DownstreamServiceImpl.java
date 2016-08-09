@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
+import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceImplBase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
@@ -50,6 +51,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeaderRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HelloAck;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.JstackRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
@@ -101,6 +103,14 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
             throw new AgentNotConnectedException();
         }
         return connectedAgent.threadDump();
+    }
+
+    String jstack(String agentId) throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.jstack();
     }
 
     long availableDiskSpaceBytes(String agentId, String directory) throws Exception {
@@ -337,6 +347,14 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
             return response.getThreadDumpResponse().getThreadDump();
         }
 
+        private String jstack() throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setJstackRequest(JstackRequest.getDefaultInstance())
+                    .build());
+            return response.getJstackResponse().getJstack();
+        }
+
         private long availableDiskSpaceBytes(String directory) throws Exception {
             ClientResponse response = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
@@ -532,7 +550,7 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
             ClientResponse response = responseHolder.response
                     .exchange(ClientResponse.getDefaultInstance(), 1, MINUTES);
             if (response.getMessageCase() == MessageCase.UNKNOWN_REQUEST_RESPONSE) {
-                throw new OutdatedAgentException();
+                throw new AgentUnsupportedOperationException();
             }
             if (response.getMessageCase() == MessageCase.EXCEPTION_RESPONSE) {
                 throw new AgentException();
@@ -547,7 +565,4 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
     @SuppressWarnings("serial")
     private static class AgentException extends Exception {}
-
-    @SuppressWarnings("serial")
-    private static class OutdatedAgentException extends Exception {}
 }

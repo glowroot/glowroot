@@ -49,6 +49,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeaderResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Hello;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.JstackResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpResponse;
@@ -208,6 +209,9 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
             case THREAD_DUMP_REQUEST:
                 threadDumpAndRespond(request, responseObserver);
                 return;
+            case JSTACK_REQUEST:
+                jstackAndRespond(request, responseObserver);
+                return;
             case AVAILABLE_DISK_SPACE_REQUEST:
                 availableDiskSpaceAndRespond(request, responseObserver);
                 return;
@@ -300,6 +304,23 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
                 .setRequestId(request.getRequestId())
                 .setThreadDumpResponse(ThreadDumpResponse.newBuilder()
                         .setThreadDump(threadDump))
+                .build());
+    }
+
+    private void jstackAndRespond(ServerRequest request,
+            StreamObserver<ClientResponse> responseObserver) {
+        String jstack;
+        try {
+            jstack = liveJvmService.getJstack("");
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            sendExceptionResponse(request, responseObserver);
+            return;
+        }
+        responseObserver.onNext(ClientResponse.newBuilder()
+                .setRequestId(request.getRequestId())
+                .setJstackResponse(JstackResponse.newBuilder()
+                        .setJstack(jstack))
                 .build());
     }
 
