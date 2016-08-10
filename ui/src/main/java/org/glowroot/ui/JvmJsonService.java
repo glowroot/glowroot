@@ -15,6 +15,7 @@
  */
 package org.glowroot.ui;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Collections;
@@ -30,7 +31,9 @@ import javax.management.ObjectName;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
@@ -67,6 +70,13 @@ class JvmJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(JvmJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
+
+    private static final Set<String> PATH_SEPARATED_SYSTEM_PROPERTIES;
+
+    static {
+        PATH_SEPARATED_SYSTEM_PROPERTIES = ImmutableSet.of("java.class.path", "java.ext.dirs",
+                "java.library.path", "sun.boot.class.path");
+    }
 
     private final AgentRepository agentRepository;
     private final @Nullable LiveJvmService liveJvmService;
@@ -324,6 +334,51 @@ class JvmJsonService {
         }
         MBeanDump.MBeanInfo mbeanInfo = mbeanInfos.get(0);
         return mapper.writeValueAsString(getSortedAttributeMap(mbeanInfo.getAttributeList()));
+    }
+
+    @GET(path = "/backend/jvm/system-properties", permission = "agent:tool:systemProperties")
+    String getSystemProperties(@BindAgentId String agentId) throws Exception {
+        checkNotNull(liveJvmService);
+        Map<String, String> properties;
+        try {
+            properties = liveJvmService.getSystemProperties(agentId);
+        } catch (AgentNotConnectedException e) {
+            logger.debug(e.getMessage(), e);
+            return "{\"agentNotConnected\":true}";
+        } catch (AgentUnsupportedOperationException e) {
+            // this operation introduced in 0.9.2
+            logger.debug(e.getMessage(), e);
+            return getAgentUnsupportedOperationResponse(agentId);
+        }
+        // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
+        // see https://code.google.com/p/guava-libraries/issues/detail?id=635
+        Map<String, String> sortedProperties =
+                new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
+        sortedProperties.putAll(properties);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeArrayFieldStart("properties");
+        for (Entry<String, String> entry : sortedProperties.entrySet()) {
+            jg.writeStartObject();
+            String propertyName = entry.getKey();
+            jg.writeStringField("name", propertyName);
+            if (PATH_SEPARATED_SYSTEM_PROPERTIES.contains(propertyName)) {
+                jg.writeArrayFieldStart("value");
+                for (String item : Splitter.on(File.pathSeparatorChar)
+                        .splitToList(entry.getValue())) {
+                    jg.writeString(item);
+                }
+                jg.writeEndArray();
+            } else {
+                jg.writeStringField("value", entry.getValue());
+            }
+            jg.writeEndObject();
+        }
+        jg.writeEndArray();
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
     }
 
     @GET(path = "/backend/jvm/capabilities", permission = "agent:tool:capabilities")

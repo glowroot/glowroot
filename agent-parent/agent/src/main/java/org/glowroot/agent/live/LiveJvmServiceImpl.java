@@ -314,6 +314,11 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
+    public Map<String, String> getSystemProperties(String agentId) throws Exception {
+        return ManagementFactory.getRuntimeMXBean().getSystemProperties();
+    }
+
+    @Override
     public Capabilities getCapabilities(String agentId) {
         return Capabilities.newBuilder()
                 .setThreadCpuTime(getThreadCpuTimeAvailability())

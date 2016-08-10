@@ -16,6 +16,7 @@
 package org.glowroot.server;
 
 import java.util.List;
+import java.util.Map;
 
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
@@ -84,6 +85,11 @@ class LiveJvmServiceImpl implements LiveJvmService {
     @Override
     public MBeanMeta getMBeanMeta(String agentId, String objectName) throws Exception {
         return downstreamService.mbeanMeta(agentId, objectName);
+    }
+
+    @Override
+    public Map<String, String> getSystemProperties(String agentId) throws Exception {
+        return downstreamService.systemProperties(agentId);
     }
 
     @Override

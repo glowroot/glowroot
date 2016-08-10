@@ -59,6 +59,10 @@ public class RoleConfigPage {
         return withWait(xpath("//input[@ng-model='page.permissions.tool.mbeanTree']"));
     }
 
+    public WebElement getToolSystemPropertiesCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.tool.systemProperties']"));
+    }
+
     public WebElement getConfigViewCheckBox() {
         return withWait(xpath("//input[@ng-model='page.permissions.config.view']"));
     }

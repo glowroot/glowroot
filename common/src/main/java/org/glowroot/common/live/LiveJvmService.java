@@ -16,6 +16,7 @@
 package org.glowroot.common.live;
 
 import java.util.List;
+import java.util.Map;
 
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
@@ -48,6 +49,8 @@ public interface LiveJvmService {
             throws Exception;
 
     MBeanMeta getMBeanMeta(String agentId, String mbeanObjectName) throws Exception;
+
+    Map<String, String> getSystemProperties(String agentId) throws Exception;;
 
     Capabilities getCapabilities(String agentId) throws Exception;
 

@@ -189,6 +189,8 @@ class LayoutService {
                                 authentication.isPermitted(agentRollup, "agent:tool:heapHistogram"))
                         .gc(authentication.isPermitted(agentRollup, "agent:tool:gc"))
                         .mbeanTree(authentication.isPermitted(agentRollup, "agent:tool:mbeanTree"))
+                        .systemProperties(authentication.isPermitted(agentRollup,
+                                "agent:tool:systemProperties"))
                         .capabilities(
                                 authentication.isPermitted(agentRollup, "agent:tool:capabilities"))
                         .build())
@@ -261,6 +263,7 @@ class LayoutService {
         boolean heapHistogram();
         boolean gc();
         boolean mbeanTree();
+        boolean systemProperties();
         boolean capabilities();
     }
 

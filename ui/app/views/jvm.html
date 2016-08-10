@@ -83,6 +83,12 @@
            ng-if="agentPermissions.tool.mbeanTree">
       </div>
       <div gt-sidebar-item
+           gt-display="System properties"
+           gt-url="jvm/system-properties{{agentQueryString()}}"
+           gt-active="currentUrl() === 'jvm/system-properties'"
+           ng-if="agentPermissions.tool.systemProperties">
+      </div>
+      <div gt-sidebar-item
            gt-display="Environment"
            gt-url="jvm/environment{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/environment'">

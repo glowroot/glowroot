@@ -293,11 +293,6 @@ glowroot.config([
       templateUrl: 'views/jvm/gauge-values.html',
       controller: 'JvmGaugeValuesCtrl'
     });
-    $stateProvider.state('jvm.environment', {
-      url: '/environment?agent-id&agent-rollup',
-      templateUrl: 'views/jvm/environment.html',
-      controller: 'JvmEnvironmentCtrl'
-    });
     $stateProvider.state('jvm.threadDump', {
       url: '/thread-dump?agent-id&agent-rollup',
       templateUrl: 'views/jvm/thread-dump.html',
@@ -327,6 +322,16 @@ glowroot.config([
       url: '/mbean-tree?agent-id&agent-rollup',
       templateUrl: 'views/jvm/mbean-tree.html',
       controller: 'JvmMBeanTreeCtrl'
+    });
+    $stateProvider.state('jvm.systemProperties', {
+      url: '/system-properties?agent-id&agent-rollup',
+      templateUrl: 'views/jvm/system-properties.html',
+      controller: 'JvmSystemPropertiesCtrl'
+    });
+    $stateProvider.state('jvm.environment', {
+      url: '/environment?agent-id&agent-rollup',
+      templateUrl: 'views/jvm/environment.html',
+      controller: 'JvmEnvironmentCtrl'
     });
     $stateProvider.state('jvm.capabilities', {
       url: '/capabilities?agent-id&agent-rollup',

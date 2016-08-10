@@ -94,6 +94,8 @@ glowroot.controller('AdminRoleCtrl', [
           permissionBlock.tool.heapHistogram = true;
         } else if (permission === 'agent:tool:mbeanTree') {
           permissionBlock.tool.mbeanTree = true;
+        } else if (permission === 'agent:tool:systemProperties') {
+          permissionBlock.tool.systemProperties = true;
         } else if (permission === 'agent:config') {
           permissionBlock.config._ = true;
         } else if (permission === 'agent:config:view') {
@@ -125,6 +127,7 @@ glowroot.controller('AdminRoleCtrl', [
         permissionsObj.tool.heapDump = false;
         permissionsObj.tool.heapHistogram = false;
         permissionsObj.tool.mbeanTree = false;
+        permissionsObj.tool.systemProperties = false;
       }
       if (permissionsObj.config._) {
         permissionsObj.config.view = false;
@@ -171,11 +174,12 @@ glowroot.controller('AdminRoleCtrl', [
         return false;
       }
       return permissionsObj.tool._ || permissionsObj.tool.threadDump || permissionsObj.tool.heapDump
-          || permissionsObj.tool.heapHistogram || permissionsObj.tool.mbeanTree || permissionsObj.config._
-          || permissionsObj.config.view || permissionsObj.config.edit._ || permissionsObj.config.edit.transaction
-          || permissionsObj.config.edit.gauge || permissionsObj.config.edit.alert || permissionsObj.config.edit.ui
-          || permissionsObj.config.edit.plugin || permissionsObj.config.edit.instrumentation
-          || permissionsObj.config.edit.reweave || permissionsObj.config.edit.advanced;
+          || permissionsObj.tool.heapHistogram || permissionsObj.tool.mbeanTree || permissionsObj.tool.systemProperties
+          || permissionsObj.config._ || permissionsObj.config.view || permissionsObj.config.edit._
+          || permissionsObj.config.edit.transaction || permissionsObj.config.edit.gauge
+          || permissionsObj.config.edit.alert || permissionsObj.config.edit.ui || permissionsObj.config.edit.plugin
+          || permissionsObj.config.edit.instrumentation || permissionsObj.config.edit.reweave
+          || permissionsObj.config.edit.advanced;
     };
 
     $scope.viewConfigPermissionDisabled = function (permissionsObj) {
@@ -215,6 +219,9 @@ glowroot.controller('AdminRoleCtrl', [
       }
       if (permissionsObj.tool.mbeanTree) {
         permissions.push('agent:' + agentIds + 'tool:mbeanTree');
+      }
+      if (permissionsObj.tool.systemProperties) {
+        permissions.push('agent:' + agentIds + 'tool:systemProperties');
       }
       if (permissionsObj.config._) {
         permissions.push('agent:' + agentIds + 'config');
@@ -286,7 +293,8 @@ glowroot.controller('AdminRoleCtrl', [
           threadDump: false,
           heapDump: false,
           heapHistogram: false,
-          mbeanTree: false
+          mbeanTree: false,
+          systemProperties: false
         },
         config: {
           _: false,

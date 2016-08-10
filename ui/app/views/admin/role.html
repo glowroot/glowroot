@@ -100,6 +100,14 @@
             </label>
           </div>
           <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': page.permissions.tool._}"
+                   style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="page.permissions.tool.systemProperties"
+                     ng-disabled="page.permissions.tool._">System properties
+            </label>
+          </div>
+          <div class="checkbox">
             <label>
               <input type="checkbox"
                      ng-model="page.permissions.config._">Configuration
@@ -262,6 +270,14 @@
               <input type="checkbox"
                      ng-model="page.permissions.tool.mbeanTree"
                      ng-disabled="page.permissions.tool._">MBean tree
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': page.permissions.tool._}"
+                   style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="page.permissions.tool.systemProperties"
+                     ng-disabled="page.permissions.tool._">System properties
             </label>
           </div>
           <div class="checkbox">
@@ -433,6 +449,14 @@
               <input type="checkbox"
                      ng-model="permissionBlock.tool.mbeanTree"
                      ng-disabled="permissionBlock.tool._">MBean tree
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': permissionBlock.tool._}"
+                   style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="permissionBlock.tool.systemProperties"
+                     ng-disabled="permissionBlock.tool._">System properties
             </label>
           </div>
           <div class="checkbox">

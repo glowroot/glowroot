@@ -68,6 +68,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignaturesR
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.PreloadClasspathCacheRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ServerRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.SystemPropertiesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDumpRequest;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
@@ -171,6 +172,14 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
             throw new AgentNotConnectedException();
         }
         return connectedAgent.mbeanMeta(objectName);
+    }
+
+    Map<String, String> systemProperties(String agentId) throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.systemProperties();
     }
 
     Capabilities capabilities(String agentId) throws Exception {
@@ -427,6 +436,14 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
                             .setObjectName(objectName))
                     .build());
             return response.getMbeanMetaResponse().getMbeanMeta();
+        }
+
+        private Map<String, String> systemProperties() throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setSystemPropertiesRequest(SystemPropertiesRequest.getDefaultInstance())
+                    .build());
+            return response.getSystemPropertiesResponse().getSystemPropertiesMap();
         }
 
         private Capabilities capabilities() throws Exception {
