@@ -51,6 +51,10 @@ public class RoleConfigPage {
         return withWait(xpath("//input[@ng-model='page.permissions.tool.heapDump']"));
     }
 
+    public WebElement getToolHeapHistogramCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.tool.heapHistogram']"));
+    }
+
     public WebElement getToolMBeanTreeCheckBox() {
         return withWait(xpath("//input[@ng-model='page.permissions.tool.mbeanTree']"));
     }

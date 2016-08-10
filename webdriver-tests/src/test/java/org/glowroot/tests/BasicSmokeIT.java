@@ -266,6 +266,8 @@ public class BasicSmokeIT extends WebDriverIT {
         Utils.withWait(driver, By.xpath("//button[normalize-space()='Check disk space']")).click();
         Utils.withWait(driver, By.xpath("//div[@ng-show='availableDiskSpaceBytes !== undefined']"));
 
+        jvmSidebar.getHeapHistogramLink().click();
+
         jvmSidebar.getMBeanTreeLink().click();
         List<WebElement> elements = new WebDriverWait(driver, 30).until(ExpectedConditions
                 .visibilityOfAllElementsLocatedBy(By.className("gt-mbean-unexpanded-content")));

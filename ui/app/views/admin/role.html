@@ -87,6 +87,14 @@
             <label ng-class="{'gt-label-disabled': page.permissions.tool._}"
                    style="margin-left: 30px;">
               <input type="checkbox"
+                     ng-model="page.permissions.tool.heapHistogram"
+                     ng-disabled="page.permissions.tool._">Heap histogram
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': page.permissions.tool._}"
+                   style="margin-left: 30px;">
+              <input type="checkbox"
                      ng-model="page.permissions.tool.mbeanTree"
                      ng-disabled="page.permissions.tool._">MBean tree
             </label>
@@ -238,6 +246,14 @@
               <input type="checkbox"
                      ng-model="page.permissions.tool.heapDump"
                      ng-disabled="page.permissions.tool._">Heap dump
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': page.permissions.tool._}"
+                   style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="page.permissions.tool.heapHistogram"
+                     ng-disabled="page.permissions.tool._">Heap histogram
             </label>
           </div>
           <div class="checkbox">
@@ -401,6 +417,14 @@
               <input type="checkbox"
                      ng-model="permissionBlock.tool.heapDump"
                      ng-disabled="permissionBlock.tool._">Heap dump
+            </label>
+          </div>
+          <div class="checkbox">
+            <label ng-class="{'gt-label-disabled': permissionBlock.tool._}"
+                   style="margin-left: 30px;">
+              <input type="checkbox"
+                     ng-model="permissionBlock.tool.heapHistogram"
+                     ng-disabled="permissionBlock.tool._">Heap histogram
             </label>
           </div>
           <div class="checkbox">

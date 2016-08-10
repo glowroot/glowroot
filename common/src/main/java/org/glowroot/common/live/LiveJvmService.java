@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogram;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
@@ -35,6 +36,8 @@ public interface LiveJvmService {
     long getAvailableDiskSpace(String agentId, String directory) throws Exception;
 
     HeapDumpFileInfo heapDump(String agentId, String directory) throws Exception;
+
+    HeapHistogram heapHistogram(String agentId) throws Exception;
 
     void gc(String agentId) throws Exception;
 

@@ -71,6 +71,12 @@
            ng-if="agentPermissions.tool.heapDump">
       </div>
       <div gt-sidebar-item
+           gt-display="Heap histogram"
+           gt-url="jvm/heap-histogram{{agentQueryString()}}"
+           gt-active="currentUrl() === 'jvm/heap-histogram'"
+           ng-if="agentPermissions.tool.heapHistogram">
+      </div>
+      <div gt-sidebar-item
            gt-display="MBean tree"
            gt-url="jvm/mbean-tree{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/mbean-tree'"

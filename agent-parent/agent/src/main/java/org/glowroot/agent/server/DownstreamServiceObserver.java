@@ -48,6 +48,8 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMetaRespons
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeaderResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogram;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogramResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Hello;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.JstackResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
@@ -218,6 +220,9 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
             case HEAP_DUMP_REQUEST:
                 heapDumpAndRespond(request, responseObserver);
                 return;
+            case HEAP_HISTOGRAM_REQUEST:
+                heapHistogramAndRespond(request, responseObserver);
+                return;
             case GC_REQUEST:
                 gcAndRespond(request, responseObserver);
                 return;
@@ -357,6 +362,23 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
                 .setRequestId(request.getRequestId())
                 .setHeapDumpResponse(HeapDumpResponse.newBuilder()
                         .setHeapDumpFileInfo(heapDumpFileInfo))
+                .build());
+    }
+
+    private void heapHistogramAndRespond(ServerRequest request,
+            StreamObserver<ClientResponse> responseObserver) {
+        HeapHistogram heapHistogram;
+        try {
+            heapHistogram = liveJvmService.heapHistogram("");
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            sendExceptionResponse(request, responseObserver);
+            return;
+        }
+        responseObserver.onNext(ClientResponse.newBuilder()
+                .setRequestId(request.getRequestId())
+                .setHeapHistogramResponse(HeapHistogramResponse.newBuilder()
+                        .setHeapHistogram(heapHistogram))
                 .build());
     }
 

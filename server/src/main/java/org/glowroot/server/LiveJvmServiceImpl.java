@@ -20,6 +20,7 @@ import java.util.List;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogram;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
@@ -56,6 +57,11 @@ class LiveJvmServiceImpl implements LiveJvmService {
     @Override
     public HeapDumpFileInfo heapDump(String agentId, String directory) throws Exception {
         return downstreamService.heapDump(agentId, directory);
+    }
+
+    @Override
+    public HeapHistogram heapHistogram(String agentId) throws Exception {
+        return downstreamService.heapHistogram(agentId);
     }
 
     @Override

@@ -50,6 +50,8 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMetaRequest
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeaderRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogram;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogramRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HelloAck;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.JstackRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
@@ -127,6 +129,14 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
             throw new AgentNotConnectedException();
         }
         return connectedAgent.heapDump(directory);
+    }
+
+    HeapHistogram heapHistogram(String agentId) throws Exception {
+        ConnectedAgent connectedAgent = connectedAgents.get(agentId);
+        if (connectedAgent == null) {
+            throw new AgentNotConnectedException();
+        }
+        return connectedAgent.heapHistogram();
     }
 
     void gc(String agentId) throws Exception {
@@ -371,6 +381,14 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
                             .setDirectory(directory))
                     .build());
             return response.getHeapDumpResponse().getHeapDumpFileInfo();
+        }
+
+        private HeapHistogram heapHistogram() throws Exception {
+            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+                    .setRequestId(nextRequestId.getAndIncrement())
+                    .setHeapHistogramRequest(HeapHistogramRequest.newBuilder())
+                    .build());
+            return response.getHeapHistogramResponse().getHeapHistogram();
         }
 
         private void gc() throws Exception {

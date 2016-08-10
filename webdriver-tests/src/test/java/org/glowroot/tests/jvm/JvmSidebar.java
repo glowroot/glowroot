@@ -47,6 +47,10 @@ public class JvmSidebar {
         return Utils.withWait(driver, getSidebar(), linkText("Heap dump"));
     }
 
+    public WebElement getHeapHistogramLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Heap histogram"));
+    }
+
     public WebElement getSystemInfoLink() {
         return Utils.withWait(driver, getSidebar(), linkText("System info"));
     }

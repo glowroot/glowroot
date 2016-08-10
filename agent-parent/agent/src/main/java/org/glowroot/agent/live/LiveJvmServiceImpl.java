@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.live;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,8 +26,10 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -44,12 +47,17 @@ import javax.tools.ToolProvider;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
+import com.google.common.io.Closer;
+import com.google.common.primitives.Longs;
+import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +68,7 @@ import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Availability;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogram;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
@@ -177,6 +186,37 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                 .setFilePath(file.getAbsolutePath())
                 .setFileSizeBytes(file.length())
                 .build();
+    }
+
+    @Override
+    public HeapHistogram heapHistogram(String agentId) throws Exception {
+        ClassLoader systemToolClassLoader = ToolProvider.getSystemToolClassLoader();
+        Class<?> vmClass =
+                Class.forName("com.sun.tools.attach.VirtualMachine", true, systemToolClassLoader);
+        Method attachMethod = vmClass.getMethod("attach", String.class);
+        Method detachMethod = vmClass.getMethod("detach");
+        Class<?> hotSpotVmClass = Class.forName("sun.tools.attach.HotSpotVirtualMachine", true,
+                systemToolClassLoader);
+        Method heapHistoMethod = hotSpotVmClass.getMethod("heapHisto", Object[].class);
+
+        long pid = checkNotNull(LiveJvmServiceImpl.getProcessId());
+        Object vm = attachMethod.invoke(null, Long.toString(pid));
+        try {
+            InputStream in = (InputStream) heapHistoMethod.invoke(vm, (Object) new Object[0]);
+            checkNotNull(in);
+            // Closer is used to simulate Java 7 try-with-resources
+            Closer closer = Closer.create();
+            BufferedReader reader = closer.register(new BufferedReader(new InputStreamReader(in)));
+            try {
+                return process(reader);
+            } catch (Throwable t) {
+                throw closer.rethrow(t);
+            } finally {
+                closer.close();
+            }
+        } finally {
+            detachMethod.invoke(vm);
+        }
     }
 
     @Override
@@ -472,6 +512,50 @@ public class LiveJvmServiceImpl implements LiveJvmService {
         return attributeNames;
     }
 
+    private static HeapHistogram process(BufferedReader reader) throws IOException {
+        // skip over header lines
+        String line = reader.readLine();
+        while (line != null && !line.contains("--------")) {
+            line = reader.readLine();
+        }
+        if (line == null) {
+            throw new IOException("Unexpected heapHisto output");
+        }
+        Map<String, ClassInfo> classInfos = Maps.newHashMap();
+        Splitter splitter = Splitter.on(' ').omitEmptyStrings();
+        while ((line = reader.readLine()) != null) {
+            Iterator<String> parts = splitter.split(line).iterator();
+            String num = parts.next();
+            if (num.equals("Total")) {
+                break;
+            }
+            long count = Long.parseLong(parts.next());
+            long bytes = Long.parseLong(parts.next());
+            String className = parts.next();
+            // skipping PermGen objects
+            if (className.charAt(0) != '<') {
+                if (className.charAt(0) == '[') {
+                    className = Type.getType(className).getClassName();
+                }
+                ClassInfo classInfo = classInfos.get(className);
+                if (classInfo == null) {
+                    classInfo = new ClassInfo(className);
+                    classInfos.put(className, classInfo);
+                }
+                classInfo.bytes += bytes;
+                classInfo.count += count;
+            }
+        }
+        HeapHistogram.Builder builder = HeapHistogram.newBuilder();
+        for (ClassInfo classInfo : ClassInfo.orderingByBytes.sortedCopy(classInfos.values())) {
+            builder.addClassInfo(HeapHistogram.ClassInfo.newBuilder()
+                    .setClassName(classInfo.className)
+                    .setBytes(classInfo.bytes)
+                    .setCount(classInfo.count));
+        }
+        return builder.build();
+    }
+
     private static void addNumericAttributes(MBeanAttributeInfo attribute, Object value,
             Set<String> attributeNames) {
         String attributeType = attribute.getType();
@@ -566,6 +650,24 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                     .build();
         }
         return Availability.newBuilder().setAvailable(true).build();
+    }
+
+    private static class ClassInfo {
+
+        private static final Ordering<ClassInfo> orderingByBytes = new Ordering<ClassInfo>() {
+            @Override
+            public int compare(ClassInfo left, ClassInfo right) {
+                return Longs.compare(right.bytes, left.bytes);
+            }
+        };
+
+        private final String className;
+        private long bytes;
+        private long count;
+
+        private ClassInfo(String className) {
+            this.className = className;
+        }
     }
 
     @SuppressWarnings("serial")

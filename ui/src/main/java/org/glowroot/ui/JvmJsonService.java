@@ -54,6 +54,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Availability;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogram;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
@@ -199,27 +200,14 @@ class JvmJsonService {
     String getAvailableDiskSpace(@BindAgentId String agentId, @BindRequest HeapDumpRequest request)
             throws Exception {
         checkNotNull(liveJvmService);
-        try {
-            return Long
-                    .toString(liveJvmService.getAvailableDiskSpace(agentId, request.directory()));
-        } catch (IOException e) {
-            logger.debug(e.getMessage(), e);
-            // this is for specific common errors, e.g. "Directory doesn't exist"
-            return buildErrorResponse(e);
-        }
+        return Long.toString(liveJvmService.getAvailableDiskSpace(agentId, request.directory()));
     }
 
     @POST(path = "/backend/jvm/heap-dump", permission = "agent:tool:heapDump")
     String heapDump(@BindAgentId String agentId, @BindRequest HeapDumpRequest request)
             throws Exception {
         checkNotNull(liveJvmService);
-        HeapDumpFileInfo heapDumpFileInfo;
-        try {
-            heapDumpFileInfo = liveJvmService.heapDump(agentId, request.directory());
-        } catch (IOException e) {
-            logger.debug(e.getMessage(), e);
-            return buildErrorResponse(e);
-        }
+        HeapDumpFileInfo heapDumpFileInfo = liveJvmService.heapDump(agentId, request.directory());
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
         jg.writeStartObject();
@@ -230,16 +218,53 @@ class JvmJsonService {
         return sw.toString();
     }
 
-    @GET(path = "/backend/jvm/gc-check-agent-connected", permission = "agent:tool:gc")
-    String checkAgentConnected(@BindAgentId String agentId) throws Exception {
+    @POST(path = "/backend/jvm/heap-histogram", permission = "agent:tool:heapHistogram")
+    String heapHistogram(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
-        return Boolean.toString(liveJvmService.isAvailable(agentId));
+        HeapHistogram heapHistogram;
+        try {
+            heapHistogram = liveJvmService.heapHistogram(agentId);
+        } catch (AgentNotConnectedException e) {
+            logger.debug(e.getMessage(), e);
+            return "{\"agentNotConnected\":true}";
+        } catch (AgentUnsupportedOperationException e) {
+            // this operation introduced in 0.9.2
+            logger.debug(e.getMessage(), e);
+            return getAgentUnsupportedOperationResponse(agentId);
+        }
+        StringWriter sw = new StringWriter();
+        JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+        jg.writeStartObject();
+        jg.writeArrayFieldStart("items");
+        long totalBytes = 0;
+        long totalCount = 0;
+        for (HeapHistogram.ClassInfo classInfo : heapHistogram.getClassInfoList()) {
+            jg.writeStartObject();
+            jg.writeStringField("className", classInfo.getClassName());
+            jg.writeNumberField("bytes", classInfo.getBytes());
+            jg.writeNumberField("count", classInfo.getCount());
+            jg.writeEndObject();
+            totalBytes += classInfo.getBytes();
+            totalCount += classInfo.getCount();
+        }
+        jg.writeEndArray();
+        jg.writeNumberField("totalBytes", totalBytes);
+        jg.writeNumberField("totalCount", totalCount);
+        jg.writeEndObject();
+        jg.close();
+        return sw.toString();
     }
 
     @POST(path = "/backend/jvm/gc", permission = "agent:tool:gc")
     void performGC(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
         liveJvmService.gc(agentId);
+    }
+
+    @GET(path = "/backend/jvm/gc-check-agent-connected", permission = "agent:tool:gc")
+    String checkAgentConnected(@BindAgentId String agentId) throws Exception {
+        checkNotNull(liveJvmService);
+        return Boolean.toString(liveJvmService.isAvailable(agentId));
     }
 
     @GET(path = "/backend/jvm/mbean-tree", permission = "agent:tool:mbeanTree")
@@ -530,16 +555,6 @@ class JvmJsonService {
                 throw new IllegalStateException(
                         "Unexpected mbean value case: " + value.getValCase());
         }
-    }
-
-    private static String buildErrorResponse(IOException e) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeStringField("error", e.getMessage());
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
     }
 
     @Value.Immutable

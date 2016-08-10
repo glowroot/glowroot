@@ -1,0 +1,131 @@
+<!--
+  Copyright 2013-2016 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div ng-include src="'template/gt-loading-overlay.html'"></div>
+<div ng-include src="'template/gt-http-error-overlay.html'"></div>
+<div ng-if="agentNotConnected" class="alert alert-danger">
+  This feature is only available when the agent is running and connected
+</div>
+<div ng-if="agentUnsupportedOperation" class="alert alert-danger">
+  This feature is only supported by Glowroot agent 0.9.2 and later
+  (currently reporting agent version is {{agentUnsupportedOperation}})
+</div>
+<div ng-if="loaded && !agentNotConnected && !agentUnsupportedOperation">
+  <div class="clearfix"
+       style="float: right;">
+    <button class="btn btn-default"
+            ng-click="exportAsCsv()">
+      Export as text
+    </button>
+  </div>
+  <div gt-button
+       gt-label="Refresh"
+       gt-click="refresh(deferred)"
+       style="margin-bottom: 20px;">
+  </div>
+  <div ng-form
+       class="form-horizontal well">
+    <div class="row">
+      <div class="col-md-9">
+        <div class="input-group" style="width: 100%;">
+          <div gt-input-group-dropdown
+               gt-model="page.filterComparator"
+               gt-items="filterComparatorOptions">
+          </div>
+          <input type="text"
+                 ng-model="page.filterValue"
+                 class="form-control"
+                 placeholder="Filter by class name">
+        </div>
+      </div>
+      <div class="col-md-3">
+        <select ng-model="page.filterLimit"
+                class="heap-histogram-limit form-control inline-block"
+                style="max-width: 8em;">
+          <option value="" disabled>Display limit</option>
+          <option value="" disabled>&mdash;&mdash;&mdash;&mdash;&mdash;</option>
+          <option value="100">100</option>
+          <option value="200">200</option>
+          <option value="500">500</option>
+          <option value="1000">1,000</option>
+          <option value="2000">2,000</option>
+          <option value="5000">5,000</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <table class="table table-sortable" style="table-layout: fixed;">
+    <thead>
+    <tr>
+      <th style="width: 70%;">
+        <a ng-href="jvm/heap-histogram{{sortQueryString('class-name')}}" class="gt-sortable-table-header">
+          <span ng-class="sortIconClass('class-name')"
+                ng-show="sortAttribute === 'class-name'">
+          </span>
+          Class name
+        </a>
+      </th>
+      <th style="width: 15%;">
+        <a ng-href="jvm/heap-histogram{{sortQueryString('bytes')}}" class="gt-sortable-table-header">
+          <span ng-class="sortIconClass('bytes')"
+                ng-show="sortAttribute === 'bytes'">
+          </span>
+          Bytes
+        </a>
+      </th>
+      <th style="width: 15%;">
+        <a ng-href="jvm/heap-histogram{{sortQueryString('count')}}" class="gt-sortable-table-header">
+          <span ng-class="sortIconClass('count')"
+                ng-show="sortAttribute === 'count'">
+          </span>
+          Count
+        </a>
+      </th>
+    </tr>
+    </thead>
+    <tfoot>
+    <tr>
+      <th>Total</th>
+      <th>{{filteredTotalBytes}}</th>
+      <th>{{filteredTotalCount}}</th>
+    </tr>
+    </tfoot>
+    <tbody>
+    <tr ng-repeat="item in displayedItems track by item.className">
+      <td ng-if="sortAttribute === 'bytes' && !sortAsc"
+          style="padding: 0;">
+        <!-- cannot apply relative positioning to td elements in firefox
+         see https://bugzilla.mozilla.org/show_bug.cgi?id=35168 -->
+        <div style="position: relative;">
+          <div style="position: absolute; height: 100%; background-color: #eee;"
+               ng-style="{width: classNameBarWidth(item.bytes)}">
+          </div>
+          <div style="position: relative; padding: 8px; word-break: break-all;">
+            {{item.className}}
+          </div>
+        </div>
+      </td>
+      <td ng-if="sortAttribute !== 'bytes' || sortAsc">{{item.className}}</td>
+      <td>{{item.bytes}}</td>
+      <td>{{item.count}}</td>
+    </tr>
+    <tr ng-show="limitApplied">
+      <td>... <em>display limit applied</em></td>
+      <td></td>
+      <td></td>
+    </tr>
+    </tbody>
+  </table>
+</div>

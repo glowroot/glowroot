@@ -100,7 +100,7 @@
       </tr>
       </thead>
       <tbody ng-if="!smallScreen()">
-      <tr ng-repeat="query in queries | filter:{queryType: queryType} | orderBy:sortAttr:sortReverse">
+      <tr ng-repeat="query in queries | filter:{queryType: queryType} | orderBy:sortAttr:sortAsc">
         <td class="gt-query-text-column"
             ng-click="showQueryModal(query)">
           {{query.truncatedQueryText}}
@@ -120,7 +120,7 @@
       </tr>
       </tbody>
       <tbody ng-if="smallScreen()">
-      <tr ng-repeat-start="query in queries | filter:{queryType: queryType} | orderBy:sortAttr:sortReverse">
+      <tr ng-repeat-start="query in queries | filter:{queryType: queryType} | orderBy:sortAttr:sortAsc">
         <td class="gt-query-text-column"
             ng-click="showQueryModal(query)"
             colspan="5"

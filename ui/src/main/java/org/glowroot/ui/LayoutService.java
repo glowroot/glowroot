@@ -185,6 +185,8 @@ class LayoutService {
                         .threadDump(
                                 authentication.isPermitted(agentRollup, "agent:tool:threadDump"))
                         .heapDump(authentication.isPermitted(agentRollup, "agent:tool:heapDump"))
+                        .heapHistogram(
+                                authentication.isPermitted(agentRollup, "agent:tool:heapHistogram"))
                         .gc(authentication.isPermitted(agentRollup, "agent:tool:gc"))
                         .mbeanTree(authentication.isPermitted(agentRollup, "agent:tool:mbeanTree"))
                         .capabilities(
@@ -256,6 +258,7 @@ class LayoutService {
     interface ToolPermissions {
         boolean threadDump();
         boolean heapDump();
+        boolean heapHistogram();
         boolean gc();
         boolean mbeanTree();
         boolean capabilities();

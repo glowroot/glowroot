@@ -313,6 +313,11 @@ glowroot.config([
       templateUrl: 'views/jvm/heap-dump.html',
       controller: 'JvmHeapDumpCtrl'
     });
+    $stateProvider.state('jvm.heapHistogram', {
+      url: '/heap-histogram?agent-id&agent-rollup',
+      templateUrl: 'views/jvm/heap-histogram.html',
+      controller: 'JvmHeapHistogramCtrl'
+    });
     $stateProvider.state('jvm.gc', {
       url: '/gc?agent-id&agent-rollup',
       templateUrl: 'views/jvm/gc.html',

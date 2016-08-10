@@ -24,6 +24,7 @@ message ServerRequest {
     JstackRequest jstack_request = 308;
     AvailableDiskSpaceRequest available_disk_space_request = 301;
     HeapDumpRequest heap_dump_request = 302;
+    HeapHistogramRequest heap_histogram_request = 309;
     GcRequest gc_request = 303;
     MBeanDumpRequest mbean_dump_request = 304;
     MatchingMBeanObjectNamesRequest matching_mbean_object_names_request = 305;
@@ -58,6 +59,7 @@ message ClientResponse {
     JstackResponse jstack_response = 308;
     AvailableDiskSpaceResponse available_disk_space_response = 301;
     HeapDumpResponse heap_dump_response = 302;
+    HeapHistogramResponse heap_histogram_response = 309;
     GcResponse gc_response = 303;
     MBeanDumpResponse mbean_dump_response = 304;
     MatchingMBeanObjectNamesResponse matching_mbean_object_names_response = 305;
@@ -126,6 +128,13 @@ message HeapDumpRequest {
 
 message HeapDumpResponse {
   HeapDumpFileInfo heap_dump_file_info = 1;
+}
+
+message HeapHistogramRequest {
+}
+
+message HeapHistogramResponse {
+  HeapHistogram heap_histogram = 1;
 }
 
 message GcRequest {
@@ -312,6 +321,17 @@ message ThreadDump {
 message HeapDumpFileInfo {
   string file_path = 1;
   int64 file_size_bytes = 2;
+}
+
+message HeapHistogram {
+
+  repeated ClassInfo class_info = 1;
+
+  message ClassInfo {
+    string class_name = 1;
+    int64 bytes = 2;
+    int64 count = 3;
+  }
 }
 
 message MBeanDump {

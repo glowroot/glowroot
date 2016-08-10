@@ -91,7 +91,7 @@
       </tr>
       </thead>
       <tbody>
-      <tr ng-repeat="serviceCall in serviceCalls | filter:{type: type} | orderBy:sortAttr:sortReverse">
+      <tr ng-repeat="serviceCall in serviceCalls | filter:{type: type} | orderBy:sortAttr:sortAsc">
         <td class="gt-monospace gt-break-word">
           {{serviceCall.text}}
         </td>

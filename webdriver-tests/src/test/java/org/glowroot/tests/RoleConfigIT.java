@@ -65,6 +65,7 @@ public class RoleConfigIT extends WebDriverIT {
         assertThat(rolePage.getToolCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getToolThreadDumpCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getToolHeapDumpCheckBox().isSelected()).isFalse();
+        assertThat(rolePage.getToolHeapHistogramCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getToolMBeanTreeCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getConfigViewCheckBox().isSelected()).isFalse();
         assertThat(rolePage.getConfigEditCheckBox().isSelected()).isFalse();

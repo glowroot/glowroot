@@ -48,17 +48,12 @@ glowroot.controller('TransactionServicesCtrl', [
       }
     });
 
-    $scope.sort = function () {
-      $location.search('sort-attribute', null);
-      $location.search('sort-direction', null);
-    };
-
     $scope.sortQueryString = function (attributeName) {
       var query = $scope.buildQueryObject({});
-      if (attributeName !== 'total-time') {
+      if (attributeName !== 'total-time' || ($scope.sortAttribute === 'total-time' && !$scope.sortAsc)) {
         query['sort-attribute'] = attributeName;
       }
-      if ($scope.sortAttribute === attributeName && !$scope.sortReverse) {
+      if ($scope.sortAttribute === attributeName && !$scope.sortAsc) {
         query['sort-direction'] = 'asc';
       }
       if ($scope.type) {
@@ -71,8 +66,8 @@ glowroot.controller('TransactionServicesCtrl', [
       if ($scope.sortAttribute !== attributeName) {
         return '';
       }
-      if ($scope.sortReverse) {
-        return 'caret gt-caret-reversed';
+      if ($scope.sortAsc) {
+        return 'caret gt-caret-sort-ascending';
       } else {
         return 'caret';
       }
@@ -80,7 +75,7 @@ glowroot.controller('TransactionServicesCtrl', [
 
     locationChanges.on($scope, function () {
       $scope.sortAttribute = $location.search()['sort-attribute'] || 'total-time';
-      $scope.sortReverse = $location.search()['sort-direction'] === 'asc';
+      $scope.sortAsc = $location.search()['sort-direction'] === 'asc';
       if ($scope.sortAttribute === 'total-time') {
         $scope.sortAttr = '-totalDurationNanos';
       } else if ($scope.sortAttribute === 'execution-count') {
