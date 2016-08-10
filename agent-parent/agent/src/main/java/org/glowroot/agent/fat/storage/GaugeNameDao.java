@@ -41,8 +41,6 @@ class GaugeNameDao {
 
     GaugeNameDao(DataSource dataSource) throws Exception {
         this.dataSource = dataSource;
-        dataSource.renameTable("gauge", "gauge_name");
-        dataSource.renameColumn("gauge_name", "name", "gauge_name");
         dataSource.syncTable("gauge_name", columns);
     }
 

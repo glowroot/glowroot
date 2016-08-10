@@ -172,14 +172,10 @@ class AggregateDao implements AggregateRepository {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         for (int i = 0; i < rollupConfigs.size(); i++) {
             String overallTableName = "aggregate_tt_rollup_" + castUntainted(i);
-            dataSource.renameColumn(overallTableName, "async_thread_profile_capped_id",
-                    "aux_thread_profile_capped_id");
             dataSource.syncTable(overallTableName, overallAggregatePointColumns);
             dataSource.syncIndexes(overallTableName, ImmutableList.<Index>of(
                     ImmutableIndex.of(overallTableName + "_idx", overallAggregateIndexColumns)));
             String transactionTableName = "aggregate_tn_rollup_" + castUntainted(i);
-            dataSource.renameColumn(transactionTableName, "async_thread_profile_capped_id",
-                    "aux_thread_profile_capped_id");
             dataSource.syncTable(transactionTableName, transactionAggregateColumns);
             dataSource.syncIndexes(transactionTableName, ImmutableList.<Index>of(ImmutableIndex
                     .of(transactionTableName + "_idx", transactionAggregateIndexColumns)));
