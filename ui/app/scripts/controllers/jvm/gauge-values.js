@@ -149,19 +149,8 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     }
 
     function onRefreshData(data) {
-      var i, j;
-      var dataSeries;
-      var point;
-      for (i = 0; i < data.dataSeries.length; i++) {
-        dataSeries = data.dataSeries[i];
-        for (j = 0; j < dataSeries.data.length; j++) {
-          point = dataSeries.data[j];
-          if (point && point[1] < 0) {
-            point[1] = 0;
-          }
-        }
-      }
       updatePlotData(data.dataSeries);
+      var i;
       for (i = 0; i < data.dataSeries.length; i++) {
         data.dataSeries[i].shortLabel = gaugeShortDisplayMap[data.dataSeries[i].name];
       }
@@ -267,6 +256,8 @@ glowroot.controller('JvmGaugeValuesCtrl', [
         dataSeries = data[i];
         if (dataSeries.data.length) {
           updateYvalMap(dataSeries.name, dataSeries.data);
+          // set negative data to zero after putting real value into yval map
+          setNegativeDataToZero(dataSeries);
           scale = getPointsScale(dataSeries.data);
           grouping = gaugeGrouping[dataSeries.name];
           if (groupingScale[grouping]) {
@@ -293,6 +284,17 @@ glowroot.controller('JvmGaugeValuesCtrl', [
         }
       }
       updateThePlotData(data);
+    }
+
+    function setNegativeDataToZero(dataSeries) {
+      var i;
+      var point;
+      for (i = 0; i < dataSeries.data.length; i++) {
+        point = dataSeries.data[i];
+        if (point && point[1] < 0) {
+          point[1] = 0;
+        }
+      }
     }
 
     function updateYvalMap(label, points) {
