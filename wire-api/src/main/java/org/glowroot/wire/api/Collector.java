@@ -21,14 +21,14 @@ import java.util.List;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface Collector {
 
-    void init(File glowrootBaseDir, SystemInfo systemInfo, AgentConfig agentConfig,
+    void init(File glowrootBaseDir, Environment environment, AgentConfig agentConfig,
             AgentConfigUpdater agentConfigUpdater) throws Exception;
 
     void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType,

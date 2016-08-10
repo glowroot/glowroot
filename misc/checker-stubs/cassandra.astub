@@ -5,6 +5,7 @@ package com.datastax.driver.core;
 
 public class BoundStatement {
     public BoundStatement setString(int i, @Nullable String v);
+    public BoundStatement setBytes(int i, @Nullable ByteBuffer v);
 }
 
 public class Row {

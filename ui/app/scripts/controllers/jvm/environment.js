@@ -16,13 +16,13 @@
 
 /* global glowroot */
 
-glowroot.controller('JvmSystemInfoCtrl', [
+glowroot.controller('JvmEnvironmentCtrl', [
   '$scope',
   '$http',
   'httpErrors',
   function ($scope, $http, httpErrors) {
 
-    $scope.$parent.heading = 'System info';
+    $scope.$parent.heading = 'Environment';
 
     if ($scope.hideMainContent()) {
       return;
@@ -47,7 +47,7 @@ glowroot.controller('JvmSystemInfoCtrl', [
       }
     };
 
-    $http.get('backend/jvm/system-info?agent-id=' + encodeURIComponent($scope.agentId))
+    $http.get('backend/jvm/environment?agent-id=' + encodeURIComponent($scope.agentId))
         .success(function (data) {
           $scope.loaded = true;
           $scope.data = data;

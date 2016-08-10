@@ -293,10 +293,10 @@ glowroot.config([
       templateUrl: 'views/jvm/gauge-values.html',
       controller: 'JvmGaugeValuesCtrl'
     });
-    $stateProvider.state('jvm.systemInfo', {
-      url: '/system-info?agent-id&agent-rollup',
-      templateUrl: 'views/jvm/system-info.html',
-      controller: 'JvmSystemInfoCtrl'
+    $stateProvider.state('jvm.environment', {
+      url: '/environment?agent-id&agent-rollup',
+      templateUrl: 'views/jvm/environment.html',
+      controller: 'JvmEnvironmentCtrl'
     });
     $stateProvider.state('jvm.threadDump', {
       url: '/thread-dump?agent-id&agent-rollup',

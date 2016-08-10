@@ -29,9 +29,9 @@ import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class CollectorImpl implements Collector {
@@ -57,9 +57,9 @@ class CollectorImpl implements Collector {
     }
 
     @Override
-    public void init(File glowrootBaseDir, SystemInfo systemInfo, AgentConfig agentConfig,
+    public void init(File glowrootBaseDir, Environment environment, AgentConfig agentConfig,
             AgentConfigUpdater agentConfigUpdater) throws Exception {
-        agentDao.store(systemInfo);
+        agentDao.store(environment);
     }
 
     @Override

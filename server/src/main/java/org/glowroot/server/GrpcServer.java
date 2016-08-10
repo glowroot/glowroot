@@ -95,7 +95,7 @@ class GrpcServer {
                 StreamObserver<InitResponse> responseObserver) {
             AgentConfig updatedAgentConfig;
             try {
-                updatedAgentConfig = agentDao.store(request.getAgentId(), request.getSystemInfo(),
+                updatedAgentConfig = agentDao.store(request.getAgentId(), request.getEnvironment(),
                         request.getAgentConfig());
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);

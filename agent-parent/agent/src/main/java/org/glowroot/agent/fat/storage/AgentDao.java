@@ -33,7 +33,7 @@ import org.glowroot.agent.fat.storage.util.Schemas.Column;
 import org.glowroot.agent.fat.storage.util.Schemas.ColumnType;
 import org.glowroot.storage.repo.AgentRepository;
 import org.glowroot.storage.repo.ImmutableAgentRollup;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -41,12 +41,14 @@ import static com.google.common.base.Preconditions.checkState;
 public class AgentDao implements AgentRepository {
 
     private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
-            ImmutableColumn.of("system_info", ColumnType.VARBINARY));
+            ImmutableColumn.of("environment", ColumnType.VARBINARY));
 
     private final DataSource dataSource;
 
     AgentDao(DataSource dataSource) throws Exception {
         this.dataSource = dataSource;
+        // upgrade from 0.9.1 to 0.9.2
+        dataSource.renameColumn("agent", "system_info", "environment");
         dataSource.syncTable("agent", columns);
         init(dataSource);
     }
@@ -59,13 +61,13 @@ public class AgentDao implements AgentRepository {
                 .build());
     }
 
-    public void store(SystemInfo systemInfo) throws Exception {
-        dataSource.update(new SystemInfoBinder(systemInfo));
+    public void store(Environment environment) throws Exception {
+        dataSource.update(new EnvironmentBinder(environment));
     }
 
     @Override
-    public @Nullable SystemInfo readSystemInfo(String agentId) throws Exception {
-        return dataSource.queryAtMostOne(new SystemInfoRowMapper());
+    public @Nullable Environment readEnvironment(String agentId) throws Exception {
+        return dataSource.queryAtMostOne(new EnvironmentRowMapper());
     }
 
     void reinitAfterDeletingDatabase() throws Exception {
@@ -75,47 +77,47 @@ public class AgentDao implements AgentRepository {
     private static void init(DataSource dataSource) throws SQLException {
         long rowCount = dataSource.queryForLong("select count(*) from agent");
         if (rowCount == 0) {
-            dataSource.execute("insert into agent (system_info) values (null)");
+            dataSource.execute("insert into agent (environment) values (null)");
         } else {
             checkState(rowCount == 1);
         }
     }
 
-    private static class SystemInfoBinder implements JdbcUpdate {
+    private static class EnvironmentBinder implements JdbcUpdate {
 
-        private final SystemInfo systemInfo;
+        private final Environment environment;
 
-        private SystemInfoBinder(SystemInfo systemInfo) {
-            this.systemInfo = systemInfo;
+        private EnvironmentBinder(Environment environment) {
+            this.environment = environment;
         }
 
         @Override
         public @Untainted String getSql() {
-            return "update agent set system_info = ?";
+            return "update agent set environment = ?";
         }
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws SQLException {
-            preparedStatement.setBytes(1, systemInfo.toByteArray());
+            preparedStatement.setBytes(1, environment.toByteArray());
         }
     }
 
-    private static class SystemInfoRowMapper implements JdbcRowQuery<SystemInfo> {
+    private static class EnvironmentRowMapper implements JdbcRowQuery<Environment> {
 
         @Override
         public @Untainted String getSql() {
-            return "select system_info from agent where system_info is not null";
+            return "select environment from agent where environment is not null";
         }
 
         @Override
         public void bind(PreparedStatement preparedStatement) {}
 
         @Override
-        public SystemInfo mapRow(ResultSet resultSet) throws Exception {
+        public Environment mapRow(ResultSet resultSet) throws Exception {
             byte[] bytes = resultSet.getBytes(1);
-            // query already filters out null system_info
+            // query already filters out null environment
             checkNotNull(bytes);
-            return SystemInfo.parseFrom(bytes);
+            return Environment.parseFrom(bytes);
         }
     }
 }

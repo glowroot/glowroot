@@ -41,13 +41,13 @@ import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceStub;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -95,11 +95,11 @@ public class ServerCollectorImpl implements Collector {
     }
 
     @Override
-    public void init(File glowrootBaseDir, SystemInfo systemInfo, AgentConfig agentConfig,
+    public void init(File glowrootBaseDir, Environment environment, AgentConfig agentConfig,
             final AgentConfigUpdater agentConfigUpdater) {
         final InitMessage initMessage = InitMessage.newBuilder()
                 .setAgentId(agentId)
-                .setSystemInfo(systemInfo)
+                .setEnvironment(environment)
                 .setAgentConfig(agentConfig)
                 .build();
         serverConnection.callUntilSuccessful(new GrpcCall<InitResponse>() {

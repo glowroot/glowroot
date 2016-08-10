@@ -240,7 +240,7 @@ public class BasicSmokeIT extends WebDriverIT {
         // (first to get gauge list and then to get gauge points for default selected gauges)
         Thread.sleep(1000);
 
-        jvmSidebar.getSystemInfoLink().click();
+        jvmSidebar.getEnvironmentLink().click();
 
         jvmSidebar.getThreadDumpLink().click();
         Utils.withWait(driver, By.linkText("View jstack thread dump")).click();

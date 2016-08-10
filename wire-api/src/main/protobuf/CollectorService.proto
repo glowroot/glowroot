@@ -19,7 +19,7 @@ service CollectorService {
 
 message InitMessage {
   string agent_id = 1;
-  SystemInfo system_info = 2;
+  Environment environment = 2;
   AgentConfig agent_config = 3;
 }
 
@@ -50,7 +50,7 @@ message LogMessage {
   LogEvent log_event = 2;
 }
 
-message SystemInfo {
+message Environment {
   HostInfo host_info = 1;
   ProcessInfo process_info = 2;
   JavaInfo java_info = 3;

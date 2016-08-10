@@ -22,14 +22,14 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
 public interface AgentRepository {
 
     List<AgentRollup> readAgentRollups() throws Exception;
 
     @Nullable
-    SystemInfo readSystemInfo(String agentId) throws Exception;
+    Environment readEnvironment(String agentId) throws Exception;
 
     @Value.Immutable
     @Styles.AllParameters

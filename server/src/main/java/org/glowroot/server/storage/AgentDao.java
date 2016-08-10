@@ -26,6 +26,7 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -42,7 +43,7 @@ import org.glowroot.storage.repo.ImmutableAgentRollup;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -57,7 +58,7 @@ public class AgentDao implements AgentRepository {
 
     private final PreparedStatement insertPS;
     private final PreparedStatement insertConfigOnlyPS;
-    private final PreparedStatement readSystemInfoPS;
+    private final PreparedStatement readEnvironmentPS;
     private final PreparedStatement readAgentConfigPS;
 
     private final PreparedStatement existsRollupPS;
@@ -77,15 +78,17 @@ public class AgentDao implements AgentRepository {
     public AgentDao(Session session) {
         this.session = session;
 
-        session.execute("create table if not exists agent (agent_id varchar, system_info blob,"
+        upgradeIfNeeded(session);
+
+        session.execute("create table if not exists agent (agent_id varchar, environment blob,"
                 + " config blob, primary key (agent_id)) " + WITH_LCS);
         session.execute("create table if not exists agent_rollup (one int, agent_rollup varchar,"
                 + " leaf boolean, primary key (one, agent_rollup)) " + WITH_LCS);
 
         insertPS = session
-                .prepare("insert into agent (agent_id, system_info, config) values (?, ?, ?)");
+                .prepare("insert into agent (agent_id, environment, config) values (?, ?, ?)");
         insertConfigOnlyPS = session.prepare("insert into agent (agent_id, config) values (?, ?)");
-        readSystemInfoPS = session.prepare("select system_info from agent where agent_id = ?");
+        readEnvironmentPS = session.prepare("select environment from agent where agent_id = ?");
         readAgentConfigPS = session.prepare("select config from agent where agent_id = ?");
 
         existsRollupPS = session.prepare(
@@ -112,7 +115,7 @@ public class AgentDao implements AgentRepository {
     }
 
     // returns stored agent config
-    public AgentConfig store(String agentId, SystemInfo systemInfo, AgentConfig agentConfig)
+    public AgentConfig store(String agentId, Environment environment, AgentConfig agentConfig)
             throws InvalidProtocolBufferException {
         AgentConfig existingAgentConfig = null;
         // checking if agent exists in agent_rollup table since if it doesn't, then user no longer
@@ -171,10 +174,10 @@ public class AgentDao implements AgentRepository {
         boundStatement = insertPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentId);
-        boundStatement.setBytes(i++, ByteBuffer.wrap(systemInfo.toByteArray()));
+        boundStatement.setBytes(i++, ByteBuffer.wrap(environment.toByteArray()));
         boundStatement.setBytes(i++, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
         session.execute(boundStatement);
-        // insert into agent last so readSystemInfo() and readAgentConfig() below are more likely
+        // insert into agent last so readEnvironment() and readAgentConfig() below are more likely
         // to return non-null
         boundStatement = insertRollupPS.bind();
         i = 0;
@@ -186,9 +189,9 @@ public class AgentDao implements AgentRepository {
     }
 
     @Override
-    public @Nullable SystemInfo readSystemInfo(String agentId)
+    public @Nullable Environment readEnvironment(String agentId)
             throws InvalidProtocolBufferException {
-        BoundStatement boundStatement = readSystemInfoPS.bind();
+        BoundStatement boundStatement = readEnvironmentPS.bind();
         boundStatement.setString(0, agentId);
         ResultSet results = session.execute(boundStatement);
         Row row = results.one();
@@ -201,7 +204,7 @@ public class AgentDao implements AgentRepository {
             // for some reason received data from agent, but not initial system info data
             return null;
         }
-        return SystemInfo.parseFrom(ByteString.copyFrom(bytes));
+        return Environment.parseFrom(ByteString.copyFrom(bytes));
     }
 
     @Nullable
@@ -234,5 +237,26 @@ public class AgentDao implements AgentRepository {
             return null;
         }
         return AgentConfig.parseFrom(ByteString.copyFrom(bytes));
+    }
+
+    // upgrade from 0.9.1 to 0.9.2
+    private static void upgradeIfNeeded(Session session) {
+        ResultSet results;
+        try {
+            results = session.execute("select agent_id, system_info from agent");
+        } catch (InvalidQueryException e) {
+            // system_info column does not exist
+            return;
+        }
+        session.execute("alter table agent add environment blob");
+        for (Row row : results) {
+            PreparedStatement preparedStatement =
+                    session.prepare("insert into agent (agent_id, environment) values (?, ?)");
+            BoundStatement boundStatement = preparedStatement.bind();
+            boundStatement.setString(0, row.getString(0));
+            boundStatement.setBytes(1, row.getBytes(1));
+            session.execute(boundStatement);
+        }
+        session.execute("alter table agent drop system_info");
     }
 }

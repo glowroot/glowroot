@@ -27,9 +27,9 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 @VisibleForTesting
@@ -42,10 +42,10 @@ public class CollectorProxy implements Collector {
     private final List<LogEvent> earlyLogEvents = Lists.newCopyOnWriteArrayList();
 
     @Override
-    public void init(File glowrootBaseDir, SystemInfo systemInfo, AgentConfig agentConfig,
+    public void init(File glowrootBaseDir, Environment environment, AgentConfig agentConfig,
             AgentConfigUpdater agentConfigUpdater) throws Exception {
         if (instance != null) {
-            instance.init(glowrootBaseDir, systemInfo, agentConfig, agentConfigUpdater);
+            instance.init(glowrootBaseDir, environment, agentConfig, agentConfigUpdater);
         }
     }
 

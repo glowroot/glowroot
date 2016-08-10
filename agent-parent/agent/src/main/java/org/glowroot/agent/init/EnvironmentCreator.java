@@ -34,24 +34,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.live.LiveJvmServiceImpl;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.HostInfo;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.JavaInfo;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
-public class SystemInfoCreator {
+public class EnvironmentCreator {
 
-    private static final Logger logger = LoggerFactory.getLogger(SystemInfoCreator.class);
+    private static final Logger logger = LoggerFactory.getLogger(EnvironmentCreator.class);
 
-    private SystemInfoCreator() {}
+    private EnvironmentCreator() {}
 
-    public static SystemInfo create(String glowrootVersion) {
+    public static Environment create(String glowrootVersion) {
         HostInfo hostInfo = createHostInfo();
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
         ProcessInfo processInfo = createProcessInfo(runtimeMXBean);
         JavaInfo javaInfo = createJavaInfo(glowrootVersion, runtimeMXBean);
-        return SystemInfo.newBuilder()
+        return Environment.newBuilder()
                 .setHostInfo(hostInfo)
                 .setProcessInfo(processInfo)
                 .setJavaInfo(javaInfo)

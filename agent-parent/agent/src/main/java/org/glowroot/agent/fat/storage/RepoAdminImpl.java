@@ -21,7 +21,7 @@ import org.glowroot.agent.fat.storage.util.CappedDatabase;
 import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.RepoAdmin;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
 class RepoAdminImpl implements RepoAdmin {
 
@@ -45,12 +45,12 @@ class RepoAdminImpl implements RepoAdmin {
 
     @Override
     public void deleteAllData() throws Exception {
-        SystemInfo systemInfo = agentDao.readSystemInfo("");
+        Environment environment = agentDao.readEnvironment("");
         dataSource.deleteAll();
         agentDao.reinitAfterDeletingDatabase();
         gaugeValueDao.reinitAfterDeletingDatabase();
-        if (systemInfo != null) {
-            agentDao.store(systemInfo);
+        if (environment != null) {
+            agentDao.store(environment);
         }
     }
 

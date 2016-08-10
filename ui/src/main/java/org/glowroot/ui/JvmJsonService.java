@@ -47,10 +47,10 @@ import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationExceptio
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.UsedByJsonSerialization;
 import org.glowroot.storage.repo.AgentRepository;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.HostInfo;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.JavaInfo;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.ProcessInfo;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.SystemInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Availability;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
@@ -76,15 +76,15 @@ class JvmJsonService {
         this.liveJvmService = liveJvmService;
     }
 
-    @GET(path = "/backend/jvm/system-info", permission = "agent:view:jvm:systemInfo")
-    String getSystemInfo(@BindAgentId String agentId) throws Exception {
-        SystemInfo systemInfo = agentRepository.readSystemInfo(agentId);
-        if (systemInfo == null) {
+    @GET(path = "/backend/jvm/environment", permission = "agent:view:jvm:environment")
+    String getEnvironment(@BindAgentId String agentId) throws Exception {
+        Environment environment = agentRepository.readEnvironment(agentId);
+        if (environment == null) {
             return "{}";
         }
-        HostInfo hostInfo = systemInfo.getHostInfo();
-        ProcessInfo processInfo = systemInfo.getProcessInfo();
-        JavaInfo javaInfo = systemInfo.getJavaInfo();
+        HostInfo hostInfo = environment.getHostInfo();
+        ProcessInfo processInfo = environment.getProcessInfo();
+        JavaInfo javaInfo = environment.getJavaInfo();
 
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
@@ -185,12 +185,12 @@ class JvmJsonService {
         if (!liveJvmService.isAvailable(agentId)) {
             return "{\"agentNotConnected\":true}";
         }
-        SystemInfo systemInfo = agentRepository.readSystemInfo(agentId);
-        checkNotNull(systemInfo);
+        Environment environment = agentRepository.readEnvironment(agentId);
+        checkNotNull(environment);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeStringField("directory", systemInfo.getJavaInfo().getHeapDumpDefaultDir());
+        jg.writeStringField("directory", environment.getJavaInfo().getHeapDumpDefaultDir());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
