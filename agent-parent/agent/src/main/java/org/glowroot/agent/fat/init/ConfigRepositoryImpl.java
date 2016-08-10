@@ -129,8 +129,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
         if (this.roleConfigs.isEmpty()) {
             this.roleConfigs = ImmutableList.<RoleConfig>of(ImmutableRoleConfig.builder()
                     .name("Administrator")
-                    .addPermissions("agent:view", "agent:tool", "agent:config:view",
-                            "agent:config:edit", "admin:view", "admin:edit")
+                    .addPermissions("agent:transaction", "agent:error", "agent:jvm", "agent:config",
+                            "admin")
                     .build());
         }
         WebConfig webConfig = configService.getAdminConfig(WEB_KEY, ImmutableWebConfig.class);
@@ -833,8 +833,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
                 .build());
         roleConfigs = ImmutableList.<RoleConfig>of(ImmutableRoleConfig.builder()
                 .name("Administrator")
-                .addPermissions("agent:view", "agent:tool", "agent:config:view",
-                        "agent:config:edit", "admin")
+                .addPermissions("agent:transaction", "agent:error", "agent:jvm",
+                        "agent:config:view", "agent:config:edit", "admin")
                 .build());
         webConfig = ImmutableWebConfig.builder().build();
         storageConfig = ImmutableFatStorageConfig.builder().build();

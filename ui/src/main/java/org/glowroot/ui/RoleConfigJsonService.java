@@ -15,12 +15,16 @@
  */
 package org.glowroot.ui;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map.Entry;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.value.Value;
@@ -29,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.storage.config.ImmutableRoleConfig;
+import org.glowroot.storage.config.PermissionParser;
 import org.glowroot.storage.config.RoleConfig;
 import org.glowroot.storage.repo.AgentRepository;
 import org.glowroot.storage.repo.AgentRepository.AgentRollup;
@@ -67,11 +72,11 @@ class RoleConfigJsonService {
         if (name.isPresent()) {
             return getRoleConfigInternal(name.get());
         } else {
-            List<RoleConfigDto> responses = Lists.newArrayList();
+            List<RoleConfigListDto> responses = Lists.newArrayList();
             List<RoleConfig> roleConfigs = configRepository.getRoleConfigs();
             roleConfigs = orderingByName.immutableSortedCopy(roleConfigs);
             for (RoleConfig roleConfig : roleConfigs) {
-                responses.add(RoleConfigDto.create(roleConfig));
+                responses.add(RoleConfigListDto.create(roleConfig));
             }
             return mapper.writeValueAsString(responses);
         }
@@ -84,7 +89,7 @@ class RoleConfigJsonService {
 
     @POST(path = "/backend/admin/roles/add", permission = "admin:edit:role")
     String addRole(@BindRequest RoleConfigDto roleConfigDto) throws Exception {
-        RoleConfig roleConfig = roleConfigDto.convert();
+        RoleConfig roleConfig = roleConfigDto.convert(fat);
         try {
             configRepository.insertRoleConfig(roleConfig);
         } catch (DuplicateRoleNameException e) {
@@ -97,7 +102,7 @@ class RoleConfigJsonService {
 
     @POST(path = "/backend/admin/roles/update", permission = "admin:edit:role")
     String updateRole(@BindRequest RoleConfigDto roleConfigDto) throws Exception {
-        RoleConfig roleConfig = roleConfigDto.convert();
+        RoleConfig roleConfig = roleConfigDto.convert(fat);
         String version = roleConfigDto.version().get();
         try {
             configRepository.updateRoleConfig(roleConfig, version);
@@ -120,7 +125,7 @@ class RoleConfigJsonService {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }
         ImmutableRoleConfigResponse.Builder response = ImmutableRoleConfigResponse.builder()
-                .config(RoleConfigDto.create(roleConfig));
+                .config(RoleConfigDto.create(roleConfig, fat));
         if (!fat) {
             response.allAgentIds(getAllAgentIdsInternal());
         }
@@ -149,25 +154,94 @@ class RoleConfigJsonService {
     }
 
     @Value.Immutable
+    abstract static class RoleConfigListDto {
+
+        abstract String name();
+        abstract String version();
+
+        private static RoleConfigListDto create(RoleConfig roleConfig) {
+            return ImmutableRoleConfigListDto.builder()
+                    .name(roleConfig.name())
+                    .version(roleConfig.version())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
     abstract static class RoleConfigDto {
 
         abstract String name();
         abstract ImmutableList<String> permissions();
+        abstract ImmutableList<ImmutableRolePermissionBlock> permissionBlocks();
         abstract Optional<String> version(); // absent for insert operations
 
-        private RoleConfig convert() {
-            return ImmutableRoleConfig.builder()
-                    .name(name())
-                    .permissions(permissions())
-                    .build();
+        private RoleConfig convert(boolean fat) {
+            ImmutableRoleConfig.Builder builder = ImmutableRoleConfig.builder()
+                    .fat(fat)
+                    .name(name());
+            if (fat) {
+                builder.addAllPermissions(permissions());
+            } else {
+                for (String permission : permissions()) {
+                    if (permission.startsWith("agent:")) {
+                        builder.addPermissions(
+                                "agent:*:" + permission.substring("agent:".length()));
+                    } else {
+                        builder.addPermissions(permission);
+                    }
+                }
+            }
+            for (RolePermissionBlock permissionBlock : permissionBlocks()) {
+                String agentIds =
+                        PermissionParser.quoteIfNecessaryAndJoin(permissionBlock.agentIds());
+                for (String permission : permissionBlock.permissions()) {
+                    builder.addPermissions(
+                            "agent:" + agentIds + ":" + permission.substring("agent:".length()));
+                }
+            }
+            return builder.build();
         }
 
-        private static RoleConfigDto create(RoleConfig roleConfig) {
-            return ImmutableRoleConfigDto.builder()
-                    .name(roleConfig.name())
-                    .permissions(roleConfig.permissions())
-                    .version(roleConfig.version())
+        private static RoleConfigDto create(RoleConfig roleConfig, boolean fat) {
+            ImmutableRoleConfigDto.Builder builder = ImmutableRoleConfigDto.builder()
+                    .name(roleConfig.name());
+            if (fat) {
+                builder.addAllPermissions(roleConfig.permissions());
+            } else {
+                Multimap<List<String>, String> permissionBlocks = HashMultimap.create();
+                for (String permission : roleConfig.permissions()) {
+                    if (permission.startsWith("agent:")) {
+                        PermissionParser parser = new PermissionParser(permission);
+                        parser.parse();
+                        if (parser.getAgentIds().size() == 1
+                                && parser.getAgentIds().get(0).equals("*")) {
+                            builder.addPermissions(parser.getPermission());
+                        } else {
+                            // sorting in order to combine agent:a,b:... and agent:b,a:...
+                            List<String> agentIds =
+                                    Ordering.natural().sortedCopy(parser.getAgentIds());
+                            permissionBlocks.put(agentIds, parser.getPermission());
+                        }
+                    } else {
+                        builder.addPermissions(permission);
+                    }
+                }
+                for (Entry<List<String>, Collection<String>> entry : permissionBlocks.asMap()
+                        .entrySet()) {
+                    builder.addPermissionBlocks(ImmutableRolePermissionBlock.builder()
+                            .addAllAgentIds(entry.getKey())
+                            .addAllPermissions(entry.getValue())
+                            .build());
+                }
+            }
+            return builder.version(roleConfig.version())
                     .build();
         }
+    }
+
+    @Value.Immutable
+    interface RolePermissionBlock {
+        ImmutableList<String> agentIds();
+        ImmutableList<String> permissions();
     }
 }

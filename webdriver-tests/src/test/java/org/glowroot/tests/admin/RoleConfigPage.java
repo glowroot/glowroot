@@ -35,32 +35,72 @@ public class RoleConfigPage {
         return withWait(xpath("//div[@gt-label='Name']//input"));
     }
 
-    public WebElement getViewCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.view']"));
+    public WebElement getTransactionCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.transaction._']"));
     }
 
-    public WebElement getToolCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.tool._']"));
+    public WebElement getTransactionOverviewCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.transaction.overview']"));
     }
 
-    public WebElement getToolThreadDumpCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.tool.threadDump']"));
+    public WebElement getTransactionTracesCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.transaction.traces']"));
     }
 
-    public WebElement getToolHeapDumpCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.tool.heapDump']"));
+    public WebElement getTransactionQueriesCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.transaction.queries']"));
     }
 
-    public WebElement getToolHeapHistogramCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.tool.heapHistogram']"));
+    public WebElement getTransactionServiceCallsCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.transaction.serviceCalls']"));
     }
 
-    public WebElement getToolMBeanTreeCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.tool.mbeanTree']"));
+    public WebElement getTransactionProfileCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.transaction.profile']"));
     }
 
-    public WebElement getToolSystemPropertiesCheckBox() {
-        return withWait(xpath("//input[@ng-model='page.permissions.tool.systemProperties']"));
+    public WebElement getErrorCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.error._']"));
+    }
+
+    public WebElement getErrorOverviewCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.error.overview']"));
+    }
+
+    public WebElement getErrorTracesCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.error.traces']"));
+    }
+
+    public WebElement getJvmCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.jvm._']"));
+    }
+
+    public WebElement getJvmGaugesCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.jvm.gauges']"));
+    }
+
+    public WebElement getJvmThreadDumpCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.jvm.threadDump']"));
+    }
+
+    public WebElement getJvmHeapDumpCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.jvm.heapDump']"));
+    }
+
+    public WebElement getJvmHeapHistogramCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.jvm.heapHistogram']"));
+    }
+
+    public WebElement getJvmMBeanTreeCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.jvm.mbeanTree']"));
+    }
+
+    public WebElement getJvmSystemPropertiesCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.jvm.systemProperties']"));
+    }
+
+    public WebElement getJvmEnvironmentCheckBox() {
+        return withWait(xpath("//input[@ng-model='page.permissions.jvm.environment']"));
     }
 
     public WebElement getConfigViewCheckBox() {

@@ -30,7 +30,8 @@ class TraceJsonService {
         this.traceCommonService = traceCommonService;
     }
 
-    @GET(path = "/backend/trace/header", permission = "agent:view:trace")
+    // see special case for "agent:trace" permission in Authentication.isPermitted()
+    @GET(path = "/backend/trace/header", permission = "agent:trace")
     String getHeader(@BindAgentId String agentId, @BindRequest HeaderRequest request)
             throws Exception {
         String headerJson = traceCommonService.getHeaderJson(agentId, request.traceId(),

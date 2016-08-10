@@ -79,37 +79,52 @@ class LayoutService {
         Map<String, AgentRollupLayout> agentRollups = Maps.newLinkedHashMap();
         Map<String, List<String>> transactionTypesMap =
                 transactionTypeRepository.readTransactionTypes();
-        boolean showNavbarConfig = false;
         boolean hasSomeAccess = false;
-        if (fat && authentication.isPermitted(AGENT_ID, "agent:view")) {
-            hasSomeAccess = true;
-            // a couple of special cases for fat agent
-            UiConfig uiConfig = checkNotNull(configRepository.getUiConfig(AGENT_ID));
-            String defaultDisplayedTransactionType =
-                    uiConfig.getDefaultDisplayedTransactionType();
-            Set<String> transactionTypes = Sets.newHashSet();
-            List<String> storedTransactionTypes = transactionTypesMap.get(AGENT_ID);
-            if (storedTransactionTypes != null) {
-                transactionTypes.addAll(storedTransactionTypes);
-            }
-            transactionTypes.add(defaultDisplayedTransactionType);
-
+        boolean showNavbarTransaction = false;
+        boolean showNavbarError = false;
+        boolean showNavbarJvm = false;
+        boolean showNavbarConfig = false;
+        if (fat) {
             Permissions permissions = getPermissions(authentication, AGENT_ID);
-            agentRollups.put(AGENT_ID, ImmutableAgentRollupLayout.builder()
-                    .leaf(true)
-                    .permissions(permissions)
-                    .addAllTransactionTypes(transactionTypes)
-                    .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
-                    .defaultDisplayedPercentiles(uiConfig.getDefaultDisplayedPercentileList())
-                    .build());
-            showNavbarConfig = checkNotNull(permissions.config()).view();
+            hasSomeAccess =
+                    permissions.hasSomeAccess() || authentication.isAdminPermitted("admin:view");
+            showNavbarTransaction = permissions.transaction().hasSomeAccess();
+            showNavbarError = permissions.error().hasSomeAccess();
+            showNavbarJvm = permissions.jvm().hasSomeAccess();
+            showNavbarConfig = permissions.config().view();
+            if (hasSomeAccess) {
+                // a couple of special cases for fat agent
+                UiConfig uiConfig = checkNotNull(configRepository.getUiConfig(AGENT_ID));
+                String defaultDisplayedTransactionType =
+                        uiConfig.getDefaultDisplayedTransactionType();
+                Set<String> transactionTypes = Sets.newHashSet();
+                List<String> storedTransactionTypes = transactionTypesMap.get(AGENT_ID);
+                if (storedTransactionTypes != null) {
+                    transactionTypes.addAll(storedTransactionTypes);
+                }
+                transactionTypes.add(defaultDisplayedTransactionType);
+
+                agentRollups.put(AGENT_ID, ImmutableAgentRollupLayout.builder()
+                        .leaf(true)
+                        .permissions(permissions)
+                        .addAllTransactionTypes(transactionTypes)
+                        .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
+                        .defaultDisplayedPercentiles(uiConfig.getDefaultDisplayedPercentileList())
+                        .build());
+                showNavbarConfig = checkNotNull(permissions.config()).view();
+            }
         } else if (!fat) {
-            hasSomeAccess = authentication.isPermitted("admin:view");
             for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
-                if (!authentication.isPermitted(agentRollup.name(), "agent:view")) {
+                Permissions permissions = getPermissions(authentication, agentRollup.name());
+                if (!permissions.hasSomeAccess()) {
                     continue;
                 }
                 hasSomeAccess = true;
+                showNavbarTransaction =
+                        showNavbarTransaction || permissions.transaction().hasSomeAccess();
+                showNavbarError = showNavbarError || permissions.error().hasSomeAccess();
+                showNavbarJvm = showNavbarJvm || permissions.jvm().hasSomeAccess();
+                showNavbarConfig = showNavbarConfig || permissions.config().view();
                 UiConfig uiConfig = configRepository.getUiConfig(agentRollup.name());
                 String defaultDisplayedTransactionType;
                 List<Double> defaultDisplayedPercentiles;
@@ -126,9 +141,7 @@ class LayoutService {
                 ImmutableAgentRollupLayout.Builder builder = ImmutableAgentRollupLayout.builder()
                         .leaf(leaf);
                 if (leaf) {
-                    Permissions permissions = getPermissions(authentication, agentRollup.name());
                     builder.permissions(permissions);
-                    showNavbarConfig = showNavbarConfig || permissions.config().view();
                 }
                 List<String> storedTransactionTypes = transactionTypesMap.get(agentRollup.name());
                 if (storedTransactionTypes != null) {
@@ -140,6 +153,8 @@ class LayoutService {
                 builder.defaultDisplayedPercentiles(defaultDisplayedPercentiles);
                 agentRollups.put(agentRollup.name(), builder.build());
             }
+            hasSomeAccess = hasSomeAccess || authentication.isAdminPermitted("admin:view");
+
         }
         if (hasSomeAccess) {
             List<Long> rollupExpirationMillis = Lists.newArrayList();
@@ -156,6 +171,9 @@ class LayoutService {
                     .gaugeCollectionIntervalMillis(
                             configRepository.getGaugeCollectionIntervalMillis())
                     .agentRollups(agentRollups)
+                    .showNavbarTransaction(showNavbarTransaction)
+                    .showNavbarError(showNavbarError)
+                    .showNavbarJvm(showNavbarJvm)
                     .showNavbarConfig(showNavbarConfig)
                     .adminView(authentication.isPermitted("admin:view"))
                     .adminEdit(authentication.isPermitted("admin:edit"))
@@ -169,6 +187,9 @@ class LayoutService {
                     .footerMessage("Glowroot version " + version)
                     .hideLogin(false)
                     .gaugeCollectionIntervalMillis(0)
+                    .showNavbarTransaction(false)
+                    .showNavbarError(false)
+                    .showNavbarJvm(false)
                     .showNavbarConfig(false)
                     .adminView(false)
                     .adminEdit(false)
@@ -179,20 +200,36 @@ class LayoutService {
         }
     }
 
-    private Permissions getPermissions(Authentication authentication, String agentRollup) {
+    private static Permissions getPermissions(Authentication authentication, String agentRollup) {
         return ImmutablePermissions.builder()
-                .tool(ImmutableToolPermissions.builder()
+                .transaction(ImmutableTransactionPermissions.builder()
+                        .overview(authentication.isPermitted(agentRollup,
+                                "agent:transaction:overview"))
+                        .traces(authentication.isPermitted(agentRollup, "agent:transaction:traces"))
+                        .queries(authentication.isPermitted(agentRollup,
+                                "agent:transaction:queries"))
+                        .serviceCalls(authentication.isPermitted(agentRollup,
+                                "agent:transaction:serviceCalls"))
+                        .profile(authentication.isPermitted(agentRollup,
+                                "agent:transaction:profile"))
+                        .build())
+                .error(ImmutableErrorPermissions.builder()
+                        .overview(authentication.isPermitted(agentRollup, "agent:error:overview"))
+                        .traces(authentication.isPermitted(agentRollup, "agent:error:traces"))
+                        .build())
+                .jvm(ImmutableJvmPermissions.builder()
+                        .gauges(authentication.isPermitted(agentRollup, "agent:jvm:gauges"))
                         .threadDump(
-                                authentication.isPermitted(agentRollup, "agent:tool:threadDump"))
-                        .heapDump(authentication.isPermitted(agentRollup, "agent:tool:heapDump"))
+                                authentication.isPermitted(agentRollup, "agent:jvm:threadDump"))
+                        .heapDump(authentication.isPermitted(agentRollup, "agent:jvm:heapDump"))
                         .heapHistogram(
-                                authentication.isPermitted(agentRollup, "agent:tool:heapHistogram"))
-                        .gc(authentication.isPermitted(agentRollup, "agent:tool:gc"))
-                        .mbeanTree(authentication.isPermitted(agentRollup, "agent:tool:mbeanTree"))
+                                authentication.isPermitted(agentRollup, "agent:jvm:heapHistogram"))
+                        .gc(authentication.isPermitted(agentRollup, "agent:jvm:gc"))
+                        .mbeanTree(authentication.isPermitted(agentRollup, "agent:jvm:mbeanTree"))
                         .systemProperties(authentication.isPermitted(agentRollup,
-                                "agent:tool:systemProperties"))
-                        .capabilities(
-                                authentication.isPermitted(agentRollup, "agent:tool:capabilities"))
+                                "agent:jvm:systemProperties"))
+                        .environment(
+                                authentication.isPermitted(agentRollup, "agent:jvm:environment"))
                         .build())
                 .config(ImmutableConfigPermissions.builder()
                         .view(authentication.isPermitted(agentRollup, "agent:config:view"))
@@ -227,6 +264,9 @@ class LayoutService {
         abstract ImmutableList<Long> rollupExpirationMillis();
         abstract long gaugeCollectionIntervalMillis();
         abstract ImmutableMap<String, AgentRollupLayout> agentRollups();
+        abstract boolean showNavbarTransaction();
+        abstract boolean showNavbarError();
+        abstract boolean showNavbarJvm();
         abstract boolean showNavbarConfig();
         abstract boolean adminView();
         abstract boolean adminEdit();
@@ -251,20 +291,60 @@ class LayoutService {
     }
 
     @Value.Immutable
-    interface Permissions {
-        ToolPermissions tool();
-        ConfigPermissions config();
+    static abstract class Permissions {
+
+        abstract TransactionPermissions transaction();
+        abstract ErrorPermissions error();
+        abstract JvmPermissions jvm();
+        abstract ConfigPermissions config();
+
+        boolean hasSomeAccess() {
+            return transaction().hasSomeAccess() || error().hasSomeAccess() || jvm().hasSomeAccess()
+                    || config().view();
+        }
     }
 
     @Value.Immutable
-    interface ToolPermissions {
-        boolean threadDump();
-        boolean heapDump();
-        boolean heapHistogram();
-        boolean gc();
-        boolean mbeanTree();
-        boolean systemProperties();
-        boolean capabilities();
+    static abstract class TransactionPermissions {
+
+        abstract boolean overview();
+        abstract boolean traces();
+        abstract boolean queries();
+        abstract boolean serviceCalls();
+        abstract boolean profile();
+
+        boolean hasSomeAccess() {
+            return overview() || traces() || queries() || serviceCalls() || profile();
+        }
+    }
+
+    @Value.Immutable
+    static abstract class ErrorPermissions {
+
+        abstract boolean overview();
+        abstract boolean traces();
+
+        boolean hasSomeAccess() {
+            return overview() || traces();
+        }
+    }
+
+    @Value.Immutable
+    static abstract class JvmPermissions {
+
+        abstract boolean gauges();
+        abstract boolean threadDump();
+        abstract boolean heapDump();
+        abstract boolean heapHistogram();
+        abstract boolean gc();
+        abstract boolean mbeanTree();
+        abstract boolean systemProperties();
+        abstract boolean environment();
+
+        boolean hasSomeAccess() {
+            return gauges() || threadDump() || heapDump() || heapHistogram() || gc() || mbeanTree()
+                    || systemProperties() || environment();
+        }
     }
 
     @Value.Immutable

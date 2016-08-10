@@ -56,42 +56,44 @@
       <div gt-sidebar-item
            gt-display="Gauges"
            gt-url="jvm/gauges{{agentQueryString()}}"
-           gt-active="currentUrl() === 'jvm/gauges'">
+           gt-active="currentUrl() === 'jvm/gauges'"
+           ng-if="agentPermissions.jvm.gauges">
       </div>
       <div gt-sidebar-item
            gt-display="Thread dump"
            gt-url="jvm/thread-dump{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/thread-dump' || currentUrl() === 'jvm/jstack'"
-           ng-if="agentPermissions.tool.threadDump">
+           ng-if="agentPermissions.jvm.threadDump">
       </div>
       <div gt-sidebar-item
            gt-display="Heap dump"
            gt-url="jvm/heap-dump{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/heap-dump'"
-           ng-if="agentPermissions.tool.heapDump">
+           ng-if="agentPermissions.jvm.heapDump">
       </div>
       <div gt-sidebar-item
            gt-display="Heap histogram"
            gt-url="jvm/heap-histogram{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/heap-histogram'"
-           ng-if="agentPermissions.tool.heapHistogram">
+           ng-if="agentPermissions.jvm.heapHistogram">
       </div>
       <div gt-sidebar-item
            gt-display="MBean tree"
            gt-url="jvm/mbean-tree{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/mbean-tree'"
-           ng-if="agentPermissions.tool.mbeanTree">
+           ng-if="agentPermissions.jvm.mbeanTree">
       </div>
       <div gt-sidebar-item
            gt-display="System properties"
            gt-url="jvm/system-properties{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/system-properties'"
-           ng-if="agentPermissions.tool.systemProperties">
+           ng-if="agentPermissions.jvm.systemProperties">
       </div>
       <div gt-sidebar-item
            gt-display="Environment"
            gt-url="jvm/environment{{agentQueryString()}}"
-           gt-active="currentUrl() === 'jvm/environment'">
+           gt-active="currentUrl() === 'jvm/environment'"
+           ng-if="agentPermissions.jvm.environment">
       </div>
     </ul>
   </div>

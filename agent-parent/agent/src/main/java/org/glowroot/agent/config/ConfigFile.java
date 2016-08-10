@@ -17,6 +17,7 @@ package org.glowroot.agent.config;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -27,8 +28,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
@@ -36,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.storage.config.PermissionParser;
 
 // TODO if config.json or admin.json file have unrecognized top-level node (something other than
 // "transactions", "ui", "userRecording", "advanced", etc) then log warning and remove that node
@@ -59,6 +64,7 @@ class ConfigFile {
         }
         if (adminFile.exists()) {
             adminRootObjectNode = getRootObjectNode(adminFile);
+            upgradeIfNeeded(adminRootObjectNode);
         } else {
             adminRootObjectNode = mapper.createObjectNode();
         }
@@ -148,6 +154,43 @@ class ConfigFile {
     void delete() throws IOException {
         if (!configFile.delete()) {
             throw new IOException("Could not delete file: " + configFile.getCanonicalPath());
+        }
+    }
+
+    private static void upgradeIfNeeded(ObjectNode adminRootObjectNode) {
+        // upgrade from 0.9.1 to 0.9.2
+        JsonNode rolesNode = adminRootObjectNode.get("roles");
+        if (rolesNode == null || !rolesNode.isArray()) {
+            return;
+        }
+        for (JsonNode roleNode : rolesNode) {
+            JsonNode permissionsNode = roleNode.get("permissions");
+            if (permissionsNode == null || !permissionsNode.isArray()) {
+                continue;
+            }
+            List<String> permissions = Lists.newArrayList();
+            ArrayNode permissionsArrayNode = (ArrayNode) permissionsNode;
+            for (int i = 0; i < permissionsArrayNode.size(); i++) {
+                JsonNode permissionNode = permissionsArrayNode.get(i);
+                if (!permissionNode.isTextual()) {
+                    continue;
+                }
+                permissions.add(permissionNode.asText());
+            }
+            // TODO retain order when remove/add
+
+            if (PermissionParser.upgradeAgentPermissions(permissions)) {
+                // only apply below updates if upgrading from 0.9.1 to 0.9.2
+                if (permissions.contains("admin:view") && permissions.contains("admin:edit")) {
+                    permissions.remove("admin:view");
+                    permissions.remove("admin:edit");
+                    permissions.add("admin");
+                }
+            }
+            permissionsArrayNode.removeAll();
+            for (String permission : permissions) {
+                permissionsArrayNode.add(new TextNode(permission));
+            }
         }
     }
 

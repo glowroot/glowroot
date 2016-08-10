@@ -55,6 +55,7 @@ public class RoleDaoIT {
     public void shouldRead() throws Exception {
         // given
         roleDao.insert(ImmutableRoleConfig.builder()
+                .fat(false)
                 .name("abc")
                 .addPermissions("*:*")
                 .build());

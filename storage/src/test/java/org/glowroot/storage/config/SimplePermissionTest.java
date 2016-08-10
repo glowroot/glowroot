@@ -42,4 +42,32 @@ public class SimplePermissionTest {
         assertThat(SimplePermission.create("a:b:c").implies(SimplePermission.create("a:*")))
                 .isFalse();
     }
+
+    @Test
+    public void testAgentPermissions() throws Exception {
+        assertThat(SimplePermission.create("agent:abc,xyz:c")
+                .implies(SimplePermission.create("agent:abc:c"))).isTrue();
+        assertThat(SimplePermission.create("agent:abc,xyz")
+                .implies(SimplePermission.create("agent:abc:c"))).isTrue();
+        assertThat(SimplePermission.create("agent:abc,xyz:c")
+                .implies(SimplePermission.create("agent:abc"))).isFalse();
+
+        assertThat(SimplePermission.create("agent:abc,xyz:*")
+                .implies(SimplePermission.create("agent:abc:c"))).isTrue();
+        assertThat(SimplePermission.create("agent:abc,xyz:c")
+                .implies(SimplePermission.create("agent:abc:*"))).isFalse();
+
+        assertThat(
+                SimplePermission.create("agent:*").implies(SimplePermission.create("agent:abc:c")))
+                        .isTrue();
+        assertThat(SimplePermission.create("agent:abc,xyz:c")
+                .implies(SimplePermission.create("agent:*"))).isFalse();
+
+        assertThat(SimplePermission.create("agent:xyz:c")
+                .implies(SimplePermission.create("agent:abc:c"))).isFalse();
+        assertThat(SimplePermission.create("agent:xyz")
+                .implies(SimplePermission.create("agent:abc:c"))).isFalse();
+        assertThat(SimplePermission.create("agent:xyz:*")
+                .implies(SimplePermission.create("agent:abc:c"))).isFalse();
+    }
 }

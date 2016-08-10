@@ -52,7 +52,8 @@ class TraceDetailHttpService implements HttpService {
 
     @Override
     public String getPermission() {
-        return "agent:view:trace";
+        // see special case for "agent:trace" permission in Authentication.isPermitted()
+        return "agent:trace";
     }
 
     @Override

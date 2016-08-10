@@ -54,11 +54,15 @@ glowroot.controller('JvmCtrl', [
 
     $scope.agentRollupUrl = function (agentRollup, agentRollupObj) {
       var path = $location.path().substring(1);
-      if (path === 'jvm/thread-dump' && !agentRollupObj.permissions.tool.threadDump
-          || path === 'jvm/heap-dump' && !agentRollupObj.permissions.tool.heapDump
-          || path === 'jvm/mbean-tree' && !agentRollupObj.permissions.tool.mbeanTree
-          || path === 'jvm/gc' && !agentRollupObj.permissions.tool.gc
-          || path === 'jvm/capabilities' && !agentRollupObj.permissions.tool.capabilities) {
+      if (path === 'jvm/gauges' && !agentRollupObj.permissions.jvm.gauges
+          || path === 'jvm/thread-dump' && !agentRollupObj.permissions.jvm.threadDump
+          || path === 'jvm/heap-dump' && !agentRollupObj.permissions.jvm.heapDump
+          || path === 'jvm/heap-histogram' && !agentRollupObj.permissions.jvm.heapHistogram
+          || path === 'jvm/gc' && !agentRollupObj.permissions.jvm.gc
+          || path === 'jvm/mbean-tree' && !agentRollupObj.permissions.jvm.mbeanTree
+          || path === 'jvm/system-properties' && !agentRollupObj.permissions.jvm.systemProperties
+          || path === 'jvm/environment' && !agentRollupObj.permissions.jvm.environment
+          || path === 'jvm/capabilities' && !agentRollupObj.permissions.jvm.capabilities) {
         return agentRollupUrl('jvm/gauges', agentRollup, agentRollupObj.leaf);
       } else {
         return agentRollupUrl(path, agentRollup, agentRollupObj.leaf);

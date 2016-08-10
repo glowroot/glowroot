@@ -68,7 +68,7 @@ class TracePointJsonService {
         this.clock = clock;
     }
 
-    @GET(path = "/backend/transaction/trace-count", permission = "agent:view:transaction:traces")
+    @GET(path = "/backend/transaction/trace-count", permission = "agent:transaction:traces")
     String getTransactionTraceCount(@BindAgentRollup String agentRollup,
             @BindRequest TransactionDataRequest request) throws Exception {
         TraceQuery query = ImmutableTraceQuery.builder()
@@ -86,19 +86,19 @@ class TracePointJsonService {
         return Long.toString(traceCount);
     }
 
-    @GET(path = "/backend/error/trace-count", permission = "agent:view:error:traces")
+    @GET(path = "/backend/error/trace-count", permission = "agent:error:traces")
     String getErrorTraceCount(@BindAgentRollup String agentRollup, @BindRequest TraceQuery query)
             throws Exception {
         return Long.toString(traceRepository.readErrorCount(agentRollup, query));
     }
 
-    @GET(path = "/backend/transaction/points", permission = "agent:view:transaction:traces")
+    @GET(path = "/backend/transaction/points", permission = "agent:transaction:traces")
     String getTransactionPoints(@BindAgentRollup String agentRollup,
             @BindRequest TracePointRequest request) throws Exception {
         return getPoints(TraceKind.SLOW, agentRollup, request);
     }
 
-    @GET(path = "/backend/error/points", permission = "agent:view:error:traces")
+    @GET(path = "/backend/error/points", permission = "agent:error:traces")
     String getErrorPoints(@BindAgentRollup String agentRollup,
             @BindRequest TracePointRequest request) throws Exception {
         return getPoints(TraceKind.ERROR, agentRollup, request);

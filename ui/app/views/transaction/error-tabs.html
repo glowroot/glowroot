@@ -26,6 +26,7 @@
     <a ng-href="error/traces{{tabQueryString()}}"
        ng-click="clickTab('traces', $event)"
        ng-keydown="keydownTab('tab_messages', null, $event)"
+       ng-if="agentPermissions.error.traces"
        id="tab_traces">
       Error traces ({{traceCountDisplay()}})
     </a>

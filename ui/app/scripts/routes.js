@@ -61,7 +61,24 @@ glowroot.config([
       }];
     };
     $urlRouterProvider.otherwise(function () {
-      return 'transaction/average';
+      // TODO revisit this, especially for server
+      if (!window.layout) {
+        // don't seem able to return promise for 'otherwise', oh well, this is only for grunt serve anyways
+        return 'transaction/average';
+      }
+      if (window.layout.showNavbarTransaction) {
+        return 'transaction/average';
+      } else if (window.layout.showNavbarError) {
+        return 'error/messages';
+      } else if (window.layout.showNavbarJvm) {
+        // TODO this will not work if user has access to other JVM pages, but not gauges
+        // (deal with this when revisiting entire 'otherwise', see comment above)
+        return 'jvm/gauges';
+      } else if (window.layout.showNavbarConfig) {
+        return 'config/transaction';
+      } else {
+        return 'admin/user-list';
+      }
     });
     $stateProvider.state('transaction', {
       abstract: true,

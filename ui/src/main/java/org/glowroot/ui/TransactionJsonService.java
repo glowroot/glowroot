@@ -80,7 +80,7 @@ class TransactionJsonService {
         this.clock = clock;
     }
 
-    @GET(path = "/backend/transaction/average", permission = "agent:view:transaction:average")
+    @GET(path = "/backend/transaction/average", permission = "agent:transaction:overview")
     String getOverview(@BindAgentRollup String agentRollup,
             @BindRequest TransactionDataRequest request) throws Exception {
         TransactionQuery query = toQuery(request);
@@ -109,8 +109,7 @@ class TransactionJsonService {
         return sb.toString();
     }
 
-    @GET(path = "/backend/transaction/percentiles",
-            permission = "agent:view:transaction:percentiles")
+    @GET(path = "/backend/transaction/percentiles", permission = "agent:transaction:overview")
     String getPercentiles(@BindAgentRollup String agentRollup,
             @BindRequest TransactionDataRequest request) throws Exception {
         TransactionQuery query = toQuery(request);
@@ -132,7 +131,7 @@ class TransactionJsonService {
         return sb.toString();
     }
 
-    @GET(path = "/backend/transaction/throughput", permission = "agent:view:transaction:throughput")
+    @GET(path = "/backend/transaction/throughput", permission = "agent:transaction:overview")
     String getThroughput(@BindAgentRollup String agentRollup,
             @BindRequest TransactionDataRequest request) throws Exception {
         TransactionQuery query = toQuery(request);
@@ -168,7 +167,7 @@ class TransactionJsonService {
         return sb.toString();
     }
 
-    @GET(path = "/backend/transaction/queries", permission = "agent:view:transaction:queries")
+    @GET(path = "/backend/transaction/queries", permission = "agent:transaction:queries")
     String getQueries(@BindAgentRollup String agentRollup,
             @BindRequest TransactionDataRequest request) throws Exception {
         TransactionQuery query = toQuery(request);
@@ -197,8 +196,7 @@ class TransactionJsonService {
         return sb.toString();
     }
 
-    @GET(path = "/backend/transaction/full-query-text",
-            permission = "agent:view:transaction:queries")
+    @GET(path = "/backend/transaction/full-query-text", permission = "agent:transaction:queries")
     String getQueryText(@BindAgentRollup String agentRollup,
             @BindRequest FullQueryTextRequest request) throws Exception {
         String fullQueryText =
@@ -216,8 +214,7 @@ class TransactionJsonService {
         return sb.toString();
     }
 
-    @GET(path = "/backend/transaction/service-calls",
-            permission = "agent:view:transaction:serviceCalls")
+    @GET(path = "/backend/transaction/service-calls", permission = "agent:transaction:serviceCalls")
     String getServiceCalls(@BindAgentRollup String agentRollup,
             @BindRequest TransactionDataRequest request) throws Exception {
         TransactionQuery query = toQuery(request);
@@ -252,7 +249,7 @@ class TransactionJsonService {
         return sb.toString();
     }
 
-    @GET(path = "/backend/transaction/profile", permission = "agent:view:transaction:profile")
+    @GET(path = "/backend/transaction/profile", permission = "agent:transaction:profile")
     String getProfile(@BindAgentRollup String agentRollup,
             @BindRequest TransactionProfileRequest request) throws Exception {
         TransactionQuery query = toQuery(request);
@@ -299,7 +296,7 @@ class TransactionJsonService {
         return sb.toString();
     }
 
-    @GET(path = "/backend/transaction/summaries", permission = "agent:view:transaction:summaries")
+    @GET(path = "/backend/transaction/summaries", permission = "agent:transaction:overview")
     String getSummaries(@BindAgentRollup String agentRollup,
             @BindRequest TransactionSummaryRequest request) throws Exception {
         ImmutableOverallQuery query = ImmutableOverallQuery.builder()
@@ -324,8 +321,7 @@ class TransactionJsonService {
         return sb.toString();
     }
 
-    @GET(path = "/backend/transaction/flame-graph",
-            permission = "agent:view:transaction:flameGraph")
+    @GET(path = "/backend/transaction/flame-graph", permission = "agent:transaction:profile")
     String getFlameGraph(@BindAgentRollup String agentRollup,
             @BindRequest FlameGraphRequest request) throws Exception {
         TransactionQuery query = toQuery(request);

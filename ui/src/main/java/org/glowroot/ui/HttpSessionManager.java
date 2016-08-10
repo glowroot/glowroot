@@ -274,6 +274,11 @@ class HttpSessionManager {
         abstract ConfigRepository configRepository();
 
         boolean isPermitted(String agentId, String permission) {
+            if (permission.equals("agent:trace")) {
+                // special case for now
+                return isPermitted(agentId, "agent:transaction:traces")
+                        || isPermitted(agentId, "agent:error:traces");
+            }
             if (agentId.isEmpty()) {
                 return isPermitted(permission);
             } else {

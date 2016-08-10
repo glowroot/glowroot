@@ -77,7 +77,7 @@ class ErrorJsonService {
         this.clock = clock;
     }
 
-    @GET(path = "/backend/error/messages", permission = "agent:view:error:messages")
+    @GET(path = "/backend/error/messages", permission = "agent:error:overview")
     String getData(@BindAgentRollup String agentRollup, @BindRequest ErrorMessageRequest request)
             throws Exception {
         TraceQuery query = ImmutableTraceQuery.builder()
@@ -149,7 +149,7 @@ class ErrorJsonService {
         return sb.toString();
     }
 
-    @GET(path = "/backend/error/summaries", permission = "agent:view:error:messages")
+    @GET(path = "/backend/error/summaries", permission = "agent:error:overview")
     String getSummaries(@BindAgentRollup String agentRollup,
             @BindRequest ErrorSummaryRequest request) throws Exception {
         OverallQuery query = ImmutableOverallQuery.builder()

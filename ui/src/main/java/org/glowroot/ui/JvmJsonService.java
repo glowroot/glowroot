@@ -86,7 +86,7 @@ class JvmJsonService {
         this.liveJvmService = liveJvmService;
     }
 
-    @GET(path = "/backend/jvm/environment", permission = "agent:view:jvm:environment")
+    @GET(path = "/backend/jvm/environment", permission = "agent:jvm:environment")
     String getEnvironment(@BindAgentId String agentId) throws Exception {
         Environment environment = agentRepository.readEnvironment(agentId);
         if (environment == null) {
@@ -130,7 +130,7 @@ class JvmJsonService {
         return sw.toString();
     }
 
-    @GET(path = "/backend/jvm/thread-dump", permission = "agent:tool:threadDump")
+    @GET(path = "/backend/jvm/thread-dump", permission = "agent:jvm:threadDump")
     String getThreadDump(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
         ThreadDump threadDump;
@@ -166,7 +166,7 @@ class JvmJsonService {
         return sw.toString();
     }
 
-    @GET(path = "/backend/jvm/jstack", permission = "agent:tool:threadDump")
+    @GET(path = "/backend/jvm/jstack", permission = "agent:jvm:threadDump")
     String getJstack(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
         String jstack;
@@ -189,7 +189,7 @@ class JvmJsonService {
         return sw.toString();
     }
 
-    @GET(path = "/backend/jvm/heap-dump-default-dir", permission = "agent:tool:heapDump")
+    @GET(path = "/backend/jvm/heap-dump-default-dir", permission = "agent:jvm:heapDump")
     String getHeapDumpDefaultDir(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
         if (!liveJvmService.isAvailable(agentId)) {
@@ -206,14 +206,14 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @POST(path = "/backend/jvm/available-disk-space", permission = "agent:tool:heapDump")
+    @POST(path = "/backend/jvm/available-disk-space", permission = "agent:jvm:heapDump")
     String getAvailableDiskSpace(@BindAgentId String agentId, @BindRequest HeapDumpRequest request)
             throws Exception {
         checkNotNull(liveJvmService);
         return Long.toString(liveJvmService.getAvailableDiskSpace(agentId, request.directory()));
     }
 
-    @POST(path = "/backend/jvm/heap-dump", permission = "agent:tool:heapDump")
+    @POST(path = "/backend/jvm/heap-dump", permission = "agent:jvm:heapDump")
     String heapDump(@BindAgentId String agentId, @BindRequest HeapDumpRequest request)
             throws Exception {
         checkNotNull(liveJvmService);
@@ -228,7 +228,7 @@ class JvmJsonService {
         return sw.toString();
     }
 
-    @POST(path = "/backend/jvm/heap-histogram", permission = "agent:tool:heapHistogram")
+    @POST(path = "/backend/jvm/heap-histogram", permission = "agent:jvm:heapHistogram")
     String heapHistogram(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
         HeapHistogram heapHistogram;
@@ -265,19 +265,19 @@ class JvmJsonService {
         return sw.toString();
     }
 
-    @POST(path = "/backend/jvm/gc", permission = "agent:tool:gc")
+    @POST(path = "/backend/jvm/gc", permission = "agent:jvm:gc")
     void performGC(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
         liveJvmService.gc(agentId);
     }
 
-    @GET(path = "/backend/jvm/gc-check-agent-connected", permission = "agent:tool:gc")
+    @GET(path = "/backend/jvm/gc-check-agent-connected", permission = "agent:jvm:gc")
     String checkAgentConnected(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
         return Boolean.toString(liveJvmService.isAvailable(agentId));
     }
 
-    @GET(path = "/backend/jvm/mbean-tree", permission = "agent:tool:mbeanTree")
+    @GET(path = "/backend/jvm/mbean-tree", permission = "agent:jvm:mbeanTree")
     String getMBeanTree(@BindAgentId String agentId, @BindRequest MBeanTreeRequest request)
             throws Exception {
         checkNotNull(liveJvmService);
@@ -317,7 +317,7 @@ class JvmJsonService {
         return mapper.writeValueAsString(sortedRootNodes);
     }
 
-    @GET(path = "/backend/jvm/mbean-attribute-map", permission = "agent:tool:mbeanTree")
+    @GET(path = "/backend/jvm/mbean-attribute-map", permission = "agent:jvm:mbeanTree")
     String getMBeanAttributeMap(@BindAgentId String agentId,
             @BindRequest MBeanAttributeMapRequest request) throws Exception {
         checkNotNull(liveJvmService);
@@ -336,7 +336,7 @@ class JvmJsonService {
         return mapper.writeValueAsString(getSortedAttributeMap(mbeanInfo.getAttributeList()));
     }
 
-    @GET(path = "/backend/jvm/system-properties", permission = "agent:tool:systemProperties")
+    @GET(path = "/backend/jvm/system-properties", permission = "agent:jvm:systemProperties")
     String getSystemProperties(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
         Map<String, String> properties;
@@ -381,7 +381,7 @@ class JvmJsonService {
         return sb.toString();
     }
 
-    @GET(path = "/backend/jvm/capabilities", permission = "agent:tool:capabilities")
+    @GET(path = "/backend/jvm/capabilities", permission = "agent:jvm:capabilities")
     String getCapabilities(@BindAgentId String agentId) throws Exception {
         checkNotNull(liveJvmService);
         Capabilities capabilities;

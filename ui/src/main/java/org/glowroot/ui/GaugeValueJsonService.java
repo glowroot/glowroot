@@ -54,7 +54,7 @@ class GaugeValueJsonService {
         this.configRepository = configRepository;
     }
 
-    @GET(path = "/backend/jvm/gauges", permission = "agent:view:jvm:gauges")
+    @GET(path = "/backend/jvm/gauges", permission = "agent:jvm:gauges")
     String getGaugeValues(@BindAgentRollup String agentRollup,
             @BindRequest GaugeValueRequest request) throws Exception {
         int rollupLevel =
@@ -92,7 +92,7 @@ class GaugeValueJsonService {
         return sb.toString();
     }
 
-    @GET(path = "/backend/jvm/all-gauges", permission = "agent:view:jvm:gauges")
+    @GET(path = "/backend/jvm/all-gauges", permission = "agent:jvm:gauges")
     String getAllGaugeNames(@BindAgentRollup String agentRollup) throws Exception {
         List<Gauge> gauges = gaugeValueRepository.getGauges(agentRollup);
         ImmutableList<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);

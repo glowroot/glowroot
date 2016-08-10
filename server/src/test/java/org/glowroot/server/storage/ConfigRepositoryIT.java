@@ -440,6 +440,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudRoleConfig() throws Exception {
         // given
         RoleConfig roleConfig = ImmutableRoleConfig.builder()
+                .fat(false)
                 .name("brole")
                 .addPermissions("p1")
                 .addPermissions("p2")
@@ -457,6 +458,7 @@ public class ConfigRepositoryIT {
 
         // given
         RoleConfig updatedRoleConfig = ImmutableRoleConfig.builder()
+                .fat(false)
                 .name("brole")
                 .addPermissions("p5")
                 .addPermissions("p6")

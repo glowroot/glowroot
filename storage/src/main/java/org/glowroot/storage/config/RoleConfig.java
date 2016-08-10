@@ -32,12 +32,22 @@ public abstract class RoleConfig {
     public abstract String name();
     public abstract ImmutableSet<String> permissions();
 
+    @JsonIgnore
+    @Value.Default
+    public boolean fat() {
+        return true;
+    }
+
     @Value.Derived
     @JsonIgnore
     public ImmutableSet<SimplePermission> simplePermissions() {
         Set<SimplePermission> simplePermissions = Sets.newHashSet();
         for (String permission : permissions()) {
-            simplePermissions.add(SimplePermission.create(permission));
+            if (fat()) {
+                simplePermissions.add(SimplePermission.create("", permission));
+            } else {
+                simplePermissions.add(SimplePermission.create(permission));
+            }
         }
         return ImmutableSet.copyOf(simplePermissions);
     }
@@ -61,14 +71,21 @@ public abstract class RoleConfig {
     public abstract static class SimplePermission {
 
         public static SimplePermission create(String permission) {
+            PermissionParser parser = new PermissionParser(permission);
+            parser.parse();
             return ImmutableSimplePermission.builder()
-                    .addAllParts(Splitter.on(':').splitToList(permission))
+                    .addAllAgentIds(parser.getAgentIds())
+                    .addAllParts(Splitter.on(':').splitToList(parser.getPermission()))
                     .build();
         }
 
+        public abstract List<String> agentIds();
         public abstract List<String> parts();
 
         public boolean implies(SimplePermission other) {
+            if (!agentIds().contains("*") && !agentIds().containsAll(other.agentIds())) {
+                return false;
+            }
             List<String> otherParts = other.parts();
             if (otherParts.size() < parts().size()) {
                 return false;
