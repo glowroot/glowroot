@@ -75,7 +75,6 @@
 
     <div class="gt-everything-below-gauge-chart">
       <div class="legend" id="chartLegend"
-           ng-hide="chartNoData"
            style="text-align: center; margin-top: 10px; width: 100%;">
         <div class="gt-inline-block">
           <div class="gt-inline-block" ng-repeat="seriesLabel in seriesLabels"
@@ -130,10 +129,11 @@
             </div>
           </td>
           <td>
-            <div ng-style="gaugeColorStyle(gauge.name)">{{gaugeColorText(gauge.name)}}</div>
+            <div ng-style="gaugeColorStyle(gauge.name)"></div>
           </td>
           <td>
-            <div ng-show="hasGaugeScale(gauge.name)">
+            <div ng-show="hasGaugeScale(gauge.name)"
+                 ng-style="gaugeScaleStyle(gauge.name)">
               {{getGaugeScale(gauge.name)}}
             </div>
           </td>

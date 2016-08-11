@@ -254,8 +254,8 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       var grouping;
       for (i = 0; i < data.length; i++) {
         dataSeries = data[i];
+        updateYvalMap(dataSeries.name, dataSeries.data);
         if (dataSeries.data.length) {
-          updateYvalMap(dataSeries.name, dataSeries.data);
           // set negative data to zero after putting real value into yval map
           setNegativeDataToZero(dataSeries);
           scale = getPointsScale(dataSeries.data);
@@ -404,33 +404,31 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     $scope.gaugeColorStyle = function (gaugeName) {
       var style = {
         width: '60px',
-        height: '18px',
-        'font-style': 'italic'
+        height: '18px'
       };
-      if (gaugeScales[gaugeName]) {
-        var color = chartState.keyedColorPool.get(gaugeName);
-        if (color) {
-          style['background-color'] = color;
-        }
+      var color = chartState.keyedColorPool.get(gaugeName);
+      if (color) {
+        style['background-color'] = color;
       }
       return style;
     };
 
-    $scope.gaugeColorText = function (gaugeName) {
-      if ($scope.gaugeNames.indexOf(gaugeName) !== -1 && emptyGaugeNames[gaugeName]) {
-        return 'no data';
-      }
-      return '';
+    $scope.hasGaugeScale = function (gaugeName) {
+      return gaugeScales[gaugeName] || emptyGaugeNames[gaugeName];
     };
 
-    $scope.hasGaugeScale = function (gaugeName) {
-      return gaugeScales[gaugeName];
+    $scope.gaugeScaleStyle = function (gaugeName) {
+      if (gaugeScales[gaugeName]) {
+        return {};
+      } else {
+        return {'font-style': 'italic'};
+      }
     };
 
     $scope.getGaugeScale = function (gaugeName) {
       var scale = gaugeScales[gaugeName];
       if (!scale) {
-        return '';
+        return 'no data';
       }
       scale = scale.toString();
       var index = scale.indexOf('e-');

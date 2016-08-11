@@ -337,6 +337,10 @@ glowroot.factory('charts', [
     function updateLegend(chartState, $scope) {
       var plotData = chartState.plot.getData();
       $scope.seriesLabels = [];
+      if (plotData.length === 1 && plotData[0].label === undefined) {
+        // special case for when user de-selects all gauges and chart displays 'Select one or more gauges below'
+        return;
+      }
       var seriesIndex;
       for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
         $scope.seriesLabels.push({
@@ -383,11 +387,6 @@ glowroot.factory('charts', [
         if (nonStacked) {
           // dataIndex don't line up since non-stacked
           displayText = display(undefined, dataSeries.label);
-          if (displayText === 'no data') {
-            // this continue really helps usability with live rollup tooltip when live rollups are over 60 seconds apart
-            // (see 60 second limit in GaugeValueJsonService.syncManualRollupCaptureTimes())
-            continue;
-          }
           found = true;
         } else if (dataSeries.data[dataIndex]) {
           value = dataSeries.data[dataIndex][1];
