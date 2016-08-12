@@ -70,7 +70,7 @@ class GaugeValueJsonService {
         long revisedFrom = request.from() - intervalMillis;
         long revisedTo = request.to() + intervalMillis;
 
-        Map<String, List<GaugeValue>> map = Maps.newHashMap();
+        Map<String, List<GaugeValue>> map = Maps.newLinkedHashMap();
         for (String gaugeName : request.gaugeNames()) {
             map.put(gaugeName,
                     getGaugeValues(agentRollup, revisedFrom, revisedTo, gaugeName, rollupLevel));

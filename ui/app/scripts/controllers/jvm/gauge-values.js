@@ -447,6 +447,15 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       var index = $scope.gaugeNames.indexOf(gaugeName);
       if (index === -1) {
         $scope.gaugeNames.push(gaugeName);
+        // maintain selected gauge ordering matching to match ordering of allGaugeNames
+        // (which are ordered server-side by case insensitive gauge display)
+        var ordering = {};
+        angular.forEach(allGaugeNames, function (gaugeName, index) {
+          ordering[gaugeName] = index;
+        });
+        $scope.gaugeNames.sort(function (a, b) {
+          return ordering[a] - ordering[b];
+        });
       } else {
         $scope.gaugeNames.splice(index, 1);
         // hide color and scale right away (noticeable when subsequent server response is slow)
