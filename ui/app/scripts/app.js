@@ -238,7 +238,7 @@ glowroot.run([
       $rootScope.layout = data;
       if ($rootScope.layout.redirectToLogin) {
         login.goToLogin();
-      } else if ($location.path() === '/login' && (data.username !== 'anonymous' || data.hideLogin)) {
+      } else if ($location.path() === '/login' && (data.loggedIn || data.hideLogin)) {
         // authentication is not needed
         $location.path('/').replace();
       } else if ($rootScope.layout.fat || $rootScope.agentRollup) {
