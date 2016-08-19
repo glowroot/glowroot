@@ -23,6 +23,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -70,6 +71,15 @@ public class ExecutorIT {
         // given
         // when
         Trace trace = container.execute(DoExecuteRunnable.class);
+        // then
+        checkTrace(trace, false, false);
+    }
+
+    @Test
+    public void shouldCaptureExecuteFutureTask() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(DoExecuteFutureTask.class);
         // then
         checkTrace(trace, false, false);
     }
@@ -304,6 +314,47 @@ public class ExecutorIT {
                     latch.countDown();
                 }
             });
+            latch.await();
+            executor.shutdown();
+            executor.awaitTermination(10, SECONDS);
+        }
+    }
+
+    public static class DoExecuteFutureTask implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
+            final CountDownLatch latch = new CountDownLatch(3);
+            executor.execute(new FutureTask<>(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                    return null;
+                }
+            }));
+            executor.submit(new FutureTask<>(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                    return null;
+                }
+            }));
+            executor.submit(new FutureTask<>(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                    return null;
+                }
+            }));
             latch.await();
             executor.shutdown();
             executor.awaitTermination(10, SECONDS);
