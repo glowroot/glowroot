@@ -47,6 +47,7 @@ public class UiModule {
     @Builder.Factory
     public static UiModule createUiModule(
             boolean fat,
+            boolean offlineViewer,
             @Nullable Ticker ticker, // @Nullable to deal with shading from glowroot server
             Clock clock,
             File logDir,
@@ -65,10 +66,10 @@ public class UiModule {
             int numWorkerThreads,
             String version) throws Exception {
 
-        LayoutService layoutService = new LayoutService(fat, version, configRepository,
-                agentRepository, transactionTypeRepository);
+        LayoutService layoutService = new LayoutService(fat, offlineViewer, version,
+                configRepository, agentRepository, transactionTypeRepository);
         HttpSessionManager httpSessionManager =
-                new HttpSessionManager(fat, configRepository, clock, layoutService);
+                new HttpSessionManager(fat, offlineViewer, configRepository, clock, layoutService);
         IndexHtmlHttpService indexHtmlHttpService = new IndexHtmlHttpService(layoutService);
         LayoutHttpService layoutHttpService = new LayoutHttpService(layoutService);
         TransactionCommonService transactionCommonService = new TransactionCommonService(
@@ -106,13 +107,9 @@ public class UiModule {
         jsonServices.add(new RoleConfigJsonService(fat, configRepository, agentRepository));
         jsonServices.add(gaugeValueJsonService);
         jsonServices.add(new JvmJsonService(agentRepository, liveJvmService));
-        if (liveJvmService != null) {
-            jsonServices.add(new GaugeConfigJsonService(configRepository, liveJvmService));
-        }
-        if (liveWeavingService != null && liveJvmService != null) {
-            jsonServices.add(new InstrumentationConfigJsonService(configRepository,
-                    liveWeavingService, liveJvmService));
-        }
+        jsonServices.add(new GaugeConfigJsonService(configRepository, liveJvmService));
+        jsonServices.add(new InstrumentationConfigJsonService(configRepository, liveWeavingService,
+                liveJvmService));
         jsonServices.add(alertJsonService);
         jsonServices.add(adminJsonService);
 

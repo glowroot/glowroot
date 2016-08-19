@@ -79,6 +79,13 @@ public abstract class RoleConfig {
                     .build();
         }
 
+        public static SimplePermission create(String agentId, String permission) {
+            return ImmutableSimplePermission.builder()
+                    .addAgentIds(agentId)
+                    .addAllParts(Splitter.on(':').splitToList(permission))
+                    .build();
+        }
+
         public abstract List<String> agentIds();
         public abstract List<String> parts();
 

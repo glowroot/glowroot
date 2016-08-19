@@ -35,8 +35,8 @@ import org.glowroot.agent.fat.storage.SimpleRepoModule;
 import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.CollectorProxy;
-import org.glowroot.agent.init.GlowrootThinAgentInit;
 import org.glowroot.agent.init.EnvironmentCreator;
+import org.glowroot.agent.init.GlowrootThinAgentInit;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
@@ -72,7 +72,7 @@ class FatAgentModule {
 
     FatAgentModule(File baseDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
-            String glowrootVersion, boolean viewerMode) throws Exception {
+            String glowrootVersion, boolean offlineViewer) throws Exception {
 
         dataDirLockingCloseable = DataDirLocking.lockDataDir(baseDir);
 
@@ -92,7 +92,7 @@ class FatAgentModule {
         }
 
         PluginCache pluginCache = PluginCache.create(glowrootJarFile, false);
-        if (viewerMode) {
+        if (offlineViewer) {
             viewerAgentModule = new ViewerAgentModule(baseDir, glowrootJarFile);
             backgroundExecutor = null;
             agentModule = null;
@@ -152,6 +152,7 @@ class FatAgentModule {
         if (agentModule != null) {
             uiModule = new CreateUiModuleBuilder()
                     .fat(true)
+                    .offlineViewer(false)
                     .ticker(ticker)
                     .clock(clock)
                     .logDir(baseDir)
@@ -174,6 +175,7 @@ class FatAgentModule {
             checkNotNull(viewerAgentModule);
             uiModule = new CreateUiModuleBuilder()
                     .fat(true)
+                    .offlineViewer(true)
                     .ticker(ticker)
                     .clock(clock)
                     .logDir(baseDir)

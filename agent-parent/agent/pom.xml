@@ -317,7 +317,7 @@
             <archive>
               <manifestEntries>
                 <Build-Time>${maven.build.timestamp}</Build-Time>
-                <Main-Class>org.glowroot.agent.Viewer</Main-Class>
+                <Main-Class>org.glowroot.agent.OfflineViewer</Main-Class>
                 <Premain-Class>org.glowroot.agent.AgentPremain</Premain-Class>
                 <Can-Redefine-Classes>true</Can-Redefine-Classes>
                 <Can-Retransform-Classes>true</Can-Retransform-Classes>

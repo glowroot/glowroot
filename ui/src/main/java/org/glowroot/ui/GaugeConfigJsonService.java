@@ -62,9 +62,10 @@ class GaugeConfigJsonService {
     };
 
     private final ConfigRepository configRepository;
-    private final LiveJvmService liveJvmService;
+    private final @Nullable LiveJvmService liveJvmService;
 
-    GaugeConfigJsonService(ConfigRepository configRepository, LiveJvmService liveJvmService) {
+    GaugeConfigJsonService(ConfigRepository configRepository,
+            @Nullable LiveJvmService liveJvmService) {
         this.configRepository = configRepository;
         this.liveJvmService = liveJvmService;
     }
@@ -95,13 +96,14 @@ class GaugeConfigJsonService {
     @GET(path = "/backend/config/new-gauge-check-agent-connected",
             permission = "agent:config:edit:gauge")
     String checkAgentConnected(@BindAgentId String agentId) throws Exception {
-        checkNotNull(liveJvmService);
+        checkNotNull(liveJvmService); // agent:config:edit is disabled in offline viewer
         return Boolean.toString(liveJvmService.isAvailable(agentId));
     }
 
     @GET(path = "/backend/config/matching-mbean-objects", permission = "agent:config:edit:gauge")
     String getMatchingMBeanObjects(@BindAgentId String agentId,
             @BindRequest MBeanObjectNameRequest request) throws Exception {
+        checkNotNull(liveJvmService); // agent:config:edit is disabled in offline viewer
         try {
             return mapper.writeValueAsString(liveJvmService.getMatchingMBeanObjectNames(agentId,
                     request.partialObjectName(), request.limit()));
@@ -114,6 +116,7 @@ class GaugeConfigJsonService {
     @GET(path = "/backend/config/mbean-attributes", permission = "agent:config:edit:gauge")
     String getMBeanAttributes(@BindAgentId String agentId,
             @BindRequest MBeanAttributeNamesRequest request) throws Exception {
+        checkNotNull(liveJvmService); // agent:config:edit is disabled in offline viewer
         boolean duplicateMBean = false;
         for (GaugeConfig gaugeConfig : configRepository.getGaugeConfigs(agentId)) {
             if (gaugeConfig.getMbeanObjectName().equals(request.objectName())
@@ -169,12 +172,13 @@ class GaugeConfigJsonService {
     private GaugeResponse buildResponse(String agentId, GaugeConfig gaugeConfig) throws Exception {
         ImmutableGaugeResponse.Builder builder = ImmutableGaugeResponse.builder()
                 .config(GaugeConfigDto.create(gaugeConfig));
-        MBeanMeta mbeanMeta;
-        try {
-            mbeanMeta = liveJvmService.getMBeanMeta(agentId, gaugeConfig.getMbeanObjectName());
-        } catch (AgentNotConnectedException e) {
-            logger.debug(e.getMessage(), e);
-            mbeanMeta = null;
+        MBeanMeta mbeanMeta = null;
+        if (liveJvmService != null) {
+            try {
+                mbeanMeta = liveJvmService.getMBeanMeta(agentId, gaugeConfig.getMbeanObjectName());
+            } catch (AgentNotConnectedException e) {
+                logger.debug(e.getMessage(), e);
+            }
         }
         builder.agentNotConnected(mbeanMeta == null)
                 .mbeanUnmatched(mbeanMeta != null && mbeanMeta.getUnmatched())

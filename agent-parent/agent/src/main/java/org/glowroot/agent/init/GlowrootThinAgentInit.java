@@ -58,7 +58,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
     public void init(final File baseDir, final @Nullable String collectorHost,
             final @Nullable Collector customCollector, final Map<String, String> properties,
             final @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
-            final String glowrootVersion, boolean viewerMode) throws Exception {
+            final String glowrootVersion, boolean offlineViewer) throws Exception {
 
         if (instrumentation != null) {
             PreInitializeWeavingClasses.preInitializeClasses();

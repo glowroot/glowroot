@@ -18,6 +18,9 @@
 <div ng-if="data.agentNotConnected" class="alert alert-danger">
   The agent is not currently connected. The values below were reported at last JVM start.
 </div>
+<div ng-if="layout.offlineViewer" class="alert alert-warning">
+  The values below were reported at last JVM start.
+</div>
 <fieldset style="padding-bottom: 22px;">
   <legend style="margin-bottom: 10px;">Host</legend>
   <div class="row gt-jvm-general-row">
@@ -83,10 +86,10 @@
     <div>
       <label class="col-md-3" style="text-align: right;">Uptime</label>
     </div>
-    <div class="col-md-9" ng-if="data.agentNotConnected">
+    <div class="col-md-9" ng-if="data.agentNotConnected || layout.offlineViewer">
       -
     </div>
-    <div class="col-md-9" ng-if="!data.agentNotConnected">
+    <div class="col-md-9" ng-if="!data.agentNotConnected && !layout.offlineViewer">
       {{uptime | gtDuration}}
     </div>
   </div>

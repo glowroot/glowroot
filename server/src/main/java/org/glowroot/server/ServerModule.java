@@ -144,6 +144,7 @@ class ServerModule {
 
             uiModule = new CreateUiModuleBuilder()
                     .fat(false)
+                    .offlineViewer(false)
                     .clock(clock)
                     .logDir(new File("."))
                     .liveJvmService(new LiveJvmServiceImpl(downstreamService))

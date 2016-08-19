@@ -41,10 +41,10 @@ public class GlowrootFatAgentInit implements GlowrootAgentInit {
     public void init(File baseDir, @Nullable String collectorHost,
             @Nullable Collector customCollector, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
-            String glowrootVersion, boolean viewerMode) throws Exception {
+            String glowrootVersion, boolean offlineViewer) throws Exception {
 
         fatAgentModule = new FatAgentModule(baseDir, properties, instrumentation, glowrootJarFile,
-                glowrootVersion, viewerMode);
+                glowrootVersion, offlineViewer);
         NettyWorkaround.run(instrumentation, new Callable</*@Nullable*/ Void>() {
             @Override
             public @Nullable Void call() throws Exception {

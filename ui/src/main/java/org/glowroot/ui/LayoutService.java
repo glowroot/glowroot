@@ -49,15 +49,17 @@ class LayoutService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final boolean fat;
+    private final boolean offlineViewer;
     private final String version;
     private final ConfigRepository configRepository;
     private final AgentRepository agentRepository;
     private final TransactionTypeRepository transactionTypeRepository;
 
-    LayoutService(boolean fat, String version, ConfigRepository configRepository,
-            AgentRepository agentRepository,
+    LayoutService(boolean fat, boolean offlineViewer, String version,
+            ConfigRepository configRepository, AgentRepository agentRepository,
             TransactionTypeRepository transactionTypeRepository) {
         this.fat = fat;
+        this.offlineViewer = offlineViewer;
         this.version = version;
         this.configRepository = configRepository;
         this.agentRepository = agentRepository;
@@ -163,9 +165,11 @@ class LayoutService {
             }
             return ImmutableLayout.builder()
                     .fat(fat)
+                    .offlineViewer(offlineViewer)
                     .footerMessage("Glowroot version " + version)
-                    .hideLogin(!configRepository.namedUsersExist()
-                            && configRepository.getLdapConfig().host().isEmpty())
+                    .hideLogin(offlineViewer ? true
+                            : !configRepository.namedUsersExist()
+                                    && configRepository.getLdapConfig().host().isEmpty())
                     .addAllRollupConfigs(configRepository.getRollupConfigs())
                     .addAllRollupExpirationMillis(rollupExpirationMillis)
                     .gaugeCollectionIntervalMillis(
@@ -175,8 +179,8 @@ class LayoutService {
                     .showNavbarError(showNavbarError)
                     .showNavbarJvm(showNavbarJvm)
                     .showNavbarConfig(showNavbarConfig)
-                    .adminView(authentication.isPermitted("admin:view"))
-                    .adminEdit(authentication.isPermitted("admin:edit"))
+                    .adminView(authentication.isAdminPermitted("admin:view"))
+                    .adminEdit(authentication.isAdminPermitted("admin:edit"))
                     .loggedIn(!authentication.anonymous())
                     .ldap(authentication.ldap())
                     .redirectToLogin(false)
@@ -184,6 +188,7 @@ class LayoutService {
         } else {
             return ImmutableLayout.builder()
                     .fat(fat)
+                    .offlineViewer(offlineViewer)
                     .footerMessage("Glowroot version " + version)
                     .hideLogin(false)
                     .gaugeCollectionIntervalMillis(0)
@@ -203,51 +208,56 @@ class LayoutService {
     private static Permissions getPermissions(Authentication authentication, String agentRollup) {
         return ImmutablePermissions.builder()
                 .transaction(ImmutableTransactionPermissions.builder()
-                        .overview(authentication.isPermitted(agentRollup,
+                        .overview(authentication.isAgentPermitted(agentRollup,
                                 "agent:transaction:overview"))
-                        .traces(authentication.isPermitted(agentRollup, "agent:transaction:traces"))
-                        .queries(authentication.isPermitted(agentRollup,
+                        .traces(authentication.isAgentPermitted(agentRollup,
+                                "agent:transaction:traces"))
+                        .queries(authentication.isAgentPermitted(agentRollup,
                                 "agent:transaction:queries"))
-                        .serviceCalls(authentication.isPermitted(agentRollup,
+                        .serviceCalls(authentication.isAgentPermitted(agentRollup,
                                 "agent:transaction:serviceCalls"))
-                        .profile(authentication.isPermitted(agentRollup,
+                        .profile(authentication.isAgentPermitted(agentRollup,
                                 "agent:transaction:profile"))
                         .build())
                 .error(ImmutableErrorPermissions.builder()
-                        .overview(authentication.isPermitted(agentRollup, "agent:error:overview"))
-                        .traces(authentication.isPermitted(agentRollup, "agent:error:traces"))
+                        .overview(authentication.isAgentPermitted(agentRollup,
+                                "agent:error:overview"))
+                        .traces(authentication.isAgentPermitted(agentRollup, "agent:error:traces"))
                         .build())
                 .jvm(ImmutableJvmPermissions.builder()
-                        .gauges(authentication.isPermitted(agentRollup, "agent:jvm:gauges"))
-                        .threadDump(
-                                authentication.isPermitted(agentRollup, "agent:jvm:threadDump"))
-                        .heapDump(authentication.isPermitted(agentRollup, "agent:jvm:heapDump"))
-                        .heapHistogram(
-                                authentication.isPermitted(agentRollup, "agent:jvm:heapHistogram"))
-                        .gc(authentication.isPermitted(agentRollup, "agent:jvm:gc"))
-                        .mbeanTree(authentication.isPermitted(agentRollup, "agent:jvm:mbeanTree"))
-                        .systemProperties(authentication.isPermitted(agentRollup,
+                        .gauges(authentication.isAgentPermitted(agentRollup, "agent:jvm:gauges"))
+                        .threadDump(authentication.isAgentPermitted(agentRollup,
+                                "agent:jvm:threadDump"))
+                        .heapDump(
+                                authentication.isAgentPermitted(agentRollup, "agent:jvm:heapDump"))
+                        .heapHistogram(authentication.isAgentPermitted(agentRollup,
+                                "agent:jvm:heapHistogram"))
+                        .gc(authentication.isAgentPermitted(agentRollup, "agent:jvm:gc"))
+                        .mbeanTree(
+                                authentication.isAgentPermitted(agentRollup, "agent:jvm:mbeanTree"))
+                        .systemProperties(authentication.isAgentPermitted(agentRollup,
                                 "agent:jvm:systemProperties"))
-                        .environment(
-                                authentication.isPermitted(agentRollup, "agent:jvm:environment"))
+                        .environment(authentication.isAgentPermitted(agentRollup,
+                                "agent:jvm:environment"))
                         .build())
                 .config(ImmutableConfigPermissions.builder()
-                        .view(authentication.isPermitted(agentRollup, "agent:config:view"))
+                        .view(authentication.isAgentPermitted(agentRollup, "agent:config:view"))
                         .edit(ImmutableEditConfigPermissions.builder()
-                                .transaction(authentication.isPermitted(agentRollup,
+                                .transaction(authentication.isAgentPermitted(agentRollup,
                                         "agent:config:edit:transaction"))
-                                .gauge(authentication.isPermitted(agentRollup,
+                                .gauge(authentication.isAgentPermitted(agentRollup,
                                         "agent:config:edit:gauge"))
-                                .alert(authentication.isPermitted(agentRollup,
+                                .alert(authentication.isAgentPermitted(agentRollup,
                                         "agent:config:edit:alert"))
-                                .ui(authentication.isPermitted(agentRollup, "agent:config:edit:ui"))
-                                .plugin(authentication.isPermitted(agentRollup,
+                                .ui(authentication.isAgentPermitted(agentRollup,
+                                        "agent:config:edit:ui"))
+                                .plugin(authentication.isAgentPermitted(agentRollup,
                                         "agent:config:edit:plugin"))
-                                .instrumentation(authentication.isPermitted(agentRollup,
+                                .instrumentation(authentication.isAgentPermitted(agentRollup,
                                         "agent:config:edit:instrumentation"))
-                                .advanced(authentication.isPermitted(agentRollup,
+                                .advanced(authentication.isAgentPermitted(agentRollup,
                                         "agent:config:edit:advanced"))
-                                .userRecording(authentication.isPermitted(agentRollup,
+                                .userRecording(authentication.isAgentPermitted(agentRollup,
                                         "agent:config:edit:userRecording"))
                                 .build())
                         .build())
@@ -258,6 +268,7 @@ class LayoutService {
     abstract static class Layout {
 
         abstract boolean fat();
+        abstract boolean offlineViewer();
         abstract String footerMessage();
         abstract boolean hideLogin();
         abstract ImmutableList<RollupConfig> rollupConfigs();

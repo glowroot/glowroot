@@ -23,12 +23,12 @@ import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 
-class Viewer {
+class OfflineViewer {
 
-    private Viewer() {}
+    private OfflineViewer() {}
 
     public static void main(String... args) throws Exception {
-        CodeSource codeSource = Viewer.class.getProtectionDomain().getCodeSource();
+        CodeSource codeSource = OfflineViewer.class.getProtectionDomain().getCodeSource();
         MainEntryPoint.runViewer(getGlowrootJarFile(codeSource));
     }
 

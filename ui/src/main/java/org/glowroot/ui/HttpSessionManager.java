@@ -47,6 +47,7 @@ import org.glowroot.storage.config.UserConfig;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.ui.LdapAuthentication.AuthenticationException;
 
+import static com.google.common.base.Preconditions.checkState;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -55,6 +56,7 @@ class HttpSessionManager {
     private static final Logger logger = LoggerFactory.getLogger(HttpSessionManager.class);
 
     private final boolean fat;
+    private final boolean offlineViewer;
     private final ConfigRepository configRepository;
     private final Clock clock;
     private final LayoutService layoutJsonService;
@@ -62,9 +64,10 @@ class HttpSessionManager {
     private final SecureRandom secureRandom = new SecureRandom();
     private final Map<String, Session> sessions = Maps.newConcurrentMap();
 
-    HttpSessionManager(boolean fat, ConfigRepository configRepository,
+    HttpSessionManager(boolean fat, boolean offlineViewer, ConfigRepository configRepository,
             Clock clock, LayoutService layoutJsonService) {
         this.fat = fat;
+        this.offlineViewer = offlineViewer;
         this.configRepository = configRepository;
         this.clock = clock;
         this.layoutJsonService = layoutJsonService;
@@ -130,6 +133,9 @@ class HttpSessionManager {
     }
 
     Authentication getAuthentication(HttpRequest request) {
+        if (offlineViewer) {
+            return getOfflineViewerAuthentication();
+        }
         String sessionId = getSessionId(request);
         if (sessionId == null) {
             return getAnonymousAuthentication();
@@ -166,6 +172,7 @@ class HttpSessionManager {
         if (userConfig == null) {
             return ImmutableAuthentication.builder()
                     .fat(fat)
+                    .offlineViewer(false)
                     .anonymous(true)
                     .ldap(false)
                     .usernameCaseAmbiguous("anonymous")
@@ -190,10 +197,22 @@ class HttpSessionManager {
     private Authentication getAuthentication(String username, Set<String> roles, boolean ldap) {
         return ImmutableAuthentication.builder()
                 .fat(fat)
+                .offlineViewer(false)
                 .anonymous(username.equalsIgnoreCase("anonymous"))
                 .ldap(ldap)
                 .usernameCaseAmbiguous(username)
                 .roles(roles)
+                .configRepository(configRepository)
+                .build();
+    }
+
+    private Authentication getOfflineViewerAuthentication() {
+        return ImmutableAuthentication.builder()
+                .fat(true) // offline viewer only applies to fat
+                .offlineViewer(true)
+                .anonymous(true)
+                .ldap(false)
+                .usernameCaseAmbiguous("anonymous")
                 .configRepository(configRepository)
                 .build();
     }
@@ -266,6 +285,7 @@ class HttpSessionManager {
     abstract static class Authentication {
 
         abstract boolean fat();
+        abstract boolean offlineViewer();
         abstract boolean anonymous();
         abstract boolean ldap();
         abstract String usernameCaseAmbiguous(); // the case is exactly as user entered during login
@@ -274,22 +294,37 @@ class HttpSessionManager {
         abstract ConfigRepository configRepository();
 
         boolean isPermitted(String agentId, String permission) {
-            if (permission.equals("agent:trace")) {
-                // special case for now
-                return isPermitted(agentId, "agent:transaction:traces")
-                        || isPermitted(agentId, "agent:error:traces");
-            }
-            if (agentId.isEmpty()) {
-                return isPermitted(permission);
+            if (permission.startsWith("agent:")) {
+                return isAgentPermitted(agentId, permission);
             } else {
-                return isPermitted("agent:" + agentId + permission.substring(5));
+                return isAdminPermitted(permission);
             }
         }
 
-        boolean isPermitted(String permission) {
-            SimplePermission p = SimplePermission.create(permission);
+        boolean isAgentPermitted(String agentId, String permission) {
+            checkState(permission.startsWith("agent:"));
+            if (offlineViewer()) {
+                return !permission.startsWith("agent:config:edit:");
+            }
+            if (permission.equals("agent:trace")) {
+                // special case for now
+                return isAgentPermitted(agentId, "agent:transaction:traces")
+                        || isAgentPermitted(agentId, "agent:error:traces");
+            }
+            return isPermitted(SimplePermission.create(agentId, permission));
+        }
+
+        boolean isAdminPermitted(String permission) {
+            checkState(permission.startsWith("admin:"));
+            if (offlineViewer()) {
+                return permission.equals("admin:view") || permission.startsWith("admin:view:");
+            }
+            return isPermitted(SimplePermission.create(permission));
+        }
+
+        private boolean isPermitted(SimplePermission permission) {
             for (RoleConfig roleConfig : configRepository().getRoleConfigs()) {
-                if (roles().contains(roleConfig.name()) && roleConfig.isPermitted(p)) {
+                if (roles().contains(roleConfig.name()) && roleConfig.isPermitted(permission)) {
                     return true;
                 }
             }

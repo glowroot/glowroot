@@ -63,31 +63,31 @@
            gt-display="Thread dump"
            gt-url="jvm/thread-dump{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/thread-dump' || currentUrl() === 'jvm/jstack'"
-           ng-if="agentPermissions.jvm.threadDump">
+           ng-if="agentPermissions.jvm.threadDump && !layout.offlineViewer">
       </div>
       <div gt-sidebar-item
            gt-display="Heap dump"
            gt-url="jvm/heap-dump{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/heap-dump'"
-           ng-if="agentPermissions.jvm.heapDump">
+           ng-if="agentPermissions.jvm.heapDump && !layout.offlineViewer">
       </div>
       <div gt-sidebar-item
            gt-display="Heap histogram"
            gt-url="jvm/heap-histogram{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/heap-histogram'"
-           ng-if="agentPermissions.jvm.heapHistogram">
+           ng-if="agentPermissions.jvm.heapHistogram && !layout.offlineViewer">
       </div>
       <div gt-sidebar-item
            gt-display="MBean tree"
            gt-url="jvm/mbean-tree{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/mbean-tree'"
-           ng-if="agentPermissions.jvm.mbeanTree">
+           ng-if="agentPermissions.jvm.mbeanTree && !layout.offlineViewer">
       </div>
       <div gt-sidebar-item
            gt-display="System properties"
            gt-url="jvm/system-properties{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/system-properties'"
-           ng-if="agentPermissions.jvm.systemProperties">
+           ng-if="agentPermissions.jvm.systemProperties && !layout.offlineViewer">
       </div>
       <div gt-sidebar-item
            gt-display="Environment"

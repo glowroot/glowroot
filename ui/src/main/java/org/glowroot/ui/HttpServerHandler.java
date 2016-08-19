@@ -352,7 +352,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             parameterTypes.add(String.class);
             parameters.add(agentId);
             queryParameters.remove("agent-id");
-            permitted = authentication.isPermitted(agentId, jsonServiceMapping.permission());
+            permitted = authentication.isAgentPermitted(agentId, jsonServiceMapping.permission());
         } else if (jsonServiceMapping.bindAgentRollup()) {
             List<String> values = queryParameters.get("agent-rollup");
             if (values == null) {
@@ -362,10 +362,11 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             parameterTypes.add(String.class);
             parameters.add(agentRollup);
             queryParameters.remove("agent-rollup");
-            permitted = authentication.isPermitted(agentRollup, jsonServiceMapping.permission());
+            permitted =
+                    authentication.isAgentPermitted(agentRollup, jsonServiceMapping.permission());
         } else {
             permitted = jsonServiceMapping.permission().isEmpty()
-                    || authentication.isPermitted(jsonServiceMapping.permission());
+                    || authentication.isAdminPermitted(jsonServiceMapping.permission());
         }
         if (!permitted) {
             if (authentication.anonymous()) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,24 +24,24 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ViewerTest {
+public class OfflineViewerTest {
 
     @Test
     public void testNullCodeSource() throws URISyntaxException {
-        assertThat(Viewer.getGlowrootJarFile(null)).isNull();
+        assertThat(OfflineViewer.getGlowrootJarFile(null)).isNull();
     }
 
     @Test
     public void testWithGlowrootJar() throws Exception {
         File glowrootJar = new File("x/glowroot.jar").getAbsoluteFile();
         CodeSource codeSource = new CodeSource(glowrootJar.toURI().toURL(), new Certificate[0]);
-        assertThat(Viewer.getGlowrootJarFile(codeSource)).isEqualTo(glowrootJar);
+        assertThat(OfflineViewer.getGlowrootJarFile(codeSource)).isEqualTo(glowrootJar);
     }
 
     @Test
     public void testWithNotGlowrootJar() throws Exception {
         File glowrootJar = new File("x/classes");
         CodeSource codeSource = new CodeSource(glowrootJar.toURI().toURL(), new Certificate[0]);
-        assertThat(Viewer.getGlowrootJarFile(codeSource)).isNull();
+        assertThat(OfflineViewer.getGlowrootJarFile(codeSource)).isNull();
     }
 }

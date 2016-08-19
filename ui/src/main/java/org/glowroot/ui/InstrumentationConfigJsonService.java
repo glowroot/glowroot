@@ -61,11 +61,12 @@ class InstrumentationConfigJsonService {
             new InstrumentationConfigOrdering();
 
     private final ConfigRepository configRepository;
-    private final LiveWeavingService liveWeavingService;
-    private final LiveJvmService liveJvmService;
+    private final @Nullable LiveWeavingService liveWeavingService;
+    private final @Nullable LiveJvmService liveJvmService;
 
     InstrumentationConfigJsonService(ConfigRepository configRepository,
-            LiveWeavingService liveWeavingService, LiveJvmService liveJvmService) {
+            @Nullable LiveWeavingService liveWeavingService,
+            @Nullable LiveJvmService liveJvmService) {
         this.configRepository = configRepository;
         this.liveWeavingService = liveWeavingService;
         this.liveJvmService = liveJvmService;
@@ -85,12 +86,13 @@ class InstrumentationConfigJsonService {
             for (InstrumentationConfig config : configs) {
                 dtos.add(InstrumentationConfigDto.create(config));
             }
-            GlobalMeta globalMeta;
-            try {
-                globalMeta = liveWeavingService.getGlobalMeta(agentId);
-            } catch (AgentNotConnectedException e) {
-                logger.debug(e.getMessage(), e);
-                globalMeta = null;
+            GlobalMeta globalMeta = null;
+            if (liveWeavingService != null) {
+                try {
+                    globalMeta = liveWeavingService.getGlobalMeta(agentId);
+                } catch (AgentNotConnectedException e) {
+                    logger.debug(e.getMessage(), e);
+                }
             }
             return mapper.writeValueAsString(ImmutableInstrumentationListResponse.builder()
                     .addAllConfigs(dtos)
@@ -104,6 +106,9 @@ class InstrumentationConfigJsonService {
     @GET(path = "/backend/config/preload-classpath-cache",
             permission = "agent:config:view:instrumentation")
     void preloadClasspathCache(final @BindAgentId String agentId) throws Exception {
+        if (liveWeavingService == null) {
+            return;
+        }
         // HttpServer is configured with a very small thread pool to keep number of threads down
         // (currently only a single thread), so spawn a background thread to perform the preloading
         // so it doesn't block other http requests
@@ -111,6 +116,8 @@ class InstrumentationConfigJsonService {
             @Override
             public void run() {
                 try {
+                    // TODO report checker framework issue that occurs without checkNotNull
+                    checkNotNull(liveWeavingService);
                     liveWeavingService.preloadClasspathCache(agentId);
                 } catch (AgentNotConnectedException e) {
                     logger.debug(e.getMessage(), e);
@@ -127,7 +134,7 @@ class InstrumentationConfigJsonService {
     @GET(path = "/backend/config/new-instrumentation-check-agent-connected",
             permission = "agent:config:edit:instrumentation")
     String checkAgentConnected(@BindAgentId String agentId) throws Exception {
-        checkNotNull(liveJvmService);
+        checkNotNull(liveJvmService); // agent:config:edit is disabled in offline viewer
         return Boolean.toString(liveJvmService.isAvailable(agentId));
     }
 
@@ -135,6 +142,7 @@ class InstrumentationConfigJsonService {
             permission = "agent:config:edit:instrumentation")
     String getMatchingClassNames(@BindAgentId String agentId,
             @BindRequest ClassNamesRequest request) throws Exception {
+        checkNotNull(liveWeavingService); // agent:config:edit is disabled in offline viewer
         return mapper.writeValueAsString(liveWeavingService.getMatchingClassNames(agentId,
                 request.partialClassName(), request.limit()));
     }
@@ -143,6 +151,7 @@ class InstrumentationConfigJsonService {
             permission = "agent:config:edit:instrumentation")
     String getMatchingMethodNames(@BindAgentId String agentId,
             @BindRequest MethodNamesRequest request) throws Exception {
+        checkNotNull(liveWeavingService); // agent:config:edit is disabled in offline viewer
         List<String> matchingMethodNames = liveWeavingService.getMatchingMethodNames(agentId,
                 request.className(), request.partialMethodName(), request.limit());
         return mapper.writeValueAsString(matchingMethodNames);
@@ -152,6 +161,7 @@ class InstrumentationConfigJsonService {
             permission = "agent:config:edit:instrumentation")
     String getMethodSignatures(@BindAgentId String agentId,
             @BindRequest MethodSignaturesRequest request) throws Exception {
+        checkNotNull(liveWeavingService); // agent:config:edit is disabled in offline viewer
         List<MethodSignature> signatures = liveWeavingService.getMethodSignatures(agentId,
                 request.className(), request.methodName());
         List<MethodSignatureDto> methodSignatures = Lists.newArrayList();
@@ -200,7 +210,7 @@ class InstrumentationConfigJsonService {
 
     @POST(path = "/backend/config/reweave", permission = "agent:config:edit:instrumentation")
     String reweave(@BindAgentId String agentId) throws Exception {
-        checkNotNull(liveWeavingService);
+        checkNotNull(liveWeavingService); // agent:config:edit is disabled in offline viewer
         int count = liveWeavingService.reweave(agentId);
         return "{\"classes\":" + count + "}";
     }
@@ -211,13 +221,14 @@ class InstrumentationConfigJsonService {
         if (config == null) {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }
-        List<MethodSignature> methodSignatures;
-        try {
-            methodSignatures = liveWeavingService.getMethodSignatures(agentId,
-                    config.getClassName(), config.getMethodName());
-        } catch (AgentNotConnectedException e) {
-            logger.debug(e.getMessage(), e);
-            methodSignatures = null;
+        List<MethodSignature> methodSignatures = null;
+        if (liveWeavingService != null) {
+            try {
+                methodSignatures = liveWeavingService.getMethodSignatures(agentId,
+                        config.getClassName(), config.getMethodName());
+            } catch (AgentNotConnectedException e) {
+                logger.debug(e.getMessage(), e);
+            }
         }
 
         ImmutableInstrumentationConfigResponse.Builder builder =

@@ -27,8 +27,8 @@ public interface GlowrootAgentInit {
 
     void init(File baseDir, @Nullable String collectorHost, @Nullable Collector customCollector,
             Map<String, String> properties, @Nullable Instrumentation instrumentation,
-            @Nullable File glowrootJarFile, String glowrootVersion, boolean viewerMode)
-                    throws Exception;
+            @Nullable File glowrootJarFile, String glowrootVersion, boolean offlineViewer)
+            throws Exception;
 
     AgentModule getAgentModule();
 

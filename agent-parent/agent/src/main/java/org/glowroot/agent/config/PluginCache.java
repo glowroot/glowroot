@@ -59,7 +59,7 @@ public abstract class PluginCache {
     public abstract ImmutableList<File> pluginJars();
     public abstract ImmutableList<PluginDescriptor> pluginDescriptors();
 
-    public static PluginCache create(@Nullable File glowrootJarFile, boolean viewerMode)
+    public static PluginCache create(@Nullable File glowrootJarFile, boolean offlineViewer)
             throws Exception {
         ImmutablePluginCache.Builder builder = ImmutablePluginCache.builder();
         List<URL> descriptorURLs = Lists.newArrayList();
@@ -76,8 +76,8 @@ public abstract class PluginCache {
         }
         // also add descriptors on the class path (this is primarily for integration tests)
         descriptorURLs.addAll(getResources("META-INF/glowroot.plugin.json"));
-        if (viewerMode) {
-            builder.addAllPluginDescriptors(createInViewerMode(descriptorURLs));
+        if (offlineViewer) {
+            builder.addAllPluginDescriptors(createForOfflineViewer(descriptorURLs));
         } else {
             builder.addAllPluginDescriptors(readPluginDescriptors(descriptorURLs));
         }
@@ -148,7 +148,7 @@ public abstract class PluginCache {
         return ImmutableList.copyOf(Iterators.forEnumeration(loader.getResources(resourceName)));
     }
 
-    private static List<PluginDescriptor> createInViewerMode(List<URL> descriptorURLs)
+    private static List<PluginDescriptor> createForOfflineViewer(List<URL> descriptorURLs)
             throws IOException, URISyntaxException {
         List<PluginDescriptor> pluginDescriptors = readPluginDescriptors(descriptorURLs);
         List<PluginDescriptor> pluginDescriptorsWithoutAdvice = Lists.newArrayList();
