@@ -15,6 +15,9 @@
 -->
 <div ng-include src="'template/gt-loading-overlay.html'"></div>
 <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+<div ng-if="data.agentNotConnected" class="alert alert-danger">
+  The agent is not currently connected. The values below were reported at last JVM start.
+</div>
 <fieldset style="padding-bottom: 22px;">
   <legend style="margin-bottom: 10px;">Host</legend>
   <div class="row gt-jvm-general-row">
@@ -80,7 +83,10 @@
     <div>
       <label class="col-md-3" style="text-align: right;">Uptime</label>
     </div>
-    <div class="col-md-9">
+    <div class="col-md-9" ng-if="data.agentNotConnected">
+      -
+    </div>
+    <div class="col-md-9" ng-if="!data.agentNotConnected">
       {{uptime | gtDuration}}
     </div>
   </div>

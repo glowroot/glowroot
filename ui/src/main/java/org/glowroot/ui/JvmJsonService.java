@@ -99,6 +99,9 @@ class JvmJsonService {
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
         jg.writeStartObject();
+        if (liveJvmService != null) {
+            jg.writeBooleanField("agentNotConnected", !liveJvmService.isAvailable(agentId));
+        }
         jg.writeObjectFieldStart("host");
         jg.writeStringField("hostName", hostInfo.getHostName());
         jg.writeNumberField("availableProcessors", hostInfo.getAvailableProcessors());
