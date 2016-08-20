@@ -40,16 +40,22 @@ public class DataDirLocking {
             throw new BaseDirLockedException(e);
         }
         final RandomAccessFile baseDirLockFile = new RandomAccessFile(lockFile, "rw");
-        final FileLock baseDirFileLock = baseDirLockFile.getChannel().tryLock();
+        FileLock baseDirFileLock = baseDirLockFile.getChannel().tryLock();
         if (baseDirFileLock == null) {
-            throw new BaseDirLockedException();
+            // try again in case there is O/S lag on releasing prior lock on JVM restart
+            Thread.sleep(1000);
+            baseDirFileLock = baseDirLockFile.getChannel().tryLock();
+            if (baseDirFileLock == null) {
+                throw new BaseDirLockedException();
+            }
         }
         lockFile.deleteOnExit();
+        final FileLock baseDirFileLockFinal = baseDirFileLock;
         return new Closeable() {
             @Override
             public void close() throws IOException {
-                checkNotNull(baseDirFileLock);
-                baseDirFileLock.release();
+                checkNotNull(baseDirFileLockFinal);
+                baseDirFileLockFinal.release();
                 baseDirLockFile.close();
             }
         };
