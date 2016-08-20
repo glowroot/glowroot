@@ -18,7 +18,6 @@ package org.glowroot.agent.init;
 import java.io.File;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
-import java.net.Socket;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
@@ -150,7 +149,6 @@ public class AgentModule {
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);
                 jvmRetransformClassesSupported = true;
-                instrumentation.retransformClasses(Socket.class);
             } else {
                 instrumentation.addTransformer(transformer);
                 jvmRetransformClassesSupported = false;
