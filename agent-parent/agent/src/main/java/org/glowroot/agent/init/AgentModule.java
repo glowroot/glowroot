@@ -18,8 +18,10 @@ package org.glowroot.agent.init;
 import java.io.File;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
+import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.jar.JarFile;
 
@@ -153,13 +155,7 @@ public class AgentModule {
                 instrumentation.addTransformer(transformer);
                 jvmRetransformClassesSupported = false;
             }
-            if (logger.isDebugEnabled()) {
-                for (Class<?> clazz : instrumentation.getAllLoadedClasses()) {
-                    if (Runnable.class.isAssignableFrom(clazz)) {
-                        logger.debug(clazz.getName());
-                    }
-                }
-            }
+            logRunnableCallableClassWarningIfNeeded(instrumentation);
         }
 
         // now that instrumentation is set up, it is safe to create scheduled executor
@@ -259,6 +255,42 @@ public class AgentModule {
 
     public LiveJvmService getLiveJvmService() {
         return liveJvmService;
+    }
+
+    private static void logRunnableCallableClassWarningIfNeeded(Instrumentation instrumentation) {
+        List<String> runnableCallableClasses = Lists.newArrayList();
+        for (Class<?> clazz : instrumentation.getAllLoadedClasses()) {
+            if (clazz.isInterface()) {
+                continue;
+            }
+            if (!clazz.getName().startsWith("java.util.concurrent.")) {
+                continue;
+            }
+            if (Runnable.class.isAssignableFrom(clazz) || Callable.class.isAssignableFrom(clazz)) {
+                runnableCallableClasses.add(clazz.getName());
+            }
+        }
+        if (runnableCallableClasses.isEmpty()) {
+            return;
+        }
+        String firstJavaagentArg = null;
+        for (String jvmArg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+            if (jvmArg.startsWith("-javaagent:")) {
+                firstJavaagentArg = jvmArg;
+                break;
+            }
+        }
+        String extraExplanation = "";
+        if (firstJavaagentArg != null && !firstJavaagentArg.endsWith("glowroot.jar")) {
+            extraExplanation = "This likely occurred because there is another javaagent listed in"
+                    + " the JVM args prior to the Glowroot javaagent which gives the other"
+                    + " javaagent higher loading precedence. ";
+        }
+        logger.warn("one or more java.lang.Runnable or java.util.concurrent.Callable"
+                + " implementations were loaded before Glowroot instrumentation could be applied to"
+                + " them: {}. {}This may prevent Glowroot from capturing async requests that span"
+                + " multiple threads.", Joiner.on(", ").join(runnableCallableClasses),
+                extraExplanation);
     }
 
     // now init plugins to give them a chance to do something in their static initializer
