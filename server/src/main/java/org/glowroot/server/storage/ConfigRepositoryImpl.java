@@ -261,7 +261,9 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public WebConfig getWebConfig() {
         WebConfig config = serverConfigDao.read(WEB_KEY, ImmutableWebConfig.class);
         if (config == null) {
-            return ImmutableWebConfig.builder().build();
+            return ImmutableWebConfig.builder()
+                    .bindAddress("0.0.0.0")
+                    .build();
         }
         return config;
     }
