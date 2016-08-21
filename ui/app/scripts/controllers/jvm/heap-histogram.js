@@ -183,6 +183,11 @@ glowroot.controller('JvmHeapHistogramCtrl', [
       $(csvWindow.document.body).html('<pre style="white-space: pre-wrap;">' + csv + '</pre>');
     };
 
+    $scope.smallScreen = function () {
+      // using innerWidth so it will match to screen media queries
+      return window.innerWidth < 768;
+    };
+
     $scope.filterComparatorOptions = [
       {
         display: 'Contains',

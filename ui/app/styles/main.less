@@ -413,6 +413,20 @@ hr.soften {
   text-align: right;
 }
 
+.gt-heap-histogram-other-column {
+  width: 80px;
+  text-align: right;
+}
+
+.gt-flame-graph-link {
+  margin-top: -10px;
+  margin-bottom: 10px;
+}
+
+.gt-jstack-normal-link {
+  display: none;
+}
+
 .caret.gt-caret-sort-ascending {
   border-top-width: 0;
   border-bottom: 4px solid;
@@ -461,6 +475,10 @@ hr.soften {
   .gt-query-other-column {
     width: 90px;
   }
+
+  .gt-heap-histogram-other-column {
+    width: 120px;
+  }
 }
 
 .gt-everything-below-throughput-chart {
@@ -470,6 +488,12 @@ hr.soften {
 @media screen and (min-width: @screen-sm) {
   .gt-gauge-chart-tools {
     margin-top: -20px;
+  }
+  .gt-jstack-small-screen-link {
+    display: none;
+  }
+  .gt-jstack-normal-link {
+    display: inline;
   }
 }
 
@@ -498,5 +522,9 @@ hr.soften {
   }
   .gt-everything-below-gauge-chart {
     padding: 0 20px;
+  }
+  .gt-flame-graph-link {
+    margin-top: 0;
+    margin-bottom: 0;
   }
 }
