@@ -56,7 +56,8 @@
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="page.permissions.transaction._">Transactions
+                     ng-model="page.permissions.transaction._"
+                     ng-disabled="!layout.adminEdit">Transactions
             </label>
           </div>
           <div class="checkbox"
@@ -65,7 +66,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.transaction.overview"
-                     ng-disabled="page.permissions.transaction._"
+                     ng-disabled="page.permissions.transaction._ || !layout.adminEdit"
                      ng-required="transactionOverviewRequired(page.permissions)">Overview
               <span ng-if="transactionOverviewRequired(page.permissions) && !page.permissions.transaction.overview"
                     style="font-style: italic;">
@@ -78,7 +79,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.transaction.traces"
-                     ng-disabled="page.permissions.transaction._">Traces
+                     ng-disabled="page.permissions.transaction._ || !layout.adminEdit">Traces
             </label>
           </div>
           <div class="checkbox">
@@ -86,7 +87,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.transaction.queries"
-                     ng-disabled="page.permissions.transaction._">Queries
+                     ng-disabled="page.permissions.transaction._ || !layout.adminEdit">Queries
             </label>
           </div>
           <div class="checkbox">
@@ -94,7 +95,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.transaction.serviceCalls"
-                     ng-disabled="page.permissions.transaction._">Service calls
+                     ng-disabled="page.permissions.transaction._ || !layout.adminEdit">Service calls
             </label>
           </div>
           <div class="checkbox">
@@ -102,13 +103,14 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.transaction.profile"
-                     ng-disabled="page.permissions.transaction._">Profile
+                     ng-disabled="page.permissions.transaction._ || !layout.adminEdit">Profile
             </label>
           </div>
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="page.permissions.error._">Errors
+                     ng-model="page.permissions.error._"
+                     ng-disabled="!layout.adminEdit">Errors
             </label>
           </div>
           <div class="checkbox"
@@ -117,7 +119,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.error.overview"
-                     ng-disabled="page.permissions.error._"
+                     ng-disabled="page.permissions.error._ || !layout.adminEdit"
                      ng-required="page.permissions.error.traces">Overview
               <span ng-if="page.permissions.error.traces && !page.permissions.error.overview"
                     style="font-style: italic;">
@@ -130,13 +132,14 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.error.traces"
-                     ng-disabled="page.permissions.error._">Traces
+                     ng-disabled="page.permissions.error._ || !layout.adminEdit">Traces
             </label>
           </div>
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="page.permissions.jvm._">JVM
+                     ng-model="page.permissions.jvm._"
+                     ng-disabled="!layout.adminEdit">JVM
             </label>
           </div>
           <div class="checkbox">
@@ -144,7 +147,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.jvm.gauges"
-                     ng-disabled="page.permissions.jvm._">Gauges
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">Gauges
             </label>
           </div>
           <div class="checkbox">
@@ -152,7 +155,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.jvm.threadDump"
-                     ng-disabled="page.permissions.jvm._">Thread dump
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">Thread dump
             </label>
           </div>
           <div class="checkbox">
@@ -160,7 +163,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.jvm.heapDump"
-                     ng-disabled="page.permissions.jvm._">Heap dump
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">Heap dump
             </label>
           </div>
           <div class="checkbox">
@@ -168,7 +171,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.jvm.heapHistogram"
-                     ng-disabled="page.permissions.jvm._">Heap histogram
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">Heap histogram
             </label>
           </div>
           <div class="checkbox">
@@ -176,7 +179,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.jvm.mbeanTree"
-                     ng-disabled="page.permissions.jvm._">MBean tree
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">MBean tree
             </label>
           </div>
           <div class="checkbox">
@@ -184,7 +187,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.jvm.systemProperties"
-                     ng-disabled="page.permissions.jvm._">System properties
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">System properties
             </label>
           </div>
           <div class="checkbox">
@@ -192,13 +195,14 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.jvm.environment"
-                     ng-disabled="page.permissions.jvm._">Environment
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">Environment
             </label>
           </div>
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="page.permissions.config._">Configuration
+                     ng-model="page.permissions.config._"
+                     ng-disabled="!layout.adminEdit">Configuration
             </label>
           </div>
           <div class="checkbox"
@@ -207,7 +211,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.view"
-                     ng-disabled="page.permissions.config._"
+                     ng-disabled="page.permissions.config._ || !layout.adminEdit"
                      ng-required="viewConfigRequired(page.permissions)">
               View (Transactions, Gauges, Alerts, UI, Plugins, Instrumentation, Advanced)
               <span ng-if="!page.permissions.config.view && viewConfigRequired(page.permissions)"
@@ -221,7 +225,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit._"
-                     ng-disabled="page.permissions.config._">Edit
+                     ng-disabled="page.permissions.config._ || !layout.adminEdit">Edit
             </label>
           </div>
           <div class="checkbox">
@@ -229,7 +233,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.transaction"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Transactions
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Transactions
             </label>
           </div>
           <div class="checkbox">
@@ -237,7 +241,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.gauge"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Gauges
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Gauges
             </label>
           </div>
           <div class="checkbox">
@@ -245,7 +249,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.alert"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Alerts
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Alerts
             </label>
           </div>
           <div class="checkbox">
@@ -253,7 +257,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.ui"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">UI
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">UI
             </label>
           </div>
           <div class="checkbox">
@@ -261,7 +265,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.plugin"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Plugins
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Plugins
             </label>
           </div>
           <div class="checkbox">
@@ -269,7 +273,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.instrumentation"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Instrumentation
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Instrumentation
             </label>
           </div>
           <div class="checkbox">
@@ -277,13 +281,14 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.advanced"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Advanced
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Advanced
             </label>
           </div>
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="page.permissions.admin._">Administration (Users, Roles, Web, Storage, SMTP, LDAP)
+                     ng-model="page.permissions.admin._"
+                     ng-disabled="!layout.adminEdit">Administration (Users, Roles, Web, Storage, SMTP, LDAP)
             </label>
           </div>
           <div class="checkbox"
@@ -292,7 +297,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.admin.view"
-                     ng-disabled="page.permissions.admin._"
+                     ng-disabled="page.permissions.admin._ || !layout.adminEdit"
                      ng-required="page.permissions.admin.edit">View
               <span ng-if="!page.permissions.admin.view && page.permissions.admin.edit"
                     style="font-style: italic;">
@@ -305,7 +310,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.admin.edit"
-                     ng-disabled="page.permissions.admin._">Edit
+                     ng-disabled="page.permissions.admin._ || !layout.adminEdit">Edit
             </label>
           </div>
         </div>
@@ -329,7 +334,8 @@
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="page.permissions.transaction._">Transactions
+                     ng-model="page.permissions.transaction._"
+                     ng-disabled="!layout.adminEdit">Transactions
             </label>
           </div>
           <div class="checkbox"
@@ -338,7 +344,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.transaction.overview"
-                     ng-disabled="page.permissions.transaction._"
+                     ng-disabled="page.permissions.transaction._ || !layout.adminEdit"
                      ng-required="transactionOverviewRequired(page.permissions)">Overview
               <span ng-if="transactionOverviewRequired(page.permissions) && !page.permissions.transaction.overview"
                     style="font-style: italic;">
@@ -351,7 +357,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.transaction.traces"
-                     ng-disabled="page.permissions.transaction._">Traces
+                     ng-disabled="page.permissions.transaction._ || !layout.adminEdit">Traces
             </label>
           </div>
           <div class="checkbox">
@@ -359,7 +365,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.transaction.queries"
-                     ng-disabled="page.permissions.transaction._">Queries
+                     ng-disabled="page.permissions.transaction._ || !layout.adminEdit">Queries
             </label>
           </div>
           <div class="checkbox">
@@ -367,7 +373,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.transaction.serviceCalls"
-                     ng-disabled="page.permissions.transaction._">Service calls
+                     ng-disabled="page.permissions.transaction._ || !layout.adminEdit">Service calls
             </label>
           </div>
           <div class="checkbox">
@@ -375,13 +381,14 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.transaction.profile"
-                     ng-disabled="page.permissions.transaction._">Profile
+                     ng-disabled="page.permissions.transaction._ || !layout.adminEdit">Profile
             </label>
           </div>
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="page.permissions.error._">Errors
+                     ng-model="page.permissions.error._"
+                     ng-disabled="!layout.adminEdit">Errors
             </label>
           </div>
           <div class="checkbox"
@@ -390,7 +397,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.error.overview"
-                     ng-disabled="page.permissions.error._"
+                     ng-disabled="page.permissions.error._ || !layout.adminEdit"
                      ng-required="page.permissions.error.traces">Overview
               <span ng-if="page.permissions.error.traces && !page.permissions.error.overview"
                     style="font-style: italic;">
@@ -403,13 +410,14 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.error.traces"
-                     ng-disabled="page.permissions.error._">Traces
+                     ng-disabled="page.permissions.error._ || !layout.adminEdit">Traces
             </label>
           </div>
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="page.permissions.jvm._">JVM
+                     ng-model="page.permissions.jvm._"
+                     ng-disabled="!layout.adminEdit">JVM
             </label>
           </div>
           <div class="checkbox">
@@ -417,7 +425,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.jvm.gauges"
-                     ng-disabled="page.permissions.jvm._">Gauges
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">Gauges
             </label>
           </div>
           <div class="checkbox">
@@ -425,7 +433,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.jvm.threadDump"
-                     ng-disabled="page.permissions.jvm._">Thread dump
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">Thread dump
             </label>
           </div>
           <div class="checkbox">
@@ -433,7 +441,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.jvm.heapDump"
-                     ng-disabled="page.permissions.jvm._">Heap dump
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">Heap dump
             </label>
           </div>
           <div class="checkbox">
@@ -441,7 +449,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.jvm.heapHistogram"
-                     ng-disabled="page.permissions.jvm._">Heap histogram
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">Heap histogram
             </label>
           </div>
           <div class="checkbox">
@@ -449,7 +457,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.jvm.mbeanTree"
-                     ng-disabled="page.permissions.jvm._">MBean tree
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">MBean tree
             </label>
           </div>
           <div class="checkbox">
@@ -457,7 +465,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.jvm.systemProperties"
-                     ng-disabled="page.permissions.jvm._">System properties
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">System properties
             </label>
           </div>
           <div class="checkbox">
@@ -465,13 +473,14 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.jvm.environment"
-                     ng-disabled="page.permissions.jvm._">Environment
+                     ng-disabled="page.permissions.jvm._ || !layout.adminEdit">Environment
             </label>
           </div>
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="page.permissions.config._">Configuration
+                     ng-model="page.permissions.config._"
+                     ng-disabled="!layout.adminEdit">Configuration
             </label>
           </div>
           <div class="checkbox"
@@ -480,7 +489,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.view"
-                     ng-disabled="page.permissions.config._"
+                     ng-disabled="page.permissions.config._ || !layout.adminEdit"
                      ng-required="viewConfigRequired(page.permissions)">
               View (Transactions, Gauges, Alerts, UI, Plugins, Instrumentation, Advanced)
               <span ng-if="!page.permissions.config.view && viewConfigRequired(page.permissions)"
@@ -494,7 +503,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit._"
-                     ng-disabled="page.permissions.config._">Edit
+                     ng-disabled="page.permissions.config._ || !layout.adminEdit">Edit
             </label>
           </div>
           <div class="checkbox">
@@ -502,7 +511,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.transaction"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Transactions
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Transactions
             </label>
           </div>
           <div class="checkbox">
@@ -510,7 +519,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.gauge"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Gauges
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Gauges
             </label>
           </div>
           <div class="checkbox">
@@ -518,7 +527,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.alert"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Alerts
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Alerts
             </label>
           </div>
           <div class="checkbox">
@@ -526,7 +535,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.ui"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">UI
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">UI
             </label>
           </div>
           <div class="checkbox">
@@ -534,7 +543,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.plugin"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Plugins
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Plugins
             </label>
           </div>
           <div class="checkbox">
@@ -542,7 +551,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.instrumentation"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Instrumentation
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Instrumentation
             </label>
           </div>
           <div class="checkbox">
@@ -550,7 +559,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="page.permissions.config.edit.advanced"
-                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._">Advanced
+                     ng-disabled="page.permissions.config._ || page.permissions.config.edit._ || !layout.adminEdit">Advanced
             </label>
           </div>
         </div>
@@ -562,7 +571,8 @@
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="page.permissions.admin._">Administration (Users, Roles, Web, Storage, SMTP, LDAP)
+                     ng-model="page.permissions.admin._"
+                     ng-disabled="!layout.adminEdit">Administration (Users, Roles, Web, Storage, SMTP, LDAP)
             </label>
           </div>
           <div class="checkbox"
@@ -571,7 +581,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.admin.view"
-                     ng-disabled="page.permissions.admin._"
+                     ng-disabled="page.permissions.admin._ || !layout.adminEdit"
                      ng-required="page.permissions.admin.edit">View
               <span ng-if="!page.permissions.admin.view && page.permissions.admin.edit"
                     style="font-style: italic;">
@@ -584,7 +594,7 @@
             <label style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="page.permissions.admin.edit"
-                     ng-disabled="page.permissions.admin._">Edit
+                     ng-disabled="page.permissions.admin._ || !layout.adminEdit">Edit
             </label>
           </div>
         </div>
@@ -602,6 +612,7 @@
                       ng-model="permissionBlock.agentIds"
                       ng-options="agentId as agentId for agentId in allAgentIds"
                       ng-required="true"
+                      ng-disabled="!layout.adminEdit"
                       style="width: auto; min-width: 200px; border-top-right-radius: 0; border-bottom-right-radius: 0;">
               </select>
             </div>
@@ -609,7 +620,8 @@
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="permissionBlock.transaction._">Transactions
+                     ng-model="permissionBlock.transaction._"
+                     ng-disabled="!layout.adminEdit">Transactions
             </label>
           </div>
           <div class="checkbox"
@@ -618,7 +630,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.transaction.overview"
-                     ng-disabled="permissionBlock.transaction._"
+                     ng-disabled="permissionBlock.transaction._ || !layout.adminEdit"
                      ng-required="transactionOverviewRequired(permissionBlock)">Overview
               <span ng-if="transactionOverviewRequired(permissionBlock) && !permissionBlock.transaction.overview"
                     style="font-style: italic;">
@@ -631,7 +643,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.transaction.traces"
-                     ng-disabled="permissionBlock.transaction._">Traces
+                     ng-disabled="permissionBlock.transaction._ || !layout.adminEdit">Traces
             </label>
           </div>
           <div class="checkbox">
@@ -639,7 +651,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.transaction.queries"
-                     ng-disabled="permissionBlock.transaction._">Queries
+                     ng-disabled="permissionBlock.transaction._ || !layout.adminEdit">Queries
             </label>
           </div>
           <div class="checkbox">
@@ -647,7 +659,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.transaction.serviceCalls"
-                     ng-disabled="permissionBlock.transaction._">Service calls
+                     ng-disabled="permissionBlock.transaction._ || !layout.adminEdit">Service calls
             </label>
           </div>
           <div class="checkbox">
@@ -655,13 +667,14 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.transaction.profile"
-                     ng-disabled="permissionBlock.transaction._">Profile
+                     ng-disabled="permissionBlock.transaction._ || !layout.adminEdit">Profile
             </label>
           </div>
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="permissionBlock.error._">Errors
+                     ng-model="permissionBlock.error._"
+                     ng-disabled="!layout.adminEdit">Errors
             </label>
           </div>
           <div class="checkbox"
@@ -670,7 +683,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.error.overview"
-                     ng-disabled="permissionBlock.error._"
+                     ng-disabled="permissionBlock.error._ || !layout.adminEdit"
                      ng-required="permissionBlock.error.traces">Overview
               <span ng-if="permissionBlock.error.traces && !permissionBlock.error.overview"
                     style="font-style: italic;">
@@ -683,13 +696,14 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.error.traces"
-                     ng-disabled="permissionBlock.error._">Traces
+                     ng-disabled="permissionBlock.error._ || !layout.adminEdit">Traces
             </label>
           </div>
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="permissionBlock.jvm._">JVM
+                     ng-model="permissionBlock.jvm._"
+                     ng-disabled="!layout.adminEdit">JVM
             </label>
           </div>
           <div class="checkbox">
@@ -697,7 +711,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.jvm.gauges"
-                     ng-disabled="permissionBlock.jvm._">Gauges
+                     ng-disabled="permissionBlock.jvm._ || !layout.adminEdit">Gauges
             </label>
           </div>
           <div class="checkbox">
@@ -705,7 +719,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.jvm.threadDump"
-                     ng-disabled="permissionBlock.jvm._">Thread dump
+                     ng-disabled="permissionBlock.jvm._ || !layout.adminEdit">Thread dump
             </label>
           </div>
           <div class="checkbox">
@@ -713,7 +727,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.jvm.heapDump"
-                     ng-disabled="permissionBlock.jvm._">Heap dump
+                     ng-disabled="permissionBlock.jvm._ || !layout.adminEdit">Heap dump
             </label>
           </div>
           <div class="checkbox">
@@ -721,7 +735,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.jvm.heapHistogram"
-                     ng-disabled="permissionBlock.jvm._">Heap histogram
+                     ng-disabled="permissionBlock.jvm._ || !layout.adminEdit">Heap histogram
             </label>
           </div>
           <div class="checkbox">
@@ -729,7 +743,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.jvm.mbeanTree"
-                     ng-disabled="permissionBlock.jvm._">MBean tree
+                     ng-disabled="permissionBlock.jvm._ || !layout.adminEdit">MBean tree
             </label>
           </div>
           <div class="checkbox">
@@ -737,7 +751,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.jvm.systemProperties"
-                     ng-disabled="permissionBlock.jvm._">System properties
+                     ng-disabled="permissionBlock.jvm._ || !layout.adminEdit">System properties
             </label>
           </div>
           <div class="checkbox">
@@ -745,13 +759,14 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.jvm.environment"
-                     ng-disabled="permissionBlock.jvm._">Environment
+                     ng-disabled="permissionBlock.jvm._ || !layout.adminEdit">Environment
             </label>
           </div>
           <div class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="permissionBlock.config._">Configuration
+                     ng-model="permissionBlock.config._"
+                     ng-disabled="!layout.adminEdit">Configuration
             </label>
           </div>
           <div class="checkbox"
@@ -760,7 +775,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.view"
-                     ng-disabled="permissionBlock.config._"
+                     ng-disabled="permissionBlock.config._ || !layout.adminEdit"
                      ng-required="viewConfigRequired(permissionBlock)">
               View (Transactions, Gauges, Alerts, UI, Plugins, Instrumentation, Advanced)
               <span ng-if="!permissionBlock.config.view && viewConfigRequired(permissionBlock)"
@@ -774,7 +789,7 @@
                    style="margin-left: 30px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit._"
-                     ng-disabled="permissionBlock.config._">Edit
+                     ng-disabled="permissionBlock.config._ || !layout.adminEdit">Edit
             </label>
           </div>
           <div class="checkbox">
@@ -782,7 +797,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.transaction"
-                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._">Transactions
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Transactions
             </label>
           </div>
           <div class="checkbox">
@@ -790,7 +805,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.gauge"
-                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._">Gauges
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Gauges
             </label>
           </div>
           <div class="checkbox">
@@ -798,7 +813,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.alert"
-                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._">Alerts
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Alerts
             </label>
           </div>
           <div class="checkbox">
@@ -806,7 +821,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.ui"
-                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._">UI
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">UI
             </label>
           </div>
           <div class="checkbox">
@@ -814,7 +829,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.plugin"
-                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._">Plugins
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Plugins
             </label>
           </div>
           <div class="checkbox">
@@ -822,7 +837,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.instrumentation"
-                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._">Instrumentation
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Instrumentation
             </label>
           </div>
           <div class="checkbox gt-role-permission-block-last-checkbox">
@@ -830,7 +845,7 @@
                    style="margin-left: 60px;">
               <input type="checkbox"
                      ng-model="permissionBlock.config.edit.advanced"
-                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._">Advanced
+                     ng-disabled="permissionBlock.config._ || permissionBlock.config.edit._ || !layout.adminEdit">Advanced
             </label>
           </div>
           <button class="gt-role-permission-block-remove btn btn-default"

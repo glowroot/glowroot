@@ -30,6 +30,7 @@
       <div gt-form-group
            gt-label="Host"
            gt-model="config.host"
+           gt-disabled="!layout.adminEdit"
            gt-width="20em">
         <div class="help-block">
           This is required in order to send alerts.
@@ -40,6 +41,7 @@
            gt-model="config.port"
            gt-number="true"
            gt-pattern="pattern.integer"
+           gt-disabled="!layout.adminEdit"
            gt-width="7em">
         <div class="help-block">
           Defaults to port 25.
@@ -49,11 +51,13 @@
            gt-type="checkbox"
            gt-label="Use SSL"
            gt-model="config.ssl"
+           gt-disabled="!layout.adminEdit"
            class="gt-form-group-without-help-block">
       </div>
       <div gt-form-group
            gt-label="Username"
            gt-model="config.username"
+           gt-disabled="!layout.adminEdit"
            gt-width="20em"
            class="gt-form-group-without-help-block">
       </div>
@@ -67,6 +71,7 @@
           <input type="password"
                  class="form-control"
                  ng-model="password"
+                 ng-disabled="!layout.adminEdit"
                  name="password"
                  id="password"
                  ng-change="onPasswordChange()"
@@ -77,6 +82,7 @@
       <div gt-form-group
            gt-label="From email address"
            gt-model="config.fromEmailAddress"
+           gt-disabled="!layout.adminEdit"
            gt-width="20em">
         <div class="help-block">
           Defaults to <em>glowroot@&lt;server name&gt;</em> (currently glowroot@{{localServerName}}).
@@ -85,6 +91,7 @@
       <div gt-form-group
            gt-label="From display name"
            gt-model="config.fromDisplayName"
+           gt-disabled="!layout.adminEdit"
            gt-width="20em">
         <div class="help-block">
           Defaults to <em>Glowroot</em>.

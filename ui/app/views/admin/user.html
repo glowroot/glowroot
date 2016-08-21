@@ -41,6 +41,7 @@
       <div gt-form-group
            gt-label="Username"
            gt-model="config.username"
+           gt-disabled="!layout.adminEdit"
            gt-width="40em"
            gt-required="loaded"
            gt-disabled="username"
@@ -50,6 +51,7 @@
            gt-type="checkbox"
            gt-label="Use LDAP for password"
            gt-model="config.ldap"
+           gt-disabled="!layout.adminEdit"
            class="gt-form-group-without-help-block"
            style="padding-top: 7px;"
            ng-if="ldapAvailable && config.username.toLowerCase() !== 'anonymous'">
@@ -58,6 +60,7 @@
            gt-label="Password"
            gt-type="password"
            gt-model="page.password"
+           gt-disabled="!layout.adminEdit"
            gt-width="20em"
            gt-required="loaded && (!username || originalConfig.ldap && !config.ldap)"
            class="gt-form-group-without-help-block"
@@ -67,6 +70,7 @@
            gt-label="Verify password"
            gt-type="password"
            gt-model="page.verifyPassword"
+           gt-disabled="!layout.adminEdit"
            gt-width="20em"
            gt-required="loaded && (!username || originalConfig.ldap && !config.ldap)"
            class="gt-form-group-without-help-block"
@@ -86,7 +90,8 @@
                class="checkbox">
             <label>
               <input type="checkbox"
-                     ng-model="role.checked">
+                     ng-model="role.checked"
+                     ng-disabled="!layout.adminEdit">
               <span ng-if="role.available">
                 <a href="admin/role?name={{role.name}}">{{role.name}}</a>
               </span>
