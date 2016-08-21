@@ -71,9 +71,29 @@ glowroot.config([
       } else if (window.layout.showNavbarError) {
         return 'error/messages';
       } else if (window.layout.showNavbarJvm) {
-        // TODO this will not work if user has access to other JVM pages, but not gauges
-        // (deal with this when revisiting entire 'otherwise', see comment above)
-        return 'jvm/gauges';
+        if (window.layout.fat) {
+          var jvmPermissions = window.layout.agentRollups[''].permissions.jvm;
+          if (jvmPermissions.gauges) {
+            return 'jvm/gauges';
+          } else if (jvmPermissions.threadDump) {
+            return 'jvm/thread-dump';
+          } else if (jvmPermissions.heapDump) {
+            return 'jvm/heap-dump';
+          } else if (jvmPermissions.heapHistogram) {
+            return 'jvm/heap-histogram';
+          } else if (jvmPermissions.mbeanTree) {
+            return 'jvm/mbean-tree';
+          } else if (jvmPermissions.systemProperties) {
+            return 'jvm/system-properties';
+          } else {
+            // only remaining option when showNavbarJvm is true
+            return 'jvm/environment';
+          }
+        } else {
+          // TODO this will not work if user has access to other JVM pages, but not gauges
+          // (deal with this when revisiting entire 'otherwise', see comment above)
+          return 'jvm/gauges';
+        }
       } else if (window.layout.showNavbarConfig) {
         return 'config/transaction';
       } else {
