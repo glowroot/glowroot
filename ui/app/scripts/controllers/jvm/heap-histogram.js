@@ -171,7 +171,7 @@ glowroot.controller('JvmHeapHistogramCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $scope.exportAsCsv = function (deferred) {
+    $scope.exportAsCsv = function () {
       var csv = '<strong>Class name,Bytes,Count</strong><br>';
       angular.forEach($scope.histogram.items, function (item) {
         if (matchesFilter(item.className)) {
@@ -181,7 +181,6 @@ glowroot.controller('JvmHeapHistogramCtrl', [
       });
       var csvWindow = window.open();
       $(csvWindow.document.body).html('<pre style="white-space: pre-wrap;">' + csv + '</pre>');
-      deferred.resolve();
     };
 
     $scope.filterComparatorOptions = [
