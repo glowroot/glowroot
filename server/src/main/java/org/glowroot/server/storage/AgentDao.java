@@ -249,9 +249,9 @@ public class AgentDao implements AgentRepository {
             return;
         }
         session.execute("alter table agent add environment blob");
+        PreparedStatement preparedStatement =
+                session.prepare("insert into agent (agent_id, environment) values (?, ?)");
         for (Row row : results) {
-            PreparedStatement preparedStatement =
-                    session.prepare("insert into agent (agent_id, environment) values (?, ?)");
             BoundStatement boundStatement = preparedStatement.bind();
             boundStatement.setString(0, row.getString(0));
             boundStatement.setBytes(1, row.getBytes(1));
