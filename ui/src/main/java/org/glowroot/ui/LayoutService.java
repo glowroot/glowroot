@@ -239,6 +239,8 @@ class LayoutService {
                                 "agent:jvm:systemProperties"))
                         .environment(authentication.isAgentPermitted(agentRollup,
                                 "agent:jvm:environment"))
+                        .capabilities(authentication.isAgentPermitted(agentRollup,
+                                "agent:jvm:capabilities"))
                         .build())
                 .config(ImmutableConfigPermissions.builder()
                         .view(authentication.isAgentPermitted(agentRollup, "agent:config:view"))
@@ -351,8 +353,10 @@ class LayoutService {
         abstract boolean mbeanTree();
         abstract boolean systemProperties();
         abstract boolean environment();
+        abstract boolean capabilities();
 
         boolean hasSomeAccess() {
+            // capabilities is not in sidebar, so not included here
             return gauges() || threadDump() || heapDump() || heapHistogram() || gc() || mbeanTree()
                     || systemProperties() || environment();
         }

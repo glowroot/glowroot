@@ -62,7 +62,7 @@
              gt-disabled="!agentPermissions.config.edit.transaction">
           <div class="help-block">
             Capture CPU time, blocked time, waited time and allocated memory if available.
-            See <a href="jvm/capabilities">JVM Capabilities</a>.
+            <span ng-if="agentPermissions.jvm.capabilities">See <a href="jvm/capabilities">JVM Capabilities</a>.</span>
             Capturing this data has some overhead (around 5 microseconds per transaction).
           </div>
         </div>
