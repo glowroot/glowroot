@@ -321,7 +321,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            notifyConfigListeners(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId);
         }
     }
 
@@ -338,7 +338,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            notifyConfigListeners(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId);
         }
     }
 
@@ -374,7 +374,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            notifyConfigListeners(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId);
         }
     }
 
@@ -405,7 +405,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            notifyConfigListeners(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId);
         }
     }
 
@@ -422,7 +422,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            notifyConfigListeners(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId);
         }
     }
 
@@ -454,7 +454,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            notifyConfigListeners(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId);
         }
     }
 
@@ -485,7 +485,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            notifyConfigListeners(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId);
         }
     }
 
@@ -506,7 +506,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            notifyConfigListeners(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId);
         }
     }
 
@@ -543,7 +543,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            notifyConfigListeners(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId);
         }
     }
 
@@ -562,7 +562,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            notifyConfigListeners(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId);
         }
     }
 
@@ -594,7 +594,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            notifyConfigListeners(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId);
         }
     }
 
@@ -627,7 +627,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            notifyConfigListeners(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId);
         }
     }
 
@@ -652,7 +652,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            notifyConfigListeners(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId);
         }
     }
 
@@ -673,7 +673,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            notifyConfigListeners(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId);
         }
     }
 
@@ -694,7 +694,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
             // updating the agent is inside above synchronized block to ensure ordering of updates
-            notifyConfigListeners(agentId, updatedAgentConfig);
+            notifyConfigListeners(agentId);
         }
     }
 
@@ -853,9 +853,9 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     // config updates being sent out of order, instead listeners must call get*Config() which will
     // never return the updates out of order (at worst it may return the most recent update twice
     // which is ok)
-    private void notifyConfigListeners(String agentId, AgentConfig agentConfig) throws Exception {
+    private void notifyConfigListeners(String agentId) throws Exception {
         for (ConfigListener configListener : configListeners) {
-            configListener.onChange(agentId, agentConfig);
+            configListener.onChange(agentId);
         }
     }
 
@@ -955,6 +955,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         // the new config is not passed to onChange so that the receiver has to get the latest,
         // this avoids race condition worries that two updates may get sent to the receiver in the
         // wrong order
-        void onChange(String agentId, AgentConfig agentConfig) throws Exception;
+        void onChange(String agentId) throws Exception;
     }
 }

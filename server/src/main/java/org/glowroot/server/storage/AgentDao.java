@@ -18,6 +18,7 @@ package org.glowroot.server.storage;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.annotation.Nullable;
 
@@ -27,6 +28,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -36,6 +38,9 @@ import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.storage.repo.AgentRepository;
 import org.glowroot.storage.repo.ConfigRepository;
@@ -51,6 +56,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 // (at least in the UI) that "A/B" is only a rollup
 public class AgentDao implements AgentRepository {
 
+    private static final Logger logger = LoggerFactory.getLogger(AgentDao.class);
+
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
@@ -60,6 +67,8 @@ public class AgentDao implements AgentRepository {
     private final PreparedStatement insertConfigOnlyPS;
     private final PreparedStatement readEnvironmentPS;
     private final PreparedStatement readAgentConfigPS;
+    private final PreparedStatement readAgentConfigUpdatePS;
+    private final PreparedStatement markAgentConfigUpdatedPS;
 
     private final PreparedStatement existsRollupPS;
     private final PreparedStatement insertRollupPS;
@@ -78,18 +87,28 @@ public class AgentDao implements AgentRepository {
     public AgentDao(Session session) {
         this.session = session;
 
-        upgradeIfNeeded(session);
+        renameSystemInfoColumnIfNeeded(session);
+        addConfigUpdateColumnsIfNeeded(session);
 
         session.execute("create table if not exists agent (agent_id varchar, environment blob,"
-                + " config blob, primary key (agent_id)) " + WITH_LCS);
+                + " config blob, config_update boolean, config_update_token uuid,"
+                + " primary key (agent_id)) " + WITH_LCS);
+        // secondary index is needed for Cassandra 2.x (to avoid error on readAgentConfigUpdatePS)
+        session.execute(
+                "create index if not exists agent_config_update_idx on agent (config_update)");
         session.execute("create table if not exists agent_rollup (one int, agent_rollup varchar,"
                 + " leaf boolean, primary key (one, agent_rollup)) " + WITH_LCS);
 
-        insertPS = session
-                .prepare("insert into agent (agent_id, environment, config) values (?, ?, ?)");
-        insertConfigOnlyPS = session.prepare("insert into agent (agent_id, config) values (?, ?)");
+        insertPS = session.prepare("insert into agent (agent_id, environment, config,"
+                + " config_update, config_update_token) values (?, ?, ?, ?, ?)");
+        insertConfigOnlyPS = session.prepare("insert into agent (agent_id, config, config_update,"
+                + " config_update_token) values (?, ?, ?, ?)");
         readEnvironmentPS = session.prepare("select environment from agent where agent_id = ?");
         readAgentConfigPS = session.prepare("select config from agent where agent_id = ?");
+        readAgentConfigUpdatePS = session.prepare("select config, config_update_token from agent"
+                + " where agent_id = ? and config_update = true allow filtering");
+        markAgentConfigUpdatedPS = session.prepare("update agent set config_update = false,"
+                + " config_update_token = null where agent_id = ? if config_update_token = ?");
 
         existsRollupPS = session.prepare(
                 "select agent_rollup from agent_rollup where one = 1 and agent_rollup = ?");
@@ -176,6 +195,10 @@ public class AgentDao implements AgentRepository {
         boundStatement.setString(i++, agentId);
         boundStatement.setBytes(i++, ByteBuffer.wrap(environment.toByteArray()));
         boundStatement.setBytes(i++, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
+        // this method is only called by collectInit(), and agent will not consider collectInit()
+        // to be successful until it receives updated agent config
+        boundStatement.setBool(i++, false);
+        boundStatement.setToNull(i++);
         session.execute(boundStatement);
         // insert into agent last so readEnvironment() and readAgentConfig() below are more likely
         // to return non-null
@@ -196,15 +219,41 @@ public class AgentDao implements AgentRepository {
         ResultSet results = session.execute(boundStatement);
         Row row = results.one();
         if (row == null) {
-            // must have just expired or been manually deleted
+            // agent must have been manually deleted
             return null;
         }
         ByteBuffer bytes = row.getBytes(0);
         if (bytes == null) {
-            // for some reason received data from agent, but not initial system info data
+            // for some reason received data from agent, but not initial environment data
             return null;
         }
         return Environment.parseFrom(ByteString.copyFrom(bytes));
+    }
+
+    public @Nullable AgentConfigUpdate readForAgentConfigUpdate(String agentId)
+            throws InvalidProtocolBufferException {
+        BoundStatement boundStatement = readAgentConfigUpdatePS.bind();
+        boundStatement.setString(0, agentId);
+        ResultSet results = session.execute(boundStatement);
+        Row row = results.one();
+        if (row == null) {
+            // no pending config update for this agent (or agent has been manually deleted)
+            return null;
+        }
+        ByteBuffer bytes = checkNotNull(row.getBytes(0));
+        UUID configUpdateToken = checkNotNull(row.getUUID(1));
+        return ImmutableAgentConfigUpdate.builder()
+                .config(AgentConfig.parseFrom(ByteString.copyFrom(bytes)))
+                .configUpdateToken(configUpdateToken)
+                .build();
+    }
+
+    public void markAgentConfigUpdated(String agentId, UUID configUpdateToken) {
+        BoundStatement boundStatement = markAgentConfigUpdatedPS.bind();
+        int i = 0;
+        boundStatement.setString(i++, agentId);
+        boundStatement.setUUID(i++, configUpdateToken);
+        session.execute(boundStatement);
     }
 
     @Nullable
@@ -217,6 +266,8 @@ public class AgentDao implements AgentRepository {
         int i = 0;
         boundStatement.setString(i++, agentId);
         boundStatement.setBytes(i++, ByteBuffer.wrap(agentConfig.toByteArray()));
+        boundStatement.setBool(i++, true);
+        boundStatement.setUUID(i++, UUIDs.random());
         session.execute(boundStatement);
         cache.invalidate(agentId);
     }
@@ -228,27 +279,33 @@ public class AgentDao implements AgentRepository {
         ResultSet results = session.execute(boundStatement);
         Row row = results.one();
         if (row == null) {
-            // must have just expired or been manually deleted
+            // agent must have been manually deleted
             return null;
         }
         ByteBuffer bytes = row.getBytes(0);
         if (bytes == null) {
-            // for some reason received data from agent, but not initial system info data
+            // for some reason received data from agent, but not initial agent config
             return null;
         }
         return AgentConfig.parseFrom(ByteString.copyFrom(bytes));
     }
 
     // upgrade from 0.9.1 to 0.9.2
-    private static void upgradeIfNeeded(Session session) {
+    private static void renameSystemInfoColumnIfNeeded(Session session) {
         ResultSet results;
         try {
             results = session.execute("select agent_id, system_info from agent");
         } catch (InvalidQueryException e) {
             // system_info column does not exist
+            logger.debug(e.getMessage(), e);
             return;
         }
-        session.execute("alter table agent add environment blob");
+        try {
+            session.execute("alter table agent add environment blob");
+        } catch (InvalidQueryException e) {
+            // previously failed mid-upgrade
+            logger.debug(e.getMessage(), e);
+        }
         PreparedStatement preparedStatement =
                 session.prepare("insert into agent (agent_id, environment) values (?, ?)");
         for (Row row : results) {
@@ -258,5 +315,24 @@ public class AgentDao implements AgentRepository {
             session.execute(boundStatement);
         }
         session.execute("alter table agent drop system_info");
+    }
+
+    private static void addConfigUpdateColumnsIfNeeded(Session session) {
+        try {
+            session.execute("alter table agent add config_update boolean");
+        } catch (InvalidQueryException e) {
+            logger.debug(e.getMessage(), e);
+        }
+        try {
+            session.execute("alter table agent add config_update_token uuid");
+        } catch (InvalidQueryException e) {
+            logger.debug(e.getMessage(), e);
+        }
+    }
+
+    @Value.Immutable
+    public interface AgentConfigUpdate {
+        AgentConfig config();
+        UUID configUpdateToken();
     }
 }

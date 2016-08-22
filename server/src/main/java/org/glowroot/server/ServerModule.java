@@ -63,7 +63,6 @@ import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.storage.util.MailService;
 import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.UiModule;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -130,17 +129,17 @@ class ServerModule {
             AlertingService alertingService = new AlertingService(configRepository,
                     triggeredAlertDao, aggregateDao, gaugeValueDao, rollupLevelService,
                     new MailService());
-            rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao, clock);
-
             server = new GrpcServer(serverConfig.grpcPort(), agentDao, aggregateDao,
                     gaugeValueDao, traceDao, alertingService);
             DownstreamServiceImpl downstreamService = server.getDownstreamService();
             configRepository.addConfigListener(new ConfigListener() {
                 @Override
-                public void onChange(String agentId, AgentConfig agentConfig) throws Exception {
-                    downstreamService.updateAgentConfigIfConnected(agentId, agentConfig);
+                public void onChange(String agentId) throws Exception {
+                    downstreamService.updateAgentConfigIfConnectedAndNeeded(agentId);
                 }
             });
+            rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao,
+                    downstreamService, clock);
 
             uiModule = new CreateUiModuleBuilder()
                     .fat(false)

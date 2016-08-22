@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.Clock;
+import org.glowroot.server.DownstreamServiceImpl;
 import org.glowroot.storage.repo.AgentRepository.AgentRollup;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -34,6 +35,7 @@ public class RollupService implements Runnable {
     private final AgentDao agentDao;
     private final AggregateDao aggregateDao;
     private final GaugeValueDao gaugeValueDao;
+    private final DownstreamServiceImpl downstreamService;
     private final Clock clock;
 
     private final ExecutorService executor;
@@ -41,10 +43,11 @@ public class RollupService implements Runnable {
     private volatile boolean stopped;
 
     public RollupService(AgentDao agentDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,
-            Clock clock) {
+            DownstreamServiceImpl downstreamService, Clock clock) {
         this.agentDao = agentDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
+        this.downstreamService = downstreamService;
         this.clock = clock;
         executor = Executors.newSingleThreadExecutor();
         executor.execute(castInitialized(this));
@@ -70,6 +73,9 @@ public class RollupService implements Runnable {
                     // anti-pattern (and lots of tombstones)
                     aggregateDao.rollup(agentRollup.name());
                     gaugeValueDao.rollup(agentRollup.name());
+                    if (agentRollup.leaf()) {
+                        downstreamService.updateAgentConfigIfConnectedAndNeeded(agentRollup.name());
+                    }
                 }
             } catch (InterruptedException e) {
                 if (stopped) {

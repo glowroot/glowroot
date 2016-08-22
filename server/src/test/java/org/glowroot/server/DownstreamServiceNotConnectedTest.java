@@ -21,19 +21,22 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.server.storage.AgentDao;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
+
+import static org.mockito.Mockito.mock;
 
 public class DownstreamServiceNotConnectedTest {
 
-    private DownstreamServiceImpl downstreamService = new DownstreamServiceImpl();
+    private DownstreamServiceImpl downstreamService =
+            new DownstreamServiceImpl(mock(AgentDao.class));
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void shouldNotThrowAgentNotConnectExceptionOnUpdateAgentConfig() throws Exception {
-        downstreamService.updateAgentConfigIfConnected("a", AgentConfig.getDefaultInstance());
+        downstreamService.updateAgentConfigIfConnectedAndNeeded("a");
     }
 
     @Test

@@ -70,7 +70,7 @@ class GrpcServer {
         this.traceRepository = traceRepository;
         this.alertingService = alertingService;
 
-        downstreamService = new DownstreamServiceImpl();
+        downstreamService = new DownstreamServiceImpl(agentDao);
 
         server = NettyServerBuilder.forPort(port)
                 .addService(new CollectorServiceImpl().bindService())

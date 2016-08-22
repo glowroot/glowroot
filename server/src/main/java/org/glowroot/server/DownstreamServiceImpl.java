@@ -33,6 +33,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
+import org.glowroot.server.storage.AgentDao;
+import org.glowroot.server.storage.AgentDao.AgentConfigUpdate;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceImplBase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
@@ -82,17 +84,25 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
     private static final Logger logger = LoggerFactory.getLogger(DownstreamServiceImpl.class);
 
     private final Map<String, ConnectedAgent> connectedAgents = Maps.newConcurrentMap();
+    private final AgentDao agentDao;
+
+    public DownstreamServiceImpl(AgentDao agentDao) {
+        this.agentDao = agentDao;
+    }
 
     @Override
     public StreamObserver<ClientResponse> connect(StreamObserver<ServerRequest> requestObserver) {
         return new ConnectedAgent(requestObserver);
     }
 
-    public void updateAgentConfigIfConnected(String agentId, AgentConfig agentConfig)
-            throws Exception {
+    public void updateAgentConfigIfConnectedAndNeeded(String agentId) throws Exception {
         ConnectedAgent connectedAgent = connectedAgents.get(agentId);
         if (connectedAgent != null) {
-            connectedAgent.updateAgentConfig(agentConfig);
+            AgentConfigUpdate agentConfigUpdate = agentDao.readForAgentConfigUpdate(agentId);
+            if (agentConfigUpdate != null) {
+                connectedAgent.updateAgentConfig(agentConfigUpdate.config());
+                agentDao.markAgentConfigUpdated(agentId, agentConfigUpdate.configUpdateToken());
+            }
         }
     }
 
