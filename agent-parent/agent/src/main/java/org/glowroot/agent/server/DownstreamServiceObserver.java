@@ -16,6 +16,7 @@
 package org.glowroot.agent.server;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -72,6 +73,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.PreloadClasspathC
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ServerRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ServerRequest.MessageCase;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.SystemPropertiesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDumpResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.UnknownRequestResponse;
@@ -234,6 +236,9 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
                 return;
             case MBEAN_META_REQUEST:
                 mbeanMetaAndRespond(request, responseObserver);
+                return;
+            case SYSTEM_PROPERTIES_REQUEST:
+                systemPropertiesAndRespond(request, responseObserver);
                 return;
             case CAPABILITIES_REQUEST:
                 capabilitiesAndRespond(request, responseObserver);
@@ -449,6 +454,23 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
                 .setRequestId(request.getRequestId())
                 .setMbeanMetaResponse(MBeanMetaResponse.newBuilder()
                         .setMbeanMeta(mbeanMeta))
+                .build());
+    }
+
+    private void systemPropertiesAndRespond(ServerRequest request,
+            StreamObserver<ClientResponse> responseObserver) {
+        Map<String, String> systemProperties;
+        try {
+            systemProperties = liveJvmService.getSystemProperties("");
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            sendExceptionResponse(request, responseObserver);
+            return;
+        }
+        responseObserver.onNext(ClientResponse.newBuilder()
+                .setRequestId(request.getRequestId())
+                .setSystemPropertiesResponse(SystemPropertiesResponse.newBuilder()
+                        .putAllSystemProperties(systemProperties))
                 .build());
     }
 
