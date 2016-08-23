@@ -89,12 +89,6 @@ message Trace {
     OptionalInt64 total_allocated_bytes = 4;
   }
 
-  message GarbageCollectionActivity {
-    string collector_name = 1;
-    int64 total_millis = 2;
-    int64 count = 3;
-  }
-
   message Entry {
     int32 depth = 1;
     // start time relative to trace start
