@@ -41,7 +41,8 @@ glowroot.controller('JvmJstackCtrl', [
             $scope.loaded = true;
             $scope.agentNotConnected = data.agentNotConnected;
             $scope.agentUnsupportedOperation = data.agentUnsupportedOperation;
-            if ($scope.agentNotConnected || $scope.agentUnsupportedOperation) {
+            $scope.unavailableDueToRunningInJre = data.unavailableDueToRunningInJre;
+            if ($scope.agentNotConnected || $scope.agentUnsupportedOperation || $scope.unavailableDueToRunningInJre) {
               return;
             }
             jstack = data.jstack;

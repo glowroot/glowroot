@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
+import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.server.storage.AgentDao;
 import org.glowroot.server.storage.AgentDao.AgentConfigUpdate;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -54,8 +55,10 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogram;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogramRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogramResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HelloAck;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.JstackRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.JstackResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
@@ -381,7 +384,11 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setJstackRequest(JstackRequest.getDefaultInstance())
                     .build());
-            return response.getJstackResponse().getJstack();
+            JstackResponse jstackResponse = response.getJstackResponse();
+            if (jstackResponse.getUnavailableDueToRunningInJre()) {
+                throw new UnavailableDueToRunningInJreException();
+            }
+            return jstackResponse.getJstack();
         }
 
         private long availableDiskSpaceBytes(String directory) throws Exception {
@@ -407,7 +414,11 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setHeapHistogramRequest(HeapHistogramRequest.newBuilder())
                     .build());
-            return response.getHeapHistogramResponse().getHeapHistogram();
+            HeapHistogramResponse heapHistogramResponse = response.getHeapHistogramResponse();
+            if (heapHistogramResponse.getUnavailableDueToRunningInJre()) {
+                throw new UnavailableDueToRunningInJreException();
+            }
+            return heapHistogramResponse.getHeapHistogram();
         }
 
         private void gc() throws Exception {

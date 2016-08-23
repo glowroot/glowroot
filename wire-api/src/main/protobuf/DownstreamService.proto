@@ -114,6 +114,7 @@ message JstackRequest {
 
 message JstackResponse {
   string jstack = 1;
+  bool unavailable_due_to_running_in_jre = 2;
 }
 
 message AvailableDiskSpaceRequest {
@@ -137,6 +138,7 @@ message HeapHistogramRequest {
 
 message HeapHistogramResponse {
   HeapHistogram heap_histogram = 1;
+  bool unavailable_due_to_running_in_jre = 2;
 }
 
 message GcRequest {

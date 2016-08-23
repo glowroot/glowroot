@@ -59,4 +59,7 @@ public interface LiveJvmService {
 
     @SuppressWarnings("serial")
     public static class AgentUnsupportedOperationException extends Exception {}
+
+    @SuppressWarnings("serial")
+    public class UnavailableDueToRunningInJreException extends Exception {}
 }

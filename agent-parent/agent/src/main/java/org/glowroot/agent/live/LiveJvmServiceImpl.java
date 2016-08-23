@@ -117,10 +117,10 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
     @Override
     public String getJstack(String agentId) throws Exception {
-        ClassLoader systemToolClassLoader = ToolProvider.getSystemToolClassLoader();
-        if (systemToolClassLoader == null) {
-            return "jstack is not available under JRE, must be running JDK";
+        if (ToolProvider.getSystemJavaCompiler() == null) {
+            throw new UnavailableDueToRunningInJreException();
         }
+        ClassLoader systemToolClassLoader = ToolProvider.getSystemToolClassLoader();
         Class<?> vmClass =
                 Class.forName("com.sun.tools.attach.VirtualMachine", true, systemToolClassLoader);
         Method attachMethod = vmClass.getMethod("attach", String.class);
@@ -190,6 +190,9 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
     @Override
     public HeapHistogram heapHistogram(String agentId) throws Exception {
+        if (ToolProvider.getSystemJavaCompiler() == null) {
+            throw new UnavailableDueToRunningInJreException();
+        }
         ClassLoader systemToolClassLoader = ToolProvider.getSystemToolClassLoader();
         Class<?> vmClass =
                 Class.forName("com.sun.tools.attach.VirtualMachine", true, systemToolClassLoader);

@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
+import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.UsedByJsonSerialization;
 import org.glowroot.storage.repo.AgentRepository;
@@ -178,6 +179,9 @@ class JvmJsonService {
         } catch (AgentNotConnectedException e) {
             logger.debug(e.getMessage(), e);
             return "{\"agentNotConnected\":true}";
+        } catch (UnavailableDueToRunningInJreException e) {
+            logger.debug(e.getMessage(), e);
+            return "{\"unavailableDueToRunningInJre\":true}";
         } catch (AgentUnsupportedOperationException e) {
             // this operation introduced in 0.9.2
             logger.debug(e.getMessage(), e);
@@ -240,6 +244,9 @@ class JvmJsonService {
         } catch (AgentNotConnectedException e) {
             logger.debug(e.getMessage(), e);
             return "{\"agentNotConnected\":true}";
+        } catch (UnavailableDueToRunningInJreException e) {
+            logger.debug(e.getMessage(), e);
+            return "{\"unavailableDueToRunningInJre\":true}";
         } catch (AgentUnsupportedOperationException e) {
             // this operation introduced in 0.9.2
             logger.debug(e.getMessage(), e);

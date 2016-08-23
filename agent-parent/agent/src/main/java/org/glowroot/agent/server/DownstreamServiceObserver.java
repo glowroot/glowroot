@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -322,6 +323,14 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
         String jstack;
         try {
             jstack = liveJvmService.getJstack("");
+        } catch (UnavailableDueToRunningInJreException e) {
+            logger.debug(e.getMessage(), e);
+            responseObserver.onNext(ClientResponse.newBuilder()
+                    .setRequestId(request.getRequestId())
+                    .setJstackResponse(JstackResponse.newBuilder()
+                            .setUnavailableDueToRunningInJre(true))
+                    .build());
+            return;
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);
@@ -375,6 +384,14 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
         HeapHistogram heapHistogram;
         try {
             heapHistogram = liveJvmService.heapHistogram("");
+        } catch (UnavailableDueToRunningInJreException e) {
+            logger.debug(e.getMessage(), e);
+            responseObserver.onNext(ClientResponse.newBuilder()
+                    .setRequestId(request.getRequestId())
+                    .setHeapHistogramResponse(HeapHistogramResponse.newBuilder()
+                            .setUnavailableDueToRunningInJre(true))
+                    .build());
+            return;
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);
