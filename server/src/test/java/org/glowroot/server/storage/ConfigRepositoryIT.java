@@ -490,6 +490,7 @@ public class ConfigRepositoryIT {
         WebConfig updatedConfig = ImmutableWebConfig.builder()
                 .port(4001)
                 .sessionTimeoutMinutes(31)
+                .sessionCookieName("GLOWROOT_SESSION_ID2")
                 .build();
 
         // when

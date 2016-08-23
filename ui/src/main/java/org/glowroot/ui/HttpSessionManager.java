@@ -59,18 +59,18 @@ class HttpSessionManager {
     private final boolean offlineViewer;
     private final ConfigRepository configRepository;
     private final Clock clock;
-    private final LayoutService layoutJsonService;
+    private final LayoutService layoutService;
 
     private final SecureRandom secureRandom = new SecureRandom();
     private final Map<String, Session> sessions = Maps.newConcurrentMap();
 
     HttpSessionManager(boolean fat, boolean offlineViewer, ConfigRepository configRepository,
-            Clock clock, LayoutService layoutJsonService) {
+            Clock clock, LayoutService layoutService) {
         this.fat = fat;
         this.offlineViewer = offlineViewer;
         this.configRepository = configRepository;
         this.clock = clock;
-        this.layoutJsonService = layoutJsonService;
+        this.layoutService = layoutService;
     }
 
     FullHttpResponse login(String username, String password) throws Exception {
@@ -100,7 +100,7 @@ class HttpSessionManager {
         if (authentication == null) {
             return buildIncorrectLoginResponse();
         } else {
-            String text = layoutJsonService.getLayout(authentication);
+            String text = layoutService.getLayout(authentication);
             FullHttpResponse response = HttpServices.createJsonResponse(text, OK);
             createSession(response, authentication);
             return response;
@@ -120,7 +120,7 @@ class HttpSessionManager {
     }
 
     void deleteSessionCookie(HttpResponse response) {
-        Cookie cookie = new DefaultCookie("GLOWROOT_SESSION_ID", "");
+        Cookie cookie = new DefaultCookie(configRepository.getWebConfig().sessionCookieName(), "");
         cookie.setHttpOnly(true);
         cookie.setMaxAge(0);
         cookie.setPath("/");
@@ -160,7 +160,7 @@ class HttpSessionManager {
         }
         Set<Cookie> cookies = ServerCookieDecoder.STRICT.decode(cookieHeader);
         for (Cookie cookie : cookies) {
-            if (cookie.name().equals("GLOWROOT_SESSION_ID")) {
+            if (cookie.name().equals(configRepository.getWebConfig().sessionCookieName())) {
                 return cookie.value();
             }
         }
@@ -186,7 +186,8 @@ class HttpSessionManager {
             throws Exception {
         String sessionId = new BigInteger(130, secureRandom).toString(32);
         sessions.put(sessionId, new Session(authentication));
-        Cookie cookie = new DefaultCookie("GLOWROOT_SESSION_ID", sessionId);
+        Cookie cookie =
+                new DefaultCookie(configRepository.getWebConfig().sessionCookieName(), sessionId);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         response.headers().add(HttpHeaderNames.SET_COOKIE,

@@ -167,9 +167,9 @@ class LayoutService {
                     .fat(fat)
                     .offlineViewer(offlineViewer)
                     .footerMessage("Glowroot version " + version)
-                    .hideLogin(offlineViewer ? true
-                            : !configRepository.namedUsersExist()
-                                    && configRepository.getLdapConfig().host().isEmpty())
+                    .loginEnabled(offlineViewer ? false
+                            : configRepository.namedUsersExist()
+                                    || !configRepository.getLdapConfig().host().isEmpty())
                     .addAllRollupConfigs(configRepository.getRollupConfigs())
                     .addAllRollupExpirationMillis(rollupExpirationMillis)
                     .gaugeCollectionIntervalMillis(
@@ -190,7 +190,7 @@ class LayoutService {
                     .fat(fat)
                     .offlineViewer(offlineViewer)
                     .footerMessage("Glowroot version " + version)
-                    .hideLogin(false)
+                    .loginEnabled(true)
                     .gaugeCollectionIntervalMillis(0)
                     .showNavbarTransaction(false)
                     .showNavbarError(false)
@@ -272,7 +272,7 @@ class LayoutService {
         abstract boolean fat();
         abstract boolean offlineViewer();
         abstract String footerMessage();
-        abstract boolean hideLogin();
+        abstract boolean loginEnabled();
         abstract ImmutableList<RollupConfig> rollupConfigs();
         abstract ImmutableList<Long> rollupExpirationMillis();
         abstract long gaugeCollectionIntervalMillis();

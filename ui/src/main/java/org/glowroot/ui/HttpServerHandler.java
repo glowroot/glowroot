@@ -209,9 +209,6 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     private void sendFullResponse(ChannelHandlerContext ctx, FullHttpRequest request,
             FullHttpResponse response, Authentication authentication) throws Exception {
-        if (httpSessionManager.getSessionId(request) != null && authentication.anonymous()) {
-            httpSessionManager.deleteSessionCookie(response);
-        }
         if (request.uri().startsWith("/backend/") && !request.uri().equals("/backend/layout")) {
             response.headers().add("Glowroot-Layout-Version",
                     layoutService.getLayoutVersion(authentication));

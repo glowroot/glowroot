@@ -129,6 +129,7 @@ public abstract class WebDriverIT {
         resetAdminServerConfig("web", "{\"port\":" + getUiPort()
                 + ",\"bindAddress\":\"127.0.0.1\","
                 + "\"sessionTimeoutMinutes\":30,"
+                + "\"sessionCookieName\":\"GLOWROOT_SESSION_ID\","
                 + "\"version\":\"$version\"}");
         resetAdminServerConfig("storage", "{\"rollupExpirationHours\":[72,336,2160,17520],"
                 + "\"traceExpirationHours\":336,"

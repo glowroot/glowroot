@@ -176,7 +176,7 @@ glowroot.run([
     };
 
     $rootScope.showSignIn = function () {
-      return $rootScope.layout && !$rootScope.layout.loggedIn && !$rootScope.layout.hideLogin;
+      return $rootScope.layout && !$rootScope.layout.loggedIn && $rootScope.layout.loginEnabled;
     };
 
     $rootScope.showSignOut = function () {
@@ -238,7 +238,7 @@ glowroot.run([
       $rootScope.layout = data;
       if ($rootScope.layout.redirectToLogin) {
         login.goToLogin();
-      } else if ($location.path() === '/login' && (data.loggedIn || data.hideLogin)) {
+      } else if ($location.path() === '/login' && (data.loggedIn || !data.loginEnabled)) {
         // authentication is not needed
         $location.path('/').replace();
       } else if ($rootScope.layout.fat || $rootScope.agentRollup) {

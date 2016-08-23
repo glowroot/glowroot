@@ -345,6 +345,7 @@ class AdminJsonService {
         abstract int port();
         abstract String bindAddress();
         abstract int sessionTimeoutMinutes();
+        abstract String sessionCookieName();
         abstract String version();
 
         private WebConfig convert() throws Exception {
@@ -352,6 +353,7 @@ class AdminJsonService {
                     .port(port())
                     .bindAddress(bindAddress())
                     .sessionTimeoutMinutes(sessionTimeoutMinutes())
+                    .sessionCookieName(sessionCookieName())
                     .build();
         }
 
@@ -360,6 +362,7 @@ class AdminJsonService {
                     .port(config.port())
                     .bindAddress(config.bindAddress())
                     .sessionTimeoutMinutes(config.sessionTimeoutMinutes())
+                    .sessionCookieName(config.sessionCookieName())
                     .version(config.version())
                     .build();
         }

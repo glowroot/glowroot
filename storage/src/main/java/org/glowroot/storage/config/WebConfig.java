@@ -39,6 +39,11 @@ public abstract class WebConfig {
         return 30;
     }
 
+    @Value.Default
+    public String sessionCookieName() {
+        return "GLOWROOT_SESSION_ID";
+    }
+
     @Value.Derived
     @JsonIgnore
     public String version() {
