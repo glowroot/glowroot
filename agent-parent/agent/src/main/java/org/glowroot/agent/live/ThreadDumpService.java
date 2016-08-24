@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
-import javax.tools.ToolProvider;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
@@ -146,8 +145,7 @@ class ThreadDumpService {
         if (currentThreadInfo != null) {
             builder.setThreadDumpingThread(createProtobuf(currentThreadInfo));
         }
-        return builder.setJstackAvailable(isJstackAvailable())
-                .build();
+        return builder.build();
     }
 
     private ThreadDump.Thread createProtobuf(ThreadInfo threadInfo) {
@@ -183,16 +181,6 @@ class ThreadDumpService {
             builder.addStackTraceElement(stackTraceElement);
         }
         return builder.build();
-    }
-
-    private static boolean isJstackAvailable() {
-        try {
-            Class.forName("com.sun.tools.attach.VirtualMachine", false,
-                    ToolProvider.getSystemToolClassLoader());
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
     }
 
     private static class TransactionOrdering extends Ordering<ThreadDump.Transaction> {

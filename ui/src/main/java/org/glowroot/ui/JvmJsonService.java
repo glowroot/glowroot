@@ -165,7 +165,6 @@ class JvmJsonService {
         writeThread(threadDump.getThreadDumpingThread(), jg);
         allThreads.add(threadDump.getThreadDumpingThread());
         writeDeadlockedCycles(allThreads, jg);
-        jg.writeBooleanField("jstackAvailable", threadDump.getJstackAvailable());
         jg.writeEndObject();
         jg.close();
         return sw.toString();

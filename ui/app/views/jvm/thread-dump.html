@@ -20,22 +20,8 @@
 </div>
 <!-- ng-show explicitly needed here instead of ng-if because thread-dump.js binds directly to #threadDump -->
 <div ng-show="loaded && !agentNotConnected">
-  <div class="clearfix gt-jstack-small-screen-link"
-       ng-if="jstackAvailable"
-       style="text-align: right; margin-bottom: 10px; margin-top: -10px;">
-    <a href="jvm/jstack{{agentQueryString()}}"
-       style="font-style: italic;">
-      View jstack thread dump
-    </a>
-  </div>
   <div class="clearfix"
        style="float: right;">
-    <a href="jvm/jstack{{agentQueryString()}}"
-       class="gt-jstack-normal-link"
-       ng-if="jstackAvailable"
-       style="font-style: italic; margin-right: 40px;">
-      View jstack thread dump
-    </a>
     <button class="btn btn-default"
             ng-click="exportAsText()">
       Export as text

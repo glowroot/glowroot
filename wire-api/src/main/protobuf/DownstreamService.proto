@@ -292,7 +292,7 @@ message ThreadDump {
   repeated Transaction transaction = 1;
   repeated Thread unmatched_thread = 2;
   Thread thread_dumping_thread = 3;
-  bool jstack_available = 4;
+  bool jstack_available = 4; // deprecated in 0.9.2
 
   message Transaction {
     string headline = 6;
