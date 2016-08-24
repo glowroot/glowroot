@@ -57,7 +57,7 @@ public class TraceDaoIT {
         ConfigRepository configRepository = mock(ConfigRepository.class);
         when(configRepository.getStorageConfig())
                 .thenReturn(ImmutableServerStorageConfig.builder().build());
-        traceDao = new TraceDao(session, configRepository);
+        traceDao = new TraceDao(session, mock(TransactionTypeDao.class), configRepository);
     }
 
     @AfterClass

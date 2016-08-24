@@ -122,7 +122,7 @@ class ServerModule {
                     new TransactionTypeDao(session, configRepository);
             AggregateDao aggregateDao =
                     new AggregateDao(session, transactionTypeDao, configRepository);
-            TraceDao traceDao = new TraceDao(session, configRepository);
+            TraceDao traceDao = new TraceDao(session, transactionTypeDao, configRepository);
             GaugeValueDao gaugeValueDao = new GaugeValueDao(session, configRepository);
             TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session, configRepository);
             RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);

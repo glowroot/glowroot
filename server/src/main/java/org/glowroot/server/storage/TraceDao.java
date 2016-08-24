@@ -73,7 +73,9 @@ public class TraceDao implements TraceRepository {
             "with compaction = { 'class' : 'DateTieredCompactionStrategy' }";
 
     private final Session session;
+    private final TransactionTypeDao transactionTypeDao;
     private final ConfigRepository configRepository;
+
     private final TraceAttributeNameDao traceAttributeNameDao;
 
     private final PreparedStatement insertOverallSlowPoint;
@@ -115,8 +117,10 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement deletePartialOverallSlowCount;
     private final PreparedStatement deletePartialTransactionSlowCount;
 
-    public TraceDao(Session session, ConfigRepository configRepository) {
+    public TraceDao(Session session, TransactionTypeDao transactionTypeDao,
+            ConfigRepository configRepository) {
         this.session = session;
+        this.transactionTypeDao = transactionTypeDao;
         this.configRepository = configRepository;
         traceAttributeNameDao = new TraceAttributeNameDao(session, configRepository);
 
@@ -595,6 +599,8 @@ public class TraceDao implements TraceRepository {
             boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
+        transactionTypeDao.maybeUpdateLastCaptureTime(agentId, header.getTransactionType(),
+                futures);
         Futures.allAsList(futures).get();
     }
 
