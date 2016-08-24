@@ -1,20 +1,21 @@
-{{#each deadlockedCycles}}<strong>Found deadlock:</strong>
-<strong>==============</strong>
+{{#each deadlockedCycles}}<strong><u>Found deadlock:</u></strong>
 {{#each .}}"{{name}}"
 &nbsp;&nbsp;{{desc1}}
 &nbsp;&nbsp;{{desc2}}
-{{/each}}<br>{{/each}}{{#if transactions}}<strong>Matched threads</strong> (matched to currently executing transactions):<br>
-{{#each transactions}}{{#if transactionType}}<strong>Transaction type: </strong>{{transactionType}}
+{{/each}}<br>{{/each}}{{#if transactions}}<strong><u>Matched threads</u></strong> (matched to currently executing transactions):<br>
+{{#each transactions}}{{#if transactionType}}<strong>{{headline}}</strong>{{#if traceId}} <a href="jvm/thread-dump?{{#agentIdQueryString}}{{/agentIdQueryString}}modal-trace-id={{traceId}}&modal-check-live-traces=true" style="padding-left: 5px;">view trace</a>{{/if}}
+<strong>Transaction type: </strong>{{transactionType}}
 <strong>Transaction name:</strong> {{transactionName}}
-<strong>Transaction duration:</strong> {{nanosToMillis totalDurationNanos}} milliseconds {{#if traceId}}<a href="jvm/thread-dump?{{#agentIdQueryString}}{{/agentIdQueryString}}modal-trace-id={{traceId}}&modal-check-live-traces=true">view trace</a>{{/if}}
+<strong>Duration:</strong> {{nanosToMillis totalDurationNanos}} milliseconds{{#ifNotNA totalCpuNanos}}
+<strong>CPU time:</strong> {{nanosToMillis totalCpuNanos}} milliseconds{{/ifNotNA}}
 {{/if}}{{#each threads}}"{{name}}" #{{id}}
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{state}}
 {{#each stackTraceElements}}        {{.}}
-{{/each}}{{/each}}<br>{{/each}}{{/if}}{{#if unmatchedThreads}}<strong>Unmatched threads</strong> (this may possibly include currently executing transactions that just started or just ended):<br>
+{{/each}}{{/each}}<br>{{/each}}{{/if}}{{#if unmatchedThreads}}<strong><u>Unmatched threads</u></strong> (this may possibly include currently executing transactions that just started or just ended):<br>
 {{#each unmatchedThreads}}"{{name}}" #{{id}}
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{state}}
 {{#each stackTraceElements}}        {{.}}
-{{/each}}<br>{{/each}}{{/if}}{{#if threadDumpingThread}}<strong>Thread dumping thread</strong> (producing this thread dump):<br>
+{{/each}}<br>{{/each}}{{/if}}{{#if threadDumpingThread}}<strong><u>Thread dumping thread</u></strong> (producing this thread dump):<br>
 "{{threadDumpingThread/name}}" #{{threadDumpingThread/id}}
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{threadDumpingThread/state}}
 {{#each threadDumpingThread/stackTraceElements}}        {{.}}

@@ -96,6 +96,24 @@ class ThreadStatsComponent {
         }
     }
 
+    // safe to be called from another thread
+    long getTotalCpuNanos() {
+        synchronized (lock) {
+            if (completedThreadStats == null) {
+                // transaction thread is still alive (and cannot terminate in the middle of this
+                // method because of above lock), so safe to capture ThreadMXBean.getThreadCpuTime()
+                // for the transaction thread
+                if (IS_THREAD_CPU_TIME_SUPPORTED) {
+                    return getTotalCpuNanosInternal();
+                } else {
+                    return -1;
+                }
+            } else {
+                return completedThreadStats.getTotalCpuNanos();
+            }
+        }
+    }
+
     private ThreadStats getThreadStatsInternal() {
         ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId, 0);
         if (threadInfo == null) {
@@ -104,7 +122,7 @@ class ThreadStatsComponent {
         }
         long totalCpuNanos;
         if (IS_THREAD_CPU_TIME_SUPPORTED) {
-            totalCpuNanos = getTotalCpuNanos();
+            totalCpuNanos = getTotalCpuNanosInternal();
         } else {
             totalCpuNanos = -1;
         }
@@ -127,7 +145,7 @@ class ThreadStatsComponent {
                 totalAllocatedBytes);
     }
 
-    private long getTotalCpuNanos() {
+    private long getTotalCpuNanosInternal() {
         // getThreadCpuTime() returns -1 if CPU time measurement is disabled (which is different
         // than whether or not it is supported)
         long threadCpuNanos = threadMXBean.getThreadCpuTime(threadId);

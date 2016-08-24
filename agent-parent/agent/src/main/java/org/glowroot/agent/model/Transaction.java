@@ -63,6 +63,7 @@ import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.Cancellable;
+import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -328,6 +329,17 @@ public class Transaction {
     // can be called from a non-transaction thread
     public ThreadStats getMainThreadStats() {
         return mainThreadContext.getThreadStats();
+    }
+
+    public long getTotalCpuNanos() {
+        long totalCpuNanos = mainThreadContext.getTotalCpuNanos();
+        if (auxThreadContexts != null) {
+            for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
+                totalCpuNanos =
+                        NotAvailableAware.add(totalCpuNanos, auxThreadContext.getTotalCpuNanos());
+            }
+        }
+        return totalCpuNanos;
     }
 
     public void mergeAuxThreadStatsInto(ThreadStatsCollector threadStats) {

@@ -40,6 +40,7 @@ import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.Transaction;
+import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
@@ -102,8 +103,9 @@ class ThreadDumpService {
             String traceId = transaction.getTraceId();
             TransactionThreadInfo transactionThreadInfo = transactionThreadInfos.get(traceId);
             if (transactionThreadInfo == null) {
-                transactionThreadInfo = new TransactionThreadInfo(transaction.getTransactionType(),
-                        transaction.getTransactionName(), transaction.getDurationNanos(),
+                transactionThreadInfo = new TransactionThreadInfo(transaction.getHeadline(),
+                        transaction.getTransactionType(), transaction.getTransactionName(),
+                        transaction.getDurationNanos(), transaction.getTotalCpuNanos(),
                         transactionCollector.shouldStoreSlow(transaction));
                 transactionThreadInfos.put(traceId, transactionThreadInfo);
             }
@@ -113,9 +115,13 @@ class ThreadDumpService {
         for (Entry<String, TransactionThreadInfo> entry : transactionThreadInfos.entrySet()) {
             TransactionThreadInfo value = entry.getValue();
             ThreadDump.Transaction.Builder builder = ThreadDump.Transaction.newBuilder()
+                    .setHeadline(value.headline)
                     .setTransactionType(value.transactionType)
                     .setTransactionName(value.transactionName)
                     .setTotalDurationNanos(value.totalDurationNanos);
+            if (!NotAvailableAware.isNA(value.totalCpuNanos)) {
+                builder.setTotalCpuNanos(OptionalInt64.newBuilder().setValue(value.totalCpuNanos));
+            }
             if (value.shouldStoreSlow) {
                 builder.setTraceId(entry.getKey());
             }
@@ -205,18 +211,23 @@ class ThreadDumpService {
 
     private static class TransactionThreadInfo {
 
+        private final String headline;
         private final String transactionType;
         private final String transactionName;
         private final long totalDurationNanos;
+        private final long totalCpuNanos;
         private final boolean shouldStoreSlow;
 
         private final List<ThreadInfo> threadInfos = Lists.newArrayList();
 
-        private TransactionThreadInfo(String transactionType, String transactionName,
-                long totalDurationNanos, boolean shouldStoreSlow) {
+        private TransactionThreadInfo(String headline, String transactionType,
+                String transactionName, long totalDurationNanos, long totalCpuNanos,
+                boolean shouldStoreSlow) {
+            this.headline = headline;
             this.transactionType = transactionType;
             this.transactionName = transactionName;
             this.totalDurationNanos = totalDurationNanos;
+            this.totalCpuNanos = totalCpuNanos;
             this.shouldStoreSlow = shouldStoreSlow;
         }
     }

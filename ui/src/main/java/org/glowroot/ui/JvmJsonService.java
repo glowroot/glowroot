@@ -48,6 +48,7 @@ import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
+import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.UsedByJsonSerialization;
 import org.glowroot.storage.repo.AgentRepository;
@@ -442,9 +443,15 @@ class JvmJsonService {
             throws IOException {
         jg.writeStartObject();
         jg.writeStringField("traceId", transaction.getTraceId());
+        jg.writeStringField("headline", transaction.getHeadline());
         jg.writeStringField("transactionType", transaction.getTransactionType());
         jg.writeStringField("transactionName", transaction.getTransactionName());
         jg.writeNumberField("totalDurationNanos", transaction.getTotalDurationNanos());
+        if (transaction.hasTotalCpuNanos()) {
+            jg.writeNumberField("totalCpuNanos", transaction.getTotalCpuNanos().getValue());
+        } else {
+            jg.writeNumberField("totalCpuNanos", NotAvailableAware.NA);
+        }
         jg.writeArrayFieldStart("threads");
         for (ThreadDump.Thread thread : transaction.getThreadList()) {
             writeThread(thread, jg);

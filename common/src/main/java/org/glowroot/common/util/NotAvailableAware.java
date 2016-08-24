@@ -57,6 +57,10 @@ public class NotAvailableAware {
         return value == NA;
     }
 
+    public static boolean isNA(long value) {
+        return value == NA;
+    }
+
     public static @Nullable Double orNull(double value) {
         return value == NA ? null : value;
     }

@@ -295,9 +295,11 @@ message ThreadDump {
   bool jstack_available = 4;
 
   message Transaction {
+    string headline = 6;
     string transaction_type = 1;
     string transaction_name = 2;
     int64 total_duration_nanos = 3;
+    OptionalInt64 total_cpu_nanos = 7; // across all threads
     // trace id is only included if a trace will be stored for this transaction
     // (e.g. the transaction exceeds the slow threshold)
     string trace_id = 4;

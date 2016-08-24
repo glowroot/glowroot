@@ -52,6 +52,7 @@ import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.common.model.ServiceCallCollector;
+import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -151,6 +152,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
             return ThreadStats.NA;
         }
         return threadStatsComponent.getThreadStats();
+    }
+
+    long getTotalCpuNanos() {
+        if (threadStatsComponent == null) {
+            return NotAvailableAware.NA;
+        }
+        return threadStatsComponent.getTotalCpuNanos();
     }
 
     public long getThreadId() {
