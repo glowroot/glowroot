@@ -329,13 +329,13 @@ public class JavaagentContainer implements Container {
                     + "it-harness" + File.separator + "target" + File.separator + "classes")) {
                 agentClasses = true;
             }
-            if (name.matches("glowroot-agent-[0-9.]+(-SNAPSHOT)?.jar")) {
+            if (name.matches("glowroot-agent-core-[0-9.]+(-SNAPSHOT)?.jar")) {
                 javaagentJarFile = file;
             } else if (name.matches("glowroot-common-[0-9.]+(-SNAPSHOT)?.jar")
                     || name.matches("glowroot-wire-api-[0-9.]+(-SNAPSHOT)?.jar")
                     || name.matches("glowroot-agent-api-[0-9.]+(-SNAPSHOT)?.jar")
                     || name.matches("glowroot-agent-plugin-api-[0-9.]+(-SNAPSHOT)?.jar")) {
-                // these artifacts should not be present since glowroot-agent shades them
+                // these artifacts should not be present since glowroot-agent-core shades them
                 // but maven 3.3.1/3.3.3 are not using the dependency reduced pom during downstream
                 // module builds, which causes the glowroot artifacts to be included
                 // when running "mvn clean install" from the project root, see MSHADE-206
@@ -372,7 +372,7 @@ public class JavaagentContainer implements Container {
                     || name.matches("slf4j-api-.*\\.jar")
                     || name.matches("smtp-.*\\.jar")
                     || name.matches("value-.*\\.jar")) {
-                // these are glowroot-agent transitive dependencies
+                // these are glowroot-agent-core transitive dependencies
                 maybeBootstrapJar.add(path);
             } else {
                 paths.add(path);

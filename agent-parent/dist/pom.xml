@@ -10,16 +10,16 @@
     <relativePath>../..</relativePath>
   </parent>
 
-  <artifactId>glowroot-agent-distribution</artifactId>
+  <artifactId>glowroot-agent</artifactId>
   <packaging>pom</packaging>
 
-  <name>Glowroot Agent Distribution</name>
-  <description>Glowroot Agent Distribution</description>
+  <name>Glowroot Agent</name>
+  <description>Glowroot Agent</description>
 
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent</artifactId>
+      <artifactId>glowroot-agent-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -120,7 +120,6 @@
   </dependencies>
 
   <build>
-    <finalName>glowroot-${project.version}</finalName>
     <plugins>
       <plugin>
         <groupId>org.glowroot</groupId>

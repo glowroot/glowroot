@@ -58,18 +58,15 @@ case "$1" in
                                 -B
                ;;
 
-     "deploy") # build shaded distribution zip which will be uploaded to s3 in travis-ci deploy step
-               mvn clean install -Pjavadoc \
-                                 -DargLine="$surefire_jvm_args" \
-                                 -Dglowroot.build.commit=$TRAVIS_COMMIT \
+     "deploy") mvn clean install -DargLine="$surefire_jvm_args" \
                                  -Dglowroot.test.fileLoggingOnly=false \
                                  -B
                # only deploy snapshot versions (release versions need pgp signature)
                version=`mvn help:evaluate -Dexpression=project.version | grep -v '\['`
                if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_PULL_REQUEST" == "false" && "$version" == *-SNAPSHOT ]]
                then
-                 # deploy only glowroot-parent, glowroot-agent-api, glowroot-agent-plugin-api, glowroot-agent and glowroot-agent-it-harness artifacts to maven repository
-                 mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent,:glowroot-agent-it-harness \
+                 # deploy only glowroot-parent, glowroot-agent-api, glowroot-agent-plugin-api, glowroot-agent-core and glowroot-agent-it-harness artifacts to maven repository
+                 mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-core,:glowroot-agent-it-harness,:glowroot-agent-dist \
                                   -Pjavadoc \
                                   -DargLine="$surefire_jvm_args" \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
@@ -167,7 +164,7 @@ case "$1" in
                  # the sonar.jdbc.password system property is set in the pom.xml using the
                  # environment variable SONAR_DB_PASSWORD (instead of setting the system
                  # property on the command line which which would make it visible to ps)
-                 mvn clean verify sonar:sonar -pl !misc/license-resource-bundle,!misc/checker-qual-jdk6,!misc/multi-lib-version-tester,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!agent-parent/dist-maven-plugin,!agent-parent/distribution \
+                 mvn clean verify sonar:sonar -pl !misc/license-resource-bundle,!misc/checker-qual-jdk6,!misc/multi-lib-version-tester,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!agent-parent/dist-maven-plugin,!agent-parent/dist \
                                    -Dsonar.jdbc.url=$SONAR_JDBC_URL \
                                    -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
                                    -Dsonar.host.url=$SONAR_HOST_URL \
@@ -206,7 +203,7 @@ case "$1" in
                                  -B
                # this is just to keep travis ci build from timing out due to "No output has been received in the last 10 minutes, ..."
                while true; do sleep 60; echo ...; done &
-               mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!agent-parent/distribution \
+               mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!agent-parent/dist \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \

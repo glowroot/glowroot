@@ -44,7 +44,7 @@
     <module>ui</module>
     <module>agent-parent/api</module>
     <module>agent-parent/plugin-api</module>
-    <module>agent-parent/agent</module>
+    <module>agent-parent/core</module>
     <module>agent-parent/it-harness</module>
     <module>agent-parent/integration-tests</module>
     <module>agent-parent/plugins/cassandra-plugin</module>
@@ -69,7 +69,7 @@
     <module>agent-parent/benchmarks</module>
     <module>agent-parent/ui-sandbox</module>
     <module>agent-parent/dist-maven-plugin</module>
-    <module>agent-parent/distribution</module>
+    <module>agent-parent/dist</module>
     <module>webdriver-tests</module>
   </modules>
 

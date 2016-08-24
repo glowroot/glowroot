@@ -18,7 +18,7 @@
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent</artifactId>
+      <artifactId>glowroot-agent-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <!-- do not include glowroot-agent-api or glowroot-agent-plugin-api since want to either get

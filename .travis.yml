@@ -54,23 +54,6 @@ env:
     - TARGET=test SKIP_SHADING=false GLOWROOT_HARNESS=local
     - TARGET=test SKIP_SHADING=true GLOWROOT_HARNESS=javaagent
     - TARGET=test SKIP_SHADING=true GLOWROOT_HARNESS=local
-before_deploy:
-  - mkdir -p s3/snapshots
-  - cp agent-parent/distribution/target/glowroot-*-dist.zip s3/snapshots
-  - cd s3
-deploy:
-  provider: s3
-  access_key_id:
-    secure: "TKm8rMaM7//dszw+GpTj+HzZ5BXdiYZmG/EpMRTIy1uKHnXvw5Lf63B1rOQjUclnwqYHSV1r890XHUPeIZddcxJK9nRaOmVg/5AUZIh/HbjqT+M91OkX4SIQiyW+HV2aF5LF+RPTVIB24NbSok3jrZnPRRVGX6VjeEIFYQRXBQY="
-  secret_access_key:
-    secure: "ItGgSVtNccZaA7BGRDFPmTjw2Gb6R0xLPGbF4F2W1CbUVA+qlW7MaOeQ8jZwlh5O6YelFN2dcehCXbsHnPnkfdl+bCsBJ4QqdSWiCuRYIh0gHFwNjdS7syJ3/T55nhrhSzd398R/IquSbSSk/s2UkpUoAj4NgmIqrlt8MScaslU="
-  bucket: glowroot
-  skip_cleanup: true
-  on:
-    jdk: oraclejdk8
-    branch: master
-    repo: glowroot/glowroot
-    condition: "$TARGET = deploy"
 addons:
   sauce_connect:
     # this is needed on android, see https://support.saucelabs.com/customer/en/portal/questions/13056252

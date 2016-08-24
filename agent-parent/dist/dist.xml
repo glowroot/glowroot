@@ -9,7 +9,7 @@
   <dependencySets>
     <dependencySet>
       <includes>
-        <include>org.glowroot:glowroot-agent-distribution:jar:dist0</include>
+        <include>org.glowroot:glowroot-agent:jar:dist0</include>
       </includes>
       <useProjectArtifact>false</useProjectArtifact>
       <useProjectAttachments>true</useProjectAttachments>
@@ -22,12 +22,6 @@
       <includes>
         <include>LICENSE</include>
         <include>NOTICE</include>
-      </includes>
-      <outputDirectory></outputDirectory>
-    </fileSet>
-    <fileSet>
-      <includes>
-        <include>glowroot.properties</include>
       </includes>
       <outputDirectory></outputDirectory>
     </fileSet>

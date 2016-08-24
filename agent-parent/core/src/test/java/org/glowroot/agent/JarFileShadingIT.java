@@ -71,7 +71,7 @@ public class JarFileShadingIT {
 
     private static @Nullable File getGlowrootAgentJarFile() {
         for (File file : new File(".").listFiles()) {
-            if (file.getName().matches("glowroot-agent-[0-9.]+(-SNAPSHOT)?.jar")) {
+            if (file.getName().matches("glowroot-agent-core-[0-9.]+(-SNAPSHOT)?.jar")) {
                 return file;
             }
         }
