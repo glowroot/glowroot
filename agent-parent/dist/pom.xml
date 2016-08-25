@@ -154,6 +154,7 @@
                   <Can-Retransform-Classes>true</Can-Retransform-Classes>
                 </manifestEntries>
               </archive>
+              <attach>false</attach>
             </configuration>
             <phase>package</phase>
             <goals>
