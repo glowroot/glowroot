@@ -66,7 +66,7 @@ case "$1" in
                if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_PULL_REQUEST" == "false" && "$version" == *-SNAPSHOT ]]
                then
                  # deploy only glowroot-parent, glowroot-agent-api, glowroot-agent-plugin-api, glowroot-agent-core and glowroot-agent-it-harness artifacts to maven repository
-                 mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-core,:glowroot-agent-it-harness,:glowroot-agent-dist \
+                 mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-core,:glowroot-agent-it-harness,:glowroot-agent \
                                   -Pjavadoc \
                                   -DargLine="$surefire_jvm_args" \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
