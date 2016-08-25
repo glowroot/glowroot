@@ -80,7 +80,7 @@
         "java.lang.Object"
       ],
       "nestingGroup": "hibernate",
-      "captureKind": "trace-entry",
+      "captureKind": "timer",
       "timerName": "hibernate saveOrUpdate",
       "traceEntryMessageTemplate": "hibernate saveOrUpdate: {{0.class.name}}"
     },
@@ -92,7 +92,7 @@
         "java.lang.Object"
       ],
       "nestingGroup": "hibernate",
-      "captureKind": "trace-entry",
+      "captureKind": "timer",
       "timerName": "hibernate saveOrUpdate",
       "traceEntryMessageTemplate": "hibernate saveOrUpdate: {{1.class.name}}"
     },
@@ -103,7 +103,7 @@
         "java.lang.Object"
       ],
       "nestingGroup": "hibernate",
-      "captureKind": "trace-entry",
+      "captureKind": "timer",
       "timerName": "hibernate save",
       "traceEntryMessageTemplate": "hibernate save: {{0.class.name}}"
     },
@@ -115,7 +115,7 @@
         "java.lang.Object"
       ],
       "nestingGroup": "hibernate",
-      "captureKind": "trace-entry",
+      "captureKind": "timer",
       "timerName": "hibernate save",
       "traceEntryMessageTemplate": "hibernate save: {{1.class.name}}"
     },
@@ -126,7 +126,7 @@
         "java.lang.Object"
       ],
       "nestingGroup": "hibernate",
-      "captureKind": "trace-entry",
+      "captureKind": "timer",
       "timerName": "hibernate merge",
       "traceEntryMessageTemplate": "hibernate merge: {{0.class.name}}"
     },
@@ -138,7 +138,7 @@
         "java.lang.Object"
       ],
       "nestingGroup": "hibernate",
-      "captureKind": "trace-entry",
+      "captureKind": "timer",
       "timerName": "hibernate merge",
       "traceEntryMessageTemplate": "hibernate merge: {{1.class.name}}"
     },
@@ -149,7 +149,7 @@
         "java.lang.Object"
       ],
       "nestingGroup": "hibernate",
-      "captureKind": "trace-entry",
+      "captureKind": "timer",
       "timerName": "hibernate update",
       "traceEntryMessageTemplate": "hibernate update: {{0.class.name}}"
     },
@@ -161,7 +161,7 @@
         "java.lang.Object"
       ],
       "nestingGroup": "hibernate",
-      "captureKind": "trace-entry",
+      "captureKind": "timer",
       "timerName": "hibernate update",
       "traceEntryMessageTemplate": "hibernate update: {{1.class.name}}"
     },
@@ -172,7 +172,7 @@
         "java.lang.Object"
       ],
       "nestingGroup": "hibernate",
-      "captureKind": "trace-entry",
+      "captureKind": "timer",
       "timerName": "hibernate persist",
       "traceEntryMessageTemplate": "hibernate persist: {{0.class.name}}"
     },
@@ -184,7 +184,7 @@
         "java.lang.Object"
       ],
       "nestingGroup": "hibernate",
-      "captureKind": "trace-entry",
+      "captureKind": "timer",
       "timerName": "hibernate persist",
       "traceEntryMessageTemplate": "hibernate persist: {{1.class.name}}"
     },
@@ -195,7 +195,7 @@
         "java.lang.Object"
       ],
       "nestingGroup": "hibernate",
-      "captureKind": "trace-entry",
+      "captureKind": "timer",
       "timerName": "hibernate delete",
       "traceEntryMessageTemplate": "hibernate delete: {{0.class.name}}"
     },
@@ -207,7 +207,7 @@
         "java.lang.Object"
       ],
       "nestingGroup": "hibernate",
-      "captureKind": "trace-entry",
+      "captureKind": "timer",
       "timerName": "hibernate delete",
       "traceEntryMessageTemplate": "hibernate delete: {{1.class.name}}"
     }

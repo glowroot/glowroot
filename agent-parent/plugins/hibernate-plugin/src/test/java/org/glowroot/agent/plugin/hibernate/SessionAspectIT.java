@@ -72,11 +72,9 @@ public class SessionAspectIT {
         // when
         Trace trace = container.execute(SessionSave.class);
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("hibernate save: org.glowroot.agent.plugin.hibernate.Employee");
+        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        assertThat(timers).hasSize(1);
+        assertThat(timers.get(0).getName()).isEqualTo("hibernate save");
     }
 
     @Test
@@ -85,11 +83,9 @@ public class SessionAspectIT {
         // when
         Trace trace = container.execute(SessionSaveTwoArg.class);
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("hibernate save: org.glowroot.agent.plugin.hibernate.Employee");
+        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        assertThat(timers).hasSize(1);
+        assertThat(timers.get(0).getName()).isEqualTo("hibernate save");
     }
 
     @Test
@@ -98,11 +94,9 @@ public class SessionAspectIT {
         // when
         Trace trace = container.execute(SessionSaveOrUpdate.class);
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("hibernate saveOrUpdate: org.glowroot.agent.plugin.hibernate.Employee");
+        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        assertThat(timers).hasSize(1);
+        assertThat(timers.get(0).getName()).isEqualTo("hibernate saveOrUpdate");
     }
 
     @Test
@@ -111,11 +105,9 @@ public class SessionAspectIT {
         // when
         Trace trace = container.execute(SessionSaveOrUpdateTwoArg.class);
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("hibernate saveOrUpdate: org.glowroot.agent.plugin.hibernate.Employee");
+        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        assertThat(timers).hasSize(1);
+        assertThat(timers.get(0).getName()).isEqualTo("hibernate saveOrUpdate");
     }
 
     @Test
@@ -124,11 +116,9 @@ public class SessionAspectIT {
         // when
         Trace trace = container.execute(SessionUpdate.class);
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        Trace.Entry entry = entries.get(1);
-        assertThat(entry.getMessage())
-                .isEqualTo("hibernate update: org.glowroot.agent.plugin.hibernate.Employee");
+        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        assertThat(timers).hasSize(1);
+        assertThat(timers.get(0).getName()).isEqualTo("hibernate update");
     }
 
     @Test
@@ -137,11 +127,9 @@ public class SessionAspectIT {
         // when
         Trace trace = container.execute(SessionUpdateTwoArg.class);
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        Trace.Entry entry = entries.get(1);
-        assertThat(entry.getMessage())
-                .isEqualTo("hibernate update: org.glowroot.agent.plugin.hibernate.Employee");
+        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        assertThat(timers).hasSize(1);
+        assertThat(timers.get(0).getName()).isEqualTo("hibernate update");
     }
 
     @Test
@@ -150,11 +138,9 @@ public class SessionAspectIT {
         // when
         Trace trace = container.execute(SessionMerge.class);
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("hibernate merge: org.glowroot.agent.plugin.hibernate.Employee");
+        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        assertThat(timers).hasSize(1);
+        assertThat(timers.get(0).getName()).isEqualTo("hibernate merge");
     }
 
     @Test
@@ -163,11 +149,9 @@ public class SessionAspectIT {
         // when
         Trace trace = container.execute(SessionMergeTwoArg.class);
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("hibernate merge: org.glowroot.agent.plugin.hibernate.Employee");
+        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        assertThat(timers).hasSize(1);
+        assertThat(timers.get(0).getName()).isEqualTo("hibernate merge");
     }
 
     @Test
@@ -176,11 +160,9 @@ public class SessionAspectIT {
         // when
         Trace trace = container.execute(SessionPersist.class);
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("hibernate persist: org.glowroot.agent.plugin.hibernate.Employee");
+        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        assertThat(timers).hasSize(1);
+        assertThat(timers.get(0).getName()).isEqualTo("hibernate persist");
     }
 
     @Test
@@ -189,11 +171,9 @@ public class SessionAspectIT {
         // when
         Trace trace = container.execute(SessionPersistTwoArg.class);
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("hibernate persist: org.glowroot.agent.plugin.hibernate.Employee");
+        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        assertThat(timers).hasSize(1);
+        assertThat(timers.get(0).getName()).isEqualTo("hibernate persist");
     }
 
     @Test
@@ -202,11 +182,9 @@ public class SessionAspectIT {
         // when
         Trace trace = container.execute(SessionDelete.class);
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        Trace.Entry entry = entries.get(1);
-        assertThat(entry.getMessage())
-                .isEqualTo("hibernate delete: org.glowroot.agent.plugin.hibernate.Employee");
+        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        assertThat(timers).hasSize(1);
+        assertThat(timers.get(0).getName()).isEqualTo("hibernate delete");
     }
 
     @Test
@@ -215,11 +193,9 @@ public class SessionAspectIT {
         // when
         Trace trace = container.execute(SessionDeleteTwoArg.class);
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        Trace.Entry entry = entries.get(1);
-        assertThat(entry.getMessage())
-                .isEqualTo("hibernate delete: org.glowroot.agent.plugin.hibernate.Employee");
+        List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
+        assertThat(timers).hasSize(1);
+        assertThat(timers.get(0).getName()).isEqualTo("hibernate delete");
     }
 
     @Test
@@ -229,11 +205,8 @@ public class SessionAspectIT {
         Trace trace = container.execute(SessionFlush.class);
         // then
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage())
-                .isEqualTo("hibernate merge: org.glowroot.agent.plugin.hibernate.Employee");
-        Trace.Entry entry = entries.get(1);
-        assertThat(entry.getMessage()).isEqualTo("hibernate flush");
+        assertThat(entries).hasSize(1);
+        assertThat(entries.get(0).getMessage()).isEqualTo("hibernate flush");
     }
 
     @Test
@@ -243,11 +216,8 @@ public class SessionAspectIT {
         Trace trace = container.execute(TransactionCommit.class);
         // then
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage())
-                .isEqualTo("hibernate save: org.glowroot.agent.plugin.hibernate.Employee");
-        Trace.Entry entry = entries.get(1);
-        assertThat(entry.getMessage()).isEqualTo("hibernate commit");
+        assertThat(entries).hasSize(1);
+        assertThat(entries.get(0).getMessage()).isEqualTo("hibernate commit");
     }
 
     @Test
@@ -257,11 +227,8 @@ public class SessionAspectIT {
         Trace trace = container.execute(TransactionRollback.class);
         // then
         List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage())
-                .isEqualTo("hibernate save: org.glowroot.agent.plugin.hibernate.Employee");
-        Trace.Entry entry = entries.get(1);
-        assertThat(entry.getMessage()).isEqualTo("hibernate rollback");
+        assertThat(entries).hasSize(1);
+        assertThat(entries.get(0).getMessage()).isEqualTo("hibernate rollback");
     }
 
     public abstract static class DoWithSession implements AppUnderTest, TransactionMarker {
@@ -272,10 +239,13 @@ public class SessionAspectIT {
         public void executeApp() throws Exception {
             session = HibernateUtil.getSessionFactory().openSession();
             Transaction transaction = session.beginTransaction();
+            initOutsideTransactionMarker();
             transactionMarker();
             transaction.commit();
             session.close();
         }
+
+        protected void initOutsideTransactionMarker() {}
     }
 
     public static class CriteriaQuery extends DoWithSession {
@@ -314,20 +284,34 @@ public class SessionAspectIT {
     }
 
     public static class SessionUpdate extends DoWithSession {
+
+        private Employee employee;
+
         @Override
         public void transactionMarker() {
-            Employee employee = (Employee) session.merge(new Employee("John"));
-            employee.setName("Hugh");
             session.update(employee);
+        }
+
+        @Override
+        protected void initOutsideTransactionMarker() {
+            employee = (Employee) session.merge(new Employee("John"));
+            employee.setName("Hugh");
         }
     }
 
     public static class SessionUpdateTwoArg extends DoWithSession {
+
+        private Employee employee;
+
         @Override
         public void transactionMarker() {
-            Employee employee = (Employee) session.merge(new Employee("John"));
-            employee.setName("Hugh");
             session.update(null, employee);
+        }
+
+        @Override
+        protected void initOutsideTransactionMarker() {
+            employee = (Employee) session.merge(new Employee("John"));
+            employee.setName("Hugh");
         }
     }
 
@@ -360,18 +344,34 @@ public class SessionAspectIT {
     }
 
     public static class SessionDelete extends DoWithSession {
+
+        private Employee employee;
+
         @Override
         public void transactionMarker() {
-            Employee employee = (Employee) session.merge(new Employee("John"));
             session.delete(employee);
+        }
+
+        @Override
+        protected void initOutsideTransactionMarker() {
+            employee = (Employee) session.merge(new Employee("John"));
+            employee.setName("Hugh");
         }
     }
 
     public static class SessionDeleteTwoArg extends DoWithSession {
+
+        private Employee employee;
+
         @Override
         public void transactionMarker() {
-            Employee employee = (Employee) session.merge(new Employee("John"));
             session.delete(null, employee);
+        }
+
+        @Override
+        protected void initOutsideTransactionMarker() {
+            employee = (Employee) session.merge(new Employee("John"));
+            employee.setName("Hugh");
         }
     }
 
