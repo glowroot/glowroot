@@ -66,8 +66,8 @@ class PluginJsonTransformer {
         String pluginsJson = transform(pluginDescriptors);
         File targetDir = new File(project.getBuild().getDirectory());
         File file = new File(targetDir, "glowroot.plugins.json");
-        if (!targetDir.mkdirs()) {
-            throw new IOException("Could not create directory: " + file.getAbsolutePath());
+        if (!targetDir.exists() && !targetDir.mkdirs()) {
+            throw new IOException("Could not create directory: " + targetDir.getAbsolutePath());
         }
         Files.write(pluginsJson, file, Charsets.UTF_8);
     }
