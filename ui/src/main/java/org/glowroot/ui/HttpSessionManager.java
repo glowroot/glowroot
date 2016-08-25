@@ -117,7 +117,7 @@ class HttpSessionManager {
         if (sessionId != null) {
             Session session = sessions.remove(sessionId);
             if (session != null) {
-                auditLogout(session.authentication.usernameCaseAmbiguous());
+                auditLogout(session.authentication.caseAmbiguousUsername());
             }
         }
     }
@@ -174,7 +174,7 @@ class HttpSessionManager {
                     .offlineViewer(false)
                     .anonymous(true)
                     .ldap(false)
-                    .usernameCaseAmbiguous("anonymous")
+                    .caseAmbiguousUsername("anonymous")
                     .configRepository(configRepository)
                     .build();
         }
@@ -205,7 +205,7 @@ class HttpSessionManager {
                 .offlineViewer(false)
                 .anonymous(username.equalsIgnoreCase("anonymous"))
                 .ldap(ldap)
-                .usernameCaseAmbiguous(username)
+                .caseAmbiguousUsername(username)
                 .roles(roles)
                 .configRepository(configRepository)
                 .build();
@@ -217,7 +217,7 @@ class HttpSessionManager {
                 .offlineViewer(true)
                 .anonymous(true)
                 .ldap(false)
-                .usernameCaseAmbiguous("anonymous")
+                .caseAmbiguousUsername("anonymous")
                 .configRepository(configRepository)
                 .build();
     }
@@ -238,7 +238,7 @@ class HttpSessionManager {
             Session session = i.next().getValue();
             if (session.isTimedOut(currentTimeMillis)) {
                 i.remove();
-                auditSessionTimeout(session.authentication.usernameCaseAmbiguous());
+                auditSessionTimeout(session.authentication.caseAmbiguousUsername());
             }
         }
     }
@@ -311,7 +311,7 @@ class HttpSessionManager {
         abstract boolean offlineViewer();
         abstract boolean anonymous();
         abstract boolean ldap();
-        abstract String usernameCaseAmbiguous(); // the case is exactly as user entered during login
+        abstract String caseAmbiguousUsername(); // the case is exactly as user entered during login
         abstract Set<String> roles();
 
         abstract ConfigRepository configRepository();

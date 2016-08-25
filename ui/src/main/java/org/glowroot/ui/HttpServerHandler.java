@@ -377,7 +377,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         Object responseObject;
         try {
             responseObject = callMethod(jsonServiceMapping, parameterTypes, parameters,
-                    queryParameters, authentication.usernameCaseAmbiguous(), request);
+                    queryParameters, authentication.caseAmbiguousUsername(), request);
         } catch (Exception e) {
             return newHttpResponseFromException(e);
         }

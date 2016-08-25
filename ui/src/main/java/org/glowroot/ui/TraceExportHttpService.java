@@ -75,7 +75,7 @@ class TraceExportHttpService implements HttpService {
     @Override
     public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request,
             Authentication authentication) throws Exception {
-        auditLogger.info("{} - GET {}", authentication.usernameCaseAmbiguous(), request.uri());
+        auditLogger.info("{} - GET {}", authentication.caseAmbiguousUsername(), request.uri());
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         List<String> agentIds = decoder.parameters().get("agent-id");
         if (agentIds == null) {
