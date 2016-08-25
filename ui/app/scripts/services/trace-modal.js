@@ -44,10 +44,7 @@ glowroot.factory('traceModal', [
                 var traceId = $traceParent.data('gtTraceId');
                 var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
                 var url = document.getElementsByTagName('base')[0].href + 'export/trace?';
-                if (agentId) {
-                  url += 'agent-id=' + agentId + '&';
-                }
-                url += 'trace-id=' + traceId;
+                url += 'agent-id=' + agentId + '&trace-id=' + traceId;
                 if (checkLiveTraces) {
                   url += '&check-live-traces=true';
                 }

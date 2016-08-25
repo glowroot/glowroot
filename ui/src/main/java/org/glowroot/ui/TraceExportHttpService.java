@@ -56,6 +56,7 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 class TraceExportHttpService implements HttpService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceExportHttpService.class);
+    private static final Logger auditLogger = LoggerFactory.getLogger("audit");
 
     private final TraceCommonService traceCommonService;
     private final String version;
@@ -74,6 +75,7 @@ class TraceExportHttpService implements HttpService {
     @Override
     public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request,
             Authentication authentication) throws Exception {
+        auditLogger.info("{} - GET {}", authentication.usernameCaseAmbiguous(), request.uri());
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         List<String> agentIds = decoder.parameters().get("agent-id");
         if (agentIds == null) {

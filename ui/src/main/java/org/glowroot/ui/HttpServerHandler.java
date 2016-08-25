@@ -89,6 +89,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServerHandler.class);
+    private static final Logger auditLogger = LoggerFactory.getLogger("audit");
+
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final long TEN_YEARS = DAYS.toMillis(365 * 10);
@@ -593,6 +595,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 parameters.add(QueryStrings.decode(queryParameters, bindRequest));
             } else {
                 String content = request.content().toString(Charsets.ISO_8859_1);
+                auditLogger.info("{} - POST {} - {}", usernameCaseAmbiguous, request.uri(),
+                        content);
                 if (bindRequest == String.class) {
                     parameters.add(content);
                 } else {

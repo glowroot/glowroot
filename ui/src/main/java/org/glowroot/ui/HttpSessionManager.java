@@ -54,6 +54,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 class HttpSessionManager {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpSessionManager.class);
+    private static final Logger auditLogger = LoggerFactory.getLogger("audit");
 
     private final boolean fat;
     private final boolean offlineViewer;
@@ -75,6 +76,7 @@ class HttpSessionManager {
 
     FullHttpResponse login(String username, String password) throws Exception {
         if (username.equalsIgnoreCase("anonymous")) {
+            auditFailedLogin(username);
             return buildIncorrectLoginResponse();
         }
         Authentication authentication = null;
@@ -85,6 +87,7 @@ class HttpSessionManager {
                 roles = authenticateAgainstLdapAndGetGlowrootRoles(username, password);
             } catch (AuthenticationException e) {
                 logger.debug(e.getMessage(), e);
+                auditFailedLogin(username);
                 return buildIncorrectLoginResponse();
             }
             if (userConfig != null) {
@@ -98,24 +101,24 @@ class HttpSessionManager {
             authentication = getAuthentication(userConfig.username(), userConfig.roles(), false);
         }
         if (authentication == null) {
+            auditFailedLogin(username);
             return buildIncorrectLoginResponse();
         } else {
             String text = layoutService.getLayout(authentication);
             FullHttpResponse response = HttpServices.createJsonResponse(text, OK);
             createSession(response, authentication);
+            auditSuccessfulLogin(username);
             return response;
         }
-    }
-
-    private FullHttpResponse buildIncorrectLoginResponse() {
-        String text = "{\"incorrectLogin\":true}";
-        return HttpServices.createJsonResponse(text, OK);
     }
 
     void signOut(HttpRequest request) {
         String sessionId = getSessionId(request);
         if (sessionId != null) {
-            sessions.remove(sessionId);
+            Session session = sessions.remove(sessionId);
+            if (session != null) {
+                auditLogout(session.authentication.usernameCaseAmbiguous());
+            }
         }
     }
 
@@ -126,10 +129,6 @@ class HttpSessionManager {
         cookie.setPath("/");
         response.headers().add(HttpHeaderNames.SET_COOKIE,
                 ServerCookieEncoder.STRICT.encode(cookie));
-    }
-
-    void clearAllSessions() {
-        sessions.clear();
     }
 
     Authentication getAuthentication(HttpRequest request) {
@@ -182,6 +181,11 @@ class HttpSessionManager {
         return getAuthentication(userConfig.username(), userConfig.roles(), false);
     }
 
+    private FullHttpResponse buildIncorrectLoginResponse() {
+        String text = "{\"incorrectLogin\":true}";
+        return HttpServices.createJsonResponse(text, OK);
+    }
+
     private void createSession(HttpResponse response, Authentication authentication)
             throws Exception {
         String sessionId = new BigInteger(130, secureRandom).toString(32);
@@ -231,8 +235,10 @@ class HttpSessionManager {
         long currentTimeMillis = clock.currentTimeMillis();
         Iterator<Entry<String, Session>> i = sessions.entrySet().iterator();
         while (i.hasNext()) {
-            if (i.next().getValue().isTimedOut(currentTimeMillis)) {
+            Session session = i.next().getValue();
+            if (session.isTimedOut(currentTimeMillis)) {
                 i.remove();
+                auditSessionTimeout(session.authentication.usernameCaseAmbiguous());
             }
         }
     }
@@ -251,6 +257,22 @@ class HttpSessionManager {
         Set<String> ldapGroupDns = LdapAuthentication.authenticateAndGetLdapGroupDns(username,
                 password, ldapConfig, configRepository.getSecretKey());
         return LdapAuthentication.getGlowrootRoles(ldapGroupDns, ldapConfig);
+    }
+
+    private void auditFailedLogin(String username) {
+        auditLogger.info("{} - failed login", username);
+    }
+
+    private void auditSuccessfulLogin(String username) {
+        auditLogger.info("{} - successful login", username);
+    }
+
+    private void auditLogout(String username) {
+        auditLogger.info("{} - logout", username);
+    }
+
+    private void auditSessionTimeout(String username) {
+        auditLogger.info("{} - session timeout", username);
     }
 
     private static boolean validatePassword(String password, String passwordHash)
