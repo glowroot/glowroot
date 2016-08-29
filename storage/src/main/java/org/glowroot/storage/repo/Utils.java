@@ -27,11 +27,14 @@ public class Utils {
     }
 
     private static String getPercentileSuffix(String percentileText) {
-        if (percentileText.equals("11") || percentileText.endsWith(".11")) {
+        if (percentileText.equals("11") || percentileText.endsWith(".11")
+                || percentileText.endsWith(",11")) {
             return "th";
-        } else if (percentileText.equals("12") || percentileText.endsWith(".12")) {
+        } else if (percentileText.equals("12") || percentileText.endsWith(".12")
+                || percentileText.endsWith(",12")) {
             return "th";
-        } else if (percentileText.equals("13") || percentileText.endsWith(".13")) {
+        } else if (percentileText.equals("13") || percentileText.endsWith(".13")
+                || percentileText.endsWith(",13")) {
             return "th";
         }
         switch (percentileText.charAt(percentileText.length() - 1)) {

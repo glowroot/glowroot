@@ -15,6 +15,8 @@
  */
 package org.glowroot.storage.repo.helper;
 
+import java.text.DecimalFormat;
+
 import javax.crypto.SecretKey;
 import javax.mail.Message;
 
@@ -141,38 +143,37 @@ public class AlertingServiceTest {
 
     @Test
     public void shouldReturnCorrectPercentileName() {
-        assertThat(Utils.getPercentileWithSuffix(0)).isEqualTo("0th");
-        assertThat(Utils.getPercentileWithSuffix(1)).isEqualTo("1st");
-        assertThat(Utils.getPercentileWithSuffix(2)).isEqualTo("2nd");
-        assertThat(Utils.getPercentileWithSuffix(3)).isEqualTo("3rd");
-        assertThat(Utils.getPercentileWithSuffix(4)).isEqualTo("4th");
-        assertThat(Utils.getPercentileWithSuffix(9)).isEqualTo("9th");
-        assertThat(Utils.getPercentileWithSuffix(10)).isEqualTo("10th");
-        assertThat(Utils.getPercentileWithSuffix(11)).isEqualTo("11th");
-        assertThat(Utils.getPercentileWithSuffix(12)).isEqualTo("12th");
-        assertThat(Utils.getPercentileWithSuffix(13)).isEqualTo("13th");
-        assertThat(Utils.getPercentileWithSuffix(14)).isEqualTo("14th");
-        assertThat(Utils.getPercentileWithSuffix(20)).isEqualTo("20th");
-        assertThat(Utils.getPercentileWithSuffix(21)).isEqualTo("21st");
-        assertThat(Utils.getPercentileWithSuffix(22)).isEqualTo("22nd");
-        assertThat(Utils.getPercentileWithSuffix(23)).isEqualTo("23rd");
-        assertThat(Utils.getPercentileWithSuffix(24)).isEqualTo("24th");
+        shouldReturnCorrectPercentileName(0, "th");
+        shouldReturnCorrectPercentileName(1, "st");
+        shouldReturnCorrectPercentileName(2, "nd");
+        shouldReturnCorrectPercentileName(3, "rd");
+        shouldReturnCorrectPercentileName(4, "th");
+        shouldReturnCorrectPercentileName(9, "th");
+        shouldReturnCorrectPercentileName(10, "th");
+        shouldReturnCorrectPercentileName(11, "th");
+        shouldReturnCorrectPercentileName(12, "th");
+        shouldReturnCorrectPercentileName(13, "th");
+        shouldReturnCorrectPercentileName(14, "th");
+        shouldReturnCorrectPercentileName(20, "th");
+        shouldReturnCorrectPercentileName(21, "st");
+        shouldReturnCorrectPercentileName(22, "nd");
+        shouldReturnCorrectPercentileName(23, "rd");
+        shouldReturnCorrectPercentileName(24, "th");
 
-        assertThat(Utils.getPercentileWithSuffix(50.0)).isEqualTo("50th");
-        assertThat(Utils.getPercentileWithSuffix(50.1)).isEqualTo("50.1st");
-        assertThat(Utils.getPercentileWithSuffix(50.2)).isEqualTo("50.2nd");
-        assertThat(Utils.getPercentileWithSuffix(50.3)).isEqualTo("50.3rd");
-        assertThat(Utils.getPercentileWithSuffix(50.4)).isEqualTo("50.4th");
-        assertThat(Utils.getPercentileWithSuffix(50.10)).isEqualTo("50.1st");
-        assertThat(Utils.getPercentileWithSuffix(50.11)).isEqualTo("50.11th");
-        assertThat(Utils.getPercentileWithSuffix(50.12)).isEqualTo("50.12th");
-        assertThat(Utils.getPercentileWithSuffix(50.13)).isEqualTo("50.13th");
-        assertThat(Utils.getPercentileWithSuffix(50.14)).isEqualTo("50.14th");
-        assertThat(Utils.getPercentileWithSuffix(50.20)).isEqualTo("50.2nd");
-        assertThat(Utils.getPercentileWithSuffix(50.21)).isEqualTo("50.21st");
-        assertThat(Utils.getPercentileWithSuffix(50.22)).isEqualTo("50.22nd");
-        assertThat(Utils.getPercentileWithSuffix(50.23)).isEqualTo("50.23rd");
-        assertThat(Utils.getPercentileWithSuffix(50.24)).isEqualTo("50.24th");
+        shouldReturnCorrectPercentileName(50, "th");
+        shouldReturnCorrectPercentileName(50.1, "st");
+        shouldReturnCorrectPercentileName(50.2, "nd");
+        shouldReturnCorrectPercentileName(50.3, "rd");
+        shouldReturnCorrectPercentileName(50.4, "th");
+        shouldReturnCorrectPercentileName(50.11, "th");
+        shouldReturnCorrectPercentileName(50.12, "th");
+        shouldReturnCorrectPercentileName(50.13, "th");
+        shouldReturnCorrectPercentileName(50.14, "th");
+        shouldReturnCorrectPercentileName(50.2, "nd");
+        shouldReturnCorrectPercentileName(50.21, "st");
+        shouldReturnCorrectPercentileName(50.22, "nd");
+        shouldReturnCorrectPercentileName(50.23, "rd");
+        shouldReturnCorrectPercentileName(50.24, "th");
     }
 
     private void setupForTransaction(long... histogramValues) throws Exception {
@@ -235,6 +236,11 @@ public class AlertingServiceTest {
         when(gaugeValueRepository.readGaugeValues(AGENT_ID,
                 "java.lang:type=GarbageCollector,name=ConcurrentMarkSweep:CollectionTime[counter]",
                 60001, 120000, 0)).thenReturn(ImmutableList.of(gaugeValue));
+    }
+
+    private static void shouldReturnCorrectPercentileName(double percentile, String suffix) {
+        assertThat(Utils.getPercentileWithSuffix(percentile))
+                .isEqualTo(new DecimalFormat().format(percentile) + suffix);
     }
 
     static class MockMailService extends MailService {
