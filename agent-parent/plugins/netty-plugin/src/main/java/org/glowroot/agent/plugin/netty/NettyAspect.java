@@ -157,6 +157,41 @@ public class NettyAspect {
         }
     }
 
+    @Pointcut(className = "io.netty.channel.ChannelHandlerContext",
+            methodName = "fireChannelReadComplete", methodParameterTypes = {},
+            nestingGroup = "netty-inbound", timerName = "http request")
+    public static class InboundCompleteAdvice {
+
+        @OnBefore
+        public static @Nullable TraceEntry onBefore(
+                @BindReceiver ChannelHandlerContext channelHandlerContext) {
+            ChannelMixin channel = channelHandlerContext.glowroot$channel();
+            if (channel == null) {
+                return null;
+            }
+            AuxThreadContext auxContext = channel.glowroot$getAuxContext();
+            if (auxContext == null) {
+                return null;
+            }
+            return auxContext.start();
+        }
+
+        @OnReturn
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.end();
+            }
+        }
+
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable throwable,
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.endWithError(throwable);
+            }
+        }
+    }
+
     @Pointcut(className = "io.netty.channel.ChannelOutboundHandler", methodName = "write",
             methodParameterTypes = {"io.netty.channel.ChannelHandlerContext",
                     "java.lang.Object", "io.netty.channel.ChannelPromise"})

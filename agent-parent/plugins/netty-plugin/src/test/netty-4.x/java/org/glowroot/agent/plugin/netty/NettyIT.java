@@ -64,6 +64,16 @@ public class NettyIT {
     }
 
     @Test
+    public void shouldCaptureHttpChunkedResponse() throws Exception {
+        // given
+        // when
+        Trace trace = container.execute(ExecuteHttpChunked.class);
+        // then
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/chunked");
+        assertThat(trace.getEntryCount()).isZero();
+    }
+
+    @Test
     public void shouldCaptureHttpGetWithException() throws Exception {
         // given
         // when
@@ -89,6 +99,22 @@ public class NettyIT {
             HttpServer server = new HttpServer(port);
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet = new HttpGet("http://localhost:" + port + "/abc?xyz=123");
+            int statusCode = httpClient.execute(httpGet).getStatusLine().getStatusCode();
+            if (statusCode != 200) {
+                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            }
+            server.close();
+        }
+    }
+
+    public static class ExecuteHttpChunked implements AppUnderTest {
+
+        @Override
+        public void executeApp() throws Exception {
+            int port = getAvailablePort();
+            HttpServer server = new HttpServer(port);
+            CloseableHttpClient httpClient = HttpClients.createDefault();
+            HttpGet httpGet = new HttpGet("http://localhost:" + port + "/chunked");
             int statusCode = httpClient.execute(httpGet).getStatusLine().getStatusCode();
             if (statusCode != 200) {
                 throw new IllegalStateException("Unexpected status code: " + statusCode);
