@@ -26,8 +26,6 @@ glowroot.factory('login', [
         message = msg;
         originalUrl = doNotSaveLocation ? '/' : $location.url();
         if (originalUrl !== '/login') {
-          // don't do .replace() here, since then back button doesn't work after clicking login
-          // (this is relevant when anonymous access is enabled)
           $location.url('/login');
           $location.replace();
         }
