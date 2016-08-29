@@ -555,10 +555,6 @@
                   <shadedPattern>org.glowroot.agent.shaded.netty</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>org.apache.shiro</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.apache.shiro</shadedPattern>
-                </relocation>
-                <relocation>
                   <pattern>org.apache.commons</pattern>
                   <shadedPattern>org.glowroot.agent.shaded.apache.commons</shadedPattern>
                 </relocation>
