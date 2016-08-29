@@ -60,19 +60,20 @@ glowroot.config([
         }
       }];
     };
-    $urlRouterProvider.otherwise(function () {
+    $urlRouterProvider.otherwise(function ($injector) {
+      var $rootScope = $injector.get('$rootScope');
       // TODO revisit this, especially for server
-      if (!window.layout) {
+      if (!$rootScope.layout) {
         // don't seem able to return promise for 'otherwise', oh well, this is only for grunt serve anyways
         return 'transaction/average';
       }
-      if (window.layout.showNavbarTransaction) {
+      if ($rootScope.layout.showNavbarTransaction) {
         return 'transaction/average';
-      } else if (window.layout.showNavbarError) {
+      } else if ($rootScope.layout.showNavbarError) {
         return 'error/messages';
-      } else if (window.layout.showNavbarJvm) {
-        if (window.layout.fat) {
-          var jvmPermissions = window.layout.agentRollups[''].permissions.jvm;
+      } else if ($rootScope.layout.showNavbarJvm) {
+        if ($rootScope.layout.fat) {
+          var jvmPermissions = $rootScope.layout.agentRollups[''].permissions.jvm;
           if (jvmPermissions.gauges) {
             return 'jvm/gauges';
           } else if (jvmPermissions.threadDump) {
@@ -94,7 +95,7 @@ glowroot.config([
           // (deal with this when revisiting entire 'otherwise', see comment above)
           return 'jvm/gauges';
         }
-      } else if (window.layout.showNavbarConfig) {
+      } else if ($rootScope.layout.showNavbarConfig) {
         return 'config/transaction';
       } else {
         return 'admin/user-list';
