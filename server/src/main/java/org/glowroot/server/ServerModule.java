@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.security.CodeSource;
 import java.util.List;
 import java.util.Properties;
 
@@ -29,6 +31,7 @@ import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
@@ -69,7 +72,30 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 class ServerModule {
 
-    private static final Logger logger = LoggerFactory.getLogger(ServerModule.class);
+    private static final Logger logger;
+
+    static {
+        CodeSource codeSource = ServerModule.class.getProtectionDomain().getCodeSource();
+        File glowrootServerJarFile = null;
+        Exception exception = null;
+        try {
+            glowrootServerJarFile = getGlowrootServerJarFile(codeSource);
+        } catch (URISyntaxException e) {
+            exception = e;
+        }
+        if (glowrootServerJarFile != null) {
+            File logbackXmlOverride =
+                    new File(glowrootServerJarFile.getParentFile(), "logback.xml");
+            if (logbackXmlOverride.exists()) {
+                System.setProperty("logback.configurationFile",
+                        logbackXmlOverride.getAbsolutePath());
+            }
+        }
+        logger = LoggerFactory.getLogger(ServerModule.class);
+        if (exception != null) {
+            logger.error(exception.getMessage(), exception);
+        }
+    }
 
     private final Cluster cluster;
     private final Session session;
@@ -187,6 +213,19 @@ class ServerModule {
         this.rollupService = rollupService;
         this.server = server;
         this.uiModule = uiModule;
+    }
+
+    @VisibleForTesting
+    static @Nullable File getGlowrootServerJarFile(@Nullable CodeSource codeSource)
+            throws URISyntaxException {
+        if (codeSource == null) {
+            return null;
+        }
+        File codeSourceFile = new File(codeSource.getLocation().toURI());
+        if (codeSourceFile.getName().endsWith(".jar")) {
+            return codeSourceFile;
+        }
+        return null;
     }
 
     private static Session connect(ServerConfiguration serverConfig) throws InterruptedException {
