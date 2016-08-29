@@ -27,6 +27,7 @@
     <appender-ref ref="CONSOLE" />
     <appender-ref ref="FILE" />
   </root>
+  <logger name="audit" level="off" />
   <!-- this is to deal with "Sending GOAWAY failed" that occur when connection to central fails
     (which is already logged more nicely by DownstreamServiceObserver) -->
   <logger name="io.netty.handler.codec.http2.Http2ConnectionHandler" level="off" />
