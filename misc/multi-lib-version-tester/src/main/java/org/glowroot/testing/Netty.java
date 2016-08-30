@@ -47,13 +47,18 @@ public class Netty {
         for (int i = 0; i <= 5; i++) {
             runNetty("3.10." + i + ".Final", "netty-3.x");
         }
-        for (int i = 0; i <= 38; i++) {
+        for (int i = 0; i <= 41; i++) {
             runNetty("4.0." + i + ".Final", "netty-4.x");
         }
         for (int i = 1; i <= 7; i++) {
             runNetty("4.1.0.CR" + i, "netty-4.x");
         }
         runNetty("4.1.0.Final", "netty-4.x");
+        runNetty("4.1.1.Final", "netty-4.x");
+        runNetty("4.1.2.Final", "netty-4.x");
+        runNetty("4.1.3.Final", "netty-4.x");
+        runNetty("4.1.4.Final", "netty-4.x");
+        runNetty("4.1.5.Final", "netty-4.x");
     }
 
     private static void runVertx() throws Exception {
