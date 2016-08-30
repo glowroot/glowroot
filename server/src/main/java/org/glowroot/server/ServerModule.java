@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
+import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
@@ -239,6 +240,9 @@ class ServerModule {
                                 serverConfig.cassandraContactPoint().toArray(new String[0]))
                         // aggressive reconnect policy seems ok since not many clients
                         .withReconnectionPolicy(new ConstantReconnectionPolicy(1000))
+                        // let driver know that only idempotent queries are used so it will retry on
+                        // timeout
+                        .withQueryOptions(new QueryOptions().setDefaultIdempotence(true))
                         .build();
                 return cluster.connect();
             } catch (NoHostAvailableException e) {

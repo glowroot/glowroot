@@ -48,7 +48,7 @@ public class TraceDaoIT {
     @BeforeClass
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
-        cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
+        cluster = Clusters.newCluster();
         session = cluster.newSession();
         session.execute("create keyspace if not exists glowroot_unit_tests with replication ="
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");

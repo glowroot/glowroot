@@ -21,7 +21,6 @@ import java.util.Map;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SocketOptions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.junit.AfterClass;
@@ -67,10 +66,7 @@ public class AggregateDaoIT {
     @BeforeClass
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
-        cluster = Cluster.builder().addContactPoint("127.0.0.1")
-                // long read timeout is sometimes needed on slow travis ci machines
-                .withSocketOptions(new SocketOptions().setReadTimeoutMillis(30000))
-                .build();
+        cluster = Clusters.newCluster();
         session = cluster.newSession();
         session.execute("create keyspace if not exists glowroot_unit_tests with replication ="
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");

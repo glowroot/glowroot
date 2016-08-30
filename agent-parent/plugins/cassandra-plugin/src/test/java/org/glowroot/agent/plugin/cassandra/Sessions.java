@@ -15,18 +15,20 @@
  */
 package org.glowroot.agent.plugin.cassandra;
 
-import java.io.IOException;
+import java.lang.reflect.Method;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SocketOptions;
 
 class Sessions {
 
-    static Session createSession() throws IOException {
+    static Session createSession() throws Exception {
         Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1")
                 // long read timeout is sometimes needed on slow travis ci machines
                 .withSocketOptions(new SocketOptions().setReadTimeoutMillis(30000))
+                .withQueryOptions(getQueryOptions())
                 .build();
         Session session = cluster.connect();
         session.execute("CREATE KEYSPACE IF NOT EXISTS test WITH REPLICATION ="
@@ -45,5 +47,20 @@ class Sessions {
         Cluster cluster = session.getCluster();
         session.close();
         cluster.close();
+    }
+
+    // if possible, let driver know that only idempotent queries are used so it will retry on
+    // timeout
+    private static QueryOptions getQueryOptions() {
+        QueryOptions queryOptions = new QueryOptions();
+        Method setDefaultIdempotenceMethod;
+        try {
+            setDefaultIdempotenceMethod =
+                    SocketOptions.class.getMethod("setDefaultIdempotence", boolean.class);
+            setDefaultIdempotenceMethod.invoke(queryOptions, true);
+        } catch (Exception e) {
+            // early version of driver
+        }
+        return queryOptions;
     }
 }
