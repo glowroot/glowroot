@@ -18,8 +18,8 @@ package org.glowroot.agent.model;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -39,7 +39,6 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
 import com.google.common.io.BaseEncoding;
@@ -64,6 +63,7 @@ import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.model.ServiceCallCollector;
 import org.glowroot.common.util.Cancellable;
 import org.glowroot.common.util.NotAvailableAware;
+import org.glowroot.common.util.Traverser;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -412,6 +412,8 @@ public class Transaction {
             }
         }
         List<Trace.Entry> entries = Lists.newArrayList();
+        new ParentChildMapTrimmer(mainThreadContext.getRootEntry(), parentChildMap, captureTick)
+                .traverse();
         addProtobufChildEntries(mainThreadContext.getRootEntry(), parentChildMap, startTick,
                 captureTick, 0, entries, async);
         return entries;
@@ -753,25 +755,16 @@ public class Transaction {
     }
 
     private static void addProtobufChildEntries(TraceEntryImpl entry,
-            Multimap<TraceEntryImpl, TraceEntryImpl> parentChildMap, long transactionStartTick,
+            ListMultimap<TraceEntryImpl, TraceEntryImpl> parentChildMap, long transactionStartTick,
             long captureTick, int depth, List<Trace.Entry> entries, boolean removeSingleAuxEntry) {
         if (!parentChildMap.containsKey(entry)) {
+            // check containsKey to avoid creating garbage empty list via ListMultimap
             return;
         }
         Collection<TraceEntryImpl> childEntries = parentChildMap.get(entry);
-        Iterator<TraceEntryImpl> i = childEntries.iterator();
-        while (i.hasNext()) {
-            TraceEntryImpl childEntry = i.next();
-            if (childEntry.getStartTick() > captureTick) {
-                i.remove();
-            } else if (isEmptyAuxThreadRoot(childEntry, parentChildMap)) {
-                i.remove();
-            }
-        }
         for (TraceEntryImpl childEntry : childEntries) {
             boolean singleAuxEntry = childEntries.size() == 1 && childEntry.isAuxThreadRoot();
-            if (singleAuxEntry
-                    && (removeSingleAuxEntry || isRemovableAuxEntry(childEntry, parentChildMap))) {
+            if (singleAuxEntry && removeSingleAuxEntry) {
                 addProtobufChildEntries(childEntry, parentChildMap, transactionStartTick,
                         captureTick, depth, entries, removeSingleAuxEntry);
             } else {
@@ -780,32 +773,6 @@ public class Transaction {
                         captureTick, depth + 1, entries, false);
             }
         }
-    }
-
-    private static boolean isEmptyAuxThreadRoot(TraceEntryImpl entry,
-            Multimap<TraceEntryImpl, TraceEntryImpl> parentChildMap) {
-        if (!entry.isAuxThreadRoot()) {
-            return false;
-        }
-        for (TraceEntryImpl childEntry : parentChildMap.get(entry)) {
-            if (!isEmptyAuxThreadRoot(childEntry, parentChildMap)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static boolean isRemovableAuxEntry(TraceEntryImpl entry,
-            Multimap<TraceEntryImpl, TraceEntryImpl> parentChildMap) {
-        if (!entry.isAuxThreadRoot()) {
-            return false;
-        }
-        for (TraceEntryImpl childEntry : parentChildMap.get(entry)) {
-            if (!childEntry.isAuxThreadRoot()) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private ListMultimap<TraceEntryImpl, ThreadContextImpl> buildPriorEntryChildThreadContextMap() {
@@ -951,6 +918,72 @@ public class Transaction {
         @Override
         public Message get() {
             return message;
+        }
+    }
+
+    private static class ParentChildMapTrimmer extends Traverser<TraceEntryImpl, RuntimeException> {
+
+        private final ListMultimap<TraceEntryImpl, TraceEntryImpl> parentChildMap;
+        private final long captureTick;
+
+        private ParentChildMapTrimmer(TraceEntryImpl rootNode,
+                ListMultimap<TraceEntryImpl, TraceEntryImpl> parentChildMap,
+                long captureTick) {
+            super(rootNode);
+            this.parentChildMap = parentChildMap;
+            this.captureTick = captureTick;
+        }
+
+        @Override
+        public List<TraceEntryImpl> visit(TraceEntryImpl node, int depth) {
+            if (!parentChildMap.containsKey(node)) {
+                // check containsKey to avoid creating garbage empty list via ListMultimap
+                return ImmutableList.of();
+            }
+            return parentChildMap.get(node);
+        }
+
+        @Override
+        public void revisitAfterChildren(TraceEntryImpl node) {
+            if (!parentChildMap.containsKey(node)) {
+                // check containsKey to avoid creating garbage empty list via ListMultimap
+                return;
+            }
+            List<TraceEntryImpl> childEntries = parentChildMap.get(node);
+            ListIterator<TraceEntryImpl> i = childEntries.listIterator();
+            while (i.hasNext()) {
+                TraceEntryImpl childEntry = i.next();
+                if (childEntry.getStartTick() > captureTick) {
+                    i.remove();
+                }
+            }
+            i = childEntries.listIterator();
+            while (i.hasNext()) {
+                TraceEntryImpl childEntry = i.next();
+                if (!childEntry.isAuxThreadRoot()) {
+                    continue;
+                }
+                if (!parentChildMap.containsKey(childEntry)) {
+                    // check containsKey to avoid creating garbage empty list via ListMultimap
+                    //
+                    // remove empty aux thread root
+                    i.remove();
+                    continue;
+                }
+                List<TraceEntryImpl> subChildEntries = parentChildMap.get(childEntry);
+                if (subChildEntries.isEmpty()) {
+                    // remove empty aux thread root
+                    i.remove();
+                    continue;
+                }
+                if (subChildEntries.size() == 1) {
+                    TraceEntryImpl singleSubChildEntry = subChildEntries.get(0);
+                    if (singleSubChildEntry.isAuxThreadRoot()) {
+                        // compact consecutive single aux root entries
+                        i.set(singleSubChildEntry);
+                    }
+                }
+            }
         }
     }
 }
