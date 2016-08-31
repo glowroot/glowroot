@@ -569,6 +569,8 @@ public class LiveJvmServiceImpl implements LiveJvmService {
         String attributeType = attribute.getType();
         if (numericAttributeTypes.contains(attributeType)) {
             attributeNames.add(attribute.getName());
+        } else if (attributeType.equals("java.lang.Object") && value instanceof Number) {
+            attributeNames.add(attribute.getName());
         } else if (attributeType.equals("java.lang.String") && value instanceof String) {
             try {
                 Double.parseDouble((String) value);
