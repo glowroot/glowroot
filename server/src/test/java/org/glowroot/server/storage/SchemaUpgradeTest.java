@@ -23,14 +23,14 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RoleDaoTest {
+public class SchemaUpgradeTest {
 
     @Test
     public void shouldUpgradeWildcardPermissions() throws Exception {
         // given
         Set<String> permissions = ImmutableSet.of("agent:*:view");
         // when
-        permissions = RoleDao.upgradePermissions(permissions);
+        permissions = SchemaUpgrade.upgradePermissions(permissions);
         // then
         assertThat(Ordering.natural().sortedCopy(permissions)).containsExactly(
                 "agent:*:error", "agent:*:jvm:environment", "agent:*:jvm:gauges",
@@ -42,7 +42,7 @@ public class RoleDaoTest {
         // given
         Set<String> permissions = ImmutableSet.of("agent:abc:view");
         // when
-        permissions = RoleDao.upgradePermissions(permissions);
+        permissions = SchemaUpgrade.upgradePermissions(permissions);
         // then
         assertThat(Ordering.natural().sortedCopy(permissions)).containsExactly("agent:abc:error",
                 "agent:abc:jvm:environment", "agent:abc:jvm:gauges", "agent:abc:transaction");
@@ -53,7 +53,7 @@ public class RoleDaoTest {
         // given
         Set<String> permissions = ImmutableSet.of("agent:abc,mno,xyz:view");
         // when
-        permissions = RoleDao.upgradePermissions(permissions);
+        permissions = SchemaUpgrade.upgradePermissions(permissions);
         // then
         assertThat(Ordering.natural().sortedCopy(permissions)).containsExactly(
                 "agent:abc,mno,xyz:error", "agent:abc,mno,xyz:jvm:environment",

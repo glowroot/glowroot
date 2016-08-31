@@ -59,6 +59,7 @@ import org.glowroot.server.storage.ConfigRepositoryImpl;
 import org.glowroot.server.storage.ConfigRepositoryImpl.ConfigListener;
 import org.glowroot.server.storage.GaugeValueDao;
 import org.glowroot.server.storage.RoleDao;
+import org.glowroot.server.storage.SchemaUpgrade;
 import org.glowroot.server.storage.ServerConfigDao;
 import org.glowroot.server.storage.TraceDao;
 import org.glowroot.server.storage.TransactionTypeDao;
@@ -124,10 +125,15 @@ class ServerModule {
                     + " with replication = {'class': 'SimpleStrategy', 'replication_factor': 1}");
             session.execute("use " + serverConfig.cassandraKeyspace());
 
-            ServerConfigDao serverConfigDao = new ServerConfigDao(session);
-            AgentDao agentDao = new AgentDao(session);
             KeyspaceMetadata keyspace =
                     cluster.getMetadata().getKeyspace(serverConfig.cassandraKeyspace());
+            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspace);
+            Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
+            if (initialSchemaVersion != null) {
+                schemaUpgrade.upgrade();
+            }
+            ServerConfigDao serverConfigDao = new ServerConfigDao(session);
+            AgentDao agentDao = new AgentDao(session);
             UserDao userDao = new UserDao(session, keyspace);
             RoleDao roleDao = new RoleDao(session, keyspace);
             ConfigRepositoryImpl configRepository =
@@ -166,6 +172,10 @@ class ServerModule {
             });
             rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao,
                     downstreamService, clock);
+
+            if (initialSchemaVersion == null) {
+                schemaUpgrade.updateSchemaVersionToCurent();
+            }
 
             uiModule = new CreateUiModuleBuilder()
                     .fat(false)

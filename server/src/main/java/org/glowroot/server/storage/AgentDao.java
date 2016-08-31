@@ -27,7 +27,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
@@ -39,8 +38,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.repo.AgentRepository;
 import org.glowroot.common.repo.ConfigRepository;
@@ -55,8 +52,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 // TODO need to validate cannot have agentIds "A/B/C" and "A/B" since there is logic elsewhere
 // (at least in the UI) that "A/B" is only a rollup
 public class AgentDao implements AgentRepository {
-
-    private static final Logger logger = LoggerFactory.getLogger(AgentDao.class);
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -86,9 +81,6 @@ public class AgentDao implements AgentRepository {
 
     public AgentDao(Session session) {
         this.session = session;
-
-        renameSystemInfoColumnIfNeeded(session);
-        addConfigUpdateColumnsIfNeeded(session);
 
         session.execute("create table if not exists agent (agent_id varchar, environment blob,"
                 + " config blob, config_update boolean, config_update_token uuid,"
@@ -288,46 +280,6 @@ public class AgentDao implements AgentRepository {
             return null;
         }
         return AgentConfig.parseFrom(ByteString.copyFrom(bytes));
-    }
-
-    // upgrade from 0.9.1 to 0.9.2
-    private static void renameSystemInfoColumnIfNeeded(Session session) {
-        ResultSet results;
-        try {
-            results = session.execute("select agent_id, system_info from agent");
-        } catch (InvalidQueryException e) {
-            // system_info column does not exist
-            logger.debug(e.getMessage(), e);
-            return;
-        }
-        try {
-            session.execute("alter table agent add environment blob");
-        } catch (InvalidQueryException e) {
-            // previously failed mid-upgrade
-            logger.debug(e.getMessage(), e);
-        }
-        PreparedStatement preparedStatement =
-                session.prepare("insert into agent (agent_id, environment) values (?, ?)");
-        for (Row row : results) {
-            BoundStatement boundStatement = preparedStatement.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setBytes(1, row.getBytes(1));
-            session.execute(boundStatement);
-        }
-        session.execute("alter table agent drop system_info");
-    }
-
-    private static void addConfigUpdateColumnsIfNeeded(Session session) {
-        try {
-            session.execute("alter table agent add config_update boolean");
-        } catch (InvalidQueryException e) {
-            logger.debug(e.getMessage(), e);
-        }
-        try {
-            session.execute("alter table agent add config_update_token uuid");
-        } catch (InvalidQueryException e) {
-            logger.debug(e.getMessage(), e);
-        }
     }
 
     @Value.Immutable

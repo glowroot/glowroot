@@ -34,6 +34,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -43,6 +44,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.ImmutableTracePoint;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
@@ -68,6 +71,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 public class TraceDao implements TraceRepository {
+
+    private static final Logger logger = LoggerFactory.getLogger(TraceDao.class);
 
     private static final String WITH_DTCS =
             "with compaction = { 'class' : 'DateTieredCompactionStrategy' }";
@@ -164,12 +169,27 @@ public class TraceDao implements TraceRepository {
         session.execute("create table if not exists trace_header (agent_id varchar,"
                 + " trace_id varchar, header blob, primary key (agent_id, trace_id)) " + WITH_DTCS);
 
-        // "index" is cassandra reserved word
-        session.execute("create table if not exists trace_entry (agent_id varchar,"
-                + " trace_id varchar, index_ int, depth int, start_offset_nanos bigint,"
-                + " duration_nanos bigint, active boolean, message varchar, detail blob,"
-                + " location_stack_trace blob, error blob, primary key (agent_id, trace_id,"
-                + " index_)) " + WITH_DTCS);
+        try {
+            // try with compression options for Cassandra 3.x
+            // see https://docs.datastax.com/en/cql/3.3/cql/cql_reference/compressSubprop.html
+            session.execute("create table if not exists trace_entry (agent_id varchar,"
+                    + " trace_id varchar, index_ int, depth int, start_offset_nanos bigint,"
+                    + " duration_nanos bigint, active boolean, message varchar, detail blob,"
+                    + " location_stack_trace blob, error blob, primary key (agent_id, trace_id,"
+                    + " index_)) " + WITH_DTCS + " and compression = {'class' :"
+                    + " 'org.apache.cassandra.io.compress.LZ4Compressor', 'chunk_length_kb' :"
+                    + " 512}");
+        } catch (InvalidConfigurationInQueryException e) {
+            logger.debug(e.getMessage(), e);
+            // try with compression options for Cassandra 2.x
+            // see https://docs.datastax.com/en/cql/3.1/cql/cql_reference/compressSubprop.html
+            session.execute("create table if not exists trace_entry (agent_id varchar,"
+                    + " trace_id varchar, index_ int, depth int, start_offset_nanos bigint,"
+                    + " duration_nanos bigint, active boolean, message varchar, detail blob,"
+                    + " location_stack_trace blob, error blob, primary key (agent_id, trace_id,"
+                    + " index_)) " + WITH_DTCS + " and compression = {'sstable_compression' :"
+                    + " 'SnappyCompressor', 'chunk_length_kb' : 512}");
+        }
 
         session.execute("create table if not exists trace_main_thread_profile (agent_id varchar,"
                 + " trace_id varchar, profile blob, primary key (agent_id, trace_id)) "

@@ -16,8 +16,6 @@
 package org.glowroot.server.storage;
 
 import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -27,30 +25,19 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.TableMetadata;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.Sets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.config.ImmutableRoleConfig;
-import org.glowroot.common.config.PermissionParser;
 import org.glowroot.common.config.RoleConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class RoleDao {
-
-    private static final Logger logger = LoggerFactory.getLogger(RoleDao.class);
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -84,8 +71,7 @@ public class RoleDao {
     public RoleDao(Session session, KeyspaceMetadata keyspaceMetadata) {
         this.session = session;
 
-        TableMetadata roleTable = keyspaceMetadata.getTable("role");
-        boolean createAnonymousRole = roleTable == null;
+        boolean createAnonymousRole = keyspaceMetadata.getTable("role") == null;
 
         session.execute("create table if not exists role (name varchar, permissions set<varchar>,"
                 + " primary key (name)) " + WITH_LCS);
@@ -104,8 +90,6 @@ public class RoleDao {
                     "agent:*:jvm", "agent:*:config", "admin"));
             session.execute(boundStatement);
         }
-
-        upgradeIfNeeded(insertPS, session);
     }
 
     List<RoleConfig> read() {
@@ -156,63 +140,6 @@ public class RoleDao {
             throw new IllegalStateException("Multiple role records for name: " + name);
         }
         return buildRole(row);
-    }
-
-    private static void upgradeIfNeeded(PreparedStatement insertPS, Session session) {
-        ResultSet results = session.execute("select name, permissions from role");
-        for (Row row : results) {
-            String name = row.getString(0);
-            Set<String> permissions = row.getSet(1, String.class);
-            Set<String> upgradedPermissions = upgradePermissions(permissions);
-            if (upgradedPermissions == null) {
-                continue;
-            }
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, name);
-            boundStatement.setSet(1, upgradedPermissions, String.class);
-            session.execute(boundStatement);
-        }
-    }
-
-    @VisibleForTesting
-    static @Nullable Set<String> upgradePermissions(Set<String> permissions) {
-        Set<String> updatedPermissions = Sets.newHashSet();
-        ListMultimap<String, String> agentPermissions = ArrayListMultimap.create();
-        boolean needsUpgrade = false;
-        for (String permission : permissions) {
-            if (permission.startsWith("agent:")) {
-                PermissionParser parser = new PermissionParser(permission);
-                parser.parse();
-                String perm = parser.getPermission();
-                agentPermissions.put(PermissionParser.quoteIfNecessaryAndJoin(parser.getAgentIds()),
-                        perm);
-                if (perm.equals("agent:view")) {
-                    needsUpgrade = true;
-                }
-            } else if (permission.equals("admin") || permission.startsWith("admin:")) {
-                updatedPermissions.add(permission);
-            } else {
-                logger.error("unexpected permission: {}", permission);
-            }
-        }
-        if (!needsUpgrade) {
-            return null;
-        }
-        for (Entry<String, List<String>> entry : Multimaps.asMap(agentPermissions).entrySet()) {
-            List<String> perms = entry.getValue();
-            PermissionParser.upgradeAgentPermissions(perms);
-            for (String perm : perms) {
-                updatedPermissions
-                        .add("agent:" + entry.getKey() + ":" + perm.substring("agent:".length()));
-            }
-        }
-        if (updatedPermissions.contains("admin:view")
-                && updatedPermissions.contains("admin:edit")) {
-            updatedPermissions.remove("admin:view");
-            updatedPermissions.remove("admin:edit");
-            updatedPermissions.add("admin");
-        }
-        return updatedPermissions;
     }
 
     private static ImmutableRoleConfig buildRole(Row row) {
