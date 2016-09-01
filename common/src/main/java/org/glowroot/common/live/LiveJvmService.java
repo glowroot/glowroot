@@ -50,7 +50,7 @@ public interface LiveJvmService {
 
     MBeanMeta getMBeanMeta(String agentId, String mbeanObjectName) throws Exception;
 
-    Map<String, String> getSystemProperties(String agentId) throws Exception;;
+    Map<String, String> getSystemProperties(String agentId) throws Exception;
 
     Capabilities getCapabilities(String agentId) throws Exception;
 

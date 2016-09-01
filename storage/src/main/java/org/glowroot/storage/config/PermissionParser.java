@@ -16,6 +16,7 @@
 package org.glowroot.storage.config;
 
 import java.util.List;
+import java.util.ListIterator;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
@@ -131,22 +132,23 @@ public class PermissionParser {
     public static boolean upgradeAgentPermissions(List<String> perms) {
         boolean hasAgentJvmAll = perms.contains("agent:tool");
         boolean upgrade = false;
-        for (int i = 0; i < perms.size(); i++) {
-            String perm = perms.get(i);
+        ListIterator<String> i = perms.listIterator();
+        while (i.hasNext()) {
+            String perm = i.next();
             if (perm.equals("agent:view")) {
-                perms.set(i, "agent:transaction");
-                perms.add(++i, "agent:error");
+                i.set("agent:transaction");
+                i.add("agent:error");
                 if (!hasAgentJvmAll) {
                     // in 0.9.1, agent:view gave access to JVM gauges and environment
-                    perms.add(++i, "agent:jvm:gauges");
-                    perms.add(++i, "agent:jvm:environment");
+                    i.add("agent:jvm:gauges");
+                    i.add("agent:jvm:environment");
                 }
                 upgrade = true;
             } else if (perm.equals("agent:tool")) {
-                perms.set(i, "agent:jvm");
+                i.set("agent:jvm");
                 upgrade = true;
             } else if (perm.startsWith("agent:tool:")) {
-                perms.set(i, "agent:jvm:" + perm.substring("agent:tool:".length()));
+                i.set("agent:jvm:" + perm.substring("agent:tool:".length()));
                 upgrade = true;
             }
         }

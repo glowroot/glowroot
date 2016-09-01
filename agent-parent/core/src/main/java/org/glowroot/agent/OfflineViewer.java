@@ -62,19 +62,15 @@ public class OfflineViewer {
         File baseDir = BaseDir.getBaseDir(baseDirPath, glowrootJarFile);
         File dataDir = new File(baseDir, "data");
         File recoverFile = new File(dataDir, "data.h2.sql");
-        if (recoverFile.exists()) {
-            if (!recoverFile.delete()) {
-                startupLogger.warn("recover failed: cannot delete existing data.h2.sql");
-            }
+        if (recoverFile.exists() && !recoverFile.delete()) {
+            startupLogger.warn("recover failed: cannot delete existing data.h2.sql");
         }
         Recover.main(new String[] {"-dir", dataDir.getPath(), "-db", "data"});
         File dbFile = new File(dataDir, "data.h2.db");
         File dbBakFile = new File(dataDir, "data.h2.db.bak");
-        if (dbBakFile.exists()) {
-            if (!dbBakFile.delete()) {
-                startupLogger.warn("recover failed, cannot delete existing file: {}",
-                        dbBakFile.getPath());
-            }
+        if (dbBakFile.exists() && !dbBakFile.delete()) {
+            startupLogger.warn("recover failed, cannot delete existing file: {}",
+                    dbBakFile.getPath());
         }
         if (!dbFile.renameTo(dbBakFile)) {
             startupLogger.warn("recover failed, cannot rename {} to {}", dbFile.getPath(),
