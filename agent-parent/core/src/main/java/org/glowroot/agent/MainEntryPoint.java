@@ -92,11 +92,10 @@ public class MainEntryPoint {
         }
     }
 
-    static void runViewer(@Nullable File glowrootJarFile) throws InterruptedException {
-        String baseDirPath = System.getProperty("glowroot.base.dir");
-        File baseDir = BaseDir.getBaseDir(baseDirPath, glowrootJarFile);
-        // init logger as early as possible
-        initLogging(baseDir);
+    static void runViewer(File baseDir, @Nullable File glowrootJarFile)
+            throws InterruptedException {
+        // initLogging() already called by OfflineViewer.main()
+        checkNotNull(startupLogger);
         String version;
         try {
             version = Version.getVersion(MainEntryPoint.class);
@@ -117,7 +116,7 @@ public class MainEntryPoint {
     }
 
     @EnsuresNonNull("startupLogger")
-    private static void initLogging(File baseDir) {
+    static void initLogging(File baseDir) {
         File logbackXmlOverride = new File(baseDir, "glowroot.logback.xml");
         if (logbackXmlOverride.exists()) {
             System.setProperty("glowroot.logback.configurationFile",

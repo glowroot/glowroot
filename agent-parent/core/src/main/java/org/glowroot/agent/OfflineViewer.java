@@ -23,6 +23,9 @@ import java.sql.SQLException;
 import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
+import org.h2.tools.Console;
 import org.h2.tools.Recover;
 import org.h2.tools.RunScript;
 import org.slf4j.Logger;
@@ -30,18 +33,29 @@ import org.slf4j.LoggerFactory;
 
 public class OfflineViewer {
 
-    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
+    // need to wait to init logger until
+    private static volatile @MonotonicNonNull Logger startupLogger;
 
     private OfflineViewer() {}
 
     public static void main(String... args) throws Exception {
         CodeSource codeSource = OfflineViewer.class.getProtectionDomain().getCodeSource();
         File glowrootJarFile = getGlowrootJarFile(codeSource);
+
+        String baseDirPath = System.getProperty("glowroot.base.dir");
+        File baseDir = BaseDir.getBaseDir(baseDirPath, glowrootJarFile);
+        MainEntryPoint.initLogging(baseDir);
+        startupLogger = LoggerFactory.getLogger("org.glowroot");
+
+        if (args.length == 1 && args[0].equals("h2")) {
+            h2(glowrootJarFile);
+            return;
+        }
         if (args.length == 1 && args[0].equals("recover")) {
             recover(glowrootJarFile);
             return;
         }
-        MainEntryPoint.runViewer(glowrootJarFile);
+        MainEntryPoint.runViewer(baseDir, glowrootJarFile);
     }
 
     @VisibleForTesting
@@ -57,6 +71,15 @@ public class OfflineViewer {
         return null;
     }
 
+    private static void h2(@Nullable File glowrootJarFile) throws SQLException {
+        String baseDirPath = System.getProperty("glowroot.base.dir");
+        File baseDir = BaseDir.getBaseDir(baseDirPath, glowrootJarFile);
+        File dataDir = new File(baseDir, "data");
+        Console.main(new String[] {"-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data",
+                "-user", "sa"});
+    }
+
+    @RequiresNonNull("startupLogger")
     private static void recover(@Nullable File glowrootJarFile) throws SQLException {
         String baseDirPath = System.getProperty("glowroot.base.dir");
         File baseDir = BaseDir.getBaseDir(baseDirPath, glowrootJarFile);
