@@ -143,7 +143,10 @@ glowroot.factory('charts', [
           $scope.applyLast();
           return;
         }
-        $scope.range.last = roundUpLast(now - revisedFrom, selection);
+        var last = roundUpLast(now - revisedFrom, selection);
+        if (last > 0) {
+          $scope.range.last = last;
+        }
         $scope.applyLast();
       } else {
         $scope.range.chartFrom = revisedFrom;
