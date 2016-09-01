@@ -1,20 +1,28 @@
 Glowroot &nbsp;&nbsp; [![Build Status](https://img.shields.io/travis/glowroot/glowroot.svg)](https://travis-ci.org/glowroot/glowroot) [![Code Coverage](https://img.shields.io/sonar/https/sonar.glowroot.org/org.glowroot:glowroot-parent/overall_coverage.svg?label=coverage)](https://sonar.glowroot.org/dashboard/index?id=org.glowroot%3Aglowroot-parent)
 =========
 
+## Requirements
+
+* Java 6+
+
 ## Quick start
 
 1. Download and unzip [glowroot-0.9.1-dist.zip](https://github.com/glowroot/glowroot/releases/download/v0.9.1/glowroot-0.9.1-dist.zip)
 2. Add `-javaagent:path/to/glowroot.jar` to your application's JVM arguments
 3. Start your application
-4. Connect to http://localhost:4000
+4. Point your browser to http://localhost:4000
 
-Glowroot supports Java 6+.
+See the [wiki](https://github.com/glowroot/glowroot/wiki/Agent-Installation) for optional post-installation steps.
 
-## Questions, bugs, feature requests, news
+## Please report any issues!
 
  * [GitHub issue tracker](https://github.com/glowroot/glowroot/issues)
- * [Google group](https://groups.google.com/forum/#!forum/glowroot)
- * Twitter [@glowroot](https://twitter.com/glowroot)
+ * [Google groups](https://groups.google.com/forum/#!forum/glowroot)
+
+## Release announcements
+
+* Follow [@glowroot](https://twitter.com/glowroot), or
+* Subscribe to the [Google group](https://groups.google.com/forum/#!forum/glowroot)
 
 ## Building
 
@@ -22,7 +30,7 @@ The usual:
 
     mvn clean install
 
-Binary and source distributions are built under agent-parent/distribution/target.
+Binary distribution is built under agent-parent/dist/target.
 
 Building requires Java 7+ (in order to perform [Immutables](https://immutables.github.io) annotation processing).
 
@@ -59,7 +67,7 @@ Microbenchmarks are written using the excellent [JMH](http://openjdk.java.net/pr
 
 [Checker Framework](http://types.cs.washington.edu/checker-framework/) is used to eliminate fear of *null* with its rigorous [Nullness Checker](http://types.cs.washington.edu/checker-framework/current/checker-framework-manual.html#nullness-checker). It is run as part of every Travis CI build (see the job with TARGET=checker) and any violation fails the build.
 
-## Dependency hiding/shading
+## Dependency shading
 
 All third party java libraries used by the agent are shaded under the org.glowroot.agent.shaded package to ensure there are no jar version conflicts with the application being monitored.
 
