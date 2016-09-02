@@ -8,14 +8,14 @@
   <baseDirectory>glowroot-server</baseDirectory>
   <files>
     <file>
-      <source>target/glowroot-server-${project.version}-jar-with-dependencies.jar</source>
+      <source>${project.build.directory}/glowroot-server-${project.version}-dist0.jar</source>
       <outputDirectory></outputDirectory>
       <destName>glowroot-server.jar</destName>
     </file>
   </files>
   <fileSets>
     <fileSet>
-      <directory>${basedir}/..</directory>
+      <directory>src/main/resources/META-INF</directory>
       <includes>
         <include>LICENSE</include>
         <include>NOTICE</include>

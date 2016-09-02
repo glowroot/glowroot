@@ -15,7 +15,7 @@
   </files>
   <fileSets>
     <fileSet>
-      <directory>${basedir}/../..</directory>
+      <directory>${basedir}/../core/src/main/shaded-resources/META-INF</directory>
       <includes>
         <include>LICENSE</include>
         <include>NOTICE</include>

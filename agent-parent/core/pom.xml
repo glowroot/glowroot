@@ -117,6 +117,11 @@
       <artifactId>grpc-netty</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.ning</groupId>
+      <artifactId>compress-lzf</artifactId>
+      <version>1.0.3</version>
+    </dependency>
+    <dependency>
       <groupId>${checker.qual.group.id}</groupId>
       <artifactId>${checker.qual.artifact.id}</artifactId>
       <version>${checker.qual.version}</version>
@@ -266,33 +271,11 @@
         </resources>
         <plugins>
           <plugin>
+            <!-- use LICENSE and NOTICE under src/main/shaded-resources -->
             <artifactId>maven-remote-resources-plugin</artifactId>
             <configuration>
               <skip>true</skip>
             </configuration>
-          </plugin>
-          <plugin>
-            <!-- not using maven-resources-plugin:copy-resources because it generates m2e warning
-              about accessing "directory outside of project base directory" -->
-            <artifactId>maven-antrun-plugin</artifactId>
-            <executions>
-              <execution>
-                <phase>generate-sources</phase>
-                <configuration>
-                  <target>
-                    <copy todir="${project.build.outputDirectory}/META-INF">
-                      <fileset dir="../..">
-                        <include name="LICENSE" />
-                        <include name="NOTICE" />
-                      </fileset>
-                    </copy>
-                  </target>
-                </configuration>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-              </execution>
-            </executions>
           </plugin>
           <plugin>
             <artifactId>maven-shade-plugin</artifactId>
