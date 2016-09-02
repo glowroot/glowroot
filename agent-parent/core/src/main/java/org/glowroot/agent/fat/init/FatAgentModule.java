@@ -79,13 +79,13 @@ class FatAgentModule {
         ticker = Ticker.systemTicker();
         clock = Clock.systemClock();
 
-        // mem db is only used for testing (by glowroot-test-container)
+        // mem db is only used for testing (by glowroot-agent-it-harness)
         h2MemDb = Boolean.parseBoolean(properties.get("glowroot.internal.h2.memdb"));
 
         File dataDir = new File(baseDir, "data");
         DataSource dataSource;
         if (h2MemDb) {
-            // mem db is only used for testing (by glowroot-test-container)
+            // mem db is only used for testing (by glowroot-agent-it-harness)
             dataSource = new DataSource();
         } else {
             dataSource = new DataSource(new File(dataDir, "data.h2.db"));

@@ -1,6 +1,6 @@
 {
-  "name": "Test Container Plugin",
-  "id": "glowroot-test-container",
+  "name": "IT Harness Plugin",
+  "id": "glowroot-it-harness",
   "instrumentation": [
     {
       "className": "org.glowroot.agent.it.harness.TransactionMarker",
