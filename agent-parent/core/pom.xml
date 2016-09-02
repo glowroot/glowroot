@@ -464,10 +464,6 @@
                   <shadedPattern>org.glowroot.agent.shaded.grpc</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>com.twitter.hpack</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.twitter.hpack</shadedPattern>
-                </relocation>
-                <relocation>
                   <pattern>org.HdrHistogram</pattern>
                   <shadedPattern>org.glowroot.agent.shaded.HdrHistogram</shadedPattern>
                 </relocation>
