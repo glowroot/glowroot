@@ -26,7 +26,6 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
-import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
@@ -147,7 +146,7 @@ class TraceCollector implements Collector {
     }
 
     @Value.Immutable
-    @Styles.AllParameters
+    @Value.Style(allParameters = true)
     interface ExpectedLogMessage {
         String loggerName();
         String partialMessage();
