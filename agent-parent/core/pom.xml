@@ -194,16 +194,6 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <!-- maven-failsafe-plugin is used to execute JarFileShadingIT since it needs to run after
           the packaging phase so that glowroot-agent.jar will be available -->
         <artifactId>maven-failsafe-plugin</artifactId>
