@@ -142,6 +142,14 @@
         </property>
       </activation>
       <build>
+        <resources>
+          <resource>
+            <directory>src/main/resources</directory>
+          </resource>
+          <resource>
+            <directory>src/main/shaded-resources</directory>
+          </resource>
+        </resources>
         <plugins>
           <plugin>
             <artifactId>maven-shade-plugin</artifactId>
@@ -153,45 +161,26 @@
               <shadeSourcesContent>true</shadeSourcesContent>
               <artifactSet>
                 <includes>
-                  <!-- includes removes these artifacts from dependency reduced pom -->
-                  <include>org.glowroot:glowroot-wire-api</include>
-                  <!-- includes removes the artifacts from dependency reduced pom, while filters
-                    below keep them from being bundled since they already exist in shaded agent -->
+                  <!-- need to shade netty so glowroot-agent-netty-plugin can test against all netty
+                    versions without causing conflicts -->
                   <include>io.netty:*</include>
+                  <!-- need to shade grpc so it uses shaded netty -->
                   <include>io.grpc:*</include>
+                  <!-- need to shade glowroot-wire-api so it uses shaded grpc -->
+                  <include>org.glowroot:glowroot-wire-api</include>
                 </includes>
               </artifactSet>
-              <filters>
-                <filter>
-                  <artifact>io.netty:*</artifact>
-                  <excludes>
-                    <exclude>**</exclude>
-                  </excludes>
-                </filter>
-                <filter>
-                  <artifact>io.grpc:*</artifact>
-                  <excludes>
-                    <exclude>**</exclude>
-                  </excludes>
-                </filter>
-              </filters>
               <relocations>
                 <relocation>
                   <pattern>io.netty</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.netty</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.it.harness.shaded.netty</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>io.grpc</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.grpc</shadedPattern>
+                  <shadedPattern>org.glowroot.agent.it.harness.shaded.grpc</shadedPattern>
                 </relocation>
-                <relocation>
-                  <pattern>com.google.protobuf</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.google.protobuf</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>com.fasterxml.jackson</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.fasterxml.jackson</shadedPattern>
-                </relocation>
+                <!-- not relocating glowroot-wire-api since it-harness api exposes glowroot-wire-api
+                  unshaded for use by plugin integration tests -->
               </relocations>
             </configuration>
             <executions>
@@ -206,21 +195,49 @@
       </build>
     </profile>
     <profile>
+      <!-- this profile is needed because can't include glowroot-agent-core as part of normal build
+        due to https://issues.apache.org/jira/browse/MSHADE-206 -->
       <id>release</id>
       <build>
         <plugins>
+          <plugin>
+            <artifactId>maven-remote-resources-plugin</artifactId>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </plugin>
+          <plugin>
+            <!-- not using maven-resources-plugin:copy-resources because it generates m2e warning
+              about accessing "directory outside of project base directory" -->
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>generate-sources</phase>
+                <configuration>
+                  <target>
+                    <copy todir="${project.build.outputDirectory}/META-INF">
+                      <fileset dir="../..">
+                        <include name="LICENSE" />
+                        <include name="NOTICE" />
+                      </fileset>
+                    </copy>
+                  </target>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <artifactId>maven-shade-plugin</artifactId>
             <configuration>
               <artifactSet>
                 <includes>
-                  <include>org.glowroot:glowroot-agent</include>
-                  <include>org.glowroot:glowroot-agent-it-harness</include>
-                  <!-- includes removes the artifacts from dependency reduced pom, while filters
-                    below keep them from being bundled since they already exist in shaded agent -->
-                  <include>org.glowroot:glowroot-wire-api</include>
                   <include>io.netty:*</include>
                   <include>io.grpc:*</include>
+                  <include>org.glowroot:glowroot-wire-api</include>
+                  <include>org.glowroot:glowroot-agent-core</include>
                 </includes>
               </artifactSet>
             </configuration>
