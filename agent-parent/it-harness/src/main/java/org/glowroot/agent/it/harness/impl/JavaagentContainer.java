@@ -356,14 +356,12 @@ public class JavaagentContainer implements Container {
                 // several plugins use guava
                 bootPaths.add(path);
             } else if (name.matches("asm-.*\\.jar")
-                    || name.matches("commons-compiler-.*\\.jar")
                     || name.matches("compress-lzf-.*\\.jar")
                     || name.matches("grpc-.*\\.jar")
                     || name.matches("guava-.*\\.jar")
                     || name.matches("h2-.*\\.jar")
                     || name.matches("HdrHistogram-.*\\.jar")
                     || name.matches("jackson-.*\\.jar")
-                    || name.matches("janino-.*\\.jar")
                     || name.matches("jzlib-.*\\.jar")
                     || name.matches("logback-.*\\.jar")
                     || name.matches("mailapi-.*\\.jar")

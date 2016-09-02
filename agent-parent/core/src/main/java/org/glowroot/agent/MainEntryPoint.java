@@ -79,7 +79,6 @@ public class MainEntryPoint {
         String baseDirPath = System.getProperty("glowroot.base.dir");
         File baseDir = BaseDir.getBaseDir(baseDirPath, glowrootJarFile);
         // init logger as early as possible
-        instrumentation.addTransformer(new LogbackPatch());
         initLogging(baseDir);
         try {
             ImmutableMap<String, String> properties = getGlowrootProperties(baseDir);

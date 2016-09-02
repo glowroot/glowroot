@@ -96,12 +96,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <!-- conditional logback configuration is only used in tests -->
-      <groupId>org.codehaus.janino</groupId>
-      <artifactId>janino</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.rauschig</groupId>
       <artifactId>jarchivelib</artifactId>
       <version>0.7.1</version>

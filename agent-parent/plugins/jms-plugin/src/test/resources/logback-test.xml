@@ -1,31 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE configuration>
 <configuration>
-  <!-- unit tests do not log to console when running from maven in order to avoid logging expected
-    warnings and errors which can be confusing to new users building glowroot from source -->
-  <if condition='!property("glowroot.test.fileLoggingOnly").equals("true")'>
-    <then>
-      <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-          <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-      </appender>
-      <root>
-        <appender-ref ref="CONSOLE" />
-      </root>
-    </then>
-  </if>
-  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-    <file>target/glowroot.log</file>
-    <!-- prudent is needed since some tests are run in a separate JVM (using JavaagentContainer)
-      and these use the same logback configuration and log to the same file -->
-    <prudent>true</prudent>
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
       <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
   <root level="warn">
-    <appender-ref ref="FILE" />
+    <appender-ref ref="CONSOLE" />
   </root>
   <!-- these are needed to deal with a couple of sporadic error messages -->
   <logger name="org.apache.activemq.broker.BrokerService" level="off"></logger>

@@ -22,7 +22,6 @@ case "$1" in
                mvn clean install -DargLine="$surefire_jvm_args" \
                                  $skip_shading_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
-                                 -Dglowroot.test.fileLoggingOnly=false \
                                  -B
                if [[ "$java_version" > "1.8" && "$SKIP_SHADING" == "true" ]]
                then
@@ -32,34 +31,29 @@ case "$1" in
                                   -Dglowroot.internal.webdriver.server=true \
                                   -DargLine="$surefire_jvm_args" \
                                   -Dglowroot.it.harness=$GLOWROOT_HARNESS \
-                                  -Dglowroot.test.fileLoggingOnly=false \
                                   -B
                fi
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -DargLine="$surefire_jvm_args" \
                                 $skip_shading_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
-                                -Dglowroot.test.fileLoggingOnly=false \
                                 -Dglowroot.test.jdbcConnectionType=H2 \
                                 -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -DargLine="$surefire_jvm_args" \
                                 $skip_shading_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
-                                -Dglowroot.test.fileLoggingOnly=false \
                                 -Dglowroot.test.jdbcConnectionType=COMMONS_DBCP_WRAPPED \
                                 -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
                                 -DargLine="$surefire_jvm_args" \
                                 $skip_shading_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
-                                -Dglowroot.test.fileLoggingOnly=false \
                                 -Dglowroot.test.jdbcConnectionType=TOMCAT_JDBC_POOL_WRAPPED \
                                 -B
                ;;
 
      "deploy") mvn clean install -DargLine="$surefire_jvm_args" \
-                                 -Dglowroot.test.fileLoggingOnly=false \
                                  -B
                # only deploy snapshot versions (release versions need pgp signature)
                version=`mvn help:evaluate -Dexpression=project.version | grep -v '\['`
@@ -70,7 +64,6 @@ case "$1" in
                                   -Pjavadoc \
                                   -DargLine="$surefire_jvm_args" \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
-                                  -Dglowroot.test.fileLoggingOnly=false \
                                   --settings misc/travis-build/settings.xml \
                                   -B
                fi
@@ -88,7 +81,6 @@ case "$1" in
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                  -Dglowroot.shade.skip \
-                                 -Dglowroot.test.fileLoggingOnly=false \
                                  -B
                  # intentionally calling failsafe plugin directly in order to skip surefire (unit test) execution
                  #
@@ -106,8 +98,7 @@ case "$1" in
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -Djacoco.append=true \
                                  -Dglowroot.shade.skip \
-                                 -Dglowroot.it.harness=javaagent \
-                                 -Dglowroot.test.fileLoggingOnly=false"
+                                 -Dglowroot.it.harness=javaagent"
                  # run integration tests
                  mvn $common_mvn_args -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
@@ -172,7 +163,6 @@ case "$1" in
                                    -Dsonar.jacoco.itReportPath=$PWD/jacoco-combined-it.exec \
                                    -DargLine="$surefire_jvm_args" \
                                    -Dglowroot.shade.skip \
-                                   -Dglowroot.test.fileLoggingOnly=false \
                                    -B
                else
                  echo skipping, sonar analysis only runs against master repository and master branch
@@ -229,7 +219,6 @@ case "$1" in
                                   -Dsaucelabs.device.orientation="$SAUCELABS_DEVICE_ORIENTATION" \
                                   -Dsaucelabs.tunnel.identifier="$TRAVIS_JOB_NUMBER" \
                                   -DargLine="$surefire_jvm_args" \
-                                  -Dglowroot.test.fileLoggingOnly=false \
                                   -B
                else
                  echo skipping, saucelabs only runs against master repository and master branch

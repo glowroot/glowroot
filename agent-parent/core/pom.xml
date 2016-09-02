@@ -113,10 +113,6 @@
       <artifactId>logback-classic</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.codehaus.janino</groupId>
-      <artifactId>janino</artifactId>
-    </dependency>
-    <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-netty</artifactId>
     </dependency>
@@ -379,21 +375,6 @@
                   </excludes>
                 </filter>
                 <filter>
-                  <artifact>org.codehaus.janino:janino</artifact>
-                  <excludes>
-                    <exclude>META-INF/DUMMY.DSA</exclude>
-                    <exclude>META-INF/DUMMY.SF</exclude>
-                    <exclude>org.codehaus.commons.compiler.properties</exclude>
-                  </excludes>
-                </filter>
-                <filter>
-                  <artifact>org.codehaus.janino:commons-compiler</artifact>
-                  <excludes>
-                    <exclude>META-INF/DUMMY.DSA</exclude>
-                    <exclude>META-INF/DUMMY.SF</exclude>
-                  </excludes>
-                </filter>
-                <filter>
                   <artifact>com.h2database:h2</artifact>
                   <excludes>
                     <exclude>META-INF/services/java.sql.Driver</exclude>
@@ -498,14 +479,6 @@
                 <relocation>
                   <pattern>ch.qos.logback</pattern>
                   <shadedPattern>org.glowroot.agent.shaded.qos.logback</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.codehaus.janino</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.codehaus.janino</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.codehaus.commons.compiler</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.codehaus.commons.compiler</shadedPattern>
                 </relocation>
                 <relocation>
                   <!-- logback internal constant, see

@@ -84,7 +84,6 @@ class Util {
             command.add("-Dit.test=" + test);
         }
         command.add("-Dglowroot.it.harness=javaagent");
-        command.add("-Dglowroot.test.fileLoggingOnly=false");
         command.add("-Denforcer.skip");
         String sourceOfRandomness = System.getProperty("java.security.egd");
         if (sourceOfRandomness != null) {
