@@ -87,7 +87,7 @@ public class GaugeConfigIT extends WebDriverIT {
         gaugePage.getMBeanAttributeCheckBox("LoadedClassCount").click();
         gaugePage.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(500);
+        Thread.sleep(1000);
         driver.findElement(linkText("Return to list")).click();
 
         // then

@@ -126,7 +126,7 @@ public class BasicSmokeIT extends WebDriverIT {
 
         Utils.withWait(driver, By.linkText("View flame graph (experimental)")).click();
         // give flame graph a chance to render (only for visual when running locally)
-        Thread.sleep(500);
+        Thread.sleep(1000);
         globalNavbar.getTransactionsLink().click();
         Utils.withWait(driver, By.partialLinkText("/jdbcservlet")).click();
         Utils.withWait(driver, By.partialLinkText("percentiles")).click();
@@ -306,7 +306,7 @@ public class BasicSmokeIT extends WebDriverIT {
                 By.xpath("//div[starts-with(normalize-space(.),'jdbc execution:')]"));
         Utils.withWait(driver, By.className("gt-main-thread-profile-toggle")).click();
         // wait for profile to open
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         Pattern pattern = Pattern.compile("modal-trace-id=([0-9a-f]*)");
         Matcher matcher = pattern.matcher(driver.getCurrentUrl());

@@ -108,7 +108,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(500);
+        Thread.sleep(1000);
         driver.findElement(linkText("Return to list")).click();
 
         // then
@@ -136,7 +136,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(500);
+        Thread.sleep(1000);
         driver.findElement(linkText("Return to list")).click();
 
         // then

@@ -50,7 +50,7 @@ public class ConfigIT extends WebDriverIT {
         page.getCaptureThreadStatsCheckBox().click();
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         // then
         app.open();
@@ -77,7 +77,7 @@ public class ConfigIT extends WebDriverIT {
         page.getDefaultDisplayedPercentilesTextField().sendKeys("3,4,5,6");
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         // then
         app.open();
@@ -108,7 +108,7 @@ public class ConfigIT extends WebDriverIT {
         page.getProfileIntervalTextField().sendKeys("2345");
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         // then
         app.open();
@@ -144,7 +144,7 @@ public class ConfigIT extends WebDriverIT {
         page.getMaxStackTraceSamplesPerTransactionTextField().sendKeys("3456");
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         // then
         app.open();
@@ -193,7 +193,7 @@ public class ConfigIT extends WebDriverIT {
         }
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         // then
         app.open();
@@ -244,7 +244,7 @@ public class ConfigIT extends WebDriverIT {
         page.getFromDisplayNameTextField().sendKeys("User 1234");
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         // then
         app.open();
@@ -292,7 +292,7 @@ public class ConfigIT extends WebDriverIT {
         page.getGroupSearchFilterTextField().sendKeys("yf");
         page.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         // then
         app.open();
@@ -325,7 +325,7 @@ public class ConfigIT extends WebDriverIT {
         Utils.withWait(driver, By.xpath("//button[normalize-space()='Save changes']")).click();
 
         // wait for save to finish
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         // then
         app.open();

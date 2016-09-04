@@ -110,7 +110,7 @@ public class RoleConfigIT extends WebDriverIT {
         rolePage.getAdminCheckBox().click();
         rolePage.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(500);
+        Thread.sleep(1000);
         driver.findElement(linkText("Return to list")).click();
 
         // then

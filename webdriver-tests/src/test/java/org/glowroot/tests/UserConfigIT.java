@@ -83,7 +83,7 @@ public class UserConfigIT extends WebDriverIT {
         Utils.withWait(driver, xpath("//input[@ng-model='role.checked']")).click();
         userPage.clickSaveButton();
         // wait for save to finish
-        Thread.sleep(500);
+        Thread.sleep(1000);
         driver.findElement(linkText("Return to list")).click();
 
         // then
