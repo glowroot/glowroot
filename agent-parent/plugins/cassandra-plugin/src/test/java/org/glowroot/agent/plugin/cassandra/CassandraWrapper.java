@@ -75,7 +75,7 @@ class CassandraWrapper {
     static void stop() throws Exception {
         process.destroy();
         consolePipeExecutorService.shutdown();
-        if (!consolePipeExecutorService.awaitTermination(10, SECONDS)) {
+        if (!consolePipeExecutorService.awaitTermination(30, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
         }
     }
