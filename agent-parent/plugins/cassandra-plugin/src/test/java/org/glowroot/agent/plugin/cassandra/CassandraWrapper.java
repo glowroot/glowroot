@@ -27,6 +27,7 @@ import java.util.concurrent.Executors;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.google.common.base.Charsets;
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.rauschig.jarchivelib.ArchiveFormat;
@@ -40,6 +41,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 class CassandraWrapper {
 
     private static final String CASSANDRA_VERSION;
+    private static final String JAVA_7_OR_LATER_HOME;
 
     static {
         if (System.getProperty("os.name").startsWith("Windows")) {
@@ -48,6 +50,16 @@ class CassandraWrapper {
             CASSANDRA_VERSION = "2.2.6";
         } else {
             CASSANDRA_VERSION = "2.1.14";
+        }
+        if (StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6")) {
+            JAVA_7_OR_LATER_HOME = System.getProperty("java7.home");
+            if (JAVA_7_OR_LATER_HOME == null) {
+                throw new IllegalStateException("Cassandra itself requires Java 7+, but this test"
+                        + " is running under Java 6, so you must provide -Djava7.home=... (or run"
+                        + " this test under Java 7+)");
+            }
+        } else {
+            JAVA_7_OR_LATER_HOME = System.getProperty("java.home");
         }
     }
 
@@ -115,7 +127,7 @@ class CassandraWrapper {
     private static List<String> buildCommandLine(File cassandraDir) {
         List<String> command = Lists.newArrayList();
         String javaExecutable =
-                System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
+                JAVA_7_OR_LATER_HOME + File.separator + "bin" + File.separator + "java";
         command.add(javaExecutable);
         command.add("-cp");
         command.add(buildClasspath(cassandraDir));

@@ -68,7 +68,7 @@
             <execution>
               <id>default-testCompile</id>
               <configuration>
-                <!-- java 7 is needed for running ForkJoinPool tests -->
+                <!-- Java 7 is needed for compiling and running ForkJoinPool tests -->
                 <source>1.7</source>
                 <target>1.7</target>
               </configuration>
@@ -78,4 +78,38 @@
       </plugins>
     </pluginManagement>
   </build>
+
+  <profiles>
+    <profile>
+      <id>force-java6</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <testExcludes>
+                <exclude>org/glowroot/agent/plugin/executor/ForkJoinPoolIT.java</exclude>
+              </testExcludes>
+            </configuration>
+          </plugin>
+        </plugins>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <artifactId>maven-compiler-plugin</artifactId>
+              <executions>
+                <execution>
+                  <id>default-testCompile</id>
+                  <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+  </profiles>
 </project>

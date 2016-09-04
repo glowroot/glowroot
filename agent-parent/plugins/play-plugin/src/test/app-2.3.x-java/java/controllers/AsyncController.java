@@ -31,12 +31,14 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class AsyncController extends Controller {
 
     public static Promise<Result> message() {
-        RedeemablePromise<Result> promise = RedeemablePromise.empty();
+        final RedeemablePromise<Result> promise = RedeemablePromise.empty();
         Akka.system().scheduler().scheduleOnce(
                 Duration.create(1, SECONDS),
-                () -> {
-                    new CreateTraceEntry().traceEntryMarker();
-                    promise.success(Results.ok("Hi!"));
+                new Runnable() {
+                    public void run() {
+                        new CreateTraceEntry().traceEntryMarker();
+                        promise.success(Results.ok("Hi!"));
+                    }
                 },
                 ExecutionContexts.global());
         return promise;

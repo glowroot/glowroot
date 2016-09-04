@@ -37,6 +37,7 @@ import com.google.common.io.Files;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.glowroot.testing.JavaVersion.JAVA7;
 
 class Util {
 
@@ -66,20 +67,58 @@ class Util {
         report.println(property + " : " + version);
     }
 
-    static void runTests(String modulePath, String... profiles) throws Exception {
-        runTest(modulePath, null, profiles);
+    static void runTests(String modulePath, JavaVersion... javaVersions) throws Exception {
+        runInternal(modulePath, null, new String[] {}, javaVersions);
     }
 
-    static void runTest(String modulePath, @Nullable String test, String... profiles)
+    static void runTests(String modulePath, String profile, JavaVersion... javaVersions)
             throws Exception {
+        runInternal(modulePath, null, new String[] {profile}, javaVersions);
+    }
+
+    static void runTests(String modulePath, String[] profiles, JavaVersion... javaVersions)
+            throws Exception {
+        runInternal(modulePath, null, profiles, javaVersions);
+    }
+
+    static void runTest(String modulePath, String test, JavaVersion... javaVersions)
+            throws Exception {
+        runInternal(modulePath, test, new String[] {}, javaVersions);
+    }
+
+    static void runTest(String modulePath, String test, String profile, JavaVersion... javaVersions)
+            throws Exception {
+        runInternal(modulePath, test, new String[] {profile}, javaVersions);
+    }
+
+    private static void runInternal(String modulePath, @Nullable String test, String[] profiles,
+            JavaVersion... javaVersions) throws Exception {
+        for (JavaVersion javaVersion : javaVersions) {
+            runTest(modulePath, test, javaVersion, profiles);
+        }
+    }
+
+    private static void runTest(String modulePath, @Nullable String test, JavaVersion javaVersion,
+            String... profiles) throws Exception {
+        System.out.println(javaVersion);
+        report.println(javaVersion);
         List<String> command = Lists.newArrayList();
         command.add(MVN);
-        if (profiles.length > 0) {
+        List<String> profilesPlus = Lists.newArrayList(profiles);
+        if (javaVersion == JavaVersion.JAVA6) {
+            profilesPlus.add("force-java6");
+        }
+        if (!profilesPlus.isEmpty()) {
             command.add("-P");
-            command.add(Joiner.on(',').join(profiles));
+            command.add(Joiner.on(',').join(profilesPlus));
         }
         command.add("-pl");
         command.add(modulePath);
+        command.add("-Djvm=" + javaVersion.getJavaHome() + File.separator + "bin" + File.separator
+                + "java");
+        // cassandra plugin tests need java7.home when running under java 6 in order to run
+        // cassandra itself
+        command.add("-Djava7.home=" + JAVA7.getJavaHome());
         if (test != null) {
             command.add("-Dit.test=" + test);
         }
@@ -94,7 +133,12 @@ class Util {
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         processBuilder.directory(new File(BASE_DIR));
-        processBuilder.environment().put("JAVA_HOME", System.getProperty("java.home"));
+        if (javaVersion == JavaVersion.JAVA6) {
+            // maven requires Java 7+
+            processBuilder.environment().put("JAVA_HOME", JavaVersion.JAVA7.getJavaHome());
+        } else {
+            processBuilder.environment().put("JAVA_HOME", javaVersion.getJavaHome());
+        }
         System.out.println("\n\n" + Joiner.on(' ').join(command) + "\n\n");
         Process process = processBuilder.start();
         InputStream in = checkNotNull(process.getInputStream());

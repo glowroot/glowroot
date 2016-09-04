@@ -82,7 +82,6 @@
         <play.version>2.5.1</play.version>
         <scala.major.version>2.11</scala.major.version>
         <scala.version>2.11.8</scala.version>
-        <java.version>1.8</java.version>
         <netty.version>4.0.34.Final</netty.version>
         <jackson.version>2.7.1</jackson.version>
         <test.app.version>2.5.x</test.app.version>
@@ -177,14 +176,37 @@
               </execution>
             </executions>
           </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>play-2.4.x</id>
+      <dependencies>
+        <dependency>
+          <groupId>com.typesafe.play</groupId>
+          <artifactId>play-java_${scala.major.version}</artifactId>
+          <version>${play.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>com.typesafe.play</groupId>
+          <artifactId>play-test_${scala.major.version}</artifactId>
+          <version>${play.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
           <plugin>
+            <!-- play 2.4+ requires Java 8+, and tests for play 2.4 use lambdas so require
+              source/target 1.8 -->
             <artifactId>maven-compiler-plugin</artifactId>
             <executions>
               <execution>
                 <id>default-testCompile</id>
                 <configuration>
-                  <source>${java.version}</source>
-                  <target>${java.version}</target>
+                  <source>1.8</source>
+                  <target>1.8</target>
                 </configuration>
               </execution>
             </executions>

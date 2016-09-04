@@ -17,6 +17,10 @@ package org.glowroot.testing;
 
 import java.io.IOException;
 
+import static org.glowroot.testing.JavaVersion.JAVA6;
+import static org.glowroot.testing.JavaVersion.JAVA7;
+import static org.glowroot.testing.JavaVersion.JAVA8;
+
 public class HttpClient {
 
     private static final String MODULE_PATH = "agent-parent/plugins/http-client-plugin";
@@ -35,52 +39,52 @@ public class HttpClient {
         final String test = "ApacheHttpClientPluginIT";
         updateLibVersion("apache.httpclient.version", "4.0");
         updateLibVersion("apache.httpcore.version", "4.0.1");
-        runTest(test, "apache-httpclient-pre-4.2");
+        run(test, "apache-httpclient-pre-4.2");
         for (int i = 1; i <= 3; i++) {
             updateLibVersion("apache.httpclient.version", "4.0." + i);
             updateLibVersion("apache.httpcore.version", "4.0.1");
-            runTest(test, "apache-httpclient-pre-4.2");
+            run(test, "apache-httpclient-pre-4.2");
         }
         updateLibVersion("apache.httpclient.version", "4.1");
         updateLibVersion("apache.httpcore.version", "4.1");
-        runTest(test, "apache-httpclient-pre-4.2");
+        run(test, "apache-httpclient-pre-4.2");
         for (int i = 1; i <= 3; i++) {
             updateLibVersion("apache.httpclient.version", "4.1." + i);
             updateLibVersion("apache.httpcore.version", "4.1");
-            runTest(test, "apache-httpclient-pre-4.2");
+            run(test, "apache-httpclient-pre-4.2");
         }
         updateLibVersion("apache.httpclient.version", "4.2");
         updateLibVersion("apache.httpcore.version", "4.2");
-        runTest(test);
+        run(test);
         for (int i = 1; i <= 6; i++) {
             updateLibVersion("apache.httpclient.version", "4.2." + i);
             updateLibVersion("apache.httpcore.version", "4.2");
-            runTest(test);
+            run(test);
         }
         updateLibVersion("apache.httpclient.version", "4.3");
         updateLibVersion("apache.httpcore.version", "4.3");
-        runTest(test);
+        run(test);
         for (int i = 1; i <= 6; i++) {
             updateLibVersion("apache.httpclient.version", "4.3." + i);
             updateLibVersion("apache.httpcore.version", "4.3");
-            runTest(test);
+            run(test);
         }
-        runTest(test);
+        run(test);
         updateLibVersion("apache.httpclient.version", "4.4");
         updateLibVersion("apache.httpcore.version", "4.4");
-        runTest(test);
+        run(test);
         updateLibVersion("apache.httpclient.version", "4.4.1");
         updateLibVersion("apache.httpcore.version", "4.4.1");
-        runTest(test);
+        run(test);
         updateLibVersion("apache.httpclient.version", "4.5");
         updateLibVersion("apache.httpcore.version", "4.4.1");
-        runTest(test);
+        run(test);
         updateLibVersion("apache.httpclient.version", "4.5.1");
         updateLibVersion("apache.httpcore.version", "4.4.3");
-        runTest(test);
+        run(test);
         updateLibVersion("apache.httpclient.version", "4.5.2");
         updateLibVersion("apache.httpcore.version", "4.4.4");
-        runTest(test);
+        run(test);
     }
 
     private static void apacheHttpAsyncClient() throws Exception {
@@ -88,78 +92,78 @@ public class HttpClient {
         updateLibVersion("apache.httpasyncclient.version", "4.0");
         updateLibVersion("apache.httpcore.version", "4.3");
         updateLibVersion("apache.httpclient.version", "4.3.1");
-        runTest(test);
+        run(test);
         updateLibVersion("apache.httpasyncclient.version", "4.0.1");
         updateLibVersion("apache.httpcore.version", "4.3.2");
         updateLibVersion("apache.httpclient.version", "4.3.2");
-        runTest(test);
+        run(test);
         updateLibVersion("apache.httpasyncclient.version", "4.0.2");
         updateLibVersion("apache.httpcore.version", "4.3.2");
         updateLibVersion("apache.httpclient.version", "4.3.5");
-        runTest(test);
+        run(test);
         updateLibVersion("apache.httpasyncclient.version", "4.1");
         updateLibVersion("apache.httpcore.version", "4.4.1");
         updateLibVersion("apache.httpclient.version", "4.4.1");
-        runTest(test);
+        run(test);
         updateLibVersion("apache.httpasyncclient.version", "4.1.1");
         updateLibVersion("apache.httpcore.version", "4.4.4");
         updateLibVersion("apache.httpclient.version", "4.5.1");
-        runTest(test);
+        run(test);
         updateLibVersion("apache.httpasyncclient.version", "4.1.2");
         updateLibVersion("apache.httpcore.version", "4.4.5");
         updateLibVersion("apache.httpclient.version", "4.5.2");
-        runTest(test);
+        run(test);
     }
 
     private static void apacheHttpClient3x() throws Exception {
         final String test = "ApacheHttpClient3xPluginIT";
         updateLibVersion("apache.httpclient3x.version", "3.0");
-        runTest(test);
+        run(test);
         updateLibVersion("apache.httpclient3x.version", "3.0.1");
-        runTest(test);
+        run(test);
         updateLibVersion("apache.httpclient3x.version", "3.1");
-        runTest(test);
+        run(test);
     }
 
     private static void asyncHttpClient() throws Exception {
         final String test = "AsyncHttpClientPluginIT";
         for (int i = 1; i <= 24; i++) {
             updateLibVersion("asynchttpclient.version", "1.7." + i);
-            runTest(test, "async-http-client-1.x");
+            run(test, "async-http-client-1.x");
         }
         for (int i = 0; i <= 17; i++) {
             updateLibVersion("asynchttpclient.version", "1.8." + i);
-            runTest(test, "async-http-client-1.x");
+            run(test, "async-http-client-1.x");
         }
         for (int i = 0; i <= 39; i++) {
             updateLibVersion("asynchttpclient.version", "1.9." + i);
-            runTest(test, "async-http-client-1.x");
+            runJava7(test, "async-http-client-1.x");
         }
         for (int i = 0; i <= 11; i++) {
             updateLibVersion("asynchttpclient.version", "2.0." + i);
-            runTest(test, "async-http-client-2.x");
+            runJava8(test, "async-http-client-2.x");
         }
     }
 
     private static void okHttpClient() throws Exception {
         final String test = "OkHttpClientPluginIT";
         updateLibVersion("okhttpclient.version", "2.0.0");
-        runTest(test);
+        runJava7(test);
         updateLibVersion("okhttpclient.version", "2.1.0");
-        runTest(test);
+        runJava7(test);
         updateLibVersion("okhttpclient.version", "2.2.0");
-        runTest(test);
+        runJava7(test);
         updateLibVersion("okhttpclient.version", "2.3.0");
-        runTest(test);
+        runJava7(test);
         updateLibVersion("okhttpclient.version", "2.4.0");
-        runTest(test);
+        runJava7(test);
         updateLibVersion("okhttpclient.version", "2.5.0");
-        runTest(test);
+        runJava7(test);
         updateLibVersion("okhttpclient.version", "2.6.0");
-        runTest(test);
+        runJava7(test);
         for (int i = 0; i <= 5; i++) {
             updateLibVersion("okhttpclient.version", "2.7." + i);
-            runTest(test);
+            runJava7(test);
         }
     }
 
@@ -167,39 +171,39 @@ public class HttpClient {
         final String test = "CxfClientPluginIT";
         for (int i = 1; i <= 10; i++) {
             updateLibVersion("cxf.version", "2.1." + i);
-            runTest(test, "cxf-2.x");
+            run(test, "cxf-2.x");
         }
         for (int i = 1; i <= 12; i++) {
             updateLibVersion("cxf.version", "2.2." + i);
-            runTest(test, "cxf-2.x");
+            run(test, "cxf-2.x");
         }
         for (int i = 0; i <= 11; i++) {
             updateLibVersion("cxf.version", "2.3." + i);
-            runTest(test, "cxf-2.x");
+            run(test, "cxf-2.x");
         }
         for (int i = 0; i <= 10; i++) {
             updateLibVersion("cxf.version", "2.4." + i);
-            runTest(test, "cxf-2.x");
+            run(test, "cxf-2.x");
         }
         for (int i = 0; i <= 11; i++) {
             updateLibVersion("cxf.version", "2.5." + i);
-            runTest(test, "cxf-2.x");
+            run(test, "cxf-2.x");
         }
         for (int i = 0; i <= 16; i++) {
             updateLibVersion("cxf.version", "2.6." + i);
-            runTest(test, "cxf-2.x");
+            run(test, "cxf-2.x");
         }
         for (int i = 0; i <= 18; i++) {
             updateLibVersion("cxf.version", "2.7." + i);
-            runTest(test, "cxf-2.x");
+            run(test, "cxf-2.x");
         }
         for (int i = 0; i <= 8; i++) {
             updateLibVersion("cxf.version", "3.0." + i);
-            runTest(test);
+            run(test);
         }
         for (int i = 0; i <= 7; i++) {
             updateLibVersion("cxf.version", "3.1." + i);
-            runTest(test);
+            runJava7(test);
         }
     }
 
@@ -207,42 +211,61 @@ public class HttpClient {
         final String test = "RestTemplatePluginIT";
         for (int i = 0; i <= 7; i++) {
             updateLibVersion("spring.version", "3.0." + i + ".RELEASE");
-            runTest(test);
+            run(test);
         }
         for (int i = 0; i <= 4; i++) {
             updateLibVersion("spring.version", "3.1." + i + ".RELEASE");
-            runTest(test);
+            run(test);
         }
         for (int i = 0; i <= 4; i++) {
             updateLibVersion("spring.version", "3.1." + i + ".RELEASE");
-            runTest(test);
+            run(test);
         }
         for (int i = 0; i <= 16; i++) {
             updateLibVersion("spring.version", "3.2." + i + ".RELEASE");
-            runTest(test);
+            run(test);
         }
         for (int i = 0; i <= 9; i++) {
             updateLibVersion("spring.version", "4.0." + i + ".RELEASE");
-            runTest(test);
+            run(test);
         }
         for (int i = 0; i <= 9; i++) {
             updateLibVersion("spring.version", "4.1." + i + ".RELEASE");
-            runTest(test);
+            run(test);
         }
         for (int i = 0; i <= 7; i++) {
             updateLibVersion("spring.version", "4.2." + i + ".RELEASE");
-            runTest(test);
+            run(test);
         }
         updateLibVersion("spring.version", "4.3.0.RELEASE");
+        run(test);
         updateLibVersion("spring.version", "4.3.1.RELEASE");
+        run(test);
         updateLibVersion("spring.version", "4.3.2.RELEASE");
+        run(test);
     }
 
     private static void updateLibVersion(String property, String version) throws IOException {
         Util.updateLibVersion(MODULE_PATH, property, version);
     }
 
-    private static void runTest(String test, String... profiles) throws Exception {
-        Util.runTest(MODULE_PATH, test, profiles);
+    private static void run(String test) throws Exception {
+        Util.runTest(MODULE_PATH, test, JAVA6, JAVA7, JAVA8);
+    }
+
+    private static void run(String test, String profile) throws Exception {
+        Util.runTest(MODULE_PATH, test, profile, JAVA6, JAVA7, JAVA8);
+    }
+
+    private static void runJava7(String test) throws Exception {
+        Util.runTest(MODULE_PATH, test, JAVA7, JAVA8);
+    }
+
+    private static void runJava7(String test, String profile) throws Exception {
+        Util.runTest(MODULE_PATH, test, profile, JAVA7, JAVA8);
+    }
+
+    private static void runJava8(String test, String profile) throws Exception {
+        Util.runTest(MODULE_PATH, test, profile, JAVA8);
     }
 }

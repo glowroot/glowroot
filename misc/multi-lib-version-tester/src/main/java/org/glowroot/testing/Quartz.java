@@ -15,6 +15,10 @@
  */
 package org.glowroot.testing;
 
+import static org.glowroot.testing.JavaVersion.JAVA6;
+import static org.glowroot.testing.JavaVersion.JAVA7;
+import static org.glowroot.testing.JavaVersion.JAVA8;
+
 public class Quartz {
 
     private static final String MODULE_PATH = "agent-parent/plugins/quartz-plugin";
@@ -39,6 +43,6 @@ public class Quartz {
 
     private static void run(String version, String... profiles) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "quartz.version", version);
-        Util.runTests(MODULE_PATH, profiles);
+        Util.runTests(MODULE_PATH, profiles, JAVA6, JAVA7, JAVA8);
     }
 }

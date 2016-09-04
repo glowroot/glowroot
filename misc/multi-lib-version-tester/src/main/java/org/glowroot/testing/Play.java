@@ -15,19 +15,13 @@
  */
 package org.glowroot.testing;
 
+import static org.glowroot.testing.JavaVersion.JAVA6;
+import static org.glowroot.testing.JavaVersion.JAVA7;
+import static org.glowroot.testing.JavaVersion.JAVA8;
+
 public class Play {
 
-    private static final String JAVA_7_HOME;
-
     private static final String MODULE_PATH = "agent-parent/plugins/play-plugin";
-
-    static {
-        String value = System.getProperty("java7.home");
-        if (value == null) {
-            throw new IllegalStateException("Must provide -Djava7.home=...");
-        }
-        JAVA_7_HOME = value;
-    }
 
     public static void main(String[] args) throws Exception {
         play1x();
@@ -67,28 +61,22 @@ public class Play {
 
     private static void play2x() throws Exception {
 
-        String javaHome = System.getProperty("java.home");
-        try {
-            System.setProperty("java.home", JAVA_7_HOME);
-            runPlay2x("2.0", "2.9.3", "3.3.0.Final", "2.2.2");
-            runPlay2x("2.0.1", "2.9.3", "3.3.0.Final", "2.2.2");
-            runPlay2x("2.0.2", "2.9.3", "3.3.0.Final", "2.2.2");
-            runPlay2x("2.0.3", "2.9.3", "3.5.0.Final", "2.2.2");
-            runPlay2x("2.0.4", "2.9.3", "3.5.0.Final", "2.2.2");
-            runPlay2x("2.0.5", "2.9.3", "3.5.0.Final", "2.2.2");
-            runPlay2x("2.0.6", "2.9.3", "3.5.0.Final", "2.2.2");
-            runPlay2x("2.0.7", "2.9.3", "3.5.0.Final", "2.2.2");
-            runPlay2x("2.0.8", "2.9.3", "3.5.0.Final", "2.2.2");
+        runPlay2x("2.0", "2.9.3", "3.3.0.Final", "2.2.2");
+        runPlay2x("2.0.1", "2.9.3", "3.3.0.Final", "2.2.2");
+        runPlay2x("2.0.2", "2.9.3", "3.3.0.Final", "2.2.2");
+        runPlay2x("2.0.3", "2.9.3", "3.5.0.Final", "2.2.2");
+        runPlay2x("2.0.4", "2.9.3", "3.5.0.Final", "2.2.2");
+        runPlay2x("2.0.5", "2.9.3", "3.5.0.Final", "2.2.2");
+        runPlay2x("2.0.6", "2.9.3", "3.5.0.Final", "2.2.2");
+        runPlay2x("2.0.7", "2.9.3", "3.5.0.Final", "2.2.2");
+        runPlay2x("2.0.8", "2.9.3", "3.5.0.Final", "2.2.2");
 
-            runPlay2x("2.1.0", "2.10.3", "3.5.9.Final", "2.2.2");
-            runPlay2x("2.1.1", "2.10.3", "3.6.3.Final", "2.2.2");
-            runPlay2x("2.1.2", "2.10.3", "3.6.3.Final", "2.2.2");
-            runPlay2x("2.1.3", "2.10.3", "3.6.3.Final", "2.2.2");
-            runPlay2x("2.1.4", "2.10.3", "3.6.3.Final", "2.2.2");
-            runPlay2x("2.1.5", "2.10.3", "3.6.3.Final", "2.2.2");
-        } finally {
-            System.setProperty("java.home", javaHome);
-        }
+        runPlay2x("2.1.0", "2.10.3", "3.5.9.Final", "2.2.2");
+        runPlay2x("2.1.1", "2.10.3", "3.6.3.Final", "2.2.2");
+        runPlay2x("2.1.2", "2.10.3", "3.6.3.Final", "2.2.2");
+        runPlay2x("2.1.3", "2.10.3", "3.6.3.Final", "2.2.2");
+        runPlay2x("2.1.4", "2.10.3", "3.6.3.Final", "2.2.2");
+        runPlay2x("2.1.5", "2.10.3", "3.6.3.Final", "2.2.2");
 
         runPlay2x("2.2.0", "2.10.3", "3.7.0.Final", "2.2.2");
         runPlay2x("2.2.1", "2.10.3", "3.7.0.Final", "2.2.2");
@@ -135,32 +123,35 @@ public class Play {
         }
         String scalaMajorVersion = scalaVersion.substring(0, scalaVersion.lastIndexOf('.'));
         String profile;
-        String javaVersion;
-        if (testAppVersion.equals("2.0.x")) {
+        JavaVersion[] javaVersions;
+        if (playVersion.startsWith("2.0")) {
             profile = "play-2.0.x";
-            javaVersion = "1.7"; // scala 2.9 doesn't support 1.8
-        } else if (testAppVersion.equals("2.1.0") || testAppVersion.equals("2.1.x")) {
+            javaVersions = new JavaVersion[] {JAVA6, JAVA7}; // scala 2.9 doesn't support 1.8
+        } else if (playVersion.startsWith("2.1")) {
             profile = "play-2.1.x";
-            javaVersion = "1.7"; // tests work under either 1.7 or 1.8
-        } else {
+            javaVersions = new JavaVersion[] {JAVA6, JAVA7, JAVA8};
+        } else if (playVersion.startsWith("2.2") || playVersion.startsWith("2.3")) {
             profile = "play-2.2.x";
-            javaVersion = "1.8"; // tests use lambdas so require 1.8
+            javaVersions = new JavaVersion[] {JAVA6, JAVA7, JAVA8};
+        } else {
+            // play version is 2.4+
+            profile = "play-2.4.x";
+            javaVersions = new JavaVersion[] {JAVA8};
         }
         Util.updateLibVersion(MODULE_PATH, "play.version", playVersion);
         Util.updateLibVersion(MODULE_PATH, "scala.major.version", scalaMajorVersion);
         Util.updateLibVersion(MODULE_PATH, "scala.version", scalaVersion);
-        Util.updateLibVersion(MODULE_PATH, "java.version", javaVersion);
         Util.updateLibVersion(MODULE_PATH, "netty.version", nettyVersion);
         Util.updateLibVersion(MODULE_PATH, "jackson.version", jacksonVersion);
         Util.updateLibVersion(MODULE_PATH, "test.app.version", testAppVersion);
         Util.updateLibVersion(MODULE_PATH, "test.app.language", "scala");
-        Util.runTests(MODULE_PATH, "play-2.x", profile);
+        Util.runTests(MODULE_PATH, new String[] {"play-2.x", profile}, javaVersions);
         Util.updateLibVersion(MODULE_PATH, "test.app.language", "java");
-        Util.runTests(MODULE_PATH, "play-2.x", profile);
+        Util.runTests(MODULE_PATH, new String[] {"play-2.x", profile}, javaVersions);
     }
 
     private static void runPlay1x(String version, String profile) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "play.version", version);
-        Util.runTests(MODULE_PATH, profile);
+        Util.runTests(MODULE_PATH, profile, JAVA6, JAVA7, JAVA8);
     }
 }

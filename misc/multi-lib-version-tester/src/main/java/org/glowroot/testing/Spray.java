@@ -15,6 +15,10 @@
  */
 package org.glowroot.testing;
 
+import static org.glowroot.testing.JavaVersion.JAVA6;
+import static org.glowroot.testing.JavaVersion.JAVA7;
+import static org.glowroot.testing.JavaVersion.JAVA8;
+
 public class Spray {
 
     private static final String MODULE_PATH = "agent-parent/plugins/spray-plugin";
@@ -41,6 +45,6 @@ public class Spray {
         Util.updateLibVersion(MODULE_PATH, "akka.version", akkaVersion);
         Util.updateLibVersion(MODULE_PATH, "scala.major.version", scalaMajorVersion);
         Util.updateLibVersion(MODULE_PATH, "scala.version", scalaVersion);
-        Util.runTests(MODULE_PATH);
+        Util.runTests(MODULE_PATH, JAVA6, JAVA7, JAVA8);
     }
 }

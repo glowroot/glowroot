@@ -15,28 +15,23 @@
  */
 package org.glowroot.testing;
 
-public class All {
+public enum JavaVersion {
 
-    public static void main(String[] args) throws Exception {
-        AgentIntegrationTests.main(args);
-        Cassandra.main(args);
-        Executor.main(args);
-        Grails.main(args);
-        Hibernate.main(args);
-        HttpClient.main(args);
-        JAXRS.main(args);
-        JDBC.main(args);
-        JMS.main(args);
-        JSF.main(args);
-        JSP.main(args);
-        Logger.main(args);
-        Netty.main(args);
-        Play.main(args);
-        Quartz.main(args);
-        Redis.main(args);
-        Servlet.main(args);
-        Spray.main(args);
-        Spring.main(args);
-        Struts.main(args);
+    JAVA6("java6.home"),
+    JAVA7("java7.home"),
+    JAVA8("java.home");
+
+    private final String javaHome;
+
+    private JavaVersion(String propertyName) {
+        String javaHome = System.getProperty(propertyName);
+        if (javaHome == null) {
+            throw new IllegalStateException("Missing " + propertyName);
+        }
+        this.javaHome = javaHome;
+    }
+
+    public String getJavaHome() {
+        return javaHome;
     }
 }

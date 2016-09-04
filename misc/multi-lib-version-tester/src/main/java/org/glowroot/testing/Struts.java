@@ -17,6 +17,10 @@ package org.glowroot.testing;
 
 import java.io.IOException;
 
+import static org.glowroot.testing.JavaVersion.JAVA6;
+import static org.glowroot.testing.JavaVersion.JAVA7;
+import static org.glowroot.testing.JavaVersion.JAVA8;
+
 public class Struts {
 
     private static final String MODULE_PATH = "agent-parent/plugins/struts-plugin";
@@ -29,104 +33,108 @@ public class Struts {
     private static void struts1() throws Exception {
         final String test = "StrutsOneIT";
         updateLibVersion("struts1.version", "1.3.5");
-        runTest(test);
+        run(test);
         updateLibVersion("struts1.version", "1.3.8");
-        runTest(test);
+        run(test);
         updateLibVersion("struts1.version", "1.3.9");
-        runTest(test);
+        run(test);
         updateLibVersion("struts1.version", "1.3.10");
-        runTest(test);
+        run(test);
     }
 
     private static void struts2() throws Exception {
         final String test = "StrutsTwoIT";
         updateLibVersion("struts2.version", "2.1.8");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.1.8.1");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.2.1");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.2.1.1");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.2.3");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.2.3.1");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.1");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.1.1");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.1.2");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.3");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.4");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.4.1");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.7");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.8");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.12");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.14");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.14.1");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.14.2");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.14.3");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.15");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.15.1");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.15.2");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.15.3");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.16");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.16.1");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.16.2");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.16.3");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.20");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.20.1");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.20.3");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.24");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.24.1");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.24.3");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.28");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.28.1");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.29");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.3.30");
-        runTest(test);
+        run(test);
         updateLibVersion("struts2.version", "2.5");
-        runTest(test);
+        runJava7(test);
         updateLibVersion("struts2.version", "2.5.1");
-        runTest(test);
+        runJava7(test);
         updateLibVersion("struts2.version", "2.5.2");
-        runTest(test);
+        runJava7(test);
     }
 
     private static void updateLibVersion(String property, String version) throws IOException {
         Util.updateLibVersion(MODULE_PATH, property, version);
     }
 
-    private static void runTest(String test) throws Exception {
-        Util.runTest(MODULE_PATH, test);
+    private static void run(String test) throws Exception {
+        Util.runTest(MODULE_PATH, test, JAVA6, JAVA7, JAVA8);
+    }
+
+    private static void runJava7(String test) throws Exception {
+        Util.runTest(MODULE_PATH, test, JAVA7, JAVA8);
     }
 }

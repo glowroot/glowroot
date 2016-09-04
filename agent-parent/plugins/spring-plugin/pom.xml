@@ -121,16 +121,16 @@
 
   <profiles>
     <profile>
-      <id>java7</id>
+      <id>java6or7</id>
       <activation>
-        <jdk>1.7</jdk>
+        <jdk>[1.6,1.8)</jdk>
       </activation>
       <build>
         <plugins>
           <plugin>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
-              <!-- this is needed when building with java 7 -->
+              <!-- this is needed when building with Java 6 or 7 -->
               <argLine>-XX:MaxPermSize=128m</argLine>
             </configuration>
           </plugin>

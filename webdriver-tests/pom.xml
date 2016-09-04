@@ -209,8 +209,9 @@
 
   <profiles>
     <profile>
+      <!-- Java 8 or later is needed to run tests against glowroot-server -->
       <activation>
-        <jdk>1.8</jdk>
+        <jdk>[1.8,)</jdk>
       </activation>
       <dependencies>
         <dependency>
@@ -224,6 +225,8 @@
         <pluginManagement>
           <plugins>
             <plugin>
+              <!-- this is just so eclipse will use Java 8 for this module, since Java 8 is needed
+               for running the tests against glowroot-server -->
               <artifactId>maven-compiler-plugin</artifactId>
               <executions>
                 <execution>

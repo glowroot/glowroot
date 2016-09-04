@@ -15,16 +15,20 @@
  */
 package org.glowroot.testing;
 
+import static org.glowroot.testing.JavaVersion.JAVA6;
+import static org.glowroot.testing.JavaVersion.JAVA7;
+import static org.glowroot.testing.JavaVersion.JAVA8;
+
 public class Netty {
 
     private static final String MODULE_PATH = "agent-parent/plugins/netty-plugin";
 
     public static void main(String[] args) throws Exception {
-        runNetty();
-        runVertx();
+        netty();
+        vertx();
     }
 
-    private static void runNetty() throws Exception {
+    private static void netty() throws Exception {
         runNetty("3.3.0.Final", "netty-3.x");
         runNetty("3.3.1.Final", "netty-3.x");
         for (int i = 0; i <= 6; i++) {
@@ -61,7 +65,7 @@ public class Netty {
         runNetty("4.1.5.Final", "netty-4.x");
     }
 
-    private static void runVertx() throws Exception {
+    private static void vertx() throws Exception {
         runVertx("1.2.1.final", "3.5.0.Final", "vertx-1.x");
         runVertx("1.2.3.final", "3.5.0.Final", "vertx-1.x");
         runVertx("1.3.0.final", "3.5.8.Final", "vertx-1.x");
@@ -79,21 +83,28 @@ public class Netty {
         runVertx("2.1.5", "4.0.21.Final", "vertx-2.x");
         runVertx("2.1.6", "4.0.21.Final", "vertx-2.x");
 
-        runVertx("3.0.0", "4.0.28.Final", "vertx-3.x");
-        runVertx("3.1.0", "4.0.31.Final", "vertx-3.x");
-        runVertx("3.2.0", "4.0.33.Final", "vertx-3.x");
-        runVertx("3.2.1", "4.0.33.Final", "vertx-3.x");
+        runVertxJava8("3.0.0", "4.0.28.Final", "vertx-3.x");
+        runVertxJava8("3.1.0", "4.0.31.Final", "vertx-3.x");
+        runVertxJava8("3.2.0", "4.0.33.Final", "vertx-3.x");
+        runVertxJava8("3.2.1", "4.0.33.Final", "vertx-3.x");
     }
 
     private static void runNetty(String version, String... profile) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "netty.version", version);
-        Util.runTests(MODULE_PATH, profile);
+        Util.runTests(MODULE_PATH, profile, JAVA6, JAVA7, JAVA8);
     }
 
     private static void runVertx(String vertxVersion, String nettyVersion, String profile)
             throws Exception {
         Util.updateLibVersion(MODULE_PATH, "vertx.version", vertxVersion);
         Util.updateLibVersion(MODULE_PATH, "netty.version", nettyVersion);
-        Util.runTests(MODULE_PATH, profile);
+        Util.runTests(MODULE_PATH, profile, JAVA7, JAVA8);
+    }
+
+    private static void runVertxJava8(String vertxVersion, String nettyVersion, String profile)
+            throws Exception {
+        Util.updateLibVersion(MODULE_PATH, "vertx.version", vertxVersion);
+        Util.updateLibVersion(MODULE_PATH, "netty.version", nettyVersion);
+        Util.runTests(MODULE_PATH, profile, JAVA8);
     }
 }

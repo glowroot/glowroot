@@ -15,28 +15,17 @@
  */
 package org.glowroot.testing;
 
-public class All {
+import static org.glowroot.testing.JavaVersion.JAVA6;
+import static org.glowroot.testing.JavaVersion.JAVA7;
+import static org.glowroot.testing.JavaVersion.JAVA8;
+
+public class JDBC {
+
+    private static final String MODULE_PATH = "agent-parent/plugins/jdbc-plugin";
 
     public static void main(String[] args) throws Exception {
-        AgentIntegrationTests.main(args);
-        Cassandra.main(args);
-        Executor.main(args);
-        Grails.main(args);
-        Hibernate.main(args);
-        HttpClient.main(args);
-        JAXRS.main(args);
-        JDBC.main(args);
-        JMS.main(args);
-        JSF.main(args);
-        JSP.main(args);
-        Logger.main(args);
-        Netty.main(args);
-        Play.main(args);
-        Quartz.main(args);
-        Redis.main(args);
-        Servlet.main(args);
-        Spray.main(args);
-        Spring.main(args);
-        Struts.main(args);
+        // TODO run tests against different versions hsqldb, h2, postgresql, commons dbcp (wrapped
+        // connection), tomcat (wrapped connection)
+        Util.runTests(MODULE_PATH, JAVA6, JAVA7, JAVA8);
     }
 }

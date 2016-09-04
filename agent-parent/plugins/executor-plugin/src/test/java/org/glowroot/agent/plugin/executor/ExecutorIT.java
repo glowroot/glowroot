@@ -331,7 +331,7 @@ public class ExecutorIT {
         public void transactionMarker() throws Exception {
             ExecutorService executor = createExecutorService();
             final CountDownLatch latch = new CountDownLatch(3);
-            executor.execute(new FutureTask<>(new Callable<Void>() {
+            executor.execute(new FutureTask<Void>(new Callable<Void>() {
                 @Override
                 public Void call() {
                     new CreateTraceEntry().traceEntryMarker();
@@ -339,7 +339,7 @@ public class ExecutorIT {
                     return null;
                 }
             }));
-            executor.submit(new FutureTask<>(new Callable<Void>() {
+            executor.submit(new FutureTask<Void>(new Callable<Void>() {
                 @Override
                 public Void call() {
                     new CreateTraceEntry().traceEntryMarker();
@@ -347,7 +347,7 @@ public class ExecutorIT {
                     return null;
                 }
             }));
-            executor.submit(new FutureTask<>(new Callable<Void>() {
+            executor.submit(new FutureTask<Void>(new Callable<Void>() {
                 @Override
                 public Void call() {
                     new CreateTraceEntry().traceEntryMarker();

@@ -15,6 +15,10 @@
  */
 package org.glowroot.testing;
 
+import static org.glowroot.testing.JavaVersion.JAVA6;
+import static org.glowroot.testing.JavaVersion.JAVA7;
+import static org.glowroot.testing.JavaVersion.JAVA8;
+
 public class Hibernate {
 
     private static final String MODULE_PATH = "agent-parent/plugins/hibernate-plugin";
@@ -40,12 +44,14 @@ public class Hibernate {
         for (int i = 0; i <= 11; i++) {
             run("4.3." + i + ".Final");
         }
-        for (int i = 0; i <= 9; i++) {
-            run("5.0." + i + ".Final");
+        for (int i = 0; i <= 10; i++) {
+            runJava7("5.0." + i + ".Final");
         }
-        run("5.1.0.Final");
-        run("5.2.0.Final");
-        run("5.2.1.Final");
+        runJava7("5.1.0.Final");
+        runJava7("5.1.1.Final");
+        runJava8("5.2.0.Final");
+        runJava8("5.2.1.Final");
+        runJava8("5.2.2.Final");
     }
 
     private static void run(String version, String annotationsVersion, String... profiles)
@@ -54,11 +60,21 @@ public class Hibernate {
         if (!annotationsVersion.isEmpty()) {
             Util.updateLibVersion(MODULE_PATH, "hibernate.annotations.version", annotationsVersion);
         }
-        Util.runTests(MODULE_PATH, profiles);
+        Util.runTests(MODULE_PATH, profiles, JAVA6, JAVA7, JAVA8);
     }
 
     private static void run(String version) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "hibernate.version", version);
-        Util.runTests(MODULE_PATH);
+        Util.runTests(MODULE_PATH, JAVA6, JAVA7, JAVA8);
+    }
+
+    private static void runJava7(String version) throws Exception {
+        Util.updateLibVersion(MODULE_PATH, "hibernate.version", version);
+        Util.runTests(MODULE_PATH, JAVA7, JAVA8);
+    }
+
+    private static void runJava8(String version) throws Exception {
+        Util.updateLibVersion(MODULE_PATH, "hibernate.version", version);
+        Util.runTests(MODULE_PATH, JAVA8);
     }
 }

@@ -15,6 +15,7 @@
  */
 package controllers;
 
+import play.libs.F.Function0;
 import play.libs.F.Promise;
 import play.mvc.Controller;
 import play.mvc.Result;
@@ -27,9 +28,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class AsyncController extends Controller {
 
     public static Promise<Result> message() {
-        return Promise.delayed(() -> {
-            new CreateTraceEntry().traceEntryMarker();
-            return Results.ok("Hi!");
+        return Promise.delayed(new Function0<Result>() {
+            public Result apply() {
+                new CreateTraceEntry().traceEntryMarker();
+                return Results.ok("Hi!");
+            }
         }, 1, SECONDS);
     }
 

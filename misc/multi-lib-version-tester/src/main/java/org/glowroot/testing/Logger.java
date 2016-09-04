@@ -17,6 +17,10 @@ package org.glowroot.testing;
 
 import java.io.IOException;
 
+import static org.glowroot.testing.JavaVersion.JAVA6;
+import static org.glowroot.testing.JavaVersion.JAVA7;
+import static org.glowroot.testing.JavaVersion.JAVA8;
+
 public class Logger {
 
     private static final String MODULE_PATH = "agent-parent/plugins/logger-plugin";
@@ -32,88 +36,88 @@ public class Logger {
 
         updateLibVersion("logback.version", "0.9");
         updateLibVersion("slf4j.version", "1.2");
-        runTest(test, "logback-old");
+        run(test, "logback-old");
 
         for (int i = 1; i <= 5; i++) {
             updateLibVersion("logback.version", "0.9." + i);
             updateLibVersion("slf4j.version", "1.3.0");
-            runTest(test, "logback-old");
+            run(test, "logback-old");
         }
 
         updateLibVersion("logback.version", "0.9.6");
         updateLibVersion("slf4j.version", "1.4.0");
-        runTest(test, "logback-old");
+        run(test, "logback-old");
 
         updateLibVersion("logback.version", "0.9.7");
         updateLibVersion("slf4j.version", "1.4.0");
-        runTest(test, "logback-old");
+        run(test, "logback-old");
 
         updateLibVersion("logback.version", "0.9.8");
         updateLibVersion("slf4j.version", "1.4.3");
-        runTest(test, "logback-old");
+        run(test, "logback-old");
 
         updateLibVersion("logback.version", "0.9.9");
         updateLibVersion("slf4j.version", "1.5.0");
-        runTest(test, "logback-old");
+        run(test, "logback-old");
 
         // logback 0.9.10 doesn't work period in multi-threaded environments due to
         // https://github.com/qos-ch/logback/commit/d699a4afd4cad728ab2aa57b04ef357e15d8c8cf
 
         updateLibVersion("logback.version", "0.9.11");
         updateLibVersion("slf4j.version", "1.5.5");
-        runTest(test, "logback-old");
+        run(test, "logback-old");
 
         for (int i = 12; i <= 15; i++) {
             updateLibVersion("logback.version", "0.9." + i);
             updateLibVersion("slf4j.version", "1.5.6");
-            runTest(test, "logback-old");
+            run(test, "logback-old");
         }
 
         updateLibVersion("logback.version", "0.9.16");
         updateLibVersion("slf4j.version", "1.5.8");
-        runTest(test, "logback-old");
+        run(test, "logback-old");
 
         updateLibVersion("logback.version", "0.9.17");
         updateLibVersion("slf4j.version", "1.5.8");
-        runTest(test, "logback-old");
+        run(test, "logback-old");
 
         updateLibVersion("logback.version", "0.9.18");
         updateLibVersion("slf4j.version", "1.5.10");
-        runTest(test, "logback-old");
+        run(test, "logback-old");
 
         updateLibVersion("logback.version", "0.9.19");
         updateLibVersion("slf4j.version", "1.5.11");
-        runTest(test, "logback-old");
+        run(test, "logback-old");
 
         updateLibVersion("logback.version", "0.9.20");
         updateLibVersion("slf4j.version", "1.5.11");
-        runTest(test, "logback-old");
+        run(test, "logback-old");
 
         for (int i = 21; i <= 25; i++) {
             updateLibVersion("logback.version", "0.9." + i);
             updateLibVersion("slf4j.version", "1.6.0");
-            runTest(test);
+            run(test);
         }
 
         for (int i = 26; i <= 29; i++) {
             updateLibVersion("logback.version", "0.9." + i);
             updateLibVersion("slf4j.version", "1.6.1");
-            runTest(test);
+            run(test);
         }
 
         updateLibVersion("logback.version", "0.9.30");
         updateLibVersion("slf4j.version", "1.6.2");
-        runTest(test);
+        run(test);
 
         for (int i = 0; i <= 13; i++) {
             updateLibVersion("slf4j.version", "1.7.19");
             updateLibVersion("logback.version", "1.0." + i);
-            runTest(test);
+            run(test);
         }
         for (int i = 0; i <= 7; i++) {
             updateLibVersion("slf4j.version", "1.7.21");
             updateLibVersion("logback.version", "1.1." + i);
-            runTest(test);
+            run(test);
         }
     }
 
@@ -125,42 +129,50 @@ public class Logger {
                 continue;
             }
             updateLibVersion("log4j.version", "1.2." + i);
-            runTest(test);
+            run(test);
         }
     }
 
     private static void log4j2x() throws Exception {
         final String test = "Log4j2xIT,Log4j2xMarkerIT";
         updateLibVersion("log4j2x.version", "2.0");
-        runTest(test);
+        run(test);
         updateLibVersion("log4j2x.version", "2.0.1");
-        runTest(test);
+        run(test);
         updateLibVersion("log4j2x.version", "2.0.2");
-        runTest(test);
+        run(test);
         updateLibVersion("log4j2x.version", "2.1");
-        runTest(test);
+        run(test);
         updateLibVersion("log4j2x.version", "2.2");
-        runTest(test);
+        run(test);
         updateLibVersion("log4j2x.version", "2.3");
-        runTest(test);
+        run(test);
         updateLibVersion("log4j2x.version", "2.4");
-        runTest(test);
+        runJava7(test);
         updateLibVersion("log4j2x.version", "2.4.1");
-        runTest(test);
+        runJava7(test);
         updateLibVersion("log4j2x.version", "2.5");
-        runTest(test);
+        runJava7(test);
         // tests fail with log4j 2.6 due to https://github.com/apache/logging-log4j2/pull/31
         updateLibVersion("log4j2x.version", "2.6.1");
-        runTest(test);
+        runJava7(test);
         updateLibVersion("log4j2x.version", "2.6.2");
-        runTest(test);
+        runJava7(test);
     }
 
     private static void updateLibVersion(String property, String version) throws IOException {
         Util.updateLibVersion(MODULE_PATH, property, version);
     }
 
-    private static void runTest(String test, String... profiles) throws Exception {
-        Util.runTest(MODULE_PATH, test, profiles);
+    private static void run(String test) throws Exception {
+        Util.runTest(MODULE_PATH, test, JAVA6, JAVA7, JAVA8);
+    }
+
+    private static void run(String test, String profile) throws Exception {
+        Util.runTest(MODULE_PATH, test, profile, JAVA6, JAVA7, JAVA8);
+    }
+
+    private static void runJava7(String test) throws Exception {
+        Util.runTest(MODULE_PATH, test, JAVA7, JAVA8);
     }
 }

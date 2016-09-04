@@ -23,8 +23,11 @@ import org.glowroot.agent.it.harness.TraceEntryMarker;
 public class StreamController extends Controller {
 
     public static Result stream() {
-        Chunks<String> chunks = StringChunks.whenReady(
-                StreamController::registerOutChannelSomewhere);
+        Chunks<String> chunks = new StringChunks() {
+            public void onReady(Chunks.Out<String> out) {
+                registerOutChannelSomewhere(out);
+            }
+        };
         return ok(chunks);
     }
 

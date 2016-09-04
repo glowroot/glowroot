@@ -15,6 +15,9 @@
  */
 package org.glowroot.testing;
 
+import static org.glowroot.testing.JavaVersion.JAVA7;
+import static org.glowroot.testing.JavaVersion.JAVA8;
+
 public class Grails {
 
     private static final String MODULE_PATH = "agent-parent/plugins/grails-plugin";
@@ -41,6 +44,6 @@ public class Grails {
 
     private static void run(String version) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "grails.version", version);
-        Util.runTests(MODULE_PATH);
+        Util.runTests(MODULE_PATH, JAVA7, JAVA8);
     }
 }
