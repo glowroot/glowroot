@@ -39,11 +39,11 @@ import org.glowroot.agent.fat.storage.util.ImmutableIndex;
 import org.glowroot.agent.fat.storage.util.Schemas.Column;
 import org.glowroot.agent.fat.storage.util.Schemas.ColumnType;
 import org.glowroot.agent.fat.storage.util.Schemas.Index;
+import org.glowroot.common.repo.ConfigRepository.RollupConfig;
+import org.glowroot.common.repo.GaugeValueRepository;
+import org.glowroot.common.repo.util.Gauges;
+import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
-import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
-import org.glowroot.storage.repo.GaugeValueRepository;
-import org.glowroot.storage.repo.helper.Gauges;
-import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static org.glowroot.agent.util.Checkers.castUntainted;

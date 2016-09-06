@@ -33,7 +33,7 @@ import com.google.common.hash.Hashing;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.RateLimiter;
 
-import org.glowroot.storage.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository;
 
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;

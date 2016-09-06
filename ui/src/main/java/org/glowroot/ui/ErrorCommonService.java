@@ -24,7 +24,7 @@ import org.glowroot.common.model.Result;
 import org.glowroot.common.model.TransactionErrorSummaryCollector;
 import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySortOrder;
 import org.glowroot.common.model.TransactionErrorSummaryCollector.TransactionErrorSummary;
-import org.glowroot.storage.repo.AggregateRepository;
+import org.glowroot.common.repo.AggregateRepository;
 
 class ErrorCommonService {
 

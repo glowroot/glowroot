@@ -15,10 +15,10 @@
  */
 package org.glowroot.agent.fat.storage;
 
+import org.glowroot.common.config.StorageConfig;
+import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ScheduledRunnable;
-import org.glowroot.storage.config.StorageConfig;
-import org.glowroot.storage.repo.ConfigRepository;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 

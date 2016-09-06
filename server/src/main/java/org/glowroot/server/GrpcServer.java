@@ -25,11 +25,11 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.repo.AggregateRepository;
+import org.glowroot.common.repo.GaugeValueRepository;
+import org.glowroot.common.repo.TraceRepository;
+import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.server.storage.AgentDao;
-import org.glowroot.storage.repo.AggregateRepository;
-import org.glowroot.storage.repo.GaugeValueRepository;
-import org.glowroot.storage.repo.TraceRepository;
-import org.glowroot.storage.repo.helper.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceImplBase;

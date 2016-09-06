@@ -32,8 +32,8 @@ import javax.naming.ldap.LdapContext;
 import com.google.common.collect.Sets;
 import org.immutables.value.Value;
 
-import org.glowroot.storage.config.LdapConfig;
-import org.glowroot.storage.util.Encryption;
+import org.glowroot.common.config.LdapConfig;
+import org.glowroot.common.repo.util.Encryption;
 
 class LdapAuthentication {
 

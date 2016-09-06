@@ -28,12 +28,12 @@ import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.GaugeValueRepository;
+import org.glowroot.common.repo.GaugeValueRepository.Gauge;
+import org.glowroot.common.repo.Utils;
+import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.GaugeValueRepository;
-import org.glowroot.storage.repo.GaugeValueRepository.Gauge;
-import org.glowroot.storage.repo.Utils;
-import org.glowroot.storage.repo.helper.RollupLevelService;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;

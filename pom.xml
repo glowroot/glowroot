@@ -40,7 +40,6 @@
     <module>misc/multi-lib-version-tester</module>
     <module>common</module>
     <module>wire-api</module>
-    <module>storage</module>
     <module>ui</module>
     <module>agent/api</module>
     <module>agent/plugin-api</module>

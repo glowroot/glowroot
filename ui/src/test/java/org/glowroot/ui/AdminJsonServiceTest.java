@@ -23,9 +23,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.common.live.LiveAggregateRepository;
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.RepoAdmin;
-import org.glowroot.storage.util.MailService;
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.RepoAdmin;
+import org.glowroot.common.repo.util.MailService;
 import org.glowroot.ui.AdminJsonService.SmtpConfigDto;
 
 import static org.assertj.core.api.Assertions.assertThat;

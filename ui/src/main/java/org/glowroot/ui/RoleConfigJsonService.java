@@ -31,14 +31,14 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.config.ImmutableRoleConfig;
+import org.glowroot.common.config.PermissionParser;
+import org.glowroot.common.config.RoleConfig;
+import org.glowroot.common.repo.AgentRepository;
+import org.glowroot.common.repo.AgentRepository.AgentRollup;
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository.DuplicateRoleNameException;
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.storage.config.ImmutableRoleConfig;
-import org.glowroot.storage.config.PermissionParser;
-import org.glowroot.storage.config.RoleConfig;
-import org.glowroot.storage.repo.AgentRepository;
-import org.glowroot.storage.repo.AgentRepository.AgentRollup;
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.ConfigRepository.DuplicateRoleNameException;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 

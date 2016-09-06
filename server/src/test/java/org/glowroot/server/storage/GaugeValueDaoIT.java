@@ -25,8 +25,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.storage.config.ImmutableServerStorageConfig;
-import org.glowroot.storage.repo.ConfigRepository;
+import org.glowroot.common.config.ImmutableServerStorageConfig;
+import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -19,8 +19,8 @@ import java.util.List;
 
 import org.glowroot.agent.fat.storage.util.CappedDatabase;
 import org.glowroot.agent.fat.storage.util.DataSource;
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.RepoAdmin;
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.RepoAdmin;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
 class RepoAdminImpl implements RepoAdmin {

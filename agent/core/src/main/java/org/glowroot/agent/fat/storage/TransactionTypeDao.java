@@ -25,7 +25,7 @@ import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.agent.fat.storage.util.ImmutableColumn;
 import org.glowroot.agent.fat.storage.util.Schemas.Column;
 import org.glowroot.agent.fat.storage.util.Schemas.ColumnType;
-import org.glowroot.storage.repo.TransactionTypeRepository;
+import org.glowroot.common.repo.TransactionTypeRepository;
 
 class TransactionTypeDao implements TransactionTypeRepository {
 

@@ -29,8 +29,8 @@ import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.live.StringComparator;
 import org.glowroot.common.model.Result;
-import org.glowroot.storage.repo.ImmutableTraceQuery;
-import org.glowroot.storage.repo.TraceRepository.TraceQuery;
+import org.glowroot.common.repo.ImmutableTraceQuery;
+import org.glowroot.common.repo.TraceRepository.TraceQuery;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;

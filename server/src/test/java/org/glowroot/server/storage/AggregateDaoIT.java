@@ -47,7 +47,7 @@ import org.glowroot.common.model.TransactionErrorSummaryCollector.TransactionErr
 import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
-import org.glowroot.storage.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.QueriesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.Query;

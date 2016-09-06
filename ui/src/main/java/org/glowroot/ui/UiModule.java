@@ -28,17 +28,17 @@ import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveWeavingService;
+import org.glowroot.common.repo.AgentRepository;
+import org.glowroot.common.repo.AggregateRepository;
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.GaugeValueRepository;
+import org.glowroot.common.repo.RepoAdmin;
+import org.glowroot.common.repo.TraceRepository;
+import org.glowroot.common.repo.TransactionTypeRepository;
+import org.glowroot.common.repo.util.MailService;
+import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.storage.repo.AgentRepository;
-import org.glowroot.storage.repo.AggregateRepository;
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.GaugeValueRepository;
-import org.glowroot.storage.repo.RepoAdmin;
-import org.glowroot.storage.repo.TraceRepository;
-import org.glowroot.storage.repo.TransactionTypeRepository;
-import org.glowroot.storage.repo.helper.RollupLevelService;
-import org.glowroot.storage.util.MailService;
 
 public class UiModule {
 

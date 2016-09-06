@@ -32,11 +32,6 @@
     </dependency>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-storage</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
       <artifactId>glowroot-ui</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -383,10 +378,6 @@
                 <relocation>
                   <pattern>org.glowroot.wire.api</pattern>
                   <shadedPattern>org.glowroot.agent.shaded.glowroot.wire.api</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.glowroot.storage</pattern>
-                  <shadedPattern>org.glowroot.agent.shaded.glowroot.storage</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>org.glowroot.ui</pattern>

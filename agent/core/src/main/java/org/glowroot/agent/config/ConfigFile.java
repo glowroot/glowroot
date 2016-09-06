@@ -38,9 +38,9 @@ import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.config.PermissionParser;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.storage.config.PermissionParser;
 
 // TODO if config.json or admin.json file have unrecognized top-level node (something other than
 // "transactions", "ui", "userRecording", "advanced", etc) then log warning and remove that node

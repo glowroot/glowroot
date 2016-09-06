@@ -21,8 +21,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.storage.config.ImmutableUserConfig;
-import org.glowroot.storage.config.UserConfig;
+import org.glowroot.common.config.ImmutableUserConfig;
+import org.glowroot.common.config.UserConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

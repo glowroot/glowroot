@@ -32,8 +32,8 @@ import com.google.common.hash.Hashing;
 import com.google.common.primitives.Doubles;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.util.Styles;
-import org.glowroot.storage.config.StorageConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 public class QueryCollector {

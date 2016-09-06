@@ -30,12 +30,12 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository.DuplicateMBeanObjectNameException;
+import org.glowroot.common.repo.GaugeValueRepository.Gauge;
+import org.glowroot.common.repo.util.Gauges;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.ConfigRepository.DuplicateMBeanObjectNameException;
-import org.glowroot.storage.repo.GaugeValueRepository.Gauge;
-import org.glowroot.storage.repo.helper.Gauges;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.Proto.OptionalDouble;

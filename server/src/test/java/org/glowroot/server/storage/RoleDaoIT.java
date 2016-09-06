@@ -21,8 +21,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.storage.config.ImmutableRoleConfig;
-import org.glowroot.storage.config.RoleConfig;
+import org.glowroot.common.config.ImmutableRoleConfig;
+import org.glowroot.common.config.RoleConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -36,11 +36,11 @@ import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.live.StringComparator;
 import org.glowroot.common.model.Result;
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ImmutableTraceQuery;
+import org.glowroot.common.repo.TraceRepository;
+import org.glowroot.common.repo.TraceRepository.TraceQuery;
 import org.glowroot.common.util.Clock;
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.ImmutableTraceQuery;
-import org.glowroot.storage.repo.TraceRepository;
-import org.glowroot.storage.repo.TraceRepository.TraceQuery;
 import org.glowroot.ui.TransactionJsonService.TransactionDataRequest;
 
 import static java.util.concurrent.TimeUnit.HOURS;

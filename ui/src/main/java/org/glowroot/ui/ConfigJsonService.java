@@ -27,10 +27,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import org.immutables.value.Value;
 
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;

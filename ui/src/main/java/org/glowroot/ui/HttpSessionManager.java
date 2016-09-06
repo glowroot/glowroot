@@ -39,12 +39,12 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.config.LdapConfig;
+import org.glowroot.common.config.RoleConfig;
+import org.glowroot.common.config.RoleConfig.SimplePermission;
+import org.glowroot.common.config.UserConfig;
+import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Clock;
-import org.glowroot.storage.config.LdapConfig;
-import org.glowroot.storage.config.RoleConfig;
-import org.glowroot.storage.config.RoleConfig.SimplePermission;
-import org.glowroot.storage.config.UserConfig;
-import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.ui.LdapAuthentication.AuthenticationException;
 
 import static com.google.common.base.Preconditions.checkState;

@@ -21,8 +21,8 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.google.common.primitives.Ints;
 
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.TriggeredAlertRepository;
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.TriggeredAlertRepository;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 

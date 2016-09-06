@@ -31,8 +31,8 @@ import org.glowroot.agent.fat.storage.util.DataSource.JdbcUpdate;
 import org.glowroot.agent.fat.storage.util.ImmutableColumn;
 import org.glowroot.agent.fat.storage.util.Schemas.Column;
 import org.glowroot.agent.fat.storage.util.Schemas.ColumnType;
-import org.glowroot.storage.repo.AgentRepository;
-import org.glowroot.storage.repo.ImmutableAgentRollup;
+import org.glowroot.common.repo.AgentRepository;
+import org.glowroot.common.repo.ImmutableAgentRollup;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
 import static com.google.common.base.Preconditions.checkNotNull;

@@ -35,13 +35,13 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.Futures;
 
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository.RollupConfig;
+import org.glowroot.common.repo.GaugeValueRepository;
+import org.glowroot.common.repo.Utils;
+import org.glowroot.common.repo.util.Gauges;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.server.storage.AggregateDao.NeedsRollup;
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
-import org.glowroot.storage.repo.GaugeValueRepository;
-import org.glowroot.storage.repo.Utils;
-import org.glowroot.storage.repo.helper.Gauges;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;

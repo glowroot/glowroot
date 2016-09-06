@@ -23,7 +23,7 @@ import org.glowroot.agent.fat.storage.util.ImmutableIndex;
 import org.glowroot.agent.fat.storage.util.Schemas.Column;
 import org.glowroot.agent.fat.storage.util.Schemas.ColumnType;
 import org.glowroot.agent.fat.storage.util.Schemas.Index;
-import org.glowroot.storage.repo.TriggeredAlertRepository;
+import org.glowroot.common.repo.TriggeredAlertRepository;
 
 class TriggeredAlertDao implements TriggeredAlertRepository {
 

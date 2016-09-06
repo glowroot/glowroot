@@ -33,8 +33,8 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
-import org.glowroot.storage.config.ImmutableUserConfig;
-import org.glowroot.storage.config.UserConfig;
+import org.glowroot.common.config.ImmutableUserConfig;
+import org.glowroot.common.config.UserConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

@@ -42,9 +42,9 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.storage.config.ImmutableRoleConfig;
-import org.glowroot.storage.config.PermissionParser;
-import org.glowroot.storage.config.RoleConfig;
+import org.glowroot.common.config.ImmutableRoleConfig;
+import org.glowroot.common.config.PermissionParser;
+import org.glowroot.common.config.RoleConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

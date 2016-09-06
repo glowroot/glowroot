@@ -31,13 +31,13 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.config.ImmutableUserConfig;
+import org.glowroot.common.config.RoleConfig;
+import org.glowroot.common.config.UserConfig;
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository.DuplicateUsernameException;
+import org.glowroot.common.repo.ConfigRepository.UserNotFoundException;
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.storage.config.ImmutableUserConfig;
-import org.glowroot.storage.config.RoleConfig;
-import org.glowroot.storage.config.UserConfig;
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.ConfigRepository.DuplicateUsernameException;
-import org.glowroot.storage.repo.ConfigRepository.UserNotFoundException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;

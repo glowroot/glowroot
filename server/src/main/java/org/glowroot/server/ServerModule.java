@@ -44,7 +44,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
+import org.glowroot.common.config.ImmutableWebConfig;
+import org.glowroot.common.config.WebConfig;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
+import org.glowroot.common.repo.RepoAdmin;
+import org.glowroot.common.repo.util.AlertingService;
+import org.glowroot.common.repo.util.MailService;
+import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Version;
 import org.glowroot.server.storage.AgentDao;
@@ -58,12 +64,6 @@ import org.glowroot.server.storage.TraceDao;
 import org.glowroot.server.storage.TransactionTypeDao;
 import org.glowroot.server.storage.TriggeredAlertDao;
 import org.glowroot.server.storage.UserDao;
-import org.glowroot.storage.config.ImmutableWebConfig;
-import org.glowroot.storage.config.WebConfig;
-import org.glowroot.storage.repo.RepoAdmin;
-import org.glowroot.storage.repo.helper.AlertingService;
-import org.glowroot.storage.repo.helper.RollupLevelService;
-import org.glowroot.storage.util.MailService;
 import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.UiModule;
 

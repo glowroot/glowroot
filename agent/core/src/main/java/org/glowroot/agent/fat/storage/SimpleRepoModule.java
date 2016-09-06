@@ -29,18 +29,18 @@ import com.google.common.collect.Lists;
 import org.glowroot.agent.fat.storage.util.CappedDatabase;
 import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.agent.fat.storage.util.H2DatabaseStats;
+import org.glowroot.common.config.FatStorageConfig;
+import org.glowroot.common.repo.AggregateRepository;
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.GaugeValueRepository;
+import org.glowroot.common.repo.RepoAdmin;
+import org.glowroot.common.repo.TraceRepository;
+import org.glowroot.common.repo.TransactionTypeRepository;
+import org.glowroot.common.repo.util.AlertingService;
+import org.glowroot.common.repo.util.MailService;
+import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.storage.config.FatStorageConfig;
-import org.glowroot.storage.repo.AggregateRepository;
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.GaugeValueRepository;
-import org.glowroot.storage.repo.RepoAdmin;
-import org.glowroot.storage.repo.TraceRepository;
-import org.glowroot.storage.repo.TransactionTypeRepository;
-import org.glowroot.storage.repo.helper.AlertingService;
-import org.glowroot.storage.repo.helper.RollupLevelService;
-import org.glowroot.storage.util.MailService;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 

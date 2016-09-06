@@ -29,8 +29,8 @@ import org.immutables.value.Value;
 import org.glowroot.common.live.LiveTraceRepository.TraceKind;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.live.StringComparator;
+import org.glowroot.common.repo.TraceRepository.TraceQuery;
 import org.glowroot.common.util.Styles;
-import org.glowroot.storage.repo.TraceRepository.TraceQuery;
 
 class TracePointQueryBuilder {
 

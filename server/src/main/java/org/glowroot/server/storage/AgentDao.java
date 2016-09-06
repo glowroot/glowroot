@@ -42,9 +42,9 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.storage.repo.AgentRepository;
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.ImmutableAgentRollup;
+import org.glowroot.common.repo.AgentRepository;
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ImmutableAgentRollup;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;

@@ -31,8 +31,8 @@ import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.RateLimiter;
 import org.immutables.value.Value;
 
+import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Styles;
-import org.glowroot.storage.repo.ConfigRepository;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;

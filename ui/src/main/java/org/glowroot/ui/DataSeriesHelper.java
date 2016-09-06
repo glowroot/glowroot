@@ -19,7 +19,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.storage.repo.Utils;
+import org.glowroot.common.repo.Utils;
 
 class DataSeriesHelper {
 

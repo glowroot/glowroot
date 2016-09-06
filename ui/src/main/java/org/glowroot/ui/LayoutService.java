@@ -29,13 +29,13 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.immutables.value.Value;
 
+import org.glowroot.common.repo.AgentRepository;
+import org.glowroot.common.repo.AgentRepository.AgentRollup;
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository.RollupConfig;
+import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
-import org.glowroot.storage.repo.AgentRepository;
-import org.glowroot.storage.repo.AgentRepository.AgentRollup;
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
-import org.glowroot.storage.repo.TransactionTypeRepository;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiConfig;
 

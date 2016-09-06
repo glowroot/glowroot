@@ -22,11 +22,11 @@ import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.repo.AgentRepository.AgentRollup;
 import org.glowroot.common.util.Clock;
 import org.glowroot.server.storage.AgentDao;
 import org.glowroot.server.storage.AggregateDao;
 import org.glowroot.server.storage.GaugeValueDao;
-import org.glowroot.storage.repo.AgentRepository.AgentRollup;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 

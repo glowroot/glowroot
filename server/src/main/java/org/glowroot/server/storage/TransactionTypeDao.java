@@ -37,9 +37,9 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.util.Styles;
-import org.glowroot.storage.repo.ConfigRepository;
-import org.glowroot.storage.repo.TransactionTypeRepository;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
