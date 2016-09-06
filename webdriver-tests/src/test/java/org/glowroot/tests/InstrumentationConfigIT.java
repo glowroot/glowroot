@@ -22,6 +22,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.tests.config.ConfigSidebar;
 import org.glowroot.tests.config.InstrumentationConfigPage;
+import org.glowroot.tests.util.Utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openqa.selenium.By.linkText;

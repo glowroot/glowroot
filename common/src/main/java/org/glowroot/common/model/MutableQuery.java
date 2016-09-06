@@ -22,7 +22,7 @@ import com.google.common.primitives.Doubles;
 
 public class MutableQuery {
 
-    public static final Ordering<MutableQuery> byTotalDurationDesc = new Ordering<MutableQuery>() {
+    static final Ordering<MutableQuery> byTotalDurationDesc = new Ordering<MutableQuery>() {
         @Override
         public int compare(MutableQuery left, MutableQuery right) {
             return Doubles.compare(right.getTotalDurationNanos(), left.getTotalDurationNanos());

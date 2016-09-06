@@ -38,6 +38,8 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +49,8 @@ import org.glowroot.agent.weaving.ThinClassVisitor.ThinClass;
 import org.glowroot.agent.weaving.ThinClassVisitor.ThinMethod;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
+import static org.objectweb.asm.Opcodes.ASM5;
 
 class ClassAnalyzer {
 
@@ -484,6 +488,60 @@ class ClassAnalyzer {
                     .addAllParameterTypes(analyzedMethod.parameterTypes())
                     .analyzedMethod(analyzedMethod)
                     .build();
+        }
+    }
+
+    private static class BridgeMethodClassVisitor extends ClassVisitor {
+
+        private final Map<String, String> bridgeTargetMethods = Maps.newHashMap();
+
+        private BridgeMethodClassVisitor() {
+            super(ASM5);
+        }
+
+        public Map<String, String> getBridgeTargetMethods() {
+            return bridgeTargetMethods;
+        }
+
+        @Override
+        public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
+                @Nullable String signature, String /*@Nullable*/[] exceptions) {
+            if ((access & ACC_BRIDGE) == 0) {
+                return null;
+            }
+            return new BridgeMethodVisitor(name, desc);
+        }
+
+        private class BridgeMethodVisitor extends MethodVisitor {
+
+            private String bridgeMethodName;
+            private String bridgeMethodDesc;
+            private int bridgeMethodParamCount;
+
+            private boolean found;
+
+            private BridgeMethodVisitor(String bridgeMethodName, String bridgeMethodDesc) {
+                super(ASM5);
+                this.bridgeMethodName = bridgeMethodName;
+                this.bridgeMethodDesc = bridgeMethodDesc;
+                bridgeMethodParamCount = Type.getArgumentTypes(bridgeMethodDesc).length;
+            }
+
+            @Override
+            public void visitMethodInsn(int opcode, String owner, String name, String desc,
+                    boolean itf) {
+                if (found) {
+                    return;
+                }
+                if (!name.equals(bridgeMethodName)) {
+                    return;
+                }
+                if (Type.getArgumentTypes(desc).length != bridgeMethodParamCount) {
+                    return;
+                }
+                bridgeTargetMethods.put(this.bridgeMethodName + this.bridgeMethodDesc, name + desc);
+                found = true;
+            }
         }
     }
 }

@@ -127,14 +127,6 @@ public class MutableAggregate {
         return auxThreadProfile;
     }
 
-    public int getMaxAggregateQueriesPerType() {
-        return maxAggregateQueriesPerType;
-    }
-
-    public int getMaxAggregateServiceCallsPerType() {
-        return maxAggregateServiceCallsPerType;
-    }
-
     public boolean isEmpty() {
         return transactionCount == 0;
     }

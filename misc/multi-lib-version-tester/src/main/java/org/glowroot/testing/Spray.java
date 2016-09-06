@@ -24,27 +24,27 @@ public class Spray {
     private static final String MODULE_PATH = "agent-parent/plugins/spray-plugin";
 
     public static void main(String[] args) throws Exception {
-        run("1.1.0", "", "2.1.4", "2.10.6");
-        run("1.1.1", "", "2.1.4", "2.10.6");
-        run("1.1.2", "", "2.1.4", "2.10.6");
-        run("1.1.3", "", "2.1.4", "2.10.6");
-        run("1.2.0", "", "2.2.4", "2.10.6");
-        run("1.2.1", "", "2.2.4", "2.10.6");
-        run("1.2.2", "", "2.2.4", "2.10.6");
-        run("1.2.3", "", "2.2.4", "2.10.6");
-        run("1.3.1", "_2.11", "2.4.6", "2.11.8");
-        run("1.3.2", "_2.11", "2.4.6", "2.11.8");
-        run("1.3.3", "_2.11", "2.4.6", "2.11.8");
+        run("1.1.0", "", "2.1.4", "2.10.6", JAVA6, JAVA7, JAVA8);
+        run("1.1.1", "", "2.1.4", "2.10.6", JAVA6, JAVA7, JAVA8);
+        run("1.1.2", "", "2.1.4", "2.10.6", JAVA6, JAVA7, JAVA8);
+        run("1.1.3", "", "2.1.4", "2.10.6", JAVA6, JAVA7, JAVA8);
+        run("1.2.0", "", "2.2.4", "2.10.6", JAVA6, JAVA7, JAVA8);
+        run("1.2.1", "", "2.2.4", "2.10.6", JAVA6, JAVA7, JAVA8);
+        run("1.2.2", "", "2.2.4", "2.10.6", JAVA6, JAVA7, JAVA8);
+        run("1.2.3", "", "2.2.4", "2.10.6", JAVA6, JAVA7, JAVA8);
+        run("1.3.1", "_2.11", "2.4.6", "2.11.8", JAVA8);
+        run("1.3.2", "_2.11", "2.4.6", "2.11.8", JAVA8);
+        run("1.3.3", "_2.11", "2.4.6", "2.11.8", JAVA8);
     }
 
     private static void run(String sprayVersion, String sprayArtifactExt, String akkaVersion,
-            String scalaVersion) throws Exception {
+            String scalaVersion, JavaVersion... javaVersions) throws Exception {
         String scalaMajorVersion = scalaVersion.substring(0, scalaVersion.lastIndexOf("."));
         Util.updateLibVersion(MODULE_PATH, "spray.version", sprayVersion);
         Util.updateLibVersion(MODULE_PATH, "spray.artifact.ext", sprayArtifactExt);
         Util.updateLibVersion(MODULE_PATH, "akka.version", akkaVersion);
         Util.updateLibVersion(MODULE_PATH, "scala.major.version", scalaMajorVersion);
         Util.updateLibVersion(MODULE_PATH, "scala.version", scalaVersion);
-        Util.runTests(MODULE_PATH, JAVA6, JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, javaVersions);
     }
 }

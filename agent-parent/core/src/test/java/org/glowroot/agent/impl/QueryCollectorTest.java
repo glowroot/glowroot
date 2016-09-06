@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.junit.Test;
 
+import org.glowroot.agent.model.QueryCollector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.QueriesByType;
 
 import static org.assertj.core.api.Assertions.assertThat;

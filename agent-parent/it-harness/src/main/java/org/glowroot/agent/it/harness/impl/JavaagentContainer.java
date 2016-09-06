@@ -173,7 +173,8 @@ public class JavaagentContainer implements Container {
         while (stopwatch.elapsed(SECONDS) < 30) {
             try {
                 JavaagentServiceBlockingStub javaagentService =
-                        JavaagentServiceGrpc.newBlockingStub(channel).withCompression("gzip");
+                        JavaagentServiceGrpc.newBlockingStub(channel)
+                                .withCompression("gzip");
                 javaagentService.ping(Void.getDefaultInstance());
                 break;
             } catch (Exception e) {
@@ -181,7 +182,8 @@ public class JavaagentContainer implements Container {
             }
             Thread.sleep(100);
         }
-        javaagentService = JavaagentServiceGrpc.newBlockingStub(channel).withCompression("gzip");
+        javaagentService = JavaagentServiceGrpc.newBlockingStub(channel)
+                .withCompression("gzip");
         javaagentService.ping(Void.getDefaultInstance());
         if (server == null) {
             configService = null;

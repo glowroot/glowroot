@@ -38,8 +38,8 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.InstrumentationConfig;
-import org.glowroot.agent.impl.AdviceCache;
 import org.glowroot.agent.live.ClasspathCache.UiAnalyzedMethod;
+import org.glowroot.agent.weaving.AdviceCache;
 import org.glowroot.agent.weaving.AnalyzedWorld;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;

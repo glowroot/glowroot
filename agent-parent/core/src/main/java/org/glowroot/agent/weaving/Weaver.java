@@ -32,14 +32,23 @@ import com.google.common.io.Files;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.impl.ThreadContextImpl;
+import org.glowroot.agent.impl.TimerImpl;
+import org.glowroot.agent.impl.TimerNameCache;
+import org.glowroot.agent.impl.TransactionRegistry;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.config.ConfigListener;
+import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.weaving.AnalyzedWorld.ParseContext;
-import org.glowroot.agent.weaving.WeavingTimerService.WeavingTimer;
 
 import static org.objectweb.asm.Opcodes.ASM5;
 
@@ -54,21 +63,32 @@ public class Weaver {
     private final ImmutableList<ShimType> shimTypes;
     private final ImmutableList<MixinType> mixinTypes;
     private final AnalyzedWorld analyzedWorld;
-    private final WeavingTimerService weavingTimerService;
+    private final TransactionRegistry transactionRegistry;
+    private final TimerName timerName;
+
+    private volatile boolean enabled;
 
     public Weaver(Supplier<List<Advice>> advisors, List<ShimType> shimTypes,
             List<MixinType> mixinTypes, AnalyzedWorld analyzedWorld,
-            WeavingTimerService weavingTimerService) {
+            TransactionRegistry transactionRegistry, TimerNameCache timerNameCache,
+            final ConfigService configService) {
         this.advisors = advisors;
         this.shimTypes = ImmutableList.copyOf(shimTypes);
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.analyzedWorld = analyzedWorld;
-        this.weavingTimerService = weavingTimerService;
+        this.transactionRegistry = transactionRegistry;
+        configService.addConfigListener(new ConfigListener() {
+            @Override
+            public void onChange() {
+                enabled = configService.getAdvancedConfig().weavingTimer();
+            }
+        });
+        this.timerName = timerNameCache.getTimerName(OnlyForTheTimerName.class);
     }
 
     byte /*@Nullable*/[] weave(byte[] classBytes, String className, @Nullable CodeSource codeSource,
             @Nullable ClassLoader loader) {
-        WeavingTimer weavingTimer = weavingTimerService.start();
+        TimerImpl weavingTimer = startWeavingTimer();
         try {
             logger.trace("transform(): className={}", className);
             byte[] transformedBytes = weaveUnderTimer(classBytes, className, codeSource, loader);
@@ -77,8 +97,25 @@ public class Weaver {
             }
             return transformedBytes;
         } finally {
-            weavingTimer.stop();
+            if (weavingTimer != null) {
+                weavingTimer.stop();
+            }
         }
+    }
+
+    private @Nullable TimerImpl startWeavingTimer() {
+        if (!enabled) {
+            return null;
+        }
+        ThreadContextImpl threadContext = transactionRegistry.getCurrentThreadContextHolder().get();
+        if (threadContext == null) {
+            return null;
+        }
+        TimerImpl currentTimer = threadContext.getCurrentTimer();
+        if (currentTimer == null) {
+            return null;
+        }
+        return currentTimer.startNestedTimer(timerName);
     }
 
     private byte/*@Nullable*/[] weaveUnderTimer(byte[] classBytes, String className,
@@ -351,5 +388,53 @@ public class Weaver {
                 return false;
             }
         }
+    }
+
+    private static class FelixOsgiHackClassVisitor extends ClassVisitor {
+
+        private final ClassWriter cw;
+
+        FelixOsgiHackClassVisitor(ClassWriter cw) {
+            super(ASM5, cw);
+            this.cw = cw;
+        }
+
+        @Override
+        public MethodVisitor visitMethod(int access, String name, String desc,
+                @Nullable String signature, String /*@Nullable*/[] exceptions) {
+            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            if (name.equals("shouldBootDelegate") && desc.equals("(Ljava/lang/String;)Z")) {
+                return new FelixOsgiHackMethodVisitor(mv, access, name, desc);
+            } else {
+                return mv;
+            }
+        }
+    }
+
+    private static class FelixOsgiHackMethodVisitor extends AdviceAdapter {
+
+        private FelixOsgiHackMethodVisitor(MethodVisitor mv, int access, String name, String desc) {
+            super(ASM5, mv, access, name, desc);
+        }
+
+        @Override
+        protected void onMethodEnter() {
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitLdcInsn("org.glowroot.");
+            mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "startsWith",
+                    "(Ljava/lang/String;)Z", false);
+            Label label = new Label();
+            mv.visitJumpInsn(IFEQ, label);
+            mv.visitInsn(ICONST_1);
+            mv.visitInsn(IRETURN);
+            mv.visitLabel(label);
+
+        }
+    }
+
+    @Pointcut(className = "", methodName = "", methodParameterTypes = {},
+            timerName = "glowroot weaving")
+    private static class OnlyForTheTimerName {
+        private OnlyForTheTimerName() {}
     }
 }

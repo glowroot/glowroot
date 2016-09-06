@@ -52,7 +52,7 @@ public class Profile {
         }
     }
 
-    org.glowroot.wire.api.model.ProfileOuterClass.Profile toProto() {
+    public org.glowroot.wire.api.model.ProfileOuterClass.Profile toProto() {
         synchronized (lock) {
             if (profile == null) {
                 profile = new MutableProfile();
@@ -64,7 +64,7 @@ public class Profile {
         }
     }
 
-    long getSampleCount() {
+    public long getSampleCount() {
         // lock is needed for visibility
         synchronized (lock) {
             return sampleCount;
@@ -73,7 +73,7 @@ public class Profile {
 
     // limit is just to cap memory consumption for a single transaction profile in case it runs for
     // a very very very long time
-    void addStackTrace(ThreadInfo threadInfo, int limit) {
+    public void addStackTrace(ThreadInfo threadInfo, int limit) {
         synchronized (lock) {
             if (sampleCount >= limit) {
                 return;

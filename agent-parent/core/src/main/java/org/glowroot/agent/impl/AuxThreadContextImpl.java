@@ -20,9 +20,6 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.model.ThreadContextImpl;
-import org.glowroot.agent.model.TraceEntryImpl;
-import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.TraceEntry;
@@ -35,7 +32,7 @@ import static org.glowroot.agent.util.Checkers.castInitialized;
 // but don't use WeakReference because it needs to be able to retain transaction in async case
 // (at least until transaction completion)
 // so ideally clear references here at transaction completion
-public class AuxThreadContextImpl implements AuxThreadContext {
+class AuxThreadContextImpl implements AuxThreadContext {
 
     private static final Logger logger = LoggerFactory.getLogger(AuxThreadContextImpl.class);
 
@@ -46,7 +43,7 @@ public class AuxThreadContextImpl implements AuxThreadContext {
     private final TransactionRegistry transactionRegistry;
     private final TransactionServiceImpl transactionService;
 
-    public AuxThreadContextImpl(Transaction transaction, TraceEntryImpl parentTraceEntry,
+    AuxThreadContextImpl(Transaction transaction, TraceEntryImpl parentTraceEntry,
             TraceEntryImpl parentThreadContextPriorEntry,
             @Nullable MessageSupplier servletMessageSupplier,
             TransactionRegistry transactionRegistry, TransactionServiceImpl transactionService) {

@@ -29,7 +29,7 @@ import org.glowroot.agent.util.ThreadAllocatedBytes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-class ThreadStatsComponent {
+public class ThreadStatsComponent {
 
     private static final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
     private static final boolean IS_THREAD_CPU_TIME_SUPPORTED =
@@ -50,7 +50,7 @@ class ThreadStatsComponent {
 
     private final Object lock = new Object();
 
-    ThreadStatsComponent(@Nullable ThreadAllocatedBytes threadAllocatedBytes) {
+    public ThreadStatsComponent(@Nullable ThreadAllocatedBytes threadAllocatedBytes) {
         threadId = Thread.currentThread().getId();
         ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId, 0);
         // thread info for current thread cannot be null
@@ -76,14 +76,14 @@ class ThreadStatsComponent {
     }
 
     // must be called from transaction thread
-    void onComplete() {
+    public void onComplete() {
         synchronized (lock) {
             completedThreadStats = getThreadStats();
         }
     }
 
     // safe to be called from another thread
-    ThreadStats getThreadStats() {
+    public ThreadStats getThreadStats() {
         synchronized (lock) {
             if (completedThreadStats == null) {
                 // transaction thread is still alive (and cannot terminate in the middle of this
@@ -97,7 +97,7 @@ class ThreadStatsComponent {
     }
 
     // safe to be called from another thread
-    long getTotalCpuNanos() {
+    public long getTotalCpuNanos() {
         synchronized (lock) {
             if (completedThreadStats == null) {
                 // transaction thread is still alive (and cannot terminate in the middle of this

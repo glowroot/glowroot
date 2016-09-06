@@ -27,6 +27,7 @@ import org.glowroot.tests.config.ConfigSidebar;
 import org.glowroot.tests.config.TransactionConfigPage;
 import org.glowroot.tests.config.UiConfigPage;
 import org.glowroot.tests.config.UserRecordingConfigPage;
+import org.glowroot.tests.util.Utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -33,7 +33,7 @@ import org.objectweb.asm.commons.Method;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 @Value.Immutable
-public abstract class Advice {
+abstract class Advice {
 
     static final Ordering<Advice> ordering = new AdviceOrdering();
 
@@ -102,6 +102,11 @@ public abstract class Advice {
             }
         }
         return types;
+    }
+
+    enum ParameterKind {
+        RECEIVER, METHOD_ARG, METHOD_ARG_ARRAY, METHOD_NAME, RETURN, OPTIONAL_RETURN, THROWABLE,
+        TRAVELER, CLASS_META, METHOD_META, THREAD_CONTEXT, OPTIONAL_THREAD_CONTEXT
     }
 
     private static class AdviceOrdering extends Ordering<Advice> {

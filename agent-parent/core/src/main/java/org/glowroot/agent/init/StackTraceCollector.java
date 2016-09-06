@@ -25,10 +25,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.impl.ThreadContextImpl;
+import org.glowroot.agent.impl.Transaction;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.UserProfileScheduler;
-import org.glowroot.agent.model.ThreadContextImpl;
-import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.common.util.OnlyUsedByTests;
 

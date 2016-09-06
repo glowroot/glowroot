@@ -45,7 +45,7 @@ public abstract class TimerNameImpl implements TimerName {
     }
 
     @Value.Derived
-    int specialHashCode() {
+    public int specialHashCode() {
         return nextSpecialHashCode.getAndIncrement();
     }
 }

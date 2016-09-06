@@ -17,7 +17,9 @@ package org.glowroot.agent.model;
 
 import java.util.List;
 
-import org.glowroot.agent.model.TimerImpl.TimerImplSnapshot;
+import org.immutables.value.Value;
+
+import org.glowroot.common.util.Styles;
 
 public interface CommonTimerImpl {
 
@@ -29,9 +31,17 @@ public interface CommonTimerImpl {
 
     long getCount();
 
-    void mergeChildTimersInto(List<MutableTimer> mutableTimers);
+    void mergeChildTimersInto(List<MutableTraceTimer> childTimers);
 
-    void mergeChildTimersInto2(List<org.glowroot.agent.impl.MutableTimer> childTimers);
+    void mergeChildTimersInto2(List<MutableAggregateTimer> childTimers);
 
     TimerImplSnapshot getSnapshot();
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface TimerImplSnapshot {
+        long totalNanos();
+        long count();
+        boolean active();
+    }
 }

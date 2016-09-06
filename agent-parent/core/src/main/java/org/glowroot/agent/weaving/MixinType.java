@@ -34,11 +34,11 @@ import org.glowroot.agent.plugin.api.weaving.MixinInit;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable
-public abstract class MixinType {
+abstract class MixinType {
 
     private static final Logger logger = LoggerFactory.getLogger(MixinType.class);
 
-    public static MixinType from(Mixin mixin, Class<?> implementation) throws IOException {
+    static MixinType from(Mixin mixin, Class<?> implementation) throws IOException {
         ImmutableMixinType.Builder builder = ImmutableMixinType.builder();
         builder.addTargets(mixin.value());
         builder.implementation(Type.getType(implementation));

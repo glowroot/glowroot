@@ -36,7 +36,7 @@ import javax.annotation.Nullable;
 // in-flight (e.g. partial traces and active traces displayed in the UI) may not be visible
 //
 // all timing data is in nanoseconds
-class QueryData {
+public class QueryData {
 
     private final String queryType;
     private final String queryText;
@@ -54,26 +54,25 @@ class QueryData {
     private long startTick;
     private int selfNestingLevel;
 
-    QueryData(String queryType, String queryText, @Nullable QueryData nextQueryData) {
+    public QueryData(String queryType, String queryText, @Nullable QueryData nextQueryData) {
         this.queryType = queryType;
         this.queryText = queryText;
         this.nextQueryData = nextQueryData;
     }
 
-    String getQueryType() {
+    public String getQueryType() {
         return queryType;
     }
 
-    String getQueryText() {
+    public String getQueryText() {
         return queryText;
     }
 
-    @Nullable
-    QueryData getNextQueryData() {
+    public @Nullable QueryData getNextQueryData() {
         return nextQueryData;
     }
 
-    void start(long startTick, long batchSize) {
+    public void start(long startTick, long batchSize) {
         if (selfNestingLevel++ == 0) {
             this.startTick = startTick;
             executionCount += batchSize;
@@ -95,22 +94,22 @@ class QueryData {
         totalRows += inc;
     }
 
-    long getTotalDurationNanos() {
+    public long getTotalDurationNanos() {
         return totalDurationNanos;
     }
 
     // only called after transaction completion
-    long getExecutionCount() {
+    public long getExecutionCount() {
         return executionCount;
     }
 
     // only called after transaction completion
-    boolean hasTotalRows() {
+    public boolean hasTotalRows() {
         return hasTotalRows;
     }
 
     // only called after transaction completion
-    long getTotalRows() {
+    public long getTotalRows() {
         return totalRows;
     }
 

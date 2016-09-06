@@ -311,7 +311,7 @@ class LayoutService {
         abstract JvmPermissions jvm();
         abstract ConfigPermissions config();
 
-        boolean hasSomeAccess() {
+        private boolean hasSomeAccess() {
             return transaction().hasSomeAccess() || error().hasSomeAccess() || jvm().hasSomeAccess()
                     || config().view();
         }
@@ -326,7 +326,7 @@ class LayoutService {
         abstract boolean serviceCalls();
         abstract boolean profile();
 
-        boolean hasSomeAccess() {
+        private boolean hasSomeAccess() {
             return overview() || traces() || queries() || serviceCalls() || profile();
         }
     }
@@ -337,7 +337,7 @@ class LayoutService {
         abstract boolean overview();
         abstract boolean traces();
 
-        boolean hasSomeAccess() {
+        private boolean hasSomeAccess() {
             return overview() || traces();
         }
     }
@@ -355,7 +355,7 @@ class LayoutService {
         abstract boolean environment();
         abstract boolean capabilities();
 
-        boolean hasSomeAccess() {
+        private boolean hasSomeAccess() {
             // capabilities is not in sidebar, so not included here
             return gauges() || threadDump() || heapDump() || heapHistogram() || gc() || mbeanTree()
                     || systemProperties() || environment();

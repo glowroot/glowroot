@@ -28,6 +28,7 @@ import org.openqa.selenium.By;
 
 import org.glowroot.tests.admin.StorageConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
+import org.glowroot.tests.util.Utils;
 
 public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.weaving.other;
 
-import org.glowroot.agent.weaving.Misc;
+import org.glowroot.agent.weaving.targets.Misc;
 
 // this needs to be in a package other than "org.glowroot.weaving", since that is the package used
 // when generating MethodMetaHolder classes, and so would have access to SomethingPrivate.class

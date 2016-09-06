@@ -19,7 +19,6 @@ import com.google.common.base.Strings;
 import org.junit.Test;
 
 import org.glowroot.agent.plugin.api.Message;
-import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

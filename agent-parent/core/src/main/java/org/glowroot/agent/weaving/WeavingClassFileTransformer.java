@@ -117,7 +117,6 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                 || className.startsWith("org/glowroot/wire/api/")
                 || className.startsWith("org/glowroot/agent/api/")
                 || className.startsWith("org/glowroot/agent/plugin/api/")
-                || className.startsWith("org/glowroot/agent/advicegen/")
                 || className.startsWith("org/glowroot/agent/config/")
                 || className.startsWith("org/glowroot/agent/init/fat/")
                 || className.startsWith("org/glowroot/agent/init/thin/")

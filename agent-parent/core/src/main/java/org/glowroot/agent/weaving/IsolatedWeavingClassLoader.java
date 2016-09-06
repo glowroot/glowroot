@@ -29,9 +29,9 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.impl.ServiceRegistryImpl;
+import org.glowroot.agent.impl.ThreadContextImpl;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionServiceImpl;
-import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.ThreadContextPlus;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -180,8 +180,8 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         // (weaving)
         if (name.startsWith("org.glowroot.agent.api.")
                 || name.startsWith("org.glowroot.agent.plugin.api.")
-                || name.startsWith("org.glowroot.agent.advicegen.GeneratedAdvice")
-                || name.startsWith("org.glowroot.agent.advicegen.GeneratedMethodMeta")
+                || name.startsWith("org.glowroot.agent.weaving.GeneratedAdvice")
+                || name.startsWith("org.glowroot.agent.weaving.GeneratedMethodMeta")
                 || name.equals(ServiceRegistryImpl.class.getName())
                 || name.equals(ThreadContextImpl.class.getName())
                 || name.equals(ThreadContextPlus.class.getName())

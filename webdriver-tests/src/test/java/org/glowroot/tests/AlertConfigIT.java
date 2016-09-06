@@ -21,6 +21,7 @@ import org.openqa.selenium.WebElement;
 
 import org.glowroot.tests.config.AlertConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
+import org.glowroot.tests.util.Utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openqa.selenium.By.linkText;

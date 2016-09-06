@@ -35,25 +35,7 @@ import org.immutables.value.Value;
 import org.glowroot.storage.config.LdapConfig;
 import org.glowroot.storage.util.Encryption;
 
-public class LdapAuthentication {
-
-    static @Nullable String getUserDn(LdapContext ldapContext, String username,
-            LdapConfig ldapConfig) throws NamingException {
-        SearchControls searchCtls = new SearchControls();
-        searchCtls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-        NamingEnumeration<?> namingEnum = ldapContext.search(ldapConfig.userBaseDn(),
-                ldapConfig.userSearchFilter(), new String[] {username}, searchCtls);
-        if (!namingEnum.hasMore()) {
-            return null;
-        }
-        SearchResult result = (SearchResult) namingEnum.next();
-        String userDn = result.getNameInNamespace();
-        if (namingEnum.hasMore()) {
-            throw new IllegalStateException("More than matching user: " + username);
-        }
-        namingEnum.close();
-        return userDn;
-    }
+class LdapAuthentication {
 
     static Set<String> getGlowrootRoles(Set<String> ldapGroupDns, LdapConfig ldapConfig)
             throws NamingException {
@@ -65,21 +47,6 @@ public class LdapAuthentication {
             }
         }
         return glowrootRoles;
-    }
-
-    static Set<String> getGroupDnsForUserDn(LdapContext ldapContext, String userDn,
-            LdapConfig ldapConfig) throws NamingException {
-        SearchControls searchCtls = new SearchControls();
-        searchCtls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-        NamingEnumeration<?> namingEnum = ldapContext.search(ldapConfig.groupBaseDn(),
-                ldapConfig.groupSearchFilter(), new String[] {userDn}, searchCtls);
-        Set<String> ldapGroups = Sets.newHashSet();
-        while (namingEnum.hasMore()) {
-            SearchResult result = (SearchResult) namingEnum.next();
-            ldapGroups.add(result.getNameInNamespace());
-        }
-        namingEnum.close();
-        return ldapGroups;
     }
 
     static Set<String> authenticateAndGetLdapGroupDns(String username, String password,
@@ -97,7 +64,7 @@ public class LdapAuthentication {
         }
         String userDn;
         try {
-            userDn = LdapAuthentication.getUserDn(ldapContext, username, ldapConfig);
+            userDn = getUserDn(ldapContext, username, ldapConfig);
         } catch (NamingException e) {
             throw new AuthenticationException(e);
         }
@@ -121,6 +88,39 @@ public class LdapAuthentication {
         env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
         env.put(Context.PROVIDER_URL, ldapConfig.url());
         return new InitialLdapContext(env, null);
+    }
+
+    private static @Nullable String getUserDn(LdapContext ldapContext, String username,
+            LdapConfig ldapConfig) throws NamingException {
+        SearchControls searchCtls = new SearchControls();
+        searchCtls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+        NamingEnumeration<?> namingEnum = ldapContext.search(ldapConfig.userBaseDn(),
+                ldapConfig.userSearchFilter(), new String[] {username}, searchCtls);
+        if (!namingEnum.hasMore()) {
+            return null;
+        }
+        SearchResult result = (SearchResult) namingEnum.next();
+        String userDn = result.getNameInNamespace();
+        if (namingEnum.hasMore()) {
+            throw new IllegalStateException("More than matching user: " + username);
+        }
+        namingEnum.close();
+        return userDn;
+    }
+
+    private static Set<String> getGroupDnsForUserDn(LdapContext ldapContext, String userDn,
+            LdapConfig ldapConfig) throws NamingException {
+        SearchControls searchCtls = new SearchControls();
+        searchCtls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+        NamingEnumeration<?> namingEnum = ldapContext.search(ldapConfig.groupBaseDn(),
+                ldapConfig.groupSearchFilter(), new String[] {userDn}, searchCtls);
+        Set<String> ldapGroups = Sets.newHashSet();
+        while (namingEnum.hasMore()) {
+            SearchResult result = (SearchResult) namingEnum.next();
+            ldapGroups.add(result.getNameInNamespace());
+        }
+        namingEnum.close();
+        return ldapGroups;
     }
 
     @Value.Immutable

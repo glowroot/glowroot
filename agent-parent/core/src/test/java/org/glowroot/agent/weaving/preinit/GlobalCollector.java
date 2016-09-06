@@ -30,8 +30,6 @@ import org.objectweb.asm.ClassReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.weaving.ClassNames;
-
 public class GlobalCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalCollector.class);
@@ -83,7 +81,7 @@ public class GlobalCollector {
                     && !internalName.startsWith("org/slf4j/")
                     && !internalName.startsWith("org/glowroot/agent/shaded/slf4j/")
                     && InternalNames.exists(internalName)) {
-                internalNames.add(ClassNames.fromInternalName(internalName));
+                internalNames.add(internalName.replace('/', '.'));
             }
         }
         return internalNames;

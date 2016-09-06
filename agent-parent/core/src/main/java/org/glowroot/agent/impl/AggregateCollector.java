@@ -25,12 +25,13 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.agent.config.AdvancedConfig;
+import org.glowroot.agent.impl.Transaction.RootTimerCollector;
+import org.glowroot.agent.impl.Transaction.ThreadStatsCollector;
 import org.glowroot.agent.model.CommonTimerImpl;
+import org.glowroot.agent.model.MutableAggregateTimer;
 import org.glowroot.agent.model.Profile;
+import org.glowroot.agent.model.QueryCollector;
 import org.glowroot.agent.model.ThreadStats;
-import org.glowroot.agent.model.Transaction;
-import org.glowroot.agent.model.Transaction.RootTimerCollector;
-import org.glowroot.agent.model.Transaction.ThreadStatsCollector;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
 import org.glowroot.common.live.ImmutableThroughputAggregate;
@@ -266,7 +267,7 @@ class AggregateCollector {
 
     private static class RootTimerCollectorImpl implements RootTimerCollector {
 
-        List<MutableTimer> rootMutableTimers = Lists.newArrayList();
+        List<MutableAggregateTimer> rootMutableTimers = Lists.newArrayList();
 
         @Override
         public void mergeRootTimer(CommonTimerImpl rootTimer) {
@@ -275,22 +276,22 @@ class AggregateCollector {
 
         private List<Aggregate.Timer> toProto() {
             List<Aggregate.Timer> rootTimers = Lists.newArrayList();
-            for (MutableTimer rootMutableTimer : rootMutableTimers) {
+            for (MutableAggregateTimer rootMutableTimer : rootMutableTimers) {
                 rootTimers.add(rootMutableTimer.toProto());
             }
             return rootTimers;
         }
 
         private static void mergeRootTimer(CommonTimerImpl toBeMergedRootTimer,
-                List<MutableTimer> rootTimers) {
-            for (MutableTimer rootTimer : rootTimers) {
+                List<MutableAggregateTimer> rootTimers) {
+            for (MutableAggregateTimer rootTimer : rootTimers) {
                 if (toBeMergedRootTimer.getName().equals(rootTimer.getName())) {
                     rootTimer.merge(toBeMergedRootTimer);
                     return;
                 }
             }
-            MutableTimer rootTimer = MutableTimer.createRootTimer(toBeMergedRootTimer.getName(),
-                    toBeMergedRootTimer.isExtended());
+            MutableAggregateTimer rootTimer = MutableAggregateTimer.createRootTimer(
+                    toBeMergedRootTimer.getName(), toBeMergedRootTimer.isExtended());
             rootTimer.merge(toBeMergedRootTimer);
             rootTimers.add(rootTimer);
         }

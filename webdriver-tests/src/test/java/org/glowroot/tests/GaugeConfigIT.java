@@ -20,6 +20,7 @@ import org.openqa.selenium.NoSuchElementException;
 
 import org.glowroot.tests.config.ConfigSidebar;
 import org.glowroot.tests.config.GaugeConfigPage;
+import org.glowroot.tests.util.Utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openqa.selenium.By.linkText;

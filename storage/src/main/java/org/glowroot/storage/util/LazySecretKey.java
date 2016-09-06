@@ -18,6 +18,7 @@ package org.glowroot.storage.util;
 import java.io.File;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import com.google.common.io.Files;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -37,7 +38,7 @@ public class LazySecretKey {
         synchronized (secretFile) {
             if (secretKey == null) {
                 if (secretFile.exists()) {
-                    secretKey = Encryption.loadKey(secretFile);
+                    secretKey = loadKey(secretFile);
                 } else {
                     secretKey = Encryption.generateNewKey();
                     Files.write(secretKey.getEncoded(), secretFile);
@@ -45,5 +46,10 @@ public class LazySecretKey {
             }
             return secretKey;
         }
+    }
+
+    private static SecretKey loadKey(File secretFile) throws Exception {
+        byte[] bytes = Files.toByteArray(secretFile);
+        return new SecretKeySpec(bytes, "AES");
     }
 }

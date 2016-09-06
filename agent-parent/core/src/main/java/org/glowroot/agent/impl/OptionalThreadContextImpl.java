@@ -21,7 +21,6 @@ import javax.annotation.Nullable;
 
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-import org.glowroot.agent.model.ThreadContextImpl;
 import org.glowroot.agent.model.ThreadContextPlus;
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
 import org.glowroot.agent.plugin.api.AsyncTraceEntry;

@@ -77,19 +77,16 @@ public class ServiceCallCollector {
     public void mergeServiceCalls(List<Aggregate.ServiceCallsByType> toBeMergedServiceCalls)
             throws IOException {
         for (Aggregate.ServiceCallsByType toBeMergedServiceCallsByType : toBeMergedServiceCalls) {
-            mergeQueries(toBeMergedServiceCallsByType);
-        }
-    }
-
-    public void mergeQueries(Aggregate.ServiceCallsByType toBeMergedServiceCalls) {
-        String type = toBeMergedServiceCalls.getType();
-        Map<String, MutableServiceCall> serviceCallsForType = serviceCalls.get(type);
-        if (serviceCallsForType == null) {
-            serviceCallsForType = Maps.newHashMap();
-            serviceCalls.put(type, serviceCallsForType);
-        }
-        for (Aggregate.ServiceCall serviceCall : toBeMergedServiceCalls.getServiceCallList()) {
-            mergeServiceCall(serviceCall, serviceCallsForType);
+            String type = toBeMergedServiceCallsByType.getType();
+            Map<String, MutableServiceCall> serviceCallsForType = serviceCalls.get(type);
+            if (serviceCallsForType == null) {
+                serviceCallsForType = Maps.newHashMap();
+                serviceCalls.put(type, serviceCallsForType);
+            }
+            for (Aggregate.ServiceCall serviceCall : toBeMergedServiceCallsByType
+                    .getServiceCallList()) {
+                mergeServiceCall(serviceCall, serviceCallsForType);
+            }
         }
     }
 
@@ -133,9 +130,9 @@ public class ServiceCallCollector {
         aggregateServiceCall.addToExecutionCount(executionCount);
     }
 
-    private void order(List<Aggregate.ServiceCall> queries) {
+    private void order(List<Aggregate.ServiceCall> serviceCalls) {
         // reverse sort by total
-        Collections.sort(queries, new Comparator<Aggregate.ServiceCall>() {
+        Collections.sort(serviceCalls, new Comparator<Aggregate.ServiceCall>() {
             @Override
             public int compare(Aggregate.ServiceCall left, Aggregate.ServiceCall right) {
                 return Doubles.compare(right.getTotalDurationNanos(), left.getTotalDurationNanos());

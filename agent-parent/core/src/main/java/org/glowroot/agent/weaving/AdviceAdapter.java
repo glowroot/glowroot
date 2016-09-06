@@ -49,7 +49,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 // * fix in visitFieldInsn switch case PUTFIELD
 // (reported fix at http://forge.ow2.org/tracker/?group_id=23&atid=100023&func=detail&aid=317604)
 // * clearing stackFrame on GOTO
-public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
+abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
 
     private static final Object THIS = new Object();
 

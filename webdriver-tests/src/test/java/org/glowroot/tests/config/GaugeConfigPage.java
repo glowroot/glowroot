@@ -22,7 +22,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import org.glowroot.tests.Utils;
+import org.glowroot.tests.util.Utils;
 
 import static org.openqa.selenium.By.xpath;
 

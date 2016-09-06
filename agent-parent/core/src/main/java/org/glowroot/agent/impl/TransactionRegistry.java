@@ -18,8 +18,6 @@ package org.glowroot.agent.impl;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.impl.TransactionCollection.TransactionEntry;
-import org.glowroot.agent.model.ThreadContextImpl;
-import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.common.util.UsedByGeneratedBytecode;

@@ -51,12 +51,13 @@ import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.weaving.Advice.AdviceParameter;
+import org.glowroot.agent.weaving.Advice.ParameterKind;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.common.util.Patterns;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class AdviceBuilder {
+class AdviceBuilder {
 
     private static final ImmutableList<Class<? extends Annotation>> isEnabledBindAnnotationTypes =
             ImmutableList.of(BindReceiver.class, BindParameter.class, BindParameterArray.class,
@@ -102,19 +103,19 @@ public class AdviceBuilder {
     private boolean hasOnThrowAdvice;
     private boolean hasOnAfterAdvice;
 
-    public AdviceBuilder(Class<?> adviceClass) {
+    AdviceBuilder(Class<?> adviceClass) {
         this.adviceClass = adviceClass;
         this.lazyAdviceClass = null;
         builder.reweavable(false);
     }
 
-    public AdviceBuilder(LazyDefinedClass lazyAdviceClass, boolean reweavable) {
+    AdviceBuilder(LazyDefinedClass lazyAdviceClass, boolean reweavable) {
         this.adviceClass = null;
         this.lazyAdviceClass = lazyAdviceClass;
         builder.reweavable(reweavable);
     }
 
-    public Advice build() throws Exception {
+    Advice build() throws Exception {
         Class<?> adviceClass = this.adviceClass;
         if (adviceClass == null) {
             // safe check, if adviceClass is null then lazyAdviceClass is non-null

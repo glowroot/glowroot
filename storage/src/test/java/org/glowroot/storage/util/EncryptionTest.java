@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,8 @@
  */
 package org.glowroot.storage.util;
 
-import java.io.File;
-
 import javax.crypto.SecretKey;
 
-import com.google.common.io.Files;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,20 +32,5 @@ public class EncryptionTest {
         String decrypted = Encryption.decrypt(encrypted, secretKey);
         // then
         assertThat(decrypted).isEqualTo("test");
-    }
-
-    @Test
-    public void testLoadSecretKey() throws Exception {
-        // given
-        SecretKey secretKey = Encryption.generateNewKey();
-        File secretKeyFile = File.createTempFile("glowroot-unit-test-", "");
-        byte[] encodedKey = secretKey.getEncoded();
-        Files.write(encodedKey, secretKeyFile);
-        // when
-        secretKey = Encryption.loadKey(secretKeyFile);
-        // then
-        assertThat(secretKey.getEncoded()).isEqualTo(encodedKey);
-        // cleanup
-        secretKeyFile.delete();
     }
 }

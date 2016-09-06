@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@ package org.glowroot.agent.weaving.preinit;
 import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.collect.Maps;
-
-import org.glowroot.agent.weaving.ClassNames;
 
 class InternalNames {
 
@@ -68,7 +66,7 @@ class InternalNames {
 
     private static Class<?> classForInternalName(String internalName)
             throws ClassNotFoundException {
-        return Class.forName(ClassNames.fromInternalName(internalName), false,
+        return Class.forName(internalName.replace('/', '.'), false,
                 ClassLoader.getSystemClassLoader());
     }
 }

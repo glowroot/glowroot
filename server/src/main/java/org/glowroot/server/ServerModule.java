@@ -53,7 +53,6 @@ import org.glowroot.server.storage.ConfigRepositoryImpl;
 import org.glowroot.server.storage.ConfigRepositoryImpl.ConfigListener;
 import org.glowroot.server.storage.GaugeValueDao;
 import org.glowroot.server.storage.RoleDao;
-import org.glowroot.server.storage.RollupService;
 import org.glowroot.server.storage.ServerConfigDao;
 import org.glowroot.server.storage.TraceDao;
 import org.glowroot.server.storage.TransactionTypeDao;

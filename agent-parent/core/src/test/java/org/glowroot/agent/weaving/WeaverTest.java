@@ -28,12 +28,15 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.impl.ThreadContextImpl;
+import org.glowroot.agent.impl.TimerNameCache;
+import org.glowroot.agent.impl.TransactionRegistry;
+import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.Mixin;
 import org.glowroot.agent.plugin.api.weaving.OptionalReturn;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
-import org.glowroot.agent.weaving.AbstractMisc.ExtendsAbstractMisc;
-import org.glowroot.agent.weaving.AbstractNotMisc.ExtendsAbstractNotMisc;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.agent.weaving.SomeAspect.BasicAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BasicAnnotationBasedAdvice;
@@ -107,10 +110,35 @@ import org.glowroot.agent.weaving.SomeAspect.ThrowInOnBeforeAdvice;
 import org.glowroot.agent.weaving.SomeAspect.ThrowableToStringAdvice;
 import org.glowroot.agent.weaving.SomeAspect.WildMethodAdvice;
 import org.glowroot.agent.weaving.SomeAspectThreadLocals.IntegerThreadLocal;
-import org.glowroot.agent.weaving.WeavingTimerService.WeavingTimer;
 import org.glowroot.agent.weaving.other.ArrayMisc;
+import org.glowroot.agent.weaving.targets.AccessibilityMisc;
+import org.glowroot.agent.weaving.targets.BasicMisc;
+import org.glowroot.agent.weaving.targets.BytecodeWithStackFramesMisc;
+import org.glowroot.agent.weaving.targets.DuplicateStackFramesMisc;
+import org.glowroot.agent.weaving.targets.ExtendsPackagePrivateMisc;
+import org.glowroot.agent.weaving.targets.GenericAbstractMiscImpl;
+import org.glowroot.agent.weaving.targets.GenericMisc;
+import org.glowroot.agent.weaving.targets.GenericMiscImpl;
+import org.glowroot.agent.weaving.targets.InnerTryCatchMisc;
+import org.glowroot.agent.weaving.targets.Misc;
+import org.glowroot.agent.weaving.targets.Misc2;
+import org.glowroot.agent.weaving.targets.NativeMisc;
+import org.glowroot.agent.weaving.targets.NestingMisc;
+import org.glowroot.agent.weaving.targets.OnlyThrowingMisc;
+import org.glowroot.agent.weaving.targets.PrimitiveMisc;
+import org.glowroot.agent.weaving.targets.ShimmedMisc;
+import org.glowroot.agent.weaving.targets.StaticMisc;
+import org.glowroot.agent.weaving.targets.SubBasicMisc;
+import org.glowroot.agent.weaving.targets.SubException;
+import org.glowroot.agent.weaving.targets.SuperBasic;
+import org.glowroot.agent.weaving.targets.SuperBasicMisc;
+import org.glowroot.agent.weaving.targets.ThrowingMisc;
+import org.glowroot.agent.weaving.targets.AbstractMisc.ExtendsAbstractMisc;
+import org.glowroot.agent.weaving.targets.AbstractNotMisc.ExtendsAbstractNotMisc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class WeaverTest {
 
@@ -844,8 +872,12 @@ public class WeaverTest {
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
         AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisorsSupplier,
                 ImmutableList.<ShimType>of(), ImmutableList.<MixinType>of());
+        TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
+        when(transactionRegistry.getCurrentThreadContextHolder())
+                .thenReturn(new FastThreadLocal<ThreadContextImpl>().getHolder());
         Weaver weaver = new Weaver(advisorsSupplier, ImmutableList.<ShimType>of(),
-                ImmutableList.<MixinType>of(), analyzedWorld, NopWeavingTimerService.INSTANCE);
+                ImmutableList.<MixinType>of(), analyzedWorld, transactionRegistry,
+                new TimerNameCache(), mock(ConfigService.class));
         isolatedWeavingClassLoader.setWeaver(weaver);
         Misc test = isolatedWeavingClassLoader.newInstance(BasicMisc.class, Misc.class);
         // when
@@ -1525,8 +1557,11 @@ public class WeaverTest {
         Supplier<List<Advice>> advisorsSupplier =
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
         AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes);
+        TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
+        when(transactionRegistry.getCurrentThreadContextHolder())
+                .thenReturn(new FastThreadLocal<ThreadContextImpl>().getHolder());
         Weaver weaver = new Weaver(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
-                NopWeavingTimerService.INSTANCE);
+                transactionRegistry, new TimerNameCache(), mock(ConfigService.class));
         isolatedWeavingClassLoader.setWeaver(weaver);
         return isolatedWeavingClassLoader.newInstance(implClass, bridgeClass);
     }
@@ -1561,8 +1596,11 @@ public class WeaverTest {
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
         AnalyzedWorld analyzedWorld =
                 new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes);
+        TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
+        when(transactionRegistry.getCurrentThreadContextHolder())
+                .thenReturn(new FastThreadLocal<ThreadContextImpl>().getHolder());
         Weaver weaver = new Weaver(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
-                NopWeavingTimerService.INSTANCE);
+                transactionRegistry, new TimerNameCache(), mock(ConfigService.class));
         isolatedWeavingClassLoader.setWeaver(weaver);
 
         String className = toBeDefinedImplClass.type().getClassName();
@@ -1574,19 +1612,5 @@ public class WeaverTest {
 
     private static void assumeJdk7() {
         Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
-    }
-
-    private static class NopWeavingTimerService implements WeavingTimerService {
-        private static final NopWeavingTimerService INSTANCE = new NopWeavingTimerService();
-        @Override
-        public WeavingTimer start() {
-            return NopWeavingTimer.INSTANCE;
-        }
-    }
-
-    private static class NopWeavingTimer implements WeavingTimer {
-        private static final NopWeavingTimer INSTANCE = new NopWeavingTimer();
-        @Override
-        public void stop() {}
     }
 }

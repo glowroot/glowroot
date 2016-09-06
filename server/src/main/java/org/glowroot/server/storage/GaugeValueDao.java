@@ -193,7 +193,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         return gaugeValues;
     }
 
-    void rollup(String agentRollup) throws Exception {
+    public void rollup(String agentRollup) throws Exception {
         List<Integer> ttls = getTTLs();
         for (int rollupLevel = 1; rollupLevel <= configRepository.getRollupConfigs()
                 .size(); rollupLevel++) {

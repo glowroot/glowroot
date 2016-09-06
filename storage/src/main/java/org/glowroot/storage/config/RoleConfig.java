@@ -89,7 +89,7 @@ public abstract class RoleConfig {
         public abstract List<String> agentIds();
         public abstract List<String> parts();
 
-        public boolean implies(SimplePermission other) {
+        boolean implies(SimplePermission other) {
             if (!agentIds().contains("*") && !agentIds().containsAll(other.agentIds())) {
                 return false;
             }

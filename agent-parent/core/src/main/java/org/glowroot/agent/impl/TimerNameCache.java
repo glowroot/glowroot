@@ -45,7 +45,7 @@ public class TimerNameCache {
     private final TimerName unknownTimerName = names.getUnchecked("unknown");
     private final TimerName auxThreadTimerName = names.getUnchecked("auxiliary thread");
 
-    TimerName getTimerName(Class<?> adviceClass) {
+    public TimerName getTimerName(Class<?> adviceClass) {
         if (adviceClass == null) {
             logger.error("get(): argument 'adviceClass' must be non-null");
             return unknownTimerName;

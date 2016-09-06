@@ -32,7 +32,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-class DetailMapWriter {
+public class DetailMapWriter {
 
     private static final Logger logger = LoggerFactory.getLogger(DetailMapWriter.class);
 
@@ -48,7 +48,8 @@ class DetailMapWriter {
 
     private DetailMapWriter() {}
 
-    static List<Trace.DetailEntry> toProto(Map<String, ? extends /*@Nullable*/ Object> detail) {
+    public static List<Trace.DetailEntry> toProto(
+            Map<String, ? extends /*@Nullable*/ Object> detail) {
         return writeMap(detail);
     }
 

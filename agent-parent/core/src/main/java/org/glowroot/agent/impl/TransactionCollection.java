@@ -23,11 +23,9 @@ import java.util.NoSuchElementException;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.agent.model.Transaction;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class TransactionCollection implements Iterable<Transaction> {
+class TransactionCollection implements Iterable<Transaction> {
 
     private final ReferenceQueue<Transaction> queue = new ReferenceQueue<Transaction>();
 
@@ -122,7 +120,7 @@ public class TransactionCollection implements Iterable<Transaction> {
         }
     }
 
-    public class TransactionEntry {
+    class TransactionEntry {
 
         private final @Nullable WeakReference<Transaction> transactionRef; // only null for head
 
@@ -141,7 +139,7 @@ public class TransactionCollection implements Iterable<Transaction> {
             }
         }
 
-        public void remove() {
+        void remove() {
             synchronized (lock) {
                 if (prevEntry == null) {
                     // already removed

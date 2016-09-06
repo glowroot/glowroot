@@ -53,9 +53,7 @@
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
           <configuration>
-            <excludePackageNames>
-              org.glowroot.agent.api.internal
-            </excludePackageNames>
+            <excludePackageNames>org.glowroot.agent.api.internal</excludePackageNames>
           </configuration>
         </plugin>
       </plugins>

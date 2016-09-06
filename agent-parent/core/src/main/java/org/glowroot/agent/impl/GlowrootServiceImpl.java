@@ -25,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.internal.GlowrootService;
-import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 
 public class GlowrootServiceImpl implements GlowrootService {

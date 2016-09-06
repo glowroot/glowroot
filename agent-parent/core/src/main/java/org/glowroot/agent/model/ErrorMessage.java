@@ -44,7 +44,7 @@ public abstract class ErrorMessage {
     public abstract @Nullable Proto.Throwable throwable();
 
     // accepts null values so callers don't have to check if passing it in from elsewhere
-    static ErrorMessage from(@Nullable String message, @Nullable Throwable t,
+    public static ErrorMessage from(@Nullable String message, @Nullable Throwable t,
             AtomicInteger transactionThrowableFrameCount) {
         if (t == null) {
             return ImmutableErrorMessage.of(Strings.nullToEmpty(message), null);

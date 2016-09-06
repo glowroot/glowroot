@@ -682,7 +682,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    void rollup(String agentRollup) throws Exception {
+    public void rollup(String agentRollup) throws Exception {
         List<Integer> ttls = getTTLs();
         for (int rollupLevel = 1; rollupLevel < configRepository.getRollupConfigs()
                 .size(); rollupLevel++) {

@@ -35,10 +35,10 @@ import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.impl.ThreadContextImpl;
+import org.glowroot.agent.impl.Transaction;
 import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
-import org.glowroot.agent.model.ThreadContextImpl;
-import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 import org.glowroot.wire.api.model.Proto.OptionalInt64;

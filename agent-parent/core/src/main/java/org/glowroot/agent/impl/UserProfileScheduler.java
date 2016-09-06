@@ -33,8 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.UserRecordingConfig;
-import org.glowroot.agent.model.ThreadContextImpl;
-import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.common.util.Cancellable;
 
@@ -55,7 +53,7 @@ public class UserProfileScheduler {
         this.random = random;
     }
 
-    public void maybeScheduleUserProfiling(Transaction transaction, String user) {
+    void maybeScheduleUserProfiling(Transaction transaction, String user) {
         UserRecordingConfig userRecordingConfig = configService.getUserRecordingConfig();
         ImmutableList<String> users = userRecordingConfig.users();
         if (users.isEmpty()) {

@@ -21,10 +21,9 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
 
-import org.glowroot.agent.model.TimerImpl.TimerImplSnapshot;
 import org.glowroot.agent.util.Tickers;
 
-class AsyncTimerImpl implements CommonTimerImpl {
+public class AsyncTimerImpl implements CommonTimerImpl {
 
     private static final Ticker ticker = Tickers.getTicker();
 
@@ -36,12 +35,12 @@ class AsyncTimerImpl implements CommonTimerImpl {
     // this is for maintaining list of async timers
     private volatile @Nullable AsyncTimerImpl nextAsyncTimer;
 
-    AsyncTimerImpl(TimerNameImpl timerName, long startTick) {
+    public AsyncTimerImpl(TimerNameImpl timerName, long startTick) {
         this.timerName = timerName;
         this.startTick = startTick;
     }
 
-    void end(long endTick) {
+    public void end(long endTick) {
         totalNanos = endTick - startTick;
     }
 
@@ -71,16 +70,16 @@ class AsyncTimerImpl implements CommonTimerImpl {
     }
 
     @Override
-    public void mergeChildTimersInto(List<MutableTimer> mutableTimers) {
+    public void mergeChildTimersInto(List<MutableTraceTimer> childTimers) {
         // async timers have no child timers
     }
 
     @Override
-    public void mergeChildTimersInto2(List<org.glowroot.agent.impl.MutableTimer> mutableTimers) {
+    public void mergeChildTimersInto2(List<MutableAggregateTimer> childTimers) {
         // async timers have no child timers
     }
 
-    boolean active() {
+    public boolean active() {
         return totalNanos == -1;
     }
 

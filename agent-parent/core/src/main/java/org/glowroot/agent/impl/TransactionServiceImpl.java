@@ -23,11 +23,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.impl.Transaction.CompletionCallback;
 import org.glowroot.agent.impl.TransactionCollection.TransactionEntry;
-import org.glowroot.agent.model.ThreadContextImpl;
-import org.glowroot.agent.model.TraceEntryImpl;
-import org.glowroot.agent.model.Transaction;
-import org.glowroot.agent.model.Transaction.CompletionCallback;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
@@ -88,6 +85,7 @@ public class TransactionServiceImpl implements ConfigListener {
     }
 
     // this is used by OptionalThreadContextImpl
+    @UsedByGeneratedBytecode
     public TraceEntry startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName,
             Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {

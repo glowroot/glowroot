@@ -28,9 +28,9 @@ import org.objectweb.asm.Type;
 import org.glowroot.agent.plugin.api.weaving.Shim;
 
 @Value.Immutable
-public abstract class ShimType {
+abstract class ShimType {
 
-    public static ShimType from(Shim shim, Class<?> iface) throws IOException {
+    static ShimType from(Shim shim, Class<?> iface) throws IOException {
         ImmutableShimType.Builder builder = ImmutableShimType.builder();
         String value = shim.value();
         Pattern pattern = AdviceBuilder.buildPattern(value);

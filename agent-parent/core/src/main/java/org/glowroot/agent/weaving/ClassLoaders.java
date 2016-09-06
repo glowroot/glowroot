@@ -35,15 +35,14 @@ import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class ClassLoaders {
+class ClassLoaders {
 
     private static final Logger logger = LoggerFactory.getLogger(ClassLoaders.class);
 
     private ClassLoaders() {}
 
-    public static void defineClassesInBootstrapClassLoader(
-            Collection<LazyDefinedClass> lazyDefinedClasses, Instrumentation instrumentation,
-            File generatedJarFile) throws IOException {
+    static void defineClassesInBootstrapClassLoader(Collection<LazyDefinedClass> lazyDefinedClasses,
+            Instrumentation instrumentation, File generatedJarFile) throws IOException {
         Closer closer = Closer.create();
         try {
             FileOutputStream out = closer.register(new FileOutputStream(generatedJarFile));
@@ -70,7 +69,7 @@ public class ClassLoaders {
         appendToBootstrapResourcePath(generatedJarFile);
     }
 
-    public static void defineClassesInClassLoader(Collection<LazyDefinedClass> lazyDefinedClasses,
+    static void defineClassesInClassLoader(Collection<LazyDefinedClass> lazyDefinedClasses,
             ClassLoader loader) throws Exception {
         for (LazyDefinedClass lazyDefinedClass : lazyDefinedClasses) {
             defineClass(lazyDefinedClass, loader);
@@ -96,7 +95,7 @@ public class ClassLoaders {
         return definedClass;
     }
 
-    public static void createDirectoryOrCleanPreviousContentsWithPrefix(File dir, String prefix)
+    static void createDirectoryOrCleanPreviousContentsWithPrefix(File dir, String prefix)
             throws IOException {
         deleteIfRegularFile(dir);
         if (dir.exists()) {

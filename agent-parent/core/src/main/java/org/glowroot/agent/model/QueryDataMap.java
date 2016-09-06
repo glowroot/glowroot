@@ -20,7 +20,7 @@ import javax.annotation.Nullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 // micro-optimized map for query data
-class QueryDataMap {
+public class QueryDataMap {
 
     private static final Object CHAINED_KEY = new Object();
 
@@ -33,16 +33,15 @@ class QueryDataMap {
     private int size = 0;
     private int threshold = 3; // 0.75 * capacity
 
-    QueryDataMap(String type) {
+    public QueryDataMap(String type) {
         this.type = type;
     }
 
-    String getType() {
+    public String getType() {
         return type;
     }
 
-    @Nullable
-    QueryData get(String key) {
+    public @Nullable QueryData get(String key) {
         // this mask requires capacity to be a power of 2
         int bucket = (key.hashCode() & (capacity - 1)) << 1;
         Object keyAtBucket = table[bucket];
@@ -57,7 +56,7 @@ class QueryDataMap {
     }
 
     // IMPORTANT put assumes get was already called and key is not present in this map
-    void put(String key, QueryData value) {
+    public void put(String key, QueryData value) {
         if (size++ > threshold) {
             rehash();
         }

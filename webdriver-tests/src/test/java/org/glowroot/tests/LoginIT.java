@@ -21,6 +21,7 @@ import org.openqa.selenium.WebElement;
 import org.glowroot.tests.admin.ChangePasswordPage;
 import org.glowroot.tests.admin.UserConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
+import org.glowroot.tests.util.Utils;
 
 import static org.openqa.selenium.By.linkText;
 import static org.openqa.selenium.By.xpath;

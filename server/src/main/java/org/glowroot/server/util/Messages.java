@@ -50,7 +50,7 @@ public class Messages {
             return ImmutableList.of();
         }
         SizeLimitBypassingParser<T> sizeLimitBypassingParser =
-                new SizeLimitBypassingParser<T>(parser);
+                new SizeLimitBypassingParser<>(parser);
         List<T> messages = Lists.newArrayList();
         try (InputStream input = new ByteBufferInputStream(byteBuf)) {
             T message;

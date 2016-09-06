@@ -29,11 +29,11 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 
+import org.glowroot.agent.impl.TraceCreator;
+import org.glowroot.agent.impl.Transaction;
 import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.model.ErrorMessage;
-import org.glowroot.agent.model.TraceCreator;
-import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.live.ImmutableTracePoint;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.util.Clock;

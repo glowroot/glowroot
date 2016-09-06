@@ -28,8 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.model.TraceCreator;
-import org.glowroot.agent.model.Transaction;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.common.util.Clock;

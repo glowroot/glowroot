@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.glowroot.storage.util;
 
-import java.io.File;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -24,11 +23,9 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.BaseEncoding;
-import com.google.common.io.Files;
 
 public class Encryption {
 
@@ -41,11 +38,6 @@ public class Encryption {
         KeyGenerator keyGen = KeyGenerator.getInstance("AES");
         keyGen.init(128);
         return keyGen.generateKey();
-    }
-
-    public static SecretKey loadKey(File secretFile) throws Exception {
-        byte[] bytes = Files.toByteArray(secretFile);
-        return new SecretKeySpec(bytes, "AES");
     }
 
     public static String encrypt(String text, SecretKey secretKey) throws GeneralSecurityException {

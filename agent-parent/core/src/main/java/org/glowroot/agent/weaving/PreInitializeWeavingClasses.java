@@ -238,24 +238,20 @@ public class PreInitializeWeavingClasses {
 
     private static List<String> getGlowrootUsedTypes() {
         List<String> types = Lists.newArrayList();
-        types.add("org.glowroot.agent.advicegen.AdviceGenerator");
         types.add("org.glowroot.agent.config.ImmutableInstrumentationConfig");
         types.add("org.glowroot.agent.config.ImmutableInstrumentationConfig$Builder");
         types.add("org.glowroot.agent.config.ImmutableInstrumentationConfig$InitShim");
         types.add("org.glowroot.agent.config.InstrumentationConfig");
         types.add("org.glowroot.agent.impl.OptionalThreadContextImpl");
+        types.add("org.glowroot.agent.impl.NestedTimerMap");
+        types.add("org.glowroot.agent.impl.ThreadContextImpl");
+        types.add("org.glowroot.agent.impl.TimerImpl");
         types.add("org.glowroot.agent.impl.TransactionRegistry");
         types.add("org.glowroot.agent.impl.TransactionRegistry$TransactionRegistryHolder");
         types.add("org.glowroot.agent.impl.TransactionServiceImpl");
         types.add("org.glowroot.agent.impl.TransactionServiceImpl$TransactionServiceHolder");
-        types.add("org.glowroot.agent.impl.WeavingTimerServiceImpl");
-        types.add("org.glowroot.agent.impl.WeavingTimerServiceImpl$2");
-        types.add("org.glowroot.agent.impl.WeavingTimerServiceImpl$NopWeavingTimer");
         types.add("org.glowroot.agent.model.CommonTimerImpl");
-        types.add("org.glowroot.agent.model.NestedTimerMap");
-        types.add("org.glowroot.agent.model.ThreadContextImpl");
         types.add("org.glowroot.agent.model.ThreadContextPlus");
-        types.add("org.glowroot.agent.model.TimerImpl");
         types.add("org.glowroot.agent.model.TimerNameImpl");
         types.add("org.glowroot.agent.plugin.api.MessageSupplier");
         types.add("org.glowroot.agent.plugin.api.MessageSupplier$1");
@@ -287,8 +283,10 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.util.Tickers");
         types.add("org.glowroot.agent.util.Tickers$DummyTicker");
         types.add("org.glowroot.agent.weaving.Advice");
+        types.add("org.glowroot.agent.weaving.AdviceGenerator");
         types.add("org.glowroot.agent.weaving.Advice$AdviceOrdering");
         types.add("org.glowroot.agent.weaving.Advice$AdviceParameter");
+        types.add("org.glowroot.agent.weaving.Advice$ParameterKind");
         types.add("org.glowroot.agent.weaving.AdviceAdapter");
         types.add("org.glowroot.agent.weaving.AdviceBuilder");
         types.add("org.glowroot.agent.weaving.AdviceBuilder$1");
@@ -301,16 +299,16 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$ClassMetaHolder");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$MethodMetaHolder");
-        types.add("org.glowroot.agent.weaving.BridgeMethodClassVisitor");
-        types.add("org.glowroot.agent.weaving.BridgeMethodClassVisitor$BridgeMethodVisitor");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer$AnalyzedMethodKey");
+        types.add("org.glowroot.agent.weaving.ClassAnalyzer$BridgeMethodClassVisitor");
+        types.add("org.glowroot.agent.weaving.ClassAnalyzer$BridgeMethodClassVisitor"
+                + "$BridgeMethodVisitor");
         types.add("org.glowroot.agent.weaving.ClassLoaders");
         types.add("org.glowroot.agent.weaving.ClassLoaders$LazyDefinedClass");
         types.add("org.glowroot.agent.weaving.ClassNames");
-        types.add("org.glowroot.agent.weaving.FelixOsgiHackClassVisitor");
-        types.add("org.glowroot.agent.weaving.FelixOsgiHackClassVisitor"
-                + "$FelixOsgiHackMethodVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$FelixOsgiHackClassVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$FelixOsgiHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.GeneratedBytecodeUtil");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$Builder");
@@ -344,7 +342,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor"
                 + "$TransactionAnnotationVisitor");
         types.add("org.glowroot.agent.weaving.MixinType");
-        types.add("org.glowroot.agent.weaving.ParameterKind");
         types.add("org.glowroot.agent.weaving.ShimType");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$AnnotationCaptureMethodVisitor");
@@ -359,8 +356,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$MethodMetaGroup");
         types.add("org.glowroot.agent.weaving.WeavingMethodVisitor");
         types.add("org.glowroot.agent.weaving.WeavingMethodVisitor$CatchHandler");
-        types.add("org.glowroot.agent.weaving.WeavingTimerService");
-        types.add("org.glowroot.agent.weaving.WeavingTimerService$WeavingTimer");
         types.add("org.glowroot.common.util.Patterns");
         types.add("org.glowroot.wire.api.model.AgentConfigOuterClass$AgentConfig"
                 + "$InstrumentationConfig$CaptureKind");
@@ -474,8 +469,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.AnalyzedMethod$1");
         types.add("org.glowroot.agent.weaving.AnalyzedMethodKey$1");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$1");
-        types.add("org.glowroot.agent.weaving.BridgeMethodClassVisitor$1");
-        types.add("org.glowroot.agent.weaving.FelixOsgiHackClassVisitor$1");
+        types.add("org.glowroot.agent.weaving.ClassAnalyzer$1");
+        types.add("org.glowroot.agent.weaving.ClassAnalyzer$BridgeMethodClassVisitor$1");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedClass$1");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedMethod$1");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedMethodKey$1");
@@ -489,6 +484,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.MethodMetaGroup$1");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$1");
         types.add("org.glowroot.agent.weaving.Weaver$1");
+        types.add("org.glowroot.agent.weaving.Weaver$FelixOsgiHackClassVisitor$1");
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$1");
         // this is a special class generated by javac (but not by the eclipse compiler) to handle
         // enum switch statements

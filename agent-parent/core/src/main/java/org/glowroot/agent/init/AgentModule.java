@@ -38,7 +38,6 @@ import org.glowroot.agent.api.internal.GlowrootService;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.config.PluginDescriptor;
-import org.glowroot.agent.impl.AdviceCache;
 import org.glowroot.agent.impl.Aggregator;
 import org.glowroot.agent.impl.ConfigServiceImpl;
 import org.glowroot.agent.impl.GlowrootServiceImpl;
@@ -49,7 +48,6 @@ import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionServiceImpl;
 import org.glowroot.agent.impl.UserProfileScheduler;
-import org.glowroot.agent.impl.WeavingTimerServiceImpl;
 import org.glowroot.agent.live.LiveAggregateRepositoryImpl;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.agent.live.LiveTraceRepositoryImpl;
@@ -58,11 +56,11 @@ import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.OptionalService;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.agent.util.Tickers;
+import org.glowroot.agent.weaving.AdviceCache;
 import org.glowroot.agent.weaving.AnalyzedWorld;
 import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
 import org.glowroot.agent.weaving.Weaver;
 import org.glowroot.agent.weaving.WeavingClassFileTransformer;
-import org.glowroot.agent.weaving.WeavingTimerService;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveTraceRepository;
@@ -93,7 +91,6 @@ public class AgentModule {
     private final AnalyzedWorld analyzedWorld;
     private final TransactionRegistry transactionRegistry;
     private final AdviceCache adviceCache;
-    private final WeavingTimerService weavingTimerService;
 
     private final TransactionCollector transactionCollector;
     private final Aggregator aggregator;
@@ -132,12 +129,10 @@ public class AgentModule {
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
                 adviceCache.getShimTypes(), adviceCache.getMixinTypes());
         final TimerNameCache timerNameCache = new TimerNameCache();
-        weavingTimerService =
-                new WeavingTimerServiceImpl(transactionRegistry, configService, timerNameCache);
 
-        Weaver weaver =
-                new Weaver(adviceCache.getAdvisorsSupplier(), adviceCache.getShimTypes(),
-                        adviceCache.getMixinTypes(), analyzedWorld, weavingTimerService);
+        Weaver weaver = new Weaver(adviceCache.getAdvisorsSupplier(), adviceCache.getShimTypes(),
+                adviceCache.getMixinTypes(), analyzedWorld, transactionRegistry, timerNameCache,
+                configService);
 
         if (instrumentation == null) {
             // instrumentation is null when debugging with LocalContainer

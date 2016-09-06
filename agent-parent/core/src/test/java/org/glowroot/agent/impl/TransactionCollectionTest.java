@@ -21,7 +21,6 @@ import com.google.common.collect.Lists;
 import org.junit.Test;
 
 import org.glowroot.agent.impl.TransactionCollection.TransactionEntry;
-import org.glowroot.agent.model.Transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
