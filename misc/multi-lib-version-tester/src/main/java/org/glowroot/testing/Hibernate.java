@@ -21,7 +21,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class Hibernate {
 
-    private static final String MODULE_PATH = "agent-parent/plugins/hibernate-plugin";
+    private static final String MODULE_PATH = "agent/plugins/hibernate-plugin";
 
     public static void main(String[] args) throws Exception {
         run("3.3.0.GA", "3.3.0.ga", "hibernate-3.x", "hibernate-3.3.0.ga");

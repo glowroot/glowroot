@@ -20,7 +20,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class Grails {
 
-    private static final String MODULE_PATH = "agent-parent/plugins/grails-plugin";
+    private static final String MODULE_PATH = "agent/plugins/grails-plugin";
 
     public static void main(String[] args) throws Exception {
         for (int i = 6; i <= 17; i++) {

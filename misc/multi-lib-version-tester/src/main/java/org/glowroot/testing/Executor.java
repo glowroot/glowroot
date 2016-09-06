@@ -21,7 +21,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class Executor {
 
-    private static final String MODULE_PATH = "agent-parent/plugins/executor-plugin";
+    private static final String MODULE_PATH = "agent/plugins/executor-plugin";
 
     public static void main(String[] args) throws Exception {
         Util.runTests(MODULE_PATH, JAVA6, JAVA7, JAVA8);

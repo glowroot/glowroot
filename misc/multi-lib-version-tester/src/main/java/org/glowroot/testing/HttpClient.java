@@ -23,7 +23,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class HttpClient {
 
-    private static final String MODULE_PATH = "agent-parent/plugins/http-client-plugin";
+    private static final String MODULE_PATH = "agent/plugins/http-client-plugin";
 
     public static void main(String[] args) throws Exception {
         apacheHttpClient();

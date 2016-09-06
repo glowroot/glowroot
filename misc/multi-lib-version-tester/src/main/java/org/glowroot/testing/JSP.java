@@ -21,7 +21,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class JSP {
 
-    private static final String MODULE_PATH = "agent-parent/plugins/jsp-plugin";
+    private static final String MODULE_PATH = "agent/plugins/jsp-plugin";
 
     public static void main(String[] args) throws Exception {
         // TODO run tests against different versions of tomcat

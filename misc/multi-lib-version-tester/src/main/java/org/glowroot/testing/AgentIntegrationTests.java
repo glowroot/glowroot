@@ -21,7 +21,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class AgentIntegrationTests {
 
-    private static final String MODULE_PATH = "agent-parent/integration-tests";
+    private static final String MODULE_PATH = "agent/integration-tests";
 
     public static void main(String[] args) throws Exception {
         Util.runTests(MODULE_PATH, JAVA6, JAVA7, JAVA8);

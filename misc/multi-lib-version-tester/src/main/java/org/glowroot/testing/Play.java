@@ -21,7 +21,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class Play {
 
-    private static final String MODULE_PATH = "agent-parent/plugins/play-plugin";
+    private static final String MODULE_PATH = "agent/plugins/play-plugin";
 
     public static void main(String[] args) throws Exception {
         play1x();

@@ -116,46 +116,46 @@ case "$1" in
                                   -Denforcer.skip \
                                   \"-DargLine=$surefire_jvm_args \\\${jacocoArgLine}\""
                  # async-http-client 2.x (AsyncHttpClientPluginIT)
-                 mvn $common_mvn_args -pl agent-parent/plugins/http-client-plugin \
+                 mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
                                       -P async-http-client-2.x \
                                       -Dit.test=AsyncHttpClientPluginIT \
                                       -B
                  # async-http-client 1.x (AsyncHttpClientPluginIT)
-                 mvn $common_mvn_args -pl agent-parent/plugins/http-client-plugin \
+                 mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
                                       -P async-http-client-1.x \
                                       -Dit.test=AsyncHttpClientPluginIT \
                                       -B
                  # okhttp prior to 2.2.0 (OkHttpClientPluginIT)
-                 mvn $common_mvn_args -pl agent-parent/plugins/http-client-plugin \
+                 mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
                                       -Dokhttpclient.version=2.1.0 \
                                       -Dit.test=OkHttpClientPluginIT \
                                       -B
                  # LogbackIT (only runs against shaded agent)
-                 mvn $common_mvn_args -pl agent-parent/plugins/logger-plugin \
+                 mvn $common_mvn_args -pl agent/plugins/logger-plugin \
                                       -Dit.test=LogbackIT \
                                       -B
                  # LogbackIT prior to 0.9.16
-                 mvn $common_mvn_args -pl agent-parent/plugins/logger-plugin \
+                 mvn $common_mvn_args -pl agent/plugins/logger-plugin \
                                       -P logback-old \
                                       -Dit.test=LogbackIT \
                                       -B
                  # netty 3.x
-                 mvn $common_mvn_args -pl agent-parent/plugins/netty-plugin \
+                 mvn $common_mvn_args -pl agent/plugins/netty-plugin \
                                       -P netty-3.x \
                                       -B
                  # play 2.2.x
-                 mvn $common_mvn_args -pl agent-parent/plugins/play-plugin \
+                 mvn $common_mvn_args -pl agent/plugins/play-plugin \
                                       -P play-2.2.x,play-2.x \
                                       -B
                  # TODO Play 2.0.x and 2.1.x require Java 7
                  # play 1.x
-                 mvn $common_mvn_args -pl agent-parent/plugins/play-plugin \
+                 mvn $common_mvn_args -pl agent/plugins/play-plugin \
                                       -P play-1.x \
                                       -B
                  # the sonar.jdbc.password system property is set in the pom.xml using the
                  # environment variable SONAR_DB_PASSWORD (instead of setting the system
                  # property on the command line which which would make it visible to ps)
-                 mvn clean verify sonar:sonar -pl !misc/license-resource-bundle,!misc/checker-qual-jdk6,!misc/multi-lib-version-tester,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!agent-parent/dist-maven-plugin,!agent-parent/dist \
+                 mvn clean verify sonar:sonar -pl !misc/license-resource-bundle,!misc/checker-qual-jdk6,!misc/multi-lib-version-tester,!agent/benchmarks,!agent/ui-sandbox,!agent/dist-maven-plugin,!agent/dist \
                                    -Dsonar.jdbc.url=$SONAR_JDBC_URL \
                                    -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
                                    -Dsonar.host.url=$SONAR_HOST_URL \
@@ -193,7 +193,7 @@ case "$1" in
                                  -B
                # this is just to keep travis ci build from timing out due to "No output has been received in the last 10 minutes, ..."
                while true; do sleep 60; echo ...; done &
-               mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent-parent/benchmarks,!agent-parent/ui-sandbox,!agent-parent/dist \
+               mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent/benchmarks,!agent/ui-sandbox,!agent/dist \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \

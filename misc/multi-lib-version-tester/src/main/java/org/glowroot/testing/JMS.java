@@ -21,7 +21,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class JMS {
 
-    private static final String MODULE_PATH = "agent-parent/plugins/jms-plugin";
+    private static final String MODULE_PATH = "agent/plugins/jms-plugin";
 
     public static void main(String[] args) throws Exception {
         // TODO run tests against different versions of activemq

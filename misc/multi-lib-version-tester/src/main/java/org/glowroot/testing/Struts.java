@@ -23,7 +23,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class Struts {
 
-    private static final String MODULE_PATH = "agent-parent/plugins/struts-plugin";
+    private static final String MODULE_PATH = "agent/plugins/struts-plugin";
 
     public static void main(String[] args) throws Exception {
         struts1();

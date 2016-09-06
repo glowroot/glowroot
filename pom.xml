@@ -42,34 +42,34 @@
     <module>wire-api</module>
     <module>storage</module>
     <module>ui</module>
-    <module>agent-parent/api</module>
-    <module>agent-parent/plugin-api</module>
-    <module>agent-parent/core</module>
-    <module>agent-parent/it-harness</module>
-    <module>agent-parent/integration-tests</module>
-    <module>agent-parent/plugins/cassandra-plugin</module>
-    <module>agent-parent/plugins/executor-plugin</module>
-    <module>agent-parent/plugins/grails-plugin</module>
-    <module>agent-parent/plugins/hibernate-plugin</module>
-    <module>agent-parent/plugins/http-client-plugin</module>
-    <module>agent-parent/plugins/jaxrs-plugin</module>
-    <module>agent-parent/plugins/jdbc-plugin</module>
-    <module>agent-parent/plugins/jms-plugin</module>
-    <module>agent-parent/plugins/jsf-plugin</module>
-    <module>agent-parent/plugins/jsp-plugin</module>
-    <module>agent-parent/plugins/logger-plugin</module>
-    <module>agent-parent/plugins/netty-plugin</module>
-    <module>agent-parent/plugins/play-plugin</module>
-    <module>agent-parent/plugins/quartz-plugin</module>
-    <module>agent-parent/plugins/redis-plugin</module>
-    <module>agent-parent/plugins/servlet-plugin</module>
-    <module>agent-parent/plugins/spray-plugin</module>
-    <module>agent-parent/plugins/spring-plugin</module>
-    <module>agent-parent/plugins/struts-plugin</module>
-    <module>agent-parent/benchmarks</module>
-    <module>agent-parent/ui-sandbox</module>
-    <module>agent-parent/dist-maven-plugin</module>
-    <module>agent-parent/dist</module>
+    <module>agent/api</module>
+    <module>agent/plugin-api</module>
+    <module>agent/core</module>
+    <module>agent/it-harness</module>
+    <module>agent/integration-tests</module>
+    <module>agent/plugins/cassandra-plugin</module>
+    <module>agent/plugins/executor-plugin</module>
+    <module>agent/plugins/grails-plugin</module>
+    <module>agent/plugins/hibernate-plugin</module>
+    <module>agent/plugins/http-client-plugin</module>
+    <module>agent/plugins/jaxrs-plugin</module>
+    <module>agent/plugins/jdbc-plugin</module>
+    <module>agent/plugins/jms-plugin</module>
+    <module>agent/plugins/jsf-plugin</module>
+    <module>agent/plugins/jsp-plugin</module>
+    <module>agent/plugins/logger-plugin</module>
+    <module>agent/plugins/netty-plugin</module>
+    <module>agent/plugins/play-plugin</module>
+    <module>agent/plugins/quartz-plugin</module>
+    <module>agent/plugins/redis-plugin</module>
+    <module>agent/plugins/servlet-plugin</module>
+    <module>agent/plugins/spray-plugin</module>
+    <module>agent/plugins/spring-plugin</module>
+    <module>agent/plugins/struts-plugin</module>
+    <module>agent/benchmarks</module>
+    <module>agent/ui-sandbox</module>
+    <module>agent/dist-maven-plugin</module>
+    <module>agent/dist</module>
     <module>webdriver-tests</module>
   </modules>
 

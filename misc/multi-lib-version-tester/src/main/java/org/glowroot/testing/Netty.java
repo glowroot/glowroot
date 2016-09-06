@@ -21,7 +21,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class Netty {
 
-    private static final String MODULE_PATH = "agent-parent/plugins/netty-plugin";
+    private static final String MODULE_PATH = "agent/plugins/netty-plugin";
 
     public static void main(String[] args) throws Exception {
         netty();

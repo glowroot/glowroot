@@ -23,7 +23,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class Logger {
 
-    private static final String MODULE_PATH = "agent-parent/plugins/logger-plugin";
+    private static final String MODULE_PATH = "agent/plugins/logger-plugin";
 
     public static void main(String[] args) throws Exception {
         logback();

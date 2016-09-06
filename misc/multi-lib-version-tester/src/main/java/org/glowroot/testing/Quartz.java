@@ -21,7 +21,7 @@ import static org.glowroot.testing.JavaVersion.JAVA8;
 
 public class Quartz {
 
-    private static final String MODULE_PATH = "agent-parent/plugins/quartz-plugin";
+    private static final String MODULE_PATH = "agent/plugins/quartz-plugin";
 
     public static void main(String[] args) throws Exception {
         run("1.7.2", "quartz-old");
