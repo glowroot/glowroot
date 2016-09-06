@@ -10,11 +10,11 @@
     <relativePath>../..</relativePath>
   </parent>
 
-  <groupId>org.glowroot.misc</groupId>
-  <artifactId>glowroot-multi-lib-version-tester</artifactId>
+  <groupId>org.glowroot.build</groupId>
+  <artifactId>glowroot-build-multi-lib-tests</artifactId>
 
-  <name>Glowroot Multi Lib Version Tester</name>
-  <description>Glowroot Multi Lib Version Tester</description>
+  <name>Glowroot Build Multi Lib Tests</name>
+  <description>Glowroot Build Multi Lib Tests</description>
 
   <dependencies>
     <dependency>

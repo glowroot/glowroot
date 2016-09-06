@@ -12,7 +12,7 @@ before_install:
     # NewRatio is to leave as much memory as possible to old gen
   - echo "MAVEN_OPTS=\"-Xmx768m -XX:NewRatio=20\"" > ~/.mavenrc
 install: true
-script: misc/travis-build/travis-build.sh $TARGET
+script: build/travis-ci/build.sh $TARGET
 cache:
   directories:
   - $HOME/.m2

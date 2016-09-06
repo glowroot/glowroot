@@ -64,7 +64,7 @@ case "$1" in
                                   -Pjavadoc \
                                   -DargLine="$surefire_jvm_args" \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
-                                  --settings misc/travis-build/settings.xml \
+                                  --settings build/travis-ci/settings.xml \
                                   -B
                fi
                ;;
@@ -155,7 +155,7 @@ case "$1" in
                  # the sonar.jdbc.password system property is set in the pom.xml using the
                  # environment variable SONAR_DB_PASSWORD (instead of setting the system
                  # property on the command line which which would make it visible to ps)
-                 mvn clean verify sonar:sonar -pl !misc/license-resource-bundle,!misc/checker-qual-jdk6,!misc/multi-lib-version-tester,!agent/benchmarks,!agent/ui-sandbox,!agent/dist-maven-plugin,!agent/dist \
+                 mvn clean verify sonar:sonar -pl !build/license-bundle,!build/checker-jdk6,!build/multi-lib-tests,!agent/benchmarks,!agent/ui-sandbox,!agent/dist-maven-plugin,!agent/dist \
                                    -Dsonar.jdbc.url=$SONAR_JDBC_URL \
                                    -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
                                    -Dsonar.host.url=$SONAR_HOST_URL \
@@ -193,10 +193,10 @@ case "$1" in
                                  -B
                # this is just to keep travis ci build from timing out due to "No output has been received in the last 10 minutes, ..."
                while true; do sleep 60; echo ...; done &
-               mvn clean compile -pl !misc/checker-qual-jdk6,!wire-api,!agent/benchmarks,!agent/ui-sandbox,!agent/dist \
+               mvn clean compile -pl !build/checker-jdk6,!wire-api,!agent/benchmarks,!agent/ui-sandbox,!agent/dist \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
-                                 -Dchecker.stubs.dir=$PWD/misc/checker-stubs \
+                                 -Dchecker.stubs.dir=$PWD/build/checker-stubs \
                                  -Dglowroot.ui.skip \
                                  -DargLine="$surefire_jvm_args" \
                                  -B \

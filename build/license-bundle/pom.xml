@@ -10,11 +10,11 @@
     <relativePath>../..</relativePath>
   </parent>
 
-  <groupId>org.glowroot.misc</groupId>
-  <artifactId>glowroot-license-resource-bundle</artifactId>
+  <groupId>org.glowroot.build</groupId>
+  <artifactId>glowroot-build-license-bundle</artifactId>
 
-  <name>Glowroot License Resource Bundle</name>
-  <description>Glowroot License Resource Bundle</description>
+  <name>Glowroot Build License Bundle</name>
+  <description>Glowroot Build License Bundle</description>
 
   <build>
     <plugins>
