@@ -116,8 +116,16 @@ class LayoutService {
                 showNavbarConfig = checkNotNull(permissions.config()).view();
             }
         } else if (!fat) {
+            // "*" is to check permissions for "all agents"
+            Permissions permissions = getPermissions(authentication, "*");
+            hasSomeAccess =
+                    permissions.hasSomeAccess() || authentication.isAdminPermitted("admin:view");
+            showNavbarTransaction = permissions.transaction().hasSomeAccess();
+            showNavbarError = permissions.error().hasSomeAccess();
+            showNavbarJvm = permissions.jvm().hasSomeAccess();
+            showNavbarConfig = permissions.config().view();
             for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
-                Permissions permissions = getPermissions(authentication, agentRollup.name());
+                permissions = getPermissions(authentication, agentRollup.name());
                 if (!permissions.hasSomeAccess()) {
                     continue;
                 }
@@ -155,8 +163,6 @@ class LayoutService {
                 builder.defaultDisplayedPercentiles(defaultDisplayedPercentiles);
                 agentRollups.put(agentRollup.name(), builder.build());
             }
-            hasSomeAccess = hasSomeAccess || authentication.isAdminPermitted("admin:view");
-
         }
         if (hasSomeAccess) {
             List<Long> rollupExpirationMillis = Lists.newArrayList();
