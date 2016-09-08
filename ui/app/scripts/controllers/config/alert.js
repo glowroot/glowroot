@@ -65,14 +65,17 @@ glowroot.controller('ConfigAlertCtrl', [
     };
 
     var halfLoaded;
+    function onHalfLoad() {
+      if (halfLoaded) {
+        $scope.loaded = true;
+      } else {
+        halfLoaded = true;
+      }
+    }
 
     $http.get('backend/jvm/all-gauges?agent-rollup=' + encodeURIComponent($scope.agentRollup))
         .success(function (data) {
-          if (halfLoaded) {
-            $scope.loaded = true;
-          } else {
-            halfLoaded = true;
-          }
+          onHalfLoad();
           $scope.gaugeNames = [];
           $scope.gauges = data;
         })
@@ -81,16 +84,12 @@ glowroot.controller('ConfigAlertCtrl', [
     if (version) {
       $http.get('backend/config/alerts?agent-id=' + encodeURIComponent($scope.agentId) + '&version=' + version)
           .success(function (data) {
-            if (halfLoaded) {
-              $scope.loaded = true;
-            } else {
-              halfLoaded = true;
-            }
+            onHalfLoad();
             onNewData(data);
           })
           .error(httpErrors.handler($scope));
     } else {
-      $scope.loaded = true;
+      onHalfLoad();
       onNewData({
         kind: 'transaction',
         transactionType: $scope.defaultTransactionType(),
