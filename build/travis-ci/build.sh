@@ -195,10 +195,8 @@ case "$1" in
                while true; do sleep 60; echo ...; done &
                mvn clean compile -pl !build/checker-jdk6,!wire-api,!agent/benchmarks,!agent/ui-sandbox,!agent/dist \
                                  -Pchecker \
-                                 -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/build/checker-stubs \
                                  -Dglowroot.ui.skip \
-                                 -DargLine="$surefire_jvm_args" \
                                  -B \
                                  | sed 's/\[ERROR\] .*[\/]\([^\/.]*\.java\):\[\([0-9]*\),\([0-9]*\)\]/[ERROR] (\1:\2) [column \3]/'
                # preserve exit status from mvn (needed because of pipe to sed)
