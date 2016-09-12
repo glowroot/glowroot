@@ -167,7 +167,8 @@ class ServerModule {
             configRepository.addConfigListener(new ConfigListener() {
                 @Override
                 public void onChange(String agentId) throws Exception {
-                    downstreamService.updateAgentConfigIfConnectedAndNeeded(agentId);
+                    // TODO report checker framework issue that occurs without checkNotNull
+                    checkNotNull(downstreamService).updateAgentConfigIfConnectedAndNeeded(agentId);
                 }
             });
             rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao,

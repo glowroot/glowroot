@@ -182,7 +182,7 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
     @RequiresNonNull("instrumentation")
     private int reweaveInternal() throws Exception {
         List<InstrumentationConfig> configs = configService.getInstrumentationConfigs();
-        adviceCache.updateAdvisors(configs, false);
+        adviceCache.updateAdvisors(configs);
         Set<String> classNames = Sets.newHashSet();
         for (InstrumentationConfig config : configs) {
             String className = config.className();

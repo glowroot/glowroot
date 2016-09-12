@@ -135,7 +135,8 @@ public class TransactionTypeDao implements TransactionTypeRepository {
             @Override
             public void run() {
                 try {
-                    future.getUninterruptibly();
+                    // TODO report checker framework issue that occurs without checkNotNull
+                    checkNotNull(future).getUninterruptibly();
                 } catch (Exception e) {
                     logger.debug(e.getMessage(), e);
                     // insert was unsuccessful so important to return rate limiter token

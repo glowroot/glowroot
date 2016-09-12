@@ -36,7 +36,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,7 +119,10 @@ public class AdviceCache {
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.instrumentation = instrumentation;
         this.baseDir = baseDir;
-        updateAdvisors(reweavableConfigs, true);
+        reweavableAdvisors =
+                createReweavableAdvisors(reweavableConfigs, instrumentation, baseDir, true);
+        reweavableConfigVersions = createReweavableConfigVersions(reweavableConfigs);
+        allAdvisors = ImmutableList.copyOf(Iterables.concat(pluginAdvisors, reweavableAdvisors));
     }
 
     public Supplier<List<Advice>> getAdvisorsSupplier() {
@@ -142,34 +144,9 @@ public class AdviceCache {
         return mixinTypes;
     }
 
-    @EnsuresNonNull({"reweavableAdvisors", "reweavableConfigVersions", "allAdvisors"})
-    public void updateAdvisors(/*>>>@UnknownInitialization(AdviceCache.class) AdviceCache this,*/
-            List<InstrumentationConfig> reweavableConfigs, boolean cleanTmpDir) throws Exception {
-        ImmutableMap<Advice, LazyDefinedClass> advisors =
-                AdviceGenerator.createAdvisors(reweavableConfigs, null, true);
-        if (instrumentation == null) {
-            // this is for tests that don't run with javaagent container
-            ClassLoader loader = AdviceCache.class.getClassLoader();
-            checkNotNull(loader);
-            ClassLoaders.defineClassesInClassLoader(advisors.values(), loader);
-        } else {
-            File generatedJarDir = new File(baseDir, "tmp");
-            if (cleanTmpDir) {
-                ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(generatedJarDir,
-                        "config-pointcuts");
-            }
-            if (!advisors.isEmpty()) {
-                String suffix = "";
-                int count = jarFileCounter.incrementAndGet();
-                if (count > 1) {
-                    suffix = "-" + count;
-                }
-                File jarFile = new File(generatedJarDir, "config-pointcuts" + suffix + ".jar");
-                ClassLoaders.defineClassesInBootstrapClassLoader(advisors.values(), instrumentation,
-                        jarFile);
-            }
-        }
-        reweavableAdvisors = advisors.keySet().asList();
+    public void updateAdvisors(List<InstrumentationConfig> reweavableConfigs) throws Exception {
+        reweavableAdvisors =
+                createReweavableAdvisors(reweavableConfigs, instrumentation, baseDir, false);
         reweavableConfigVersions = createReweavableConfigVersions(reweavableConfigs);
         allAdvisors = ImmutableList.copyOf(Iterables.concat(pluginAdvisors, reweavableAdvisors));
     }
@@ -216,6 +193,37 @@ public class AdviceCache {
             }
         }
         return mixinTypes;
+    }
+
+    private static ImmutableList<Advice> createReweavableAdvisors(
+            List<InstrumentationConfig> reweavableConfigs,
+            @Nullable Instrumentation instrumentation, File baseDir, boolean cleanTmpDir)
+            throws Exception {
+        ImmutableMap<Advice, LazyDefinedClass> advisors =
+                AdviceGenerator.createAdvisors(reweavableConfigs, null, true);
+        if (instrumentation == null) {
+            // this is for tests that don't run with javaagent container
+            ClassLoader loader = AdviceCache.class.getClassLoader();
+            checkNotNull(loader);
+            ClassLoaders.defineClassesInClassLoader(advisors.values(), loader);
+        } else {
+            File generatedJarDir = new File(baseDir, "tmp");
+            if (cleanTmpDir) {
+                ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(generatedJarDir,
+                        "config-pointcuts");
+            }
+            if (!advisors.isEmpty()) {
+                String suffix = "";
+                int count = jarFileCounter.incrementAndGet();
+                if (count > 1) {
+                    suffix = "-" + count;
+                }
+                File jarFile = new File(generatedJarDir, "config-pointcuts" + suffix + ".jar");
+                ClassLoaders.defineClassesInBootstrapClassLoader(advisors.values(), instrumentation,
+                        jarFile);
+            }
+        }
+        return advisors.keySet().asList();
     }
 
     private static ImmutableSet<String> createReweavableConfigVersions(
