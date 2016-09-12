@@ -299,7 +299,7 @@ class ClassAnalyzer {
                 return possibleTargetMethod;
             }
         }
-        logger.warn("could not find match for bridge method: {}", bridgeMethod);
+        logger.warn("could not find match for bridge method in {}: {}", className, bridgeMethod);
         return null;
     }
 
