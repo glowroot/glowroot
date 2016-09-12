@@ -131,7 +131,18 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
                 .setActive(active);
 
         // async root entry always has empty message and empty detail
-        builder.setMessage(message == null ? "" : message.getText() + getRowCountSuffix());
+        if (message == null) {
+            builder.setMessage("");
+        } else {
+            String rowCountSuffix = getRowCountSuffix();
+            if (rowCountSuffix.isEmpty()) {
+                // optimization to avoid creating new string when concatenating empty string
+                // since message text is often long sql
+                builder.setMessage(message.getText());
+            } else {
+                builder.setMessage(message.getText() + rowCountSuffix);
+            }
+        }
         if (message != null) {
             builder.addAllDetailEntry(DetailMapWriter.toProto(message.getDetail()));
         }
