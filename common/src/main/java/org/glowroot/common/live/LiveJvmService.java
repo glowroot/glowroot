@@ -62,4 +62,7 @@ public interface LiveJvmService {
 
     @SuppressWarnings("serial")
     public class UnavailableDueToRunningInJreException extends Exception {}
+
+    @SuppressWarnings("serial")
+    public class DirectoryDoesNotExistException extends Exception {}
 }

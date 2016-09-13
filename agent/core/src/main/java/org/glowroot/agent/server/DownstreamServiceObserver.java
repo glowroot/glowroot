@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveWeavingService;
@@ -349,6 +350,14 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
         try {
             availableDiskSpaceBytes = liveJvmService.getAvailableDiskSpace("",
                     request.getAvailableDiskSpaceRequest().getDirectory());
+        } catch (DirectoryDoesNotExistException e) {
+            logger.debug(e.getMessage(), e);
+            responseObserver.onNext(ClientResponse.newBuilder()
+                    .setRequestId(request.getRequestId())
+                    .setAvailableDiskSpaceResponse(AvailableDiskSpaceResponse.newBuilder()
+                            .setDirectoryDoesNotExist(true))
+                    .build());
+            return;
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);
@@ -367,6 +376,14 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
         try {
             heapDumpFileInfo =
                     liveJvmService.heapDump("", request.getHeapDumpRequest().getDirectory());
+        } catch (DirectoryDoesNotExistException e) {
+            logger.debug(e.getMessage(), e);
+            responseObserver.onNext(ClientResponse.newBuilder()
+                    .setRequestId(request.getRequestId())
+                    .setHeapDumpResponse(HeapDumpResponse.newBuilder()
+                            .setDirectoryDoesNotExist(true))
+                    .build());
+            return;
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);

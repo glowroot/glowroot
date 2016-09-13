@@ -150,13 +150,11 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public long getAvailableDiskSpace(String agentId, String directory) throws IOException {
+    public long getAvailableDiskSpace(String agentId, String directory)
+            throws DirectoryDoesNotExistException {
         File dir = new File(directory);
-        if (!dir.exists()) {
-            throw new IOException("Directory doesn't exist");
-        }
-        if (!dir.isDirectory()) {
-            throw new IOException("Path is not a directory");
+        if (!dir.exists() || !dir.isDirectory()) {
+            throw new DirectoryDoesNotExistException();
         }
         return dir.getFreeSpace();
     }
@@ -164,11 +162,8 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     @Override
     public HeapDumpFileInfo heapDump(String agentId, String directory) throws Exception {
         File dir = new File(directory);
-        if (!dir.exists()) {
-            throw new IOException("Directory doesn't exist");
-        }
-        if (!dir.isDirectory()) {
-            throw new IOException("Path is not a directory");
+        if (!dir.exists() || !dir.isDirectory()) {
+            throw new DirectoryDoesNotExistException();
         }
         String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
         File file = new File(dir, "heap-dump-" + timestamp + ".hprof");

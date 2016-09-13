@@ -123,6 +123,7 @@ message AvailableDiskSpaceRequest {
 
 message AvailableDiskSpaceResponse {
   int64 available_bytes = 1;
+  bool directory_does_not_exist = 2;
 }
 
 message HeapDumpRequest {
@@ -131,6 +132,7 @@ message HeapDumpRequest {
 
 message HeapDumpResponse {
   HeapDumpFileInfo heap_dump_file_info = 1;
+  bool directory_does_not_exist = 2;
 }
 
 message HeapHistogramRequest {

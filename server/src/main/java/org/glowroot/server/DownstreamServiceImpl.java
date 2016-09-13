@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
+import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.server.storage.AgentDao;
 import org.glowroot.server.storage.AgentDao.AgentConfigUpdate;
@@ -41,6 +42,7 @@ import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceImplBa
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AuxThreadProfileRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpaceRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpaceResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CapabilitiesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse;
@@ -53,6 +55,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMetaRequest
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeaderRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogram;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogramRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogramResponse;
@@ -397,7 +400,12 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
                     .setAvailableDiskSpaceRequest(AvailableDiskSpaceRequest.newBuilder()
                             .setDirectory(directory))
                     .build());
-            return response.getAvailableDiskSpaceResponse().getAvailableBytes();
+            AvailableDiskSpaceResponse availableDiskSpaceResponse =
+                    response.getAvailableDiskSpaceResponse();
+            if (availableDiskSpaceResponse.getDirectoryDoesNotExist()) {
+                throw new DirectoryDoesNotExistException();
+            }
+            return availableDiskSpaceResponse.getAvailableBytes();
         }
 
         private HeapDumpFileInfo heapDump(String directory) throws Exception {
@@ -406,7 +414,11 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
                     .setHeapDumpRequest(HeapDumpRequest.newBuilder()
                             .setDirectory(directory))
                     .build());
-            return response.getHeapDumpResponse().getHeapDumpFileInfo();
+            HeapDumpResponse heapDumpResponse = response.getHeapDumpResponse();
+            if (heapDumpResponse.getDirectoryDoesNotExist()) {
+                throw new DirectoryDoesNotExistException();
+            }
+            return heapDumpResponse.getHeapDumpFileInfo();
         }
 
         private HeapHistogram heapHistogram() throws Exception {

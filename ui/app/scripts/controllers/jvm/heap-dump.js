@@ -41,6 +41,8 @@ glowroot.controller('JvmHeapDumpCtrl', [
           .success(function (data) {
             if (data.error) {
               deferred.reject(data.error);
+            } else if (data.directoryDoesNotExist) {
+              deferred.reject('Directory does not exist');
             } else {
               $scope.availableDiskSpaceBytes = data;
               deferred.resolve('See disk space below');
@@ -59,6 +61,8 @@ glowroot.controller('JvmHeapDumpCtrl', [
           .success(function (data) {
             if (data.error) {
               deferred.reject(data.error);
+            } else if (data.directoryDoesNotExist) {
+              deferred.reject('Directory does not exist');
             } else {
               deferred.resolve('Heap dump created');
               $scope.heapDumpResponse = data;

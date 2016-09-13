@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
+import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.repo.AgentRepository;
 import org.glowroot.common.util.NotAvailableAware;
@@ -217,14 +218,26 @@ class JvmJsonService {
     String getAvailableDiskSpace(@BindAgentId String agentId, @BindRequest HeapDumpRequest request)
             throws Exception {
         checkNotNull(liveJvmService);
-        return Long.toString(liveJvmService.getAvailableDiskSpace(agentId, request.directory()));
+        try {
+            return Long
+                    .toString(liveJvmService.getAvailableDiskSpace(agentId, request.directory()));
+        } catch (DirectoryDoesNotExistException e) {
+            logger.debug(e.getMessage(), e);
+            return "{\"directoryDoesNotExist\": true}";
+        }
     }
 
     @POST(path = "/backend/jvm/heap-dump", permission = "agent:jvm:heapDump")
     String heapDump(@BindAgentId String agentId, @BindRequest HeapDumpRequest request)
             throws Exception {
         checkNotNull(liveJvmService);
-        HeapDumpFileInfo heapDumpFileInfo = liveJvmService.heapDump(agentId, request.directory());
+        HeapDumpFileInfo heapDumpFileInfo;
+        try {
+            heapDumpFileInfo = liveJvmService.heapDump(agentId, request.directory());
+        } catch (DirectoryDoesNotExistException e) {
+            logger.debug(e.getMessage(), e);
+            return "{\"directoryDoesNotExist\": true}";
+        }
         StringWriter sw = new StringWriter();
         JsonGenerator jg = mapper.getFactory().createGenerator(sw);
         jg.writeStartObject();
