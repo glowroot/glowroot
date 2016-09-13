@@ -726,7 +726,7 @@ public class Transaction {
     }
 
     boolean isEntryLimitExceeded() {
-        return entryLimitCounter++ > maxTraceEntriesPerTransaction;
+        return entryLimitCounter > maxTraceEntriesPerTransaction;
     }
 
     void captureStackTrace(boolean auxiliary, ThreadInfo threadInfo, int limit) {
