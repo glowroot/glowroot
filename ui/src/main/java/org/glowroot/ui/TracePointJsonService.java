@@ -48,7 +48,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 @JsonService
 class TracePointJsonService {
 
-    private static final double NANOSECONDS_PER_MILLISECOND = 1000000.0;
+    private static final int NANOSECONDS_PER_MILLISECOND = 1000000;
 
     private static final JsonFactory jsonFactory = new JsonFactory();
 

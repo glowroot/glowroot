@@ -37,14 +37,16 @@ class AuxThreadContextImpl implements AuxThreadContext {
     private static final Logger logger = LoggerFactory.getLogger(AuxThreadContextImpl.class);
 
     private final Transaction transaction;
-    private final TraceEntryImpl parentTraceEntry;
-    private final TraceEntryImpl parentThreadContextPriorEntry;
+    // null when parent is a limit exceeded auxiliary thread context, to prevent retaining parent
+    private final @Nullable TraceEntryImpl parentTraceEntry;
+    // null when parent is a limit exceeded auxiliary thread context, to prevent retaining parent
+    private final @Nullable TraceEntryImpl parentThreadContextPriorEntry;
     private final @Nullable MessageSupplier servletMessageSupplier;
     private final TransactionRegistry transactionRegistry;
     private final TransactionServiceImpl transactionService;
 
-    AuxThreadContextImpl(Transaction transaction, TraceEntryImpl parentTraceEntry,
-            TraceEntryImpl parentThreadContextPriorEntry,
+    AuxThreadContextImpl(Transaction transaction, @Nullable TraceEntryImpl parentTraceEntry,
+            @Nullable TraceEntryImpl parentThreadContextPriorEntry,
             @Nullable MessageSupplier servletMessageSupplier,
             TransactionRegistry transactionRegistry, TransactionServiceImpl transactionService) {
         this.transaction = transaction;
@@ -53,7 +55,7 @@ class AuxThreadContextImpl implements AuxThreadContext {
         this.servletMessageSupplier = servletMessageSupplier;
         this.transactionRegistry = transactionRegistry;
         this.transactionService = transactionService;
-        if (logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled() && parentTraceEntry != null) {
             logger.debug("new AUX thread context: {}, parent thread context: {}, thread name: {}",
                     castInitialized(this).hashCode(),
                     parentTraceEntry.getThreadContext().hashCode(),
@@ -87,7 +89,7 @@ class AuxThreadContextImpl implements AuxThreadContext {
             // transaction is already complete or auxiliary thread context limit exceeded
             return NopTraceEntry.INSTANCE;
         }
-        if (logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled() && parentTraceEntry != null) {
             logger.debug("start AUX thread context: {}, thread context: {},"
                     + " parent thread context: {}, thread name: {}", hashCode(), context.hashCode(),
                     parentTraceEntry.getThreadContext().hashCode(),

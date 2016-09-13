@@ -29,7 +29,6 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -38,7 +37,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class LotsOfNestedAuxThreadContextsIT {
+public class LotsOfNonNestedAuxThreadContextsIT {
 
     private static Container container;
 
@@ -47,10 +46,8 @@ public class LotsOfNestedAuxThreadContextsIT {
         // tests only work with javaagent container because they need to weave bootstrap classes
         // that implement Executor and ExecutorService
         //
-        // restrict stack size to test for StackOverflowError
-        // restrict heap size to test for OOM when lots of nested auxiliary thread contexts
-        container =
-                JavaagentContainer.createWithExtraJvmArgs(ImmutableList.of("-Xss256k", "-Xmx32m"));
+        // restrict heap size to test for OOM when lots of auxiliary thread contexts
+        container = JavaagentContainer.createWithExtraJvmArgs(ImmutableList.of("-Xmx32m"));
     }
 
     @AfterClass
@@ -69,23 +66,13 @@ public class LotsOfNestedAuxThreadContextsIT {
         // when
         Trace trace = container.execute(DoSubmitCallable.class);
         // then
+        assertThat(trace.getEntryCount()).isZero();
         List<Trace.Timer> auxThreadRootTimers = trace.getHeader().getAuxThreadRootTimerList();
         assertThat(auxThreadRootTimers).hasSize(1);
         Trace.Timer auxThreadRootTimer = auxThreadRootTimers.get(0);
         assertThat(auxThreadRootTimer.getCount()).isEqualTo(100000);
         assertThat(auxThreadRootTimer.getActive()).isFalse();
-        assertThat(auxThreadRootTimer.getChildTimerCount()).isEqualTo(1);
-        assertThat(auxThreadRootTimer.getChildTimer(0).getName())
-                .isEqualTo("mock trace entry marker");
-
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        Trace.Entry entry1 = entries.get(0);
-        assertThat(entry1.getDepth()).isEqualTo(0);
-        assertThat(entry1.getMessage()).isEqualTo("auxiliary thread");
-        Trace.Entry entry2 = entries.get(1);
-        assertThat(entry2.getDepth()).isEqualTo(1);
-        assertThat(entry2.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        assertThat(auxThreadRootTimer.getChildTimerCount()).isZero();
     }
 
     public static class DoSubmitCallable implements AppUnderTest, TransactionMarker {
@@ -93,7 +80,7 @@ public class LotsOfNestedAuxThreadContextsIT {
         private final ThreadPoolExecutor executor = new ThreadPoolExecutor(100, 100, 0,
                 MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 
-        private final CountDownLatch latch = new CountDownLatch(1);
+        private final CountDownLatch latch = new CountDownLatch(100000);
 
         @Override
         public void executeApp() throws Exception {
@@ -102,41 +89,23 @@ public class LotsOfNestedAuxThreadContextsIT {
 
         @Override
         public void transactionMarker() throws Exception {
-            passOnToAnotherThread(0);
+            for (int i = 0; i < 100000; i++) {
+                while (executor.getQueue().size() > 1000) {
+                    // keep executor backlog from getting too full and adding memory pressure
+                    // (since restricting heap size to test for leaking aux thread contexts)
+                    Thread.sleep(1);
+                }
+                executor.submit(new Callable<Void>() {
+                    @Override
+                    public Void call() throws Exception {
+                        latch.countDown();
+                        return null;
+                    }
+                });
+            }
             latch.await();
             executor.shutdown();
             executor.awaitTermination(10, SECONDS);
-        }
-
-        private void passOnToAnotherThread(final int depth) throws Exception {
-            if (depth == 100000) {
-                new CreateTraceEntry().traceEntryMarker();
-                latch.countDown();
-                return;
-            }
-            while (executor.getQueue().size() > 1000) {
-                // keep executor backlog from getting too full and adding memory pressure
-                // (since restricting heap size to test for leaking aux thread contexts)
-                Thread.sleep(1);
-            }
-            executor.submit(new Callable<Void>() {
-                @Override
-                public Void call() throws Exception {
-                    passOnToAnotherThread(depth + 1);
-                    return null;
-                }
-            });
-        }
-    }
-
-    private static class CreateTraceEntry implements TraceEntryMarker {
-
-        @Override
-        public void traceEntryMarker() {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-            }
         }
     }
 }

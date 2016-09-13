@@ -20,10 +20,9 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 
-import org.glowroot.agent.model.CommonTimerImpl.TimerImplSnapshot;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
-public class MutableTraceTimer {
+public class MutableTraceTimer implements CommonTimerImpl {
 
     private final String name;
     private final boolean extended;
@@ -45,12 +44,75 @@ public class MutableTraceTimer {
         this.childTimers = Lists.newArrayList(nestedTimers);
     }
 
+    @Override
     public String getName() {
         return name;
     }
 
+    @Override
     public boolean isExtended() {
         return extended;
+    }
+
+    @Override
+    public long getTotalNanos() {
+        return totalNanos;
+    }
+
+    @Override
+    public long getCount() {
+        return count;
+    }
+
+    @Override
+    public void mergeChildTimersInto(List<MutableTraceTimer> childTimers) {
+        for (MutableTraceTimer curr : this.childTimers) {
+            String currName = curr.getName();
+            boolean extended = curr.isExtended();
+            MutableTraceTimer matchingChildTimer = null;
+            for (MutableTraceTimer childTimer : childTimers) {
+                if (currName.equals(childTimer.getName()) && extended == childTimer.isExtended()) {
+                    matchingChildTimer = childTimer;
+                    break;
+                }
+            }
+            if (matchingChildTimer == null) {
+                matchingChildTimer = new MutableTraceTimer(curr.getName(),
+                        curr.isExtended(), 0, 0, new ArrayList<MutableTraceTimer>());
+                childTimers.add(matchingChildTimer);
+            }
+            matchingChildTimer.merge(curr);
+        }
+    }
+
+    @Override
+    public void mergeChildTimersInto2(List<MutableAggregateTimer> childTimers) {
+        for (MutableTraceTimer curr : this.childTimers) {
+            String currName = curr.getName();
+            boolean extended = curr.isExtended();
+            MutableAggregateTimer matchingChildTimer = null;
+            for (MutableAggregateTimer childTimer : childTimers) {
+                if (currName.equals(childTimer.getName()) && extended == childTimer.isExtended()) {
+                    matchingChildTimer = childTimer;
+                    break;
+                }
+            }
+            if (matchingChildTimer == null) {
+                matchingChildTimer = new MutableAggregateTimer(curr.getName(), curr.isExtended(), 0,
+                        0, new ArrayList<MutableAggregateTimer>());
+                childTimers.add(matchingChildTimer);
+            }
+            matchingChildTimer.merge(curr);
+        }
+    }
+
+    @Override
+    public TimerImplSnapshot getSnapshot() {
+        return ImmutableTimerImplSnapshot.builder()
+                .totalNanos(totalNanos)
+                .count(count)
+                .active(active)
+                .build();
     }
 
     public void merge(CommonTimerImpl timer) {

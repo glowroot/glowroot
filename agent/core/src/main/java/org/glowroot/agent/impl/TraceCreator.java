@@ -22,21 +22,12 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.Lists;
-
-import org.glowroot.agent.impl.Transaction.RootTimerCollector;
-import org.glowroot.agent.impl.Transaction.ThreadStatsCollector;
-import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.agent.model.DetailMapWriter;
 import org.glowroot.agent.model.ErrorMessage;
-import org.glowroot.agent.model.MutableTraceTimer;
-import org.glowroot.agent.model.ThreadStats;
-import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile.ProfileNode;
 import org.glowroot.wire.api.model.Proto;
-import org.glowroot.wire.api.model.Proto.OptionalInt64;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 @Styles.Private
@@ -174,90 +165,5 @@ public class TraceCreator {
             }
         }
         return profileSampleCount;
-    }
-
-    private static class RootTimerCollectorImpl implements RootTimerCollector {
-
-        List<MutableTraceTimer> rootMutableTimers = Lists.newArrayList();
-
-        @Override
-        public void mergeRootTimer(CommonTimerImpl rootTimer) {
-            mergeRootTimer(rootTimer, rootMutableTimers);
-        }
-
-        private List<Trace.Timer> toProto() {
-            List<Trace.Timer> rootTimers = Lists.newArrayList();
-            for (MutableTraceTimer rootMutableTimer : rootMutableTimers) {
-                rootTimers.add(rootMutableTimer.toProto());
-            }
-            return rootTimers;
-        }
-
-        private static void mergeRootTimer(CommonTimerImpl toBeMergedRootTimer,
-                List<MutableTraceTimer> rootTimers) {
-            for (MutableTraceTimer rootTimer : rootTimers) {
-                if (toBeMergedRootTimer.getName().equals(rootTimer.getName())) {
-                    rootTimer.merge(toBeMergedRootTimer);
-                    return;
-                }
-            }
-            MutableTraceTimer rootTimer = MutableTraceTimer.createRootTimer(
-                    toBeMergedRootTimer.getName(), toBeMergedRootTimer.isExtended());
-            rootTimer.merge(toBeMergedRootTimer);
-            rootTimers.add(rootTimer);
-        }
-    }
-
-    private static class ThreadStatsCollectorImpl implements ThreadStatsCollector {
-
-        private long totalCpuNanos;
-        private long totalBlockedNanos;
-        private long totalWaitedNanos;
-        private long totalAllocatedBytes;
-
-        private boolean empty = true;
-
-        @Override
-        public void mergeThreadStats(ThreadStats threadStats) {
-            totalCpuNanos = NotAvailableAware.add(totalCpuNanos, threadStats.getTotalCpuNanos());
-            totalBlockedNanos = NotAvailableAware.addMillisToNanos(totalBlockedNanos,
-                    threadStats.getTotalBlockedMillis());
-            totalWaitedNanos = NotAvailableAware.addMillisToNanos(totalWaitedNanos,
-                    threadStats.getTotalWaitedMillis());
-            totalAllocatedBytes = NotAvailableAware.add(totalAllocatedBytes,
-                    threadStats.getTotalAllocatedBytes());
-            empty = false;
-        }
-
-        private boolean isNA() {
-            if (empty) {
-                return true;
-            }
-            return NotAvailableAware.isNA(totalCpuNanos)
-                    && NotAvailableAware.isNA(totalBlockedNanos)
-                    && NotAvailableAware.isNA(totalWaitedNanos)
-                    && NotAvailableAware.isNA(totalAllocatedBytes);
-        }
-
-        public Trace.ThreadStats toProto() {
-            Trace.ThreadStats.Builder builder = Trace.ThreadStats.newBuilder();
-            if (!NotAvailableAware.isNA(totalCpuNanos)) {
-                builder.setTotalCpuNanos(toProto(totalCpuNanos));
-            }
-            if (!NotAvailableAware.isNA(totalBlockedNanos)) {
-                builder.setTotalBlockedNanos(toProto(totalBlockedNanos));
-            }
-            if (!NotAvailableAware.isNA(totalWaitedNanos)) {
-                builder.setTotalWaitedNanos(toProto(totalWaitedNanos));
-            }
-            if (!NotAvailableAware.isNA(totalAllocatedBytes)) {
-                builder.setTotalAllocatedBytes(toProto(totalAllocatedBytes));
-            }
-            return builder.build();
-        }
-
-        private static OptionalInt64 toProto(long value) {
-            return OptionalInt64.newBuilder().setValue(value).build();
-        }
     }
 }

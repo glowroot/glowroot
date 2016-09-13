@@ -17,8 +17,6 @@ package org.glowroot.common.util;
 
 import javax.annotation.Nullable;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 public class NotAvailableAware {
 
     public static final int NA = -1;
@@ -37,20 +35,6 @@ public class NotAvailableAware {
             return NA;
         }
         return x + y;
-    }
-
-    public static double addMillisToNanos(double x, long y) {
-        if (isNA(x) || isNA(y)) {
-            return NA;
-        }
-        return x + MILLISECONDS.toNanos(y);
-    }
-
-    public static long addMillisToNanos(long x, long y) {
-        if (isNA(x) || isNA(y)) {
-            return NA;
-        }
-        return x + MILLISECONDS.toNanos(y);
     }
 
     public static boolean isNA(double value) {

@@ -105,7 +105,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     private final long threadId;
 
-    private final boolean auxiliary;
+    private final boolean limitExceededAuxThreadContext;
 
     private final Ticker ticker;
 
@@ -113,13 +113,16 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     private @Nullable MessageSupplier servletMessageSupplier;
 
+    private volatile boolean mayHaveChildAuxThreadContext;
+
     // this is not used much, so overhead of Long seems good tradeoff for avoiding extra field
     private volatile @MonotonicNonNull Long detachedTime;
 
     ThreadContextImpl(Transaction transaction, @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry, MessageSupplier messageSupplier,
             TimerName rootTimerName, long startTick, boolean captureThreadStats,
-            @Nullable ThreadAllocatedBytes threadAllocatedBytes, boolean auxiliary, Ticker ticker,
+            @Nullable ThreadAllocatedBytes threadAllocatedBytes,
+            boolean limitExceededAuxThreadContext, Ticker ticker,
             Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder,
             @Nullable MessageSupplier servletMessageSupplier) {
         this.transaction = transaction;
@@ -132,7 +135,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         threadId = Thread.currentThread().getId();
         threadStatsComponent =
                 captureThreadStats ? new ThreadStatsComponent(threadAllocatedBytes) : null;
-        this.auxiliary = auxiliary;
+        this.limitExceededAuxThreadContext = limitExceededAuxThreadContext;
         this.ticker = ticker;
         this.threadContextHolder = threadContextHolder;
         this.servletMessageSupplier = servletMessageSupplier;
@@ -145,6 +148,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @Nullable
     TraceEntryImpl getParentThreadContextPriorEntry() {
         return parentThreadContextPriorEntry;
+    }
+
+    TraceEntryImpl getTailEntry() {
+        return traceEntryComponent.getTailEntry();
     }
 
     TraceEntryImpl getRootEntry() {
@@ -202,6 +209,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @UsedByGeneratedBytecode
     public void setCurrentNestingGroupId(int nestingGroupId) {
         this.currentNestingGroupId = nestingGroupId;
+    }
+
+    boolean isCompleteAndEmptyExceptForTimersAndThreadStats() {
+        return isCompleted() && !mayHaveChildAuxThreadContext && traceEntryComponent.isEmpty()
+                && headQueryData == null && headServiceCallData == null;
     }
 
     void mergeQueriesInto(QueryCollector queries) {
@@ -320,16 +332,24 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     void captureStackTrace(ThreadInfo threadInfo, int limit) {
-        transaction.captureStackTrace(auxiliary, threadInfo, limit);
+        transaction.captureStackTrace(isAuxiliary(), threadInfo, limit);
         // memory barrier read ensures timely visibility of detach()
         transaction.memoryBarrierRead();
     }
 
     @Override
     public AuxThreadContext createAuxThreadContext() {
-        return new AuxThreadContextImpl(transaction, traceEntryComponent.getActiveEntry(),
-                traceEntryComponent.getTailEntry(), servletMessageSupplier,
-                transaction.getTransactionRegistry(), transaction.getTransactionService());
+        if (limitExceededAuxThreadContext) {
+            // no auxiliary thread context hierarchy after limit exceeded in order to limit the
+            // retention of auxiliary thread contexts
+            return new AuxThreadContextImpl(transaction, null, null, servletMessageSupplier,
+                    transaction.getTransactionRegistry(), transaction.getTransactionService());
+        } else {
+            mayHaveChildAuxThreadContext = true;
+            return new AuxThreadContextImpl(transaction, traceEntryComponent.getActiveEntry(),
+                    traceEntryComponent.getTailEntry(), servletMessageSupplier,
+                    transaction.getTransactionRegistry(), transaction.getTransactionService());
+        }
     }
 
     // typically pop() methods don't require the objects to pop, but for safety, the entry to pop is
@@ -341,7 +361,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
         // memory barrier read ensures timely visibility of detach()
         transaction.memoryBarrierReadWrite();
         if (traceEntryComponent.isCompleted()) {
-            if (!auxiliary || completeAsyncTransaction) {
+            if (limitExceededAuxThreadContext) {
+                // this is a limit exceeded auxiliary thread context
+                transaction.mergeLimitExceededAuxThreadContext(this);
+            }
+            if (!isAuxiliary() || completeAsyncTransaction) {
                 transaction.end(endTick, completeAsyncTransaction);
             }
             if (threadStatsComponent != null) {
@@ -749,6 +773,14 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @Override
     public void setServletMessageSupplier(@Nullable MessageSupplier messageSupplier) {
         this.servletMessageSupplier = messageSupplier;
+    }
+
+    boolean hasTraceEntries() {
+        return !traceEntryComponent.isEmpty();
+    }
+
+    private boolean isAuxiliary() {
+        return parentTraceEntry != null;
     }
 
     private void addErrorEntryInternal(@Nullable String message, @Nullable Throwable t) {

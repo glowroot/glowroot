@@ -18,11 +18,13 @@ package org.glowroot.agent.impl;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
@@ -40,9 +42,11 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
 import com.google.common.collect.TreeMultimap;
 import com.google.common.io.BaseEncoding;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,6 +93,10 @@ public class Transaction {
 
     // this is just to limit memory (and also to limit display size of trace)
     private static final long ATTRIBUTE_VALUES_PER_KEY_LIMIT = 1000;
+
+    // this is only to limit memory
+    private static final int TRANSACTION_AUX_THREAD_CONTEXT_LIMIT =
+            Integer.getInteger("glowroot.transaction.aux.thread.context.limit", 10000);
 
     private static final Random random = new Random();
 
@@ -165,6 +173,8 @@ public class Transaction {
 
     @GuardedBy("mainThreadContext")
     private @MonotonicNonNull List<ThreadContextImpl> auxThreadContexts;
+    @GuardedBy("mainThreadContext")
+    private @MonotonicNonNull Set<ThreadContextImpl> unmergedLimitExceededAuxThreadContexts;
 
     // async root timers are the root timers which do not have corresponding thread context
     // (those corresponding to async trace entries)
@@ -182,6 +192,13 @@ public class Transaction {
     private final UserProfileScheduler userProfileScheduler;
 
     private @Nullable TransactionEntry transactionEntry;
+
+    @GuardedBy("mainThreadContext")
+    private @MonotonicNonNull RootTimerCollectorImpl alreadyMergedAuxThreadTimers;
+    @GuardedBy("mainThreadContext")
+    private @MonotonicNonNull ThreadStatsCollectorImpl alreadyMergedAuxThreadStats;
+    @GuardedBy("mainThreadContext")
+    private boolean stopMergingAuxThreadContexts;
 
     Transaction(long startTime, long startTick, String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName, boolean captureThreadStats,
@@ -303,8 +320,19 @@ public class Transaction {
 
     void mergeAuxThreadTimersInto(RootTimerCollector rootTimers) {
         synchronized (mainThreadContext) {
-            if (auxThreadContexts != null) {
-                for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
+            if (auxThreadContexts == null) {
+                return;
+            }
+            for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
+                rootTimers.mergeRootTimer(auxThreadContext.getRootTimer());
+            }
+            if (alreadyMergedAuxThreadTimers != null) {
+                for (CommonTimerImpl rootTimer : alreadyMergedAuxThreadTimers.getRootTimers()) {
+                    rootTimers.mergeRootTimer(rootTimer);
+                }
+            }
+            if (unmergedLimitExceededAuxThreadContexts != null) {
+                for (ThreadContextImpl auxThreadContext : unmergedLimitExceededAuxThreadContexts) {
                     rootTimers.mergeRootTimer(auxThreadContext.getRootTimer());
                 }
             }
@@ -349,8 +377,17 @@ public class Transaction {
 
     void mergeAuxThreadStatsInto(ThreadStatsCollector threadStats) {
         synchronized (mainThreadContext) {
-            if (auxThreadContexts != null) {
-                for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
+            if (auxThreadContexts == null) {
+                return;
+            }
+            for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
+                threadStats.mergeThreadStats(auxThreadContext.getThreadStats());
+            }
+            if (alreadyMergedAuxThreadStats != null) {
+                threadStats.mergeThreadStats(alreadyMergedAuxThreadStats.getMergedThreadStats());
+            }
+            if (unmergedLimitExceededAuxThreadContexts != null) {
+                for (ThreadContextImpl auxThreadContext : unmergedLimitExceededAuxThreadContexts) {
                     threadStats.mergeThreadStats(auxThreadContext.getThreadStats());
                 }
             }
@@ -591,43 +628,68 @@ public class Transaction {
     }
 
     @Nullable
-    ThreadContextImpl startAuxThreadContext(TraceEntryImpl parentTraceEntry,
-            TraceEntryImpl parentThreadContextPriorEntry, TimerName auxTimerName, long startTick,
-            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder,
+    ThreadContextImpl startAuxThreadContext(@Nullable TraceEntryImpl parentTraceEntry,
+            @Nullable TraceEntryImpl parentThreadContextPriorEntry, TimerName auxTimerName,
+            long startTick, Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder,
             @Nullable MessageSupplier servletMessageSupplier,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes) {
-        if (completed) {
-            // this is just an optimization, the important check is below after adding to
-            // auxThreadContexts
-            return null;
-        }
-        ThreadContextImpl auxThreadContext = new ThreadContextImpl(this, parentTraceEntry,
-                parentThreadContextPriorEntry, AuxThreadRootMessageSupplier.INSTANCE, auxTimerName,
-                startTick, mainThreadContext.getCaptureThreadStats(), threadAllocatedBytes, true,
-                ticker, threadContextHolder, servletMessageSupplier);
+        ThreadContextImpl auxThreadContext;
         synchronized (mainThreadContext) {
+            // check completed and add aux thread context inside synchronized block to avoid race
+            // condition with setting completed and detaching incomplete aux thread contexts, see
+            // synchronized block in end()
+            if (completed) {
+                return null;
+            }
             if (auxThreadContexts == null) {
                 auxThreadContexts = Lists.newArrayList();
             }
-            if (auxThreadContexts.size() >= maxTraceEntriesPerTransaction) {
-                // TODO try to aggregate and reduce auxiliary thread context count
-                return null;
+            // conditions below for parentTraceEntry and parentThreadContextPriorEntry are redundant
+            // since they will not be null until after allowAnotherAuxThreadContextWithHierarchy()
+            // starts returning false
+            if (allowAnotherAuxThreadContextWithHierarchy() && parentTraceEntry != null
+                    && parentThreadContextPriorEntry != null) {
+                auxThreadContext = new ThreadContextImpl(this, parentTraceEntry,
+                        parentThreadContextPriorEntry, AuxThreadRootMessageSupplier.INSTANCE,
+                        auxTimerName, startTick, mainThreadContext.getCaptureThreadStats(),
+                        threadAllocatedBytes, false, ticker, threadContextHolder,
+                        servletMessageSupplier);
+                auxThreadContexts.add(auxThreadContext);
+            } else {
+                auxThreadContext = new ThreadContextImpl(this, mainThreadContext.getRootEntry(),
+                        mainThreadContext.getTailEntry(), AuxThreadRootMessageSupplier.INSTANCE,
+                        auxTimerName, startTick, mainThreadContext.getCaptureThreadStats(),
+                        threadAllocatedBytes, true, ticker, threadContextHolder,
+                        servletMessageSupplier);
+                if (unmergedLimitExceededAuxThreadContexts == null) {
+                    unmergedLimitExceededAuxThreadContexts = Sets.newHashSet();
+                }
+                unmergedLimitExceededAuxThreadContexts.add(auxThreadContext);
             }
-            auxThreadContexts.add(auxThreadContext);
         }
-        if (completed) {
-            // need to check after adding to auxThreadContexts to avoid race condition
-            // where this thread context could be included in the transaction's trace entries
-            synchronized (mainThreadContext) {
-                auxThreadContexts.remove(auxThreadContext);
-            }
-            return null;
-        }
-        // see counterpart to this synchronization (and explanation) in detach()
+        // see counterpart to this synchronization (and explanation) in ThreadContextImpl.detach()
         synchronized (threadContextHolder) {
             threadContextHolder.set(auxThreadContext);
         }
         return auxThreadContext;
+    }
+
+    void mergeLimitExceededAuxThreadContext(ThreadContextImpl auxThreadContext) {
+        synchronized (mainThreadContext) {
+            checkNotNull(unmergedLimitExceededAuxThreadContexts).remove(auxThreadContext);
+            if (auxThreadContext.hasTraceEntries()) {
+                checkNotNull(auxThreadContexts).add(auxThreadContext);
+                return;
+            }
+            if (alreadyMergedAuxThreadTimers == null) {
+                alreadyMergedAuxThreadTimers = new RootTimerCollectorImpl();
+            }
+            if (alreadyMergedAuxThreadStats == null) {
+                alreadyMergedAuxThreadStats = new ThreadStatsCollectorImpl();
+            }
+            alreadyMergedAuxThreadTimers.mergeRootTimer(auxThreadContext.getRootTimer());
+            alreadyMergedAuxThreadStats.mergeThreadStats(auxThreadContext.getThreadStats());
+        }
     }
 
     AsyncTimerImpl startAsyncTimer(TimerName asyncTimerName, long startTick) {
@@ -701,9 +763,15 @@ public class Transaction {
         if (async && !completeAsyncTransaction) {
             return;
         }
-        completed = true;
+        // set endTick first before completed, to avoid race condition in getDurationNanos()
         this.endTick = endTick;
-        checkForIncompleteAuxThreadContexts();
+        synchronized (mainThreadContext) {
+            // set completed and detach incomplete aux thread contexts inside synchronized block
+            // to avoid race condition with adding new aux thread contexts, see synchronized block
+            // in startAuxThreadContext()
+            completed = true;
+            detachIncompleteAuxThreadContexts();
+        }
         if (immedateTraceStoreRunnable != null) {
             immedateTraceStoreRunnable.cancel();
         }
@@ -762,6 +830,45 @@ public class Transaction {
         memoryBarrierWrite();
     }
 
+    // must be called under synchronized (mainThreadContext)
+    @RequiresNonNull("auxThreadContexts")
+    private boolean allowAnotherAuxThreadContextWithHierarchy() {
+        if (auxThreadContexts.size() < TRANSACTION_AUX_THREAD_CONTEXT_LIMIT) {
+            return true;
+        }
+        if (stopMergingAuxThreadContexts) {
+            return false;
+        }
+        List<ThreadContextImpl> mergeableAuxThreadContexts = Lists.newArrayList();
+        List<ThreadContextImpl> nonMergeableAuxThreadContexts = Lists.newArrayList();
+        for (Iterator<ThreadContextImpl> i = auxThreadContexts.iterator(); i.hasNext();) {
+            ThreadContextImpl loopAuxThreadContext = i.next();
+            if (loopAuxThreadContext.isCompleteAndEmptyExceptForTimersAndThreadStats()) {
+                mergeableAuxThreadContexts.add(loopAuxThreadContext);
+            } else {
+                nonMergeableAuxThreadContexts.add(loopAuxThreadContext);
+            }
+        }
+        if (mergeableAuxThreadContexts.size() < 0.1 * auxThreadContexts.size()) {
+            // unable to merge more than 10%
+            stopMergingAuxThreadContexts = true;
+            return false;
+        }
+        if (alreadyMergedAuxThreadTimers == null) {
+            alreadyMergedAuxThreadTimers = new RootTimerCollectorImpl();
+        }
+        if (alreadyMergedAuxThreadStats == null) {
+            alreadyMergedAuxThreadStats = new ThreadStatsCollectorImpl();
+        }
+        for (ThreadContextImpl mergeableAuxThreadContext : mergeableAuxThreadContexts) {
+            alreadyMergedAuxThreadTimers.mergeRootTimer(mergeableAuxThreadContext.getRootTimer());
+            alreadyMergedAuxThreadStats
+                    .mergeThreadStats(mergeableAuxThreadContext.getThreadStats());
+        }
+        auxThreadContexts = nonMergeableAuxThreadContexts;
+        return true;
+    }
+
     private static void addProtobufChildEntries(TraceEntryImpl entry,
             ListMultimap<TraceEntryImpl, TraceEntryImpl> parentChildMap, long transactionStartTick,
             long captureTick, int depth, List<Trace.Entry> entries, boolean removeSingleAuxEntry) {
@@ -791,8 +898,8 @@ public class Transaction {
             ListMultimap<TraceEntryImpl, ThreadContextImpl> parentChildMap =
                     ArrayListMultimap.create();
             for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
-                // checkNotNull is safe b/c aux thread contexts have non-null parent trace context
-                // prior entries
+                // checkNotNull is safe b/c aux thread contexts have non-null parent thread context
+                // prior entries when they are not limit exceeded aux thread contexts
                 parentChildMap.put(
                         checkNotNull(auxThreadContext.getParentThreadContextPriorEntry()),
                         auxThreadContext);
@@ -801,33 +908,33 @@ public class Transaction {
         }
     }
 
-    private void checkForIncompleteAuxThreadContexts() {
-        synchronized (mainThreadContext) {
-            if (auxThreadContexts == null) {
-                return;
+    // must be called under synchronized (mainThreadContext)
+    private void detachIncompleteAuxThreadContexts() {
+        if (auxThreadContexts == null) {
+            return;
+        }
+        for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
+            if (auxThreadContext.isCompleted()) {
+                continue;
             }
-            for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
-                if (auxThreadContext.isCompleted()) {
-                    continue;
+            auxThreadContext.detach();
+            if (!logger.isDebugEnabled()) {
+                continue;
+            }
+            ThreadInfo threadInfo = ManagementFactory.getThreadMXBean()
+                    .getThreadInfo(auxThreadContext.getThreadId(), Integer.MAX_VALUE);
+            if (logger.isDebugEnabled() && !isCompleted()
+                    && threadInfo != null) {
+                // still not complete and got a valid stack trace from auxiliary thread
+                StringBuilder sb = new StringBuilder();
+                for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
+                    sb.append("    ");
+                    sb.append(stackTraceElement.toString());
+                    sb.append('\n');
                 }
-                auxThreadContext.detach();
-                if (!logger.isDebugEnabled()) {
-                    continue;
-                }
-                ThreadInfo threadInfo = ManagementFactory.getThreadMXBean()
-                        .getThreadInfo(auxThreadContext.getThreadId(), Integer.MAX_VALUE);
-                if (logger.isDebugEnabled() && !isCompleted()
-                        && threadInfo != null) {
-                    // still not complete and got a valid stack trace from auxiliary thread
-                    StringBuilder sb = new StringBuilder();
-                    for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
-                        sb.append("    ");
-                        sb.append(stackTraceElement.toString());
-                        sb.append('\n');
-                    }
-                    logger.debug("auxiliary thread extended beyond the transaction which started it"
-                            + "\n{}", sb);
-                }
+                logger.debug(
+                        "auxiliary thread extended beyond the transaction which started it\n{}",
+                        sb);
             }
         }
     }

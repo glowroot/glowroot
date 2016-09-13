@@ -28,7 +28,7 @@ public class ThreadStats {
     private final long totalWaitedMillis; // not converting to nanos here for micro-opt purposes
     private final long totalAllocatedBytes;
 
-    ThreadStats(long totalCpuNanos, long totalBlockedMillis, long totalWaitedMillis,
+    public ThreadStats(long totalCpuNanos, long totalBlockedMillis, long totalWaitedMillis,
             long totalAllocatedBytes) {
         this.totalCpuNanos = totalCpuNanos;
         this.totalBlockedMillis = totalBlockedMillis;

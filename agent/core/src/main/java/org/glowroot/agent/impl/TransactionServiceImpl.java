@@ -129,7 +129,8 @@ public class TransactionServiceImpl implements ConfigListener {
 
     @Nullable
     ThreadContextImpl startAuxThreadContextInternal(Transaction transaction,
-            TraceEntryImpl parentTraceEntry, TraceEntryImpl parentThreadContextPriorEntry,
+            @Nullable TraceEntryImpl parentTraceEntry,
+            @Nullable TraceEntryImpl parentThreadContextPriorEntry,
             @Nullable MessageSupplier servletMessageSupplier,
             Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
         long startTick = ticker.read();

@@ -58,6 +58,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Styles.Private
 class AggregateCollector {
 
+    private static final double NANOSECONDS_PER_MILLISECOND = 1000000.0;
+
     private final @Nullable String transactionName;
     private long totalDurationNanos;
     private long transactionCount;
@@ -285,7 +287,8 @@ class AggregateCollector {
         private static void mergeRootTimer(CommonTimerImpl toBeMergedRootTimer,
                 List<MutableAggregateTimer> rootTimers) {
             for (MutableAggregateTimer rootTimer : rootTimers) {
-                if (toBeMergedRootTimer.getName().equals(rootTimer.getName())) {
+                if (toBeMergedRootTimer.getName().equals(rootTimer.getName())
+                        && toBeMergedRootTimer.isExtended() == rootTimer.isExtended()) {
                     rootTimer.merge(toBeMergedRootTimer);
                     return;
                 }
@@ -300,8 +303,8 @@ class AggregateCollector {
     private static class ThreadStatsCollectorImpl implements ThreadStatsCollector {
 
         private double totalCpuNanos;
-        private double totalBlockedNanos;
-        private double totalWaitedNanos;
+        private double totalBlockedMillis;
+        private double totalWaitedMillis;
         private double totalAllocatedBytes;
 
         private boolean empty = true;
@@ -309,10 +312,10 @@ class AggregateCollector {
         @Override
         public void mergeThreadStats(ThreadStats threadStats) {
             totalCpuNanos = NotAvailableAware.add(totalCpuNanos, threadStats.getTotalCpuNanos());
-            totalBlockedNanos = NotAvailableAware.addMillisToNanos(totalBlockedNanos,
-                    threadStats.getTotalBlockedMillis());
-            totalWaitedNanos = NotAvailableAware.addMillisToNanos(totalWaitedNanos,
-                    threadStats.getTotalWaitedMillis());
+            totalBlockedMillis =
+                    NotAvailableAware.add(totalBlockedMillis, threadStats.getTotalBlockedMillis());
+            totalWaitedMillis =
+                    NotAvailableAware.add(totalWaitedMillis, threadStats.getTotalWaitedMillis());
             totalAllocatedBytes = NotAvailableAware.add(totalAllocatedBytes,
                     threadStats.getTotalAllocatedBytes());
             empty = false;
@@ -323,8 +326,8 @@ class AggregateCollector {
                 return true;
             }
             return NotAvailableAware.isNA(totalCpuNanos)
-                    && NotAvailableAware.isNA(totalBlockedNanos)
-                    && NotAvailableAware.isNA(totalWaitedNanos)
+                    && NotAvailableAware.isNA(totalBlockedMillis)
+                    && NotAvailableAware.isNA(totalWaitedMillis)
                     && NotAvailableAware.isNA(totalAllocatedBytes);
         }
 
@@ -333,11 +336,13 @@ class AggregateCollector {
             if (!NotAvailableAware.isNA(totalCpuNanos)) {
                 builder.setTotalCpuNanos(toProto(totalCpuNanos));
             }
-            if (!NotAvailableAware.isNA(totalBlockedNanos)) {
-                builder.setTotalBlockedNanos(toProto(totalBlockedNanos));
+            if (!NotAvailableAware.isNA(totalBlockedMillis)) {
+                builder.setTotalBlockedNanos(
+                        toProto(totalBlockedMillis * NANOSECONDS_PER_MILLISECOND));
             }
-            if (!NotAvailableAware.isNA(totalWaitedNanos)) {
-                builder.setTotalWaitedNanos(toProto(totalWaitedNanos));
+            if (!NotAvailableAware.isNA(totalWaitedMillis)) {
+                builder.setTotalWaitedNanos(
+                        toProto(totalWaitedMillis * NANOSECONDS_PER_MILLISECOND));
             }
             if (!NotAvailableAware.isNA(totalAllocatedBytes)) {
                 builder.setTotalAllocatedBytes(toProto(totalAllocatedBytes));
