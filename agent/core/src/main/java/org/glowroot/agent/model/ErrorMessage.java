@@ -33,12 +33,8 @@ import org.glowroot.wire.api.model.Proto;
 @Styles.AllParameters
 public abstract class ErrorMessage {
 
-    private static final int TRANSACTION_THROWABLE_FRAME_LIMIT;
-
-    static {
-        TRANSACTION_THROWABLE_FRAME_LIMIT =
-                Integer.getInteger("glowroot.transaction.throwable.frame.limit", 100000);
-    }
+    private static final int TRANSACTION_THROWABLE_FRAME_LIMIT =
+            Integer.getInteger("glowroot.transaction.throwable.frame.limit", 100000);
 
     public abstract String message();
     public abstract @Nullable Proto.Throwable throwable();
@@ -63,13 +59,12 @@ public abstract class ErrorMessage {
             msg = Strings.nullToEmpty(t.getClass().getName());
         }
         return ImmutableErrorMessage.of(msg,
-                buildThrowableInfo(t, null, transactionThrowableFrameCount));
+                buildThrowableInfo(t, null, transactionThrowableFrameCount, 0));
     }
 
-    // recursionDepth is important because protobuf limits to 100 total levels of nesting by default
     private static Proto.Throwable buildThrowableInfo(Throwable t,
             @Nullable List<StackTraceElement> causedStackTrace,
-            AtomicInteger transactionThrowableFrameCount) {
+            AtomicInteger transactionThrowableFrameCount, int recursionDepth) {
         int framesInCommonWithEnclosing = 0;
         ImmutableList<StackTraceElement> stackTrace = ImmutableList.of();
         if (transactionThrowableFrameCount.get() < TRANSACTION_THROWABLE_FRAME_LIMIT) {
@@ -105,16 +100,25 @@ public abstract class ErrorMessage {
         }
         builder.setFramesInCommonWithEnclosing(framesInCommonWithEnclosing);
         Throwable cause = t.getCause();
-        if (cause != null
-                && transactionThrowableFrameCount.get() > TRANSACTION_THROWABLE_FRAME_LIMIT) {
+        if (cause == null) {
+            return builder.build();
+        }
+        if (transactionThrowableFrameCount.get() > TRANSACTION_THROWABLE_FRAME_LIMIT) {
             builder.setCause(Proto.Throwable.newBuilder()
                     .setMessage("Throwable frame capture limit exceeded")
                     .build());
-        } else if (cause != null) {
+        } else if (recursionDepth == 80) {
+            // this was the 80th nested cause
+            // protobuf limits to 100 total levels of nesting by default
+            builder.setCause(Proto.Throwable.newBuilder()
+                    .setMessage(
+                            "The rest of the causal chain for this exception has been truncated")
+                    .build());
+        } else {
             // pass t's original stack trace to construct the nested cause
             // (not stackTraces, which now has common frames removed)
             builder.setCause(buildThrowableInfo(cause, Arrays.asList(t.getStackTrace()),
-                    transactionThrowableFrameCount));
+                    transactionThrowableFrameCount, recursionDepth + 1));
         }
         return builder.build();
     }
