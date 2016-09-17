@@ -139,7 +139,7 @@ public class OkHttpClientAspect {
             methodParameterTypes = {"com.squareup.okhttp.Callback"}, nestingGroup = "http-client",
             timerName = "http client request")
     public static class EnqueueAdvice {
-        private static final TimerName timerName = Agent.getTimerName(ExecuteAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(EnqueueAdvice.class);
         @OnBefore
         public static @Nullable AsyncTraceEntry onBefore(ThreadContext context,
                 @BindReceiver Object call, @BindParameter @Nullable CallbackMixin callback,

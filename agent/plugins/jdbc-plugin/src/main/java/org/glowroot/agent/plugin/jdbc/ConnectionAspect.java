@@ -174,7 +174,7 @@ public class ConnectionAspect {
             methodParameterTypes = {"boolean"}, nestingGroup = "jdbc",
             timerName = "jdbc set autocommit")
     public static class SetAutoCommitAdvice {
-        private static final TimerName timerName = Agent.getTimerName(CloseAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(SetAutoCommitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return captureTransactionLifecycleTraceEntries.value();

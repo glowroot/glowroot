@@ -26,7 +26,6 @@ import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.tests.plugin.LogErrorAspect.LogErrorAdvice;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -42,7 +41,7 @@ public class PauseAspect {
             methodParameterTypes = {}, timerName = "pause")
     public static class PauseAdvice {
 
-        private static final TimerName timerName = Agent.getTimerName(LogErrorAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(PauseAdvice.class);
 
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context) {

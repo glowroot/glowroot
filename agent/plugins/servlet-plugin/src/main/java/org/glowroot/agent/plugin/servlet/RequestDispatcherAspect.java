@@ -32,7 +32,6 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.servlet.CatalinaAppStartupAspect.StartAdvice;
 
 public class RequestDispatcherAspect {
 
@@ -79,7 +78,7 @@ public class RequestDispatcherAspect {
                     "javax.servlet.ServletResponse"},
             nestingGroup = "servlet-dispatch", timerName = "servlet dispatch")
     public static class DispatchAdvice {
-        private static final TimerName timerName = Agent.getTimerName(StartAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(DispatchAdvice.class);
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context,
                 @BindReceiver RequestDispatcherMixin requestDispatcher) {

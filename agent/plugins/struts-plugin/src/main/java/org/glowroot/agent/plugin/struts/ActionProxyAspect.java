@@ -76,7 +76,7 @@ public class ActionProxyAspect {
             nestingGroup = "struts", timerName = "struts action")
     public static class ActionAdvice {
 
-        private static final TimerName timerName = Agent.getTimerName(ActionProxyAdvice.class);
+        private static final TimerName timerName = Agent.getTimerName(ActionAdvice.class);
 
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context, @BindReceiver Object action) {
