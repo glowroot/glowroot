@@ -59,7 +59,6 @@ public class ScheduledExecutorServiceIT {
 
     @Test
     public void shouldCaptureScheduledRunnable() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoScheduledRunnable.class);
         // then
@@ -68,7 +67,6 @@ public class ScheduledExecutorServiceIT {
 
     @Test
     public void shouldCaptureScheduledCallable() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoScheduledCallable.class);
         // then

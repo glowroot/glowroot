@@ -23,7 +23,6 @@ public class TransactionTest {
 
     @Test
     public void traceIdShouldBeThirtyTwoCharactersAndLowerCase() {
-        // given
         // when
         String traceId = Transaction.buildTraceId(System.currentTimeMillis());
         // then

@@ -51,10 +51,10 @@ public class SetTraceStoreThresholdIT {
 
     @Test
     public void shouldNotReadTrace() throws Exception {
-        // given
         // when
         container.executeNoExpectedTrace(SetLargeTraceStoreThreshold.class);
         // then
+        // should not collect trace, verified above by method executeNoExpectedTrace()
     }
 
     @Test
@@ -67,6 +67,7 @@ public class SetTraceStoreThresholdIT {
         // when
         container.execute(SetLargeAndThenSmallTraceStoreThreshold.class);
         // then
+        // should collect trace, verified above by method execute()
     }
 
     @Test
@@ -79,6 +80,7 @@ public class SetTraceStoreThresholdIT {
         // when
         container.execute(SetSmallAndThenLargeTraceStoreThreshold.class);
         // then
+        // should collect trace, verified above by method execute()
     }
 
     public static class SetLargeTraceStoreThreshold implements AppUnderTest, TransactionMarker {

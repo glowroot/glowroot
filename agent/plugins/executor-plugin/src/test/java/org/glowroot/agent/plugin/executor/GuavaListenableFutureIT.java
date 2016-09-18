@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.executor;
 
-import java.util.List;
+import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
@@ -65,52 +65,78 @@ public class GuavaListenableFutureIT {
 
     @Test
     public void shouldCaptureListenerAddedBeforeComplete() throws Exception {
-        // given
         // when
         Trace trace = container.execute(AddListenerBeforeComplete.class);
+
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
-        assertThat(trace.getEntry(0).getDepth()).isEqualTo(0);
-        assertThat(trace.getEntry(0).getMessage()).isEqualTo("auxiliary thread");
-        assertThat(trace.getEntry(1).getDepth()).isEqualTo(1);
-        assertThat(trace.getEntry(1).getMessage())
-                .isEqualTo("trace entry marker / CreateTraceEntry");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureListenerAddedAfterComplete() throws Exception {
-        // given
         // when
         Trace trace = container.execute(AddListenerAfterComplete.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries.get(0).getMessage()).isEqualTo("auxiliary thread");
-        assertThat(entries.get(1).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureSameExecutorListenerAddedBeforeComplete() throws Exception {
-        // given
         // when
         Trace trace = container.execute(AddSameExecutorListenerBeforeComplete.class);
+
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
-        assertThat(trace.getEntry(0).getDepth()).isEqualTo(0);
-        assertThat(trace.getEntry(0).getMessage()).isEqualTo("auxiliary thread");
-        assertThat(trace.getEntry(1).getDepth()).isEqualTo(1);
-        assertThat(trace.getEntry(1).getMessage())
-                .isEqualTo("trace entry marker / CreateTraceEntry");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureSameExecutorListenerAddedAfterComplete() throws Exception {
-        // given
         // when
         Trace trace = container.execute(AddSameExecutorListenerAfterComplete.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries.get(0).getMessage()).isEqualTo("auxiliary thread");
-        assertThat(entries.get(1).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class AddListenerBeforeComplete implements AppUnderTest, TransactionMarker {

@@ -29,7 +29,6 @@ public class VersionTest {
 
     @Test
     public void testWithNullManifest() {
-        // given
         // when
         String version = Version.getVersion((Manifest) null);
         // then

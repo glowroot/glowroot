@@ -54,34 +54,31 @@ public class NettyIT {
 
     @Test
     public void shouldCaptureHttpGet() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteHttpGet.class);
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/abc");
         assertThat(trace.getHeader().getHeadline()).isEqualTo("GET /abc?xyz=123");
-        assertThat(trace.getEntryCount()).isZero();
+        assertThat(trace.getEntryList()).isEmpty();
     }
 
     @Test
     public void shouldCaptureHttpChunkedResponse() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteHttpChunked.class);
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/chunked");
-        assertThat(trace.getEntryCount()).isZero();
+        assertThat(trace.getEntryList()).isEmpty();
     }
 
     @Test
     public void shouldCaptureHttpGetWithException() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteHttpGetWithException.class);
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/exception");
-        assertThat(trace.getEntryCount()).isZero();
         assertThat(trace.getHeader().getPartial()).isFalse();
+        assertThat(trace.getEntryList()).isEmpty();
     }
 
     private static int getAvailablePort() throws Exception {

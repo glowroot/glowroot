@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.jaxrs;
 
-import java.util.List;
+import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -60,20 +60,27 @@ public class SuspendedResourceIT {
     public void shouldCaptureSuspendedResponse() throws Exception {
         // when
         Trace trace = container.execute(WithNormalServletMappingCallSuspended.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /suspended/*");
         assertThat(trace.getHeader().getAsync()).isTrue();
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(3);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.agent.plugin.jaxrs.SuspendedResourceIT$SuspendedResource.log()");
 
-        entry = entries.get(1);
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
         assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
 
-        entry = entries.get(2);
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(2);
         assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class WithNormalServletMappingCallSuspended extends InvokeJaxrsResourceInTomcat {

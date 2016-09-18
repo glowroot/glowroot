@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
-import java.util.List;
+import java.util.Iterator;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -50,20 +50,34 @@ public class RestTemplatePluginIT {
 
     @Test
     public void shouldCaptureHttpGet() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteHttpGet.class);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello1/");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureHttpPost() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteHttpPost.class);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello1/");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ExecuteHttpGet extends ExecuteHttpBase {

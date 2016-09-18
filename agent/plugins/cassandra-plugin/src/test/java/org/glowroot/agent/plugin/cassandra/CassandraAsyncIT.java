@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.cassandra;
 
-import java.util.List;
+import java.util.Iterator;
 
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.BoundStatement;
@@ -57,55 +57,95 @@ public class CassandraAsyncIT {
 
     @Test
     public void shouldAsyncExecuteStatement() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteAsyncStatement.class);
+
+        // then
         checkTimers(trace);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("cql execution: SELECT * FROM test.users => 10 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldAsyncExecuteStatementReturningNoRecords() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteAsyncStatementReturningNoRecords.class);
+
+        // then
         checkTimers(trace);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("cql execution: SELECT * FROM test.users where id = 12345 => 0 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldAsyncIterateUsingOneAndAll() throws Exception {
+        // when
         Trace trace = container.execute(AsyncIterateUsingOneAndAll.class);
+
+        // then
         checkTimers(trace);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("cql execution: SELECT * FROM test.users => 10 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldAsyncExecuteBoundStatement() throws Exception {
+        // when
         Trace trace = container.execute(AsyncExecuteBoundStatement.class);
+
+        // then
         checkTimers(trace);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage()).isEqualTo(
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo(
                 "cql execution: INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldAsyncExecuteBatchStatement() throws Exception {
+        // when
         Trace trace = container.execute(AsyncExecuteBatchStatement.class);
+
+        // then
         checkTimers(trace);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage()).isEqualTo("cql execution:"
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("cql execution:"
                 + " INSERT INTO test.users (id,  fname, lname) VALUES (100, 'f100', 'l100'),"
                 + " INSERT INTO test.users (id,  fname, lname) VALUES (101, 'f101', 'l101'),"
                 + " 10 x INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?),"
                 + " INSERT INTO test.users (id,  fname, lname) VALUES (300, 'f300', 'l300')");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     private static void checkTimers(Trace trace) {

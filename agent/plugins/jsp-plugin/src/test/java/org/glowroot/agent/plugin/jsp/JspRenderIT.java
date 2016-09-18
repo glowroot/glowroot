@@ -18,7 +18,7 @@ package org.glowroot.agent.plugin.jsp;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.List;
+import java.util.Iterator;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -67,26 +67,32 @@ public class JspRenderIT {
 
     @Test
     public void shouldCaptureJspRendering() throws Exception {
-        // given
         // when
         Trace trace = container.execute(RenderJsp.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jsp render: /WEB-INF/jsp/index.jsp");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureJspRenderingInTomcat() throws Exception {
-        // given
         // when
         Trace trace = container.execute(RenderJspInTomcat.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jsp render: /WEB-INF/jsp/index.jsp");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class RenderJsp implements AppUnderTest, TransactionMarker {

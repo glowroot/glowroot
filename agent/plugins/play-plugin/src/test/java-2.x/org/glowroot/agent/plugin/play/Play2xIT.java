@@ -19,6 +19,7 @@ import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -72,76 +73,104 @@ public class Play2xIT {
 
     @Test
     public void shouldCaptureIndexRoute() throws Exception {
-        // given
         // when
         Trace trace = container.execute(GetIndex.class);
+
         // then
         if (PLAY_2_0_X) {
             assertThat(trace.getHeader().getTransactionName()).isEqualTo("HomeController#index");
         } else {
             assertThat(trace.getHeader().getTransactionName()).isEqualTo("/");
         }
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
-        assertThat(entries.get(1).getMessage()).isEqualTo("play render: index");
         assertThat(trace.getHeader().hasError()).isFalse();
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("play render: index");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureIndexRouteUsingAltTransactionNaming() throws Exception {
         // given
         container.getConfigService().setPluginProperty("play", "useAltTransactionNaming", true);
+
         // when
         Trace trace = container.execute(GetIndex.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("HomeController#index");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
-        assertThat(entries.get(1).getMessage()).isEqualTo("play render: index");
         assertThat(trace.getHeader().hasError()).isFalse();
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("play render: index");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureAsyncRoute() throws Exception {
-        // given
         // when
         Trace trace = container.execute(GetAsync.class);
+
         // then
         if (PLAY_2_0_X) {
             assertThat(trace.getHeader().getTransactionName()).isEqualTo("AsyncController#message");
         } else {
             assertThat(trace.getHeader().getTransactionName()).isEqualTo("/message");
         }
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
         assertThat(trace.getHeader().hasError()).isFalse();
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureStreamRoute() throws Exception {
-        // given
         // when
         Trace trace = container.execute(GetStream.class);
+
         // then
         if (PLAY_2_0_X) {
             assertThat(trace.getHeader().getTransactionName()).isEqualTo("StreamController#stream");
         } else {
             assertThat(trace.getHeader().getTransactionName()).isEqualTo("/stream");
         }
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
         assertThat(trace.getHeader().hasError()).isFalse();
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureAssetRoute() throws Exception {
-        // given
         // when
         Trace trace = container.execute(GetAsset.class);
+
         // then
         if (PLAY_2_0_X) {
             assertThat(trace.getHeader().getTransactionName()).isEqualTo("Assets#at");
@@ -155,9 +184,9 @@ public class Play2xIT {
 
     @Test
     public void shouldCaptureError() throws Exception {
-        // given
         // when
         Trace trace = container.execute(GetBad.class);
+
         // then
         if (PLAY_2_0_X) {
             assertThat(trace.getHeader().getTransactionName()).isEqualTo("BadController#bad");

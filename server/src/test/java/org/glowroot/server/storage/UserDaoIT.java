@@ -59,8 +59,10 @@ public class UserDaoIT {
                 .passwordHash("xyz")
                 .addRoles("arole", "brole")
                 .build());
+
         // when
         UserConfig userConfig = userDao.read("abc");
+
         // then
         assertThat(userConfig.username()).isEqualTo("abc");
         assertThat(userConfig.passwordHash()).isEqualTo("xyz");

@@ -21,7 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.util.List;
+import java.util.Iterator;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -62,19 +62,23 @@ public class JdbcPluginIT {
     public void testCallableStatement() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+
         // when
         Trace trace = container.execute(ExecuteCallableStatement.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry jdbcEntry = entries.get(0);
-        assertThat(jdbcEntry.getMessage()).isEqualTo(
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo(
                 "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane', NULL]");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testWithoutResultSetValueTimerNormal() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
@@ -96,7 +100,6 @@ public class JdbcPluginIT {
 
     @Test
     public void testWithoutResultSetValueTimerUnderSeparateTraceEntry() throws Exception {
-        // given
         // when
         Trace trace = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
         // then
@@ -140,7 +143,6 @@ public class JdbcPluginIT {
 
     @Test
     public void testWithResultSetNavigateTimerNormal() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
@@ -150,7 +152,6 @@ public class JdbcPluginIT {
 
     @Test
     public void testWithResultSetNavigateTimerUnderSeparateTraceEntry() throws Exception {
-        // given
         // when
         Trace trace = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
         // then
@@ -172,31 +173,39 @@ public class JdbcPluginIT {
 
     @Test
     public void testDefaultStackTraceThreshold() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry jdbcEntry = entries.get(0);
-        assertThat(jdbcEntry.getMessage())
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
-        assertThat(jdbcEntry.getLocationStackTraceElementList()).isEmpty();
+        assertThat(entry.getLocationStackTraceElementList()).isEmpty();
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testZeroStackTraceThreshold() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "stackTraceThresholdMillis", 0.0);
+
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry jdbcEntry = entries.get(0);
-        assertThat(jdbcEntry.getMessage())
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
-        assertThat(jdbcEntry.getLocationStackTraceElementList()).isNotEmpty();
+        assertThat(entry.getLocationStackTraceElementList()).isNotEmpty();
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
@@ -204,15 +213,20 @@ public class JdbcPluginIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "stackTraceThresholdMillis",
                 (Double) null);
+
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry jdbcEntry = entries.get(0);
-        assertThat(jdbcEntry.getMessage())
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
-        assertThat(jdbcEntry.getLocationStackTraceElementList()).isEmpty();
+        assertThat(entry.getLocationStackTraceElementList()).isEmpty();
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     private static boolean findExtendedTimerName(Trace trace, String timerName) {

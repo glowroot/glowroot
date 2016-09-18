@@ -16,6 +16,7 @@
 package org.glowroot.agent.tests;
 
 import java.io.File;
+import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -80,11 +81,11 @@ public class ConfiguredInstrumentationIT {
                 TransactionConfig.newBuilder()
                         .setSlowThresholdMillis(ProtoOptional.of(Integer.MAX_VALUE))
                         .build());
+
         // when
         Trace trace = container.execute(ShouldExecute1.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
         Trace.Header header = trace.getHeader();
         assertThat(header.getTransactionType()).isEqualTo("test override type");
         assertThat(header.getTransactionName()).isEqualTo("test override name");
@@ -95,31 +96,43 @@ public class ConfiguredInstrumentationIT {
         assertThat(rootTimer.getChildTimerList().get(0).getChildTimerList()).hasSize(1);
         assertThat(rootTimer.getChildTimerList().get(0).getChildTimerList().get(0).getName())
                 .isEqualTo("execute one timer only");
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("execute1() => void");
+
         assertThat(entry.getLocationStackTraceElementList()).isNotEmpty();
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldRenderTraceEntryMessageTemplateWithReturnValue() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldExecuteWithReturn.class);
+
         // then
         Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
         assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
         assertThat(rootTimer.getChildTimerList()).hasSize(1);
         assertThat(rootTimer.getChildTimerList().get(0).getName()).isEqualTo("execute with return");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage()).isEqualTo("executeWithReturn() => xyz");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("executeWithReturn() => xyz");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldRenderTraceHeadline() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldExecuteWithArgs.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("executeWithArgs(): abc, 123, the name");

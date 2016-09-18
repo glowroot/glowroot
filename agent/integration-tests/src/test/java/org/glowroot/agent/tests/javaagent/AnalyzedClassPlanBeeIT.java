@@ -71,6 +71,7 @@ public class AnalyzedClassPlanBeeIT {
         // when
         container.executeNoExpectedTrace(ShouldLogWarningInAnalyzedWorldPlanB.class);
         // then
+        // container close will validate that there were no unexpected warnings or errors
     }
 
     private static void updateInstrumentationConfigs() throws Exception {

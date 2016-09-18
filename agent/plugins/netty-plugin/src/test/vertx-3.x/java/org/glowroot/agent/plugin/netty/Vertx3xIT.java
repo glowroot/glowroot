@@ -56,7 +56,6 @@ public class Vertx3xIT {
 
     @Test
     public void shouldCaptureTransactionNameWithNormalServletMapping() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteHttpGet.class);
         // then

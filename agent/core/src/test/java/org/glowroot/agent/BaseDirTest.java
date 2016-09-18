@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,6 @@ public class BaseDirTest {
 
     @Test
     public void testWithNoBaseDirPropertyAndGlowrootJarFile() {
-        // given
         // when
         File baseDir = BaseDir.getBaseDir(null, glowrootJarFile);
         // then
@@ -54,7 +53,6 @@ public class BaseDirTest {
 
     @Test
     public void testWithNoBaseDirPropertyAndGlowrootJarFileWithNullParent() {
-        // given
         // when
         File baseDir = BaseDir.getBaseDir(null, new File("glowroot.jar"));
         // then
@@ -63,7 +61,6 @@ public class BaseDirTest {
 
     @Test
     public void testWithAbsoluteBaseDirProperty() {
-        // given
         // when
         File baseDir = BaseDir.getBaseDir(customBaseDir.getPath(), null);
         // then
@@ -72,7 +69,6 @@ public class BaseDirTest {
 
     @Test
     public void testWithAbsoluteBaseDirPropertyAndGlowrootJarFile() {
-        // given
         // when
         File baseDir = BaseDir.getBaseDir(customBaseDir.getPath(), glowrootJarFile);
         // then
@@ -81,7 +77,6 @@ public class BaseDirTest {
 
     @Test
     public void testWithRelativeBaseDirPropertyAndGlowrootJarFile() {
-        // given
         // when
         File baseDir = BaseDir.getBaseDir("x" + File.separator + "y", glowrootJarFile);
         // then
@@ -91,7 +86,6 @@ public class BaseDirTest {
 
     @Test
     public void testWithBadAbsoluteBaseDirPropertyAndGlowrootJarFile() {
-        // given
         // when
         File baseDir = BaseDir.getBaseDir(glowrootJarFile.getPath(), glowrootJarFile);
         // then

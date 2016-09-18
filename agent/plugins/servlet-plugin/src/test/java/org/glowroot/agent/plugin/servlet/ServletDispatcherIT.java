@@ -16,6 +16,7 @@
 package org.glowroot.agent.plugin.servlet;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -56,28 +57,42 @@ public class ServletDispatcherIT {
 
     @Test
     public void testForwardServlet() throws Exception {
-        // given
         // when
         Trace trace = container.execute(InvokeFowardServlet.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("/first-forward");
         assertThat(header.getTransactionName()).isEqualTo("/first-forward");
         assertThat(trace.getHeader().getEntryCount()).isEqualTo(1);
-        assertThat(trace.getEntry(0).getMessage()).isEqualTo("servlet dispatch: /second");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("servlet dispatch: /second");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testIncludeServlet() throws Exception {
-        // given
         // when
         Trace trace = container.execute(InvokeIncludeServlet.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("/first-include");
         assertThat(header.getTransactionName()).isEqualTo("/first-include");
         assertThat(trace.getHeader().getEntryCount()).isEqualTo(1);
-        assertThat(trace.getEntry(0).getMessage()).isEqualTo("servlet dispatch: /second");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("servlet dispatch: /second");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class InvokeFowardServlet extends InvokeServletInTomcat {

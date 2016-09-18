@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,8 +65,10 @@ public class ResponseHeaderIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
                 "Content-Type, Content-Length, Content-Language");
+
         // when
         Trace trace = container.execute(SetStandardResponseHeaders.class);
+
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(trace);
         assertThat(responseHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
@@ -80,8 +82,10 @@ public class ResponseHeaderIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
                 "Content-Type, Content-Length, Content-Language");
+
         // when
         Trace trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class);
+
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(trace);
         assertThat(responseHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
@@ -95,8 +99,10 @@ public class ResponseHeaderIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
                 "Content-Type, Content-Length, Content-Language");
+
         // when
         Trace trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class);
+
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(trace);
         assertThat(responseHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
@@ -110,8 +116,10 @@ public class ResponseHeaderIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
                 "Content-Type, Content-Length");
+
         // when
         Trace trace = container.execute(SetStandardResponseHeadersLowercase.class);
+
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(trace);
         assertThat(responseHeaders.get("content-type")).isEqualTo("text/plain;charset=UTF-8");
@@ -164,8 +172,10 @@ public class ResponseHeaderIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
                 "One,Two,Date-One,Date-Two,Int-One,Int-Two,X-One");
+
         // when
         Trace trace = container.execute(SetLotsOfResponseHeaders.class);
+
         // then
         Map<String, Object> responseHeaders = getResponseHeaders(trace);
         @SuppressWarnings("unchecked")

@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.tests;
 
+import java.util.Iterator;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -51,16 +53,18 @@ public class ExceptionWithLotsOfCausesIT {
 
     @Test
     public void testCausedBy() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldThrowExceptionWithLotsOfCauses.class);
+
         // then
-        Trace.Entry entry = trace.getEntry(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.hasError()).isTrue();
         Trace.Error error = entry.getError();
         assertThat(error.hasException()).isTrue();
         Proto.Throwable exception = error.getException();
-        for (int i = 0; i < 80; i++) {
+        for (int j = 0; j < 80; j++) {
             assertThat(exception.hasCause()).isTrue();
             exception = exception.getCause();
         }
@@ -69,6 +73,8 @@ public class ExceptionWithLotsOfCausesIT {
         assertThat(finalException.hasCause()).isFalse();
         assertThat(finalException.getMessage())
                 .isEqualTo("The rest of the causal chain for this exception has been truncated");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ShouldThrowExceptionWithLotsOfCauses

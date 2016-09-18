@@ -23,7 +23,7 @@ public class OptionalServiceTest {
 
     @Test
     public void testUnavailable() {
-        // given
+        // when
         OptionalService<Object> optionalService = OptionalService.unavailable("abc");
         // then
         assertThat(optionalService.getAvailability().getAvailable()).isFalse();

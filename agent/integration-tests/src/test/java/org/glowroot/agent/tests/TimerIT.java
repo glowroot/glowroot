@@ -56,9 +56,9 @@ public class TimerIT {
 
     @Test
     public void shouldReadTimers() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithTimers.class);
+
         // then
         Trace.Header header = trace.getHeader();
         Trace.Timer rootTimer = header.getMainThreadRootTimer();
@@ -68,9 +68,9 @@ public class TimerIT {
 
     @Test
     public void shouldReadTimersWithRootAndSelfNested() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithRootAndSelfNestedTimer.class);
+
         // then
         Trace.Header header = trace.getHeader();
         Trace.Timer rootTimer = header.getMainThreadRootTimer();
@@ -86,6 +86,7 @@ public class TimerIT {
                 AdvancedConfig.newBuilder()
                         .setImmediatePartialStoreThresholdSeconds(ProtoOptional.of(1))
                         .build());
+
         // when
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<Void> future = executor.submit(new Callable<Void>() {
@@ -95,6 +96,7 @@ public class TimerIT {
                 return null;
             }
         });
+
         // then
         Trace trace = container.getCollectedPartialTrace();
         Trace.Header header = trace.getHeader();
@@ -103,6 +105,7 @@ public class TimerIT {
         assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
         assertThat(rootTimer.getCount()).isEqualTo(1);
         assertThat(rootTimer.getActive()).isTrue();
+
         // cleanup
         container.interruptAppUnderTest();
         future.get();

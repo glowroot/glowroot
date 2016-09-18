@@ -16,7 +16,7 @@
 package org.glowroot.agent.plugin.servlet;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Iterator;
 
 import javax.annotation.Nullable;
 import javax.servlet.FilterChain;
@@ -63,9 +63,9 @@ public class ServletPluginIT {
 
     @Test
     public void testServlet() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteServlet.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("/testservlet");
@@ -76,9 +76,9 @@ public class ServletPluginIT {
 
     @Test
     public void testFilter() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteFilter.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("/testfilter");
@@ -89,9 +89,9 @@ public class ServletPluginIT {
 
     @Test
     public void testCombination() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteFilterWithNestedServlet.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("/testfilter");
@@ -102,7 +102,6 @@ public class ServletPluginIT {
 
     @Test
     public void testNoQueryString() throws Exception {
-        // given
         // when
         Trace trace = container.execute(TestNoQueryString.class);
         // then
@@ -112,7 +111,6 @@ public class ServletPluginIT {
 
     @Test
     public void testEmptyQueryString() throws Exception {
-        // given
         // when
         Trace trace = container.execute(TestEmptyQueryString.class);
         // then
@@ -122,7 +120,6 @@ public class ServletPluginIT {
 
     @Test
     public void testNonEmptyQueryString() throws Exception {
-        // given
         // when
         Trace trace = container.execute(TestNonEmptyQueryString.class);
         // then
@@ -132,9 +129,9 @@ public class ServletPluginIT {
 
     @Test
     public void testServletThrowsException() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ServletThrowsException.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getError().getMessage()).isNotEmpty();
@@ -144,9 +141,9 @@ public class ServletPluginIT {
 
     @Test
     public void testFilterThrowsException() throws Exception {
-        // given
         // when
         Trace trace = container.execute(FilterThrowsException.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getError().getMessage()).isNotEmpty();
@@ -156,44 +153,49 @@ public class ServletPluginIT {
 
     @Test
     public void testSend500Error() throws Exception {
-        // given
         // when
         Trace trace = container.execute(Send500Error.class);
+
         // then
         assertThat(trace.getHeader().getError().getMessage())
                 .isEqualTo("sendError, HTTP status code 500");
         assertThat(trace.getHeader().getError().hasException()).isFalse();
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.getError().getMessage()).isEqualTo("sendError, HTTP status code 500");
         assertThat(entry.getError().hasException()).isFalse();
         assertThat(entry.getLocationStackTraceElementList()).isNotEmpty();
         assertThat(entry.getLocationStackTraceElementList().get(0).getMethodName())
                 .isEqualTo("sendError");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testSetStatus500Error() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SetStatus500Error.class);
+
         // then
         assertThat(trace.getHeader().getError().getMessage())
                 .isEqualTo("setStatus, HTTP status code 500");
         assertThat(trace.getHeader().getError().hasException()).isFalse();
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.getError().getMessage()).isEqualTo("setStatus, HTTP status code 500");
         assertThat(entry.getError().hasException()).isFalse();
         assertThat(entry.getLocationStackTraceElementList().get(0).getMethodName())
                 .isEqualTo("setStatus");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testBizzareServletContainer() throws Exception {
-        // given
         // when
         container.executeNoExpectedTrace(BizzareServletContainer.class);
         // then
@@ -201,7 +203,6 @@ public class ServletPluginIT {
 
     @Test
     public void testBizzareThrowingServletContainer() throws Exception {
-        // given
         // when
         container.executeNoExpectedTrace(BizzareThrowingServletContainer.class);
         // then

@@ -54,12 +54,14 @@ public class CappedDatabaseOutputStreamTest {
         // given
         Writer out = new OutputStreamWriter(cappedOut);
         String text = "0123456789";
+
         // when
         cappedOut.startBlock();
         out.write(text);
         out.flush();
         long cappedId = cappedOut.endBlock();
         cappedOut.sync();
+
         // then
         assertWrite(text, cappedId);
     }
@@ -68,19 +70,20 @@ public class CappedDatabaseOutputStreamTest {
     public void shouldWriteUsingByteArray() throws IOException {
         // given
         String text = "0123456789";
+
         // when
         cappedOut.startBlock();
         cappedOut.write(text.getBytes());
         cappedOut.flush();
         long cappedId = cappedOut.endBlock();
         cappedOut.sync();
+
         // then
         assertWrite(text, cappedId);
     }
 
     @Test
     public void shouldWriteUsingSingleBytes() throws IOException {
-        // given
         // when
         cappedOut.startBlock();
         cappedOut.write('0');
@@ -96,6 +99,7 @@ public class CappedDatabaseOutputStreamTest {
         cappedOut.flush();
         long cappedId = cappedOut.endBlock();
         cappedOut.sync();
+
         // then
         assertWrite("0123456789", cappedId);
     }
@@ -113,12 +117,14 @@ public class CappedDatabaseOutputStreamTest {
         out.write(text);
         out.flush();
         cappedOut.endBlock();
+
         // when
         out = new OutputStreamWriter(cappedOut);
         cappedOut.startBlock();
         out.write(text);
         out.flush();
         long cappedId = cappedOut.endBlock();
+
         // then
         assertThat(cappedId).isEqualTo(6000 + BLOCK_HEADER_SIZE);
         long currIndex = in.readLong();
@@ -156,12 +162,14 @@ public class CappedDatabaseOutputStreamTest {
         out.write(text);
         out.flush();
         cappedOut.endBlock();
+
         // when
         out = new OutputStreamWriter(cappedOut);
         cappedOut.startBlock();
         out.write(text);
         out.flush();
         long cappedId = cappedOut.endBlock();
+
         // then
         assertThat(cappedId).isEqualTo(12000 + 2 * BLOCK_HEADER_SIZE);
         long currIndex = in.readLong();
@@ -197,11 +205,13 @@ public class CappedDatabaseOutputStreamTest {
         out.write(text);
         out.flush();
         long cappedId = cappedOut.endBlock();
+
         // when
         // have to close in before resizing
         in.close();
         cappedOut.resize(20);
         in = new RandomAccessFile(tempFile, "r");
+
         // then
         assertThat(cappedId).isEqualTo(6000 + BLOCK_HEADER_SIZE);
         long currIndex = in.readLong();
@@ -240,11 +250,13 @@ public class CappedDatabaseOutputStreamTest {
         out.write(text);
         out.flush();
         long cappedId = cappedOut.endBlock();
+
         // when
         // have to close in before resizing
         in.close();
         cappedOut.resize(1);
         in = new RandomAccessFile(tempFile, "r");
+
         // then
         assertThat(cappedId).isEqualTo(9 * (600 + BLOCK_HEADER_SIZE));
         long currIndex = in.readLong();
@@ -274,6 +286,7 @@ public class CappedDatabaseOutputStreamTest {
         }
         cappedOut.flush();
         cappedOut.endBlock();
+
         // when
         Writer out = new OutputStreamWriter(cappedOut);
         out = new OutputStreamWriter(cappedOut);
@@ -281,6 +294,7 @@ public class CappedDatabaseOutputStreamTest {
         out.write(text);
         out.flush();
         long cappedId = cappedOut.endBlock();
+
         // then
         assertThat(cappedId).isEqualTo(10240);
         long currIndex = in.readLong();

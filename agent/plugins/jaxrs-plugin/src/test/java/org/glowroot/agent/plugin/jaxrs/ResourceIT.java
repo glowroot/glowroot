@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.jaxrs;
 
-import java.util.List;
+import java.util.Iterator;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -54,114 +54,148 @@ public class ResourceIT {
 
     @Test
     public void shouldCaptureTransactionNameWithNormalServletMapping() throws Exception {
-        // given
         // when
         Trace trace = container.execute(WithNormalServletMapping.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /hello/*");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.agent.plugin.jaxrs.ResourceIT$HelloResource.echo()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureTransactionNameWithNormalServletMappingHittingRoot() throws Exception {
-        // given
         // when
         Trace trace = container.execute(WithNormalServletMappingHittingRoot.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.agent.plugin.jaxrs.ResourceIT$RootResource.echo()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureTransactionNameWithNestedServletMapping() throws Exception {
-        // given
         // when
         Trace trace = container.execute(WithNestedServletMapping.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /rest/hello/*");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.agent.plugin.jaxrs.ResourceIT$HelloResource.echo()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureTransactionNameWithNestedServletMappingHittingRoot() throws Exception {
-        // given
         // when
         Trace trace = container.execute(WithNestedServletMappingHittingRoot.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /rest/");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.agent.plugin.jaxrs.ResourceIT$RootResource.echo()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureTransactionNameWithLessNormalServletMapping() throws Exception {
-        // given
         // when
         Trace trace = container.execute(WithLessNormalServletMapping.class);
+
         // then
         if (trace.getHeader().getTransactionName().equals("GET /")) {
             // Jersey (2.5 and above) doesn't like this "less than normal" servlet mapping, and ends
             // up
             // mapping everything to RootResource
             assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /");
-            List<Trace.Entry> entries = trace.getEntryList();
-            assertThat(entries).hasSize(1);
-            Trace.Entry entry = entries.get(0);
+
+            Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+            Trace.Entry entry = i.next();
+            assertThat(entry.getDepth()).isEqualTo(0);
             assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
                     + " org.glowroot.agent.plugin.jaxrs.ResourceIT$RootResource.echo()");
+
+            assertThat(i.hasNext()).isFalse();
         } else {
             assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /hello/*");
-            List<Trace.Entry> entries = trace.getEntryList();
-            assertThat(entries).hasSize(1);
-            Trace.Entry entry = entries.get(0);
+
+            Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+            Trace.Entry entry = i.next();
+            assertThat(entry.getDepth()).isEqualTo(0);
             assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
                     + " org.glowroot.agent.plugin.jaxrs.ResourceIT$HelloResource.echo()");
+
+            assertThat(i.hasNext()).isFalse();
         }
     }
 
     @Test
     public void shouldCaptureTransactionNameWithLessNormalServletMappingHittingRoot()
             throws Exception {
-        // given
         // when
         Trace trace = container.execute(WithLessNormalServletMappingHittingRoot.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.agent.plugin.jaxrs.ResourceIT$RootResource.echo()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureAltTransactionName() throws Exception {
         // given
         container.getConfigService().setPluginProperty("jaxrs", "useAltTransactionNaming", true);
+
         // when
         Trace trace = container.execute(WithNormalServletMapping.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("HelloResource#echo");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
                 + " org.glowroot.agent.plugin.jaxrs.ResourceIT$HelloResource.echo()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class WithNormalServletMapping extends InvokeJaxrsResourceInTomcat {

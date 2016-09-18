@@ -17,7 +17,7 @@ package org.glowroot.agent.plugin.jsf;
 
 import java.io.File;
 import java.net.ServerSocket;
-import java.util.List;
+import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -59,27 +59,41 @@ public class JsfRenderIT {
 
     @Test
     public void shouldCaptureJsfRendering() throws Exception {
-        // given
         // when
         Trace trace = container.execute(GetHello.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jsf render: /hello.xhtml");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureJsfAction() throws Exception {
-        // given
         // when
         Trace trace = container.execute(PostHello.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(3);
-        assertThat(entries.get(0).getMessage()).isEqualTo("jsf apply request: /hello.xhtml");
-        assertThat(entries.get(1).getMessage()).isEqualTo("jsf invoke: #{helloBean.hello}");
-        assertThat(entries.get(2).getMessage()).isEqualTo("jsf render: /hello.xhtml");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
+                .isEqualTo("jsf apply request: /hello.xhtml");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jsf invoke: #{helloBean.hello}");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jsf render: /hello.xhtml");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class HelloBean {

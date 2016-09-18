@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.tests;
 
-import java.util.List;
+import java.util.Iterator;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -56,8 +56,10 @@ public class InstrumentationConfigEnabledPropertyIT {
         // given
         container.getConfigService().setPluginProperty("glowroot-integration-tests",
                 "levelFiveEnabled", true);
+
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithNestedEntries.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("Level One");
@@ -71,19 +73,25 @@ public class InstrumentationConfigEnabledPropertyIT {
         assertThat(levelThreeTimer.getChildTimerList().get(0).getName()).isEqualTo("level four");
         Trace.Timer levelFourTimer = levelThreeTimer.getChildTimerList().get(0);
         assertThat(levelFourTimer.getChildTimerList().get(0).getName()).isEqualTo("level five");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(3);
-        Trace.Entry entry1 = entries.get(0);
-        assertThat(entry1.getDepth()).isEqualTo(0);
-        assertThat(entry1.getMessage()).isEqualTo("Level Two");
-        Trace.Entry entry2 = entries.get(1);
-        assertThat(entry2.getDepth()).isEqualTo(1);
-        assertThat(entry2.getMessage()).isEqualTo("Level Three");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("Level Two");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("Level Three");
+
         // there's no way offsetNanos should be 0
-        assertThat(entry2.getStartOffsetNanos()).isGreaterThan(0);
-        Trace.Entry entry3 = entries.get(2);
-        assertThat(entry3.getDepth()).isEqualTo(2);
-        assertThat(entry3.getMessage()).isEqualTo("Level Four: axy, bxy");
+        assertThat(entry.getStartOffsetNanos()).isGreaterThan(0);
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(2);
+        assertThat(entry.getMessage()).isEqualTo("Level Four: axy, bxy");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
@@ -93,8 +101,10 @@ public class InstrumentationConfigEnabledPropertyIT {
                 "levelFiveEnabled", true);
         container.getConfigService().setPluginProperty("glowroot-integration-tests",
                 "levelFiveEntryEnabled", true);
+
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithNestedEntries.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("Level One");
@@ -108,22 +118,29 @@ public class InstrumentationConfigEnabledPropertyIT {
         assertThat(levelThreeTimer.getChildTimerList().get(0).getName()).isEqualTo("level four");
         Trace.Timer levelFourTimer = levelThreeTimer.getChildTimerList().get(0);
         assertThat(levelFourTimer.getChildTimerList().get(0).getName()).isEqualTo("level five");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(4);
-        Trace.Entry entry1 = entries.get(0);
-        assertThat(entry1.getDepth()).isEqualTo(0);
-        assertThat(entry1.getMessage()).isEqualTo("Level Two");
-        Trace.Entry entry2 = entries.get(1);
-        assertThat(entry2.getDepth()).isEqualTo(1);
-        assertThat(entry2.getMessage()).isEqualTo("Level Three");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("Level Two");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("Level Three");
+
         // there's no way offsetNanos should be 0
-        assertThat(entry2.getStartOffsetNanos()).isGreaterThan(0);
-        Trace.Entry entry3 = entries.get(2);
-        assertThat(entry3.getDepth()).isEqualTo(2);
-        assertThat(entry3.getMessage()).isEqualTo("Level Four: axy, bxy");
-        Trace.Entry entry4 = entries.get(3);
-        assertThat(entry4.getDepth()).isEqualTo(3);
-        assertThat(entry4.getMessage()).isEqualTo("Level Five: axy, bxy");
+        assertThat(entry.getStartOffsetNanos()).isGreaterThan(0);
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(2);
+        assertThat(entry.getMessage()).isEqualTo("Level Four: axy, bxy");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(3);
+        assertThat(entry.getMessage()).isEqualTo("Level Five: axy, bxy");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest {

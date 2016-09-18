@@ -16,7 +16,7 @@
 package org.glowroot.agent.plugin.servlet;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Set;
 
 import javax.servlet.Filter;
@@ -68,50 +68,65 @@ public class StartupIT {
 
     @Test
     public void testServletContextInitialized() throws Exception {
-        // given
         // when
         Trace trace = container.execute(TestServletContextListener.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("listener init: " + TestServletContextListener.class.getName());
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testServletInit() throws Exception {
-        // given
         // when
         Trace trace = container.execute(TestServletInit.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("servlet init: " + TestServletInit.class.getName());
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testFilterInit() throws Exception {
-        // given
         // when
         Trace trace = container.execute(TestFilterInit.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
-                .isEqualTo("filter init: " + TestFilterInit.class.getName());
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("filter init: " + TestFilterInit.class.getName());
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testContainerInitializer() throws Exception {
-        // given
         // when
         Trace trace = container.execute(TestServletContainerInitializer.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage()).isEqualTo(
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo(
                 "container initializer: " + TestServletContainerInitializer.class.getName());
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class TestServletContextListener

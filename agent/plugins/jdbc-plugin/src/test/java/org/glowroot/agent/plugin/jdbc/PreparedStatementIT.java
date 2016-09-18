@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.List;
+import java.util.Iterator;
 
 import org.apache.commons.dbcp.DelegatingConnection;
 import org.apache.commons.dbcp.DelegatingPreparedStatement;
@@ -62,63 +62,75 @@ public class PreparedStatementIT {
 
     @Test
     public void testPreparedStatement() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecutePreparedStatementAndIterateOverResults.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testPreparedStatementQuery() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecutePreparedStatementQueryAndIterateOverResults.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testPreparedStatementUpdate() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecutePreparedStatementUpdate.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: update employee set name = ? ['nobody'] => 3 rows");
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo(
+                "jdbc execution: update employee set name = ? ['nobody'] => 3 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testPreparedStatementLargeParamSetFirst() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecutePreparedStatementLargeParamSetFirst.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
-        assertThat(entry.getMessage())
-                .startsWith("jdbc execution: select * from employee where name like ?");
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).startsWith(
+                "jdbc execution: select * from employee where name like ? and name like ? ");
+        assertThat(entry.getMessage()).endsWith(", 'john%', 'john%'] => 1 row");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testPreparedStatementNullSql() throws Exception {
-        // given
         // when
         Trace trace = container.execute(PreparedStatementNullSql.class);
         // then
@@ -127,175 +139,217 @@ public class PreparedStatementIT {
 
     @Test
     public void testPreparedStatementThrowing() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecutePreparedStatementThrowing.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee where name like ? ['john%']");
         assertThat(entry.getError().getMessage()).isEqualTo("An execute failure");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testPreparedStatementWithTonsOfBindParameters() throws Exception {
-        // given
         // when
         Trace trace = container.execute(
                 ExecutePreparedStatementWithTonsOfBindParametersAndIterateOverResults.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
         StringBuilder sql =
                 new StringBuilder("jdbc execution: select * from employee where name like ?");
-        for (int i = 0; i < 200; i++) {
+        for (int j = 0; j < 200; j++) {
             sql.append(" and name like ?");
         }
         sql.append(" ['john%'");
-        for (int i = 0; i < 200; i++) {
+        for (int j = 0; j < 200; j++) {
             sql.append(", 'john%'");
         }
         sql.append("] => 1 row");
 
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo(sql.toString());
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testPreparedStatementWithoutBindParameters() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", false);
+
         // when
         Trace trace = container.execute(ExecutePreparedStatementAndIterateOverResults.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee where name like ? => 1 row");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testPreparedStatementWithSetNull() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+
         // whens
         Trace trace = container.execute(ExecutePreparedStatementWithSetNull.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo(
                 "jdbc execution: insert into employee (name, misc) values (?, ?) [NULL, NULL]");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testPreparedStatementWithBinary() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+
         // when
         Trace trace = container.execute(ExecutePreparedStatementWithBinary.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        Trace.Entry entry1 = entries.get(0);
-        assertThat(entry1.getActive()).isFalse();
-        assertThat(entry1.getMessage()).isEqualTo(
-                "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane',"
-                        + " 0x00010203040506070809]");
-        Trace.Entry entry2 = entries.get(1);
-        assertThat(entry2.getActive()).isFalse();
-        assertThat(entry2.getMessage()).isEqualTo(
-                "jdbc execution: insert /**/ into employee (name, misc) values (?, ?) ['jane',"
-                        + " {10 bytes}]");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getActive()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution: insert into employee (name, misc)"
+                + " values (?, ?) ['jane', 0x00010203040506070809]");
+
+        entry = i.next();
+        assertThat(entry.getActive()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution: insert /**/ into employee"
+                + " (name, misc) values (?, ?) ['jane', {10 bytes}]");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testPreparedStatementWithBinaryUsingSetObject() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+
         // when
         Trace trace = container.execute(ExecutePreparedStatementWithBinaryUsingSetObject.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        Trace.Entry entry1 = entries.get(0);
-        assertThat(entry1.getActive()).isFalse();
-        assertThat(entry1.getMessage()).isEqualTo(
-                "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane',"
-                        + " 0x00010203040506070809]");
-        Trace.Entry entry2 = entries.get(1);
-        assertThat(entry2.getActive()).isFalse();
-        assertThat(entry2.getMessage()).isEqualTo(
-                "jdbc execution: insert /**/ into employee (name, misc) values (?, ?) ['jane',"
-                        + " {10 bytes}]");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getActive()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution: insert into employee (name, misc)"
+                + " values (?, ?) ['jane', 0x00010203040506070809]");
+
+        entry = i.next();
+        assertThat(entry.getActive()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution: insert /**/ into employee"
+                + " (name, misc) values (?, ?) ['jane', {10 bytes}]");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testPreparedStatementWithBinaryStream() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+
         // when
         Trace trace = container.execute(ExecutePreparedStatementWithBinaryStream.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
-        assertThat(entry.getMessage()).isEqualTo(
-                "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane',"
-                        + " {stream:ByteArrayInputStream}]");
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution: insert into employee (name, misc)"
+                + " values (?, ?) ['jane', {stream:ByteArrayInputStream}]");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testPreparedStatementWithCharacterStream() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+
         // when
         Trace trace = container.execute(ExecutePreparedStatementWithCharacterStream.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
-        assertThat(entry.getMessage()).isEqualTo(
-                "jdbc execution: insert into employee (name, misc2) values (?, ?) ['jane',"
-                        + " {stream:StringReader}]");
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution: insert into employee"
+                + " (name, misc2) values (?, ?) ['jane', {stream:StringReader}]");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testPreparedStatementWithClear() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+
         // when
         Trace trace = container.execute(ExecutePreparedStatementWithClear.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testPreparedStatementThatHasInternalGlowrootToken() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecutePreparedStatementThatHasInternalGlowrootToken.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['{}'] => 0 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ExecutePreparedStatementAndIterateOverResults

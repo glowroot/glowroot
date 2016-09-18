@@ -17,7 +17,7 @@ package org.glowroot.agent.plugin.jdbc;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
@@ -62,15 +62,22 @@ public class ConnectionAndTxLifecycleIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "captureConnectionLifecycleTraceEntries", true);
+
         // when
         Trace trace = container.execute(ExecuteGetConnectionAndConnectionClose.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        Trace.Entry entry1 = entries.get(0);
-        assertThat(entry1.getMessage()).isEqualTo("jdbc get connection");
-        Trace.Entry entry2 = entries.get(1);
-        assertThat(entry2.getMessage()).isEqualTo("jdbc connection close");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc get connection");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc connection close");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
@@ -78,8 +85,10 @@ public class ConnectionAndTxLifecycleIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureGetConnection", false);
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionClose", false);
+
         // when
         Trace trace = container.execute(ExecuteGetConnectionAndConnectionClose.class);
+
         // then
         Trace.Header header = trace.getHeader();
         Trace.Timer rootTimer = header.getMainThreadRootTimer();
@@ -91,8 +100,10 @@ public class ConnectionAndTxLifecycleIT {
     public void testConnectionLifecyclePartiallyDisabled() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionClose", true);
+
         // when
         Trace trace = container.execute(ExecuteGetConnectionAndConnectionClose.class);
+
         // then
         Trace.Header header = trace.getHeader();
         Trace.Timer rootTimer = header.getMainThreadRootTimer();
@@ -110,14 +121,20 @@ public class ConnectionAndTxLifecycleIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "captureConnectionLifecycleTraceEntries", true);
+
         // when
         Trace trace = container.execute(ExecuteGetConnectionOnThrowingDataSource.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jdbc get connection");
+
         assertThat(entry.getError().getMessage()).isEqualTo("A getconnection failure");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
@@ -125,8 +142,10 @@ public class ConnectionAndTxLifecycleIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureGetConnection", false);
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionClose", false);
+
         // when
         Trace trace = container.execute(ExecuteGetConnectionOnThrowingDataSource.class);
+
         // then
         Trace.Header header = trace.getHeader();
         Trace.Timer rootTimer = header.getMainThreadRootTimer();
@@ -136,9 +155,9 @@ public class ConnectionAndTxLifecycleIT {
 
     @Test
     public void testConnectionLifecycleGetConnectionThrowsPartiallyDisabled() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteGetConnectionOnThrowingDataSource.class);
+
         // then
         Trace.Header header = trace.getHeader();
         Trace.Timer rootTimer = header.getMainThreadRootTimer();
@@ -152,16 +171,24 @@ public class ConnectionAndTxLifecycleIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "captureConnectionLifecycleTraceEntries", true);
+
         // when
         Trace trace = container.execute(ExecuteCloseConnectionOnThrowingDataSource.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        Trace.Entry entry1 = entries.get(0);
-        assertThat(entry1.getMessage()).isEqualTo("jdbc get connection");
-        Trace.Entry entry2 = entries.get(1);
-        assertThat(entry2.getMessage()).isEqualTo("jdbc connection close");
-        assertThat(entry2.getError().getMessage()).isEqualTo("A close failure");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc get connection");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc connection close");
+
+        assertThat(entry.getError().getMessage()).isEqualTo("A close failure");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
@@ -169,8 +196,10 @@ public class ConnectionAndTxLifecycleIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureGetConnection", false);
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionClose", false);
+
         // when
         Trace trace = container.execute(ExecuteCloseConnectionOnThrowingDataSource.class);
+
         // then
         Trace.Header header = trace.getHeader();
         Trace.Timer rootTimer = header.getMainThreadRootTimer();
@@ -182,8 +211,10 @@ public class ConnectionAndTxLifecycleIT {
     public void testConnectionLifecycleCloseConnectionThrowsPartiallyDisabled() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionClose", true);
+
         // when
         Trace trace = container.execute(ExecuteCloseConnectionOnThrowingDataSource.class);
+
         // then
         Trace.Header header = trace.getHeader();
         Trace.Timer rootTimer = header.getMainThreadRootTimer();
@@ -201,19 +232,29 @@ public class ConnectionAndTxLifecycleIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "captureTransactionLifecycleTraceEntries", true);
+
         // when
         Trace trace = container.execute(ExecuteSetAutoCommit.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries.size()).isBetween(2, 3);
-        Trace.Entry entry1 = entries.get(0);
-        assertThat(entry1.getMessage()).isEqualTo("jdbc set autocommit: false");
-        Trace.Entry entry2 = entries.get(1);
-        assertThat(entry2.getMessage()).isEqualTo("jdbc set autocommit: true");
-        if (entries.size() == 3) {
-            Trace.Entry entry3 = entries.get(2);
-            assertThat(entry3.getMessage()).isEqualTo("jdbc commit");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc set autocommit: false");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc set autocommit: true");
+
+        if (i.hasNext()) {
+            entry = i.next();
+            assertThat(entry.getDepth()).isEqualTo(0);
+            assertThat(entry.getMessage()).isEqualTo("jdbc commit");
+
         }
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
@@ -221,17 +262,26 @@ public class ConnectionAndTxLifecycleIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "captureTransactionLifecycleTraceEntries", true);
+
         // when
         Trace trace = container.execute(ExecuteSetAutoCommitThrowing.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        Trace.Entry entry1 = entries.get(0);
-        assertThat(entry1.getMessage()).isEqualTo("jdbc set autocommit: false");
-        assertThat(entry1.getError().getMessage()).isEqualTo("A setautocommit failure");
-        Trace.Entry entry2 = entries.get(1);
-        assertThat(entry2.getMessage()).isEqualTo("jdbc set autocommit: true");
-        assertThat(entry2.getError().getMessage()).isEqualTo("A setautocommit failure");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc set autocommit: false");
+
+        assertThat(entry.getError().getMessage()).isEqualTo("A setautocommit failure");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc set autocommit: true");
+
+        assertThat(entry.getError().getMessage()).isEqualTo("A setautocommit failure");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
@@ -241,13 +291,22 @@ public class ConnectionAndTxLifecycleIT {
                 "captureConnectionLifecycleTraceEntries", true);
         container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "captureTransactionLifecycleTraceEntries", true);
+
         // when
         Trace trace = container.execute(ExecuteGetConnectionAndConnectionClose.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jdbc get connection (autocommit: true)");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc connection close");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ExecuteGetConnectionAndConnectionClose

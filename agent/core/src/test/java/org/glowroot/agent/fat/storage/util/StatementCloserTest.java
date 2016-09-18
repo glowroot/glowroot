@@ -38,6 +38,7 @@ public class StatementCloserTest {
         thrown.expectMessage("AAAA");
         Statement statement = mock(Statement.class);
         when(statement.execute(anyString())).thenThrow(new SQLException("AAAA"));
+
         // when
         StatementCloser closer = new StatementCloser(statement);
         try {
@@ -47,6 +48,8 @@ public class StatementCloserTest {
         } finally {
             closer.close();
         }
+
+        // then expect thrown message specified above
     }
 
     @Test
@@ -55,6 +58,7 @@ public class StatementCloserTest {
         thrown.expectMessage("BBBB");
         Statement statement = mock(Statement.class);
         doThrow(new SQLException("BBBB")).when(statement).close();
+
         // when
         StatementCloser closer = new StatementCloser(statement);
         try {
@@ -64,6 +68,8 @@ public class StatementCloserTest {
         } finally {
             closer.close();
         }
+
+        // then expect thrown message specified above
     }
 
     @Test
@@ -73,6 +79,7 @@ public class StatementCloserTest {
         Statement statement = mock(Statement.class);
         when(statement.execute(anyString())).thenThrow(new SQLException("AAAA"));
         doThrow(new SQLException("BBBB")).when(statement).close();
+
         // when
         StatementCloser closer = new StatementCloser(statement);
         try {
@@ -82,5 +89,7 @@ public class StatementCloserTest {
         } finally {
             closer.close();
         }
+
+        // then expect thrown message specified above
     }
 }

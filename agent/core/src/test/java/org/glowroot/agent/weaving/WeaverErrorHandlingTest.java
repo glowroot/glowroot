@@ -35,8 +35,10 @@ public class WeaverErrorHandlingTest {
         SomeAspectThreadLocals.resetThreadLocals();
         Misc test =
                 newWovenObject(BasicMisc.class, Misc.class, BindPrimitiveTravelerBadAdvice.class);
+
         // when
         test.execute1();
+
         // then
         assertThat(SomeAspectThreadLocals.onReturnTraveler.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onThrowTraveler.get()).isNull();
@@ -49,8 +51,10 @@ public class WeaverErrorHandlingTest {
         SomeAspectThreadLocals.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class,
                 BindPrimitiveBooleanTravelerBadAdvice.class);
+
         // when
         test.execute1();
+
         // then
         assertThat(SomeAspectThreadLocals.onReturnTraveler.get()).isEqualTo(false);
         assertThat(SomeAspectThreadLocals.onThrowTraveler.get()).isNull();
@@ -62,7 +66,9 @@ public class WeaverErrorHandlingTest {
         // given
         SomeAspectThreadLocals.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, VeryBadAdvice.class);
+
         // when
+        IllegalStateException exception = null;
         try {
             test.executeWithArgs("one", 2);
         } catch (IllegalStateException e) {
@@ -70,9 +76,11 @@ public class WeaverErrorHandlingTest {
             assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
             assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
             assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(0);
-            return;
+            exception = e;
         }
-        throw new AssertionError("Expecting IllegalStateException");
+
+        // then
+        assertThat(exception).isNotNull();
     }
 
     @Test
@@ -80,7 +88,9 @@ public class WeaverErrorHandlingTest {
         // given
         SomeAspectThreadLocals.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, MoreVeryBadAdvice.class);
+
         // when
+        IllegalStateException exception = null;
         try {
             test.executeWithArgs("one", 2);
         } catch (IllegalStateException e) {
@@ -88,9 +98,11 @@ public class WeaverErrorHandlingTest {
             assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
             assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
             assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(0);
-            return;
+            exception = e;
         }
-        throw new AssertionError("Expecting IllegalStateException");
+
+        // then
+        assertThat(exception).isNotNull();
     }
 
     // same as MoreVeryBadAdvice, but testing weaving a method with a non-void return type
@@ -99,7 +111,9 @@ public class WeaverErrorHandlingTest {
         // given
         SomeAspectThreadLocals.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, MoreVeryBadAdvice2.class);
+
         // when
+        IllegalStateException exception = null;
         try {
             test.executeWithReturn();
         } catch (IllegalStateException e) {
@@ -107,9 +121,11 @@ public class WeaverErrorHandlingTest {
             assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
             assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
             assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(0);
-            return;
+            exception = e;
         }
-        throw new AssertionError("Expecting IllegalStateException");
+
+        // then
+        assertThat(exception).isNotNull();
     }
 
     private static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,

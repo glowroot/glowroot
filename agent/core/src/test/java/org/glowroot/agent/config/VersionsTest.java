@@ -25,7 +25,6 @@ public class VersionsTest {
 
     @Test
     public void shouldFallbackToZerosOnError() {
-        // given
         // when
         String version = Versions.getJsonVersion(new A());
         // then

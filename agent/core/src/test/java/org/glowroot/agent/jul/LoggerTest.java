@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,9 @@ public class LoggerTest {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
         when(slf4jLogger.getName()).thenReturn("xyz");
+        // when
         Logger logger = new Logger(slf4jLogger);
+        // then
         assertThat(logger.getName()).isEqualTo("xyz");
     }
 
@@ -46,6 +48,7 @@ public class LoggerTest {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
         Logger logger = new Logger(slf4jLogger);
+
         // when
         logger.severe("ereves");
         logger.warning("gninraw");
@@ -54,6 +57,7 @@ public class LoggerTest {
         logger.fine("enif");
         logger.finer("renif");
         logger.finest("tsenif");
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).error("ereves");
@@ -71,6 +75,7 @@ public class LoggerTest {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
         Logger logger = new Logger(slf4jLogger);
+
         // when
         logger.log(Level.SEVERE, "ereves");
         logger.log(Level.WARNING, "gninraw");
@@ -79,6 +84,7 @@ public class LoggerTest {
         logger.log(Level.FINE, "enif");
         logger.log(Level.FINER, "renif");
         logger.log(Level.FINEST, "tsenif");
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).error("ereves");
@@ -101,6 +107,7 @@ public class LoggerTest {
         when(slf4jLogger.isWarnEnabled()).thenReturn(true);
         when(slf4jLogger.isErrorEnabled()).thenReturn(true);
         Logger logger = new Logger(slf4jLogger);
+
         // when
         logger.log(Level.SEVERE, "ereves: {0}", "a");
         logger.log(Level.WARNING, "gninraw: {0}", "b");
@@ -109,6 +116,7 @@ public class LoggerTest {
         logger.log(Level.FINE, "enif: {0}", "e");
         logger.log(Level.FINER, "renif: {0}", "f");
         logger.log(Level.FINEST, "tsenif: {0}", "g");
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).isErrorEnabled();
@@ -138,6 +146,7 @@ public class LoggerTest {
         when(slf4jLogger.isWarnEnabled()).thenReturn(true);
         when(slf4jLogger.isErrorEnabled()).thenReturn(true);
         Logger logger = new Logger(slf4jLogger);
+
         // when
         logger.log(Level.SEVERE, "ereves: {0},{1}", new Object[] {"a", "b"});
         logger.log(Level.WARNING, "gninraw: {0},{1}", new Object[] {"b", "c"});
@@ -146,6 +155,7 @@ public class LoggerTest {
         logger.log(Level.FINE, "enif: {0},{1}", new Object[] {"e", "f"});
         logger.log(Level.FINER, "renif: {0},{1}", new Object[] {"f", "g"});
         logger.log(Level.FINEST, "tsenif: {0},{1}", new Object[] {"g", "h"});
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).isErrorEnabled();
@@ -177,6 +187,7 @@ public class LoggerTest {
         Throwable e = new Throwable();
         Throwable f = new Throwable();
         Throwable g = new Throwable();
+
         // when
         logger.log(Level.SEVERE, "ereves", a);
         logger.log(Level.WARNING, "gninraw", b);
@@ -185,6 +196,7 @@ public class LoggerTest {
         logger.log(Level.FINE, "enif", e);
         logger.log(Level.FINER, "renif", f);
         logger.log(Level.FINEST, "tsenif", g);
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).error("ereves", a);
@@ -201,12 +213,15 @@ public class LoggerTest {
     public void testIsLoggableAll() {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
-        Logger logger = new Logger(slf4jLogger);
         when(slf4jLogger.isTraceEnabled()).thenReturn(true);
         when(slf4jLogger.isDebugEnabled()).thenReturn(true);
         when(slf4jLogger.isInfoEnabled()).thenReturn(true);
         when(slf4jLogger.isWarnEnabled()).thenReturn(true);
         when(slf4jLogger.isErrorEnabled()).thenReturn(true);
+
+        // when
+        Logger logger = new Logger(slf4jLogger);
+
         // then
         assertThat(logger.isLoggable(Level.SEVERE)).isTrue();
         assertThat(logger.isLoggable(Level.WARNING)).isTrue();
@@ -221,12 +236,15 @@ public class LoggerTest {
     public void testIsLoggableSome() {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
-        Logger logger = new Logger(slf4jLogger);
         when(slf4jLogger.isTraceEnabled()).thenReturn(false);
         when(slf4jLogger.isDebugEnabled()).thenReturn(false);
         when(slf4jLogger.isInfoEnabled()).thenReturn(false);
         when(slf4jLogger.isWarnEnabled()).thenReturn(true);
         when(slf4jLogger.isErrorEnabled()).thenReturn(true);
+
+        // when
+        Logger logger = new Logger(slf4jLogger);
+
         // then
         assertThat(logger.isLoggable(Level.SEVERE)).isTrue();
         assertThat(logger.isLoggable(Level.WARNING)).isTrue();
@@ -241,12 +259,15 @@ public class LoggerTest {
     public void testIsLoggableNone() {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
-        Logger logger = new Logger(slf4jLogger);
         when(slf4jLogger.isTraceEnabled()).thenReturn(false);
         when(slf4jLogger.isDebugEnabled()).thenReturn(false);
         when(slf4jLogger.isInfoEnabled()).thenReturn(false);
         when(slf4jLogger.isWarnEnabled()).thenReturn(false);
         when(slf4jLogger.isErrorEnabled()).thenReturn(false);
+
+        // when
+        Logger logger = new Logger(slf4jLogger);
+
         // then
         assertThat(logger.isLoggable(Level.SEVERE)).isFalse();
         assertThat(logger.isLoggable(Level.WARNING)).isFalse();
@@ -261,8 +282,9 @@ public class LoggerTest {
     public void testGetLevelSevere() {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
-        Logger logger = new Logger(slf4jLogger);
         when(slf4jLogger.isErrorEnabled()).thenReturn(true);
+        // when
+        Logger logger = new Logger(slf4jLogger);
         // then
         assertThat(logger.getLevel()).isEqualTo(Level.SEVERE);
     }
@@ -271,8 +293,9 @@ public class LoggerTest {
     public void testGetLevelWarning() {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
-        Logger logger = new Logger(slf4jLogger);
         when(slf4jLogger.isWarnEnabled()).thenReturn(true);
+        // when
+        Logger logger = new Logger(slf4jLogger);
         // then
         assertThat(logger.getLevel()).isEqualTo(Level.WARNING);
     }
@@ -281,8 +304,9 @@ public class LoggerTest {
     public void testGetLevelConfig() {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
-        Logger logger = new Logger(slf4jLogger);
         when(slf4jLogger.isInfoEnabled()).thenReturn(true);
+        // when
+        Logger logger = new Logger(slf4jLogger);
         // then
         assertThat(logger.getLevel()).isEqualTo(Level.CONFIG);
     }
@@ -291,8 +315,9 @@ public class LoggerTest {
     public void testGetLevelFine() {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
-        Logger logger = new Logger(slf4jLogger);
         when(slf4jLogger.isDebugEnabled()).thenReturn(true);
+        // when
+        Logger logger = new Logger(slf4jLogger);
         // then
         assertThat(logger.getLevel()).isEqualTo(Level.FINE);
     }
@@ -301,8 +326,9 @@ public class LoggerTest {
     public void testGetLevelFinest() {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
-        Logger logger = new Logger(slf4jLogger);
         when(slf4jLogger.isTraceEnabled()).thenReturn(true);
+        // when
+        Logger logger = new Logger(slf4jLogger);
         // then
         assertThat(logger.getLevel()).isEqualTo(Level.FINEST);
     }
@@ -311,6 +337,7 @@ public class LoggerTest {
     public void testGetLevelOff() {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
+        // when
         Logger logger = new Logger(slf4jLogger);
         // then
         assertThat(logger.getLevel()).isEqualTo(Level.OFF);
@@ -321,6 +348,7 @@ public class LoggerTest {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
         Logger logger = new Logger(slf4jLogger);
+
         // when
         logger.logp(Level.SEVERE, null, null, "ereves");
         logger.logp(Level.WARNING, null, null, "gninraw");
@@ -329,6 +357,7 @@ public class LoggerTest {
         logger.logp(Level.FINE, null, null, "enif");
         logger.logp(Level.FINER, null, null, "renif");
         logger.logp(Level.FINEST, null, null, "tsenif");
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).error("ereves");
@@ -351,6 +380,7 @@ public class LoggerTest {
         when(slf4jLogger.isWarnEnabled()).thenReturn(true);
         when(slf4jLogger.isErrorEnabled()).thenReturn(true);
         Logger logger = new Logger(slf4jLogger);
+
         // when
         logger.logp(Level.SEVERE, null, null, "ereves: {0}", "a");
         logger.logp(Level.WARNING, null, null, "gninraw: {0}", "b");
@@ -359,6 +389,7 @@ public class LoggerTest {
         logger.logp(Level.FINE, null, null, "enif: {0}", "e");
         logger.logp(Level.FINER, null, null, "renif: {0}", "f");
         logger.logp(Level.FINEST, null, null, "tsenif: {0}", "g");
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).isErrorEnabled();
@@ -388,6 +419,7 @@ public class LoggerTest {
         when(slf4jLogger.isWarnEnabled()).thenReturn(true);
         when(slf4jLogger.isErrorEnabled()).thenReturn(true);
         Logger logger = new Logger(slf4jLogger);
+
         // when
         logger.logp(Level.SEVERE, null, null, "ereves: {0},{1}", new Object[] {"a", "b"});
         logger.logp(Level.WARNING, null, null, "gninraw: {0},{1}", new Object[] {"b", "c"});
@@ -396,6 +428,7 @@ public class LoggerTest {
         logger.logp(Level.FINE, null, null, "enif: {0},{1}", new Object[] {"e", "f"});
         logger.logp(Level.FINER, null, null, "renif: {0},{1}", new Object[] {"f", "g"});
         logger.logp(Level.FINEST, null, null, "tsenif: {0},{1}", new Object[] {"g", "h"});
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).isErrorEnabled();
@@ -427,6 +460,7 @@ public class LoggerTest {
         Throwable e = new Throwable();
         Throwable f = new Throwable();
         Throwable g = new Throwable();
+
         // when
         logger.logp(Level.SEVERE, null, null, "ereves", a);
         logger.logp(Level.WARNING, null, null, "gninraw", b);
@@ -435,6 +469,7 @@ public class LoggerTest {
         logger.logp(Level.FINE, null, null, "enif", e);
         logger.logp(Level.FINER, null, null, "renif", f);
         logger.logp(Level.FINEST, null, null, "tsenif", g);
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).error("ereves", a);
@@ -452,6 +487,7 @@ public class LoggerTest {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
         Logger logger = new Logger(slf4jLogger);
+
         // when
         logger.logrb(Level.SEVERE, null, null, null, "ereves");
         logger.logrb(Level.WARNING, null, null, null, "gninraw");
@@ -460,6 +496,7 @@ public class LoggerTest {
         logger.logrb(Level.FINE, null, null, null, "enif");
         logger.logrb(Level.FINER, null, null, null, "renif");
         logger.logrb(Level.FINEST, null, null, null, "tsenif");
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).error("ereves");
@@ -482,6 +519,7 @@ public class LoggerTest {
         when(slf4jLogger.isWarnEnabled()).thenReturn(true);
         when(slf4jLogger.isErrorEnabled()).thenReturn(true);
         Logger logger = new Logger(slf4jLogger);
+
         // when
         logger.logrb(Level.SEVERE, null, null, null, "ereves: {0}", "a");
         logger.logrb(Level.WARNING, null, null, null, "gninraw: {0}", "b");
@@ -490,6 +528,7 @@ public class LoggerTest {
         logger.logrb(Level.FINE, null, null, null, "enif: {0}", "e");
         logger.logrb(Level.FINER, null, null, null, "renif: {0}", "f");
         logger.logrb(Level.FINEST, null, null, null, "tsenif: {0}", "g");
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).isErrorEnabled();
@@ -519,6 +558,7 @@ public class LoggerTest {
         when(slf4jLogger.isWarnEnabled()).thenReturn(true);
         when(slf4jLogger.isErrorEnabled()).thenReturn(true);
         Logger logger = new Logger(slf4jLogger);
+
         // when
         logger.logrb(Level.SEVERE, null, null, null, "ereves: {0},{1}", new Object[] {"a", "b"});
         logger.logrb(Level.WARNING, null, null, null, "gninraw: {0},{1}", new Object[] {"b", "c"});
@@ -527,6 +567,7 @@ public class LoggerTest {
         logger.logrb(Level.FINE, null, null, null, "enif: {0},{1}", new Object[] {"e", "f"});
         logger.logrb(Level.FINER, null, null, null, "renif: {0},{1}", new Object[] {"f", "g"});
         logger.logrb(Level.FINEST, null, null, null, "tsenif: {0},{1}", new Object[] {"g", "h"});
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).isErrorEnabled();
@@ -558,6 +599,7 @@ public class LoggerTest {
         Throwable e = new Throwable();
         Throwable f = new Throwable();
         Throwable g = new Throwable();
+
         // when
         logger.logrb(Level.SEVERE, null, null, null, "ereves", a);
         logger.logrb(Level.WARNING, null, null, null, "gninraw", b);
@@ -566,6 +608,7 @@ public class LoggerTest {
         logger.logrb(Level.FINE, null, null, null, "enif", e);
         logger.logrb(Level.FINER, null, null, null, "renif", f);
         logger.logrb(Level.FINEST, null, null, null, "tsenif", g);
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).error("ereves", a);
@@ -583,6 +626,7 @@ public class LoggerTest {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
         Logger logger = new Logger(slf4jLogger);
+
         // when
         logger.entering(null, null);
         logger.entering(null, null, new Object());
@@ -590,6 +634,7 @@ public class LoggerTest {
         logger.exiting(null, null);
         logger.exiting(null, null, new Object());
         logger.throwing(null, null, null);
+
         // then
         verifyNoMoreInteractions(slf4jLogger);
     }
@@ -598,7 +643,10 @@ public class LoggerTest {
     public void testResourceBundle() {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
+
+        // when
         Logger logger = new Logger(slf4jLogger);
+
         // then
         assertThat(logger.getResourceBundle()).isNull();
         assertThat(logger.getResourceBundleName()).isNull();

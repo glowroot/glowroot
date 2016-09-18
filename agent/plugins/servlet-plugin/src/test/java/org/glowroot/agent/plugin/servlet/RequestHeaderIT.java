@@ -65,8 +65,10 @@ public class RequestHeaderIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
                 "Content-Type, Content-Length");
+
         // when
         Trace trace = container.execute(SetStandardRequestHeaders.class);
+
         // then
         Map<String, Object> requestHeaders =
                 ResponseHeaderIT.getDetailMap(trace, "Request headers");
@@ -80,8 +82,10 @@ public class RequestHeaderIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
                 "Content-Type, Content-Length");
+
         // when
         Trace trace = container.execute(SetStandardRequestHeadersLowercase.class);
+
         // then
         Map<String, Object> requestHeaders =
                 ResponseHeaderIT.getDetailMap(trace, "Request headers");
@@ -95,8 +99,10 @@ public class RequestHeaderIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
                 "One,Two");
+
         // when
         Trace trace = container.execute(SetOtherRequestHeaders.class);
+
         // then
         Map<String, Object> requestHeaders =
                 ResponseHeaderIT.getDetailMap(trace, "Request headers");
@@ -112,8 +118,10 @@ public class RequestHeaderIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
                 "Content-Type, Content-Length");
+
         // when
         Trace trace = container.execute(GetBadRequestHeaders.class);
+
         // then
         Map<String, Object> requestHeaders =
                 ResponseHeaderIT.getDetailMap(trace, "Request headers");
@@ -125,8 +133,10 @@ public class RequestHeaderIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
                 "Content-Type, Content-Length, h1");
+
         // when
         Trace trace = container.execute(GetBadRequestHeaders2.class);
+
         // then
         Map<String, Object> requestHeaders =
                 ResponseHeaderIT.getDetailMap(trace, "Request headers");

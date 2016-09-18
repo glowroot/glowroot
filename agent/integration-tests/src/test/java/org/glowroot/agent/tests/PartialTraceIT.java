@@ -80,6 +80,7 @@ public class PartialTraceIT {
                 AdvancedConfig.newBuilder()
                         .setImmediatePartialStoreThresholdSeconds(ProtoOptional.of(1))
                         .build());
+
         // when
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<Trace> future = executor.submit(new Callable<Trace>() {
@@ -93,6 +94,7 @@ public class PartialTraceIT {
                 return null;
             }
         });
+
         // then
         Stopwatch stopwatch = Stopwatch.createStarted();
         Trace trace = null;
@@ -117,9 +119,9 @@ public class PartialTraceIT {
         assertThat(trace).isNotNull();
         assertThat(trace.getHeader().getPartial()).isTrue();
         if (stuckOnNonRoot) {
-            assertThat(trace.getEntryCount()).isEqualTo(2);
+            assertThat(trace.getEntryList()).hasSize(2);
         } else {
-            assertThat(trace.getEntryCount()).isZero();
+            assertThat(trace.getEntryList()).isEmpty();
         }
         assertThat(trace.hasMainThreadProfile()).isTrue();
         // interrupt trace

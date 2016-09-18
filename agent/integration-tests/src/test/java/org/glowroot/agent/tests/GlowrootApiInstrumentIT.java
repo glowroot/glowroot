@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.tests;
 
+import java.util.Iterator;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -50,7 +52,6 @@ public class GlowrootApiInstrumentIT {
 
     @Test
     public void shouldCaptureTransaction() throws Exception {
-        // given
         // when
         Trace trace = container.execute(CaptureTransaction.class);
         // then
@@ -60,18 +61,24 @@ public class GlowrootApiInstrumentIT {
 
     @Test
     public void shouldCaptureTraceEntry() throws Exception {
-        // given
         // when
         Trace trace = container.execute(CaptureTraceEntry.class);
+
         // then
-        assertThat(trace.getEntryList().get(0).getMessage()).isEqualTo("xyz zyx => zyx0");
         Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
         assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("ooo");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("xyz zyx => zyx0");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureTimer() throws Exception {
-        // given
         // when
         Trace trace = container.execute(CaptureTimer.class);
         // then

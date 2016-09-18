@@ -16,7 +16,7 @@
 package org.glowroot.agent.plugin.httpclient;
 
 import java.net.ServerSocket;
-import java.util.List;
+import java.util.Iterator;
 
 import javax.jws.WebMethod;
 import javax.jws.WebParam;
@@ -59,11 +59,18 @@ public class CxfClientPluginIT {
 
     @Test
     public void shouldCaptureHttpGet() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteSoapRequest.class);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage()).matches("cxf client soap request:"
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).matches("cxf client soap request:"
                 + " http://localhost:\\d+/cxf/helloWorld\\?wsdl, operation=hello");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ExecuteSoapRequest implements AppUnderTest, TransactionMarker {

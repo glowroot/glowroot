@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,10 @@ public class LoggerTest {
         // given
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
         Logger logger = new LoggerImpl(slf4jLogger);
+
         // when
         logger.getName();
+
         // then
         verify(slf4jLogger).getName();
         verifyNoMoreInteractions(slf4jLogger);
@@ -45,6 +47,7 @@ public class LoggerTest {
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
         Logger logger = new LoggerImpl(slf4jLogger);
         Throwable t = new Throwable();
+
         // when
         logger.isTraceEnabled();
         logger.trace("a");
@@ -52,6 +55,7 @@ public class LoggerTest {
         logger.trace("a: {},{}", "b", "c");
         logger.trace("a: {},{},{}", "b", "c", "d");
         logger.trace("a", t);
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).isTraceEnabled();
@@ -69,6 +73,7 @@ public class LoggerTest {
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
         Logger logger = new LoggerImpl(slf4jLogger);
         Throwable t = new Throwable();
+
         // when
         logger.isDebugEnabled();
         logger.debug("a");
@@ -76,6 +81,7 @@ public class LoggerTest {
         logger.debug("a: {},{}", "b", "c");
         logger.debug("a: {},{},{}", "b", "c", "d");
         logger.debug("a", t);
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).isDebugEnabled();
@@ -93,6 +99,7 @@ public class LoggerTest {
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
         Logger logger = new LoggerImpl(slf4jLogger);
         Throwable t = new Throwable();
+
         // when
         logger.isInfoEnabled();
         logger.info("a");
@@ -100,6 +107,7 @@ public class LoggerTest {
         logger.info("a: {},{}", "b", "c");
         logger.info("a: {},{},{}", "b", "c", "d");
         logger.info("a", t);
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).isInfoEnabled();
@@ -117,6 +125,7 @@ public class LoggerTest {
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
         Logger logger = new LoggerImpl(slf4jLogger);
         Throwable t = new Throwable();
+
         // when
         logger.isWarnEnabled();
         logger.warn("a");
@@ -124,6 +133,7 @@ public class LoggerTest {
         logger.warn("a: {},{}", "b", "c");
         logger.warn("a: {},{},{}", "b", "c", "d");
         logger.warn("a", t);
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).isWarnEnabled();
@@ -141,6 +151,7 @@ public class LoggerTest {
         org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
         Logger logger = new LoggerImpl(slf4jLogger);
         Throwable t = new Throwable();
+
         // when
         logger.isErrorEnabled();
         logger.error("a");
@@ -148,6 +159,7 @@ public class LoggerTest {
         logger.error("a: {},{}", "b", "c");
         logger.error("a: {},{},{}", "b", "c", "d");
         logger.error("a", t);
+
         // then
         InOrder inOrder = Mockito.inOrder(slf4jLogger);
         inOrder.verify(slf4jLogger).isErrorEnabled();

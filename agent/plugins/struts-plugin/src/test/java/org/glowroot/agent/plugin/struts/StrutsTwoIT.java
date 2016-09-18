@@ -17,7 +17,7 @@ package org.glowroot.agent.plugin.struts;
 
 import java.io.File;
 import java.net.ServerSocket;
-import java.util.List;
+import java.util.Iterator;
 
 import com.ning.http.client.AsyncHttpClient;
 import org.apache.catalina.Context;
@@ -56,16 +56,20 @@ public class StrutsTwoIT {
 
     @Test
     public void shouldCaptureAction() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteActionInTomcat.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("HelloAction#helloAction");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("struts action:"
                 + " org.glowroot.agent.plugin.struts.StrutsTwoIT$HelloAction.helloAction()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class HelloAction {

@@ -54,7 +54,6 @@ public class AlertConfigOrderingTest {
 
     @Test
     public void shouldCompare() {
-        // given
         // when
         int compare = AlertConfigJsonService.orderingByName.compare(left, right);
         // then

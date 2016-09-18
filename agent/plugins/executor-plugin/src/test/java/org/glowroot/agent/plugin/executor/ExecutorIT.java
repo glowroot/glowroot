@@ -68,7 +68,6 @@ public class ExecutorIT {
 
     @Test
     public void shouldCaptureExecute() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoExecuteRunnable.class);
         // then
@@ -77,7 +76,6 @@ public class ExecutorIT {
 
     @Test
     public void shouldCaptureExecuteFutureTask() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoExecuteFutureTask.class);
         // then
@@ -86,7 +84,6 @@ public class ExecutorIT {
 
     @Test
     public void shouldCaptureSubmitCallable() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoSubmitCallable.class);
         // then
@@ -95,7 +92,6 @@ public class ExecutorIT {
 
     @Test
     public void shouldCaptureSubmitRunnableAndCallable() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoSubmitRunnableAndCallable.class);
         // then
@@ -104,9 +100,9 @@ public class ExecutorIT {
 
     @Test
     public void shouldNotCaptureTraceEntryForEmptyAuxThread() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoSimpleSubmitRunnableWork.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getAuxThreadRootTimerCount()).isEqualTo(1);
@@ -121,9 +117,9 @@ public class ExecutorIT {
 
     @Test
     public void shouldNotCaptureAlreadyCompletedFutureGet() throws Exception {
-        // given
         // when
         Trace trace = container.execute(CallFutureGetOnAlreadyCompletedFuture.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getMainThreadRootTimer().getChildTimerCount()).isZero();
@@ -131,24 +127,29 @@ public class ExecutorIT {
 
     @Test
     public void shouldCaptureNestedFutureGet() throws Exception {
-        // given
         // when
         Trace trace = container.execute(CallFutureGetOnNestedFuture.class);
+
         // then
-        Trace.Header header = trace.getHeader();
-        assertThat(header.getEntryCount()).isEqualTo(4);
-        Trace.Entry entry1 = trace.getEntry(0);
-        assertThat(entry1.getDepth()).isEqualTo(0);
-        assertThat(entry1.getMessage()).isEqualTo("auxiliary thread");
-        Trace.Entry entry2 = trace.getEntry(1);
-        assertThat(entry2.getDepth()).isEqualTo(1);
-        assertThat(entry2.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
-        Trace.Entry entry3 = trace.getEntry(2);
-        assertThat(entry3.getDepth()).isEqualTo(1);
-        assertThat(entry3.getMessage()).isEqualTo("auxiliary thread");
-        Trace.Entry entry4 = trace.getEntry(3);
-        assertThat(entry4.getDepth()).isEqualTo(2);
-        assertThat(entry4.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(2);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
@@ -209,7 +210,6 @@ public class ExecutorIT {
 
     @Test
     public void shouldCaptureNestedExecute() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoNestedExecuteRunnable.class);
         // then
@@ -218,7 +218,6 @@ public class ExecutorIT {
 
     @Test
     public void shouldCaptureDelegatingExecutor() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoDelegatingExecutor.class);
         // then
@@ -254,6 +253,7 @@ public class ExecutorIT {
         assertThat(header.getAuxThreadRootTimer(0).getChildTimer(0).getName())
                 .isEqualTo("mock trace entry marker");
         List<Trace.Entry> entries = trace.getEntryList();
+
         if (isAny) {
             entries = Lists.newArrayList(entries);
             for (Iterator<Trace.Entry> i = entries.iterator(); i.hasNext();) {
@@ -269,12 +269,12 @@ public class ExecutorIT {
             assertThat(entries).hasSize(6);
         }
         for (int i = 0; i < entries.size(); i += 2) {
-            Trace.Entry entry1 = entries.get(i);
-            assertThat(entry1.getDepth()).isEqualTo(0);
-            assertThat(entry1.getMessage()).isEqualTo("auxiliary thread");
-            Trace.Entry entry2 = entries.get(i + 1);
-            assertThat(entry2.getDepth()).isEqualTo(1);
-            assertThat(entry2.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+            assertThat(entries.get(i).getDepth()).isEqualTo(0);
+            assertThat(entries.get(i).getMessage()).isEqualTo("auxiliary thread");
+
+            assertThat(entries.get(i + 1).getDepth()).isEqualTo(1);
+            assertThat(entries.get(i + 1).getMessage())
+                    .isEqualTo("trace entry marker / CreateTraceEntry");
         }
     }
 

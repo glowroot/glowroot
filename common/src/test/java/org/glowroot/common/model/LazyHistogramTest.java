@@ -133,6 +133,7 @@ public class LazyHistogramTest {
     }
 
     private void shouldDecodeOnTopOfExisting(int encodedSize, int nonEncodedSize) throws Exception {
+        // given
         LazyHistogram lazyHistogram = new LazyHistogram();
         for (int i = encodedSize; i > 0; i -= 1000) {
             lazyHistogram.add(i);

@@ -56,9 +56,9 @@ public class AnnotatedServletIT {
 
     @Test
     public void testServlet() throws Exception {
-        // given
         // when
         Trace trace = container.execute(InvokeServlet.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("/hello/5");

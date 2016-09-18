@@ -54,9 +54,9 @@ public class ThreadStatsIT {
 
     @Test
     public void shouldReadTraceThreadStatsConfigEnabled() throws Exception {
-        // given
         // when
         Trace trace = container.execute(Normal.class);
+
         // then
         assertThat(trace.getHeader().hasMainThreadStats()).isTrue();
         assertThat(trace.getHeader().getMainThreadStats().hasTotalCpuNanos()).isTrue();
@@ -78,9 +78,9 @@ public class ThreadStatsIT {
 
     @Test
     public void shouldReadTraceCpuTimeDisabled() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ThreadCpuTimeDisabled.class);
+
         // then
         assertThat(trace.getHeader().hasMainThreadStats()).isTrue();
         assertThat(trace.getHeader().getMainThreadStats().hasTotalCpuNanos()).isFalse();
@@ -91,9 +91,9 @@ public class ThreadStatsIT {
 
     @Test
     public void shouldReadTraceCpuTimeDisabledMid() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ThreadCpuTimeDisabledMid.class);
+
         // then
         assertThat(trace.getHeader().hasMainThreadStats()).isTrue();
         assertThat(trace.getHeader().getMainThreadStats().hasTotalCpuNanos()).isFalse();
@@ -104,9 +104,9 @@ public class ThreadStatsIT {
 
     @Test
     public void shouldReadTraceCpuTimeEnabledMid() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ThreadCpuTimeEnabledMid.class);
+
         // then
         assertThat(trace.getHeader().hasMainThreadStats()).isTrue();
         assertThat(trace.getHeader().getMainThreadStats().hasTotalCpuNanos()).isFalse();
@@ -117,9 +117,9 @@ public class ThreadStatsIT {
 
     @Test
     public void shouldReadTraceContentionMonitoringDisabled() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ThreadContentionMonitoringDisabled.class);
+
         // then
         assertThat(trace.getHeader().hasMainThreadStats()).isTrue();
         assertThat(trace.getHeader().getMainThreadStats().hasTotalCpuNanos()).isTrue();
@@ -130,9 +130,9 @@ public class ThreadStatsIT {
 
     @Test
     public void shouldReadTraceContentionMonitoringDisabledMid() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ThreadContentionMonitoringDisabledMid.class);
+
         // then
         assertThat(trace.getHeader().hasMainThreadStats()).isTrue();
         assertThat(trace.getHeader().getMainThreadStats().hasTotalCpuNanos()).isTrue();
@@ -143,9 +143,9 @@ public class ThreadStatsIT {
 
     @Test
     public void shouldReadTraceContentionMonitoringEnabledMid() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ThreadContentionMonitoringEnabledMid.class);
+
         // then
         assertThat(trace.getHeader().hasMainThreadStats()).isTrue();
         assertThat(trace.getHeader().getMainThreadStats().hasTotalCpuNanos()).isTrue();

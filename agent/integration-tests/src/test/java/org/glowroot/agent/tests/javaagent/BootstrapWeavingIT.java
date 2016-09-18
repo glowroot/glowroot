@@ -16,6 +16,7 @@
 package org.glowroot.agent.tests.javaagent;
 
 import java.beans.BeanDescriptor;
+import java.util.Iterator;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -51,10 +52,21 @@ public class BootstrapWeavingIT {
 
     @Test
     public void shouldExerciseBootstrapWeaving() throws Exception {
+        // when
         Trace trace = container.execute(ShouldExerciseBootstrapWeaving.class);
-        assertThat(trace.getEntryCount()).isEqualTo(2);
-        assertThat(trace.getEntry(0).getMessage()).isEqualTo("java.beans.BeanDescriptor");
-        assertThat(trace.getEntry(1).getMessage()).isEqualTo("getCustomizerClass");
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("java.beans.BeanDescriptor");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("getCustomizerClass");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ShouldExerciseBootstrapWeaving implements AppUnderTest, TransactionMarker {

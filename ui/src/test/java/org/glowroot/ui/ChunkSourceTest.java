@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,12 +46,14 @@ public class ChunkSourceTest {
         ChunkSource secondThree = ChunkSource.concat(ImmutableList.of(EmptyChunkSource.INSTANCE,
                 EmptyChunkSource.INSTANCE, EmptyChunkSource.INSTANCE, four, five, six));
         ChunkSource lastThree = ChunkSource.concat(ImmutableList.of(seven, eight, nine));
+
         // when
         ChunkSource concat = ChunkSource.concat(ImmutableList.of(EmptyChunkSource.INSTANCE,
                 EmptyChunkSource.INSTANCE, EmptyChunkSource.INSTANCE, firstThree,
                 EmptyChunkSource.INSTANCE, EmptyChunkSource.INSTANCE, EmptyChunkSource.INSTANCE,
                 secondThree, lastThree, EmptyChunkSource.INSTANCE, EmptyChunkSource.INSTANCE,
                 EmptyChunkSource.INSTANCE));
+
         // then
         CharArrayWriter writer = new CharArrayWriter();
         ChunkCopier copier = concat.getCopier(writer);
@@ -78,11 +80,13 @@ public class ChunkSourceTest {
         ChunkSource secondThree = ChunkSource.concat(ImmutableList.of(ChunkSource.wrap(""),
                 ChunkSource.wrap(""), ChunkSource.wrap(""), four, five, six));
         ChunkSource lastThree = ChunkSource.concat(ImmutableList.of(seven, eight, nine));
+
         // when
         ChunkSource concat = ChunkSource.concat(ImmutableList.of(ChunkSource.wrap(""),
                 ChunkSource.wrap(""), ChunkSource.wrap(""), firstThree, ChunkSource.wrap(""),
                 ChunkSource.wrap(""), ChunkSource.wrap(""), secondThree, lastThree,
                 ChunkSource.wrap(""), ChunkSource.wrap(""), ChunkSource.wrap("")));
+
         // then
         CharArrayWriter writer = new CharArrayWriter();
         ChunkCopier copier = concat.getCopier(writer);

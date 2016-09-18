@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.cassandra;
 
-import java.util.List;
+import java.util.Iterator;
 
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.BoundStatement;
@@ -57,50 +57,85 @@ public class CassandraSyncIT {
 
     @Test
     public void shouldExecuteStatement() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteStatement.class);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("cql execution: SELECT * FROM test.users => 10 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldExecuteStatementReturningNoRecords() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteStatementReturningNoRecords.class);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("cql execution: SELECT * FROM test.users where id = 12345 => 0 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldIterateUsingOneAndAll() throws Exception {
+        // when
         Trace trace = container.execute(IterateUsingOneAndAll.class);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("cql execution: SELECT * FROM test.users => 10 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldExecuteBoundStatement() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteBoundStatement.class);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage()).isEqualTo(
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo(
                 "cql execution: INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldExecuteBatchStatement() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteBatchStatement.class);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage()).isEqualTo("cql execution:"
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("cql execution:"
                 + " INSERT INTO test.users (id,  fname, lname) VALUES (100, 'f100', 'l100'),"
                 + " INSERT INTO test.users (id,  fname, lname) VALUES (101, 'f101', 'l101'),"
                 + " 10 x INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?),"
                 + " INSERT INTO test.users (id,  fname, lname) VALUES (300, 'f300', 'l300')");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ExecuteStatement implements AppUnderTest, TransactionMarker {

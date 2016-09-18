@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.spring;
 
-import java.util.List;
+import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -58,38 +58,66 @@ public class AsyncControllerIT {
 
     @Test
     public void shouldCaptureCallableAsyncController() throws Exception {
-        // given
         // when
         Trace trace = container.execute(CallableAsyncServlet.class);
+
         // then
         assertThat(trace.getHeader().getAsync()).isTrue();
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/async");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(4);
-        assertThat(entries.get(0).getMessage()).isEqualTo("spring controller:"
-                + " org.glowroot.agent.plugin.spring.AsyncControllerIT"
-                + "$CallableAsyncController.test()");
-        assertThat(entries.get(1).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
-        assertThat(entries.get(2).getMessage()).isEqualTo("auxiliary thread");
-        assertThat(entries.get(3).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
+                .isEqualTo("spring controller: org.glowroot.agent.plugin.spring.AsyncControllerIT"
+                        + "$CallableAsyncController.test()");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureDeferredResultAsyncController() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DeferredResultAsyncServlet.class);
+
         // then
         assertThat(trace.getHeader().getAsync()).isTrue();
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/async2");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(4);
-        assertThat(entries.get(0).getMessage()).isEqualTo("spring controller:"
-                + " org.glowroot.agent.plugin.spring.AsyncControllerIT"
-                + "$DeferredResultAsyncController.test()");
-        assertThat(entries.get(1).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
-        assertThat(entries.get(2).getMessage()).isEqualTo("auxiliary thread");
-        assertThat(entries.get(3).getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
+                .isEqualTo("spring controller: org.glowroot.agent.plugin.spring.AsyncControllerIT"
+                        + "$DeferredResultAsyncController.test()");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(2);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class CallableAsyncServlet extends InvokeSpringControllerInTomcat {

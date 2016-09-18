@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.spring;
 
-import java.util.List;
+import java.util.Iterator;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -51,16 +51,20 @@ public class RestControllerIT {
 
     @Test
     public void shouldCaptureTransactionNameWithNormalServletMappingHittingRest() throws Exception {
-        // given
         // when
         Trace trace = container.execute(WithNormalServletMappingHittingRest.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/rest");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("spring controller:"
                 + " org.glowroot.agent.plugin.spring.RestControllerIT$TestRestController.rest()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class WithNormalServletMappingHittingRest

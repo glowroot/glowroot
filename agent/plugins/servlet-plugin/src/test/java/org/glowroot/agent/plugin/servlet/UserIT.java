@@ -58,7 +58,6 @@ public class UserIT {
 
     @Test
     public void testHasRequestUserPrincipal() throws Exception {
-        // given
         // when
         Trace trace = container.execute(HasRequestUserPrincipal.class);
         // then
@@ -67,7 +66,6 @@ public class UserIT {
 
     @Test
     public void testHasRequestWithExceptionOnGetUserPrincipal() throws Exception {
-        // given
         // when
         container.execute(HasRequestWithExceptionOnGetUserPrincipal.class);
         // then don't blow up

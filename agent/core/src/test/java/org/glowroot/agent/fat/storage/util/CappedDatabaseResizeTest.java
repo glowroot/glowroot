@@ -76,7 +76,6 @@ public class CappedDatabaseResizeTest {
     }
 
     private void shouldWrapAndResize(int newSizeKb) throws Exception {
-        // given
         // when
         // because of compression, use somewhat random text and loop until wrap occurs
         String text = createRandomText();
@@ -86,6 +85,7 @@ public class CappedDatabaseResizeTest {
         long cappedId =
                 cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
         cappedDatabase.resize(newSizeKb);
+
         // then
         String text2 = cappedDatabase.read(cappedId).read();
         assertThat(text2).isEqualTo(text);
@@ -98,7 +98,6 @@ public class CappedDatabaseResizeTest {
     }
 
     private void shouldResizeAndWrap(int newSizeKb) throws Exception {
-        // given
         // when
         cappedDatabase.resize(newSizeKb);
         // because of compression, use somewhat random text and loop until wrap occurs
@@ -108,6 +107,7 @@ public class CappedDatabaseResizeTest {
         cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
         long cappedId =
                 cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+
         // then
         String text2 = cappedDatabase.read(cappedId).read();
         assertThat(text2).isEqualTo(text);

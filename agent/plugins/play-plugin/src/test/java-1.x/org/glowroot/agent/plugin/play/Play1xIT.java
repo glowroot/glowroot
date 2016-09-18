@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.ServerSocket;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.http.client.methods.HttpGet;
@@ -61,42 +62,65 @@ public class Play1xIT {
 
     @Test
     public void shouldCaptureIndexRoute() throws Exception {
-        // given
         // when
         Trace trace = container.execute(GetIndex.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("Application#index");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage()).isEqualTo("play action invoker");
-        assertThat(entries.get(1).getMessage()).isEqualTo("play render: Application/index.html");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("play action invoker");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("play render: Application/index.html");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureApplicationIndexRoute() throws Exception {
-        // given
         // when
         Trace trace = container.execute(GetApplicationIndex.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("Application#index");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage()).isEqualTo("play action invoker");
-        assertThat(entries.get(1).getMessage()).isEqualTo("play render: Application/index.html");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("play action invoker");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("play render: Application/index.html");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureApplicationCalculateRoute() throws Exception {
-        // given
         // when
         Trace trace = container.execute(GetApplicationCalculate.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("Application#calculate");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage()).isEqualTo("play action invoker");
-        assertThat(entries.get(1).getMessage())
-                .isEqualTo("play render: Application/calculate.html");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("play action invoker");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("play render: Application/calculate.html");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class GetIndex implements AppUnderTest {

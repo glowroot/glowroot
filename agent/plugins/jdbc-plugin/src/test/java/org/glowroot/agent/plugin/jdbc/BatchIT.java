@@ -19,7 +19,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
+import java.util.Iterator;
 
 import org.apache.commons.dbcp.DelegatingConnection;
 import org.apache.commons.dbcp.DelegatingStatement;
@@ -59,117 +59,169 @@ public class BatchIT {
 
     @Test
     public void testBatchPreparedStatement() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteBatchPreparedStatement.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage()).isEqualTo("jdbc execution: 3 x"
-                + " insert into employee (name) values (?) ['huckle'] ['sally'] ['sally']"
-                + " => 3 rows");
-        assertThat(entries.get(1).getMessage()).isEqualTo("jdbc execution: 2 x"
-                + " insert into employee (name) values (?) ['lowly'] ['pig will'] => 2 rows");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution: 3 x insert into employee (name)"
+                + " values (?) ['huckle'] ['sally'] ['sally'] => 3 rows");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution: 2 x insert into employee (name)"
+                + " values (?) ['lowly'] ['pig will'] => 2 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testBatchPreparedStatementWithoutCaptureBindParams() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", false);
+
         // when
         Trace trace = container.execute(ExecuteBatchPreparedStatement.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage())
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: 3 x insert into employee (name) values (?) => 3 rows");
-        assertThat(entries.get(1).getMessage())
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: 2 x insert into employee (name) values (?) => 2 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testBatchPreparedStatementWithoutClear() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteBatchPreparedStatementWithoutClear.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage()).isEqualTo("jdbc execution: 2 x"
-                + " insert into employee (name) values (?) ['huckle'] ['sally'] => 2 rows");
-        assertThat(entries.get(1).getMessage()).isEqualTo("jdbc execution: 2 x"
-                + " insert into employee (name) values (?) ['lowly'] ['pig will'] => 2 rows");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution: 2 x insert into employee (name)"
+                + " values (?) ['huckle'] ['sally'] => 2 rows");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution: 2 x insert into employee (name)"
+                + " values (?) ['lowly'] ['pig will'] => 2 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testBatchPreparedStatementWithoutClearWithoutCaptureBindParams() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", false);
+
         // when
         Trace trace = container.execute(ExecuteBatchPreparedStatementWithoutClear.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage())
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: 2 x insert into employee (name) values (?) => 2 rows");
-        assertThat(entries.get(1).getMessage())
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: 2 x insert into employee (name) values (?) => 2 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testBatchStatement() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteBatchStatement.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage())
-                .isEqualTo("jdbc execution: insert into employee (name) values ('huckle'),"
-                        + " insert into employee (name) values ('sally') => 2 rows");
-        assertThat(entries.get(1).getMessage())
-                .isEqualTo("jdbc execution: insert into employee (name) values ('lowly'),"
-                        + " insert into employee (name) values ('pig will') => 2 rows");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution:"
+                + " insert into employee (name) values ('huckle'),"
+                + " insert into employee (name) values ('sally') => 2 rows");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution:"
+                + " insert into employee (name) values ('lowly'),"
+                + " insert into employee (name) values ('pig will') => 2 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testBatchStatementNull() throws Exception {
-        // given
         // when
         Trace trace = container.execute(BatchStatementNull.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: insert into employee (name) values ('1') => 1 row");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testBatchStatementWithNoBatches() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteBatchStatementWithNoBatches.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
-                .isEqualTo("jdbc execution: (empty batch) => 0 rows");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution: (empty batch) => 0 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testBatchStatementWithoutClear() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteBatchStatementWithoutClear.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage())
-                .isEqualTo("jdbc execution: insert into employee (name) values ('huckle'),"
-                        + " insert into employee (name) values ('sally') => 2 rows");
-        assertThat(entries.get(1).getMessage())
-                .isEqualTo("jdbc execution: insert into employee (name) values ('lowly'),"
-                        + " insert into employee (name) values ('pig will') => 2 rows");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution:"
+                + " insert into employee (name) values ('huckle'),"
+                + " insert into employee (name) values ('sally') => 2 rows");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution:"
+                + " insert into employee (name) values ('lowly'),"
+                + " insert into employee (name) values ('pig will') => 2 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ExecuteBatchPreparedStatement implements AppUnderTest, TransactionMarker {

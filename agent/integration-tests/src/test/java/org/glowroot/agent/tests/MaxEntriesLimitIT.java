@@ -67,6 +67,7 @@ public class MaxEntriesLimitIT {
                 .setMaxTraceEntriesPerTransaction(ProtoOptional.of(100))
                 .setImmediatePartialStoreThresholdSeconds(ProtoOptional.of(1))
                 .build());
+
         // when
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<Trace> future = executor.submit(new Callable<Trace>() {
@@ -75,6 +76,7 @@ public class MaxEntriesLimitIT {
                 return container.execute(GenerateLotsOfEntries.class);
             }
         });
+
         // then
         // integration test harness needs to kick off test, so may need to wait a little
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -109,12 +111,16 @@ public class MaxEntriesLimitIT {
         container.getConfigService().updateAdvancedConfig(AdvancedConfig.newBuilder()
                 .setMaxTraceEntriesPerTransaction(ProtoOptional.of(100))
                 .build());
+
         // when
         Trace trace = container.execute(GenerateLimitBypassedEntries.class);
+
         // then
         assertThat(trace.getHeader().getEntryCount()).isEqualTo(101);
         assertThat(trace.getHeader().getEntryLimitExceeded()).isTrue();
+
         List<Trace.Entry> entries = trace.getEntryList();
+
         assertThat(entries).hasSize(101);
         assertThat(entries.get(100).getMessage()).isEqualTo("ERROR -- abc");
     }

@@ -82,8 +82,11 @@ public class TraceDaoIT {
                 .durationNanosHigh(Long.MAX_VALUE)
                 .build();
         Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+
+        // when
         Trace.Header header =
                 traceDao.readHeaderPlus(AGENT_ID, queryResult.records().get(0).traceId()).header();
+
         // then
         assertThat(header.getPartial()).isEqualTo(trace.getHeader().getPartial());
         assertThat(header.getStartTime()).isEqualTo(trace.getHeader().getStartTime());
@@ -107,8 +110,10 @@ public class TraceDaoIT {
                 .durationNanosLow(trace.getHeader().getDurationNanos())
                 .durationNanosHigh(trace.getHeader().getDurationNanos())
                 .build();
+
         // when
         Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+
         // then
         assertThat(queryResult.records()).hasSize(1);
     }
@@ -127,8 +132,10 @@ public class TraceDaoIT {
                 .durationNanosLow(trace.getHeader().getDurationNanos() + 1)
                 .durationNanosHigh(trace.getHeader().getDurationNanos() + 2)
                 .build();
+
         // when
         Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+
         // then
         assertThat(queryResult.records()).isEmpty();
     }
@@ -147,8 +154,10 @@ public class TraceDaoIT {
                 .durationNanosLow(trace.getHeader().getDurationNanos() - 2)
                 .durationNanosHigh(trace.getHeader().getDurationNanos() - 1)
                 .build();
+
         // when
         Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+
         // then
         assertThat(queryResult.records()).isEmpty();
     }
@@ -170,8 +179,10 @@ public class TraceDaoIT {
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("xyz")
                 .build();
+
         // when
         Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+
         // then
         assertThat(queryResult.records()).hasSize(1);
     }
@@ -193,8 +204,10 @@ public class TraceDaoIT {
                 .attributeValueComparator(null)
                 .attributeValue(null)
                 .build();
+
         // when
         Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+
         // then
         assertThat(queryResult.records()).hasSize(1);
     }
@@ -216,8 +229,10 @@ public class TraceDaoIT {
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("xyz")
                 .build();
+
         // when
         Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+
         // then
         assertThat(queryResult.records()).hasSize(1);
     }
@@ -239,8 +254,10 @@ public class TraceDaoIT {
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("abc")
                 .build();
+
         // when
         Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+
         // then
         assertThat(queryResult.records()).isEmpty();
     }
@@ -262,8 +279,10 @@ public class TraceDaoIT {
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("xyz1")
                 .build();
+
         // when
         Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+
         // then
         assertThat(queryResult.records()).isEmpty();
     }

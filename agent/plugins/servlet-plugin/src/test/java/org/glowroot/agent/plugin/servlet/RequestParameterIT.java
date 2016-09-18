@@ -64,9 +64,9 @@ public class RequestParameterIT {
 
     @Test
     public void testRequestParameters() throws Exception {
-        // given
         // when
         Trace trace = container.execute(GetParameter.class);
+
         // then
         Map<String, Object> requestParameters =
                 ResponseHeaderIT.getDetailMap(trace, "Request parameters");
@@ -92,7 +92,6 @@ public class RequestParameterIT {
 
     @Test
     public void testRequestParameterMap() throws Exception {
-        // given
         // when
         container.execute(GetParameterMap.class);
         // then don't throw IllegalStateException (see MockCatalinaHttpServletRequest)
@@ -100,9 +99,9 @@ public class RequestParameterIT {
 
     @Test
     public void testBadRequestParameterMap() throws Exception {
-        // given
         // when
         Trace trace = container.execute(GetBadParameterMap.class);
+
         // then
         Map<String, Object> requestParameters =
                 ResponseHeaderIT.getDetailMap(trace, "Request parameters");
@@ -112,9 +111,9 @@ public class RequestParameterIT {
 
     @Test
     public void testExtraBadRequestParameterMap() throws Exception {
-        // given
         // when
         Trace trace = container.execute(GetExtraBadParameterMap.class);
+
         // then
         Map<String, Object> requestParameters =
                 ResponseHeaderIT.getDetailMap(trace, "Request parameters");
@@ -124,7 +123,6 @@ public class RequestParameterIT {
 
     @Test
     public void testOutsideServlet() throws Exception {
-        // given
         // when
         container.executeNoExpectedTrace(GetParameterOutsideServlet.class);
         // then

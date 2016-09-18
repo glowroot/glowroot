@@ -87,8 +87,10 @@ public class GaugeCollectorTest {
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
                 .mbeanObjectName("invalid mbean object name")
                 .build();
+
         // when
         List<GaugeValue> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfig);
+
         // then
         assertThat(gaugeValues).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));
@@ -108,8 +110,10 @@ public class GaugeCollectorTest {
         when(clock.currentTimeMillis()).thenReturn(59999L);
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(InstanceNotFoundException.class);
+
         // when
         List<GaugeValue> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfig);
+
         // then
         assertThat(gaugeValues).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));
@@ -127,8 +131,10 @@ public class GaugeCollectorTest {
         when(clock.currentTimeMillis()).thenReturn(60000L);
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(InstanceNotFoundException.class);
+
         // when
         List<GaugeValue> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfig);
+
         // then
         assertThat(gaugeValues).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));
@@ -147,12 +153,14 @@ public class GaugeCollectorTest {
         when(clock.currentTimeMillis()).thenReturn(0L).thenReturn(30000L).thenReturn(60000L);
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(InstanceNotFoundException.class);
+
         // when
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
+
         // then
         verify(logger, times(5)).debug(anyString(), any(Exception.class));
         verify(logger)
@@ -172,12 +180,14 @@ public class GaugeCollectorTest {
                 .build();
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(AttributeNotFoundException.class);
+
         // when
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
+
         // then
         verify(logger, times(10)).debug(anyString(), any(Exception.class));
         verify(logger).warn("mbean attribute {} not found in {}", "ccc", "xyz:aaa=bbb");
@@ -194,12 +204,14 @@ public class GaugeCollectorTest {
                 .build();
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(new RuntimeException("A msg"));
+
         // when
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
+
         // then
         verify(logger, times(10)).debug(anyString(), any(Exception.class));
         verify(logger).warn(eq("error accessing mbean attribute: {} {}"), eq("xyz:aaa=bbb"),
@@ -218,12 +230,14 @@ public class GaugeCollectorTest {
                 .build();
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenReturn("not a number");
+
         // when
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
+
         // then
         verify(logger).warn("error accessing mbean attribute {} {}: {}", "xyz:aaa=bbb", "ccc",
                 "MBean attribute value is not a valid number: \"not a number\"");
@@ -241,12 +255,14 @@ public class GaugeCollectorTest {
                 .build();
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenReturn(new Object());
+
         // when
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
         gaugeCollector.collectGaugeValues(gaugeConfig);
+
         // then
         verify(logger).warn("error accessing mbean attribute {} {}: {}", "xyz:aaa=bbb", "ccc",
                 "MBean attribute value is not a number or string");

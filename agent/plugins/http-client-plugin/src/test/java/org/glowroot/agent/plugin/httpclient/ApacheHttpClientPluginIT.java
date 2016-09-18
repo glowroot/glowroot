@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
-import java.util.List;
+import java.util.Iterator;
 
 import org.apache.http.HttpHost;
 import org.apache.http.client.HttpClient;
@@ -53,38 +53,66 @@ public class ApacheHttpClientPluginIT {
 
     @Test
     public void shouldCaptureHttpGet() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteHttpGet.class);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello1");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureHttpGetUsingHttpHostArg() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteHttpGetUsingHttpHostArg.class);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello2");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureHttpPost() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteHttpPost.class);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello3");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureHttpPostUsingHttpHostArg() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteHttpPostUsingHttpHostArg.class);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello4");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     private static HttpClient createHttpClient() throws Exception {

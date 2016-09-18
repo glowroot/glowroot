@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.plugin.executor;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -65,9 +66,9 @@ public class LotsOfNestedAuxThreadContextsIT {
 
     @Test
     public void shouldCaptureSubmitCallable() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoSubmitCallable.class);
+
         // then
         List<Trace.Timer> auxThreadRootTimers = trace.getHeader().getAuxThreadRootTimerList();
         assertThat(auxThreadRootTimers).hasSize(1);
@@ -78,14 +79,17 @@ public class LotsOfNestedAuxThreadContextsIT {
         assertThat(auxThreadRootTimer.getChildTimer(0).getName())
                 .isEqualTo("mock trace entry marker");
 
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
-        Trace.Entry entry1 = entries.get(0);
-        assertThat(entry1.getDepth()).isEqualTo(0);
-        assertThat(entry1.getMessage()).isEqualTo("auxiliary thread");
-        Trace.Entry entry2 = entries.get(1);
-        assertThat(entry2.getDepth()).isEqualTo(1);
-        assertThat(entry2.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class DoSubmitCallable implements AppUnderTest, TransactionMarker {

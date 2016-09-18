@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,9 +53,9 @@ public class PluginConfiguredInstrumentationIT {
 
     @Test
     public void shouldExecute1() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldExecuteAAA.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getTransactionName()).isEqualTo("abc zzz");

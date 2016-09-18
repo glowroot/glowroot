@@ -59,9 +59,9 @@ public class JettyHandlerIT {
 
     @Test
     public void testJettyHandler() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteJettyHandler.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("/hello");

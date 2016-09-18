@@ -19,7 +19,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
+import java.util.Iterator;
 
 import org.apache.commons.dbcp.DelegatingConnection;
 import org.apache.commons.dbcp.DelegatingStatement;
@@ -57,46 +57,54 @@ public class StatementIT {
 
     @Test
     public void testStatement() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testStatementQuery() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteStatementQueryAndIterateOverResults.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testStatementUpdate() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteStatementUpdate.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: update employee set name = 'nobody' => 3 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testNullStatement() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteNullStatement.class);
         // then
@@ -105,92 +113,113 @@ public class StatementIT {
 
     @Test
     public void testStatementThrowing() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteStatementThrowing.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jdbc execution: select * from employee");
         assertThat(entry.getError().getMessage()).isEqualTo("An execute failure");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testStatementUsingPrevious() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteStatementAndUsePrevious.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testStatementUsingRelativeForward() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteStatementAndUseRelativeForward.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testStatementUsingRelativeBackward() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteStatementAndUseRelativeBackward.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testStatementUsingAbsolute() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteStatementAndUseAbsolute.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 2 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testStatementUsingFirst() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteStatementAndUseFirst.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jdbc execution: select * from employee => 1 row");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testStatementUsingLast() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteStatementAndUseLast.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ExecuteStatementAndIterateOverResults

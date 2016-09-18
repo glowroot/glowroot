@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.spring;
 
-import java.util.List;
+import java.util.Iterator;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -52,102 +52,132 @@ public class ControllerIT {
 
     @Test
     public void shouldCaptureTransactionNameWithNormalServletMapping() throws Exception {
-        // given
         // when
         Trace trace = container.execute(WithNormalServletMapping.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/hello/echo/*");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("spring controller:"
                 + " org.glowroot.agent.plugin.spring.ControllerIT$TestController.echo()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureTransactionNameWithNormalServletMappingHittingRoot() throws Exception {
-        // given
         // when
         Trace trace = container.execute(WithNormalServletMappingHittingRoot.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("spring controller:"
                 + " org.glowroot.agent.plugin.spring.ControllerIT$RootController.echo()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureTransactionNameWithNestedServletMapping() throws Exception {
-        // given
         // when
         Trace trace = container.execute(WithNestedServletMapping.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/spring/hello/echo/*");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("spring controller:"
                 + " org.glowroot.agent.plugin.spring.ControllerIT$TestController.echo()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureTransactionNameWithNestedServletMappingHittingRoot() throws Exception {
-        // given
         // when
         Trace trace = container.execute(WithNestedServletMappingHittingRoot.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/spring/");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("spring controller:"
                 + " org.glowroot.agent.plugin.spring.ControllerIT$RootController.echo()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureTransactionNameWithLessNormalServletMapping() throws Exception {
-        // given
         // when
         Trace trace = container.execute(WithLessNormalServletMapping.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/hello/echo/*");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("spring controller:"
                 + " org.glowroot.agent.plugin.spring.ControllerIT$TestController.echo()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureTransactionNameWithLessNormalServletMappingHittingRoot()
             throws Exception {
-        // given
         // when
         Trace trace = container.execute(WithLessNormalServletMappingHittingRoot.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("spring controller:"
                 + " org.glowroot.agent.plugin.spring.ControllerIT$RootController.echo()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureAltTransactionName() throws Exception {
         // given
         container.getConfigService().setPluginProperty("spring", "useAltTransactionNaming", true);
+
         // when
         Trace trace = container.execute(WithNormalServletMapping.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("TestController#echo");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("spring controller:"
                 + " org.glowroot.agent.plugin.spring.ControllerIT$TestController.echo()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class WithNormalServletMapping extends InvokeSpringControllerInTomcat {

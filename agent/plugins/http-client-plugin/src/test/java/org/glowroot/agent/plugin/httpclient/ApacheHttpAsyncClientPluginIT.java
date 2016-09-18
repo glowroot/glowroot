@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
-import java.util.List;
+import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.http.HttpHost;
@@ -58,62 +58,106 @@ public class ApacheHttpAsyncClientPluginIT {
 
     @Test
     public void shouldCaptureAsyncHttpGet() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteAsyncHttpGet.class);
-        List<Trace.Entry> entries = trace.getEntryList();
+
+        // then
         assertThat(trace.getHeader().getAsyncTimer(0).getActive()).isFalse();
-        assertThat(entries).hasSize(3);
-        assertThat(entries.get(0).getDepth()).isEqualTo(0);
-        assertThat(entries.get(0).getMessage())
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello1");
-        assertThat(entries.get(1).getDepth()).isEqualTo(1);
-        assertThat(entries.get(1).getMessage()).matches("auxiliary thread");
-        assertThat(entries.get(2).getDepth()).isEqualTo(2);
-        assertThat(entries.get(2).getMessage()).matches("trace entry marker / CreateTraceEntry");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).matches("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(2);
+        assertThat(entry.getMessage()).matches("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureAsyncHttpGetUsingHttpHostArg() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteAsyncHttpGetUsingHttpHostArg.class);
-        List<Trace.Entry> entries = trace.getEntryList();
+
+        // then
         assertThat(trace.getHeader().getAsyncTimer(0).getActive()).isFalse();
-        assertThat(entries).hasSize(3);
-        assertThat(entries.get(0).getDepth()).isEqualTo(0);
-        assertThat(entries.get(0).getMessage())
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello2");
-        assertThat(entries.get(1).getDepth()).isEqualTo(1);
-        assertThat(entries.get(1).getMessage()).matches("auxiliary thread");
-        assertThat(entries.get(2).getDepth()).isEqualTo(2);
-        assertThat(entries.get(2).getMessage()).matches("trace entry marker / CreateTraceEntry");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).matches("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(2);
+        assertThat(entry.getMessage()).matches("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureAsyncHttpPost() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteAsyncHttpPost.class);
-        List<Trace.Entry> entries = trace.getEntryList();
+
+        // then
         assertThat(trace.getHeader().getAsyncTimer(0).getActive()).isFalse();
-        assertThat(entries).hasSize(3);
-        assertThat(entries.get(0).getDepth()).isEqualTo(0);
-        assertThat(entries.get(0).getMessage())
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello3");
-        assertThat(entries.get(1).getDepth()).isEqualTo(1);
-        assertThat(entries.get(1).getMessage()).matches("auxiliary thread");
-        assertThat(entries.get(2).getDepth()).isEqualTo(2);
-        assertThat(entries.get(2).getMessage()).matches("trace entry marker / CreateTraceEntry");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).matches("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(2);
+        assertThat(entry.getMessage()).matches("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureAsyncHttpPostUsingHttpHostArg() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteAsyncHttpPostUsingHttpHostArg.class);
-        List<Trace.Entry> entries = trace.getEntryList();
+
+        // then
         assertThat(trace.getHeader().getAsyncTimer(0).getActive()).isFalse();
-        assertThat(entries).hasSize(3);
-        assertThat(entries.get(0).getDepth()).isEqualTo(0);
-        assertThat(entries.get(0).getMessage())
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello4");
-        assertThat(entries.get(1).getDepth()).isEqualTo(1);
-        assertThat(entries.get(1).getMessage()).matches("auxiliary thread");
-        assertThat(entries.get(2).getDepth()).isEqualTo(2);
-        assertThat(entries.get(2).getMessage()).matches("trace entry marker / CreateTraceEntry");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).matches("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(2);
+        assertThat(entry.getMessage()).matches("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ExecuteAsyncHttpGet extends ExecuteHttpBase {

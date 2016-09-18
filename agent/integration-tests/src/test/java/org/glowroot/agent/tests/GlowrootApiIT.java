@@ -51,7 +51,6 @@ public class GlowrootApiIT {
 
     @Test
     public void shouldSetTransactionType() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SetTransactionType.class);
         // then
@@ -60,7 +59,6 @@ public class GlowrootApiIT {
 
     @Test
     public void shouldSetTransactionName() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SetTransactionName.class);
         // then
@@ -69,7 +67,6 @@ public class GlowrootApiIT {
 
     @Test
     public void shouldSetTransactionUser() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SetTransactionUser.class);
         // then
@@ -78,7 +75,6 @@ public class GlowrootApiIT {
 
     @Test
     public void shouldAddTransactionAttribute() throws Exception {
-        // given
         // when
         Trace trace = container.execute(AddTransactionAttribute.class);
         // then
@@ -90,10 +86,10 @@ public class GlowrootApiIT {
 
     @Test
     public void shouldSetTransactionSlowThreshold() throws Exception {
-        // given
         // when
         container.executeNoExpectedTrace(SetTransactionSlowThreshold.class);
         // then
+        // should not collect trace, verified above by method executeNoExpectedTrace()
     }
 
     public static class SetTransactionType implements AppUnderTest, TransactionMarker {

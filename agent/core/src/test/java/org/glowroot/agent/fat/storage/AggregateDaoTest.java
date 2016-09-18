@@ -97,6 +97,7 @@ public class AggregateDaoTest {
     public void shouldReadTransactions() throws Exception {
         // given
         populateAggregates();
+
         // when
         TransactionQuery query = ImmutableTransactionQuery.builder()
                 .transactionType("a type")
@@ -117,6 +118,7 @@ public class AggregateDaoTest {
                 10, collector);
         Result<TransactionSummary> queryResult =
                 collector.getResult(SummarySortOrder.TOTAL_TIME, 10);
+
         // then
         assertThat(overallAggregates).hasSize(2);
         assertThat(queryResult.records()).hasSize(3);

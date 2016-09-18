@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.tests;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -64,60 +65,71 @@ public class ErrorCaptureIT {
                 TransactionConfig.newBuilder()
                         .setSlowThresholdMillis(ProtoOptional.of(10000))
                         .build());
+
         // when
         Trace trace = container.execute(ShouldCaptureError.class);
+
         // then
         Trace.Header header = trace.getHeader();
-        assertThat(header.getEntryCount()).isEqualTo(3);
-        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(header.hasError()).isTrue();
         assertThat(header.getError().getMessage()).isEqualTo(RuntimeException.class.getName());
         assertThat(header.getError().hasException()).isTrue();
-        assertThat(entries).hasSize(3);
-        Trace.Entry entry1 = entries.get(0);
-        assertThat(entry1.hasError()).isFalse();
-        assertThat(entry1.getDepth()).isEqualTo(0);
-        Trace.Entry entry2 = entries.get(1);
-        assertThat(entry2.hasError()).isFalse();
-        assertThat(entry2.getDepth()).isEqualTo(1);
-        Trace.Entry entry3 = entries.get(2);
-        assertThat(entry3.hasError()).isFalse();
-        assertThat(entry3.getDepth()).isEqualTo(2);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.hasError()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(0);
+
+        entry = i.next();
+        assertThat(entry.hasError()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(1);
+
+        entry = i.next();
+        assertThat(entry.hasError()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(2);
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureErrorWithTraceEntryStackTrace() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldCaptureErrorWithTraceEntryStackTrace.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(trace.getHeader().hasError()).isFalse();
-        assertThat(entries).hasSize(2);
-        Trace.Entry entry1 = entries.get(0);
-        assertThat(entry1.getDepth()).isEqualTo(0);
-        Trace.Entry entry2 = entries.get(1);
-        assertThat(entry2.getDepth()).isEqualTo(1);
-        assertThat(entry2.getError().getMessage()).isNotEmpty();
-        List<Proto.StackTraceElement> stackTraceElements =
-                entry2.getLocationStackTraceElementList();
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getError().getMessage()).isNotEmpty();
+        List<Proto.StackTraceElement> stackTraceElements = entry.getLocationStackTraceElementList();
         assertThat(stackTraceElements.get(0).getClassName()).isEqualTo(LogError.class.getName());
         assertThat(stackTraceElements.get(0).getMethodName()).isEqualTo("addNestedErrorEntry");
         assertThat(stackTraceElements.get(0).getFileName()).isEqualTo("LogError.java");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureErrorWithCausalChain() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldCaptureErrorWithCausalChain.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(trace.getHeader().hasError()).isFalse();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
         assertThat(entry.getError().getMessage()).isNotEmpty();
         assertThat(entry.getMessage()).isEqualTo("ERROR -- abc");
+
         Proto.Throwable throwable = entry.getError().getException();
         assertThat(throwable.getClassName()).isEqualTo("java.lang.IllegalStateException");
         assertThat(throwable.getMessage()).isEqualTo("java.lang.IllegalArgumentException: Cause 3");
@@ -153,23 +165,29 @@ public class ErrorCaptureIT {
         causeLineNumbers.add(cause.getStackTraceElementList().get(0).getLineNumber());
         // make sure they are all different line numbers
         assertThat(causeLineNumbers).hasSize(3);
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldAddNestedErrorEntry() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldAddNestedErrorEntry.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(trace.getHeader().hasError()).isFalse();
-        assertThat(entries).hasSize(2);
-        Trace.Entry entry1 = entries.get(0);
-        assertThat(entry1.getDepth()).isEqualTo(0);
-        assertThat(entry1.getMessage()).isEqualTo("outer entry to test nesting level");
-        Trace.Entry entry2 = entries.get(1);
-        assertThat(entry2.getDepth()).isEqualTo(1);
-        assertThat(entry2.getError().getMessage()).isEqualTo("test add nested error entry message");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("outer entry to test nesting level");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getError().getMessage()).isEqualTo("test add nested error entry message");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ShouldCaptureError implements AppUnderTest {

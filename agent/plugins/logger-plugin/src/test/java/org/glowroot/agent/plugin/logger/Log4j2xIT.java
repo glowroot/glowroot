@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.logger;
 
-import java.util.List;
+import java.util.Iterator;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,16 +58,26 @@ public class Log4j2xIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
+
         // when
         Trace trace = container.execute(ShouldLog.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg");
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage())
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("log warn: o.g.a.p.logger.Log4j2xIT$ShouldLog - def");
-        assertThat(entries.get(1).getMessage())
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("log error: o.g.a.p.logger.Log4j2xIT$ShouldLog - efg");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
@@ -75,26 +85,34 @@ public class Log4j2xIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
+
         // when
         Trace trace = container.execute(ShouldLogWithThrowable.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg_t");
-        assertThat(entries).hasSize(2);
 
-        Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage())
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("log warn: o.g.a.p.l.Log4j2xIT$ShouldLogWithThrowable - def_t");
-        assertThat(warnEntry.getError().getMessage()).isEqualTo("456");
-        assertThat(warnEntry.getError().getException().getStackTraceElementList().get(0)
-                .getMethodName()).isEqualTo("transactionMarker");
+        assertThat(entry.getError().getMessage()).isEqualTo("456");
+        assertThat(
+                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
+                        .isEqualTo("transactionMarker");
 
-        Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage())
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("log error: o.g.a.p.l.Log4j2xIT$ShouldLogWithThrowable - efg_t");
-        assertThat(errorEntry.getError().getMessage()).isEqualTo("567");
-        assertThat(errorEntry.getError().getException().getStackTraceElementList().get(0)
-                .getMethodName()).isEqualTo("transactionMarker");
+        assertThat(entry.getError().getMessage()).isEqualTo("567");
+        assertThat(
+                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
+                        .isEqualTo("transactionMarker");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
@@ -102,120 +120,151 @@ public class Log4j2xIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
+
         // when
         Trace trace = container.execute(ShouldLogWithNullThrowable.class);
-        // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg_tnull");
-        assertThat(entries).hasSize(2);
 
-        Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage())
+        // then
+        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg_tnull");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("log warn: o.g.a.p.l.Log4j2xIT$ShouldLogWithNullThrowable - def_tnull");
-        assertThat(warnEntry.getError().getMessage()).isEqualTo("def_tnull");
-        Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage())
+        assertThat(entry.getError().getMessage()).isEqualTo("def_tnull");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("log error: o.g.a.p.l.Log4j2xIT$ShouldLogWithNullThrowable - efg_tnull");
-        assertThat(errorEntry.getError().getMessage()).isEqualTo("efg_tnull");
+        assertThat(entry.getError().getMessage()).isEqualTo("efg_tnull");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testLogWithOneParameter() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldLogWithOneParameter.class);
-        // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
 
-        Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage())
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("log warn: o.g.a.p.l.Log4j2xIT$ShouldLogWithOneParameter - def_1 d");
-        Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage())
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("log error: o.g.a.p.l.Log4j2xIT$ShouldLogWithOneParameter - efg_1 e");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testLogWithOneParameterAndThrowable() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldLogWithOneParameterAndThrowable.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg_1_t e");
-        assertThat(entries).hasSize(2);
 
-        Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo(
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo(
                 "log warn: o.g.a.p.l.Log4j2xIT$ShouldLogWithOneParameterAndThrowable - def_1_t d");
-        assertThat(warnEntry.getError().getMessage()).isEqualTo("456");
-        assertThat(warnEntry.getError().getException().getStackTraceElementList().get(0)
-                .getMethodName()).isEqualTo("transactionMarker");
+        assertThat(entry.getError().getMessage()).isEqualTo("456");
+        assertThat(
+                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
+                        .isEqualTo("transactionMarker");
 
-        Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo(
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo(
                 "log error: o.g.a.p.l.Log4j2xIT$ShouldLogWithOneParameterAndThrowable - efg_1_t e");
-        assertThat(errorEntry.getError().getMessage()).isEqualTo("567");
-        assertThat(errorEntry.getError().getException().getStackTraceElementList().get(0)
-                .getMethodName()).isEqualTo("transactionMarker");
+        assertThat(entry.getError().getMessage()).isEqualTo("567");
+        assertThat(
+                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
+                        .isEqualTo("transactionMarker");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testLogWithTwoParameters() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldLogWithTwoParameters.class);
-        // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
 
-        Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage())
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("log warn: o.g.a.p.l.Log4j2xIT$ShouldLogWithTwoParameters - def_2 d e");
-        Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage())
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("log error: o.g.a.p.l.Log4j2xIT$ShouldLogWithTwoParameters - efg_2 e f");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testLogWithMoreThanTwoParameters() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldLogWithMoreThanTwoParameters.class);
-        // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
 
-        Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo(
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo(
                 "log warn: o.g.a.p.l.Log4j2xIT$ShouldLogWithMoreThanTwoParameters - def_3 d e f");
-        Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo(
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo(
                 "log error: o.g.a.p.l.Log4j2xIT$ShouldLogWithMoreThanTwoParameters - efg_3 e f g");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void testLogWithParametersAndThrowable() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldLogWithParametersAndThrowable.class);
-        // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(2);
 
-        Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage()).isEqualTo("log warn: o.g.a.p.l.Log4j2xIT"
-                + "$ShouldLogWithParametersAndThrowable - def_3_t d e f");
-        assertThat(warnEntry.getError().getMessage()).isEqualTo("456");
-        assertThat(warnEntry.getError().getException().getStackTraceElementList().get(0)
-                .getMethodName()).isEqualTo("transactionMarker");
-        Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage()).isEqualTo("log error: o.g.a.p.l.Log4j2xIT"
-                + "$ShouldLogWithParametersAndThrowable - efg_3_t e f g");
-        assertThat(errorEntry.getError().getMessage()).isEqualTo("567");
-        assertThat(errorEntry.getError().getException().getStackTraceElementList().get(0)
-                .getMethodName()).isEqualTo("transactionMarker");
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("log warn:"
+                + " o.g.a.p.l.Log4j2xIT$ShouldLogWithParametersAndThrowable - def_3_t d e f");
+        assertThat(entry.getError().getMessage()).isEqualTo("456");
+        assertThat(
+                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
+                        .isEqualTo("transactionMarker");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("log error:"
+                + " o.g.a.p.l.Log4j2xIT$ShouldLogWithParametersAndThrowable - efg_3_t e f g");
+        assertThat(entry.getError().getMessage()).isEqualTo("567");
+        assertThat(
+                entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
+                        .isEqualTo("transactionMarker");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ShouldLog implements AppUnderTest, TransactionMarker {

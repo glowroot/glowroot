@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.config;
 
+import java.util.List;
+
 import org.junit.Test;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
@@ -41,10 +43,10 @@ public class InstrumentationConfigValidationTest {
 
     @Test
     public void testValid() {
-        // given
         // when
+        List<String> validationErrors = baseConfig.validationErrors();
         // then
-        assertThat(baseConfig.validationErrors()).isEmpty();
+        assertThat(validationErrors).isEmpty();
     }
 
     @Test
@@ -53,8 +55,9 @@ public class InstrumentationConfigValidationTest {
         InstrumentationConfig config = ImmutableInstrumentationConfig.builder().copyFrom(baseConfig)
                 .className("").methodName("").build();
         // when
+        List<String> validationErrors = config.validationErrors();
         // then
-        assertThat(config.validationErrors()).containsExactly(
+        assertThat(validationErrors).containsExactly(
                 "className and classAnnotation are both empty",
                 "methodName and methodAnnotation are both empty");
     }
@@ -65,8 +68,9 @@ public class InstrumentationConfigValidationTest {
         InstrumentationConfig config =
                 ImmutableInstrumentationConfig.builder().copyFrom(baseConfig).timerName("").build();
         // when
+        List<String> validationErrors = config.validationErrors();
         // then
-        assertThat(config.validationErrors()).containsExactly("timerName is empty");
+        assertThat(validationErrors).containsExactly("timerName is empty");
     }
 
     @Test
@@ -75,9 +79,9 @@ public class InstrumentationConfigValidationTest {
         InstrumentationConfig config = ImmutableInstrumentationConfig.builder().copyFrom(baseConfig)
                 .timerName("a_b").build();
         // when
+        List<String> validationErrors = config.validationErrors();
         // then
-        assertThat(config.validationErrors())
-                .containsExactly("timerName contains invalid characters: a_b");
+        assertThat(validationErrors).containsExactly("timerName contains invalid characters: a_b");
     }
 
     @Test
@@ -86,8 +90,9 @@ public class InstrumentationConfigValidationTest {
         InstrumentationConfig config = ImmutableInstrumentationConfig.builder().copyFrom(baseConfig)
                 .captureKind(CaptureKind.OTHER).timerName("").build();
         // when
+        List<String> validationErrors = config.validationErrors();
         // then
-        assertThat(config.validationErrors()).isEmpty();
+        assertThat(validationErrors).isEmpty();
     }
 
     @Test
@@ -96,8 +101,9 @@ public class InstrumentationConfigValidationTest {
         InstrumentationConfig config = ImmutableInstrumentationConfig.builder().copyFrom(baseConfig)
                 .captureKind(CaptureKind.TRACE_ENTRY).build();
         // when
+        List<String> validationErrors = config.validationErrors();
         // then
-        assertThat(config.validationErrors()).containsExactly("traceEntryMessageTemplate is empty");
+        assertThat(validationErrors).containsExactly("traceEntryMessageTemplate is empty");
     }
 
     @Test
@@ -106,8 +112,9 @@ public class InstrumentationConfigValidationTest {
         InstrumentationConfig config = ImmutableInstrumentationConfig.builder().copyFrom(baseConfig)
                 .captureKind(CaptureKind.TRANSACTION).build();
         // when
+        List<String> validationErrors = config.validationErrors();
         // then
-        assertThat(config.validationErrors()).containsExactly("transactionType is empty",
+        assertThat(validationErrors).containsExactly("transactionType is empty",
                 "transactionNameTemplate is empty");
     }
 }

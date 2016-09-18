@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
-import java.util.List;
+import java.util.Iterator;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -54,20 +54,34 @@ public class ApacheHttpClient3xPluginIT {
 
     @Test
     public void shouldCaptureHttpGet() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteHttpGet.class);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("http client request: GET http://www.example.com/hello1");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureHttpPost() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteHttpPost.class);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .isEqualTo("http client request: POST http://www.example.com/hello3");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ExecuteHttpGet implements AppUnderTest, TransactionMarker {

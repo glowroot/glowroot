@@ -36,6 +36,7 @@ public class ResultSetCloserTest {
         thrown.expectMessage("AAAA");
         ResultSet resultSet = mock(ResultSet.class);
         doThrow(new SQLException("AAAA")).when(resultSet).next();
+
         // when
         ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
@@ -53,6 +54,7 @@ public class ResultSetCloserTest {
         thrown.expectMessage("BBBB");
         ResultSet resultSet = mock(ResultSet.class);
         doThrow(new SQLException("BBBB")).when(resultSet).close();
+
         // when
         ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
@@ -71,6 +73,7 @@ public class ResultSetCloserTest {
         ResultSet resultSet = mock(ResultSet.class);
         doThrow(new SQLException("AAAA")).when(resultSet).next();
         doThrow(new SQLException("BBBB")).when(resultSet).close();
+
         // when
         ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {

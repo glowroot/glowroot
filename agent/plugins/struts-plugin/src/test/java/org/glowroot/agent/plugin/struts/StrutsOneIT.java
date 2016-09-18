@@ -17,7 +17,7 @@ package org.glowroot.agent.plugin.struts;
 
 import java.io.File;
 import java.net.ServerSocket;
-import java.util.List;
+import java.util.Iterator;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -63,16 +63,20 @@ public class StrutsOneIT {
 
     @Test
     public void shouldCaptureAction() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteActionInTomcat.class);
+
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("HelloWorldAction#execute");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("struts action:"
                 + " org.glowroot.agent.plugin.struts.StrutsOneIT$HelloWorldAction.execute()");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class HelloWorldAction extends Action {

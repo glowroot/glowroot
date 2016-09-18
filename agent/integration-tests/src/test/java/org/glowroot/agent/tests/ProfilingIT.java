@@ -69,6 +69,7 @@ public class ProfilingIT {
 
     @Test
     public void shouldNotReadProfile() throws Exception {
+        // given
         setProfilingIntervalMillis(0);
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithProfile.class);
@@ -85,11 +86,13 @@ public class ProfilingIT {
                 .build();
         container.getConfigService().updateUserRecordingConfig(userRecordingConfig);
         setProfilingIntervalMillis(0);
+
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithProfileForAble.class);
+
         // then
-        assertThat(trace.getHeader().getMainThreadProfileSampleCount()).isBetween(5L, 15L);
         // profiler should have captured about 10 stack traces
+        assertThat(trace.getHeader().getMainThreadProfileSampleCount()).isBetween(5L, 15L);
     }
 
     @Test
@@ -101,8 +104,10 @@ public class ProfilingIT {
                 .build();
         container.getConfigService().updateUserRecordingConfig(userRecordingConfig);
         setProfilingIntervalMillis(0);
+
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithProfileForAble.class);
+
         // then
         assertThat(trace.getHeader().getMainThreadProfileSampleCount()).isZero();
     }

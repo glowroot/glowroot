@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.redis;
 
-import java.util.List;
+import java.util.Iterator;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -52,38 +52,47 @@ public class ConnectionIT {
 
     @Test
     public void shouldTraceSet() throws Exception {
-        // given
         // when
         Trace trace = container.execute(JedisSet.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).matches("redis localhost:\\d+ SET");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldTraceGet() throws Exception {
-        // given
         // when
         Trace trace = container.execute(JedisGet.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).matches("redis localhost:\\d+ GET");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldTracePing() throws Exception {
-        // given
         // when
         Trace trace = container.execute(JedisPing.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        Trace.Entry entry = entries.get(0);
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).matches("redis localhost:\\d+ PING");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     private static abstract class JedisBase implements AppUnderTest, TransactionMarker {

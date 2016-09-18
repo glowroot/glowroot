@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,6 @@ public class ClasspathCacheTest {
 
     @Test
     public void shouldRead() {
-        // given
         // when
         List<String> classNames = classpathCache.getMatchingClassNames("google.common.base.str", 5);
         // then
@@ -59,7 +58,6 @@ public class ClasspathCacheTest {
 
     @Test
     public void shouldReadFullClass() {
-        // given
         // when
         List<String> classNames = classpathCache.getMatchingClassNames("ImmutableMap", 5);
         // then
@@ -68,7 +66,6 @@ public class ClasspathCacheTest {
 
     @Test
     public void shouldReadFullFullClass() {
-        // given
         // when
         List<String> classNames =
                 classpathCache.getMatchingClassNames("com.google.common.collect.ImmutableMap", 5);
@@ -78,7 +75,6 @@ public class ClasspathCacheTest {
 
     @Test
     public void shouldReadFullInnerClass() {
-        // given
         // when
         List<String> classNames = classpathCache.getMatchingClassNames("OnePlusArrayList", 5);
         // then
@@ -87,7 +83,6 @@ public class ClasspathCacheTest {
 
     @Test
     public void shouldReadFullFullInnerClass() {
-        // given
         // when
         List<String> classNames = classpathCache
                 .getMatchingClassNames("com.google.common.collect.Lists$OnePlusArrayList", 5);
@@ -97,7 +92,6 @@ public class ClasspathCacheTest {
 
     @Test
     public void shouldHitFullMatchLimit() {
-        // given
         // when
         List<String> classNames = classpathCache.getMatchingClassNames("Builder", 5);
         // then

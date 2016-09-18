@@ -67,9 +67,11 @@ public class CappedDatabaseTest {
     public void shouldReadOneByteAtATime() throws Exception {
         // given
         String text = "0123456789";
+
         // when
         long cappedId =
                 cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+
         // then
         Reader in = cappedDatabase.read(cappedId).openStream();
         assertThat((char) in.read()).isEqualTo('0');
@@ -96,9 +98,11 @@ public class CappedDatabaseTest {
         }
         String text = sb.toString();
         cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+
         // when
         long cappedId =
                 cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+
         // then
         String text2 = cappedDatabase.read(cappedId).read();
         assertThat(text2).isEqualTo(text);
@@ -116,9 +120,11 @@ public class CappedDatabaseTest {
         String text = sb.toString();
         cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
         cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+
         // when
         long cappedId =
                 cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+
         // then
         String text2 = cappedDatabase.read(cappedId).read();
         assertThat(text2).isEqualTo(text);
@@ -137,8 +143,10 @@ public class CappedDatabaseTest {
         long cappedId =
                 cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
         cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+
         // when
         cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
+
         // then
         String exceptionClassName = null;
         try {

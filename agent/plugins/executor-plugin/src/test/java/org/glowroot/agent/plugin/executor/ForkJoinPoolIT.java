@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.plugin.executor;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -61,7 +62,6 @@ public class ForkJoinPoolIT {
 
     @Test
     public void shouldCaptureSubmitCallable() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoPoolSubmitCallable.class);
         // then
@@ -70,7 +70,6 @@ public class ForkJoinPoolIT {
 
     @Test
     public void shouldCaptureSubmitRunnable() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoPoolSubmitRunnable.class);
         // then
@@ -79,7 +78,6 @@ public class ForkJoinPoolIT {
 
     @Test
     public void shouldCaptureSubmitRunnableWithReturnValue() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoPoolSubmitRunnableWithReturnValue.class);
         // then
@@ -88,7 +86,6 @@ public class ForkJoinPoolIT {
 
     @Test
     public void shouldCaptureSubmitForkJoinTask() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoPoolSubmitForkJoinTask.class);
         // then
@@ -97,7 +94,6 @@ public class ForkJoinPoolIT {
 
     @Test
     public void shouldCaptureSubmitCallableAsForkJoinTask() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoPoolSubmitCallableAsForkJoinTask.class);
         // then
@@ -106,7 +102,6 @@ public class ForkJoinPoolIT {
 
     @Test
     public void shouldCaptureSubmitRunnableAsForkJoinTask() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoPoolSubmitRunnableAsForkJoinTask.class);
         // then
@@ -115,7 +110,6 @@ public class ForkJoinPoolIT {
 
     @Test
     public void shouldCaptureSubmitRunnableAsForkJoinTaskWithReturnValue() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoPoolSubmitRunnableAsForkJoinTaskWithReturnValue.class);
         // then
@@ -124,7 +118,6 @@ public class ForkJoinPoolIT {
 
     @Test
     public void shouldCaptureExecuteRunnable() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoPoolExecuteRunnable.class);
         // then
@@ -133,7 +126,6 @@ public class ForkJoinPoolIT {
 
     @Test
     public void shouldCaptureExecuteForkJoinTask() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoPoolExecuteForkJoinTask.class);
         // then
@@ -142,7 +134,6 @@ public class ForkJoinPoolIT {
 
     @Test
     public void shouldCaptureInvokeForkJoinTask() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoPoolInvokeForkJoinTask.class);
         // then
@@ -151,14 +142,17 @@ public class ForkJoinPoolIT {
 
     @Test
     public void shouldCaptureInvokeAll() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoPoolInvokeAll.class);
+
         // then
         assertThat(trace.getHeader().getEntryCount()).isBetween(4, 6);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
         int count = 0;
-        for (Trace.Entry entry : trace.getEntryList()) {
-            if (entry.getMessage().equals("trace entry marker / CreateTraceEntry")) {
+        while (i.hasNext()) {
+            if (i.next().getMessage().equals("trace entry marker / CreateTraceEntry")) {
                 count++;
             }
         }

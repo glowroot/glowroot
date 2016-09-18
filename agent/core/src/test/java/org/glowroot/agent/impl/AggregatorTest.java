@@ -61,6 +61,7 @@ public class AggregatorTest {
             }
             Thread.sleep(1);
         }
+
         // then
         // aggregation is done in a separate thread, so give it a little time to complete
         long start = System.currentTimeMillis();

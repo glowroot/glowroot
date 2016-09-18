@@ -54,13 +54,12 @@ public class SprayIT {
 
     @Test
     public void shouldCaptureHttpGet() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ExecuteHttpGet.class);
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/abc");
         assertThat(trace.getHeader().getHeadline()).isEqualTo("GET /abc?xyz=123");
-        assertThat(trace.getEntryCount()).isZero();
+        assertThat(trace.getEntryList()).isEmpty();
     }
 
     private static int getAvailablePort() throws Exception {

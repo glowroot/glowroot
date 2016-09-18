@@ -62,11 +62,11 @@ public class LotsOfNonNestedAuxThreadContextsIT {
 
     @Test
     public void shouldCaptureSubmitCallable() throws Exception {
-        // given
         // when
         Trace trace = container.execute(DoSubmitCallable.class);
+
         // then
-        assertThat(trace.getEntryCount()).isZero();
+        assertThat(trace.getEntryList()).isEmpty();
         List<Trace.Timer> auxThreadRootTimers = trace.getHeader().getAuxThreadRootTimerList();
         assertThat(auxThreadRootTimers).hasSize(1);
         Trace.Timer auxThreadRootTimer = auxThreadRootTimers.get(0);

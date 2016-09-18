@@ -16,6 +16,7 @@
 package org.glowroot.agent.tests;
 
 import java.io.File;
+import java.util.Iterator;
 import java.util.List;
 
 import org.junit.After;
@@ -52,9 +53,9 @@ public class DetailMapIT {
 
     @Test
     public void shouldReadDetailMap() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithNestedEntries.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("Level One");
@@ -102,12 +103,14 @@ public class DetailMapIT {
         Trace.Timer levelThreeTimer = levelTwoTimer.getChildTimerList().get(0);
         assertThat(levelThreeTimer.getChildTimerList()).hasSize(1);
         assertThat(levelThreeTimer.getChildTimerList().get(0).getName()).isEqualTo("level four");
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(3);
-        Trace.Entry entry1 = entries.get(0);
-        assertThat(entry1.getDepth()).isEqualTo(0);
-        assertThat(entry1.getMessage()).isEqualTo("Level Two");
-        details = entry1.getDetailEntryList();
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("Level Two");
+
+        details = entry.getDetailEntryList();
         assertThat(details).hasSize(2);
         assertThat(details.get(0).getName()).isEqualTo("arg1");
         assertThat(details.get(0).getValueList()).hasSize(1);
@@ -115,10 +118,12 @@ public class DetailMapIT {
         assertThat(details.get(1).getName()).isEqualTo("arg2");
         assertThat(details.get(1).getValueList()).hasSize(1);
         assertThat(details.get(1).getValueList().get(0).getString()).isEqualTo("bx");
-        Trace.Entry entry2 = entries.get(1);
-        assertThat(entry2.getDepth()).isEqualTo(1);
-        assertThat(entry2.getMessage()).isEqualTo("Level Three");
-        details = entry2.getDetailEntryList();
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("Level Three");
+
+        details = entry.getDetailEntryList();
         assertThat(details).hasSize(2);
         assertThat(details.get(0).getName()).isEqualTo("arg1");
         assertThat(details.get(0).getValueList()).hasSize(1);
@@ -127,17 +132,20 @@ public class DetailMapIT {
         assertThat(details.get(1).getValueList()).hasSize(1);
         assertThat(details.get(1).getValueList().get(0).getString()).isEqualTo("bxy");
         // there's no way offsetNanos should be 0
-        assertThat(entry2.getStartOffsetNanos()).isGreaterThan(0);
-        Trace.Entry entry3 = entries.get(2);
-        assertThat(entry3.getDepth()).isEqualTo(2);
-        assertThat(entry3.getMessage()).isEqualTo("Level Four: axy, bxy");
+        assertThat(entry.getStartOffsetNanos()).isGreaterThan(0);
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(2);
+        assertThat(entry.getMessage()).isEqualTo("Level Four: axy, bxy");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldReadDetailMapWithBooleans() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithBooleans.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("Level One");
@@ -177,9 +185,9 @@ public class DetailMapIT {
 
     @Test
     public void shouldReadDetailMapWithNumbers() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithNumbers.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("Level One");
@@ -224,8 +232,10 @@ public class DetailMapIT {
             container.addExpectedLogMessage("org.glowroot.agent.model.DetailMapWriter",
                     "detail map has unexpected value type: java.io.File");
         }
+
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithBadType.class);
+
         // then
         assertThat(trace.getHeader().getHeadline()).isEqualTo("Level One");
         List<Trace.DetailEntry> details = trace.getHeader().getDetailEntryList();
@@ -269,8 +279,10 @@ public class DetailMapIT {
                 "detail map has null key");
         container.addExpectedLogMessage("org.glowroot.agent.model.DetailMapWriter",
                 "detail map has null key");
+
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithNullKey.class);
+
         // then
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("Level One");

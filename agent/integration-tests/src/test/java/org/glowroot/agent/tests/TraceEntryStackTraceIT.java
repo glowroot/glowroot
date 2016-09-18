@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.tests;
 
+import java.util.Iterator;
 import java.util.List;
 
 import org.junit.After;
@@ -58,13 +59,15 @@ public class TraceEntryStackTraceIT {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureTraceEntryStackTraces",
                 true);
+
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithTraceEntryStackTrace.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        List<Proto.StackTraceElement> stackTraceElements =
-                entries.get(0).getLocationStackTraceElementList();
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        List<Proto.StackTraceElement> stackTraceElements = entry.getLocationStackTraceElementList();
         assertThat(stackTraceElements).isNotEmpty();
         assertThat(stackTraceElements.get(0).getClassName()).isEqualTo(Pause.class.getName());
         assertThat(stackTraceElements.get(0).getMethodName()).isEqualTo("pauseOneMillisecond");
@@ -73,6 +76,8 @@ public class TraceEntryStackTraceIT {
         for (Proto.StackTraceElement stackTraceElement : stackTraceElements) {
             assertThat(stackTraceElement.getMethodName()).doesNotContain("$glowroot$");
         }
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ShouldGenerateTraceWithTraceEntryStackTrace

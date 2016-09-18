@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,7 +60,10 @@ public class AsyncHttpClientPluginIT {
 
     @Test
     public void shouldCaptureHttpGet() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteHttpGet.class);
+
+        // then
         Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
         assertThat(rootTimer.getChildTimerCount()).isEqualTo(1);
         assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("http client request");
@@ -70,15 +74,23 @@ public class AsyncHttpClientPluginIT {
         assertThat(asyncTimer.getChildTimerCount()).isZero();
         assertThat(asyncTimer.getName()).isEqualTo("http client request");
         assertThat(asyncTimer.getCount()).isEqualTo(1);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello1/");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureHttpPost() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteHttpPost.class);
+
+        // then
         Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
         assertThat(rootTimer.getChildTimerCount()).isEqualTo(1);
         assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("http client request");
@@ -89,15 +101,23 @@ public class AsyncHttpClientPluginIT {
         assertThat(asyncTimer.getChildTimerCount()).isZero();
         assertThat(asyncTimer.getName()).isEqualTo("http client request");
         assertThat(asyncTimer.getCount()).isEqualTo(1);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .matches("http client request: POST http://localhost:\\d+/hello2");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureHttpGetWithAsyncHandler() throws Exception {
+        // when
         Trace trace = container.execute(ExecuteHttpGetWithAsyncHandler.class);
+
+        // then
         Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
         assertThat(rootTimer.getChildTimerCount()).isEqualTo(1);
         assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("http client request");
@@ -108,10 +128,15 @@ public class AsyncHttpClientPluginIT {
         assertThat(asyncTimer.getChildTimerCount()).isZero();
         assertThat(asyncTimer.getName()).isEqualTo("http client request");
         assertThat(asyncTimer.getCount()).isEqualTo(1);
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage())
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage())
                 .matches("http client request: GET http://localhost:\\d+/hello3/");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ExecuteHttpGet extends ExecuteHttpBase {

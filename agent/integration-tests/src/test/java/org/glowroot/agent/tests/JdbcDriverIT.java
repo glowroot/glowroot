@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.tests;
 
-import java.util.List;
+import java.util.Iterator;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -52,12 +52,17 @@ public class JdbcDriverIT {
 
     @Test
     public void shouldNotTriggerMockJdbcDriverToLoad() throws Exception {
-        // given
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithNestedEntries.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries.get(0).getMessage()).isEqualTo("major version");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("major version");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class ShouldGenerateTraceWithNestedEntries

@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.plugin.hibernate;
 
+import java.util.Iterator;
 import java.util.List;
 
 import org.hibernate.Session;
@@ -53,24 +54,24 @@ public class SessionAspectIT {
 
     @Test
     public void shouldCaptureCriteriaQuery() throws Exception {
-        // given
         // when
         Trace trace = container.execute(CriteriaQuery.class);
+
         // then
         Trace.Timer mainThreadRootTimer = trace.getHeader().getMainThreadRootTimer();
         assertThat(mainThreadRootTimer.getChildTimerCount()).isEqualTo(1);
         assertThat(mainThreadRootTimer.getChildTimer(0).getName()).isEqualTo("hibernate query");
         assertThat(mainThreadRootTimer.getChildTimer(0).getChildTimerCount()).isZero();
-        assertThat(trace.getEntryCount()).isZero();
+        assertThat(trace.getEntryList()).isEmpty();
     }
 
     // TODO add unit test for jpa criteria query
 
     @Test
     public void shouldCaptureSave() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SessionSave.class);
+
         // then
         List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
         assertThat(timers).hasSize(1);
@@ -79,9 +80,9 @@ public class SessionAspectIT {
 
     @Test
     public void shouldCaptureSaveTwoArg() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SessionSaveTwoArg.class);
+
         // then
         List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
         assertThat(timers).hasSize(1);
@@ -90,9 +91,9 @@ public class SessionAspectIT {
 
     @Test
     public void shouldCaptureSaveOrUpdate() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SessionSaveOrUpdate.class);
+
         // then
         List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
         assertThat(timers).hasSize(1);
@@ -101,9 +102,9 @@ public class SessionAspectIT {
 
     @Test
     public void shouldCaptureSaveOrUpdateTwoArg() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SessionSaveOrUpdateTwoArg.class);
+
         // then
         List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
         assertThat(timers).hasSize(1);
@@ -112,9 +113,9 @@ public class SessionAspectIT {
 
     @Test
     public void shouldCaptureUpdate() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SessionUpdate.class);
+
         // then
         List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
         assertThat(timers).hasSize(1);
@@ -123,9 +124,9 @@ public class SessionAspectIT {
 
     @Test
     public void shouldCaptureUpdateTwoArg() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SessionUpdateTwoArg.class);
+
         // then
         List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
         assertThat(timers).hasSize(1);
@@ -134,9 +135,9 @@ public class SessionAspectIT {
 
     @Test
     public void shouldCaptureMergeCommand() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SessionMerge.class);
+
         // then
         List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
         assertThat(timers).hasSize(1);
@@ -145,9 +146,9 @@ public class SessionAspectIT {
 
     @Test
     public void shouldCaptureMergeCommandTwoArg() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SessionMergeTwoArg.class);
+
         // then
         List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
         assertThat(timers).hasSize(1);
@@ -156,9 +157,9 @@ public class SessionAspectIT {
 
     @Test
     public void shouldCapturePersistCommand() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SessionPersist.class);
+
         // then
         List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
         assertThat(timers).hasSize(1);
@@ -167,9 +168,9 @@ public class SessionAspectIT {
 
     @Test
     public void shouldCapturePersistCommandTwoArg() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SessionPersistTwoArg.class);
+
         // then
         List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
         assertThat(timers).hasSize(1);
@@ -178,9 +179,9 @@ public class SessionAspectIT {
 
     @Test
     public void shouldCaptureDelete() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SessionDelete.class);
+
         // then
         List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
         assertThat(timers).hasSize(1);
@@ -189,9 +190,9 @@ public class SessionAspectIT {
 
     @Test
     public void shouldCaptureDeleteTwoArg() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SessionDeleteTwoArg.class);
+
         // then
         List<Trace.Timer> timers = trace.getHeader().getMainThreadRootTimer().getChildTimerList();
         assertThat(timers).hasSize(1);
@@ -200,35 +201,47 @@ public class SessionAspectIT {
 
     @Test
     public void shouldCaptureSessionFlush() throws Exception {
-        // given
         // when
         Trace trace = container.execute(SessionFlush.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage()).isEqualTo("hibernate flush");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("hibernate flush");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureTransactionCommit() throws Exception {
-        // given
         // when
         Trace trace = container.execute(TransactionCommit.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage()).isEqualTo("hibernate commit");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("hibernate commit");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     @Test
     public void shouldCaptureTransactionRollback() throws Exception {
-        // given
         // when
         Trace trace = container.execute(TransactionRollback.class);
+
         // then
-        List<Trace.Entry> entries = trace.getEntryList();
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage()).isEqualTo("hibernate rollback");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("hibernate rollback");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public abstract static class DoWithSession implements AppUnderTest, TransactionMarker {
