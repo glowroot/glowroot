@@ -56,7 +56,7 @@ class Sessions {
         Method setDefaultIdempotenceMethod;
         try {
             setDefaultIdempotenceMethod =
-                    SocketOptions.class.getMethod("setDefaultIdempotence", boolean.class);
+                    QueryOptions.class.getMethod("setDefaultIdempotence", boolean.class);
             setDefaultIdempotenceMethod.invoke(queryOptions, true);
         } catch (Exception e) {
             // early version of driver
