@@ -45,7 +45,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
     }
 
     @Override
-    public Map<String, List<String>> readTransactionTypes() throws Exception {
+    public Map<String, List<String>> read() throws Exception {
         List<String> transactionTypes = dataSource.queryForStringList(
                 "select transaction_type from transaction_types order by transaction_type");
         if (transactionTypes == null) {

@@ -22,8 +22,8 @@ import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
-import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.QueryEntry;
+import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
@@ -106,7 +106,7 @@ public class SessionAspect {
                 return null;
             }
             return context.startQueryEntry(QUERY_TYPE, queryEntryInfo.queryText,
-                    queryEntryInfo.messageSupplier, timerName);
+                    queryEntryInfo.queryMessageSupplier, timerName);
         }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable ResultSet resultSet,
@@ -140,7 +140,7 @@ public class SessionAspect {
                 return null;
             }
             return context.startAsyncQueryEntry(QUERY_TYPE, queryEntryInfo.queryText,
-                    queryEntryInfo.messageSupplier, timerName);
+                    queryEntryInfo.queryMessageSupplier, timerName);
         }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable ResultSetFutureMixin future,
@@ -184,30 +184,83 @@ public class SessionAspect {
             return null;
         }
         String queryText;
-        MessageSupplier messageSupplier;
         if (arg instanceof String) {
             queryText = (String) arg;
-            messageSupplier = new QueryMessageSupplier(queryText);
         } else if (arg instanceof RegularStatement) {
             queryText = nullToEmpty(((RegularStatement) arg).getQueryString());
-            messageSupplier = new QueryMessageSupplier(queryText);
         } else if (arg instanceof BoundStatement) {
             PreparedStatement preparedStatement =
                     ((BoundStatement) arg).glowroot$preparedStatement();
             queryText = preparedStatement == null ? ""
                     : nullToEmpty(preparedStatement.getQueryString());
-            messageSupplier = new QueryMessageSupplier(queryText);
         } else if (arg instanceof BatchStatement) {
             Collection<Statement> statements = ((BatchStatement) arg).getStatements();
             if (statements == null) {
                 statements = new ArrayList<Statement>();
             }
-            queryText = "<batch cql>";
-            messageSupplier = BatchQueryMessageSupplier.from(statements);
+            queryText = concatenate(statements);
         } else {
             return null;
         }
-        return new QueryEntryInfo(queryText, messageSupplier);
+        return new QueryEntryInfo(queryText, QueryMessageSupplier.create("cql execution: "));
+    }
+
+    private static String concatenate(Collection<Statement> statements) {
+        if (statements.isEmpty()) {
+            return "[empty batch]";
+        }
+        StringBuilder sb = new StringBuilder("[batch] ");
+        String currQuery = null;
+        int currCount = 0;
+        boolean first = true;
+        for (Statement statement : statements) {
+            String query = getQuery(statement);
+            if (currQuery == null) {
+                currQuery = query;
+                currCount = 1;
+            } else if (!query.equals(currQuery)) {
+                if (!first) {
+                    sb.append(", ");
+                }
+                first = false;
+                if (currCount == 1) {
+                    sb.append(currQuery);
+                } else {
+                    sb.append(currCount + " x " + currQuery);
+                }
+                currQuery = query;
+                currCount = 1;
+            } else {
+                currCount++;
+            }
+        }
+        if (currQuery != null) {
+            if (!first) {
+                sb.append(", ");
+            }
+            if (currCount == 1) {
+                sb.append(currQuery);
+            } else {
+                sb.append(currCount + " x " + currQuery);
+            }
+        }
+        return sb.toString();
+    }
+
+    private static String getQuery(Statement statement) {
+        if (statement instanceof RegularStatement) {
+            String qs = ((RegularStatement) statement).getQueryString();
+            return nullToEmpty(qs);
+        } else if (statement instanceof BoundStatement) {
+            PreparedStatement preparedStatement =
+                    ((BoundStatement) statement).glowroot$preparedStatement();
+            String qs = preparedStatement == null ? "" : preparedStatement.getQueryString();
+            return nullToEmpty(qs);
+        } else if (statement instanceof BatchStatement) {
+            return "[nested batch statement]";
+        } else {
+            return "[unexpected statement type: " + statement.getClass().getName() + "]";
+        }
     }
 
     private static String nullToEmpty(@Nullable String string) {
@@ -217,11 +270,11 @@ public class SessionAspect {
     private static class QueryEntryInfo {
 
         private final String queryText;
-        private final MessageSupplier messageSupplier;
+        private final QueryMessageSupplier queryMessageSupplier;
 
-        private QueryEntryInfo(String queryText, MessageSupplier messageSupplier) {
+        private QueryEntryInfo(String queryText, QueryMessageSupplier messageSupplier) {
             this.queryText = queryText;
-            this.messageSupplier = messageSupplier;
+            this.queryMessageSupplier = messageSupplier;
         }
     }
 }

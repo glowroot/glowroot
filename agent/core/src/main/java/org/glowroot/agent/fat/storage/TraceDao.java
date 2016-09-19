@@ -27,11 +27,13 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.agent.fat.storage.TracePointQueryBuilder.ParameterizedSql;
 import org.glowroot.agent.fat.storage.util.CappedDatabase;
 import org.glowroot.agent.fat.storage.util.DataSource;
+import org.glowroot.agent.fat.storage.util.DataSource.JdbcQuery;
 import org.glowroot.agent.fat.storage.util.DataSource.JdbcRowQuery;
 import org.glowroot.agent.fat.storage.util.DataSource.JdbcUpdate;
 import org.glowroot.agent.fat.storage.util.ImmutableColumn;
@@ -40,7 +42,9 @@ import org.glowroot.agent.fat.storage.util.RowMappers;
 import org.glowroot.agent.fat.storage.util.Schemas.Column;
 import org.glowroot.agent.fat.storage.util.Schemas.ColumnType;
 import org.glowroot.agent.fat.storage.util.Schemas.Index;
+import org.glowroot.common.live.ImmutableEntries;
 import org.glowroot.common.live.ImmutableTracePoint;
+import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.live.LiveTraceRepository.TraceKind;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
@@ -55,9 +59,10 @@ import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static org.glowroot.agent.util.Checkers.castUntainted;
 
-class TraceDao implements TraceRepository {
+public class TraceDao implements TraceRepository {
 
     private static final String AGENT_ID = "";
 
@@ -76,6 +81,7 @@ class TraceDao implements TraceRepository {
             ImmutableColumn.of("error_message", ColumnType.VARCHAR),
             ImmutableColumn.of("header", ColumnType.VARBINARY), // protobuf
             ImmutableColumn.of("entries_capped_id", ColumnType.BIGINT),
+            ImmutableColumn.of("shared_query_texts_capped_id", ColumnType.BIGINT),
             ImmutableColumn.of("main_thread_profile_capped_id", ColumnType.BIGINT),
             ImmutableColumn.of("aux_thread_profile_capped_id", ColumnType.BIGINT));
 
@@ -119,23 +125,54 @@ class TraceDao implements TraceRepository {
     private final CappedDatabase traceCappedDatabase;
     private final TraceAttributeNameDao traceAttributeNameDao;
     private final TransactionTypeDao transactionTypeDao;
+    private final FullQueryTextDao fullQueryTextDao;
 
     TraceDao(DataSource dataSource, CappedDatabase traceCappedDatabase,
-            TransactionTypeDao transactionTypeDao) throws Exception {
+            TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao)
+            throws Exception {
         this.dataSource = dataSource;
         this.traceCappedDatabase = traceCappedDatabase;
         traceAttributeNameDao = new TraceAttributeNameDao(dataSource);
         this.transactionTypeDao = transactionTypeDao;
+        this.fullQueryTextDao = fullQueryTextDao;
+        if (dataSource.tableExists("trace")) {
+            // upgrade to 0.9.3
+            dataSource.execute("alter table trace add column if not exists"
+                    + " shared_query_texts_capped_id bigint");
+        }
         dataSource.syncTable("trace", traceColumns);
         dataSource.syncIndexes("trace", traceIndexes);
         dataSource.syncTable("trace_attribute", traceAttributeColumns);
         dataSource.syncIndexes("trace_attribute", traceAttributeIndexes);
     }
 
-    @Override
-    public void store(final String agentId, final Trace trace) throws Exception {
-        final Trace.Header header = trace.getHeader();
-        dataSource.update(new TraceMerge(trace));
+    public void store(Trace trace) throws Exception {
+        Trace.Header header = trace.getHeader();
+
+        List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+        for (Trace.SharedQueryText sharedQueryText : trace.getSharedQueryTextList()) {
+            // local collection always passes in full text
+            checkState(sharedQueryText.getTruncatedText().isEmpty());
+            checkState(sharedQueryText.getTruncatedEndText().isEmpty());
+            checkState(sharedQueryText.getFullTextSha1().isEmpty());
+            String fullText = sharedQueryText.getFullText();
+            if (fullText.length() > 240) {
+                String truncatedText = fullText.substring(0, 120);
+                String truncatedEndText =
+                        fullText.substring(fullText.length() - 120, fullText.length());
+                String fullTextSha1 =
+                        fullQueryTextDao.updateLastCaptureTime(fullText, header.getCaptureTime());
+                sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
+                        .setTruncatedText(truncatedText)
+                        .setTruncatedEndText(truncatedEndText)
+                        .setFullTextSha1(fullTextSha1)
+                        .build());
+            } else {
+                sharedQueryTexts.add(sharedQueryText);
+            }
+        }
+
+        dataSource.update(new TraceMerge(trace, sharedQueryTexts));
         if (header.getAttributeCount() > 0) {
             if (trace.getUpdate()) {
                 dataSource.update("delete from trace_attribute where trace_id = ?", trace.getId());
@@ -220,14 +257,42 @@ class TraceDao implements TraceRepository {
     }
 
     @Override
-    public List<Trace.Entry> readEntries(String agentId, String traceId) throws Exception {
-        Long cappedId = dataSource
-                .queryForOptionalLong("select entries_capped_id from trace where id = ?", traceId);
-        if (cappedId == null) {
-            // trace must have just expired while user was viewing it, or data source is closing
-            return ImmutableList.of();
+    public @Nullable Entries readEntries(String agentId, String traceId) throws Exception {
+        return dataSource.query(new EntriesQuery(traceId));
+    }
+
+    // since this is only used by export, SharedQueryTexts are always returned with fullTrace
+    // (never with truncatedText/truncatedEndText/fullTraceSha1) @Override
+    @Override
+    public @Nullable Entries readEntriesForExport(String agentId, String traceId) throws Exception {
+        Entries entries = dataSource.query(new EntriesQuery(traceId));
+        if (entries == null) {
+            return null;
         }
-        return traceCappedDatabase.readMessages(cappedId, Trace.Entry.parser());
+        List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+        for (Trace.SharedQueryText sharedQueryText : entries.sharedQueryTexts()) {
+            String fullTextSha1 = sharedQueryText.getFullTextSha1();
+            if (fullTextSha1.isEmpty()) {
+                sharedQueryTexts.add(sharedQueryText);
+            } else {
+                String fullText = fullQueryTextDao.getFullText(fullTextSha1);
+                if (fullText == null) {
+                    sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
+                            .setFullText(sharedQueryText.getTruncatedText()
+                                    + " ... [full query text has expired] ... "
+                                    + sharedQueryText.getTruncatedEndText())
+                            .build());
+                } else {
+                    sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
+                            .setFullText(fullText)
+                            .build());
+                }
+            }
+        }
+        return ImmutableEntries.builder()
+                .copyFrom(entries)
+                .sharedQueryTexts(sharedQueryTexts)
+                .build();
     }
 
     @Override
@@ -308,20 +373,28 @@ class TraceDao implements TraceRepository {
 
         private final String traceId;
         private final Trace.Header header;
-        private final @Nullable Long entriesId;
+        private final @Nullable Long entriesCappedId;
+        private final @Nullable Long sharedQueryTextsCappedId;
         private final @Nullable Long mainThreadProfileId;
         private final @Nullable Long auxThreadProfileId;
 
-        private TraceMerge(Trace trace) throws IOException {
+        private TraceMerge(Trace trace, List<Trace.SharedQueryText> sharedQueryTexts)
+                throws IOException {
             this.traceId = trace.getId();
             this.header = trace.getHeader();
 
             List<Trace.Entry> entries = trace.getEntryList();
             if (entries.isEmpty()) {
-                entriesId = null;
+                entriesCappedId = null;
             } else {
-                entriesId = traceCappedDatabase.writeMessages(entries,
+                entriesCappedId = traceCappedDatabase.writeMessages(entries,
                         TraceCappedDatabaseStats.TRACE_ENTRIES);
+            }
+            if (sharedQueryTexts.isEmpty()) {
+                sharedQueryTextsCappedId = null;
+            } else {
+                sharedQueryTextsCappedId = traceCappedDatabase.writeMessages(sharedQueryTexts,
+                        TraceCappedDatabaseStats.TRACE_SHARED_QUERY_TEXTS);
             }
             if (trace.hasMainThreadProfile()) {
                 mainThreadProfileId = traceCappedDatabase.writeMessage(trace.getMainThreadProfile(),
@@ -341,9 +414,9 @@ class TraceDao implements TraceRepository {
         public @Untainted String getSql() {
             return "merge into trace (id, partial, slow, error, start_time, capture_time,"
                     + " duration_nanos, transaction_type, transaction_name, headline, user,"
-                    + " error_message, header, entries_capped_id, main_thread_profile_capped_id,"
-                    + " aux_thread_profile_capped_id) key (id)"
-                    + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    + " error_message, header, entries_capped_id, shared_query_texts_capped_id,"
+                    + " main_thread_profile_capped_id, aux_thread_profile_capped_id) key (id)"
+                    + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         }
 
         // minimal work inside this method as it is called with active connection
@@ -367,7 +440,8 @@ class TraceDao implements TraceRepository {
                 preparedStatement.setNull(i++, Types.VARCHAR);
             }
             preparedStatement.setBytes(i++, header.toByteArray());
-            RowMappers.setLong(preparedStatement, i++, entriesId);
+            RowMappers.setLong(preparedStatement, i++, entriesCappedId);
+            RowMappers.setLong(preparedStatement, i++, sharedQueryTextsCappedId);
             RowMappers.setLong(preparedStatement, i++, mainThreadProfileId);
             RowMappers.setLong(preparedStatement, i++, auxThreadProfileId);
         }
@@ -481,6 +555,55 @@ class TraceDao implements TraceRepository {
                     .entriesExistence(entriesExistence)
                     .profileExistence(profileExistence)
                     .build();
+        }
+    }
+
+    private class EntriesQuery implements JdbcQuery</*@Nullable*/ Entries> {
+
+        private final String traceId;
+
+        private EntriesQuery(String traceId) {
+            this.traceId = traceId;
+        }
+
+        @Override
+        public @Untainted String getSql() {
+            return "select entries_capped_id, shared_query_texts_capped_id from trace where id = ?";
+        }
+
+        @Override
+        public void bind(PreparedStatement preparedStatement) throws SQLException {
+            preparedStatement.setString(1, traceId);
+        }
+
+        @Override
+        public @Nullable Entries processResultSet(ResultSet resultSet) throws Exception {
+            if (!resultSet.next()) {
+                return null;
+            }
+            int i = 1;
+            Long entriesCappedId = RowMappers.getLong(resultSet, i++);
+            Long sharedQueryTextsCappedId = RowMappers.getLong(resultSet, i++);
+            if (entriesCappedId == null) {
+                return null;
+            }
+            List<Trace.Entry> entries =
+                    traceCappedDatabase.readMessages(entriesCappedId, Trace.Entry.parser());
+            if (entries.isEmpty()) {
+                return null;
+            }
+            ImmutableEntries.Builder result = ImmutableEntries.builder()
+                    .addAllEntries(entries);
+            if (sharedQueryTextsCappedId != null) {
+                result.addAllSharedQueryTexts(traceCappedDatabase
+                        .readMessages(sharedQueryTextsCappedId, Trace.SharedQueryText.parser()));
+            }
+            return result.build();
+        }
+
+        @Override
+        public @Nullable Entries valueIfDataSourceClosing() {
+            return null;
         }
     }
 

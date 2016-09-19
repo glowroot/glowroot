@@ -29,13 +29,14 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.live.LiveJvmServiceImpl;
+import org.glowroot.agent.live.LiveTraceRepositoryImpl;
+import org.glowroot.agent.live.LiveWeavingServiceImpl;
 import org.glowroot.agent.server.ServerConnection.GrpcCall;
-import org.glowroot.common.live.LiveJvmService;
-import org.glowroot.common.live.LiveTraceRepository;
-import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceStub;
@@ -62,9 +63,11 @@ public class ServerCollectorImpl implements Collector {
     private final CollectorServiceStub collectorServiceStub;
     private final DownstreamServiceObserver downstreamServiceObserver;
 
+    private final SharedQueryTextLimiter sharedQueryTextLimiter = new SharedQueryTextLimiter();
+
     public ServerCollectorImpl(Map<String, String> properties, @Nullable String collectorHost,
-            LiveJvmService liveJvmService, LiveWeavingService liveWeavingService,
-            LiveTraceRepository liveTraceRepository, AgentConfigUpdater agentConfigUpdater)
+            LiveJvmServiceImpl liveJvmService, LiveWeavingServiceImpl liveWeavingService,
+            LiveTraceRepositoryImpl liveTraceRepository, AgentConfigUpdater agentConfigUpdater)
             throws Exception {
 
         String agentId = properties.get("glowroot.agent.id");
@@ -90,7 +93,7 @@ public class ServerCollectorImpl implements Collector {
                 .withCompression("gzip");
         downstreamServiceObserver = new DownstreamServiceObserver(serverConnection,
                 agentConfigUpdater, liveJvmService, liveWeavingService, liveTraceRepository,
-                agentId, inConnectionFailure);
+                agentId, inConnectionFailure, sharedQueryTextLimiter);
         downstreamServiceObserver.connectAsync();
     }
 
@@ -127,12 +130,23 @@ public class ServerCollectorImpl implements Collector {
                 .setAgentId(agentId)
                 .setCaptureTime(captureTime)
                 .addAllAggregatesByType(aggregatesByType)
-                .addAllSharedQueryText(sharedQueryTexts)
+                .addAllSharedQueryText(sharedQueryTextLimiter
+                        .reduceAggregatePayloadWherePossible(sharedQueryTexts))
                 .build();
         serverConnection.callWithAFewRetries(new GrpcCall<EmptyMessage>() {
             @Override
             public void call(StreamObserver<EmptyMessage> responseObserver) {
                 collectorServiceStub.collectAggregates(aggregateMessage, responseObserver);
+            }
+            @Override
+            public void doWithResponse(EmptyMessage response) {
+                for (Aggregate.SharedQueryText sharedQueryText : aggregateMessage
+                        .getSharedQueryTextList()) {
+                    String fullTextSha1 = sharedQueryText.getFullTextSha1();
+                    if (!fullTextSha1.isEmpty()) {
+                        sharedQueryTextLimiter.onSuccessfullySentToServer(fullTextSha1);
+                    }
+                }
             }
         });
     }
@@ -155,12 +169,26 @@ public class ServerCollectorImpl implements Collector {
     public void collectTrace(Trace trace) {
         final TraceMessage traceMessage = TraceMessage.newBuilder()
                 .setAgentId(agentId)
-                .setTrace(trace)
+                .setTrace(Trace.newBuilder(trace)
+                        .clearSharedQueryText()
+                        .addAllSharedQueryText(sharedQueryTextLimiter
+                                .reduceTracePayloadWherePossible(trace.getSharedQueryTextList()))
+                        .build())
                 .build();
         serverConnection.callWithAFewRetries(new GrpcCall<EmptyMessage>() {
             @Override
             public void call(StreamObserver<EmptyMessage> responseObserver) {
                 collectorServiceStub.collectTrace(traceMessage, responseObserver);
+            }
+            @Override
+            public void doWithResponse(EmptyMessage response) {
+                for (Trace.SharedQueryText sharedQueryText : traceMessage.getTrace()
+                        .getSharedQueryTextList()) {
+                    String fullTextSha1 = sharedQueryText.getFullTextSha1();
+                    if (!fullTextSha1.isEmpty()) {
+                        sharedQueryTextLimiter.onSuccessfullySentToServer(fullTextSha1);
+                    }
+                }
             }
         });
     }

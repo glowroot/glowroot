@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
@@ -31,8 +32,6 @@ import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface TraceRepository {
-
-    void store(String agentId, Trace trace) throws Exception;
 
     List<String> readTraceAttributeNames(String agentRollup, String transactionType)
             throws Exception;
@@ -50,19 +49,35 @@ public interface TraceRepository {
     ErrorMessageResult readErrorMessages(String agentRollup, TraceQuery query,
             ErrorMessageFilter filter, long resolutionMillis, int limit) throws Exception;
 
+    // null return value means trace not found
     @Nullable
     HeaderPlus readHeaderPlus(String agentId, String traceId) throws Exception;
 
-    List<Trace.Entry> readEntries(String agentId, String traceId) throws Exception;
+    // null return value means trace not found or was found but had no entries
+    //
+    // SharedQueryTexts are returned with either fullTrace or
+    // truncatedText/truncatedEndText/fullTraceSha1
+    @Nullable
+    Entries readEntries(String agentId, String traceId) throws Exception;
 
+    // null return value means trace not found or was found but had no entries (and therefore also
+    // no queries)
+    //
+    // since this is only used by export, SharedQueryTexts are always returned with fullTrace
+    // (never with truncatedText/truncatedEndText/fullTraceSha1)
+    @Nullable
+    Entries readEntriesForExport(String agentId, String traceId) throws Exception;
+
+    // null return value means trace not found or was found but had no main thread profile
     @Nullable
     Profile readMainThreadProfile(String agentId, String traceId) throws Exception;
 
+    // null return value means trace not found or was found but had no aux thread profile
     @Nullable
     Profile readAuxThreadProfile(String agentId, String traceId) throws Exception;
 
     @Value.Immutable
-    public interface TraceQuery {
+    interface TraceQuery {
         String transactionType();
         @Nullable
         String transactionName();
@@ -71,34 +86,34 @@ public interface TraceRepository {
     }
 
     @Value.Immutable
-    public interface ErrorMessageFilter {
+    interface ErrorMessageFilter {
         ImmutableList<String> includes();
         ImmutableList<String> excludes();
     }
 
     @Value.Immutable
-    public interface ErrorMessageResult {
+    interface ErrorMessageResult {
         List<ErrorMessagePoint> points();
         Result<ErrorMessageCount> counts();
     }
 
     @Value.Immutable
     @Styles.AllParameters
-    public interface ErrorMessagePoint {
+    interface ErrorMessagePoint {
         long captureTime();
         long errorCount();
     }
 
     @Value.Immutable
     @Styles.AllParameters
-    public interface ErrorMessageCount {
+    interface ErrorMessageCount {
         String message();
         long count();
     }
 
     @Value.Immutable
     @Styles.AllParameters
-    public interface HeaderPlus {
+    interface HeaderPlus {
         Trace.Header header();
         Existence entriesExistence();
         // EXPIRED if either main thread or auxiliary thread profile exist and are expired

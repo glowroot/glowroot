@@ -27,6 +27,7 @@ import org.glowroot.agent.plugin.api.AsyncTraceEntry;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.QueryEntry;
+import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
@@ -93,30 +94,31 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public QueryEntry startQueryEntry(String queryType, String queryText,
-            MessageSupplier messageSupplier, TimerName timerName) {
+            QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         if (threadContext == null) {
             return NopQueryEntry.INSTANCE;
         }
-        return threadContext.startQueryEntry(queryType, queryText, messageSupplier, timerName);
+        return threadContext.startQueryEntry(queryType, queryText, queryMessageSupplier, timerName);
     }
 
     @Override
     public QueryEntry startQueryEntry(String queryType, String queryText, long queryExecutionCount,
-            MessageSupplier messageSupplier, TimerName timerName) {
+            QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         if (threadContext == null) {
             return NopQueryEntry.INSTANCE;
         }
         return threadContext.startQueryEntry(queryType, queryText, queryExecutionCount,
-                messageSupplier, timerName);
+                queryMessageSupplier, timerName);
     }
 
     @Override
     public AsyncQueryEntry startAsyncQueryEntry(String queryType, String queryText,
-            MessageSupplier messageSupplier, TimerName timerName) {
+            QueryMessageSupplier queryMessageSupplier, TimerName timerName) {
         if (threadContext == null) {
             return NopAsyncQueryEntry.INSTANCE;
         }
-        return threadContext.startAsyncQueryEntry(queryType, queryText, messageSupplier, timerName);
+        return threadContext.startAsyncQueryEntry(queryType, queryText, queryMessageSupplier,
+                timerName);
     }
 
     @Override

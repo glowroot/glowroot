@@ -237,7 +237,7 @@ public class MutableAggregate {
             @Nullable String fullQueryTextSha1, double totalDurationNanos, long executionCount,
             boolean hasTotalRows, long totalRows) {
         if (queries == null) {
-            queries = new QueryCollector(maxAggregateQueriesPerType, 0);
+            queries = new QueryCollector(maxAggregateQueriesPerType);
         }
         queries.mergeQuery(queryType, truncatedQueryText, fullQueryTextSha1, totalDurationNanos,
                 executionCount, hasTotalRows, totalRows);

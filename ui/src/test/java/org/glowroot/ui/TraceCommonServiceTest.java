@@ -33,7 +33,7 @@ public class TraceCommonServiceTest {
         entries.add(Trace.Entry.newBuilder().setDepth(0).build());
         entries.add(Trace.Entry.newBuilder().setDepth(1).build());
         // when
-        String json = TraceCommonService.toJson(entries);
+        String json = TraceCommonService.entriesToJson(entries);
         // then
         assertThat(json).isEqualTo("[{\"startOffsetNanos\":0,\"durationNanos\":0,\"message\":\"\","
                 + "\"childEntries\":[{\"startOffsetNanos\":0,\"durationNanos\":0,\"message\":\"\"}]"

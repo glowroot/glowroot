@@ -22,9 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.fat.storage.AgentDao;
-import org.glowroot.common.repo.AggregateRepository;
-import org.glowroot.common.repo.GaugeValueRepository;
-import org.glowroot.common.repo.TraceRepository;
+import org.glowroot.agent.fat.storage.AggregateDao;
+import org.glowroot.agent.fat.storage.GaugeValueDao;
+import org.glowroot.agent.fat.storage.TraceDao;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -41,18 +41,17 @@ class CollectorImpl implements Collector {
     private static final String AGENT_ID = "";
 
     private final AgentDao agentDao;
-    private final AggregateRepository aggregateRepository;
-    private final TraceRepository traceRepository;
-    private final GaugeValueRepository gaugeValueRepository;
+    private final AggregateDao aggregateDao;
+    private final TraceDao traceDao;
+    private final GaugeValueDao gaugeValueDao;
     private final AlertingService alertingService;
 
-    CollectorImpl(AgentDao agentDao, AggregateRepository aggregateRepository,
-            TraceRepository traceRepository, GaugeValueRepository gaugeValueRepository,
-            AlertingService alertingService) {
+    CollectorImpl(AgentDao agentDao, AggregateDao aggregateRepository, TraceDao traceRepository,
+            GaugeValueDao gaugeValueRepository, AlertingService alertingService) {
         this.agentDao = agentDao;
-        this.aggregateRepository = aggregateRepository;
-        this.traceRepository = traceRepository;
-        this.gaugeValueRepository = gaugeValueRepository;
+        this.aggregateDao = aggregateRepository;
+        this.traceDao = traceRepository;
+        this.gaugeValueDao = gaugeValueRepository;
         this.alertingService = alertingService;
     }
 
@@ -65,7 +64,7 @@ class CollectorImpl implements Collector {
     @Override
     public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType,
             List<String> sharedQueryTexts) throws Exception {
-        aggregateRepository.store(AGENT_ID, captureTime, aggregatesByType, sharedQueryTexts);
+        aggregateDao.store(captureTime, aggregatesByType, sharedQueryTexts);
         try {
             alertingService.checkTransactionAlerts(AGENT_ID, captureTime, null);
         } catch (Exception e) {
@@ -75,7 +74,7 @@ class CollectorImpl implements Collector {
 
     @Override
     public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
-        gaugeValueRepository.store(AGENT_ID, gaugeValues);
+        gaugeValueDao.store(gaugeValues);
         long maxCaptureTime = 0;
         for (GaugeValue gaugeValue : gaugeValues) {
             maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
@@ -89,7 +88,7 @@ class CollectorImpl implements Collector {
 
     @Override
     public void collectTrace(Trace trace) throws Exception {
-        traceRepository.store(AGENT_ID, trace);
+        traceDao.store(trace);
     }
 
     @Override

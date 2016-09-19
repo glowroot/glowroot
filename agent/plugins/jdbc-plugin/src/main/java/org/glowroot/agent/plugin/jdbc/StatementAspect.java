@@ -16,13 +16,14 @@
 package org.glowroot.agent.plugin.jdbc;
 
 import java.sql.PreparedStatement;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.QueryEntry;
+import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.TimerName;
@@ -44,9 +45,7 @@ import org.glowroot.agent.plugin.jdbc.PreparedStatementMirror.ByteArrayParameter
 import org.glowroot.agent.plugin.jdbc.PreparedStatementMirror.StreamingParameterValue;
 import org.glowroot.agent.plugin.jdbc.message.BatchPreparedStatementMessageSupplier;
 import org.glowroot.agent.plugin.jdbc.message.BatchPreparedStatementMessageSupplier2;
-import org.glowroot.agent.plugin.jdbc.message.BatchStatementMessageSupplier;
 import org.glowroot.agent.plugin.jdbc.message.PreparedStatementMessageSupplier;
-import org.glowroot.agent.plugin.jdbc.message.StatementMessageSupplier;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -298,8 +297,8 @@ public class StatementAspect {
                 // this shouldn't happen since just checked hasGlowrootStatementMirror() above
                 return null;
             }
-            MessageSupplier messageSupplier = new StatementMessageSupplier(sql);
-            QueryEntry query = context.startQueryEntry(QUERY_TYPE, sql, messageSupplier, timerName);
+            QueryEntry query = context.startQueryEntry(QUERY_TYPE, sql,
+                    QueryMessageSupplier.create("jdbc execution: "), timerName);
             mirror.setLastQuery(query);
             return query;
         }
@@ -405,16 +404,16 @@ public class StatementAspect {
             @Nonnull
             PreparedStatementMirror mirror =
                     (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
-            MessageSupplier messageSupplier;
+            QueryMessageSupplier queryMessageSupplier;
             String queryText = mirror.getSql();
             if (captureBindParameters.value()) {
-                messageSupplier =
-                        new PreparedStatementMessageSupplier(queryText, mirror.getParametersCopy());
+                queryMessageSupplier =
+                        new PreparedStatementMessageSupplier(mirror.getParametersCopy());
             } else {
-                messageSupplier = new StatementMessageSupplier(queryText);
+                queryMessageSupplier = QueryMessageSupplier.create("jdbc execution: ");
             }
             QueryEntry queryEntry =
-                    context.startQueryEntry(QUERY_TYPE, queryText, messageSupplier, timerName);
+                    context.startQueryEntry(QUERY_TYPE, queryText, queryMessageSupplier, timerName);
             mirror.setLastQuery(queryEntry);
             return queryEntry;
         }
@@ -531,26 +530,40 @@ public class StatementAspect {
         }
         private static QueryEntry onBeforePreparedStatement(ThreadContext context,
                 PreparedStatementMirror mirror) {
-            MessageSupplier messageSupplier;
+            QueryMessageSupplier queryMessageSupplier;
             String queryText = mirror.getSql();
             int batchSize = mirror.getBatchSize();
             if (captureBindParameters.value()) {
-                messageSupplier = new BatchPreparedStatementMessageSupplier(queryText,
-                        mirror.getBatchedParameters());
+                queryMessageSupplier =
+                        new BatchPreparedStatementMessageSupplier(mirror.getBatchedParameters());
             } else {
-                messageSupplier = new BatchPreparedStatementMessageSupplier2(queryText, batchSize);
+                queryMessageSupplier = new BatchPreparedStatementMessageSupplier2(batchSize);
             }
             QueryEntry queryEntry = context.startQueryEntry(QUERY_TYPE, queryText, batchSize,
-                    messageSupplier, timerName);
+                    queryMessageSupplier, timerName);
             mirror.setLastQuery(queryEntry);
             mirror.clearBatch();
             return queryEntry;
         }
         private static QueryEntry onBeforeStatement(StatementMirror mirror, ThreadContext context) {
-            MessageSupplier messageSupplier =
-                    new BatchStatementMessageSupplier(mirror.getBatchedSql());
-            QueryEntry queryEntry =
-                    context.startQueryEntry(QUERY_TYPE, "<batch sql>", messageSupplier, timerName);
+            List<String> batchedSql = mirror.getBatchedSql();
+            String concatenated;
+            if (batchedSql.isEmpty()) {
+                concatenated = "[empty batch]";
+            } else {
+                StringBuilder sb = new StringBuilder("[batch] ");
+                boolean first = true;
+                for (String sql : batchedSql) {
+                    if (!first) {
+                        sb.append(", ");
+                    }
+                    sb.append(sql);
+                    first = false;
+                }
+                concatenated = sb.toString();
+            }
+            QueryEntry queryEntry = context.startQueryEntry(QUERY_TYPE, concatenated,
+                    QueryMessageSupplier.create("jdbc execution: "), timerName);
             mirror.setLastQuery(queryEntry);
             mirror.clearBatch();
             return queryEntry;

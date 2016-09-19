@@ -26,19 +26,17 @@ import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Charsets;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.hash.Hashing;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.RateLimiter;
 
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.server.util.RateLimiter;
+import org.glowroot.server.util.Sessions;
 
-import static java.util.concurrent.TimeUnit.DAYS;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
 
-class FullQueryTextDao {
+public class FullQueryTextDao {
 
     private final Session session;
     private final ConfigRepository configRepository;
@@ -49,19 +47,9 @@ class FullQueryTextDao {
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
-    // 2-day expiration is just to periodically clean up cache
-    private final LoadingCache<String, RateLimiter> rateLimiters = CacheBuilder.newBuilder()
-            .expireAfterAccess(2, DAYS)
-            .maximumSize(10000)
-            .build(new CacheLoader<String, RateLimiter>() {
-                @Override
-                public RateLimiter load(String fullTextSha1) throws Exception {
-                    // 1 permit per 24 hours
-                    return RateLimiter.create(1 / (24 * 3600.0));
-                }
-            });
+    private final RateLimiter<String> rateLimiter = new RateLimiter<>(10000);
 
-    FullQueryTextDao(Session session, ConfigRepository configRepository) {
+    public FullQueryTextDao(Session session, ConfigRepository configRepository) {
         this.session = session;
         this.configRepository = configRepository;
 
@@ -102,10 +90,24 @@ class FullQueryTextDao {
         return row.getString(0);
     }
 
-    String updateLastCaptureTime(String agentRollup, String fullText,
-            List<ResultSetFuture> futures) {
+    String store(String agentRollup, String fullText, List<ResultSetFuture> futures) {
         String fullTextSha1 = Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
-        // not currently rate-limiting check inserts
+        storeInternal(agentRollup, fullText, fullTextSha1, futures);
+        return fullTextSha1;
+    }
+
+    void updateTTL(String agentRollup, String fullTextSha1, List<ResultSetFuture> futures) {
+        BoundStatement boundStatement = readPS.bind();
+        boundStatement.setString(0, fullTextSha1);
+        ResultSet results = session.execute(boundStatement);
+        Row row = results.one();
+        String fullText = checkNotNull(checkNotNull(row).getString(0));
+        storeInternal(agentRollup, fullText, fullTextSha1, futures);
+    }
+
+    private void storeInternal(String agentRollup, String fullText, String fullTextSha1,
+            List<ResultSetFuture> futures) {
+        // not currently rate-limiting inserts into check table
         BoundStatement boundStatement = insertCheckPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentRollup);
@@ -113,18 +115,16 @@ class FullQueryTextDao {
         boundStatement.setInt(i++, getTTL());
         futures.add(session.executeAsync(boundStatement));
         // rate limit the large query text inserts
-        RateLimiter rateLimiter = rateLimiters.getUnchecked(fullTextSha1);
-        if (!rateLimiter.tryAcquire()) {
-            return fullTextSha1;
+        if (!rateLimiter.tryAcquire(fullTextSha1)) {
+            return;
         }
         boundStatement = insertPS.bind();
         i = 0;
         boundStatement.setString(i++, fullTextSha1);
         boundStatement.setString(i++, fullText);
         boundStatement.setInt(i++, getTTL());
-        futures.add(TransactionTypeDao.executeAsyncUnderRateLimiter(session, boundStatement,
-                rateLimiters, fullTextSha1));
-        return fullTextSha1;
+        futures.add(Sessions.executeAsyncWithOnFailure(session, boundStatement,
+                () -> rateLimiter.invalidate(fullTextSha1)));
     }
 
     private int getTTL() {

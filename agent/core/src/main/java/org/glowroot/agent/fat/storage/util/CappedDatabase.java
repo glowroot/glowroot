@@ -41,11 +41,8 @@ import com.google.common.primitives.Longs;
 import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
-import com.ning.compress.lzf.ChunkEncoder;
-import com.ning.compress.lzf.LZFChunk;
 import com.ning.compress.lzf.LZFInputStream;
 import com.ning.compress.lzf.LZFOutputStream;
-import com.ning.compress.lzf.util.ChunkEncoderFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,8 +52,6 @@ import org.glowroot.common.util.SizeLimitBypassingParser;
 public class CappedDatabase {
 
     private static final Logger logger = LoggerFactory.getLogger(CappedDatabase.class);
-
-    private static final int LZF_CHUNK_SIZE_KB = 512;
 
     private final File file;
     private final Object lock = new Object();
@@ -128,7 +123,7 @@ public class CappedDatabase {
             NonClosingCountingOutputStream countingStreamAfterCompression =
                     new NonClosingCountingOutputStream(out);
             CountingOutputStream countingStreamBeforeCompression =
-                    new CountingOutputStream(newLZFOutputStream(countingStreamAfterCompression));
+                    new CountingOutputStream(new LZFOutputStream(countingStreamAfterCompression));
             copier.copyTo(countingStreamBeforeCompression);
             countingStreamBeforeCompression.close();
             long endTick = ticker.read();
@@ -258,12 +253,6 @@ public class CappedDatabase {
             inFile.close();
         }
         Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
-    }
-
-    private static LZFOutputStream newLZFOutputStream(OutputStream out) {
-        ChunkEncoder encoder = ChunkEncoderFactory.optimalInstance(LZFChunk.MAX_CHUNK_LEN);
-        return new LZFOutputStream(encoder, out, LZF_CHUNK_SIZE_KB * 1024,
-                encoder.getBufferRecycler());
     }
 
     @OnlyUsedByTests

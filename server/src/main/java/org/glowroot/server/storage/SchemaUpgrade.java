@@ -85,9 +85,11 @@ public class SchemaUpgrade {
             addConfigUpdateColumns();
             updateSchemaVersion(4);
         }
-        if (initialSchemaVersion < 5) {
-            updateCompressionChunkLength();
-            updateSchemaVersion(5);
+        // 0.9.2 to 0.9.3
+        if (initialSchemaVersion < 6) {
+            revertCompressionChunkLength();
+            addTraceEntryColumns();
+            updateSchemaVersion(6);
         }
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
     }
@@ -160,19 +162,37 @@ public class SchemaUpgrade {
         }
     }
 
-    private void updateCompressionChunkLength() {
+    private void revertCompressionChunkLength() {
         try {
             // try with compression options for Cassandra 3.x
             // see https://docs.datastax.com/en/cql/3.3/cql/cql_reference/compressSubprop.html
             session.execute("alter table trace_entry with compression = {'class':"
                     + " 'org.apache.cassandra.io.compress.LZ4Compressor', 'chunk_length_kb' :"
-                    + " 512};");
+                    + " 64};");
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
             // try with compression options for Cassandra 2.x
             // see https://docs.datastax.com/en/cql/3.1/cql/cql_reference/compressSubprop.html
             session.execute("alter table trace_entry with compression = {'sstable_compression':"
-                    + " 'SnappyCompressor', 'chunk_length_kb' : 512};");
+                    + " 'SnappyCompressor', 'chunk_length_kb' : 64};");
+        }
+    }
+
+    private void addTraceEntryColumns() {
+        try {
+            session.execute("alter table trace_entry add shared_query_text_index int");
+        } catch (InvalidQueryException e) {
+            logger.debug(e.getMessage(), e);
+        }
+        try {
+            session.execute("alter table trace_entry add query_message_prefix varchar");
+        } catch (InvalidQueryException e) {
+            logger.debug(e.getMessage(), e);
+        }
+        try {
+            session.execute("alter table trace_entry add query_message_suffix varchar");
+        } catch (InvalidQueryException e) {
+            logger.debug(e.getMessage(), e);
         }
     }
 

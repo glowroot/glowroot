@@ -54,40 +54,42 @@ public class QueryCollector {
     private final Map<String, Map<String, MutableQuery>> queries = Maps.newHashMap();
     private final int limit;
     private final int maxMultiplierWhileBuilding;
+    private final boolean traceLevel;
 
     private final Map<String, MinQuery> minQueryPerType = Maps.newHashMap();
 
-    public QueryCollector(int limit, int maxMultiplierWhileBuilding) {
+    public QueryCollector(int limit, int maxMultiplierWhileBuilding, boolean traceLevel) {
         this.limit = limit;
         this.maxMultiplierWhileBuilding = maxMultiplierWhileBuilding;
+        this.traceLevel = traceLevel;
     }
 
-    public List<Aggregate.QueriesByType> toProto(List<String> sharedQueryTexts,
+    public List<Aggregate.QueriesByType> toAggregateProto(
             Map<String, Integer> sharedQueryTextIndexes) {
         if (queries.isEmpty()) {
             return ImmutableList.of();
         }
-        List<Aggregate.QueriesByType> queriesByType = Lists.newArrayList();
+        List<Aggregate.QueriesByType> proto = Lists.newArrayList();
         for (Entry<String, Map<String, MutableQuery>> outerEntry : queries.entrySet()) {
             List<Aggregate.Query> queries =
                     Lists.newArrayListWithCapacity(outerEntry.getValue().values().size());
             for (Entry<String, MutableQuery> entry : outerEntry.getValue().entrySet()) {
-                queries.add(entry.getValue().toProto(entry.getKey(), sharedQueryTexts,
-                        sharedQueryTextIndexes));
+                queries.add(
+                        entry.getValue().toAggregateProto(entry.getKey(), sharedQueryTextIndexes));
             }
             if (queries.size() > limit) {
-                order(queries);
+                orderAggregateQueries(queries);
                 queries = queries.subList(0, limit);
             }
-            queriesByType.add(Aggregate.QueriesByType.newBuilder()
+            proto.add(Aggregate.QueriesByType.newBuilder()
                     .setType(outerEntry.getKey())
                     .addAllQuery(queries)
                     .build());
         }
-        return queriesByType;
+        return proto;
     }
 
-    public void mergeQuery(String queryType, String queryText, double totalDurationNanos,
+    public void mergeQuery(String queryType, String queryText, long totalDurationNanos,
             long executionCount, boolean hasTotalRows, long totalRows) {
         Map<String, MutableQuery> queriesForType = queries.get(queryType);
         if (queriesForType == null) {
@@ -136,7 +138,7 @@ public class QueryCollector {
         return null;
     }
 
-    private void mergeQuery(String queryType, String queryText, double totalDurationNanos,
+    private void mergeQuery(String queryType, String queryText, long totalDurationNanos,
             long executionCount, long totalRows, boolean hasTotalRows,
             Map<String, MutableQuery> queriesForType) {
         MutableQuery aggregateQuery = queriesForType.get(queryText);
@@ -150,7 +152,7 @@ public class QueryCollector {
                 }
                 truncateAndRecalculateMinQuery = true;
             }
-            aggregateQuery = new MutableQuery();
+            aggregateQuery = new MutableQuery(traceLevel);
             queriesForType.put(queryText, aggregateQuery);
         }
         aggregateQuery.addToTotalDurationNanos(totalDurationNanos);
@@ -171,7 +173,7 @@ public class QueryCollector {
         }
     }
 
-    private static void order(List<Aggregate.Query> queries) {
+    private static void orderAggregateQueries(List<Aggregate.Query> queries) {
         // reverse sort by total
         Collections.sort(queries, new Comparator<Aggregate.Query>() {
             @Override

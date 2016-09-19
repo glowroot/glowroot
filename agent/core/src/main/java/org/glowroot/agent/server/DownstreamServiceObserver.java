@@ -27,11 +27,12 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.agent.live.LiveJvmServiceImpl;
+import org.glowroot.agent.live.LiveTraceRepositoryImpl;
+import org.glowroot.agent.live.LiveWeavingServiceImpl;
 import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
-import org.glowroot.common.live.LiveTraceRepository;
-import org.glowroot.common.live.LiveWeavingService;
+import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.Collector.AgentConfigUpdater;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc;
@@ -92,9 +93,9 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
     private final ServerConnection serverConnection;
     private final DownstreamServiceStub downstreamServiceStub;
     private final AgentConfigUpdater agentConfigUpdater;
-    private final LiveJvmService liveJvmService;
-    private final LiveWeavingService liveWeavingService;
-    private final LiveTraceRepository liveTraceRepository;
+    private final LiveJvmServiceImpl liveJvmService;
+    private final LiveWeavingServiceImpl liveWeavingService;
+    private final LiveTraceRepositoryImpl liveTraceRepository;
     private final String agentId;
 
     private volatile @Nullable StreamObserver<ClientResponse> currResponseObserver;
@@ -104,10 +105,13 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
     private final AtomicBoolean inMaybeConnectionFailure = new AtomicBoolean();
     private final AtomicBoolean inConnectionFailure;
 
+    private final SharedQueryTextLimiter sharedQueryTextLimiter;
+
     DownstreamServiceObserver(ServerConnection serverConnection,
-            AgentConfigUpdater agentConfigUpdater, LiveJvmService liveJvmService,
-            LiveWeavingService liveWeavingService, LiveTraceRepository liveTraceRepository,
-            String agentId, AtomicBoolean inConnectionFailure) throws Exception {
+            AgentConfigUpdater agentConfigUpdater, LiveJvmServiceImpl liveJvmService,
+            LiveWeavingServiceImpl liveWeavingService, LiveTraceRepositoryImpl liveTraceRepository,
+            String agentId, AtomicBoolean inConnectionFailure,
+            SharedQueryTextLimiter sharedQueryTextLimiter) throws Exception {
         this.serverConnection = serverConnection;
         downstreamServiceStub = DownstreamServiceGrpc.newStub(serverConnection.getChannel())
                 .withCompression("gzip");
@@ -117,6 +121,7 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
         this.liveTraceRepository = liveTraceRepository;
         this.agentId = agentId;
         this.inConnectionFailure = inConnectionFailure;
+        this.sharedQueryTextLimiter = sharedQueryTextLimiter;
     }
 
     @Override
@@ -658,7 +663,7 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
 
     private void getEntriesAndRespond(ServerRequest request,
             StreamObserver<ClientResponse> responseObserver) throws Exception {
-        List<Trace.Entry> entries;
+        Entries entries;
         try {
             entries = liveTraceRepository.getEntries("", request.getEntriesRequest().getTraceId());
         } catch (Exception e) {
@@ -666,10 +671,15 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+        EntriesResponse.Builder response = EntriesResponse.newBuilder();
+        if (entries != null) {
+            response.addAllEntries(entries.entries());
+            response.addAllSharedQueryText(sharedQueryTextLimiter
+                    .reduceTracePayloadWherePossible(entries.sharedQueryTexts()));
+        }
         responseObserver.onNext(ClientResponse.newBuilder()
                 .setRequestId(request.getRequestId())
-                .setEntriesResponse(EntriesResponse.newBuilder()
-                        .addAllEntry(entries))
+                .setEntriesResponse(response)
                 .build());
     }
 

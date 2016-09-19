@@ -23,6 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.commons.dbcp.DelegatingConnection;
 import org.apache.commons.dbcp.DelegatingPreparedStatement;
@@ -67,12 +68,16 @@ public class PreparedStatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
-                "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee where name like ?");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['john%'] => 1 row");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -84,12 +89,16 @@ public class PreparedStatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
-                "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee where name like ?");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['john%'] => 1 row");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -101,12 +110,16 @@ public class PreparedStatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
-                "jdbc execution: update employee set name = ? ['nobody'] => 3 rows");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("update employee set name = ?");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['nobody'] => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -118,13 +131,19 @@ public class PreparedStatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).startsWith(
-                "jdbc execution: select * from employee where name like ? and name like ? ");
-        assertThat(entry.getMessage()).endsWith(", 'john%', 'john%'] => 1 row");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText())
+                        .startsWith("select * from employee where name like ? and name like ? ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).startsWith(" ['john%', 'john%', ");
+        assertThat(entry.getQueryEntryMessage().getSuffix())
+                .endsWith(", 'john%', 'john%'] => 1 row");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -144,12 +163,16 @@ public class PreparedStatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: select * from employee where name like ? ['john%']");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee where name like ?");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['john%']");
         assertThat(entry.getError().getMessage()).isEqualTo("An execute failure");
 
         assertThat(i.hasNext()).isFalse();
@@ -163,22 +186,26 @@ public class PreparedStatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
-        StringBuilder sql =
-                new StringBuilder("jdbc execution: select * from employee where name like ?");
+        StringBuilder sql = new StringBuilder("select * from employee where name like ?");
         for (int j = 0; j < 200; j++) {
             sql.append(" and name like ?");
         }
-        sql.append(" ['john%'");
+        StringBuilder suffix = new StringBuilder(" ['john%'");
         for (int j = 0; j < 200; j++) {
-            sql.append(", 'john%'");
+            suffix.append(", 'john%'");
         }
-        sql.append("] => 1 row");
+        suffix.append("] => 1 row");
 
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(sql.toString());
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo(sql.toString());
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(suffix.toString());
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -193,12 +220,16 @@ public class PreparedStatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: select * from employee where name like ? => 1 row");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee where name like ?");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 1 row");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -213,12 +244,16 @@ public class PreparedStatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
-                "jdbc execution: insert into employee (name, misc) values (?, ?) [NULL, NULL]");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("insert into employee (name, misc) values (?, ?)");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" [NULL, NULL]");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -233,18 +268,26 @@ public class PreparedStatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc execution: insert into employee (name, misc)"
-                + " values (?, ?) ['jane', 0x00010203040506070809]");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("insert into employee (name, misc) values (?, ?)");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix())
+                .isEqualTo(" ['jane', 0x00010203040506070809]");
 
         entry = i.next();
         assertThat(entry.getActive()).isFalse();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc execution: insert /**/ into employee"
-                + " (name, misc) values (?, ?) ['jane', {10 bytes}]");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("insert /**/ into employee (name, misc) values (?, ?)");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['jane', {10 bytes}]");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -259,18 +302,26 @@ public class PreparedStatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc execution: insert into employee (name, misc)"
-                + " values (?, ?) ['jane', 0x00010203040506070809]");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("insert into employee (name, misc) values (?, ?)");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix())
+                .isEqualTo(" ['jane', 0x00010203040506070809]");
 
         entry = i.next();
         assertThat(entry.getActive()).isFalse();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc execution: insert /**/ into employee"
-                + " (name, misc) values (?, ?) ['jane', {10 bytes}]");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("insert /**/ into employee (name, misc) values (?, ?)");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['jane', {10 bytes}]");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -285,12 +336,17 @@ public class PreparedStatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc execution: insert into employee (name, misc)"
-                + " values (?, ?) ['jane', {stream:ByteArrayInputStream}]");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("insert into employee (name, misc) values (?, ?)");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix())
+                .isEqualTo(" ['jane', {stream:ByteArrayInputStream}]");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -305,12 +361,17 @@ public class PreparedStatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc execution: insert into employee"
-                + " (name, misc2) values (?, ?) ['jane', {stream:StringReader}]");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("insert into employee (name, misc2) values (?, ?)");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix())
+                .isEqualTo(" ['jane', {stream:StringReader}]");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -325,12 +386,16 @@ public class PreparedStatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
-                "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee where name like ?");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['john%'] => 1 row");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -342,12 +407,16 @@ public class PreparedStatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getActive()).isFalse();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
-                "jdbc execution: select * from employee where name like ? ['{}'] => 0 rows");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee where name like ?");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['{}'] => 0 rows");
 
         assertThat(i.hasNext()).isFalse();
     }

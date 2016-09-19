@@ -20,6 +20,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.commons.dbcp.DelegatingConnection;
 import org.apache.commons.dbcp.DelegatingStatement;
@@ -62,11 +63,15 @@ public class StatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: select * from employee => 3 rows");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -78,11 +83,15 @@ public class StatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: select * from employee => 3 rows");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -94,11 +103,15 @@ public class StatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: update employee set name = 'nobody' => 3 rows");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("update employee set name = 'nobody'");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -118,10 +131,20 @@ public class StatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+
+        for (int j = 0; j < 2000; j++) {
+            i.next();
+        }
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc execution: select * from employee");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+
         assertThat(entry.getError().getMessage()).isEqualTo("An execute failure");
 
         assertThat(i.hasNext()).isFalse();
@@ -134,11 +157,15 @@ public class StatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: select * from employee => 3 rows");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -150,11 +177,15 @@ public class StatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: select * from employee => 3 rows");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -166,11 +197,15 @@ public class StatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: select * from employee => 3 rows");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -182,11 +217,15 @@ public class StatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: select * from employee => 2 rows");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 2 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -198,10 +237,15 @@ public class StatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("jdbc execution: select * from employee => 1 row");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 1 row");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -213,11 +257,15 @@ public class StatementIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: select * from employee => 3 rows");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -331,10 +379,11 @@ public class StatementIT {
     }
 
     public static class ExecuteStatementThrowing implements AppUnderTest, TransactionMarker {
+        private Connection connection;
         private Connection delegatingConnection;
         @Override
         public void executeApp() throws Exception {
-            Connection connection = Connections.createConnection();
+            connection = Connections.createConnection();
             delegatingConnection = new DelegatingConnection(connection) {
                 @Override
                 public Statement createStatement() throws SQLException {
@@ -354,6 +403,15 @@ public class StatementIT {
         }
         @Override
         public void transactionMarker() throws Exception {
+            // exceed the limit for distinct aggregated queries in a single trace
+            for (int i = 0; i < 5000; i++) {
+                Statement statement = connection.createStatement();
+                try {
+                    statement.execute("select " + i + " from employee");
+                } finally {
+                    statement.close();
+                }
+            }
             Statement statement = delegatingConnection.createStatement();
             try {
                 statement.execute("select * from employee");

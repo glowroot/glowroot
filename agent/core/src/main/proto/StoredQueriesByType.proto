@@ -13,8 +13,8 @@ message QueriesByType {
 }
 
 message Query {
-  string truncated_query_text = 1;
-  string full_query_text_sha1 = 2;
+  string truncated_text = 1;
+  string full_text_sha1 = 2;
   double total_duration_nanos = 3;
   int64 execution_count = 4;
   OptionalInt64 total_rows = 5;

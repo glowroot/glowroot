@@ -27,7 +27,6 @@ import org.glowroot.common.repo.MutableThreadStats;
 import org.glowroot.common.repo.MutableTimer;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.Timer;
 
 class AggregateMerging {
 
@@ -70,7 +69,8 @@ class AggregateMerging {
         }
     }
 
-    private static void mergeRootTimer(Timer toBeMergedRootTimer, List<MutableTimer> rootTimers) {
+    private static void mergeRootTimer(Aggregate.Timer toBeMergedRootTimer,
+            List<MutableTimer> rootTimers) {
         for (MutableTimer rootTimer : rootTimers) {
             if (toBeMergedRootTimer.getName().equals(rootTimer.getName())) {
                 rootTimer.merge(toBeMergedRootTimer);

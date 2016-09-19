@@ -178,8 +178,8 @@ class TransactionJsonService {
             for (MutableQuery loopQuery : entry.getValue()) {
                 queryList.add(ImmutableQuery.builder()
                         .queryType(entry.getKey())
-                        .truncatedQueryText(loopQuery.getTruncatedQueryText())
-                        .fullQueryTextSha1(loopQuery.getFullQueryTextSha1())
+                        .truncatedQueryText(loopQuery.getTruncatedText())
+                        .fullQueryTextSha1(loopQuery.getFullTextSha1())
                         .totalDurationNanos(loopQuery.getTotalDurationNanos())
                         .executionCount(loopQuery.getExecutionCount())
                         .totalRows(loopQuery.hasTotalRows() ? loopQuery.getTotalRows() : null)

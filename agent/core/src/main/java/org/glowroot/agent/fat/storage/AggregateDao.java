@@ -72,7 +72,6 @@ import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.ThreadStats;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
@@ -81,7 +80,7 @@ import org.glowroot.wire.api.model.Proto.OptionalDouble;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.agent.util.Checkers.castUntainted;
 
-class AggregateDao implements AggregateRepository {
+public class AggregateDao implements AggregateRepository {
 
     private static final String AGENT_ID = "";
 
@@ -194,23 +193,20 @@ class AggregateDao implements AggregateRepository {
         // TODO initial rollup in case store is not called in a reasonable time
     }
 
-    @Override
-    public void store(String agentId, long captureTime, List<AggregatesByType> aggregatesByType,
+    public void store(long captureTime, List<AggregatesByType> aggregatesByType,
             List<String> sharedQueryTexts) throws Exception {
-        List<SharedQueryTextAndSha1> sharedQueries = Lists.newArrayList();
-        for (String fullQueryText : sharedQueryTexts) {
-            String truncatedQueryText;
-            String fullQueryTextSha1;
-            if (fullQueryText.length() > StorageConfig.QUERY_TEXT_TRUNCATE) {
-                truncatedQueryText = fullQueryText.substring(0, StorageConfig.QUERY_TEXT_TRUNCATE);
-                fullQueryTextSha1 =
-                        fullQueryTextDao.updateLastCaptureTime(fullQueryText, captureTime);
+        List<TruncatedQueryText> truncatedQueryTexts = Lists.newArrayList();
+        for (String sharedQueryText : sharedQueryTexts) {
+            String truncatedText;
+            String fullTextSha1;
+            if (sharedQueryText.length() > StorageConfig.QUERY_TEXT_TRUNCATE) {
+                truncatedText = sharedQueryText.substring(0, StorageConfig.QUERY_TEXT_TRUNCATE);
+                fullTextSha1 = fullQueryTextDao.updateLastCaptureTime(sharedQueryText, captureTime);
             } else {
-                truncatedQueryText = fullQueryText;
-                fullQueryTextSha1 = null;
+                truncatedText = sharedQueryText;
+                fullTextSha1 = null;
             }
-            sharedQueries
-                    .add(ImmutableSharedQueryTextAndSha1.of(truncatedQueryText, fullQueryTextSha1));
+            truncatedQueryTexts.add(ImmutableTruncatedQueryText.of(truncatedText, fullTextSha1));
         }
         // intentionally not using batch update as that could cause memory spike while preparing a
         // large batch
@@ -218,13 +214,15 @@ class AggregateDao implements AggregateRepository {
         for (AggregatesByType aggregatesByType1 : aggregatesByType) {
             String transactionType = aggregatesByType1.getTransactionType();
             dataSource.update(new AggregateInsert(transactionType, null, captureTime,
-                    aggregatesByType1.getOverallAggregate(), sharedQueries, 0, cappedDatabase));
+                    aggregatesByType1.getOverallAggregate(), truncatedQueryTexts, 0,
+                    cappedDatabase));
             transactionTypeDao.updateLastCaptureTime(transactionType, captureTime);
             for (TransactionAggregate transactionAggregate : aggregatesByType1
                     .getTransactionAggregateList()) {
                 dataSource.update(new AggregateInsert(transactionType,
                         transactionAggregate.getTransactionName(), captureTime,
-                        transactionAggregate.getAggregate(), sharedQueries, 0, cappedDatabase));
+                        transactionAggregate.getAggregate(), truncatedQueryTexts, 0,
+                        cappedDatabase));
             }
         }
         synchronized (rollupLock) {
@@ -317,8 +315,8 @@ class AggregateDao implements AggregateRepository {
             for (Stored.QueriesByType toBeMergedQueries : queries) {
                 for (Stored.Query toBeMergedQuery : toBeMergedQueries.getQueryList()) {
                     collector.mergeQuery(toBeMergedQueries.getType(),
-                            toBeMergedQuery.getTruncatedQueryText(),
-                            Strings.emptyToNull(toBeMergedQuery.getFullQueryTextSha1()),
+                            toBeMergedQuery.getTruncatedText(),
+                            Strings.emptyToNull(toBeMergedQuery.getFullTextSha1()),
                             toBeMergedQuery.getTotalDurationNanos(),
                             toBeMergedQuery.getExecutionCount(), toBeMergedQuery.hasTotalRows(),
                             toBeMergedQuery.getTotalRows().getValue());
@@ -500,8 +498,8 @@ class AggregateDao implements AggregateRepository {
                 for (Stored.QueriesByType queriesByType : queries) {
                     for (Stored.Query query : queriesByType.getQueryList()) {
                         mergedAggregate.mergeQuery(queriesByType.getType(),
-                                query.getTruncatedQueryText(),
-                                Strings.emptyToNull(query.getFullQueryTextSha1()),
+                                query.getTruncatedText(),
+                                Strings.emptyToNull(query.getFullTextSha1()),
                                 query.getTotalDurationNanos(), query.getExecutionCount(),
                                 query.hasTotalRows(), query.getTotalRows().getValue());
                     }
@@ -872,15 +870,19 @@ class AggregateDao implements AggregateRepository {
             if (asyncTimers != null) {
                 builder.asyncTimers(readMessages(asyncTimers, Aggregate.Timer.parser()));
             }
-            ThreadStats mainThreadStats = buildThreadStats(RowMappers.getDouble(resultSet, i++),
-                    RowMappers.getDouble(resultSet, i++), RowMappers.getDouble(resultSet, i++),
-                    RowMappers.getDouble(resultSet, i++));
+            Aggregate.ThreadStats mainThreadStats =
+                    buildThreadStats(RowMappers.getDouble(resultSet, i++),
+                            RowMappers.getDouble(resultSet, i++),
+                            RowMappers.getDouble(resultSet, i++),
+                            RowMappers.getDouble(resultSet, i++));
             if (mainThreadStats != null) {
                 builder.mainThreadStats(mainThreadStats);
             }
-            ThreadStats auxThreadStats = buildThreadStats(RowMappers.getDouble(resultSet, i++),
-                    RowMappers.getDouble(resultSet, i++), RowMappers.getDouble(resultSet, i++),
-                    RowMappers.getDouble(resultSet, i++));
+            Aggregate.ThreadStats auxThreadStats =
+                    buildThreadStats(RowMappers.getDouble(resultSet, i++),
+                            RowMappers.getDouble(resultSet, i++),
+                            RowMappers.getDouble(resultSet, i++),
+                            RowMappers.getDouble(resultSet, i++));
             if (auxThreadStats != null) {
                 builder.auxThreadStats(auxThreadStats);
             }
@@ -1275,9 +1277,9 @@ class AggregateDao implements AggregateRepository {
 
     @Value.Immutable
     @Styles.AllParameters
-    interface SharedQueryTextAndSha1 {
-        String truncatedQueryText();
+    interface TruncatedQueryText {
+        String truncatedText();
         @Nullable
-        String fullQueryTextSha1();
+        String fullTextSha1();
     }
 }

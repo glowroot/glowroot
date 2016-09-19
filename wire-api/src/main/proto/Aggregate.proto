@@ -68,8 +68,8 @@ message Aggregate {
   }
 
   message Query {
-    string query_text = 1; // deprecated in 0.9.1
-    int32 shared_query_text_index = 5; // introduced in 0.9.1, replacing query_text attribute
+    string full_text = 1; // deprecated in 0.9.1
+    int32 shared_query_text_index = 5; // introduced in 0.9.1, replacing full_text attribute
     double total_duration_nanos = 2;
     int64 execution_count = 3;
     OptionalInt64 total_rows = 4;
@@ -85,5 +85,12 @@ message Aggregate {
     string text = 1;
     double total_duration_nanos = 2;
     int64 execution_count = 3;
+  }
+
+  message SharedQueryText {
+    string full_text = 1;
+    string truncated_text = 2; // sent instead of full_text when full_text_sha1 sent recently
+                               // (truncated to 120 characters)
+    string full_text_sha1 = 3; // sent when query text > 120 characters
   }
 }

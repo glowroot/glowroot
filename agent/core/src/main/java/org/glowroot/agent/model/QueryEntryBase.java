@@ -104,4 +104,12 @@ public abstract class QueryEntryBase implements QueryEntry {
     protected long getRowCount() {
         return maxRow;
     }
+
+    protected @Nullable QueryData getQueryData() {
+        return queryData;
+    }
+
+    protected @Nullable String getQueryText() {
+        return queryData == null ? null : queryData.getQueryText();
+    }
 }

@@ -79,8 +79,7 @@ class LayoutService {
     private Layout buildLayout(Authentication authentication) throws Exception {
         // linked hash map to preserve ordering
         Map<String, AgentRollupLayout> agentRollups = Maps.newLinkedHashMap();
-        Map<String, List<String>> transactionTypesMap =
-                transactionTypeRepository.readTransactionTypes();
+        Map<String, List<String>> transactionTypesMap = transactionTypeRepository.read();
         boolean hasSomeAccess = false;
         boolean showNavbarTransaction = false;
         boolean showNavbarError = false;

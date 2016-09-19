@@ -123,7 +123,6 @@ public class GaugeValueDao implements GaugeValueRepository {
         this.deleteNeedsRollup = deleteNeedsRollup;
     }
 
-    @Override
     public void store(String agentId, List<GaugeValue> gaugeValues) throws Exception {
         if (gaugeValues.isEmpty()) {
             return;
@@ -148,7 +147,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             boundStatement.setLong(i++, gaugeValue.getWeight());
             boundStatement.setInt(i++, getAdjustedTTL(ttl, captureTime));
             futures.add(session.executeAsync(boundStatement));
-            gaugeNameDao.maybeUpdateLastCaptureTime(agentId, gaugeName, futures);
+            gaugeNameDao.store(agentId, gaugeName, futures);
         }
         // insert into gauge_needs_rollup_1
         SetMultimap<Long, String> rollupCaptureTimes = getRollupCaptureTimes(gaugeValues);

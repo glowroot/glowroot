@@ -38,10 +38,8 @@ class LiveTraceRepositoryImpl implements LiveTraceRepository {
         return downstreamService.getHeader(agentId, traceId);
     }
 
-    // this is only called if the trace does have traces, so empty list response means trace was not
-    // found (e.g. has expired)
     @Override
-    public List<Trace.Entry> getEntries(String agentId, String traceId) throws Exception {
+    public @Nullable Entries getEntries(String agentId, String traceId) throws Exception {
         return downstreamService.getEntries(agentId, traceId);
     }
 

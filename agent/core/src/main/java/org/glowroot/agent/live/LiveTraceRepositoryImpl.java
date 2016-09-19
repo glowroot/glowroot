@@ -18,15 +18,16 @@ package org.glowroot.agent.live;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Ticker;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 
 import org.glowroot.agent.impl.TraceCreator;
@@ -34,6 +35,7 @@ import org.glowroot.agent.impl.Transaction;
 import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.model.ErrorMessage;
+import org.glowroot.common.live.ImmutableEntries;
 import org.glowroot.common.live.ImmutableTracePoint;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.util.Clock;
@@ -70,17 +72,21 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         return null;
     }
 
-    // this is only called if the trace does have traces, so empty list response means trace was not
-    // found (e.g. has expired)
     @Override
-    public List<Trace.Entry> getEntries(String agentId, String traceId) {
+    public @Nullable Entries getEntries(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
-                return transaction.getEntriesProtobuf(ticker.read());
+                Map<String, Integer> sharedQueryTextIndexes = Maps.newLinkedHashMap();
+                List<Trace.Entry> entries =
+                        transaction.getEntriesProtobuf(ticker.read(), sharedQueryTextIndexes);
+                return ImmutableEntries.builder()
+                        .addAllEntries(entries)
+                        .addAllSharedQueryTexts(toProto(sharedQueryTextIndexes))
+                        .build();
             }
         }
-        return ImmutableList.of();
+        return null;
     }
 
     @Override
@@ -250,5 +256,15 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     private boolean matchesTransactionName(Transaction transaction,
             @Nullable String transactionName) {
         return transactionName == null || transactionName.equals(transaction.getTransactionName());
+    }
+
+    public static List<Trace.SharedQueryText> toProto(Map<String, Integer> sharedQueryTextIndexes) {
+        List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+        for (String sharedQueryText : sharedQueryTextIndexes.keySet()) {
+            sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
+                    .setFullText(sharedQueryText)
+                    .build());
+        }
+        return sharedQueryTexts;
     }
 }

@@ -57,6 +57,7 @@ import org.glowroot.server.storage.AgentDao;
 import org.glowroot.server.storage.AggregateDao;
 import org.glowroot.server.storage.ConfigRepositoryImpl;
 import org.glowroot.server.storage.ConfigRepositoryImpl.ConfigListener;
+import org.glowroot.server.storage.FullQueryTextDao;
 import org.glowroot.server.storage.GaugeValueDao;
 import org.glowroot.server.storage.RoleDao;
 import org.glowroot.server.storage.SchemaUpgrade;
@@ -152,17 +153,19 @@ class ServerModule {
 
             TransactionTypeDao transactionTypeDao =
                     new TransactionTypeDao(session, configRepository);
-            AggregateDao aggregateDao =
-                    new AggregateDao(session, transactionTypeDao, configRepository);
-            TraceDao traceDao = new TraceDao(session, transactionTypeDao, configRepository);
+            FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
+            AggregateDao aggregateDao = new AggregateDao(session, transactionTypeDao,
+                    fullQueryTextDao, configRepository);
+            TraceDao traceDao =
+                    new TraceDao(session, transactionTypeDao, fullQueryTextDao, configRepository);
             GaugeValueDao gaugeValueDao = new GaugeValueDao(session, configRepository);
             TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session, configRepository);
             RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
             AlertingService alertingService = new AlertingService(configRepository,
                     triggeredAlertDao, aggregateDao, gaugeValueDao, rollupLevelService,
                     new MailService());
-            server = new GrpcServer(serverConfig.grpcPort(), agentDao, aggregateDao,
-                    gaugeValueDao, traceDao, alertingService);
+            server = new GrpcServer(serverConfig.grpcPort(), agentDao, aggregateDao, gaugeValueDao,
+                    traceDao, alertingService);
             DownstreamServiceImpl downstreamService = server.getDownstreamService();
             configRepository.addConfigListener(new ConfigListener() {
                 @Override

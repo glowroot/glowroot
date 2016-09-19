@@ -20,5 +20,6 @@ import org.glowroot.agent.fat.storage.util.CappedDatabaseStats;
 public interface TraceCappedDatabaseStatsMXBean {
 
     CappedDatabaseStats getTraceEntries();
+    CappedDatabaseStats getTraceSharedQueryTexts();
     CappedDatabaseStats getTraceProfiles();
 }

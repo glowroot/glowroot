@@ -174,8 +174,7 @@ public class AggregateDaoTest {
                 .setOverallAggregate(overallAggregate)
                 .addAllTransactionAggregate(transactionAggregates)
                 .build();
-        aggregateDao.store(AGENT_ID, 10000, ImmutableList.of(aggregatesByType),
-                ImmutableList.<String>of());
+        aggregateDao.store(10000, ImmutableList.of(aggregatesByType), ImmutableList.<String>of());
 
         List<TransactionAggregate> transactionAggregates2 = Lists.newArrayList();
         transactionAggregates2.add(TransactionAggregate.newBuilder()
@@ -210,8 +209,7 @@ public class AggregateDaoTest {
                 .setOverallAggregate(overallAggregate)
                 .addAllTransactionAggregate(transactionAggregates2)
                 .build();
-        aggregateDao.store(AGENT_ID, 20000, ImmutableList.of(aggregatesByType2),
-                ImmutableList.<String>of());
+        aggregateDao.store(20000, ImmutableList.of(aggregatesByType2), ImmutableList.<String>of());
     }
 
     // used by TransactionCommonServiceTest

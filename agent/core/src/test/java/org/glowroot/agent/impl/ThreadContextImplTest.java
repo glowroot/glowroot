@@ -21,6 +21,7 @@ import org.junit.Test;
 
 import org.glowroot.agent.model.TimerNameImpl;
 import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAsyncQueryEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopAsyncTraceEntry;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopQueryEntry;
@@ -37,6 +38,7 @@ public class ThreadContextImplTest {
     private ThreadContextImpl threadContext;
 
     private MessageSupplier messageSupplier = mock(MessageSupplier.class);
+    private QueryMessageSupplier queryMessageSupplier = mock(QueryMessageSupplier.class);
     private TimerNameImpl timerName = mock(TimerNameImpl.class);
 
     @Before
@@ -85,75 +87,79 @@ public class ThreadContextImplTest {
 
     @Test
     public void testStartQueryEntry() {
-        assertThat(threadContext.startQueryEntry(null, "text", messageSupplier, timerName))
+        assertThat(threadContext.startQueryEntry(null, "text", queryMessageSupplier, timerName))
                 .isEqualTo(NopQueryEntry.INSTANCE);
-        assertThat(threadContext.startQueryEntry("type", null, messageSupplier, timerName))
+        assertThat(threadContext.startQueryEntry("type", null, queryMessageSupplier, timerName))
                 .isEqualTo(NopQueryEntry.INSTANCE);
         assertThat(threadContext.startQueryEntry("type", "text", null, timerName))
                 .isEqualTo(NopQueryEntry.INSTANCE);
-        assertThat(threadContext.startQueryEntry("type", "text", messageSupplier, null))
+        assertThat(threadContext.startQueryEntry("type", "text", queryMessageSupplier, null))
                 .isEqualTo(NopQueryEntry.INSTANCE);
-        assertThat(threadContext.startQueryEntry("type", "text", messageSupplier, timerName)
+        assertThat(threadContext.startQueryEntry("type", "text", queryMessageSupplier, timerName)
                 .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
     }
 
     @Test
     public void testStartQueryEntryWithExecutionCount() {
-        assertThat(threadContext.startQueryEntry(null, "text", 0, messageSupplier, timerName))
+        assertThat(threadContext.startQueryEntry(null, "text", 0, queryMessageSupplier, timerName))
                 .isEqualTo(NopQueryEntry.INSTANCE);
-        assertThat(threadContext.startQueryEntry("type", null, 0, messageSupplier, timerName))
+        assertThat(threadContext.startQueryEntry("type", null, 0, queryMessageSupplier, timerName))
                 .isEqualTo(NopQueryEntry.INSTANCE);
         assertThat(threadContext.startQueryEntry("type", "text", 0, null, timerName))
                 .isEqualTo(NopQueryEntry.INSTANCE);
-        assertThat(threadContext.startQueryEntry("type", "text", 0, messageSupplier, null))
+        assertThat(threadContext.startQueryEntry("type", "text", 0, queryMessageSupplier, null))
                 .isEqualTo(NopQueryEntry.INSTANCE);
-        assertThat(threadContext.startQueryEntry("type", "text", 0, messageSupplier, timerName)
+        assertThat(threadContext.startQueryEntry("type", "text", 0, queryMessageSupplier, timerName)
                 .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
     }
 
     @Test
     public void testStartAsyncQueryEntry() {
-        assertThat(threadContext.startAsyncQueryEntry(null, "text", messageSupplier, timerName))
-                .isEqualTo(NopAsyncQueryEntry.INSTANCE);
-        assertThat(threadContext.startAsyncQueryEntry("type", null, messageSupplier, timerName))
-                .isEqualTo(NopAsyncQueryEntry.INSTANCE);
+        assertThat(
+                threadContext.startAsyncQueryEntry(null, "text", queryMessageSupplier, timerName))
+                        .isEqualTo(NopAsyncQueryEntry.INSTANCE);
+        assertThat(
+                threadContext.startAsyncQueryEntry("type", null, queryMessageSupplier, timerName))
+                        .isEqualTo(NopAsyncQueryEntry.INSTANCE);
         assertThat(threadContext.startAsyncQueryEntry("type", "text", null, timerName))
                 .isEqualTo(NopAsyncQueryEntry.INSTANCE);
-        assertThat(threadContext.startAsyncQueryEntry("type", "text", messageSupplier, null))
+        assertThat(threadContext.startAsyncQueryEntry("type", "text", queryMessageSupplier, null))
                 .isEqualTo(NopAsyncQueryEntry.INSTANCE);
-        assertThat(threadContext.startAsyncQueryEntry("type", "text", messageSupplier, timerName)
-                .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
+        assertThat(
+                threadContext.startAsyncQueryEntry("type", "text", queryMessageSupplier, timerName)
+                        .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
     }
 
     @Test
     public void testStartServiceCallEntry() {
-        assertThat(threadContext.startServiceCallEntry(null, "text", messageSupplier, timerName))
-                .isEqualTo(NopTraceEntry.INSTANCE);
-        assertThat(threadContext.startServiceCallEntry("type", null, messageSupplier, timerName))
-                .isEqualTo(NopTraceEntry.INSTANCE);
+        assertThat(
+                threadContext.startServiceCallEntry(null, "text", messageSupplier, timerName))
+                        .isEqualTo(NopTraceEntry.INSTANCE);
+        assertThat(
+                threadContext.startServiceCallEntry("type", null, messageSupplier, timerName))
+                        .isEqualTo(NopTraceEntry.INSTANCE);
         assertThat(threadContext.startServiceCallEntry("type", "text", null, timerName))
                 .isEqualTo(NopTraceEntry.INSTANCE);
         assertThat(threadContext.startServiceCallEntry("type", "text", messageSupplier, null))
                 .isEqualTo(NopTraceEntry.INSTANCE);
-        assertThat(threadContext.startServiceCallEntry("type", "text", messageSupplier, timerName)
-                .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
+        assertThat(
+                threadContext.startServiceCallEntry("type", "text", messageSupplier, timerName)
+                        .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
     }
 
     @Test
     public void testStartAsyncServiceCallEntry() {
-        assertThat(
-                threadContext.startAsyncServiceCallEntry(null, "text", messageSupplier, timerName))
-                        .isEqualTo(NopAsyncTraceEntry.INSTANCE);
-        assertThat(
-                threadContext.startAsyncServiceCallEntry("type", null, messageSupplier, timerName))
-                        .isEqualTo(NopAsyncTraceEntry.INSTANCE);
+        assertThat(threadContext.startAsyncServiceCallEntry(null, "text", messageSupplier,
+                timerName)).isEqualTo(NopAsyncTraceEntry.INSTANCE);
+        assertThat(threadContext.startAsyncServiceCallEntry("type", null, messageSupplier,
+                timerName)).isEqualTo(NopAsyncTraceEntry.INSTANCE);
         assertThat(threadContext.startAsyncServiceCallEntry("type", "text", null, timerName))
                 .isEqualTo(NopAsyncTraceEntry.INSTANCE);
-        assertThat(threadContext.startAsyncServiceCallEntry("type", "text", messageSupplier, null))
-                .isEqualTo(NopAsyncTraceEntry.INSTANCE);
-        assertThat(
-                threadContext.startAsyncServiceCallEntry("type", "text", messageSupplier, timerName)
-                        .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
+        assertThat(threadContext.startAsyncServiceCallEntry("type", "text", messageSupplier,
+                null)).isEqualTo(NopAsyncTraceEntry.INSTANCE);
+        assertThat(threadContext
+                .startAsyncServiceCallEntry("type", "text", messageSupplier, timerName)
+                .getClass().getName()).endsWith("$DummyTraceEntryOrQuery");
     }
 
     @Test

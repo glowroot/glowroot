@@ -140,7 +140,7 @@ HandlebarsRendering = (function () {
 
   // allows empty string ""
   Handlebars.registerHelper('ifDisplayMessage', function (traceEntry, options) {
-    if (traceEntry.message || !traceEntry.error) {
+    if (traceEntry.message || traceEntry.queryMessage || !traceEntry.error) {
       return options.fn(this);
     }
     return options.inverse(this);
@@ -243,8 +243,20 @@ HandlebarsRendering = (function () {
     return ret;
   }
 
-  Handlebars.registerHelper('ifLongMessage', function (message, options) {
-    if (message.length > traceEntryLineLength) {
+  Handlebars.registerHelper('ifLongMessage', function (traceEntry, options) {
+    var messageLength;
+    if (traceEntry.queryMessage) {
+      var sharedQueryText = traceEntry.queryMessage.sharedQueryText;
+      if (sharedQueryText.fullTextSha1) {
+        // query text is truncated, this is a "long message"
+        messageLength = traceEntryLineLength + 1;
+      } else {
+        messageLength = traceEntry.message.length;
+      }
+    } else {
+      messageLength = traceEntry.message.length;
+    }
+    if (messageLength > traceEntryLineLength) {
       return options.fn(this);
     }
     return options.inverse(this);
@@ -293,12 +305,32 @@ HandlebarsRendering = (function () {
 
   Handlebars.registerHelper('firstPart', function (traceEntry) {
     var totalChars = traceEntryLineLength - 2 * traceEntry.depth;
-    return traceEntry.message.slice(0, Math.ceil(totalChars / 2));
+    var messageToSlice;
+    if (traceEntry.queryMessage) {
+      if (traceEntry.queryMessage.sharedQueryText.fullTextSha1) {
+        messageToSlice = traceEntry.queryMessage.prefix + traceEntry.queryMessage.sharedQueryText.truncatedText;
+      } else {
+        messageToSlice = traceEntry.message;
+      }
+    } else {
+      messageToSlice = traceEntry.message;
+    }
+    return messageToSlice.slice(0, Math.ceil(totalChars / 2));
   });
 
   Handlebars.registerHelper('lastPart', function (traceEntry) {
     var totalChars = traceEntryLineLength - 2 * traceEntry.depth;
-    return traceEntry.message.slice(-Math.floor(totalChars / 2));
+    var messageToSlice;
+    if (traceEntry.queryMessage) {
+      if (traceEntry.queryMessage.sharedQueryText.fullTextSha1) {
+        messageToSlice = traceEntry.queryMessage.sharedQueryText.truncatedEndText + traceEntry.queryMessage.suffix;
+      } else {
+        messageToSlice = traceEntry.message;
+      }
+    } else {
+      messageToSlice = traceEntry.message;
+    }
+    return messageToSlice.slice(-Math.floor(totalChars / 2));
   });
 
   Handlebars.registerHelper('exceptionHtml', function (throwable) {
@@ -359,21 +391,23 @@ HandlebarsRendering = (function () {
     smartToggle($(this).parent(), e, keyboard);
   });
 
-  $(document).on('click', '.gt-sps-toggle', function () {
-    var $selector = $('#sps');
+  $(document).on('click', '.gt-entries-toggle', function () {
+    var $selector = $('#entries');
     if ($selector.data('gtLoading')) {
       // handles rapid clicking when loading from url
       return;
     }
     if (!$selector.data('gtLoaded')) {
       var $traceParent = $(this).parents('.gt-trace-parent');
-      var traceEntries = $traceParent.data('gtTraceEntries');
-      if (traceEntries) {
+      var entries = $traceParent.data('gtEntries');
+      if (entries) {
         // this is an export file
         $selector.data('gtLoaded', true);
         // first time opening
         initTraceEntryLineLength();
-        flattenedTraceEntries = flattenTraceEntries(traceEntries);
+        var sharedQueryTexts = $traceParent.data('gtSharedQueryTexts');
+        mergeInSharedQueryTexts(entries, sharedQueryTexts);
+        flattenedTraceEntries = flattenTraceEntries(entries);
         // un-hide before building in case there are lots of trace entries, at least can see first few quickly
         $selector.removeClass('hide');
         renderNext(flattenedTraceEntries, 0);
@@ -383,14 +417,8 @@ HandlebarsRendering = (function () {
         var traceId = $traceParent.data('gtTraceId');
         var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
         $selector.data('gtLoading', true);
-        var loaded;
-        var spinner;
         var $button = $(this);
-        setTimeout(function () {
-          if (!loaded) {
-            spinner = Glowroot.showSpinner($button.parent().find('.gt-trace-detail-spinner'));
-          }
-        }, 100);
+        var spinner = Glowroot.showSpinner($button.parent().find('.gt-trace-detail-spinner'));
         var url = 'backend/trace/entries?agent-id=' + agentId + '&trace-id=' + traceId;
         if (checkLiveTraces) {
           url += '&check-live-traces=true';
@@ -398,32 +426,30 @@ HandlebarsRendering = (function () {
         $.get(url)
             .done(function (data) {
               if (data.overwritten) {
-                $('#sps').append('<div style="padding: 1em;">The trace entries have expired, see' +
+                $selector.append('<div style="padding: 1em;">The trace entries have expired, see' +
                     ' <a href="admin/storage#trace-capped-database-size">' +
                     'Configuration &gt; Storage &gt; Trace detail data</a></div>');
               } else if (data.expired) {
-                $('#sps').append('<div style="padding: 1em;">This trace has expired</div>');
+                $selector.append('<div style="padding: 1em;">This trace has expired</div>');
               } else {
                 // first time opening
                 initTraceEntryLineLength();
-                var last = data[data.length - 1];
+                mergeInSharedQueryTexts(data.entries, data.sharedQueryTexts);
+                var last = data.entries[data.entries.length - 1];
                 // updating traceDurationNanos is needed for live traces
                 traceDurationNanos = Math.max(traceDurationNanos, last.startOffsetNanos + last.durationNanos);
-                flattenedTraceEntries = flattenTraceEntries(data);
+                flattenedTraceEntries = flattenTraceEntries(data.entries);
                 // un-hide before building in case there are lots of trace entries, at least can see first few quickly
                 $selector.removeClass('hide');
                 renderNext(flattenedTraceEntries, 0);
               }
             })
             .fail(function () {
-              $('#sps').append(
+              $selector.append(
                   '<div class="gt-red" style="padding: 1em;">An error occurred retrieving the trace entries</div>');
             })
             .always(function () {
-              loaded = true;
-              if (spinner) {
-                spinner.stop();
-              }
+              spinner.stop();
               $selector.data('gtLoading', false);
               $selector.data('gtLoaded', true);
             });
@@ -451,7 +477,7 @@ HandlebarsRendering = (function () {
       }
     }
 
-    var traceEntryIndex = $(this).data('index');
+    var traceEntryIndex = $(this).data('gt-index');
     var traceEntry = flattenedTraceEntries[traceEntryIndex];
     traceEntry.collapsed = !traceEntry.collapsed;
     toggleChildren(traceEntry, traceEntry.collapsed);
@@ -515,13 +541,7 @@ HandlebarsRendering = (function () {
         $selector.data('gtLoaded', true);
       } else {
         $selector.data('gtLoading', true);
-        var loaded;
-        var spinner;
-        setTimeout(function () {
-          if (!loaded) {
-            spinner = Glowroot.showSpinner($button.parent().find('.gt-trace-detail-spinner'));
-          }
-        }, 100);
+        var spinner = Glowroot.showSpinner($button.parent().find('.gt-trace-detail-spinner'));
         $.get(url)
             .done(function (data) {
               if (data.overwritten) {
@@ -541,10 +561,7 @@ HandlebarsRendering = (function () {
               $selector.removeClass('hide');
             })
             .always(function () {
-              loaded = true;
-              if (spinner) {
-                spinner.stop();
-              }
+              spinner.stop();
               $selector.data('gtLoading', false);
               $selector.data('gtLoaded', true);
             });
@@ -558,35 +575,52 @@ HandlebarsRendering = (function () {
 
   function initTraceEntryLineLength() {
     // -170 for the left margin of the trace entry lines
-    traceEntryLineLength = ($('#sps').width() - 220) / monospaceCharWidth;
+    traceEntryLineLength = ($('#entries').width() - 220) / monospaceCharWidth;
     // min value of 60, otherwise not enough context provided by the elipsed line
     traceEntryLineLength = Math.max(traceEntryLineLength, 60);
+    // max value of 240, since long queries are only initially retrieved with first 120 and last 120 characters
+    traceEntryLineLength = Math.min(traceEntryLineLength, 240);
   }
 
-  function flattenTraceEntries(traceEntries) {
+  function mergeInSharedQueryTexts(entries, sharedQueryTexts) {
+    $.each(entries, function (index, entry) {
+      if (entry.queryMessage) {
+        entry.queryMessage.sharedQueryText = sharedQueryTexts[entry.queryMessage.sharedQueryTextIndex];
+        if (!entry.queryMessage.sharedQueryText.fullTextSha1) {
+          entry.message = entry.queryMessage.prefix + entry.queryMessage.sharedQueryText.fullText
+              + entry.queryMessage.suffix;
+        }
+      }
+      if (entry.childEntries) {
+        mergeInSharedQueryTexts(entry.childEntries, sharedQueryTexts);
+      }
+    });
+  }
+
+  function flattenTraceEntries(entries) {
     var flattenedTraceEntries = [];
     var traceEntryIndex = 0;
 
-    function flattenAndRecurse(traceEntries, depth) {
+    function flattenAndRecurse(entries, depth) {
       var i;
-      var traceEntry;
-      for (i = 0; i < traceEntries.length; i++) {
-        traceEntry = traceEntries[i];
-        traceEntry.collapsed = false;
-        traceEntry.depth = depth;
-        flattenedTraceEntries.push(traceEntry);
-        traceEntry.index = traceEntryIndex++;
-        if (traceEntry.childEntries) {
-          flattenAndRecurse(traceEntry.childEntries, depth + 1);
+      var entry;
+      for (i = 0; i < entries.length; i++) {
+        entry = entries[i];
+        entry.collapsed = false;
+        entry.depth = depth;
+        flattenedTraceEntries.push(entry);
+        entry.index = traceEntryIndex++;
+        if (entry.childEntries) {
+          flattenAndRecurse(entry.childEntries, depth + 1);
         }
       }
     }
 
-    flattenAndRecurse(traceEntries, 0);
+    flattenAndRecurse(entries, 0);
     return flattenedTraceEntries;
   }
 
-  function renderNext(traceEntries, start) {
+  function renderNext(entries, start) {
     // large numbers of trace entries (e.g. 20,000) render much faster when grouped into sub-divs
     var batchSize;
     var i;
@@ -598,20 +632,83 @@ HandlebarsRendering = (function () {
       batchSize = 500;
     }
     var html = '';
-    for (i = start; i < Math.min(start + batchSize, traceEntries.length); i++) {
-      html += JST['trace-entry'](traceEntries[i]);
+    for (i = start; i < Math.min(start + batchSize, entries.length); i++) {
+      html += JST['trace-entry'](entries[i]);
     }
-    $('#sps').append(html);
-    if (start + 100 < traceEntries.length) {
+    $('#entries').append(html);
+    if (start + 100 < entries.length) {
       setTimeout(function () {
-        renderNext(traceEntries, start + batchSize);
+        renderNext(entries, start + batchSize);
       }, 10);
+    }
+  }
+
+  function formatSqlIfNeeded(unexpanded, expanded, expandedTextNode) {
+    var text = expandedTextNode.text().trim();
+    // TODO deal with this hacky special case for SQL formatting
+    if (text.lastIndexOf('jdbc execution: ', 0) === 0) {
+      var beforeRowsStripped = text.substring('jdbc execution: '.length);
+      var beforeParamsStripped = beforeRowsStripped.replace(/ => [0-9]+ rows?$/, '');
+      var sql = beforeParamsStripped.replace(/ \[.*?]$/, '');
+      var formatted = SqlPrettyPrinter.format(sql);
+      if (typeof formatted === 'object') {
+        // intentional console logging
+        // need conditional since console does not exist in IE9 unless dev tools is open
+        if (window.console) {
+          console.log(formatted.message);
+          console.log(sql);
+        }
+      } else {
+        var rows = beforeRowsStripped.substring(beforeParamsStripped.length + 1);
+        var parameters = beforeParamsStripped.substring(sql.length + 1);
+        var html = 'jdbc execution:\n\n';
+        // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
+        // there are extra newlines after the pre tag
+        html += '<span class="gt-indent2 gt-inline-block" style="white-space: pre-wrap;">'
+            + formatted + '</span>';
+        if (parameters) {
+          // the absolutely positioned &nbsp; is just for the copy to clipboard
+          html += '\n\n<span class="gt-indent2">parameters:</span>\n\n'
+              + '<span class="gt-indent2 gt-inline-block">&nbsp;&nbsp;' + parameters + '</span>';
+        }
+        if (rows) {
+          // the absolutely positioned &nbsp; is just for the copy to clipboard
+          html += '\n\n<span class="gt-indent2">rows:</span>\n\n'
+              + '<span class="gt-indent2 gt-inline-block">&nbsp;&nbsp;' + rows + '</span>';
+        }
+        expanded.css('padding-bottom', '10px');
+        var $clip = expanded.find('.gt-clip');
+        $clip.css('top', '10px');
+        $clip.css('right', '10px');
+        var $message = expanded.find('.gt-pre-wrap');
+        $message.html(html);
+        $message.css('min-width', 0.6 * unexpanded.parent().width());
+      }
     }
   }
 
   function basicToggle(parent) {
     var expanded = parent.find('.gt-expanded-content');
     var unexpanded = parent.find('.gt-unexpanded-content');
+
+    function doAfter() {
+      unexpanded.toggleClass('hide');
+      expanded.toggleClass('hide');
+      if (expanded.width() >= expanded.parent().width()) {
+        expanded.css('display', 'block');
+      }
+      // re-focus on visible element, otherwise up/down/pgup/pgdown/ESC don't work
+      if (unexpanded.hasClass('hide')) {
+        expanded.attr('tabindex', -1);
+        expanded.css('outline', 'none');
+        expanded.focus();
+      } else {
+        unexpanded.attr('tabindex', -1);
+        unexpanded.css('outline', 'none');
+        unexpanded.focus();
+      }
+    }
+
     if (expanded.hasClass('hide') && !expanded.data('gtExpandedPreviously')) {
       var $clipboardIcon = expanded.find('.fa-clipboard');
       // mouseenter and mouseleave events are to deal with hover style being removed from expanded div
@@ -622,11 +719,11 @@ HandlebarsRendering = (function () {
       expanded.on('mouseleave', function () {
         expanded.css('background-color', '');
       });
-      var expandedTextNode = expanded.children('div');
+      var clipTextNode = expanded.find('.gt-clip-text');
       gtClipboard($clipboardIcon, function () {
-        return expandedTextNode[0];
+        return clipTextNode[0];
       }, function () {
-        var text = expandedTextNode.text().trim();
+        var text = clipTextNode.text().trim();
         // TODO deal with this hacky special case for SQL formatting
         if (text.lastIndexOf('jdbc execution:\n\n', 0) === 0) {
           text = text.substring('jdbc execution:\n\n'.length);
@@ -634,64 +731,55 @@ HandlebarsRendering = (function () {
         return text;
       });
 
-      // TODO deal with this hacky special case for SQL formatting
-      var text = expandedTextNode.text().trim();
-      if (text.lastIndexOf('jdbc execution: ', 0) === 0) {
-        var beforeRowsStripped = text.substring('jdbc execution: '.length);
-        var beforeParamsStripped = beforeRowsStripped.replace(/ => [0-9]+ rows?$/, '');
-        var sql = beforeParamsStripped.replace(/ \[.*?]$/, '');
-        var formatted = SqlPrettyPrinter.format(sql);
-        if (typeof formatted === 'object') {
-          // intentional console logging
-          // need conditional since console does not exist in IE9 unless dev tools is open
-          if (window.console) {
-            console.log(formatted.message);
-            console.log(sql);
-          }
-        } else {
-          var rows = beforeRowsStripped.substring(beforeParamsStripped.length + 1);
-          var parameters = beforeParamsStripped.substring(sql.length + 1);
-          var html = 'jdbc execution:\n\n';
-          // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
-          // there are extra newlines after the pre tag
-          html += '<span class="gt-indent2 gt-inline-block" style="white-space: pre-wrap;">'
-              + formatted + '</span>';
-          if (parameters) {
-            // the absolutely positioned &nbsp; is just for the copy to clipboard
-            html += '\n\n<span class="gt-indent2">parameters:</span>\n\n'
-                + '<span class="gt-indent2 gt-inline-block">&nbsp;&nbsp;' + parameters + '</span>';
-          }
-          if (rows) {
-            // the absolutely positioned &nbsp; is just for the copy to clipboard
-            html += '\n\n<span class="gt-indent2">rows:</span>\n\n'
-                + '<span class="gt-indent2 gt-inline-block">&nbsp;&nbsp;' + rows + '</span>';
-          }
-          expanded.css('padding-bottom', '10px');
-          var $clip = expanded.find('.gt-clip');
-          $clip.css('top', '10px');
-          $clip.css('right', '10px');
-          var $message = expanded.find('.gt-pre-wrap');
-          $message.html(html);
-          $message.css('min-width', 0.6 * unexpanded.parent().width());
-        }
+      var expandedTraceEntryNode = expanded.find('.gt-expanded-trace-entry');
+      var queryMessage;
+      if (expandedTraceEntryNode.length) {
+        var traceEntryIndex = expandedTraceEntryNode.data('gt-trace-entry-index');
+        queryMessage = flattenedTraceEntries[traceEntryIndex].queryMessage;
       }
-      expanded.data('gtExpandedPreviously', true);
-    }
-    unexpanded.toggleClass('hide');
-    expanded.toggleClass('hide');
-    if (expanded.width() >= expanded.parent().width()) {
-      expanded.css('display', 'block');
-    }
-    // re-focus on visible element, otherwise up/down/pgup/pgdown/ESC don't work
-    if (unexpanded.hasClass('hide')) {
-      expanded.attr('tabindex', -1);
-      expanded.css('outline', 'none');
-      expanded.focus();
+      if (queryMessage && queryMessage.sharedQueryText.fullTextSha1 && !queryMessage.sharedQueryText.fullText) {
+        var $traceParent = parent.parents('.gt-trace-parent');
+        var agentId = $traceParent.data('gtAgentId');
+        var alreadyDoneAfter;
+        var spinner = Glowroot.showSpinner(expanded.find('.gt-trace-detail-spinner'), function () {
+          doAfter();
+          alreadyDoneAfter = true;
+        });
+        $.get('backend/transaction/full-query-text?agent-rollup=' + encodeURIComponent(agentId) + '&full-text-sha1='
+            + queryMessage.sharedQueryText.fullTextSha1)
+            .done(function (data) {
+              if (data.expired) {
+                expandedTraceEntryNode.text('[the full query text has expired]');
+              } else {
+                expandedTraceEntryNode.text(queryMessage.prefix + data.fullText + queryMessage.suffix);
+                formatSqlIfNeeded(unexpanded, expanded, expandedTraceEntryNode);
+                // so other trace entries with same shared query text don't need to go to server
+                queryMessage.sharedQueryText.fullText = data.fullText;
+              }
+            })
+            .fail(function () {
+              expandedTraceEntryNode.html('<div class="gt-red">An error occurred retrieving the full query text</div>');
+            })
+            .always(function () {
+              spinner.stop();
+              if (!alreadyDoneAfter) {
+                doAfter();
+              }
+            });
+      } else if (queryMessage && queryMessage.sharedQueryText.fullTextSha1) {
+        // already fetched full text for this sha1
+        expandedTraceEntryNode.text(queryMessage.prefix + queryMessage.sharedQueryText.fullText + queryMessage.suffix);
+        formatSqlIfNeeded(unexpanded, expanded, expandedTraceEntryNode);
+        doAfter();
+      } else {
+        // the call to formatSqlIfNeeded() is needed here for data collected prior to 0.9.3
+        formatSqlIfNeeded(unexpanded, expanded, expandedTraceEntryNode);
+        doAfter();
+      }
     } else {
-      unexpanded.attr('tabindex', -1);
-      unexpanded.css('outline', 'none');
-      unexpanded.focus();
+      doAfter();
     }
+    expanded.data('gtExpandedPreviously', true);
   }
 
   function smartToggle(parent, e, keyboard) {
@@ -789,7 +877,7 @@ HandlebarsRendering = (function () {
       function filterNode(node, underMatchingNode) {
         var nodes = [node];
         while (node.childNodes && node.childNodes.length === 1 && !node.leafThreadState
-          // the below condition is to make the 100% block at the top really mean exactly 100% (no ellipsed nodes)
+        // the below condition is to make the 100% block at the top really mean exactly 100% (no ellipsed nodes)
         && (node.sampleCount === node.childNodes[0].sampleCount || node.sampleCount < profile.unfilteredSampleCount)
         && (!SHOW_ELLIPSED_NODE_MARKERS || !node.ellipsedSampleCount)) {
           node = node.childNodes[0];
@@ -907,7 +995,7 @@ HandlebarsRendering = (function () {
         }
         var nodes = [node];
         while (node.childNodes && node.childNodes.length === 1 && !node.leafThreadState
-          // the below condition is to make the 100% block at the top really mean exactly 100% (no ellipsed nodes)
+        // the below condition is to make the 100% block at the top really mean exactly 100% (no ellipsed nodes)
         && (node.sampleCount === node.childNodes[0].sampleCount || node.sampleCount < profile.unfilteredSampleCount)
         && (!SHOW_ELLIPSED_NODE_MARKERS || !node.ellipsedSampleCount)) {
           node = node.childNodes[0];
@@ -1111,8 +1199,10 @@ HandlebarsRendering = (function () {
       }
       traceDurationNanos = traceHeader.durationNanos;
     },
-    renderTraceFromExport: function (traceHeader, $selector, traceEntries, mainThreadProfile, auxThreadProfile) {
-      $selector.data('gtTraceEntries', traceEntries);
+    renderTraceFromExport: function (traceHeader, $selector, entries, sharedQueryTexts, mainThreadProfile,
+                                     auxThreadProfile) {
+      $selector.data('gtEntries', entries);
+      $selector.data('gtSharedQueryTexts', sharedQueryTexts);
       $selector.data('gtMainThreadProfile', mainThreadProfile);
       $selector.data('gtAuxThreadProfile', auxThreadProfile);
       this.renderTrace(traceHeader, undefined, undefined, false, $selector);

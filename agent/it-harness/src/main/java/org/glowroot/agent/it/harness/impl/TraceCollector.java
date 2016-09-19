@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.it.harness.impl;
 
-import java.io.File;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -26,17 +25,12 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
-import org.glowroot.wire.api.Collector;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-class TraceCollector implements Collector {
+class TraceCollector {
 
     private volatile @Nullable Trace trace;
 
@@ -102,18 +96,6 @@ class TraceCollector implements Collector {
         }
     }
 
-    @Override
-    public void init(File glowrootBaseDir, Environment environment, AgentConfig agentConfig,
-            AgentConfigUpdater agentConfigUpdater) {}
-
-    @Override
-    public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType,
-            List<String> sharedQueryTexts) {}
-
-    @Override
-    public void collectGaugeValues(List<GaugeValue> gaugeValues) {}
-
-    @Override
     public void collectTrace(Trace trace) {
         Trace currTrace = this.trace;
         if (currTrace == null
@@ -122,7 +104,6 @@ class TraceCollector implements Collector {
         }
     }
 
-    @Override
     public void log(LogEvent logEvent) {
         if (isExpected(logEvent)) {
             return;

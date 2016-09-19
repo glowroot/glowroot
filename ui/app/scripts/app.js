@@ -315,16 +315,18 @@ Glowroot = (function () {
     });
   }
 
-  function showSpinner(selector, opts) {
-    // z-index should be less than navbar (which is 1030)
-    opts = opts || {lines: 9, radius: 8, width: 5, zIndex: 1020};
+  function showSpinner(selector, callbackOnStart) {
     var element = $(selector)[0];
-    var spinner = new Spinner(opts);
+    // z-index should be less than navbar (which is 1030)
+    var spinner = new Spinner({lines: 9, radius: 8, width: 5, zIndex: 1020});
 
     // small delay so that if there is an immediate response the spinner doesn't blink
     var timer = setTimeout(function () {
       $(element).removeClass('hide');
       spinner.spin(element);
+      if (callbackOnStart) {
+        callbackOnStart();
+      }
     }, 100);
 
     return {

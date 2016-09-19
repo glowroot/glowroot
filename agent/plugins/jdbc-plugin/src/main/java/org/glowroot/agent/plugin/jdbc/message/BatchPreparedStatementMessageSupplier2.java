@@ -15,30 +15,26 @@
  */
 package org.glowroot.agent.plugin.jdbc.message;
 
-import org.glowroot.agent.plugin.api.Message;
-import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.QueryMessage;
+import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 
-public class BatchPreparedStatementMessageSupplier2 extends MessageSupplier {
-
-    private final String sql;
+public class BatchPreparedStatementMessageSupplier2 extends QueryMessageSupplier {
 
     private final int batchSize;
 
-    public BatchPreparedStatementMessageSupplier2(String sql, int batchSize) {
-        this.sql = sql;
+    public BatchPreparedStatementMessageSupplier2(int batchSize) {
         this.batchSize = batchSize;
     }
 
     @Override
-    public Message get() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("jdbc execution: ");
+    public QueryMessage get() {
+        String prefix;
         if (batchSize > 1) {
             // print out number of batches to make it easy to identify
-            sb.append(batchSize);
-            sb.append(" x ");
+            prefix = "jdbc execution: " + batchSize + " x ";
+        } else {
+            prefix = "jdbc execution: ";
         }
-        sb.append(sql);
-        return Message.from(sb.toString());
+        return QueryMessage.create(prefix);
     }
 }

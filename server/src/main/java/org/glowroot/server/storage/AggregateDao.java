@@ -83,10 +83,6 @@ import org.glowroot.common.util.Styles;
 import org.glowroot.server.util.Messages;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.QueriesByType;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.ServiceCallsByType;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.ThreadStats;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.Timer;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
@@ -224,11 +220,11 @@ public class AggregateDao implements AggregateRepository {
     private final ImmutableList<Table> allTables;
 
     public AggregateDao(Session session, TransactionTypeDao transactionTypeDao,
-            ConfigRepository configRepository) {
+            FullQueryTextDao fullQueryTextDao, ConfigRepository configRepository) {
         this.session = session;
         this.transactionTypeDao = transactionTypeDao;
         this.configRepository = configRepository;
-        fullQueryTextDao = new FullQueryTextDao(session, configRepository);
+        this.fullQueryTextDao = fullQueryTextDao;
 
         int count = configRepository.getRollupConfigs().size();
 
@@ -327,25 +323,29 @@ public class AggregateDao implements AggregateRepository {
         this.deleteNeedsRollup = deleteNeedsRollup;
     }
 
-    @Override
     public void store(String agentId, long captureTime, List<AggregatesByType> aggregatesByTypeList,
-            List<String> sharedQueryTexts) throws Exception {
+            List<Aggregate.SharedQueryText> initialSharedQueryTexts) throws Exception {
         int adjustedTTL = GaugeValueDao.getAdjustedTTL(getTTLs().get(0), captureTime);
         List<ResultSetFuture> futures = Lists.newArrayList();
-        List<SharedQueryTextAndSha1> sharedQueries = Lists.newArrayList();
-        for (String fullQueryText : sharedQueryTexts) {
-            String truncatedQueryText;
-            String fullQueryTextSha1;
-            if (fullQueryText.length() > StorageConfig.QUERY_TEXT_TRUNCATE) {
-                truncatedQueryText = fullQueryText.substring(0, StorageConfig.QUERY_TEXT_TRUNCATE);
-                fullQueryTextSha1 =
-                        fullQueryTextDao.updateLastCaptureTime(agentId, fullQueryText, futures);
+        List<Aggregate.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+        for (Aggregate.SharedQueryText sharedQueryText : initialSharedQueryTexts) {
+            String fullTextSha1 = sharedQueryText.getFullTextSha1();
+            if (fullTextSha1.isEmpty()) {
+                String fullText = sharedQueryText.getFullText();
+                if (fullText.length() > 120) {
+                    fullTextSha1 = fullQueryTextDao.store(agentId, fullText, futures);
+                    sharedQueryTexts.add(Aggregate.SharedQueryText.newBuilder()
+                            .setTruncatedText(fullText.substring(0, 120))
+                            .setFullTextSha1(fullTextSha1)
+                            .build());
+                    sharedQueryTexts.add(sharedQueryText);
+                } else {
+                    sharedQueryTexts.add(sharedQueryText);
+                }
             } else {
-                truncatedQueryText = fullQueryText;
-                fullQueryTextSha1 = null;
+                fullQueryTextDao.updateTTL(agentId, fullTextSha1, futures);
+                sharedQueryTexts.add(sharedQueryText);
             }
-            sharedQueries
-                    .add(ImmutableSharedQueryTextAndSha1.of(truncatedQueryText, fullQueryTextSha1));
         }
         for (AggregatesByType aggregatesByType : aggregatesByTypeList) {
             String transactionType = aggregatesByType.getTransactionType();
@@ -356,14 +356,14 @@ public class AggregateDao implements AggregateRepository {
             // END TEMPORARY
             Aggregate overallAggregate = aggregatesByType.getOverallAggregate();
             futures.addAll(storeOverallAggregate(agentId, transactionType, captureTime,
-                    overallAggregate, sharedQueries, adjustedTTL));
+                    overallAggregate, sharedQueryTexts, adjustedTTL));
             for (TransactionAggregate transactionAggregate : aggregatesByType
                     .getTransactionAggregateList()) {
                 futures.addAll(storeTransactionAggregate(agentId, transactionType,
                         transactionAggregate.getTransactionName(), captureTime,
-                        transactionAggregate.getAggregate(), sharedQueries, adjustedTTL));
+                        transactionAggregate.getAggregate(), sharedQueryTexts, adjustedTTL));
             }
-            transactionTypeDao.maybeUpdateLastCaptureTime(agentId, transactionType, futures);
+            transactionTypeDao.store(agentId, transactionType, futures);
         }
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         // TODO report checker framework issue that occurs without this suppression
@@ -572,14 +572,15 @@ public class AggregateDao implements AggregateRepository {
             int i = 0;
             captureTime = Math.max(captureTime, checkNotNull(row.getTimestamp(i++)).getTime());
             String queryType = checkNotNull(row.getString(i++));
-            String truncatedQueryText = checkNotNull(row.getString(i++));
-            String fullQueryTextSha1 = Strings.emptyToNull(row.getString(i++));
+            String truncatedText = checkNotNull(row.getString(i++));
+            // full_query_text_sha1 cannot be null since it is used in clustering key
+            String fullTextSha1 = Strings.emptyToNull(row.getString(i++));
             double totalDurationNanos = row.getDouble(i++);
             long executionCount = row.getLong(i++);
             boolean hasTotalRows = !row.isNull(i);
             long totalRows = row.getLong(i++);
-            collector.mergeQuery(queryType, truncatedQueryText, fullQueryTextSha1,
-                    totalDurationNanos, executionCount, hasTotalRows, totalRows);
+            collector.mergeQuery(queryType, truncatedText, fullTextSha1, totalDurationNanos,
+                    executionCount, hasTotalRows, totalRows);
             collector.updateLastCaptureTime(captureTime);
         }
     }
@@ -953,18 +954,19 @@ public class AggregateDao implements AggregateRepository {
         if (results.isExhausted()) {
             return ImmutableList.of();
         }
-        QueryCollector collector = new QueryCollector(rollup.maxAggregateQueriesPerType(), 0);
+        QueryCollector collector = new QueryCollector(rollup.maxAggregateQueriesPerType());
         for (Row row : results) {
             int i = 0;
             String queryType = checkNotNull(row.getString(i++));
-            String truncatedQueryText = checkNotNull(row.getString(i++));
-            String fullQueryTextSha1 = Strings.emptyToNull(row.getString(i++));
+            String truncatedText = checkNotNull(row.getString(i++));
+            // full_query_text_sha1 cannot be null since it is used in clustering key
+            String fullTextSha1 = Strings.emptyToNull(row.getString(i++));
             double totalDurationNanos = row.getDouble(i++);
             long executionCount = row.getLong(i++);
             boolean hasTotalRows = !row.isNull(i);
             long totalRows = row.getLong(i++);
-            collector.mergeQuery(queryType, truncatedQueryText, fullQueryTextSha1,
-                    totalDurationNanos, executionCount, hasTotalRows, totalRows);
+            collector.mergeQuery(queryType, truncatedText, fullTextSha1, totalDurationNanos,
+                    executionCount, hasTotalRows, totalRows);
         }
         return insertQueries(collector.getSortedQueries(), rollup.rollupLevel(),
                 rollup.agentRollup(), query.transactionType(), query.transactionName(), query.to(),
@@ -1101,7 +1103,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private List<ResultSetFuture> storeOverallAggregate(String agentRollup, String transactionType,
-            long captureTime, Aggregate aggregate, List<SharedQueryTextAndSha1> sharedQueries,
+            long captureTime, Aggregate aggregate, List<Aggregate.SharedQueryText> sharedQueryTexts,
             int adjustedTTL) throws Exception {
 
         final int rollupLevel = 0;
@@ -1179,8 +1181,8 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
-        futures.addAll(insertQueries(aggregate.getQueriesByTypeList(), sharedQueries, rollupLevel,
-                agentRollup, transactionType, null, captureTime, adjustedTTL));
+        futures.addAll(insertQueries(aggregate.getQueriesByTypeList(), sharedQueryTexts,
+                rollupLevel, agentRollup, transactionType, null, captureTime, adjustedTTL));
         futures.addAll(insertServiceCalls(aggregate.getServiceCallsByTypeList(), rollupLevel,
                 agentRollup, transactionType, null, captureTime, adjustedTTL));
         return futures;
@@ -1188,7 +1190,7 @@ public class AggregateDao implements AggregateRepository {
 
     private List<ResultSetFuture> storeTransactionAggregate(String agentRollup,
             String transactionType, String transactionName, long captureTime, Aggregate aggregate,
-            List<SharedQueryTextAndSha1> sharedQueries, int adjustedTTL) throws IOException {
+            List<Aggregate.SharedQueryText> sharedQueryTexts, int adjustedTTL) throws IOException {
 
         final int rollupLevel = 0;
 
@@ -1272,39 +1274,40 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
-        futures.addAll(insertQueries(aggregate.getQueriesByTypeList(), sharedQueries, rollupLevel,
-                agentRollup, transactionType, transactionName, captureTime, adjustedTTL));
+        futures.addAll(
+                insertQueries(aggregate.getQueriesByTypeList(), sharedQueryTexts, rollupLevel,
+                        agentRollup, transactionType, transactionName, captureTime, adjustedTTL));
         futures.addAll(insertServiceCalls(aggregate.getServiceCallsByTypeList(), rollupLevel,
                 agentRollup, transactionType, transactionName, captureTime, adjustedTTL));
         return futures;
     }
 
-    private List<ResultSetFuture> insertQueries(List<QueriesByType> queriesByTypeList,
-            List<SharedQueryTextAndSha1> sharedQueries, int rollupLevel, String agentRollup,
+    private List<ResultSetFuture> insertQueries(List<Aggregate.QueriesByType> queriesByTypeList,
+            List<Aggregate.SharedQueryText> sharedQueryTexts, int rollupLevel, String agentRollup,
             String transactionType, @Nullable String transactionName, long captureTime,
             int adjustedTTL) {
         List<ResultSetFuture> futures = Lists.newArrayList();
-        for (QueriesByType queriesByType : queriesByTypeList) {
+        for (Aggregate.QueriesByType queriesByType : queriesByTypeList) {
             for (Aggregate.Query query : queriesByType.getQueryList()) {
-                SharedQueryTextAndSha1 sharedQuery;
-                if (query.getQueryText().isEmpty()) {
-                    sharedQuery = sharedQueries.get(query.getSharedQueryTextIndex());
+                Aggregate.SharedQueryText sharedQueryText;
+                if (query.getFullText().isEmpty()) {
+                    sharedQueryText = sharedQueryTexts.get(query.getSharedQueryTextIndex());
                 } else {
                     // TEMPORARY UNTIL ROLL OUT AGENT 0.9.1
-                    String fullQueryText = query.getQueryText();
-                    String truncatedQueryText;
-                    String fullQueryTextSha1;
-                    if (fullQueryText.length() > StorageConfig.QUERY_TEXT_TRUNCATE) {
-                        truncatedQueryText =
-                                fullQueryText.substring(0, StorageConfig.QUERY_TEXT_TRUNCATE);
-                        fullQueryTextSha1 = fullQueryTextDao.updateLastCaptureTime(agentRollup,
-                                fullQueryText, futures);
+                    String fullText = query.getFullText();
+                    if (fullText.length() > StorageConfig.QUERY_TEXT_TRUNCATE) {
+                        String fullTextSha1 =
+                                fullQueryTextDao.store(agentRollup, fullText, futures);
+                        sharedQueryText = Aggregate.SharedQueryText.newBuilder()
+                                .setTruncatedText(
+                                        fullText.substring(0, StorageConfig.QUERY_TEXT_TRUNCATE))
+                                .setFullTextSha1(fullTextSha1)
+                                .build();
                     } else {
-                        truncatedQueryText = fullQueryText;
-                        fullQueryTextSha1 = null;
+                        sharedQueryText = Aggregate.SharedQueryText.newBuilder()
+                                .setFullText(fullText)
+                                .build();
                     }
-                    sharedQuery = ImmutableSharedQueryTextAndSha1.of(truncatedQueryText,
-                            fullQueryTextSha1);
                     // END TEMPORARY
                 }
                 BoundStatement boundStatement;
@@ -1321,8 +1324,15 @@ public class AggregateDao implements AggregateRepository {
                 }
                 boundStatement.setTimestamp(i++, new Date(captureTime));
                 boundStatement.setString(i++, queriesByType.getType());
-                boundStatement.setString(i++, sharedQuery.truncatedQueryText());
-                boundStatement.setString(i++, Strings.nullToEmpty(sharedQuery.fullQueryTextSha1()));
+                String fullTextSha1 = sharedQueryText.getFullTextSha1();
+                if (fullTextSha1.isEmpty()) {
+                    boundStatement.setString(i++, sharedQueryText.getFullText());
+                    // full_query_text_sha1 cannot be null since it is used in clustering key
+                    boundStatement.setString(i++, "");
+                } else {
+                    boundStatement.setString(i++, sharedQueryText.getTruncatedText());
+                    boundStatement.setString(i++, fullTextSha1);
+                }
                 boundStatement.setDouble(i++, query.getTotalDurationNanos());
                 boundStatement.setLong(i++, query.getExecutionCount());
                 if (query.hasTotalRows()) {
@@ -1357,8 +1367,9 @@ public class AggregateDao implements AggregateRepository {
                 }
                 boundStatement.setTimestamp(i++, new Date(captureTime));
                 boundStatement.setString(i++, entry.getKey());
-                boundStatement.setString(i++, query.getTruncatedQueryText());
-                boundStatement.setString(i++, Strings.nullToEmpty(query.getFullQueryTextSha1()));
+                boundStatement.setString(i++, query.getTruncatedText());
+                // full_query_text_sha1 cannot be null since it is used in clustering key
+                boundStatement.setString(i++, Strings.nullToEmpty(query.getFullTextSha1()));
                 boundStatement.setDouble(i++, query.getTotalDurationNanos());
                 boundStatement.setLong(i++, query.getExecutionCount());
                 if (query.hasTotalRows()) {
@@ -1374,11 +1385,11 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private List<ResultSetFuture> insertServiceCalls(
-            List<ServiceCallsByType> serviceCallsByTypeList, int rollupLevel, String agentRollup,
-            String transactionType, @Nullable String transactionName, long captureTime,
-            int adjustedTTL) {
+            List<Aggregate.ServiceCallsByType> serviceCallsByTypeList, int rollupLevel,
+            String agentRollup, String transactionType, @Nullable String transactionName,
+            long captureTime, int adjustedTTL) {
         List<ResultSetFuture> futures = Lists.newArrayList();
-        for (ServiceCallsByType serviceCallsByType : serviceCallsByTypeList) {
+        for (Aggregate.ServiceCallsByType serviceCallsByType : serviceCallsByTypeList) {
             for (Aggregate.ServiceCall serviceCall : serviceCallsByType.getServiceCallList()) {
                 BoundStatement boundStatement;
                 if (transactionName == null) {
@@ -1418,25 +1429,25 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
         boundStatement.setLong(i++, aggregate.getTransactionCount());
         boundStatement.setBool(i++, aggregate.getAsyncTransactions());
-        List<Timer> mainThreadRootTimers = aggregate.getMainThreadRootTimerList();
+        List<Aggregate.Timer> mainThreadRootTimers = aggregate.getMainThreadRootTimerList();
         if (!mainThreadRootTimers.isEmpty()) {
             boundStatement.setBytes(i++, Messages.toByteBuffer(mainThreadRootTimers));
         } else {
             boundStatement.setToNull(i++);
         }
-        List<Timer> auxThreadRootTimers = aggregate.getAuxThreadRootTimerList();
+        List<Aggregate.Timer> auxThreadRootTimers = aggregate.getAuxThreadRootTimerList();
         if (!auxThreadRootTimers.isEmpty()) {
             boundStatement.setBytes(i++, Messages.toByteBuffer(auxThreadRootTimers));
         } else {
             boundStatement.setToNull(i++);
         }
-        List<Timer> asyncTimers = aggregate.getAsyncTimerList();
+        List<Aggregate.Timer> asyncTimers = aggregate.getAsyncTimerList();
         if (!asyncTimers.isEmpty()) {
             boundStatement.setBytes(i++, Messages.toByteBuffer(asyncTimers));
         } else {
             boundStatement.setToNull(i++);
         }
-        ThreadStats mainThreadStats = aggregate.getMainThreadStats();
+        Aggregate.ThreadStats mainThreadStats = aggregate.getMainThreadStats();
         if (mainThreadStats.hasTotalCpuNanos()) {
             boundStatement.setDouble(i++, mainThreadStats.getTotalCpuNanos().getValue());
         } else {
@@ -1457,7 +1468,7 @@ public class AggregateDao implements AggregateRepository {
         } else {
             boundStatement.setToNull(i++);
         }
-        ThreadStats auxThreadStats = aggregate.getMainThreadStats();
+        Aggregate.ThreadStats auxThreadStats = aggregate.getMainThreadStats();
         if (auxThreadStats.hasTotalCpuNanos()) {
             boundStatement.setDouble(i++, auxThreadStats.getTotalCpuNanos().getValue());
         } else {
@@ -1940,13 +1951,5 @@ public class AggregateDao implements AggregateRepository {
     private static class MutableErrorSummary {
         private long errorCount;
         private long transactionCount;
-    }
-
-    @Value.Immutable
-    @Styles.AllParameters
-    interface SharedQueryTextAndSha1 {
-        String truncatedQueryText();
-        @Nullable
-        String fullQueryTextSha1();
     }
 }

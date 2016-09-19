@@ -103,18 +103,16 @@ public interface TraceEntry {
     void endWithInfo(Throwable t);
 
     /**
-     * Returns the {@code MessageSupplier} that was supplied when the {@code TraceEntry} was
-     * created.
+     * Returns the message supplier that was supplied when the {@code TraceEntry} was created.
      * 
-     * This can be useful (for example) to retrieve the {@code MessageSupplier} in @
-     * {@link OnReturn} so that the return value can be added to the message produced by the
-     * {@code MessageSupplier}.
+     * This can be useful (for example) to retrieve the message supplier in @{@link OnReturn} so
+     * that the return value can be added to the message produced by the {@code MessageSupplier}.
      * 
-     * This returns the {@code MessageSupplier} even if the trace has accumulated
+     * This returns the message supplier even if the trace has accumulated
      * {@code maxTraceEntriesPerTransaction} entries and this is a dummy entry.
      * 
      * Under some error conditions this can return {@code null}.
      */
     @Nullable
-    MessageSupplier getMessageSupplier();
+    Object getMessageSupplier();
 }

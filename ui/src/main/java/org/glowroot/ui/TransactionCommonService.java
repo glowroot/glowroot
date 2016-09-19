@@ -265,7 +265,7 @@ class TransactionCommonService {
     Map<String, List<MutableQuery>> getMergedQueries(String agentRollup,
             TransactionQuery query) throws Exception {
         int maxAggregateQueriesPerType = getMaxAggregateQueriesPerType(agentRollup);
-        QueryCollector queryCollector = new QueryCollector(maxAggregateQueriesPerType, 0);
+        QueryCollector queryCollector = new QueryCollector(maxAggregateQueriesPerType);
         long revisedFrom = query.from();
         long revisedTo = liveAggregateRepository.mergeInQueries(agentRollup, query, queryCollector);
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {

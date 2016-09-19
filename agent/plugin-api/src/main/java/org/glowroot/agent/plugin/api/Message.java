@@ -72,7 +72,7 @@ public abstract class Message {
         return new MessageImpl(message, EMPTY_ARGS, detail);
     }
 
-    private Message() {}
+    Message() {}
 
     // implementing ReadableMessage is just a way to access this class from glowroot without making
     // it (obviously) accessible to plugin implementations

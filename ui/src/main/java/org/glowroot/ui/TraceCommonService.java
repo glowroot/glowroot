@@ -31,6 +31,7 @@ import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
 import org.glowroot.common.live.LiveTraceRepository;
+import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.repo.TraceRepository;
@@ -57,8 +58,7 @@ class TraceCommonService {
             throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
-            // trace
-            // is not missed if it is in transition between these states
+            // trace is not missed if it is in transition between these states
             Trace.Header header = liveTraceRepository.getHeader(agentId, traceId);
             if (header != null) {
                 return toJsonLiveHeader(header);
@@ -80,8 +80,8 @@ class TraceCommonService {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
             // trace is not missed if it is in transition between these states
-            List<Trace.Entry> entries = liveTraceRepository.getEntries(agentId, traceId);
-            if (!entries.isEmpty()) {
+            Entries entries = liveTraceRepository.getEntries(agentId, traceId);
+            if (entries != null) {
                 return toJson(entries);
             }
         }
@@ -134,7 +134,11 @@ class TraceCommonService {
                 return ImmutableTraceExport.builder()
                         .fileName(getFileName(header))
                         .headerJson(toJsonLiveHeader(header))
-                        .entriesJson(toJson(trace.getEntryList()))
+                        .entriesJson(entriesToJson(trace.getEntryList()))
+                        // SharedQueryTexts are always returned from getFullTrace() above with
+                        // fullTrace, so no need to resolve fullTraceSha1
+                        .sharedQueryTextsJson(
+                                sharedQueryTextsToJson(trace.getSharedQueryTextList()))
                         .mainThreadProfileJson(toJson(trace.getMainThreadProfile()))
                         .auxThreadProfileJson(toJson(trace.getAuxThreadProfile()))
                         .build();
@@ -148,7 +152,13 @@ class TraceCommonService {
         ImmutableTraceExport.Builder builder = ImmutableTraceExport.builder()
                 .fileName(getFileName(header.header()))
                 .headerJson(toJsonRepoHeader(header));
-        builder.entriesJson(toJson(getStoredEntries(agentId, traceId, retryCountdown)));
+        Entries entries = getStoredEntriesForExport(agentId, traceId, retryCountdown);
+        if (entries != null) {
+            builder.entriesJson(entriesToJson(entries.entries()));
+            // SharedQueryTexts are always returned from getStoredEntries() above with fullTrace,
+            // so no need to resolve fullTraceSha1
+            builder.sharedQueryTextsJson(sharedQueryTextsToJson(entries.sharedQueryTexts()));
+        }
         builder.mainThreadProfileJson(
                 toJson(getStoredMainThreadProfile(agentId, traceId, retryCountdown)));
         builder.auxThreadProfileJson(
@@ -167,13 +177,24 @@ class TraceCommonService {
         return headerPlus;
     }
 
-    private List<Trace.Entry> getStoredEntries(String agentId, String traceId,
+    private @Nullable Entries getStoredEntries(String agentId, String traceId,
             RetryCountdown retryCountdown) throws Exception {
-        List<Trace.Entry> entries = traceRepository.readEntries(agentId, traceId);
-        while (entries.isEmpty() && retryCountdown.remaining-- > 0) {
+        Entries entries = traceRepository.readEntries(agentId, traceId);
+        while (entries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to glowroot server
             Thread.sleep(500);
             entries = traceRepository.readEntries(agentId, traceId);
+        }
+        return entries;
+    }
+
+    private @Nullable Entries getStoredEntriesForExport(String agentId, String traceId,
+            RetryCountdown retryCountdown) throws Exception {
+        Entries entries = traceRepository.readEntriesForExport(agentId, traceId);
+        while (entries == null && retryCountdown.remaining-- > 0) {
+            // trace may be completed, but still in transit from agent to glowroot server
+            Thread.sleep(500);
+            entries = traceRepository.readEntriesForExport(agentId, traceId);
         }
         return entries;
     }
@@ -200,13 +221,48 @@ class TraceCommonService {
         return profile;
     }
 
+    private static @Nullable String toJson(@Nullable Entries entries) throws IOException {
+        if (entries == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeFieldName("entries");
+        writeEntries(jg, entries.entries());
+        jg.writeFieldName("sharedQueryTexts");
+        writeSharedQueryTexts(jg, entries.sharedQueryTexts());
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
     @VisibleForTesting
-    static @Nullable String toJson(List<Trace.Entry> entries) throws IOException {
+    static @Nullable String entriesToJson(List<Trace.Entry> entries) throws IOException {
         if (entries.isEmpty()) {
             return null;
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+        writeEntries(jg, entries);
+        jg.close();
+        return sb.toString();
+    }
+
+    private static @Nullable String sharedQueryTextsToJson(
+            List<Trace.SharedQueryText> sharedQueryTexts) throws IOException {
+        if (sharedQueryTexts.isEmpty()) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+        writeSharedQueryTexts(jg, sharedQueryTexts);
+        jg.close();
+        return sb.toString();
+    }
+
+    private static void writeEntries(JsonGenerator jg, List<Trace.Entry> entries)
+            throws IOException {
         jg.writeStartArray();
         PeekingIterator<Trace.Entry> i = Iterators.peekingIterator(entries.iterator());
         while (i.hasNext()) {
@@ -228,8 +284,25 @@ class TraceCommonService {
             }
         }
         jg.writeEndArray();
-        jg.close();
-        return sb.toString();
+    }
+
+    private static void writeSharedQueryTexts(JsonGenerator jg,
+            List<Trace.SharedQueryText> sharedQueryTexts) throws IOException {
+        jg.writeStartArray();
+        for (Trace.SharedQueryText sharedQueryText : sharedQueryTexts) {
+            jg.writeStartObject();
+            String fullText = sharedQueryText.getFullText();
+            if (fullText.isEmpty()) {
+                // truncatedText, truncatedEndText and fullTextSha1 are all provided in this case
+                jg.writeStringField("truncatedText", sharedQueryText.getTruncatedText());
+                jg.writeStringField("truncatedEndText", sharedQueryText.getTruncatedEndText());
+                jg.writeStringField("fullTextSha1", sharedQueryText.getFullTextSha1());
+            } else {
+                jg.writeStringField("fullText", fullText);
+            }
+            jg.writeEndObject();
+        }
+        jg.writeEndArray();
     }
 
     private static @Nullable String toJson(@Nullable Profile profile) throws IOException {
@@ -354,7 +427,16 @@ class TraceCommonService {
         if (entry.getActive()) {
             jg.writeBooleanField("active", true);
         }
-        jg.writeStringField("message", entry.getMessage());
+        if (entry.hasQueryEntryMessage()) {
+            jg.writeObjectFieldStart("queryMessage");
+            Trace.QueryEntryMessage queryMessage = entry.getQueryEntryMessage();
+            jg.writeNumberField("sharedQueryTextIndex", queryMessage.getSharedQueryTextIndex());
+            jg.writeStringField("prefix", queryMessage.getPrefix());
+            jg.writeStringField("suffix", queryMessage.getSuffix());
+            jg.writeEndObject();
+        } else {
+            jg.writeStringField("message", entry.getMessage());
+        }
         List<Trace.DetailEntry> detailEntries = entry.getDetailEntryList();
         if (!detailEntries.isEmpty()) {
             jg.writeFieldName("detail");
@@ -519,6 +601,8 @@ class TraceCommonService {
         String headerJson();
         @Nullable
         String entriesJson();
+        @Nullable
+        String sharedQueryTextsJson();
         @Nullable
         String mainThreadProfileJson();
         @Nullable

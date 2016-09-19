@@ -17,35 +17,37 @@ package org.glowroot.agent.plugin.jdbc.message;
 
 import java.util.Collection;
 
-import org.glowroot.agent.plugin.api.Message;
-import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.QueryMessage;
+import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 
-public class BatchPreparedStatementMessageSupplier extends MessageSupplier {
-
-    private final String sql;
+public class BatchPreparedStatementMessageSupplier extends QueryMessageSupplier {
 
     private final Collection<BindParameterList> batchedParameters;
 
-    public BatchPreparedStatementMessageSupplier(String sql,
-            Collection<BindParameterList> batchedParameters) {
-        this.sql = sql;
+    public BatchPreparedStatementMessageSupplier(Collection<BindParameterList> batchedParameters) {
         this.batchedParameters = batchedParameters;
     }
 
     @Override
-    public Message get() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("jdbc execution: ");
+    public QueryMessage get() {
+        String prefix;
         int batchSize = batchedParameters.size();
         if (batchSize > 1) {
             // print out number of batches to make it easy to identify
-            sb.append(batchSize);
-            sb.append(" x ");
+            prefix = "jdbc execution: " + batchSize + " x ";
+        } else {
+            prefix = "jdbc execution: ";
         }
-        sb.append(sql);
-        for (BindParameterList oneParameters : batchedParameters) {
-            PreparedStatementMessageSupplier.appendParameters(sb, oneParameters);
+        String suffix;
+        if (batchedParameters.isEmpty()) {
+            suffix = "";
+        } else {
+            StringBuilder sb = new StringBuilder();
+            for (BindParameterList oneParameters : batchedParameters) {
+                PreparedStatementMessageSupplier.appendParameters(sb, oneParameters);
+            }
+            suffix = sb.toString();
         }
-        return Message.from(sb.toString());
+        return QueryMessage.create(prefix, suffix);
     }
 }

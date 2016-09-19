@@ -109,7 +109,7 @@ class TraceDetailHttpService implements HttpService {
             String entriesJson =
                     traceCommonService.getEntriesJson(agentId, traceId, checkLiveTraces);
             if (entriesJson == null) {
-                // this includes trace was found but the trace had no trace entries
+                // this includes trace was found but the trace had no entries
                 // caller should check trace.entry_count
                 return null;
             }

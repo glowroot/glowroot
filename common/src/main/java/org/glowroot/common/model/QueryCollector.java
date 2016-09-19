@@ -30,14 +30,12 @@ public class QueryCollector {
     // short) or sha1 of full query text (if query text is long)
     private final Map<String, Map<String, MutableQuery>> queries = Maps.newHashMap();
     private final int limitPerQueryType;
-    private final int maxMultiplierWhileBuilding;
 
     // this is only used by UI
     private long lastCaptureTime;
 
-    public QueryCollector(int limitPerQueryType, int maxMultiplierWhileBuilding) {
+    public QueryCollector(int limitPerQueryType) {
         this.limitPerQueryType = limitPerQueryType;
-        this.maxMultiplierWhileBuilding = maxMultiplierWhileBuilding;
     }
 
     public void updateLastCaptureTime(long captureTime) {
@@ -61,29 +59,24 @@ public class QueryCollector {
         return sortedQueries;
     }
 
-    public void mergeQuery(String queryType, String truncatedQueryText,
-            @Nullable String fullQueryTextSha1, double totalDurationNanos, long executionCount,
-            boolean hasRows, long totalRows) {
+    public void mergeQuery(String queryType, String truncatedText, @Nullable String fullTextSha1,
+            double totalDurationNanos, long executionCount, boolean hasRows, long totalRows) {
         Map<String, MutableQuery> queriesForType = queries.get(queryType);
         if (queriesForType == null) {
             queriesForType = Maps.newHashMap();
             queries.put(queryType, queriesForType);
         }
-        mergeQuery(truncatedQueryText, fullQueryTextSha1, totalDurationNanos, executionCount,
+        mergeQuery(truncatedText, fullTextSha1, totalDurationNanos, executionCount,
                 hasRows, totalRows, queriesForType);
     }
 
-    private void mergeQuery(String truncatedQueryText, @Nullable String fullQueryTextSha1,
+    private void mergeQuery(String truncatedText, @Nullable String fullTextSha1,
             double totalDurationNanos, long executionCount, boolean hasRows, long totalRows,
             Map<String, MutableQuery> queriesForType) {
-        String queryKey = MoreObjects.firstNonNull(fullQueryTextSha1, truncatedQueryText);
+        String queryKey = MoreObjects.firstNonNull(fullTextSha1, truncatedText);
         MutableQuery aggregateQuery = queriesForType.get(queryKey);
         if (aggregateQuery == null) {
-            if (maxMultiplierWhileBuilding != 0
-                    && queriesForType.size() >= limitPerQueryType * maxMultiplierWhileBuilding) {
-                return;
-            }
-            aggregateQuery = new MutableQuery(truncatedQueryText, fullQueryTextSha1);
+            aggregateQuery = new MutableQuery(truncatedText, fullTextSha1);
             queriesForType.put(queryKey, aggregateQuery);
         }
         aggregateQuery.addToTotalDurationNanos(totalDurationNanos);

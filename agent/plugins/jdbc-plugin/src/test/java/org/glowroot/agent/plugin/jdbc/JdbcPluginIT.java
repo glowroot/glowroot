@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.Iterator;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -68,11 +69,15 @@ public class JdbcPluginIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo(
-                "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane', NULL]");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("insert into employee (name, misc) values (?, ?)");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['jane', NULL]");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -178,11 +183,15 @@ public class JdbcPluginIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: select * from employee => 3 rows");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
         assertThat(entry.getLocationStackTraceElementList()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -198,11 +207,15 @@ public class JdbcPluginIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: select * from employee => 3 rows");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
         assertThat(entry.getLocationStackTraceElementList()).isNotEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -219,11 +232,15 @@ public class JdbcPluginIT {
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: select * from employee => 3 rows");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("select * from employee");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
         assertThat(entry.getLocationStackTraceElementList()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();

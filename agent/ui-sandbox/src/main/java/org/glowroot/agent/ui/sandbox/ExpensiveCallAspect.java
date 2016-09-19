@@ -22,9 +22,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.QueryEntry;
+import org.glowroot.agent.plugin.api.QueryMessage;
+import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
@@ -54,14 +55,16 @@ public class ExpensiveCallAspect {
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
             // not delegating to onBeforeInternal(), this pointcut returns message supplier with
             // detail
-            MessageSupplier messageSupplier =
-                    getMessageSupplierWithDetail(expensiveCall, expensiveCallInvoker);
+            QueryMessageSupplier messageSupplier =
+                    getQueryMessageSupplierWithDetail(expensiveCall, expensiveCallInvoker);
             char randomChar = (char) ('a' + random.nextInt(26));
             String queryText;
             if (random.nextBoolean()) {
                 queryText = "this is a short query " + randomChar;
             } else {
                 queryText = "this is a long query " + randomChar
+                        + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz"
+                        + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz"
                         + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz"
                         + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz"
                         + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz";
@@ -320,11 +323,12 @@ public class ExpensiveCallAspect {
         }
     }
 
-    private static MessageSupplier getMessageSupplierWithDetail(final Object expensiveCall,
+    private static QueryMessageSupplier getQueryMessageSupplierWithDetail(
+            final Object expensiveCall,
             final ExpensiveCallInvoker expensiveCallInvoker) {
-        return new MessageSupplier() {
+        return new QueryMessageSupplier() {
             @Override
-            public Message get() {
+            public QueryMessage get() {
                 Map<String, ?> detail =
                         ImmutableMap.of("attr1", "value1\nwith newline", "attr2", "value2", "attr3",
                                 ImmutableMap.of("attr31",
@@ -332,7 +336,7 @@ public class ExpensiveCallAspect {
                                                 ImmutableList.of("v311aa", "v311bb")),
                                         "attr32", "value32\nwith newline", "attr33", "value33"));
                 String traceEntryMessage = expensiveCallInvoker.getTraceEntryMessage(expensiveCall);
-                return Message.from(traceEntryMessage, detail);
+                return QueryMessage.create("the query: ", " | " + traceEntryMessage, detail);
             }
         };
     }

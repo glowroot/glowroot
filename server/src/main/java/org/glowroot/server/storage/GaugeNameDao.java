@@ -23,19 +23,16 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.RateLimiter;
 import org.immutables.value.Value;
 
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Styles;
+import org.glowroot.server.util.RateLimiter;
+import org.glowroot.server.util.Sessions;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 class GaugeNameDao {
@@ -49,16 +46,7 @@ class GaugeNameDao {
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
-    // 2-day expiration is just to periodically clean up cache
-    private final LoadingCache<GaugeNameKey, RateLimiter> rateLimiters = CacheBuilder.newBuilder()
-            .expireAfterAccess(2, DAYS)
-            .build(new CacheLoader<GaugeNameKey, RateLimiter>() {
-                @Override
-                public RateLimiter load(GaugeNameKey key) throws Exception {
-                    // 1 permit per 24 hours
-                    return RateLimiter.create(1 / (24 * 3600.0));
-                }
-            });
+    private final RateLimiter<GaugeNameKey> rateLimiter = new RateLimiter<>();
 
     GaugeNameDao(Session session, ConfigRepository configRepository) {
         this.session = session;
@@ -83,11 +71,9 @@ class GaugeNameDao {
         return gaugeNames;
     }
 
-    void maybeUpdateLastCaptureTime(String agentRollup, String gaugeName,
-            List<ResultSetFuture> futures) {
-        final GaugeNameKey rateLimiterKey = ImmutableGaugeNameKey.of(agentRollup, gaugeName);
-        RateLimiter rateLimiter = rateLimiters.getUnchecked(rateLimiterKey);
-        if (!rateLimiter.tryAcquire()) {
+    void store(String agentRollup, String gaugeName, List<ResultSetFuture> futures) {
+        GaugeNameKey rateLimiterKey = ImmutableGaugeNameKey.of(agentRollup, gaugeName);
+        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return;
         }
         BoundStatement boundStatement = insertPS.bind();
@@ -95,8 +81,8 @@ class GaugeNameDao {
         boundStatement.setString(i++, agentRollup);
         boundStatement.setString(i++, gaugeName);
         boundStatement.setInt(i++, getMaxTTL());
-        futures.add(TransactionTypeDao.executeAsyncUnderRateLimiter(session, boundStatement,
-                rateLimiters, rateLimiterKey));
+        futures.add(Sessions.executeAsyncWithOnFailure(session, boundStatement,
+                () -> rateLimiter.invalidate(rateLimiterKey)));
     }
 
     private int getMaxTTL() {

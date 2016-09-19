@@ -130,9 +130,9 @@ class FatAgentModule {
             // now inject the real collector into the proxy
             CollectorImpl collectorImpl =
                     new CollectorImpl(simpleRepoModule.getAgentDao(),
-                            simpleRepoModule.getAggregateRepository(),
-                            simpleRepoModule.getTraceRepository(),
-                            simpleRepoModule.getGaugeValueRepository(),
+                            simpleRepoModule.getAggregateDao(),
+                            simpleRepoModule.getTraceDao(),
+                            simpleRepoModule.getGaugeValueDao(),
                             simpleRepoModule.getAlertingService());
             collectorProxy.setInstance(collectorImpl);
             // fat agent's CollectorImpl does nothing with agent config parameter
@@ -160,9 +160,9 @@ class FatAgentModule {
                     .configRepository(simpleRepoModule.getConfigRepository())
                     .agentRepository(simpleRepoModule.getAgentDao())
                     .transactionTypeRepository(simpleRepoModule.getTransactionTypeRepository())
-                    .aggregateRepository(simpleRepoModule.getAggregateRepository())
-                    .traceRepository(simpleRepoModule.getTraceRepository())
-                    .gaugeValueRepository(simpleRepoModule.getGaugeValueRepository())
+                    .aggregateRepository(simpleRepoModule.getAggregateDao())
+                    .traceRepository(simpleRepoModule.getTraceDao())
+                    .gaugeValueRepository(simpleRepoModule.getGaugeValueDao())
                     .repoAdmin(simpleRepoModule.getRepoAdmin())
                     .rollupLevelService(simpleRepoModule.getRollupLevelService())
                     .liveTraceRepository(agentModule.getLiveTraceRepository())
@@ -183,9 +183,9 @@ class FatAgentModule {
                     .configRepository(simpleRepoModule.getConfigRepository())
                     .agentRepository(simpleRepoModule.getAgentDao())
                     .transactionTypeRepository(simpleRepoModule.getTransactionTypeRepository())
-                    .aggregateRepository(simpleRepoModule.getAggregateRepository())
-                    .traceRepository(simpleRepoModule.getTraceRepository())
-                    .gaugeValueRepository(simpleRepoModule.getGaugeValueRepository())
+                    .aggregateRepository(simpleRepoModule.getAggregateDao())
+                    .traceRepository(simpleRepoModule.getTraceDao())
+                    .gaugeValueRepository(simpleRepoModule.getGaugeValueDao())
                     .repoAdmin(simpleRepoModule.getRepoAdmin())
                     .rollupLevelService(simpleRepoModule.getRollupLevelService())
                     .liveTraceRepository(new LiveTraceRepositoryNop())

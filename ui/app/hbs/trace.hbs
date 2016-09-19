@@ -40,7 +40,7 @@
       {{! using span so background will stretch beyond page border if needed }}
       <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide">
         <div class="gt-link-color">exception</div>
-        <div class="gt-monospace">
+        <div class="gt-monospace gt-clip-text">
           {{{exceptionHtml error.exception}}}
         </div>
         <i class="fa fa-clipboard gt-clip"></i>
@@ -293,7 +293,7 @@
 <br>
 {{#ifExistenceYes entriesExistence}}
   <div>
-    <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-sps-toggle">
+    <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-entries-toggle">
       <span class="gt-link-color">Trace entries ({{entryCount}})</span>
     </button>
     {{! spinner is not used in export file }}
@@ -302,7 +302,7 @@
     </div>
   </div>
   <div style="margin: 10px 0 0 1em;">
-    <div id="sps" style="font-family: Cousine, monospace;"></div>
+    <div id="entries" style="font-family: Cousine, monospace;"></div>
   </div>
 {{/ifExistenceYes}}
 {{#ifExistenceYes profileExistence}}

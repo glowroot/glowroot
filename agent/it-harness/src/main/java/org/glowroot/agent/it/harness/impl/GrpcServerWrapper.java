@@ -34,7 +34,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceImplBase;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
@@ -70,7 +69,7 @@ class GrpcServerWrapper {
 
     private volatile @MonotonicNonNull AgentConfig agentConfig;
 
-    GrpcServerWrapper(Collector collector, int port) throws IOException {
+    GrpcServerWrapper(TraceCollector collector, int port) throws IOException {
         bossEventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Boss-ELG");
         workerEventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
         executor = Executors.newCachedThreadPool(
@@ -133,9 +132,9 @@ class GrpcServerWrapper {
 
     private class CollectorServiceImpl extends CollectorServiceImplBase {
 
-        private final Collector collector;
+        private final TraceCollector collector;
 
-        private CollectorServiceImpl(Collector collector) {
+        private CollectorServiceImpl(TraceCollector collector) {
             this.collector = collector;
         }
 
@@ -150,13 +149,6 @@ class GrpcServerWrapper {
         @Override
         public void collectAggregates(AggregateMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
-            try {
-                collector.collectAggregates(request.getCaptureTime(),
-                        request.getAggregatesByTypeList(), request.getSharedQueryTextList());
-            } catch (Throwable t) {
-                responseObserver.onError(t);
-                return;
-            }
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
         }
@@ -164,12 +156,6 @@ class GrpcServerWrapper {
         @Override
         public void collectGaugeValues(GaugeValueMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
-            try {
-                collector.collectGaugeValues(request.getGaugeValuesList());
-            } catch (Throwable t) {
-                responseObserver.onError(t);
-                return;
-            }
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
         }

@@ -18,6 +18,7 @@ message Trace {
   Profile aux_thread_profile = 5;
   bool update = 6; // optimization so server does not need to check for prior partial trace in
                    // common case where this is not an update
+  repeated SharedQueryText shared_query_text = 8;
 
   message Header {
     bool partial = 1;
@@ -98,8 +99,24 @@ message Trace {
     bool active = 4;
     // message is empty for trace entries added using addErrorEntry()
     string message = 5;
+    QueryEntryMessage query_entry_message = 9;
     repeated DetailEntry detail_entry = 6;
     repeated StackTraceElement location_stack_trace_element = 7;
     Error error = 8;
+  }
+
+  message QueryEntryMessage {
+    int32 shared_query_text_index = 1;
+    string prefix = 2;
+    string suffix = 3;
+  }
+
+  message SharedQueryText {
+    string full_text = 1;
+    string truncated_text = 2; // sent instead of full_text when full_text_sha1 sent recently
+                               // (truncated to 120 characters)
+    string truncated_end_text = 3; // sent instead of full_text when full_text_sha1 sent recently
+                                   // (truncated to 120 characters)
+    string full_text_sha1 = 4; // sent when query text > 240 characters
   }
 }

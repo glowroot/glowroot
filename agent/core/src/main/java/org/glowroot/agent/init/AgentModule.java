@@ -61,10 +61,6 @@ import org.glowroot.agent.weaving.AnalyzedWorld;
 import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
 import org.glowroot.agent.weaving.Weaver;
 import org.glowroot.agent.weaving.WeavingClassFileTransformer;
-import org.glowroot.common.live.LiveAggregateRepository;
-import org.glowroot.common.live.LiveJvmService;
-import org.glowroot.common.live.LiveTraceRepository;
-import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.Collector;
@@ -102,10 +98,10 @@ public class AgentModule {
 
     private final boolean jvmRetransformClassesSupported;
 
-    private final LiveTraceRepository liveTraceRepository;
-    private final LiveAggregateRepository liveAggregateRepository;
-    private final LiveWeavingService liveWeavingService;
-    private final LiveJvmService liveJvmService;
+    private final LiveTraceRepositoryImpl liveTraceRepository;
+    private final LiveAggregateRepositoryImpl liveAggregateRepository;
+    private final LiveWeavingServiceImpl liveWeavingService;
+    private final LiveJvmServiceImpl liveJvmService;
 
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
 
@@ -236,19 +232,19 @@ public class AgentModule {
         return lazyPlatformMBeanServer;
     }
 
-    public LiveTraceRepository getLiveTraceRepository() {
+    public LiveTraceRepositoryImpl getLiveTraceRepository() {
         return liveTraceRepository;
     }
 
-    public LiveAggregateRepository getLiveAggregateRepository() {
+    public LiveAggregateRepositoryImpl getLiveAggregateRepository() {
         return liveAggregateRepository;
     }
 
-    public LiveWeavingService getLiveWeavingService() {
+    public LiveWeavingServiceImpl getLiveWeavingService() {
         return liveWeavingService;
     }
 
-    public LiveJvmService getLiveJvmService() {
+    public LiveJvmServiceImpl getLiveJvmService() {
         return liveJvmService;
     }
 

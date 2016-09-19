@@ -31,16 +31,19 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.live.ImmutableEntries;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
 import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
+import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.server.storage.AgentDao;
 import org.glowroot.server.storage.AgentDao.AgentConfigUpdate;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceImplBase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AuxThreadProfileRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AuxThreadProfileResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpaceRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpaceResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
@@ -48,11 +51,14 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CapabilitiesReque
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse.MessageCase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.FullTraceRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.FullTraceResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GcRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMetaRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeaderRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeaderResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpResponse;
@@ -68,6 +74,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMetaRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MainThreadProfileRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MainThreadProfileResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MatchingClassNamesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MatchingMBeanObjectNamesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MatchingMethodNamesRequest;
@@ -266,7 +273,8 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
         return connectedAgent.getHeader(traceId);
     }
 
-    List<Trace.Entry> getEntries(String agentId, String traceId) throws Exception {
+    @Nullable
+    Entries getEntries(String agentId, String traceId) throws Exception {
         ConnectedAgent connectedAgent = connectedAgents.get(agentId);
         if (connectedAgent == null) {
             throw new AgentNotConnectedException();
@@ -375,62 +383,61 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
         }
 
         private ThreadDump threadDump() throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setThreadDumpRequest(ThreadDumpRequest.getDefaultInstance())
                     .build());
-            return response.getThreadDumpResponse().getThreadDump();
+            return responseWrapper.getThreadDumpResponse().getThreadDump();
         }
 
         private String jstack() throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setJstackRequest(JstackRequest.getDefaultInstance())
                     .build());
-            JstackResponse jstackResponse = response.getJstackResponse();
-            if (jstackResponse.getUnavailableDueToRunningInJre()) {
+            JstackResponse response = responseWrapper.getJstackResponse();
+            if (response.getUnavailableDueToRunningInJre()) {
                 throw new UnavailableDueToRunningInJreException();
             }
-            return jstackResponse.getJstack();
+            return response.getJstack();
         }
 
         private long availableDiskSpaceBytes(String directory) throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setAvailableDiskSpaceRequest(AvailableDiskSpaceRequest.newBuilder()
                             .setDirectory(directory))
                     .build());
-            AvailableDiskSpaceResponse availableDiskSpaceResponse =
-                    response.getAvailableDiskSpaceResponse();
-            if (availableDiskSpaceResponse.getDirectoryDoesNotExist()) {
+            AvailableDiskSpaceResponse response = responseWrapper.getAvailableDiskSpaceResponse();
+            if (response.getDirectoryDoesNotExist()) {
                 throw new DirectoryDoesNotExistException();
             }
-            return availableDiskSpaceResponse.getAvailableBytes();
+            return response.getAvailableBytes();
         }
 
         private HeapDumpFileInfo heapDump(String directory) throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setHeapDumpRequest(HeapDumpRequest.newBuilder()
                             .setDirectory(directory))
                     .build());
-            HeapDumpResponse heapDumpResponse = response.getHeapDumpResponse();
-            if (heapDumpResponse.getDirectoryDoesNotExist()) {
+            HeapDumpResponse response = responseWrapper.getHeapDumpResponse();
+            if (response.getDirectoryDoesNotExist()) {
                 throw new DirectoryDoesNotExistException();
             }
-            return heapDumpResponse.getHeapDumpFileInfo();
+            return response.getHeapDumpFileInfo();
         }
 
         private HeapHistogram heapHistogram() throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setHeapHistogramRequest(HeapHistogramRequest.newBuilder())
                     .build());
-            HeapHistogramResponse heapHistogramResponse = response.getHeapHistogramResponse();
-            if (heapHistogramResponse.getUnavailableDueToRunningInJre()) {
+            HeapHistogramResponse response = responseWrapper.getHeapHistogramResponse();
+            if (response.getUnavailableDueToRunningInJre()) {
                 throw new UnavailableDueToRunningInJreException();
             }
-            return heapHistogramResponse.getHeapHistogram();
+            return response.getHeapHistogram();
         }
 
         private void gc() throws Exception {
@@ -442,57 +449,57 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
         private MBeanDump mbeanDump(MBeanDumpKind mbeanDumpKind, List<String> objectNames)
                 throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setMbeanDumpRequest(MBeanDumpRequest.newBuilder()
                             .setKind(mbeanDumpKind)
                             .addAllObjectName(objectNames))
                     .build());
-            return response.getMbeanDumpResponse().getMbeanDump();
+            return responseWrapper.getMbeanDumpResponse().getMbeanDump();
         }
 
         private List<String> matchingMBeanObjectNames(String partialObjectName, int limit)
                 throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setMatchingMbeanObjectNamesRequest(MatchingMBeanObjectNamesRequest.newBuilder()
                             .setPartialObjectName(partialObjectName)
                             .setLimit(limit))
                     .build());
-            return response.getMatchingMbeanObjectNamesResponse().getObjectNameList();
+            return responseWrapper.getMatchingMbeanObjectNamesResponse().getObjectNameList();
         }
 
         private MBeanMeta mbeanMeta(String objectName) throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setMbeanMetaRequest(MBeanMetaRequest.newBuilder()
                             .setObjectName(objectName))
                     .build());
-            return response.getMbeanMetaResponse().getMbeanMeta();
+            return responseWrapper.getMbeanMetaResponse().getMbeanMeta();
         }
 
         private Map<String, String> systemProperties() throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setSystemPropertiesRequest(SystemPropertiesRequest.getDefaultInstance())
                     .build());
-            return response.getSystemPropertiesResponse().getSystemPropertiesMap();
+            return responseWrapper.getSystemPropertiesResponse().getSystemPropertiesMap();
         }
 
         private Capabilities capabilities() throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setCapabilitiesRequest(CapabilitiesRequest.getDefaultInstance())
                     .build());
-            return response.getCapabilitiesResponse().getCapabilities();
+            return responseWrapper.getCapabilitiesResponse().getCapabilities();
         }
 
         private GlobalMeta globalMeta() throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setGlobalMetaRequest(GlobalMetaRequest.getDefaultInstance())
                     .build());
-            return response.getGlobalMetaResponse().getGlobalMeta();
+            return responseWrapper.getGlobalMetaResponse().getGlobalMeta();
         }
 
         private void preloadClasspathCache() throws Exception {
@@ -505,102 +512,114 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
         private List<String> matchingClassNames(String partialClassName, int limit)
                 throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setMatchingClassNamesRequest(MatchingClassNamesRequest.newBuilder()
                             .setPartialClassName(partialClassName)
                             .setLimit(limit))
                     .build());
-            return response.getMatchingClassNamesResponse().getClassNameList();
+            return responseWrapper.getMatchingClassNamesResponse().getClassNameList();
         }
 
         private List<String> matchingMethodNames(String className, String partialMethodName,
                 int limit) throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setMatchingMethodNamesRequest(MatchingMethodNamesRequest.newBuilder()
                             .setClassName(className)
                             .setPartialMethodName(partialMethodName)
                             .setLimit(limit))
                     .build());
-            return response.getMatchingMethodNamesResponse().getMethodNameList();
+            return responseWrapper.getMatchingMethodNamesResponse().getMethodNameList();
         }
 
         private List<MethodSignature> methodSignatures(String className, String methodName)
                 throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setMethodSignaturesRequest(MethodSignaturesRequest.newBuilder()
                             .setClassName(className)
                             .setMethodName(methodName))
                     .build());
-            return response.getMethodSignaturesResponse().getMethodSignatureList();
+            return responseWrapper.getMethodSignaturesResponse().getMethodSignatureList();
         }
 
         private int reweave() throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setReweaveRequest(ReweaveRequest.getDefaultInstance())
                     .build());
-            return response.getReweaveResponse().getClassUpdateCount();
+            return responseWrapper.getReweaveResponse().getClassUpdateCount();
         }
 
         private @Nullable Trace.Header getHeader(String traceId) throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setHeaderRequest(HeaderRequest.newBuilder()
                             .setTraceId(traceId))
                     .build());
-            if (response.getHeaderResponse().hasHeader()) {
-                return response.getHeaderResponse().getHeader();
+            HeaderResponse response = responseWrapper.getHeaderResponse();
+            if (response.hasHeader()) {
+                return response.getHeader();
             } else {
                 return null;
             }
         }
 
-        private List<Trace.Entry> getEntries(String traceId) throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+        private @Nullable Entries getEntries(String traceId) throws Exception {
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setEntriesRequest(EntriesRequest.newBuilder()
                             .setTraceId(traceId))
                     .build());
-            return response.getEntriesResponse().getEntryList();
+            EntriesResponse response = responseWrapper.getEntriesResponse();
+            List<Trace.Entry> entries = response.getEntriesList();
+            if (entries.isEmpty()) {
+                return null;
+            }
+            return ImmutableEntries.builder()
+                    .addAllEntries(entries)
+                    .addAllSharedQueryTexts(response.getSharedQueryTextList())
+                    .build();
         }
 
         private @Nullable Profile getMainThreadProfile(String traceId) throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setMainThreadProfileRequest(MainThreadProfileRequest.newBuilder()
                             .setTraceId(traceId))
                     .build());
-            if (response.getMainThreadProfileResponse().hasProfile()) {
-                return response.getMainThreadProfileResponse().getProfile();
+            MainThreadProfileResponse response = responseWrapper.getMainThreadProfileResponse();
+            if (response.hasProfile()) {
+                return response.getProfile();
             } else {
                 return null;
             }
         }
 
         private @Nullable Profile getAuxThreadProfile(String traceId) throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setAuxThreadProfileRequest(AuxThreadProfileRequest.newBuilder()
                             .setTraceId(traceId))
                     .build());
-            if (response.getAuxThreadProfileResponse().hasProfile()) {
-                return response.getAuxThreadProfileResponse().getProfile();
+            AuxThreadProfileResponse response = responseWrapper.getAuxThreadProfileResponse();
+            if (response.hasProfile()) {
+                return response.getProfile();
             } else {
                 return null;
             }
         }
 
         private @Nullable Trace getFullTrace(String traceId) throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            ClientResponse responseWrapper = sendRequest(ServerRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setFullTraceRequest(FullTraceRequest.newBuilder()
                             .setTraceId(traceId))
                     .build());
-            if (response.getFullTraceResponse().hasTrace()) {
-                return response.getFullTraceResponse().getTrace();
+            FullTraceResponse response = responseWrapper.getFullTraceResponse();
+            if (response.hasTrace()) {
+                return response.getTrace();
             } else {
                 return null;
             }

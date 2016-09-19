@@ -20,5 +20,5 @@ import java.util.Map;
 
 public interface TransactionTypeRepository {
 
-    Map<String, List<String>> readTransactionTypes() throws Exception;
+    Map<String, List<String>> read() throws Exception;
 }

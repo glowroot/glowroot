@@ -132,6 +132,8 @@ class TraceExportHttpService implements HttpService {
         String exportJsPlaceholder = "<script src=\"scripts/export.js\"></script>";
         String headerPlaceholder = "<script type=\"text/json\" id=\"headerJson\"></script>";
         String entriesPlaceholder = "<script type=\"text/json\" id=\"entriesJson\"></script>";
+        String sharedQueryTextsPlaceholder =
+                "<script type=\"text/json\" id=\"sharedQueryTextsJson\"></script>";
         String mainThreadProfilePlaceholder =
                 "<script type=\"text/json\" id=\"mainThreadProfileJson\"></script>";
         String auxThreadProfilePlaceholder =
@@ -141,8 +143,8 @@ class TraceExportHttpService implements HttpService {
         String templateContent = asCharSource("trace-export.html").read();
         Pattern pattern = Pattern.compile("(" + htmlStartTag + "|" + exportCssPlaceholder + "|"
                 + exportJsPlaceholder + "|" + headerPlaceholder + "|" + entriesPlaceholder + "|"
-                + mainThreadProfilePlaceholder + "|" + auxThreadProfilePlaceholder + "|"
-                + footerMessagePlaceholder + ")");
+                + sharedQueryTextsPlaceholder + "|" + mainThreadProfilePlaceholder + "|"
+                + auxThreadProfilePlaceholder + "|" + footerMessagePlaceholder + ")");
         Matcher matcher = pattern.matcher(templateContent);
         int curr = 0;
         List<ChunkSource> chunkSources = Lists.newArrayList();
@@ -173,6 +175,14 @@ class TraceExportHttpService implements HttpService {
                 String entriesJson = traceExport.entriesJson();
                 if (entriesJson != null) {
                     chunkSources.add(ChunkSource.wrap(entriesJson));
+                }
+                chunkSources.add(ChunkSource.wrap("</script>"));
+            } else if (match.equals(sharedQueryTextsPlaceholder)) {
+                chunkSources.add(ChunkSource
+                        .wrap("<script type=\"text/json\" id=\"sharedQueryTextsJson\">"));
+                String sharedQueryTextsJson = traceExport.sharedQueryTextsJson();
+                if (sharedQueryTextsJson != null) {
+                    chunkSources.add(ChunkSource.wrap(sharedQueryTextsJson));
                 }
                 chunkSources.add(ChunkSource.wrap("</script>"));
             } else if (match.equals(mainThreadProfilePlaceholder)) {

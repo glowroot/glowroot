@@ -19,18 +19,20 @@ import java.io.IOException;
 import java.util.List;
 
 import com.datastax.driver.core.exceptions.ReadTimeoutException;
+import com.google.common.collect.Lists;
 import io.grpc.internal.ServerImpl;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.repo.AggregateRepository;
-import org.glowroot.common.repo.GaugeValueRepository;
-import org.glowroot.common.repo.TraceRepository;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.server.storage.AgentDao;
+import org.glowroot.server.storage.AggregateDao;
+import org.glowroot.server.storage.GaugeValueDao;
+import org.glowroot.server.storage.TraceDao;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceImplBase;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
@@ -52,22 +54,21 @@ class GrpcServer {
     private static final Logger logger = LoggerFactory.getLogger(GrpcServer.class);
 
     private final AgentDao agentDao;
-    private final AggregateRepository aggregateRepository;
-    private final GaugeValueRepository gaugeValueRepository;
-    private final TraceRepository traceRepository;
+    private final AggregateDao aggregateDao;
+    private final GaugeValueDao gaugeValueDao;
+    private final TraceDao traceDao;
     private final AlertingService alertingService;
 
     private final DownstreamServiceImpl downstreamService;
 
     private final ServerImpl server;
 
-    GrpcServer(int port, AgentDao agentDao, AggregateRepository aggregateRepository,
-            GaugeValueRepository gaugeValueRepository, TraceRepository traceRepository,
-            AlertingService alertingService) throws IOException {
+    GrpcServer(int port, AgentDao agentDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,
+            TraceDao traceDao, AlertingService alertingService) throws IOException {
         this.agentDao = agentDao;
-        this.aggregateRepository = aggregateRepository;
-        this.gaugeValueRepository = gaugeValueRepository;
-        this.traceRepository = traceRepository;
+        this.aggregateDao = aggregateDao;
+        this.gaugeValueDao = gaugeValueDao;
+        this.traceDao = traceDao;
         this.alertingService = alertingService;
 
         downstreamService = new DownstreamServiceImpl(agentDao);
@@ -118,8 +119,21 @@ class GrpcServer {
             List<AggregatesByType> aggregatesByTypeList = request.getAggregatesByTypeList();
             if (!aggregatesByTypeList.isEmpty()) {
                 try {
-                    aggregateRepository.store(request.getAgentId(), request.getCaptureTime(),
-                            aggregatesByTypeList, request.getSharedQueryTextList());
+                    List<Aggregate.SharedQueryText> sharedQueryTexts;
+                    List<String> oldSharedQueryTexts = request.getOldSharedQueryTextList();
+                    if (oldSharedQueryTexts.isEmpty()) {
+                        sharedQueryTexts = request.getSharedQueryTextList();
+                    } else {
+                        // handle agents prior to 0.9.3
+                        sharedQueryTexts = Lists.newArrayList();
+                        for (String oldSharedQueryText : oldSharedQueryTexts) {
+                            sharedQueryTexts.add(Aggregate.SharedQueryText.newBuilder()
+                                    .setFullText(oldSharedQueryText)
+                                    .build());
+                        }
+                    }
+                    aggregateDao.store(request.getAgentId(), request.getCaptureTime(),
+                            aggregatesByTypeList, sharedQueryTexts);
                 } catch (Throwable t) {
                     logger.error(t.getMessage(), t);
                     responseObserver.onError(t);
@@ -142,7 +156,7 @@ class GrpcServer {
                 StreamObserver<EmptyMessage> responseObserver) {
             long maxCaptureTime = 0;
             try {
-                gaugeValueRepository.store(request.getAgentId(), request.getGaugeValuesList());
+                gaugeValueDao.store(request.getAgentId(), request.getGaugeValuesList());
                 for (GaugeValue gaugeValue : request.getGaugeValuesList()) {
                     maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
                 }
@@ -166,7 +180,7 @@ class GrpcServer {
         public void collectTrace(TraceMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
             try {
-                traceRepository.store(request.getAgentId(), request.getTrace());
+                traceDao.store(request.getAgentId(), request.getTrace());
             } catch (Throwable t) {
                 logger.error(t.getMessage(), t);
                 responseObserver.onError(t);

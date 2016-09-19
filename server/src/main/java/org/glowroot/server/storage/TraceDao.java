@@ -34,7 +34,6 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -44,10 +43,10 @@ import com.google.common.util.concurrent.Futures;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.live.ImmutableEntries;
 import org.glowroot.common.live.ImmutableTracePoint;
+import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
@@ -72,13 +71,12 @@ import static java.util.concurrent.TimeUnit.HOURS;
 
 public class TraceDao implements TraceRepository {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceDao.class);
-
     private static final String WITH_DTCS =
             "with compaction = { 'class' : 'DateTieredCompactionStrategy' }";
 
     private final Session session;
     private final TransactionTypeDao transactionTypeDao;
+    private final FullQueryTextDao fullQueryTextDao;
     private final ConfigRepository configRepository;
 
     private final TraceAttributeNameDao traceAttributeNameDao;
@@ -100,6 +98,7 @@ public class TraceDao implements TraceRepository {
 
     private final PreparedStatement insertHeader;
     private final PreparedStatement insertEntry;
+    private final PreparedStatement insertSharedQueryText;
     private final PreparedStatement insertMainThreadProfile;
     private final PreparedStatement insertAuxThreadProfile;
 
@@ -113,6 +112,7 @@ public class TraceDao implements TraceRepository {
 
     private final PreparedStatement readHeader;
     private final PreparedStatement readEntries;
+    private final PreparedStatement readSharedQueryTexts;
     private final PreparedStatement readMainThreadProfile;
     private final PreparedStatement readAuxThreadProfile;
 
@@ -123,9 +123,10 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement deletePartialTransactionSlowCount;
 
     public TraceDao(Session session, TransactionTypeDao transactionTypeDao,
-            ConfigRepository configRepository) {
+            FullQueryTextDao fullQueryTextDao, ConfigRepository configRepository) {
         this.session = session;
         this.transactionTypeDao = transactionTypeDao;
+        this.fullQueryTextDao = fullQueryTextDao;
         this.configRepository = configRepository;
         traceAttributeNameDao = new TraceAttributeNameDao(session, configRepository);
 
@@ -169,27 +170,19 @@ public class TraceDao implements TraceRepository {
         session.execute("create table if not exists trace_header (agent_id varchar,"
                 + " trace_id varchar, header blob, primary key (agent_id, trace_id)) " + WITH_DTCS);
 
-        try {
-            // try with compression options for Cassandra 3.x
-            // see https://docs.datastax.com/en/cql/3.3/cql/cql_reference/compressSubprop.html
-            session.execute("create table if not exists trace_entry (agent_id varchar,"
-                    + " trace_id varchar, index_ int, depth int, start_offset_nanos bigint,"
-                    + " duration_nanos bigint, active boolean, message varchar, detail blob,"
-                    + " location_stack_trace blob, error blob, primary key (agent_id, trace_id,"
-                    + " index_)) " + WITH_DTCS + " and compression = {'class' :"
-                    + " 'org.apache.cassandra.io.compress.LZ4Compressor', 'chunk_length_kb' :"
-                    + " 512}");
-        } catch (InvalidConfigurationInQueryException e) {
-            logger.debug(e.getMessage(), e);
-            // try with compression options for Cassandra 2.x
-            // see https://docs.datastax.com/en/cql/3.1/cql/cql_reference/compressSubprop.html
-            session.execute("create table if not exists trace_entry (agent_id varchar,"
-                    + " trace_id varchar, index_ int, depth int, start_offset_nanos bigint,"
-                    + " duration_nanos bigint, active boolean, message varchar, detail blob,"
-                    + " location_stack_trace blob, error blob, primary key (agent_id, trace_id,"
-                    + " index_)) " + WITH_DTCS + " and compression = {'sstable_compression' :"
-                    + " 'SnappyCompressor', 'chunk_length_kb' : 512}");
-        }
+        // index_ is just to provide uniqueness
+        session.execute("create table if not exists trace_entry (agent_id varchar,"
+                + " trace_id varchar, index_ int, depth int, start_offset_nanos bigint,"
+                + " duration_nanos bigint, active boolean, message varchar,"
+                + " shared_query_text_index int, query_message_prefix varchar,"
+                + " query_message_suffix varchar, detail blob, location_stack_trace blob,"
+                + " error blob, primary key (agent_id, trace_id, index_)) " + WITH_DTCS);
+
+        // index_ is just to provide uniqueness
+        session.execute("create table if not exists trace_shared_query_text (agent_id varchar,"
+                + " trace_id varchar, index_ int, truncated_text varchar,"
+                + " truncated_end_text varchar, full_text_sha1 varchar, primary key (agent_id,"
+                + " trace_id, index_)) " + WITH_DTCS);
 
         session.execute("create table if not exists trace_main_thread_profile (agent_id varchar,"
                 + " trace_id varchar, profile blob, primary key (agent_id, trace_id)) "
@@ -272,9 +265,13 @@ public class TraceDao implements TraceRepository {
                 + " values (?, ?, ?) using ttl ?");
 
         insertEntry = session.prepare("insert into trace_entry (agent_id, trace_id, index_, depth,"
-                + " start_offset_nanos, duration_nanos, active, message, detail,"
-                + " location_stack_trace, error) values (?, ?, ?, ?, ?, ?, ?, ?,"
-                + " ?, ?, ?) using ttl ?");
+                + " start_offset_nanos, duration_nanos, active, message, shared_query_text_index,"
+                + " query_message_prefix, query_message_suffix, detail, location_stack_trace,"
+                + " error) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+
+        insertSharedQueryText = session.prepare("insert into trace_shared_query_text (agent_id,"
+                + " trace_id, index_, truncated_text, truncated_end_text, full_text_sha1) values"
+                + " (?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertMainThreadProfile = session.prepare("insert into trace_main_thread_profile"
                 + " (agent_id, trace_id, profile) values (?, ?, ?) using ttl ?");
@@ -314,8 +311,13 @@ public class TraceDao implements TraceRepository {
                 .prepare("select header from trace_header where agent_id = ? and trace_id = ?");
 
         readEntries = session.prepare("select depth, start_offset_nanos, duration_nanos,"
-                + " active, message, detail, location_stack_trace, error from"
-                + " trace_entry where agent_id = ? and trace_id = ?");
+                + " active, message, shared_query_text_index, query_message_prefix,"
+                + " query_message_suffix, detail, location_stack_trace, error from trace_entry"
+                + " where agent_id = ? and trace_id = ?");
+
+        readSharedQueryTexts = session.prepare("select truncated_text, truncated_end_text,"
+                + " full_text_sha1 from trace_shared_query_text where agent_id = ?"
+                + " and trace_id = ?");
 
         readMainThreadProfile = session.prepare("select profile from trace_main_thread_profile"
                 + " where agent_id = ? and trace_id = ?");
@@ -340,7 +342,6 @@ public class TraceDao implements TraceRepository {
                 + " and capture_time = ? and agent_id = ? and trace_id = ?");
     }
 
-    @Override
     public void store(String agentId, Trace trace) throws Exception {
         String traceId = trace.getId();
         // TODO after roll out agent 0.9.1, no need to read header if !trace.getUpdate()
@@ -361,10 +362,33 @@ public class TraceDao implements TraceRepository {
         }
         // END TEMPORARY
 
+        List<ResultSetFuture> futures = Lists.newArrayList();
+
+        List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+        for (Trace.SharedQueryText sharedQueryText : trace.getSharedQueryTextList()) {
+            String fullTextSha1 = sharedQueryText.getFullTextSha1();
+            if (fullTextSha1.isEmpty()) {
+                String fullText = sharedQueryText.getFullText();
+                if (fullText.length() > 240) {
+                    fullTextSha1 = fullQueryTextDao.store(agentId, fullText, futures);
+                    sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
+                            .setTruncatedText(fullText.substring(0, 120))
+                            .setTruncatedEndText(
+                                    fullText.substring(fullText.length() - 120, fullText.length()))
+                            .setFullTextSha1(fullTextSha1)
+                            .build());
+                } else {
+                    sharedQueryTexts.add(sharedQueryText);
+                }
+            } else {
+                fullQueryTextDao.updateTTL(agentId, fullTextSha1, futures);
+                sharedQueryTexts.add(sharedQueryText);
+            }
+        }
+
         // unlike aggregates and gauge values, traces can get written to server rollups immediately
         List<String> agentRollups = AgentRollups.getAgentRollups(agentId);
 
-        List<ResultSetFuture> futures = Lists.newArrayList();
         int adjustedTTL = GaugeValueDao.getAdjustedTTL(getTTL(), header.getCaptureTime());
         for (String agentRollup : agentRollups) {
             List<Trace.Attribute> attributes = header.getAttributeList();
@@ -552,7 +576,7 @@ public class TraceDao implements TraceRepository {
                 futures.add(session.executeAsync(boundStatement));
             }
             for (Trace.Attribute attributeName : attributes) {
-                traceAttributeNameDao.maybeUpdateLastCaptureTime(agentRollup,
+                traceAttributeNameDao.store(agentRollup,
                         header.getTransactionType(), attributeName.getName(), futures);
             }
         }
@@ -565,18 +589,31 @@ public class TraceDao implements TraceRepository {
         boundStatement.setInt(i++, adjustedTTL);
         futures.add(session.executeAsync(boundStatement));
 
-        for (int entryIndex = 0; entryIndex < trace.getEntryCount(); entryIndex++) {
-            Trace.Entry entry = trace.getEntry(entryIndex);
+        int index = 0;
+        for (Trace.Entry entry : trace.getEntryList()) {
             boundStatement = insertEntry.bind();
             i = 0;
             boundStatement.setString(i++, agentId);
             boundStatement.setString(i++, traceId);
-            boundStatement.setInt(i++, entryIndex);
+            boundStatement.setInt(i++, index++);
             boundStatement.setInt(i++, entry.getDepth());
             boundStatement.setLong(i++, entry.getStartOffsetNanos());
             boundStatement.setLong(i++, entry.getDurationNanos());
             boundStatement.setBool(i++, entry.getActive());
-            boundStatement.setString(i++, entry.getMessage());
+            if (entry.hasQueryEntryMessage()) {
+                boundStatement.setToNull(i++);
+                boundStatement.setInt(i++, entry.getQueryEntryMessage().getSharedQueryTextIndex());
+                boundStatement.setString(i++,
+                        Strings.emptyToNull(entry.getQueryEntryMessage().getPrefix()));
+                boundStatement.setString(i++,
+                        Strings.emptyToNull(entry.getQueryEntryMessage().getSuffix()));
+            } else {
+                // message is empty for trace entries added using addErrorEntry()
+                boundStatement.setString(i++, Strings.emptyToNull(entry.getMessage()));
+                boundStatement.setToNull(i++);
+                boundStatement.setToNull(i++);
+                boundStatement.setToNull(i++);
+            }
             List<Trace.DetailEntry> detailEntries = entry.getDetailEntryList();
             if (detailEntries.isEmpty()) {
                 boundStatement.setToNull(i++);
@@ -592,6 +629,27 @@ public class TraceDao implements TraceRepository {
             if (entry.hasError()) {
                 boundStatement.setBytes(i++, ByteBuffer.wrap(entry.getError().toByteArray()));
             } else {
+                boundStatement.setToNull(i++);
+            }
+            boundStatement.setInt(i++, adjustedTTL);
+            futures.add(session.executeAsync(boundStatement));
+        }
+
+        index = 0;
+        for (Trace.SharedQueryText sharedQueryText : sharedQueryTexts) {
+            boundStatement = insertSharedQueryText.bind();
+            i = 0;
+            boundStatement.setString(i++, agentId);
+            boundStatement.setString(i++, traceId);
+            boundStatement.setInt(i++, index++);
+            String fullText = sharedQueryText.getFullText();
+            if (fullText.isEmpty()) {
+                boundStatement.setString(i++, sharedQueryText.getTruncatedText());
+                boundStatement.setString(i++, sharedQueryText.getTruncatedEndText());
+                boundStatement.setString(i++, sharedQueryText.getFullTextSha1());
+            } else {
+                boundStatement.setString(i++, fullText);
+                boundStatement.setToNull(i++);
                 boundStatement.setToNull(i++);
             }
             boundStatement.setInt(i++, adjustedTTL);
@@ -619,14 +677,14 @@ public class TraceDao implements TraceRepository {
             boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
-        transactionTypeDao.maybeUpdateLastCaptureTime(agentId, header.getTransactionType(),
+        transactionTypeDao.store(agentId, header.getTransactionType(),
                 futures);
         Futures.allAsList(futures).get();
     }
 
     @Override
     public List<String> readTraceAttributeNames(String agentRollup, String transactionType) {
-        return traceAttributeNameDao.getTraceAttributeNames(agentRollup, transactionType);
+        return traceAttributeNameDao.read(agentRollup, transactionType);
     }
 
     @Override
@@ -793,38 +851,41 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public List<Trace.Entry> readEntries(String agentId, String traceId) throws IOException {
-        BoundStatement boundStatement = readEntries.bind();
-        boundStatement.setString(0, agentId);
-        boundStatement.setString(1, traceId);
-        ResultSet results = session.execute(boundStatement);
-        List<Trace.Entry> entries = Lists.newArrayList();
-        while (!results.isExhausted()) {
-            Row row = results.one();
-            int i = 0;
-            Trace.Entry.Builder entry = Trace.Entry.newBuilder()
-                    .setDepth(row.getInt(i++))
-                    .setStartOffsetNanos(row.getLong(i++))
-                    .setDurationNanos(row.getLong(i++))
-                    .setActive(row.getBool(i++))
-                    .setMessage(Strings.nullToEmpty(row.getString(i++)));
-            ByteBuffer detailBytes = row.getBytes(i++);
-            if (detailBytes != null) {
-                entry.addAllDetailEntry(
-                        Messages.parseDelimitedFrom(detailBytes, Trace.DetailEntry.parser()));
+    public Entries readEntries(String agentId, String traceId) throws IOException {
+        return ImmutableEntries.builder()
+                .addAllEntries(readEntriesInternal(agentId, traceId))
+                .addAllSharedQueryTexts(readSharedQueryTexts(agentId, traceId))
+                .build();
+    }
+
+    // since this is only used by export, SharedQueryTexts are always returned with fullTrace
+    // (never with truncatedText/truncatedEndText/fullTraceSha1) @Override
+    @Override
+    public Entries readEntriesForExport(String agentId, String traceId) throws IOException {
+        ImmutableEntries.Builder entries = ImmutableEntries.builder()
+                .addAllEntries(readEntriesInternal(agentId, traceId));
+        List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+        for (Trace.SharedQueryText sharedQueryText : readSharedQueryTexts(agentId, traceId)) {
+            String fullTextSha1 = sharedQueryText.getFullTextSha1();
+            if (fullTextSha1.isEmpty()) {
+                sharedQueryTexts.add(sharedQueryText);
+            } else {
+                String fullText = fullQueryTextDao.getFullText(agentId, fullTextSha1);
+                if (fullText == null) {
+                    sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
+                            .setFullText(sharedQueryText.getTruncatedText()
+                                    + " ... [full query text has expired] ... "
+                                    + sharedQueryText.getTruncatedEndText())
+                            .build());
+                } else {
+                    sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
+                            .setFullText(fullText)
+                            .build());
+                }
             }
-            ByteBuffer locationBytes = row.getBytes(i++);
-            if (locationBytes != null) {
-                entry.addAllLocationStackTraceElement(Messages.parseDelimitedFrom(locationBytes,
-                        Proto.StackTraceElement.parser()));
-            }
-            ByteBuffer errorBytes = row.getBytes(i++);
-            if (errorBytes != null) {
-                entry.setError(Trace.Error.parseFrom(ByteString.copyFrom(errorBytes)));
-            }
-            entries.add(entry.build());
         }
-        return entries;
+        return entries.addAllSharedQueryTexts(sharedQueryTexts)
+                .build();
     }
 
     @Override
@@ -869,6 +930,81 @@ public class TraceDao implements TraceRepository {
         }
         ByteBuffer bytes = checkNotNull(row.getBytes(0));
         return Trace.Header.parseFrom(ByteString.copyFrom(bytes));
+    }
+
+    private List<Trace.Entry> readEntriesInternal(String agentId, String traceId)
+            throws IOException {
+        BoundStatement boundStatement = readEntries.bind();
+        boundStatement.setString(0, agentId);
+        boundStatement.setString(1, traceId);
+        ResultSet results = session.execute(boundStatement);
+        List<Trace.Entry> entries = Lists.newArrayList();
+        while (!results.isExhausted()) {
+            Row row = results.one();
+            int i = 0;
+            Trace.Entry.Builder entry = Trace.Entry.newBuilder()
+                    .setDepth(row.getInt(i++))
+                    .setStartOffsetNanos(row.getLong(i++))
+                    .setDurationNanos(row.getLong(i++))
+                    .setActive(row.getBool(i++));
+            if (row.isNull(i + 1)) { // shared_query_text_index
+                // message is null for trace entries added using addErrorEntry()
+                entry.setMessage(Strings.nullToEmpty(row.getString(i++)));
+                i++; // shared_query_text_index
+                i++; // query_message_prefix
+                i++; // query_message_suffix
+            } else {
+                i++; // message
+                Trace.QueryEntryMessage queryEntryMessage = Trace.QueryEntryMessage.newBuilder()
+                        .setSharedQueryTextIndex(row.getInt(i++))
+                        .setPrefix(Strings.nullToEmpty(row.getString(i++)))
+                        .setSuffix(Strings.nullToEmpty(row.getString(i++)))
+                        .build();
+                entry.setQueryEntryMessage(queryEntryMessage);
+            }
+            ByteBuffer detailBytes = row.getBytes(i++);
+            if (detailBytes != null) {
+                entry.addAllDetailEntry(
+                        Messages.parseDelimitedFrom(detailBytes, Trace.DetailEntry.parser()));
+            }
+            ByteBuffer locationBytes = row.getBytes(i++);
+            if (locationBytes != null) {
+                entry.addAllLocationStackTraceElement(Messages.parseDelimitedFrom(locationBytes,
+                        Proto.StackTraceElement.parser()));
+            }
+            ByteBuffer errorBytes = row.getBytes(i++);
+            if (errorBytes != null) {
+                entry.setError(Trace.Error.parseFrom(ByteString.copyFrom(errorBytes)));
+            }
+            entries.add(entry.build());
+        }
+        return entries;
+    }
+
+    private List<Trace.SharedQueryText> readSharedQueryTexts(String agentId, String traceId)
+            throws IOException {
+        BoundStatement boundStatement = readSharedQueryTexts.bind();
+        boundStatement.setString(0, agentId);
+        boundStatement.setString(1, traceId);
+        ResultSet results = session.execute(boundStatement);
+        List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+        while (!results.isExhausted()) {
+            Row row = results.one();
+            int i = 0;
+            String truncatedText = checkNotNull(row.getString(i++));
+            String truncatedEndText = row.getString(i++);
+            String fullTextSha1 = row.getString(i++);
+            Trace.SharedQueryText.Builder sharedQueryText = Trace.SharedQueryText.newBuilder();
+            if (fullTextSha1 == null) {
+                sharedQueryText.setFullText(truncatedText);
+            } else {
+                sharedQueryText.setFullTextSha1(fullTextSha1)
+                        .setTruncatedText(truncatedText)
+                        .setTruncatedEndText(checkNotNull(truncatedEndText));
+            }
+            sharedQueryTexts.add(sharedQueryText.build());
+        }
+        return sharedQueryTexts;
     }
 
     private int getTTL() {

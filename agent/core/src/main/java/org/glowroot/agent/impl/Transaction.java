@@ -271,10 +271,11 @@ public class Transaction {
     }
 
     public String getHeadline() {
-        MessageSupplier messageSupplier = mainThreadContext.getRootEntry().getMessageSupplier();
-        // root trace entry messageSupplier is never be null
+        Object messageSupplier = mainThreadContext.getRootEntry().getMessageSupplier();
+        // root trace entry messageSupplier is never null
         checkNotNull(messageSupplier);
-        return ((ReadableMessage) messageSupplier.get()).getText();
+        // root trace entry messageSupplier is never QueryMessageSupplier
+        return ((ReadableMessage) ((MessageSupplier) messageSupplier).get()).getText();
     }
 
     public String getUser() {
@@ -294,10 +295,11 @@ public class Transaction {
     }
 
     Map<String, ? extends /*@Nullable*/ Object> getDetail() {
-        MessageSupplier messageSupplier = mainThreadContext.getRootEntry().getMessageSupplier();
-        // root trace entry messageSupplier is never be null
+        Object messageSupplier = mainThreadContext.getRootEntry().getMessageSupplier();
+        // root trace entry messageSupplier is never null
         checkNotNull(messageSupplier);
-        return ((ReadableMessage) messageSupplier.get()).getDetail();
+        // root trace entry messageSupplier is never QueryMessageSupplier
+        return ((ReadableMessage) ((MessageSupplier) messageSupplier).get()).getDetail();
     }
 
     public @Nullable ErrorMessage getErrorMessage() {
@@ -418,27 +420,35 @@ public class Transaction {
         }
     }
 
+    // this method has side effect of incrementing counter
     boolean allowAnotherEntry() {
         return entryLimitCounter++ < maxTraceEntriesPerTransaction;
     }
 
+    // this method has side effect of incrementing counter
     boolean allowAnotherErrorEntry() {
         // use higher entry limit when adding errors, but still need some kind of cap
         return entryLimitCounter++ < maxTraceEntriesPerTransaction
                 || extraErrorEntryLimitCounter++ < maxTraceEntriesPerTransaction;
     }
 
-    boolean allowAnotherAggregateQuery() {
-        return aggregateQueryLimitCounter++ < maxAggregateQueriesPerType
-                * AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER;
+    // this method has side effect of incrementing counter
+    boolean allowAnotherAggregateQuery(boolean bypassLimit) {
+        if (aggregateQueryLimitCounter++ < maxAggregateQueriesPerType
+                * AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER) {
+            return true;
+        }
+        return bypassLimit;
     }
 
+    // this method has side effect of incrementing counter
     boolean allowAnotherAggregateServiceCall() {
         return aggregateServiceCallLimitCounter++ < maxAggregateServiceCallsPerType
                 * AdvancedConfig.OVERALL_AGGREGATE_SERVICE_CALLS_HARD_LIMIT_MULTIPLIER;
     }
 
-    public List<Trace.Entry> getEntriesProtobuf(long captureTick) {
+    public List<Trace.Entry> getEntriesProtobuf(long captureTick,
+            Map<String, Integer> sharedQueryTextIndexes) {
         memoryBarrierRead();
         ListMultimap<TraceEntryImpl, ThreadContextImpl> priorEntryChildThreadContextMap =
                 buildPriorEntryChildThreadContextMap();
@@ -453,11 +463,11 @@ public class Transaction {
                 }
             }
         }
-        List<Trace.Entry> entries = Lists.newArrayList();
         new ParentChildMapTrimmer(mainThreadContext.getRootEntry(), parentChildMap, captureTick)
                 .traverse();
+        List<Trace.Entry> entries = Lists.newArrayList();
         addProtobufChildEntries(mainThreadContext.getRootEntry(), parentChildMap, startTick,
-                captureTick, 0, entries, async);
+                captureTick, 0, entries, sharedQueryTextIndexes, async);
         return entries;
     }
 
@@ -871,7 +881,8 @@ public class Transaction {
 
     private static void addProtobufChildEntries(TraceEntryImpl entry,
             ListMultimap<TraceEntryImpl, TraceEntryImpl> parentChildMap, long transactionStartTick,
-            long captureTick, int depth, List<Trace.Entry> entries, boolean removeSingleAuxEntry) {
+            long captureTick, int depth, List<Trace.Entry> entries,
+            Map<String, Integer> sharedQueryTextIndexes, boolean removeSingleAuxEntry) {
         if (!parentChildMap.containsKey(entry)) {
             // check containsKey to avoid creating garbage empty list via ListMultimap
             return;
@@ -881,11 +892,12 @@ public class Transaction {
             boolean singleAuxEntry = childEntries.size() == 1 && childEntry.isAuxThreadRoot();
             if (singleAuxEntry && removeSingleAuxEntry) {
                 addProtobufChildEntries(childEntry, parentChildMap, transactionStartTick,
-                        captureTick, depth, entries, removeSingleAuxEntry);
+                        captureTick, depth, entries, sharedQueryTextIndexes, removeSingleAuxEntry);
             } else {
-                entries.add(childEntry.toProto(depth, transactionStartTick, captureTick));
+                entries.add(childEntry.toProto(depth, transactionStartTick, captureTick,
+                        sharedQueryTextIndexes));
                 addProtobufChildEntries(childEntry, parentChildMap, transactionStartTick,
-                        captureTick, depth + 1, entries, false);
+                        captureTick, depth + 1, entries, sharedQueryTextIndexes, false);
             }
         }
     }

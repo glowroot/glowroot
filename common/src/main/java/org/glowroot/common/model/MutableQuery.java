@@ -29,8 +29,8 @@ public class MutableQuery {
         }
     };
 
-    private final String truncatedQueryText;
-    private final @Nullable String fullQueryTextSha1;
+    private final String truncatedText;
+    private final @Nullable String fullTextSha1;
 
     private double totalDurationNanos;
     private long executionCount;
@@ -38,17 +38,17 @@ public class MutableQuery {
     private boolean hasTotalRows;
     private long totalRows;
 
-    MutableQuery(String truncatedQueryText, @Nullable String fullQueryTextSha1) {
-        this.truncatedQueryText = truncatedQueryText;
-        this.fullQueryTextSha1 = fullQueryTextSha1;
+    MutableQuery(String truncatedText, @Nullable String fullTextSha1) {
+        this.truncatedText = truncatedText;
+        this.fullTextSha1 = fullTextSha1;
     }
 
-    public String getTruncatedQueryText() {
-        return truncatedQueryText;
+    public String getTruncatedText() {
+        return truncatedText;
     }
 
-    public @Nullable String getFullQueryTextSha1() {
-        return fullQueryTextSha1;
+    public @Nullable String getFullTextSha1() {
+        return fullTextSha1;
     }
 
     public double getTotalDurationNanos() {

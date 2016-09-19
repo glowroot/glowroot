@@ -54,14 +54,14 @@ public interface ThreadContext {
      * {@link QueryEntry} is a specialized type of {@link TraceEntry} that is aggregated by its
      * query text.
      */
-    QueryEntry startQueryEntry(String queryType, String queryText, MessageSupplier messageSupplier,
-            TimerName timerName);
+    QueryEntry startQueryEntry(String queryType, String queryText,
+            QueryMessageSupplier queryMessageSupplier, TimerName timerName);
 
     QueryEntry startQueryEntry(String queryType, String queryText, long queryExecutionCount,
-            MessageSupplier messageSupplier, TimerName timerName);
+            QueryMessageSupplier queryMessageSupplier, TimerName timerName);
 
     AsyncQueryEntry startAsyncQueryEntry(String queryType, String queryText,
-            MessageSupplier messageSupplier, TimerName timerName);
+            QueryMessageSupplier queryMessageSupplier, TimerName timerName);
 
     TraceEntry startServiceCallEntry(String type, String text, MessageSupplier messageSupplier,
             TimerName timerName);

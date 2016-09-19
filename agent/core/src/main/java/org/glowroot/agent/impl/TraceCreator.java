@@ -18,10 +18,14 @@ package org.glowroot.agent.impl;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.Maps;
+
+import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.model.DetailMapWriter;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.common.util.Styles;
@@ -48,7 +52,10 @@ public class TraceCreator {
 
     public static Trace.Header createPartialTraceHeader(Transaction transaction, long captureTime,
             long captureTick) throws IOException {
-        int entryCount = transaction.getEntriesProtobuf(captureTick).size();
+        // TODO optimize, this is excessive to construct entries just to get count
+        Map<String, Integer> sharedQueryTextIndexes = Maps.newLinkedHashMap();
+        int entryCount = transaction
+                .getEntriesProtobuf(captureTick, sharedQueryTextIndexes).size();
         long mainThreadProfileSampleCount = transaction.getMainThreadProfileSampleCount();
         long auxThreadProfileSampleCount = transaction.getAuxThreadProfileSampleCount();
         // only slow transactions reach this point, so setting slow=true (second arg below)
@@ -58,7 +65,10 @@ public class TraceCreator {
 
     public static Trace.Header createCompletedTraceHeader(Transaction transaction)
             throws IOException {
-        int entryCount = transaction.getEntriesProtobuf(transaction.getEndTick()).size();
+        // TODO optimize, this is excessive to construct entries just to get count
+        Map<String, Integer> sharedQueryTextIndexes = Maps.newLinkedHashMap();
+        int entryCount = transaction
+                .getEntriesProtobuf(transaction.getEndTick(), sharedQueryTextIndexes).size();
         long mainProfileSampleCount = transaction.getMainThreadProfileSampleCount();
         long auxProfileSampleCount = transaction.getAuxThreadProfileSampleCount();
         // only slow transactions reach this point, so setting slow=true (second arg below)
@@ -72,18 +82,22 @@ public class TraceCreator {
     // (without using synchronization to block updates to the trace while it is being read)
     private static Trace createFullTrace(Transaction transaction, boolean slow, boolean partial,
             long captureTime, long captureTick) throws IOException {
-        List<Trace.Entry> entries = transaction.getEntriesProtobuf(captureTick);
+        Map<String, Integer> sharedQueryTextIndexes = Maps.newLinkedHashMap();
+        List<Trace.Entry> entries =
+                transaction.getEntriesProtobuf(captureTick, sharedQueryTextIndexes);
         int entryCount = entries.size();
         Profile mainThreadProfile = transaction.getMainThreadProfileProtobuf();
         long mainThreadProfileSampleCount = getProfileSampleCount(mainThreadProfile);
         Profile auxThreadProfile = transaction.getAuxThreadProfileProtobuf();
         long auxThreadProfileSampleCount = getProfileSampleCount(auxThreadProfile);
-        Trace.Header header = createTraceHeader(transaction, slow, partial, captureTime,
-                captureTick, entryCount, mainThreadProfileSampleCount, auxThreadProfileSampleCount);
+        Trace.Header header =
+                createTraceHeader(transaction, slow, partial, captureTime, captureTick, entryCount,
+                        mainThreadProfileSampleCount, auxThreadProfileSampleCount);
         Trace.Builder builder = Trace.newBuilder()
                 .setId(transaction.getTraceId())
                 .setHeader(header)
-                .addAllEntry(entries);
+                .addAllEntry(entries)
+                .addAllSharedQueryText(LiveTraceRepositoryImpl.toProto(sharedQueryTextIndexes));
         if (mainThreadProfile != null) {
             builder.setMainThreadProfile(mainThreadProfile);
         }

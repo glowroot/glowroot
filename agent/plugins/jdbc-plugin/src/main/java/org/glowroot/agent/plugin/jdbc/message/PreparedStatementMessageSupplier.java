@@ -17,33 +17,30 @@ package org.glowroot.agent.plugin.jdbc.message;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.agent.plugin.api.Message;
-import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.QueryMessage;
+import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 
-public class PreparedStatementMessageSupplier extends MessageSupplier {
-
-    private final String sql;
+public class PreparedStatementMessageSupplier extends QueryMessageSupplier {
 
     // cannot use ImmutableList for parameters since it can contain null elements
     private final @Nullable BindParameterList parameters;
 
-    public PreparedStatementMessageSupplier(String sql, @Nullable BindParameterList parameters) {
-        this.sql = sql;
+    public PreparedStatementMessageSupplier(@Nullable BindParameterList parameters) {
         this.parameters = parameters;
     }
 
     @Override
-    public Message get() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("jdbc execution: ");
-        sb.append(sql);
+    public QueryMessage get() {
+        String suffix = "";
         if (parameters != null && !parameters.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
             appendParameters(sb, parameters);
+            suffix = sb.toString();
         }
-        return Message.from(sb.toString());
+        return QueryMessage.create("jdbc execution: ", suffix);
     }
 
-    static void appendParameters(StringBuilder sb, BindParameterList parameters) {
+    static String appendParameters(StringBuilder sb, BindParameterList parameters) {
         sb.append(" [");
         boolean first = true;
         for (Object parameter : parameters) {
@@ -62,5 +59,6 @@ public class PreparedStatementMessageSupplier extends MessageSupplier {
             first = false;
         }
         sb.append("]");
+        return sb.toString();
     }
 }

@@ -1,6 +1,7 @@
 <div id="gtTraceEntry{{index}}">
   <div style="width: 102px; vertical-align: top; float: left;"
-       title="duration {{nanosToMillis durationNanos}}{{#if active}}..{{/if}} milliseconds, offset {{nanosToMillis startOffsetNanos}} milliseconds">
+       title="duration {{nanosToMillis durationNanos}}{{#if active}}..{{/if}} milliseconds, offset {{nanosToMillis
+           startOffsetNanos}} milliseconds">
     <div class="gt-trace-entry-bar-outer">
       <div class="gt-trace-entry-bar"
            style="margin-left: {{traceEntryBarLeft startOffsetNanos}}px; width: {{traceEntryBarWidth .}}px;">
@@ -9,12 +10,12 @@
   </div>
   <div style="overflow: hidden; padding-left: {{traceEntryIndentPx .}}px;">
     {{#if childEntries}}
-      <div class="gt-width2 gt-trace-entry-toggle" data-index="{{index}}" style="float: left;">
+      <div class="gt-width2 gt-trace-entry-toggle" data-gt-index="{{index}}" style="float: left;">
         <i title="Collapse" class="fa fa-minus-square-o" style="padding: 5px; margin-left: -5px;"></i>
       </div>
     {{/if}}
     {{#ifDisplayMessage .}}
-      {{#ifLongMessage message}}
+      {{#ifLongMessage .}}
       {{! surrounding div is needed as common parent for toggling unexpanded/expanded content }}
         <div class="gt-indent2">
           <div class="gt-inline-block gt-unexpanded-content gt-monospace">
@@ -25,11 +26,14 @@
           <div class="gt-expanded-content gt-with-clip hide"
                style="position: relative; display: inline-block;">
             <i class="fa fa-clipboard gt-clip"></i>
-
-            <div class="gt-break-word gt-pre-wrap gt-monospace"><!--
+            <div class="gt-break-word gt-pre-wrap gt-monospace gt-clip-text gt-expanded-trace-entry"
+                 data-gt-trace-entry-index="{{index}}"><!--
               lack of space here is significant because of gt-pre-wrap
               -->{{message}}<!--
          --></div>
+            <div>
+              <div class="hide gt-trace-detail-spinner"></div>
+            </div>
           </div>
         </div>
       {{^}}
@@ -42,9 +46,9 @@
       {{#ifNonEmptyObject detail}}
         <div class="gt-content-detail">
           <span class="gt-inline-block gt-unexpanded-content gt-link-color gt-opensans">detail</span>
-        <span class="gt-inline-block gt-expanded-content hide">
+          <span class="gt-inline-block gt-expanded-content hide">
           <span class="gt-inline-block gt-link-color gt-opensans">detail</span>
-          {{{entryDetailHtml detail}}}
+            {{{entryDetailHtml detail}}}
         </span>
         </div>
       {{/ifNonEmptyObject}}
@@ -66,7 +70,9 @@
             <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide"
                  style="overflow-x: auto;">
               <div class="gt-inline-block gt-link-color gt-opensans">exception</div>
-              {{{exceptionHtml error.exception}}}
+              <div class="gt-clip-text">
+                {{{exceptionHtml error.exception}}}
+              </div>
               <i class="fa fa-clipboard gt-clip"></i>
             </div>
           </div>
@@ -80,7 +86,9 @@
         <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide"
              style="overflow-x: auto;">
           <div class="gt-inline-block gt-link-color gt-opensans">location stack trace</div>
-          {{{locationStackTraceHtml locationStackTraceElements}}}
+          <div class="gt-clip-text">
+            {{{locationStackTraceHtml locationStackTraceElements}}}
+          </div>
           <i class="fa fa-clipboard gt-clip"></i>
         </div>
       </div>

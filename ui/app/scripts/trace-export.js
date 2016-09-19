@@ -23,6 +23,11 @@ $(document).ready(function () {
   if (entriesJson) {
     entries = JSON.parse(entriesJson);
   }
+  var sharedQueryTextsJson = $('#sharedQueryTextsJson').html();
+  var sharedQueryTexts;
+  if (sharedQueryTextsJson) {
+    sharedQueryTexts = JSON.parse(sharedQueryTextsJson);
+  }
   var mainThreadProfileJson = $('#mainThreadProfileJson').html();
   var mainThreadProfile;
   if (mainThreadProfileJson) {
@@ -33,6 +38,6 @@ $(document).ready(function () {
   if (auxThreadProfileJson) {
     auxThreadProfile = JSON.parse(auxThreadProfileJson);
   }
-  HandlebarsRendering.renderTraceFromExport(header, $('#tracePlaceholder'), entries, mainThreadProfile,
-      auxThreadProfile);
+  HandlebarsRendering.renderTraceFromExport(header, $('#tracePlaceholder'), entries, sharedQueryTexts,
+      mainThreadProfile, auxThreadProfile);
 });

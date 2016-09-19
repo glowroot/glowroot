@@ -61,7 +61,8 @@ class AggregateCollector {
     private static final double NANOSECONDS_PER_MILLISECOND = 1000000.0;
 
     private final @Nullable String transactionName;
-    private long totalDurationNanos;
+    // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+    private double totalDurationNanos;
     private long transactionCount;
     private long errorCount;
     private boolean asyncTransactions;
@@ -136,7 +137,7 @@ class AggregateCollector {
                     ? AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER
                     : AdvancedConfig.TRANSACTION_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER;
             queries = new QueryCollector(maxAggregateQueriesPerType,
-                    queriesHardLimitMultiplierWhileBuilding);
+                    queriesHardLimitMultiplierWhileBuilding, false);
         }
         return queries;
     }
@@ -152,8 +153,8 @@ class AggregateCollector {
         return serviceCalls;
     }
 
-    Aggregate build(List<String> sharedQueryTexts, Map<String, Integer> sharedQueryTextIndexes,
-            ScratchBuffer scratchBuffer) throws IOException {
+    Aggregate build(Map<String, Integer> sharedQueryTextIndexes, ScratchBuffer scratchBuffer)
+            throws IOException {
         Aggregate.Builder builder = Aggregate.newBuilder()
                 .setTotalDurationNanos(totalDurationNanos)
                 .setTransactionCount(transactionCount)
@@ -170,7 +171,7 @@ class AggregateCollector {
             builder.setAuxThreadStats(auxThreadStats.toProto());
         }
         if (queries != null) {
-            builder.addAllQueriesByType(queries.toProto(sharedQueryTexts, sharedQueryTextIndexes));
+            builder.addAllQueriesByType(queries.toAggregateProto(sharedQueryTextIndexes));
         }
         if (serviceCalls != null) {
             builder.addAllServiceCallsByType(serviceCalls.toProto());
@@ -302,6 +303,7 @@ class AggregateCollector {
 
     private static class ThreadStatsCollectorImpl implements ThreadStatsCollector {
 
+        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
         private double totalCpuNanos;
         private double totalBlockedMillis;
         private double totalWaitedMillis;

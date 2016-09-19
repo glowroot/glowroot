@@ -19,6 +19,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
@@ -71,11 +72,15 @@ public class CommitRollbackIT {
         assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc commit");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("insert into employee (name) values ('john doe')");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
@@ -100,11 +105,15 @@ public class CommitRollbackIT {
         assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc commit");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("insert into employee (name) values ('john doe')");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
@@ -131,11 +140,15 @@ public class CommitRollbackIT {
         assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc rollback");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("insert into employee (name) values ('john doe')");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
@@ -159,11 +172,15 @@ public class CommitRollbackIT {
         assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc rollback");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage())
-                .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("insert into employee (name) values ('john doe')");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);

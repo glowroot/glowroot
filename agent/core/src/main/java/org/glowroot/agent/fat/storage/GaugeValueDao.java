@@ -48,7 +48,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static org.glowroot.agent.util.Checkers.castUntainted;
 
-class GaugeValueDao implements GaugeValueRepository {
+public class GaugeValueDao implements GaugeValueRepository {
 
     private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
             ImmutableColumn.of("gauge_id", ColumnType.BIGINT),
@@ -111,8 +111,7 @@ class GaugeValueDao implements GaugeValueRepository {
         return gauges;
     }
 
-    @Override
-    public void store(String agentId, List<GaugeValue> gaugeValues) throws Exception {
+    public void store(List<GaugeValue> gaugeValues) throws Exception {
         if (gaugeValues.isEmpty()) {
             return;
         }

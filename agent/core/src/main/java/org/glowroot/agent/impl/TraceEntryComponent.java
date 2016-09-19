@@ -70,7 +70,7 @@ class TraceEntryComponent {
         return endTick;
     }
 
-    TraceEntryImpl pushEntry(long startTick, MessageSupplier messageSupplier, TimerImpl syncTimer,
+    TraceEntryImpl pushEntry(long startTick, Object messageSupplier, TimerImpl syncTimer,
             @Nullable AsyncTimerImpl asyncTimer, @Nullable QueryData queryData,
             long queryExecutionCount) {
         TraceEntryImpl entry = new TraceEntryImpl(threadContext, activeEntry, messageSupplier,
@@ -99,10 +99,10 @@ class TraceEntryComponent {
         popEntrySafe(entry);
     }
 
-    TraceEntryImpl addErrorEntry(long startTick, long endTick,
-            @Nullable MessageSupplier messageSupplier, ErrorMessage errorMessage) {
-        TraceEntryImpl entry = new TraceEntryImpl(threadContext, activeEntry, messageSupplier, null,
-                1, startTick, null, null);
+    TraceEntryImpl addErrorEntry(long startTick, long endTick, @Nullable Object messageSupplier,
+            @Nullable QueryData queryData, ErrorMessage errorMessage) {
+        TraceEntryImpl entry = new TraceEntryImpl(threadContext, activeEntry, messageSupplier,
+                queryData, 1, startTick, null, null);
         entry.immediateEndAsErrorEntry(errorMessage, endTick);
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;

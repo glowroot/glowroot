@@ -31,19 +31,29 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface LiveTraceRepository {
 
+    // null return value means trace not found
     @Nullable
     Trace.Header getHeader(String agentId, String traceId) throws Exception;
 
-    // this is only called if the trace does have traces, so empty list response means trace was not
-    // found (e.g. has expired)
-    List<Trace.Entry> getEntries(String agentId, String traceId) throws Exception;
+    // null return value means trace not found or was found but had no entries
+    //
+    // SharedQueryTexts are returned with either fullTrace or
+    // truncatedText/truncatedEndText/fullTraceSha1
+    @Nullable
+    Entries getEntries(String agentId, String traceId) throws Exception;
 
+    // null return value means trace not found or was found but had no main thread profile
     @Nullable
     Profile getMainThreadProfile(String agentId, String traceId) throws Exception;
 
+    // null return value means trace not found or was found but had no aux thread profile
     @Nullable
     Profile getAuxThreadProfile(String agentId, String traceId) throws Exception;
 
+    // null return value means trace not found
+    //
+    // since this is only used by export, SharedQueryTexts are always returned with fullTrace
+    // (never with truncatedText/truncatedEndText/fullTraceSha1)
     @Nullable
     Trace getFullTrace(String agentId, String traceId) throws Exception;
 
@@ -59,7 +69,13 @@ public interface LiveTraceRepository {
             long captureTime);
 
     @Value.Immutable
-    public abstract class TracePointFilter {
+    public interface Entries {
+        List<Trace.Entry> entries();
+        List<Trace.SharedQueryText> sharedQueryTexts();
+    }
+
+    @Value.Immutable
+    abstract class TracePointFilter {
 
         public abstract long durationNanosLow();
         public abstract @Nullable Long durationNanosHigh();
@@ -128,7 +144,7 @@ public interface LiveTraceRepository {
     }
 
     @Value.Immutable
-    public interface TracePoint {
+    interface TracePoint {
         String agentId();
         String traceId();
         long captureTime();
@@ -136,15 +152,15 @@ public interface LiveTraceRepository {
         boolean error();
     }
 
-    public enum TraceKind {
+    enum TraceKind {
         SLOW, ERROR;
     }
 
-    public enum Existence {
+    enum Existence {
         YES, NO, EXPIRED;
     }
 
-    public class LiveTraceRepositoryNop implements LiveTraceRepository {
+    class LiveTraceRepositoryNop implements LiveTraceRepository {
 
         @Override
         public @Nullable Trace.Header getHeader(String agentId, String traceId) {
@@ -152,8 +168,8 @@ public interface LiveTraceRepository {
         }
 
         @Override
-        public List<Trace.Entry> getEntries(String agentId, String traceId) {
-            return ImmutableList.of();
+        public @Nullable Entries getEntries(String agentId, String traceId) {
+            return null;
         }
 
         @Override

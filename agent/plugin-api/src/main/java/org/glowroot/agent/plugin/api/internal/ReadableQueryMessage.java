@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,24 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.cassandra;
+package org.glowroot.agent.plugin.api.internal;
 
-import org.glowroot.agent.plugin.api.Message;
-import org.glowroot.agent.plugin.api.MessageSupplier;
+import java.util.Map;
 
-class QueryMessageSupplier extends MessageSupplier {
+// this interface exists to provide access to QueryMessageImpl from glowroot without making
+// QueryMessageImpl accessible to plugins (at least not through the org.glowroot.agent.plugin.api
+// package)
+public interface ReadableQueryMessage {
 
-    private final String query;
+    String getPrefix();
 
-    QueryMessageSupplier(String query) {
-        this.query = query;
-    }
+    String getSuffix();
 
-    @Override
-    public Message get() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("cql execution: ");
-        sb.append(query);
-        return Message.from(sb.toString());
-    }
+    Map<String, ? extends /*@Nullable*/ Object> getDetail();
 }

@@ -23,19 +23,16 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.RateLimiter;
 import org.immutables.value.Value;
 
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Styles;
+import org.glowroot.server.util.RateLimiter;
+import org.glowroot.server.util.Sessions;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 class TraceAttributeNameDao {
@@ -49,17 +46,7 @@ class TraceAttributeNameDao {
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
-    // 2-day expiration is just to periodically clean up cache
-    private final LoadingCache<TraceAttributeNameKey, RateLimiter> rateLimiters =
-            CacheBuilder.newBuilder()
-                    .expireAfterAccess(2, DAYS)
-                    .build(new CacheLoader<TraceAttributeNameKey, RateLimiter>() {
-                        @Override
-                        public RateLimiter load(TraceAttributeNameKey key) throws Exception {
-                            // 1 permit per 24 hours
-                            return RateLimiter.create(1 / (24 * 3600.0));
-                        }
-                    });
+    private final RateLimiter<TraceAttributeNameKey> rateLimiter = new RateLimiter<>();
 
     TraceAttributeNameDao(Session session, ConfigRepository configRepository) {
         this.session = session;
@@ -75,7 +62,7 @@ class TraceAttributeNameDao {
                 + " where agent_rollup = ? and transaction_type = ?");
     }
 
-    List<String> getTraceAttributeNames(String agentRollup, String transactionType) {
+    List<String> read(String agentRollup, String transactionType) {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentRollup);
         boundStatement.setString(1, transactionType);
@@ -87,12 +74,11 @@ class TraceAttributeNameDao {
         return attributeNames;
     }
 
-    void maybeUpdateLastCaptureTime(String agentRollup, String transactionType,
-            String traceAttributeName, List<ResultSetFuture> futures) {
+    void store(String agentRollup, String transactionType, String traceAttributeName,
+            List<ResultSetFuture> futures) {
         TraceAttributeNameKey rateLimiterKey =
                 ImmutableTraceAttributeNameKey.of(agentRollup, transactionType, traceAttributeName);
-        RateLimiter rateLimiter = rateLimiters.getUnchecked(rateLimiterKey);
-        if (!rateLimiter.tryAcquire()) {
+        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return;
         }
         BoundStatement boundStatement = insertPS.bind();
@@ -101,8 +87,8 @@ class TraceAttributeNameDao {
         boundStatement.setString(i++, transactionType);
         boundStatement.setString(i++, traceAttributeName);
         boundStatement.setInt(i++, getMaxTTL());
-        futures.add(TransactionTypeDao.executeAsyncUnderRateLimiter(session, boundStatement,
-                rateLimiters, rateLimiterKey));
+        futures.add(Sessions.executeAsyncWithOnFailure(session, boundStatement,
+                () -> rateLimiter.invalidate(rateLimiterKey)));
     }
 
     private int getMaxTTL() {

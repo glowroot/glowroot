@@ -362,14 +362,22 @@ public class DataSource {
         }
     }
 
+    long getDbFileSize() {
+        return dbFile == null ? 0 : dbFile.length();
+    }
+
+    // helpful for upgrading schema
     public boolean tableExists(String tableName) throws SQLException {
         synchronized (lock) {
             return !closing && Schemas.tableExists(tableName, connection);
         }
     }
 
-    long getDbFileSize() {
-        return dbFile == null ? 0 : dbFile.length();
+    // helpful for upgrading schema
+    public boolean columnExists(String tableName, String columnName) throws SQLException {
+        synchronized (lock) {
+            return !closing && Schemas.columnExists(tableName, columnName, connection);
+        }
     }
 
     // helpful for upgrading schema

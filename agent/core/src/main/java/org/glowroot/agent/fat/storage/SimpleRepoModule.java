@@ -30,11 +30,8 @@ import org.glowroot.agent.fat.storage.util.CappedDatabase;
 import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.agent.fat.storage.util.H2DatabaseStats;
 import org.glowroot.common.config.FatStorageConfig;
-import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.RepoAdmin;
-import org.glowroot.common.repo.TraceRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.MailService;
@@ -87,7 +84,8 @@ public class SimpleRepoModule {
         FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(dataSource);
         aggregateDao = new AggregateDao(dataSource, this.rollupCappedDatabases, configRepository,
                 transactionTypeDao, fullQueryTextDao);
-        traceDao = new TraceDao(dataSource, traceCappedDatabase, transactionTypeDao);
+        traceDao =
+                new TraceDao(dataSource, traceCappedDatabase, transactionTypeDao, fullQueryTextDao);
         GaugeNameDao gaugeNameDao = new GaugeNameDao(dataSource);
         gaugeValueDao = new GaugeValueDao(dataSource, gaugeNameDao, clock);
 
@@ -128,15 +126,15 @@ public class SimpleRepoModule {
         return transactionTypeDao;
     }
 
-    public AggregateRepository getAggregateRepository() {
+    public AggregateDao getAggregateDao() {
         return aggregateDao;
     }
 
-    public TraceRepository getTraceRepository() {
+    public TraceDao getTraceDao() {
         return traceDao;
     }
 
-    public GaugeValueRepository getGaugeValueRepository() {
+    public GaugeValueDao getGaugeValueDao() {
         return gaugeValueDao;
     }
 

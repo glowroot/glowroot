@@ -33,21 +33,19 @@ public class TraceDaoPerformanceMain {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceDaoPerformanceMain.class);
 
-    private static final String AGENT_ID = "";
-
     private TraceDaoPerformanceMain() {}
 
     public static void main(String... args) throws Exception {
         DataSource dataSource = new DataSource();
         CappedDatabase cappedDatabase =
                 new CappedDatabase(new File("glowroot.capped.db"), 1000000, Ticker.systemTicker());
-        TraceDao traceDao =
-                new TraceDao(dataSource, cappedDatabase, mock(TransactionTypeDao.class));
+        TraceDao traceDao = new TraceDao(dataSource, cappedDatabase, mock(TransactionTypeDao.class),
+                mock(FullQueryTextDao.class));
 
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (int i = 0; i < 1000; i++) {
             Trace trace = TraceTestData.createTrace();
-            traceDao.store(AGENT_ID, trace);
+            traceDao.store(trace);
         }
         logger.info("elapsed time: {}", stopwatch.elapsed(MILLISECONDS));
     }

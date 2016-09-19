@@ -36,12 +36,8 @@ import org.glowroot.common.model.TransactionErrorSummaryCollector.ErrorSummarySo
 import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.common.util.Styles;
-import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 
 public interface AggregateRepository {
-
-    void store(String agentId, long captureTime, List<AggregatesByType> aggregatesByType,
-            List<String> sharedQueryTexts) throws Exception;
 
     // query.from() is non-inclusive
     void mergeOverallSummaryInto(String agentRollup, OverallQuery query,

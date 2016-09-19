@@ -18,12 +18,11 @@ package org.glowroot.agent.impl;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.junit.Test;
 
 import org.glowroot.agent.model.QueryCollector;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.QueriesByType;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -32,18 +31,17 @@ public class QueryCollectorTest {
     @Test
     public void testAddInAscendingOrder() {
         // given
-        QueryCollector queries = new QueryCollector(100, 2);
+        QueryCollector queries = new QueryCollector(100, 2, false);
         for (int i = 1; i <= 300; i++) {
             queries.mergeQuery("SQL", Integer.toString(i), i, 1, true, 1);
         }
         // when
-        List<String> sharedQueryTexts = Lists.newArrayList();
-        Map<String, Integer> sharedQueryTextIndexes = Maps.newHashMap();
-        List<QueriesByType> queriesByTypeList =
-                queries.toProto(sharedQueryTexts, sharedQueryTextIndexes);
+        Map<String, Integer> sharedQueryTextIndexes = Maps.newLinkedHashMap();
+        List<Aggregate.QueriesByType> queriesByTypeList =
+                queries.toAggregateProto(sharedQueryTextIndexes);
         // then
         assertThat(queriesByTypeList).hasSize(1);
-        QueriesByType queriesByType = queriesByTypeList.get(0);
+        Aggregate.QueriesByType queriesByType = queriesByTypeList.get(0);
         assertThat(queriesByType.getQueryList()).hasSize(100);
         assertThat(queriesByType.getQueryList().get(0).getTotalDurationNanos()).isEqualTo(300);
         assertThat(queriesByType.getQueryList().get(99).getTotalDurationNanos()).isEqualTo(201);
@@ -52,18 +50,17 @@ public class QueryCollectorTest {
     @Test
     public void testAddInDescendingOrder() {
         // given
-        QueryCollector queries = new QueryCollector(100, 2);
+        QueryCollector queries = new QueryCollector(100, 2, false);
         for (int i = 300; i > 0; i--) {
             queries.mergeQuery("SQL", Integer.toString(i), i, 1, true, 1);
         }
         // when
-        List<String> sharedQueryTexts = Lists.newArrayList();
-        Map<String, Integer> sharedQueryTextIndexes = Maps.newHashMap();
-        List<QueriesByType> queriesByTypeList =
-                queries.toProto(sharedQueryTexts, sharedQueryTextIndexes);
+        Map<String, Integer> sharedQueryTextIndexes = Maps.newLinkedHashMap();
+        List<Aggregate.QueriesByType> queriesByTypeList =
+                queries.toAggregateProto(sharedQueryTextIndexes);
         // then
         assertThat(queriesByTypeList).hasSize(1);
-        QueriesByType queriesByType = queriesByTypeList.get(0);
+        Aggregate.QueriesByType queriesByType = queriesByTypeList.get(0);
         assertThat(queriesByType.getQueryList()).hasSize(100);
         assertThat(queriesByType.getQueryList().get(0).getTotalDurationNanos()).isEqualTo(300);
         assertThat(queriesByType.getQueryList().get(99).getTotalDurationNanos()).isEqualTo(201);

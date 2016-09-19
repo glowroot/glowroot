@@ -302,7 +302,7 @@ public class BasicSmokeIT extends WebDriverIT {
     }
 
     private void clickAroundInTraceModal(boolean active) throws Exception {
-        Utils.withWait(driver, By.className("gt-sps-toggle")).click();
+        Utils.withWait(driver, By.className("gt-entries-toggle")).click();
         Utils.withWait(driver,
                 By.xpath("//div[starts-with(normalize-space(.),'jdbc execution:')]"));
         Utils.withWait(driver, By.className("gt-main-thread-profile-toggle")).click();

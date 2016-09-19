@@ -30,7 +30,7 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.AbstractMessage;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
-import org.glowroot.agent.fat.storage.AggregateDao.SharedQueryTextAndSha1;
+import org.glowroot.agent.fat.storage.AggregateDao.TruncatedQueryText;
 import org.glowroot.agent.fat.storage.model.Stored;
 import org.glowroot.agent.fat.storage.model.Stored.QueriesByType;
 import org.glowroot.agent.fat.storage.util.CappedDatabase;
@@ -44,8 +44,6 @@ import org.glowroot.common.repo.MutableAggregate;
 import org.glowroot.common.repo.MutableThreadStats;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.ServiceCallsByType;
-import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.ThreadStats;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
 import static org.glowroot.agent.util.Checkers.castUntainted;
@@ -79,7 +77,7 @@ class AggregateInsert implements JdbcUpdate {
     private final int rollupLevel;
 
     AggregateInsert(String transactionType, @Nullable String transactionName,
-            long captureTime, Aggregate aggregate, List<SharedQueryTextAndSha1> sharedQueries,
+            long captureTime, Aggregate aggregate, List<TruncatedQueryText> truncatedQueryTexts,
             int rollupLevel, CappedDatabase cappedDatabase) throws IOException {
         this.transactionType = transactionType;
         this.transactionName = transactionName;
@@ -91,7 +89,7 @@ class AggregateInsert implements JdbcUpdate {
         asyncTransactions = aggregate.getAsyncTransactions();
 
         queriesCappedId = writeQueries(cappedDatabase,
-                convertToStored(aggregate.getQueriesByTypeList(), sharedQueries));
+                convertToStored(aggregate.getQueriesByTypeList(), truncatedQueryTexts));
         serviceCallsCappedId =
                 writeServiceCalls(cappedDatabase, aggregate.getServiceCallsByTypeList());
         if (aggregate.hasMainThreadProfile()) {
@@ -109,7 +107,7 @@ class AggregateInsert implements JdbcUpdate {
         mainThreadRootTimers = toByteArray(aggregate.getMainThreadRootTimerList());
         auxThreadRootTimers = toByteArray(aggregate.getAuxThreadRootTimerList());
         asyncTimers = toByteArray(aggregate.getAsyncTimerList());
-        ThreadStats mainThreadStats = aggregate.getMainThreadStats();
+        Aggregate.ThreadStats mainThreadStats = aggregate.getMainThreadStats();
         mainThreadTotalCpuNanos = mainThreadStats.hasTotalCpuNanos()
                 ? mainThreadStats.getTotalCpuNanos().getValue() : null;
         mainThreadTotalBlockedNanos = mainThreadStats.hasTotalBlockedNanos()
@@ -118,7 +116,7 @@ class AggregateInsert implements JdbcUpdate {
                 ? mainThreadStats.getTotalWaitedNanos().getValue() : null;
         mainThreadTotalAllocatedBytes = mainThreadStats.hasTotalAllocatedBytes()
                 ? mainThreadStats.getTotalAllocatedBytes().getValue() : null;
-        ThreadStats auxThreadStats = aggregate.getAuxThreadStats();
+        Aggregate.ThreadStats auxThreadStats = aggregate.getAuxThreadStats();
         auxThreadTotalCpuNanos = auxThreadStats.hasTotalCpuNanos()
                 ? auxThreadStats.getTotalCpuNanos().getValue() : null;
         auxThreadTotalBlockedNanos = auxThreadStats.hasTotalBlockedNanos()
@@ -236,18 +234,17 @@ class AggregateInsert implements JdbcUpdate {
     }
 
     private static List<Stored.QueriesByType> convertToStored(List<Aggregate.QueriesByType> queries,
-            List<SharedQueryTextAndSha1> sharedQueries) {
+            List<TruncatedQueryText> truncatedQueryTexts) {
         List<Stored.QueriesByType> storedQueries = Lists.newArrayList();
         for (Aggregate.QueriesByType loopQueriesByType : queries) {
             Stored.QueriesByType.Builder storedQueryByType = Stored.QueriesByType.newBuilder()
                     .setType(loopQueriesByType.getType());
             for (Aggregate.Query loopQuery : loopQueriesByType.getQueryList()) {
-                SharedQueryTextAndSha1 sharedQueryText =
-                        sharedQueries.get(loopQuery.getSharedQueryTextIndex());
+                TruncatedQueryText truncatedQueryText =
+                        truncatedQueryTexts.get(loopQuery.getSharedQueryTextIndex());
                 Stored.Query.Builder storedQuery = Stored.Query.newBuilder()
-                        .setTruncatedQueryText(sharedQueryText.truncatedQueryText())
-                        .setFullQueryTextSha1(
-                                Strings.nullToEmpty(sharedQueryText.fullQueryTextSha1()))
+                        .setTruncatedText(truncatedQueryText.truncatedText())
+                        .setFullTextSha1(Strings.nullToEmpty(truncatedQueryText.fullTextSha1()))
                         .setTotalDurationNanos(loopQuery.getTotalDurationNanos())
                         .setExecutionCount(loopQuery.getExecutionCount());
                 if (loopQuery.hasTotalRows()) {
@@ -272,8 +269,8 @@ class AggregateInsert implements JdbcUpdate {
                     .setType(entry.getKey());
             for (MutableQuery query : entry.getValue()) {
                 Stored.Query.Builder storedQuery = Stored.Query.newBuilder()
-                        .setTruncatedQueryText(query.getTruncatedQueryText())
-                        .setFullQueryTextSha1(Strings.nullToEmpty(query.getFullQueryTextSha1()))
+                        .setTruncatedText(query.getTruncatedText())
+                        .setFullTextSha1(Strings.nullToEmpty(query.getFullTextSha1()))
                         .setTotalDurationNanos(query.getTotalDurationNanos())
                         .setExecutionCount(query.getExecutionCount());
                 if (query.hasTotalRows()) {
@@ -297,7 +294,7 @@ class AggregateInsert implements JdbcUpdate {
     }
 
     private static @Nullable Long writeServiceCalls(CappedDatabase cappedDatabase,
-            List<ServiceCallsByType> serviceCalls) throws IOException {
+            List<Aggregate.ServiceCallsByType> serviceCalls) throws IOException {
         if (serviceCalls.isEmpty()) {
             return null;
         }

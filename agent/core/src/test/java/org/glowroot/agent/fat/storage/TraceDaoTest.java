@@ -57,7 +57,8 @@ public class TraceDaoTest {
         }
         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
         cappedDatabase = new CappedDatabase(cappedFile, 1000000, Ticker.systemTicker());
-        traceDao = new TraceDao(dataSource, cappedDatabase, mock(TransactionTypeDao.class));
+        traceDao = new TraceDao(dataSource, cappedDatabase, mock(TransactionTypeDao.class),
+                mock(FullQueryTextDao.class));
     }
 
     @After
@@ -71,7 +72,7 @@ public class TraceDaoTest {
     public void shouldReadTrace() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(AGENT_ID, trace);
+        traceDao.store(trace);
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType("unit test")
                 .from(0)
@@ -100,7 +101,7 @@ public class TraceDaoTest {
     public void shouldReadTraceWithDurationNanosQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(AGENT_ID, trace);
+        traceDao.store(trace);
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType("unit test")
                 .from(0)
@@ -122,7 +123,7 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithHighDurationNanosQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(AGENT_ID, trace);
+        traceDao.store(trace);
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType("unit test")
                 .from(0)
@@ -144,7 +145,7 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithLowDurationNanosQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(AGENT_ID, trace);
+        traceDao.store(trace);
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType("unit test")
                 .from(0)
@@ -166,7 +167,7 @@ public class TraceDaoTest {
     public void shouldReadTraceWithAttributeQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(AGENT_ID, trace);
+        traceDao.store(trace);
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType("unit test")
                 .from(0)
@@ -191,7 +192,7 @@ public class TraceDaoTest {
     public void shouldReadTraceWithAttributeQualifier2() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(AGENT_ID, trace);
+        traceDao.store(trace);
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType("unit test")
                 .from(0)
@@ -216,7 +217,7 @@ public class TraceDaoTest {
     public void shouldReadTraceWithAttributeQualifier3() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(AGENT_ID, trace);
+        traceDao.store(trace);
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType("unit test")
                 .from(0)
@@ -241,7 +242,7 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithNonMatchingAttributeQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(AGENT_ID, trace);
+        traceDao.store(trace);
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType("unit test")
                 .from(0)
@@ -266,7 +267,7 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithNonMatchingAttributeQualifier2() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(AGENT_ID, trace);
+        traceDao.store(trace);
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType("unit test")
                 .from(0)
@@ -291,7 +292,7 @@ public class TraceDaoTest {
     public void shouldDeletedTrace() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(AGENT_ID, trace);
+        traceDao.store(trace);
         // when
         traceDao.deleteBefore(100);
         // then

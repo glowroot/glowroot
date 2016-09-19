@@ -24,30 +24,22 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.RateLimiter;
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.util.Styles;
+import org.glowroot.server.util.RateLimiter;
+import org.glowroot.server.util.Sessions;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 public class TransactionTypeDao implements TransactionTypeRepository {
-
-    private static final Logger logger = LoggerFactory.getLogger(TransactionTypeDao.class);
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -58,17 +50,7 @@ public class TransactionTypeDao implements TransactionTypeRepository {
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
-    // 2-day expiration is just to periodically clean up cache
-    private final LoadingCache<TransactionTypeKey, RateLimiter> rateLimiters =
-            CacheBuilder.newBuilder()
-                    .expireAfterAccess(2, DAYS)
-                    .build(new CacheLoader<TransactionTypeKey, RateLimiter>() {
-                        @Override
-                        public RateLimiter load(TransactionTypeKey key) throws Exception {
-                            // 1 permit per 24 hours
-                            return RateLimiter.create(1 / (24 * 3600.0));
-                        }
-                    });
+    private final RateLimiter<TransactionTypeKey> rateLimiter = new RateLimiter<>();
 
     public TransactionTypeDao(Session session, ConfigRepository configRepository) {
         this.session = session;
@@ -85,7 +67,7 @@ public class TransactionTypeDao implements TransactionTypeRepository {
     }
 
     @Override
-    public Map<String, List<String>> readTransactionTypes() {
+    public Map<String, List<String>> read() {
         ResultSet results = session.execute(readPS.bind());
 
         ImmutableMap.Builder<String, List<String>> builder = ImmutableMap.builder();
@@ -110,12 +92,10 @@ public class TransactionTypeDao implements TransactionTypeRepository {
         return builder.build();
     }
 
-    void maybeUpdateLastCaptureTime(String agentRollup, String transactionType,
-            List<ResultSetFuture> futures) {
+    void store(String agentRollup, String transactionType, List<ResultSetFuture> futures) {
         TransactionTypeKey rateLimiterKey =
                 ImmutableTransactionTypeKey.of(agentRollup, transactionType);
-        RateLimiter rateLimiter = rateLimiters.getUnchecked(rateLimiterKey);
-        if (!rateLimiter.tryAcquire()) {
+        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return;
         }
         BoundStatement boundStatement = insertPS.bind();
@@ -123,28 +103,8 @@ public class TransactionTypeDao implements TransactionTypeRepository {
         boundStatement.setString(i++, agentRollup);
         boundStatement.setString(i++, transactionType);
         boundStatement.setInt(i++, getMaxTTL());
-        futures.add(executeAsyncUnderRateLimiter(session, boundStatement, rateLimiters,
-                rateLimiterKey));
-    }
-
-    static <T extends /*@NonNull*/ Object> ResultSetFuture executeAsyncUnderRateLimiter(
-            Session session, BoundStatement boundStatement,
-            LoadingCache<T, RateLimiter> rateLimiters, T rateLimiterKey) {
-        ResultSetFuture future = session.executeAsync(boundStatement);
-        future.addListener(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    // TODO report checker framework issue that occurs without checkNotNull
-                    checkNotNull(future).getUninterruptibly();
-                } catch (Exception e) {
-                    logger.debug(e.getMessage(), e);
-                    // insert was unsuccessful so important to return rate limiter token
-                    rateLimiters.invalidate(rateLimiterKey);
-                }
-            }
-        }, MoreExecutors.directExecutor());
-        return future;
+        futures.add(Sessions.executeAsyncWithOnFailure(session, boundStatement,
+                () -> rateLimiter.invalidate(rateLimiterKey)));
     }
 
     private int getMaxTTL() {

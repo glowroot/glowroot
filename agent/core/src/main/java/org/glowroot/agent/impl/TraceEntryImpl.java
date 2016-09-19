@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.impl;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -33,10 +34,12 @@ import org.glowroot.agent.model.QueryData;
 import org.glowroot.agent.model.QueryEntryBase;
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
 import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
 import org.glowroot.agent.plugin.api.internal.ReadableMessage;
+import org.glowroot.agent.plugin.api.internal.ReadableQueryMessage;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -51,7 +54,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
 
     private final ThreadContextImpl threadContext;
     private final @Nullable TraceEntryImpl parentTraceEntry;
-    private final @Nullable MessageSupplier messageSupplier;
+    private final @Nullable Object messageSupplier;
 
     // volatile so it can be set from another thread (needed for async trace entries)
     private volatile @Nullable ErrorMessage errorMessage;
@@ -78,10 +81,10 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     // only used by transaction thread
     private @MonotonicNonNull TimerImpl extendedTimer;
 
-    TraceEntryImpl(ThreadContextImpl threadContext,
-            @Nullable TraceEntryImpl parentTraceEntry, @Nullable MessageSupplier messageSupplier,
-            @Nullable QueryData queryData, long queryExecutionCount, long startTick,
-            @Nullable TimerImpl syncTimer, @Nullable AsyncTimerImpl asyncTimer) {
+    TraceEntryImpl(ThreadContextImpl threadContext, @Nullable TraceEntryImpl parentTraceEntry,
+            @Nullable Object messageSupplier, @Nullable QueryData queryData,
+            long queryExecutionCount, long startTick, @Nullable TimerImpl syncTimer,
+            @Nullable AsyncTimerImpl asyncTimer) {
         super(queryData);
         this.threadContext = threadContext;
         this.parentTraceEntry = parentTraceEntry;
@@ -97,7 +100,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     }
 
     @Override
-    public @Nullable MessageSupplier getMessageSupplier() {
+    public @Nullable Object getMessageSupplier() {
         return messageSupplier;
     }
 
@@ -106,7 +109,8 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         return errorMessage;
     }
 
-    Trace.Entry toProto(int depth, long transactionStartTick, long captureTick) {
+    Trace.Entry toProto(int depth, long transactionStartTick, long captureTick,
+            Map<String, Integer> sharedQueryTextIndexes) {
         long offsetNanos = startTick - transactionStartTick;
         long durationNanos;
         boolean active;
@@ -120,9 +124,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
             durationNanos = Math.max(captureTick - revisedStartTick, 0);
             active = true;
         }
-        MessageSupplier messageSupplier = getMessageSupplier();
-        ReadableMessage message =
-                messageSupplier == null ? null : (ReadableMessage) messageSupplier.get();
+        Object messageSupplier = getMessageSupplier();
 
         Trace.Entry.Builder builder = Trace.Entry.newBuilder()
                 .setDepth(depth)
@@ -131,21 +133,35 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
                 .setActive(active);
 
         // async root entry always has empty message and empty detail
-        if (message == null) {
-            builder.setMessage("");
-        } else {
+
+        if (messageSupplier instanceof MessageSupplier) {
+            ReadableMessage readableMessage =
+                    (ReadableMessage) ((MessageSupplier) messageSupplier).get();
+            builder.setMessage(readableMessage.getText());
+            builder.addAllDetailEntry(DetailMapWriter.toProto(readableMessage.getDetail()));
+        } else if (messageSupplier instanceof QueryMessageSupplier) {
+            String queryText = checkNotNull(getQueryText());
+            Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(queryText);
+            if (sharedQueryTextIndex == null) {
+                sharedQueryTextIndex = sharedQueryTextIndexes.size();
+                sharedQueryTextIndexes.put(queryText, sharedQueryTextIndex);
+            }
+            ReadableQueryMessage readableQueryMessage =
+                    (ReadableQueryMessage) ((QueryMessageSupplier) messageSupplier).get();
+            Trace.QueryEntryMessage.Builder queryMessage = Trace.QueryEntryMessage.newBuilder()
+                    .setSharedQueryTextIndex(sharedQueryTextIndex)
+                    .setPrefix(readableQueryMessage.getPrefix());
             String rowCountSuffix = getRowCountSuffix();
             if (rowCountSuffix.isEmpty()) {
                 // optimization to avoid creating new string when concatenating empty string
-                // since message text is often long sql
-                builder.setMessage(message.getText());
+                queryMessage.setSuffix(readableQueryMessage.getSuffix());
             } else {
-                builder.setMessage(message.getText() + rowCountSuffix);
+                queryMessage.setSuffix(readableQueryMessage.getSuffix() + rowCountSuffix);
             }
+            builder.setQueryEntryMessage(queryMessage);
+            builder.addAllDetailEntry(DetailMapWriter.toProto(readableQueryMessage.getDetail()));
         }
-        if (message != null) {
-            builder.addAllDetailEntry(DetailMapWriter.toProto(message.getDetail()));
-        }
+
         ErrorMessage errorMessage = this.errorMessage;
         if (errorMessage != null) {
             Trace.Error.Builder errorBuilder = builder.getErrorBuilder();
@@ -407,11 +423,17 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
         return syncTimer.extend();
     }
 
-    // this is used for debugging, in particular in TraceEntryComponent.popEntryBailout()
+    // this is used for logging, in particular in TraceEntryComponent.popEntryBailout()
+    // and in ThreadContextImpl.populateParentChildMap()
     @Override
     public String toString() {
-        if (messageSupplier != null) {
-            return ((ReadableMessage) messageSupplier.get()).getText();
+        if (messageSupplier instanceof MessageSupplier) {
+            return ((ReadableMessage) ((MessageSupplier) messageSupplier).get()).getText();
+        } else if (messageSupplier instanceof QueryMessageSupplier) {
+            ReadableQueryMessage readableQueryMessage =
+                    (ReadableQueryMessage) ((QueryMessageSupplier) messageSupplier).get();
+            return readableQueryMessage.getPrefix() + checkNotNull(getQueryText())
+                    + readableQueryMessage.getSuffix();
         }
         if (errorMessage != null) {
             return errorMessage.message();
