@@ -85,7 +85,12 @@ class HttpServer {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ChannelPipeline p = ch.pipeline();
-                        p.addLast(new HttpServerCodec());
+                        // bumping maxInitialLineLength (first arg below) from default 4096 to 32768
+                        // in order to handle long urls on /jvm/gauges view
+                        // bumping maxHeaderSize (second arg below) from default 8192 to 32768 for
+                        // same reason due to "Referer" header once url becomes huge
+                        // leaving maxChunkSize (third arg below) at default 8192
+                        p.addLast(new HttpServerCodec(32768, 32768, 8192));
                         p.addLast(new HttpObjectAggregator(1048576));
                         p.addLast(new ConditionalHttpContentCompressor());
                         p.addLast(new ChunkedWriteHandler());

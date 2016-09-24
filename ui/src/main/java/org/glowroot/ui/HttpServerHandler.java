@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -183,6 +184,10 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         FullHttpRequest request = (FullHttpRequest) msg;
+        if (request.decoderResult().isFailure()) {
+            sendBadRequest(ctx, request.decoderResult().cause().getMessage());
+            return;
+        }
         logger.debug("channelRead(): request.uri={}", request.uri());
         Channel channel = ctx.channel();
         currentChannel.set(channel);
@@ -239,6 +244,19 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         if (!keepAlive) {
             f.addListener(ChannelFutureListener.CLOSE);
         }
+    }
+
+    // TODO report checker framework issue that occurs without this suppression
+    @SuppressWarnings("argument.type.incompatible")
+    private void sendBadRequest(ChannelHandlerContext ctx, @Nullable String message) {
+        ByteBuf byteBuf = Unpooled.copiedBuffer(Strings.nullToEmpty(message), Charsets.ISO_8859_1);
+        DefaultFullHttpResponse response =
+                new DefaultFullHttpResponse(HTTP_1_1, BAD_REQUEST, byteBuf);
+        response.headers().add(HttpHeaderNames.CONTENT_TYPE, MediaType.PLAIN_TEXT_UTF_8);
+        response.headers().add(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
+        HttpServices.preventCaching(response);
+        ChannelFuture f = ctx.write(response);
+        f.addListener(ChannelFutureListener.CLOSE);
     }
 
     // TODO report checker framework issue that occurs without this suppression
