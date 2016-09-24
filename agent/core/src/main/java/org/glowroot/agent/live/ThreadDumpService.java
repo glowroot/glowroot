@@ -172,10 +172,13 @@ class ThreadDumpService {
                     .setLineNumber(stackTraceElement.getLineNumber()));
         }
         for (MonitorInfo lockedMonitor : threadInfo.getLockedMonitors()) {
-            stackTraceElements.get(lockedMonitor.getLockedStackDepth())
-                    .addMonitorInfo(ThreadDump.LockInfo.newBuilder()
-                            .setClassName(lockedMonitor.getClassName())
-                            .setIdentityHashCode(lockedMonitor.getIdentityHashCode()));
+            int lockedStackDepth = lockedMonitor.getLockedStackDepth();
+            if (lockedStackDepth >= 0) {
+                stackTraceElements.get(lockedStackDepth)
+                        .addMonitorInfo(ThreadDump.LockInfo.newBuilder()
+                                .setClassName(lockedMonitor.getClassName())
+                                .setIdentityHashCode(lockedMonitor.getIdentityHashCode()));
+            }
         }
         for (ThreadDump.StackTraceElement.Builder stackTraceElement : stackTraceElements) {
             builder.addStackTraceElement(stackTraceElement);
