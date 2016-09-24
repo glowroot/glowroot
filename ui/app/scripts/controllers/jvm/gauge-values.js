@@ -31,6 +31,9 @@ glowroot.controller('JvmGaugeValuesCtrl', [
 
     $scope.$parent.heading = 'Gauges';
 
+    // initialize page binding object
+    $scope.page = {};
+
     var DEFAULT_GAUGES = ['java.lang:type=Memory:HeapMemoryUsage.used'];
 
     var chartState = charts.createState();
@@ -45,7 +48,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     var gaugeUnits = {};
     var gaugeGrouping = {};
 
-    $scope.gaugeFilter = '';
+    $scope.page.gaugeFilter = '';
     $scope.useGaugeViewThresholdMultiplier = true;
 
     $scope.range = {};
@@ -467,12 +470,12 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       if (!$scope.allGauges) {
         return true;
       }
-      var gauges = $filter('filter')($scope.allGauges, {display: $scope.gaugeFilter});
+      var gauges = $filter('filter')($scope.allGauges, {display: $scope.page.gaugeFilter});
       return gauges.length === $scope.allGauges.length;
     };
 
     $scope.selectAllGauges = function () {
-      var gauges = $filter('filter')($scope.allGauges, {display: $scope.gaugeFilter});
+      var gauges = $filter('filter')($scope.allGauges, {display: $scope.page.gaugeFilter});
       angular.forEach(gauges, function (gauge) {
         var index = $scope.gaugeNames.indexOf(gauge.name);
         if (index === -1) {
@@ -482,7 +485,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     };
 
     $scope.deselectAllGauges = function () {
-      var gauges = $filter('filter')($scope.allGauges, {display: $scope.gaugeFilter});
+      var gauges = $filter('filter')($scope.allGauges, {display: $scope.page.gaugeFilter});
       angular.forEach(gauges, function (gauge) {
         var index = $scope.gaugeNames.indexOf(gauge.name);
         if (index !== -1) {

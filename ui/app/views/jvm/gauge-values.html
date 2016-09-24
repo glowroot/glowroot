@@ -111,13 +111,13 @@
           <td style="padding: 8px 20px 5px 20px;">
             <input type="text"
                    class="form-control gt-inline-block"
-                   ng-model="gaugeFilter"
+                   ng-model="page.gaugeFilter"
                    placeholder="filter the gauge list">
           </td>
           <td></td>
           <td></td>
         </tr>
-        <tr ng-repeat="gauge in allGauges | filter:{display: gaugeFilter}">
+        <tr ng-repeat="gauge in allGauges | filter:{display: page.gaugeFilter}">
           <td style="padding-left: 0;">
             <div class="checkbox gt-gauge-second-line-indent" style="margin-top: 0; margin-bottom: 0;">
               <label ng-style="gaugeNameStyle(gauge.name)">
@@ -145,12 +145,12 @@
               colspan="3">
             <input type="text"
                    class="form-control gt-inline-block"
-                   ng-model="gaugeFilter"
+                   ng-model="page.gaugeFilter"
                    placeholder="filter the gauge list"
                    style="max-width: 358px;">
           </td>
         </tr>
-        <tr ng-repeat-start="gauge in allGauges | filter:{display: gaugeFilter}">
+        <tr ng-repeat-start="gauge in allGauges | filter:{display: page.gaugeFilter}">
           <td style="padding-left: 0;"
               colspan="3">
             <div class="checkbox gt-gauge-second-line-indent" style="margin-top: 0; margin-bottom: 0;">
