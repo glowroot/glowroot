@@ -141,6 +141,8 @@ public class DataSource {
                 return;
             }
             Statement statement = connection.createStatement();
+            // setQueryTimeout() affects all statements of this connection (at least with h2)
+            statement.setQueryTimeout(0);
             StatementCloser closer = new StatementCloser(statement);
             try {
                 statement.execute(sql);
@@ -217,9 +219,8 @@ public class DataSource {
             if (closing) {
                 return jdbcQuery.valueIfDataSourceClosing();
             }
-            PreparedStatement preparedStatement = prepareStatement(jdbcQuery.getSql());
-            // setQueryTimeout() affects all statements of this connection (at least with h2)
-            preparedStatement.setQueryTimeout(QUERY_TIMEOUT_SECONDS);
+            PreparedStatement preparedStatement =
+                    prepareStatement(jdbcQuery.getSql(), QUERY_TIMEOUT_SECONDS);
             jdbcQuery.bind(preparedStatement);
             ResultSet resultSet = preparedStatement.executeQuery();
             ResultSetCloser closer = new ResultSetCloser(resultSet);
@@ -252,9 +253,8 @@ public class DataSource {
             if (closing) {
                 return ImmutableList.of();
             }
-            PreparedStatement preparedStatement = prepareStatement(jdbcQuery.getSql());
-            // setQueryTimeout() affects all statements of this connection (at least with h2)
-            preparedStatement.setQueryTimeout(QUERY_TIMEOUT_SECONDS);
+            PreparedStatement preparedStatement =
+                    prepareStatement(jdbcQuery.getSql(), QUERY_TIMEOUT_SECONDS);
             jdbcQuery.bind(preparedStatement);
             ResultSet resultSet = preparedStatement.executeQuery();
             ResultSetCloser closer = new ResultSetCloser(resultSet);
@@ -301,10 +301,8 @@ public class DataSource {
             if (closing) {
                 return 0;
             }
-            PreparedStatement preparedStatement = prepareStatement(jdbcUpdate.getSql());
+            PreparedStatement preparedStatement = prepareStatement(jdbcUpdate.getSql(), 0);
             jdbcUpdate.bind(preparedStatement);
-            // setQueryTimeout() affects all statements of this connection (at least with h2)
-            preparedStatement.setQueryTimeout(0);
             return preparedStatement.executeUpdate();
             // don't need to close statement since they are all cached and used under lock
         }
@@ -322,10 +320,8 @@ public class DataSource {
             if (closing) {
                 return new int[0];
             }
-            PreparedStatement preparedStatement = prepareStatement(jdbcUpdate.getSql());
+            PreparedStatement preparedStatement = prepareStatement(jdbcUpdate.getSql(), 0);
             jdbcUpdate.bind(preparedStatement);
-            // setQueryTimeout() affects all statements of this connection (at least with h2)
-            preparedStatement.setQueryTimeout(0);
             return preparedStatement.executeBatch();
             // don't need to close statement since they are all cached and used under lock
         }
@@ -412,12 +408,10 @@ public class DataSource {
     // lock must be acquired prior to calling this method
     private <T extends /*@Nullable*/ Object> T queryUnderLock(@Untainted String sql, Object[] args,
             ResultSetExtractor<T> rse) throws SQLException {
-        PreparedStatement preparedStatement = prepareStatement(sql);
+        PreparedStatement preparedStatement = prepareStatement(sql, QUERY_TIMEOUT_SECONDS);
         for (int i = 0; i < args.length; i++) {
             preparedStatement.setObject(i + 1, args[i]);
         }
-        // setQueryTimeout() affects all statements of this connection (at least with h2)
-        preparedStatement.setQueryTimeout(QUERY_TIMEOUT_SECONDS);
         ResultSet resultSet = preparedStatement.executeQuery();
         ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
@@ -430,9 +424,13 @@ public class DataSource {
         // don't need to close statement since they are all cached and used under lock
     }
 
-    private PreparedStatement prepareStatement(@Untainted String sql) throws SQLException {
+    private PreparedStatement prepareStatement(@Untainted String sql, int queryTimeoutSeconds)
+            throws SQLException {
         try {
-            return preparedStatementCache.get(sql);
+            PreparedStatement preparedStatement = preparedStatementCache.get(sql);
+            // setQueryTimeout() affects all statements of this connection (at least with h2)
+            preparedStatement.setQueryTimeout(queryTimeoutSeconds);
+            return preparedStatement;
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
             Throwables.propagateIfPossible(cause, SQLException.class);
