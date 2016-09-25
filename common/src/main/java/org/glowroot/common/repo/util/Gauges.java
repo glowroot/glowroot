@@ -48,16 +48,14 @@ public class Gauges {
         patterns.add(new UnitPattern("java.lang:type=Runtime:Uptime", "milliseconds"));
         patterns.add(new UnitPattern("java.lang:type=Threading:CurrentThread(Cpu|User)Time",
                 "nanoseconds"));
-        patterns.add(new UnitPattern("java.lang:type=MemoryPool,name=[a-zA-Z0-9 ]+:(Peak)?Usage"
+        patterns.add(new UnitPattern("java.lang:type=MemoryPool,name=[^:]+:(Peak)?Usage"
                 + "\\.(init|used|committed|max)", "bytes"));
         patterns.add(new UnitPattern(
-                "java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+:LastGcInfo\\.duration",
+                "java.lang:type=GarbageCollector,name=[^:]+:LastGcInfo\\.duration",
                 "milliseconds"));
-        patterns.add(
-                new UnitPattern("java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+:CollectionTime",
-                        "milliseconds"));
-        patterns.add(new UnitPattern(
-                "java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+:CollectionCount",
+        patterns.add(new UnitPattern("java.lang:type=GarbageCollector,name=[^:]+:CollectionTime",
+                "milliseconds"));
+        patterns.add(new UnitPattern("java.lang:type=GarbageCollector,name=[^:]+:CollectionCount",
                 GROUPING_PREFIX + "2"));
         patterns.add(
                 new UnitPattern("java.lang:type=Compilation:TotalCompilationTime", "milliseconds"));
@@ -65,10 +63,10 @@ public class Gauges {
                 "milliseconds"));
         patterns.add(new UnitPattern("sun.management:type=HotspotRuntime:TotalSafepointTime",
                 "milliseconds"));
+        patterns.add(new UnitPattern("org.glowroot:type=FileSystem,name=[^:]+:(Total|Free)Space",
+                "bytes"));
         patterns.add(
-                new UnitPattern("org.glowroot:type=FileSystem,name=.*:(Total|Free)Space", "bytes"));
-        patterns.add(
-                new UnitPattern("org.glowroot:type=FileSystem,name=.*:PercentFull", "percent"));
+                new UnitPattern("org.glowroot:type=FileSystem,name=[^:]+:PercentFull", "percent"));
         unitPatterns = ImmutableList.copyOf(patterns);
     }
 
