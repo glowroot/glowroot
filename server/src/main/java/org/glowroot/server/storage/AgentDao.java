@@ -71,8 +71,8 @@ public class AgentDao implements AgentRepository {
 
     private volatile @MonotonicNonNull ConfigRepository configRepository;
 
-    private final LoadingCache<String, Optional<AgentConfig>> cache = CacheBuilder.newBuilder()
-            .build(new CacheLoader<String, Optional<AgentConfig>>() {
+    private final LoadingCache<String, Optional<AgentConfig>> cache =
+            CacheBuilder.newBuilder().build(new CacheLoader<String, Optional<AgentConfig>>() {
                 @Override
                 public Optional<AgentConfig> load(String agentId) throws Exception {
                     return Optional.fromNullable(readAgentConfigInternal(agentId));

@@ -26,7 +26,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class RootTimerCollectorImpl implements RootTimerCollector {
 
-    List<MutableTraceTimer> rootMutableTimers = Lists.newArrayList();
+    private final List<MutableTraceTimer> rootMutableTimers = Lists.newArrayList();
 
     @Override
     public void mergeRootTimer(CommonTimerImpl rootTimer) {
@@ -41,7 +41,7 @@ class RootTimerCollectorImpl implements RootTimerCollector {
         return rootTimers;
     }
 
-    List<? extends CommonTimerImpl> getRootTimers() {
+    List<MutableTraceTimer> getRootTimers() {
         return rootMutableTimers;
     }
 
