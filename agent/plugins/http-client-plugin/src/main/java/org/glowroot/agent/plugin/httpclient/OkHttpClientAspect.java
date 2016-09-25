@@ -118,7 +118,7 @@ public class OkHttpClientAspect {
                 url = urlObj.toString();
             }
             return context.startServiceCallEntry("HTTP", method + Uris.stripQueryString(url),
-                    MessageSupplier.from("http client request: {}{}", method, url), timerName);
+                    MessageSupplier.create("http client request: {}{}", method, url), timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
@@ -166,7 +166,7 @@ public class OkHttpClientAspect {
             }
             AsyncTraceEntry asyncTraceEntry = context.startAsyncServiceCallEntry("HTTP",
                     method + Uris.stripQueryString(url),
-                    MessageSupplier.from("http client request: {}{}", method, url), timerName);
+                    MessageSupplier.create("http client request: {}{}", method, url), timerName);
             // important to inject values into callback in @OnBefore since it's possible for
             // callback to be invoked prior to @OnReturn
             callback.glowroot$setAsyncTraceEntry(asyncTraceEntry);

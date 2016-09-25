@@ -123,7 +123,7 @@ class TraceExportHttpService implements HttpService {
     private ChunkedInput<HttpContent> getExportChunkedInput(TraceExport traceExport)
             throws IOException {
         ChunkSource chunkSource = render(traceExport);
-        return ChunkedInputs.fromChunkSourceToZipFileDownload(chunkSource, traceExport.fileName());
+        return ChunkedInputs.createZipFileDownload(chunkSource, traceExport.fileName());
     }
 
     private ChunkSource render(TraceExport traceExport) throws IOException {
@@ -212,7 +212,7 @@ class TraceExportHttpService implements HttpService {
     }
 
     private static ChunkSource asChunkSource(String exportResourceName) {
-        return ChunkSource.from(asCharSource(exportResourceName));
+        return ChunkSource.create(asCharSource(exportResourceName));
     }
 
     private static CharSource asCharSource(String exportResourceName) {

@@ -36,7 +36,8 @@ public class LogCauseAspect {
 
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context, @BindParameter String message) {
-            return context.startTraceEntry(MessageSupplier.from("ERROR -- {}", message), timerName);
+            return context.startTraceEntry(MessageSupplier.create("ERROR -- {}", message),
+                    timerName);
         }
 
         @OnAfter

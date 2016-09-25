@@ -178,7 +178,7 @@ public class AdviceCache {
         for (Class<?> memberClass : aspectClass.getClasses()) {
             Shim shim = memberClass.getAnnotation(Shim.class);
             if (shim != null) {
-                shimTypes.add(ShimType.from(shim, memberClass));
+                shimTypes.add(ShimType.create(shim, memberClass));
             }
         }
         return shimTypes;
@@ -189,7 +189,7 @@ public class AdviceCache {
         for (Class<?> memberClass : aspectClass.getClasses()) {
             Mixin mixin = memberClass.getAnnotation(Mixin.class);
             if (mixin != null) {
-                mixinTypes.add(MixinType.from(mixin, memberClass));
+                mixinTypes.add(MixinType.create(mixin, memberClass));
             }
         }
         return mixinTypes;

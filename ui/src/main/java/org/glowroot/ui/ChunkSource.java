@@ -29,7 +29,7 @@ abstract class ChunkSource {
 
     public abstract ChunkCopier getCopier(Writer writer) throws IOException;
 
-    static ChunkSource from(final CharSource charSource) {
+    static ChunkSource create(final CharSource charSource) {
         return new ChunkSource() {
             @Override
             public ChunkCopier getCopier(Writer writer) throws IOException {

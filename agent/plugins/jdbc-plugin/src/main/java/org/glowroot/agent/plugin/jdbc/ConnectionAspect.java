@@ -100,7 +100,7 @@ public class ConnectionAspect {
         private static final TimerName timerName = Agent.getTimerName(CommitAdvice.class);
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context) {
-            return context.startTraceEntry(MessageSupplier.from("jdbc commit"), timerName);
+            return context.startTraceEntry(MessageSupplier.create("jdbc commit"), timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
@@ -120,7 +120,7 @@ public class ConnectionAspect {
         private static final TimerName timerName = Agent.getTimerName(RollbackAdvice.class);
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context) {
-            return context.startTraceEntry(MessageSupplier.from("jdbc rollback"), timerName);
+            return context.startTraceEntry(MessageSupplier.create("jdbc rollback"), timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
@@ -145,7 +145,7 @@ public class ConnectionAspect {
         @OnBefore
         public static Object onBefore(ThreadContext context) {
             if (captureConnectionLifecycleTraceEntries.value()) {
-                return context.startTraceEntry(MessageSupplier.from("jdbc connection close"),
+                return context.startTraceEntry(MessageSupplier.create("jdbc connection close"),
                         timerName);
             } else {
                 return context.startTimer(timerName);
@@ -183,7 +183,7 @@ public class ConnectionAspect {
         public static TraceEntry onBefore(ThreadContext context,
                 @BindParameter boolean autoCommit) {
             return context.startTraceEntry(
-                    MessageSupplier.from("jdbc set autocommit: {}", Boolean.toString(autoCommit)),
+                    MessageSupplier.create("jdbc set autocommit: {}", Boolean.toString(autoCommit)),
                     timerName);
         }
         @OnReturn

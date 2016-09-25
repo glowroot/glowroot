@@ -1547,12 +1547,12 @@ public class WeaverTest {
         List<MixinType> mixinTypes = Lists.newArrayList();
         Mixin mixin = adviceOrShimOrMixinClass.getAnnotation(Mixin.class);
         if (mixin != null) {
-            mixinTypes.add(MixinType.from(mixin, adviceOrShimOrMixinClass));
+            mixinTypes.add(MixinType.create(mixin, adviceOrShimOrMixinClass));
         }
         List<ShimType> shimTypes = Lists.newArrayList();
         Shim shim = adviceOrShimOrMixinClass.getAnnotation(Shim.class);
         if (shim != null) {
-            shimTypes.add(ShimType.from(shim, adviceOrShimOrMixinClass));
+            shimTypes.add(ShimType.create(shim, adviceOrShimOrMixinClass));
         }
         Supplier<List<Advice>> advisorsSupplier =
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
@@ -1585,12 +1585,12 @@ public class WeaverTest {
         List<MixinType> mixinTypes = Lists.newArrayList();
         Mixin mixin = adviceOrShimOrMixinClass.getAnnotation(Mixin.class);
         if (mixin != null) {
-            mixinTypes.add(MixinType.from(mixin, adviceOrShimOrMixinClass));
+            mixinTypes.add(MixinType.create(mixin, adviceOrShimOrMixinClass));
         }
         List<ShimType> shimTypes = Lists.newArrayList();
         Shim shim = adviceOrShimOrMixinClass.getAnnotation(Shim.class);
         if (shim != null) {
-            shimTypes.add(ShimType.from(shim, adviceOrShimOrMixinClass));
+            shimTypes.add(ShimType.create(shim, adviceOrShimOrMixinClass));
         }
         Supplier<List<Advice>> advisorsSupplier =
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));

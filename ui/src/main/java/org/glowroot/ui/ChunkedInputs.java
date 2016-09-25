@@ -38,12 +38,12 @@ import org.glowroot.ui.ChunkSource.ChunkCopier;
 
 class ChunkedInputs {
 
-    static ChunkedInput<HttpContent> from(ChunkSource chunkSource) throws IOException {
+    static ChunkedInput<HttpContent> create(ChunkSource chunkSource) throws IOException {
         return new ChunkSourceChunkedInput(chunkSource);
     }
 
-    static ChunkedInput<HttpContent> fromChunkSourceToZipFileDownload(ChunkSource chunkSource,
-            String fileName) throws IOException {
+    static ChunkedInput<HttpContent> createZipFileDownload(ChunkSource chunkSource, String fileName)
+            throws IOException {
         return new ZipFileChunkedInput(chunkSource, fileName);
     }
 

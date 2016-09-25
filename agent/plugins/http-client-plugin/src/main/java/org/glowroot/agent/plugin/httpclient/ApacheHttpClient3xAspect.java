@@ -70,7 +70,7 @@ public class ApacheHttpClient3xAspect {
                 uri = uriObj.toString();
             }
             return context.startServiceCallEntry("HTTP", method + Uris.stripQueryString(uri),
-                    MessageSupplier.from("http client request: {}{}", method, uri),
+                    MessageSupplier.create("http client request: {}{}", method, uri),
                     timerName);
         }
         @OnReturn

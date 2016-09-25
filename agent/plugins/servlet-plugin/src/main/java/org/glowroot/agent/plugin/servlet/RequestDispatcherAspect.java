@@ -82,7 +82,7 @@ public class RequestDispatcherAspect {
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context,
                 @BindReceiver RequestDispatcherMixin requestDispatcher) {
-            return context.startTraceEntry(MessageSupplier.from("servlet dispatch: {}",
+            return context.startTraceEntry(MessageSupplier.create("servlet dispatch: {}",
                     requestDispatcher.glowroot$getPath()), timerName);
         }
         @OnReturn

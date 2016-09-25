@@ -82,8 +82,9 @@ public class Log4j2xAspect {
                 context.setTransactionError(formattedMessage, t);
             }
             String loggerName = LoggerPlugin.getAbbreviatedLoggerName(logger.getName());
-            TraceEntry traceEntry = context.startTraceEntry(MessageSupplier.from("log {}: {} - {}",
-                    getLevelStr(lvl), loggerName, formattedMessage), timerName);
+            TraceEntry traceEntry =
+                    context.startTraceEntry(MessageSupplier.create("log {}: {} - {}",
+                            getLevelStr(lvl), loggerName, formattedMessage), timerName);
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
         @OnAfter

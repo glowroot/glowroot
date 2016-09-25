@@ -31,7 +31,7 @@ public class TraceEntryComponentTest {
         // given
         ThreadContextImpl threadContext = mock(ThreadContextImpl.class);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        when(messageSupplier.get()).thenReturn(Message.from("abc"));
+        when(messageSupplier.get()).thenReturn(Message.create("abc"));
         TimerImpl timer = mock(TimerImpl.class);
         TraceEntryComponent traceEntryComponent =
                 new TraceEntryComponent(threadContext, messageSupplier, timer, 0);
@@ -47,8 +47,8 @@ public class TraceEntryComponentTest {
         ThreadContextImpl threadContext = mock(ThreadContextImpl.class);
         MessageSupplier messageSupplier1 = mock(MessageSupplier.class);
         MessageSupplier messageSupplier2 = mock(MessageSupplier.class);
-        when(messageSupplier1.get()).thenReturn(Message.from("abc"));
-        when(messageSupplier2.get()).thenReturn(Message.from("xyz"));
+        when(messageSupplier1.get()).thenReturn(Message.create("abc"));
+        when(messageSupplier2.get()).thenReturn(Message.create("xyz"));
         TimerImpl timer1 = mock(TimerImpl.class);
         TimerImpl timer2 = mock(TimerImpl.class);
         TraceEntryComponent traceEntryComponent =
@@ -66,8 +66,8 @@ public class TraceEntryComponentTest {
         ThreadContextImpl threadContext = mock(ThreadContextImpl.class);
         MessageSupplier messageSupplier1 = mock(MessageSupplier.class);
         MessageSupplier messageSupplier2 = mock(MessageSupplier.class);
-        when(messageSupplier1.get()).thenReturn(Message.from("abc"));
-        when(messageSupplier2.get()).thenReturn(Message.from("xyz"));
+        when(messageSupplier1.get()).thenReturn(Message.create("abc"));
+        when(messageSupplier2.get()).thenReturn(Message.create("xyz"));
         TimerImpl timer1 = mock(TimerImpl.class);
         TimerImpl timer2 = mock(TimerImpl.class);
         TraceEntryComponent traceEntryComponent =

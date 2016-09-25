@@ -29,7 +29,7 @@ public class QueryResultTest {
         // given
         ImmutableList<String> records = ImmutableList.of("a");
         // when
-        Result<String> queryResult = Result.from(records, 2);
+        Result<String> queryResult = Result.create(records, 2);
         // then
         assertThat(queryResult.records()).hasSize(1);
         assertThat(queryResult.moreAvailable()).isFalse();
@@ -40,7 +40,7 @@ public class QueryResultTest {
         // given
         ImmutableList<String> records = ImmutableList.of("a", "b");
         // when
-        Result<String> queryResult = Result.from(records, 2);
+        Result<String> queryResult = Result.create(records, 2);
         // then
         assertThat(queryResult.records()).hasSize(2);
         assertThat(queryResult.moreAvailable()).isFalse();
@@ -51,7 +51,7 @@ public class QueryResultTest {
         // given
         ImmutableList<String> records = ImmutableList.of("a", "b", "c");
         // when
-        Result<String> queryResult = Result.from(records, 2);
+        Result<String> queryResult = Result.create(records, 2);
         // then
         assertThat(queryResult.records()).hasSize(2);
         assertThat(queryResult.moreAvailable()).isTrue();

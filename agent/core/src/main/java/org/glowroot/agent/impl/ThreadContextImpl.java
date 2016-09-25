@@ -69,7 +69,7 @@ import static org.glowroot.agent.util.Checkers.castInitialized;
 public class ThreadContextImpl implements ThreadContextPlus {
 
     private static final MessageSupplier DETACHED_MESSAGE_SUPPLIER = MessageSupplier
-            .from("this auxiliary thread was still running when the transaction ended");
+            .create("this auxiliary thread was still running when the transaction ended");
 
     private static final Logger logger = LoggerFactory.getLogger(ThreadContextImpl.class);
 
@@ -800,7 +800,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         if (transaction.allowAnotherErrorEntry()) {
             long currTick = ticker.read();
             ErrorMessage errorMessage =
-                    ErrorMessage.from(message, t, transaction.getThrowableFrameLimitCounter());
+                    ErrorMessage.create(message, t, transaction.getThrowableFrameLimitCounter());
             org.glowroot.agent.impl.TraceEntryImpl entry =
                     addErrorEntry(currTick, currTick, null, null, errorMessage);
             if (t == null) {
@@ -941,8 +941,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
             long endTick = ticker.read();
             endInternal(endTick);
             if (transaction.allowAnotherErrorEntry()) {
-                ErrorMessage errorMessage =
-                        ErrorMessage.from(message, t, transaction.getThrowableFrameLimitCounter());
+                ErrorMessage errorMessage = ErrorMessage.create(message, t,
+                        transaction.getThrowableFrameLimitCounter());
                 // entry won't be nested properly, but at least the error will get captured
                 org.glowroot.agent.impl.TraceEntryImpl entry = addErrorEntry(startTick, endTick,
                         messageSupplier, getQueryData(), errorMessage);

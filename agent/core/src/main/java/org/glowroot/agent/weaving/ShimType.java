@@ -30,7 +30,7 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 @Value.Immutable
 abstract class ShimType {
 
-    static ShimType from(Shim shim, Class<?> iface) throws IOException {
+    static ShimType create(Shim shim, Class<?> iface) throws IOException {
         ImmutableShimType.Builder builder = ImmutableShimType.builder();
         String value = shim.value();
         Pattern pattern = AdviceBuilder.buildPattern(value);

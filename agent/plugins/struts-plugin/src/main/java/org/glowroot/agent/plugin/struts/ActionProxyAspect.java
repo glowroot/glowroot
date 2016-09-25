@@ -54,7 +54,7 @@ public class ActionProxyAspect {
             String methodName = actionMethod != null ? actionMethod : "execute";
             context.setTransactionName(actionClass.getSimpleName() + "#" + methodName,
                     Priority.CORE_PLUGIN);
-            return context.startTraceEntry(MessageSupplier.from("struts action: {}.{}()",
+            return context.startTraceEntry(MessageSupplier.create("struts action: {}.{}()",
                     actionClass.getName(), methodName), timerName);
         }
 
@@ -84,7 +84,7 @@ public class ActionProxyAspect {
             context.setTransactionName(actionClass.getSimpleName() + "#execute",
                     Priority.CORE_PLUGIN);
             return context.startTraceEntry(
-                    MessageSupplier.from("struts action: {}.execute()", actionClass.getName()),
+                    MessageSupplier.create("struts action: {}.execute()", actionClass.getName()),
                     timerName);
         }
 

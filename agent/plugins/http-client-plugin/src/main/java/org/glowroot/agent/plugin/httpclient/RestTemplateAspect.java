@@ -50,7 +50,7 @@ public class RestTemplateAspect {
                 @BindParameter HttpMethod method) {
             String url = uri.toString();
             return context.startServiceCallEntry("HTTP", method + " " + Uris.stripQueryString(url),
-                    MessageSupplier.from("http client request: {} {}", method.name(), url),
+                    MessageSupplier.create("http client request: {} {}", method.name(), url),
                     timerName);
         }
         @OnReturn

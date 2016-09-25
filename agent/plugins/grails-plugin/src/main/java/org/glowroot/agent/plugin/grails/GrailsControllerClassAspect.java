@@ -54,7 +54,7 @@ public class GrailsControllerClassAspect {
             String actionName = action == null ? grailsController.getDefaultAction() : action;
             context.setTransactionName(grailsController.getName() + "#" + actionName,
                     Priority.CORE_PLUGIN);
-            return context.startTraceEntry(MessageSupplier.from("grails controller: {}.{}()",
+            return context.startTraceEntry(MessageSupplier.create("grails controller: {}.{}()",
                     grailsController.getFullName(), actionName), timerName);
         }
 

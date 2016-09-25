@@ -26,39 +26,39 @@ public class MessageTest {
 
     @Test
     public void shouldFormatConstant() {
-        ReadableMessage message = (ReadableMessage) Message.from("constant");
+        ReadableMessage message = (ReadableMessage) Message.create("constant");
         assertThat(message.getText()).isEqualTo("constant");
     }
 
     @Test
     public void shouldFormatSingle() {
-        ReadableMessage message = (ReadableMessage) Message.from("{}", "test");
+        ReadableMessage message = (ReadableMessage) Message.create("{}", "test");
         assertThat(message.getText()).isEqualTo("test");
     }
 
     @Test
     public void shouldFormatSinglePlus() {
-        ReadableMessage message = (ReadableMessage) Message.from("one {} two", "test");
+        ReadableMessage message = (ReadableMessage) Message.create("one {} two", "test");
         assertThat(message.getText()).isEqualTo("one test two");
     }
 
     @Test
     public void shouldFormatMultiple() {
         ReadableMessage message =
-                (ReadableMessage) Message.from("one {} two {}{}", "test", "2", "3");
+                (ReadableMessage) Message.create("one {} two {}{}", "test", "2", "3");
         assertThat(message.getText()).isEqualTo("one test two 23");
     }
 
     @Test
     public void shouldFormatConstantWithEmptyMethodBody() {
-        ReadableMessage message = (ReadableMessage) Message.from("public void run() {}");
+        ReadableMessage message = (ReadableMessage) Message.create("public void run() {}");
         assertThat(message.getText()).isEqualTo("public void run() {}");
     }
 
     @Test
     public void shouldTruncate() {
         String longString = Strings.repeat("a", 512 * 1024);
-        ReadableMessage message = (ReadableMessage) Message.from("{}", longString + "a");
+        ReadableMessage message = (ReadableMessage) Message.create("{}", longString + "a");
         assertThat(message.getText())
                 .isEqualTo(longString + " [truncated to " + 512 * 1024 + " characters]");
     }
@@ -66,20 +66,20 @@ public class MessageTest {
     @Test
     public void shouldNotTruncate() {
         String longString = Strings.repeat("a", 512 * 1024);
-        ReadableMessage message = (ReadableMessage) Message.from("{}", longString);
+        ReadableMessage message = (ReadableMessage) Message.create("{}", longString);
         assertThat(message.getText()).isEqualTo(longString);
     }
 
     @Test
     public void shouldTestNotEnoughArgsForTemplate() {
-        ReadableMessage message = (ReadableMessage) Message.from("{}, {} xyz {}", "test");
+        ReadableMessage message = (ReadableMessage) Message.create("{}, {} xyz {}", "test");
         assertThat(message.getText()).isEqualTo("test, <not enough args provided for template> xyz"
                 + " <not enough args provided for template>");
     }
 
     @Test
     public void shouldTestNullTemplate() {
-        ReadableMessage message = (ReadableMessage) Message.from(null);
+        ReadableMessage message = (ReadableMessage) Message.create(null);
         assertThat(message.getText()).isEqualTo("");
     }
 }

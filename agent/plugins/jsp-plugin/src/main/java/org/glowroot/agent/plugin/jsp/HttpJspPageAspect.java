@@ -42,7 +42,7 @@ public class HttpJspPageAspect {
         public static TraceEntry onBefore(ThreadContext context, @BindReceiver Object httpJspPage) {
             // get filename from classname
             String filename = HttpJspPages.getFilename(httpJspPage.getClass());
-            return context.startTraceEntry(MessageSupplier.from("jsp render: {}", filename),
+            return context.startTraceEntry(MessageSupplier.create("jsp render: {}", filename),
                     timerName);
         }
 

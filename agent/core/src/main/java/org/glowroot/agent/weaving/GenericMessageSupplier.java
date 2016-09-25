@@ -79,7 +79,7 @@ public class GenericMessageSupplier extends MessageSupplier {
 
     @Override
     public Message get() {
-        return Message.from(getMessageText());
+        return Message.create(getMessageText());
     }
 
     @UsedByGeneratedBytecode

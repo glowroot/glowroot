@@ -247,7 +247,7 @@ public class TraceDao implements TraceRepository {
         // one extra record over the limit is fetched above to identify if the limit was hit
         return ImmutableErrorMessageResult.builder()
                 .addAllPoints(points)
-                .counts(Result.from(counts, limit))
+                .counts(Result.create(counts, limit))
                 .build();
     }
 
@@ -331,7 +331,7 @@ public class TraceDao implements TraceRepository {
                 new TracePointQueryBuilder(traceKind, query, filter, limit).getParameterizedSql();
         List<TracePoint> points = dataSource.query(new TracePointQuery(parameterizedSql));
         // one extra record over the limit is fetched above to identify if the limit was hit
-        return Result.from(points, limit);
+        return Result.create(points, limit);
     }
 
     private static void appendQueryAndFilter(StringBuilder sql, TraceQuery query,

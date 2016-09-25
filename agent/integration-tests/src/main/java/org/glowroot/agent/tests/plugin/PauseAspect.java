@@ -45,7 +45,7 @@ public class PauseAspect {
 
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context) {
-            return context.startTraceEntry(MessageSupplier.from("Pause.pauseOneMillisecond()"),
+            return context.startTraceEntry(MessageSupplier.create("Pause.pauseOneMillisecond()"),
                     timerName);
         }
 

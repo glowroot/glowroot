@@ -97,8 +97,8 @@ public class SprayAspect {
             } else {
                 message = methodObj.toString() + " " + uri;
             }
-            TraceEntry traceEntry =
-                    context.startTransaction("Web", path, MessageSupplier.from(message), timerName);
+            TraceEntry traceEntry = context.startTransaction("Web", path,
+                    MessageSupplier.create(message), timerName);
             context.setAsyncTransaction();
             return traceEntry;
         }

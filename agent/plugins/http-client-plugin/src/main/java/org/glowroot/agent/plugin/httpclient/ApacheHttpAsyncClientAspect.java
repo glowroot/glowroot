@@ -130,7 +130,7 @@ public class ApacheHttpAsyncClientAspect {
             }
             AsyncTraceEntry asyncTraceEntry = context.startAsyncServiceCallEntry("HTTP",
                     method + Uris.stripQueryString(uri),
-                    MessageSupplier.from("http client request: {}{}", method, uri), timerName);
+                    MessageSupplier.create("http client request: {}{}", method, uri), timerName);
             asyncTraceEntryHolder.set(asyncTraceEntry);
             return asyncTraceEntry;
         }
@@ -180,10 +180,10 @@ public class ApacheHttpAsyncClientAspect {
             if (uri == null) {
                 uri = "";
             }
-            AsyncTraceEntry asyncTraceEntry =
-                    context.startAsyncServiceCallEntry("HTTP", method + Uris.stripQueryString(uri),
-                            MessageSupplier.from("http client request: {}{}{}", method, host, uri),
-                            timerName);
+            AsyncTraceEntry asyncTraceEntry = context.startAsyncServiceCallEntry("HTTP",
+                    method + Uris.stripQueryString(uri),
+                    MessageSupplier.create("http client request: {}{}{}", method, host, uri),
+                    timerName);
             asyncTraceEntryHolder.set(asyncTraceEntry);
             return asyncTraceEntry;
         }

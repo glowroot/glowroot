@@ -117,7 +117,7 @@ public class ResourceAspect {
                         requestInfo.servletPath, resourceMethodMeta.getPath());
                 context.setTransactionName(transactionName, Priority.CORE_PLUGIN);
             }
-            return context.startTraceEntry(MessageSupplier.from("jaxrs resource: {}.{}()",
+            return context.startTraceEntry(MessageSupplier.create("jaxrs resource: {}.{}()",
                     resourceMethodMeta.getResourceClassName(), resourceMethodMeta.getMethodName()),
                     timerName);
         }

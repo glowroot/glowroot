@@ -83,7 +83,7 @@ class ServletMessageSupplier extends MessageSupplier {
             detail.put("Response headers", responseHeaderStrings);
         }
         addSessionAttributeDetail(detail);
-        return Message.from(requestUri, detail);
+        return Message.create(requestUri, detail);
     }
 
     boolean isRequestParametersCaptured() {

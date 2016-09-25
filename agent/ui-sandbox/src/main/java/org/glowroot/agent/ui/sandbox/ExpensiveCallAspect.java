@@ -291,7 +291,7 @@ public class ExpensiveCallAspect {
             return null;
         }
         MessageSupplier messageSupplier =
-                MessageSupplier.from(expensiveCallInvoker.getTraceEntryMessage(expensiveCall));
+                MessageSupplier.create(expensiveCallInvoker.getTraceEntryMessage(expensiveCall));
         return context.startTraceEntry(messageSupplier, timerName);
     }
 

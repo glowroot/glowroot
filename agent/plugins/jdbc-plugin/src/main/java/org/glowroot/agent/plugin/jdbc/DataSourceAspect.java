@@ -120,9 +120,9 @@ public class DataSourceAspect {
         @Override
         public Message get() {
             if (autoCommit == null) {
-                return Message.from("jdbc get connection");
+                return Message.create("jdbc get connection");
             } else {
-                return Message.from("jdbc get connection (autocommit: {})", autoCommit);
+                return Message.create("jdbc get connection (autocommit: {})", autoCommit);
             }
         }
 

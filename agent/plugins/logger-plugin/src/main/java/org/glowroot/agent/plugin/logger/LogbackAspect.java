@@ -95,7 +95,7 @@ public class LogbackAspect {
             }
             TraceEntry traceEntry;
             String loggerName = LoggerPlugin.getAbbreviatedLoggerName(loggingEvent.getLoggerName());
-            traceEntry = context.startTraceEntry(MessageSupplier.from("log {}: {} - {}",
+            traceEntry = context.startTraceEntry(MessageSupplier.create("log {}: {} - {}",
                     getLevelStr(lvl), loggerName, formattedMessage), timerName);
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
@@ -141,8 +141,9 @@ public class LogbackAspect {
             }
             String loggerName =
                     LoggerPlugin.getAbbreviatedLoggerName(invoker.getLoggerName(logger));
-            TraceEntry traceEntry = context.startTraceEntry(MessageSupplier.from("log {}: {} - {}",
-                    getLevelStr(lvl), loggerName, formattedMessage), timerName);
+            TraceEntry traceEntry =
+                    context.startTraceEntry(MessageSupplier.create("log {}: {} - {}",
+                            getLevelStr(lvl), loggerName, formattedMessage), timerName);
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
         @OnAfter

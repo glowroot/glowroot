@@ -38,7 +38,7 @@ public class TraceEntryWorthyAspect {
 
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context) {
-            return context.startTraceEntry(MessageSupplier.from("trace entry worthy"), timerName);
+            return context.startTraceEntry(MessageSupplier.create("trace entry worthy"), timerName);
         }
 
         @OnThrow

@@ -40,7 +40,7 @@ public class TransactionWorthyAspect {
         @OnBefore
         public static TraceEntry onBefore(OptionalThreadContext context) {
             return context.startTransaction("Microbenchmark", "transaction worthy",
-                    MessageSupplier.from("transaction worthy"), timerName);
+                    MessageSupplier.create("transaction worthy"), timerName);
         }
 
         @OnReturn

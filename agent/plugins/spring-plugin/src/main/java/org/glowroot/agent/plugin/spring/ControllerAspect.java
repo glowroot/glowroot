@@ -112,7 +112,7 @@ public class ControllerAspect {
                             Priority.CORE_PLUGIN);
                 }
             }
-            return context.startTraceEntry(MessageSupplier.from("spring controller: {}.{}()",
+            return context.startTraceEntry(MessageSupplier.create("spring controller: {}.{}()",
                     controllerMethodMeta.getControllerClassName(),
                     controllerMethodMeta.getMethodName()), timerName);
         }

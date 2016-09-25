@@ -49,7 +49,7 @@ public class TraceGeneratorAspect {
             String error = traceGeneratorInvoker.error(traceGenerator);
 
             TraceEntry traceEntry = context.startTransaction(transactionType, transactionName,
-                    MessageSupplier.from(headline), timerName);
+                    MessageSupplier.create(headline), timerName);
             if (attributes != null) {
                 for (Entry<String, String> entry : attributes.entrySet()) {
                     context.addTransactionAttribute(entry.getKey(), entry.getValue());

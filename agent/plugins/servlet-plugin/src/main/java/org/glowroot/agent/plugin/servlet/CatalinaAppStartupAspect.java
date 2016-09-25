@@ -63,7 +63,7 @@ public class CatalinaAppStartupAspect {
                 transactionName = "Servlet context: " + path;
             }
             TraceEntry traceEntry = context.startTransaction("Startup", transactionName,
-                    MessageSupplier.from(transactionName), timerName);
+                    MessageSupplier.create(transactionName), timerName);
             context.setTransactionSlowThreshold(0, MILLISECONDS, Priority.CORE_PLUGIN);
             return traceEntry;
         }

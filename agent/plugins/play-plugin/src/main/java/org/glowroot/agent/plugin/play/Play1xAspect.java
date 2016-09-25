@@ -42,7 +42,8 @@ public class Play1xAspect {
 
         @OnBefore
         public static TraceEntry onBefore(OptionalThreadContext context) {
-            return context.startTraceEntry(MessageSupplier.from("play action invoker"), timerName);
+            return context.startTraceEntry(MessageSupplier.create("play action invoker"),
+                    timerName);
         }
 
         @OnReturn

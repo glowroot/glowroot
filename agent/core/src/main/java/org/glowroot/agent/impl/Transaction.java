@@ -596,7 +596,7 @@ public class Transaction {
 
     void setError(@Nullable String message, @Nullable Throwable t) {
         if (this.errorMessage == null) {
-            this.errorMessage = ErrorMessage.from(message, t, getThrowableFrameLimitCounter());
+            this.errorMessage = ErrorMessage.create(message, t, getThrowableFrameLimitCounter());
         }
     }
 
@@ -1040,7 +1040,7 @@ public class Transaction {
         private static final AuxThreadRootMessageSupplier INSTANCE =
                 new AuxThreadRootMessageSupplier();
 
-        private final Message message = Message.from("auxiliary thread");
+        private final Message message = Message.create("auxiliary thread");
 
         @Override
         public Message get() {

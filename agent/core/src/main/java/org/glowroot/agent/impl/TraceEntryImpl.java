@@ -353,7 +353,7 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     }
 
     private void endWithErrorInternal(@Nullable String message, @Nullable Throwable t) {
-        ErrorMessage errorMessage = ErrorMessage.from(message, t,
+        ErrorMessage errorMessage = ErrorMessage.create(message, t,
                 threadContext.getTransaction().getThrowableFrameLimitCounter());
         endInternal(ticker.read(), errorMessage);
         // it is not helpful to capture stack trace at end of async trace entry since it is

@@ -35,7 +35,7 @@ public class MockDriverAspect {
 
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context) {
-            return context.startTraceEntry(MessageSupplier.from("major version"), timerName);
+            return context.startTraceEntry(MessageSupplier.create("major version"), timerName);
         }
 
         @OnAfter

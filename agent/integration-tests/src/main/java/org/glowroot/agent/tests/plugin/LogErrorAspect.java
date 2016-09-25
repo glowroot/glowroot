@@ -36,7 +36,8 @@ public class LogErrorAspect {
 
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context, @BindParameter String message) {
-            return context.startTraceEntry(MessageSupplier.from("ERROR -- {}", message), timerName);
+            return context.startTraceEntry(MessageSupplier.create("ERROR -- {}", message),
+                    timerName);
         }
 
         @OnAfter
@@ -55,7 +56,7 @@ public class LogErrorAspect {
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context) {
             TraceEntry traceEntry = context.startTraceEntry(
-                    MessageSupplier.from("outer entry to test nesting level"), timerName);
+                    MessageSupplier.create("outer entry to test nesting level"), timerName);
             context.addErrorEntry("test add nested error entry message");
             return traceEntry;
         }

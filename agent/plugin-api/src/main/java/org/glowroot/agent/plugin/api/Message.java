@@ -57,17 +57,17 @@ public abstract class Message {
     }
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
-    public static Message from(@Nullable String message) {
+    public static Message create(@Nullable String message) {
         return new MessageImpl(message, EMPTY_ARGS, EMPTY_DETAIL);
     }
 
     // does not copy args
-    public static Message from(String template, @Nullable String... args) {
+    public static Message create(String template, @Nullable String... args) {
         return new MessageImpl(template, args, EMPTY_DETAIL);
     }
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
-    public static Message from(@Nullable String message,
+    public static Message create(@Nullable String message,
             Map<String, ? extends /*@Nullable*/ Object> detail) {
         return new MessageImpl(message, EMPTY_ARGS, detail);
     }

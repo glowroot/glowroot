@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ class MyRemappingMethodAdapter extends LocalVariablesSorter {
         remapper.mapType(owner);
         remapper.mapMethodName(owner, name, desc);
         remapper.mapMethodDesc(desc);
-        remapper.addReferencedMethod(ReferencedMethod.from(owner, name, desc));
+        remapper.addReferencedMethod(ReferencedMethod.create(owner, name, desc));
     }
 
     @Override

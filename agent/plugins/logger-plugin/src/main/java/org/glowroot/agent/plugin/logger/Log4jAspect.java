@@ -99,8 +99,8 @@ public class Log4jAspect {
                 context.setTransactionError(messageText, t);
             }
             String loggerName = LoggerPlugin.getAbbreviatedLoggerName(logger.getName());
-            return context.startTraceEntry(MessageSupplier.from("log {}: {} - {}", getLevelStr(lvl),
-                    loggerName, messageText), timerName);
+            return context.startTraceEntry(MessageSupplier.create("log {}: {} - {}",
+                    getLevelStr(lvl), loggerName, messageText), timerName);
         }
         @OnAfter
         @SuppressWarnings("unused")

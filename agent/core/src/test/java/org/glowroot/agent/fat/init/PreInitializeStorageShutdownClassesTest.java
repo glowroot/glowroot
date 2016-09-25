@@ -34,9 +34,9 @@ public class PreInitializeStorageShutdownClassesTest {
         globalCollector.registerClass("org/h2/jdbc/JdbcConnection");
         // "call" DataSource$ShutdownHookThread.run() and CappedDatabase$ShutdownHookThread.run()
         // because class loading during jvm shutdown throws exception
-        globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
+        globalCollector.processMethodFailIfNotFound(ReferencedMethod.create(
                 "org/glowroot/agent/fat/storage/util/DataSource$ShutdownHookThread", "run", "()V"));
-        globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
+        globalCollector.processMethodFailIfNotFound(ReferencedMethod.create(
                 "org/glowroot/agent/fat/storage/util/CappedDatabase$ShutdownHookThread", "run",
                 "()V"));
         globalCollector.processOverrides();

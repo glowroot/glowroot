@@ -41,7 +41,7 @@ public class BeanDescriptorAspect {
         @OnBefore
         public static TraceEntry onBefore(OptionalThreadContext context,
                 @BindClassMeta TestClassMeta meta) {
-            return context.startTraceEntry(MessageSupplier.from(meta.clazz.getName()), timerName);
+            return context.startTraceEntry(MessageSupplier.create(meta.clazz.getName()), timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
@@ -59,7 +59,8 @@ public class BeanDescriptorAspect {
         @OnBefore
         public static TraceEntry onBefore(OptionalThreadContext context,
                 @BindMethodMeta TestMethodMeta meta) {
-            return context.startTraceEntry(MessageSupplier.from(meta.method.getName()), timerName);
+            return context.startTraceEntry(MessageSupplier.create(meta.method.getName()),
+                    timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {

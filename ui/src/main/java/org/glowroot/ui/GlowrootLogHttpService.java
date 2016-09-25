@@ -117,7 +117,7 @@ class GlowrootLogHttpService implements HttpService {
         }
         HttpServices.preventCaching(response);
         ctx.write(response);
-        ChannelFuture future = ctx.write(ChunkedInputs.from(ChunkSource.concat(chunkSources)));
+        ChannelFuture future = ctx.write(ChunkedInputs.create(ChunkSource.concat(chunkSources)));
         HttpServices.addErrorListener(future);
         if (!keepAlive) {
             HttpServices.addCloseListener(future);

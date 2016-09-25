@@ -38,7 +38,7 @@ abstract class MixinType {
 
     private static final Logger logger = LoggerFactory.getLogger(MixinType.class);
 
-    static MixinType from(Mixin mixin, Class<?> implementation) throws IOException {
+    static MixinType create(Mixin mixin, Class<?> implementation) throws IOException {
         ImmutableMixinType.Builder builder = ImmutableMixinType.builder();
         builder.addTargets(mixin.value());
         builder.implementation(Type.getType(implementation));

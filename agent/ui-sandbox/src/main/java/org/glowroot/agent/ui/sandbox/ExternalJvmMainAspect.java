@@ -40,7 +40,8 @@ public class ExternalJvmMainAspect {
         @OnBefore
         public static TraceEntry onBefore(OptionalThreadContext context) {
             return context.startTransaction("Sandbox", "javaagent container main",
-                    MessageSupplier.from("org.glowroot.agent.it.harness.impl.JavaagentMain.main()"),
+                    MessageSupplier
+                            .create("org.glowroot.agent.it.harness.impl.JavaagentMain.main()"),
                     timerName);
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +28,11 @@ public class ReferencedMethod implements Comparable<ReferencedMethod> {
     // optimization, since this is used so heavily in HashSet
     private final int hashCode;
 
-    public static ReferencedMethod from(String owner, String name, String desc) {
+    public static ReferencedMethod create(String owner, String name, String desc) {
         return new ReferencedMethod(owner, name, desc);
     }
 
-    public static ReferencedMethod from(String owner, String method) {
+    public static ReferencedMethod create(String owner, String method) {
         String[] parts = method.split(":");
         return new ReferencedMethod(owner, parts[0], parts[1]);
     }

@@ -134,7 +134,8 @@ public class GlobalCollector {
         if (methodCollector == null && !rootMethod.getName().equals("<clinit>")
                 && classCollector.getSuperInternalNames() != null) {
             // can't find method in class, so go up to super class
-            processMethod(ReferencedMethod.from(classCollector.getSuperInternalNames(), methodId));
+            processMethod(
+                    ReferencedMethod.create(classCollector.getSuperInternalNames(), methodId));
         }
         // methodCollector can be null, e.g. unimplemented interface method in an abstract class
         if (methodCollector != null) {
@@ -187,7 +188,7 @@ public class GlobalCollector {
         }
         classCollector.setAllSuperInternalNames(allSuperInternalNames);
         // add static initializer (if it exists)
-        processMethod(ReferencedMethod.from(internalName, "<clinit>", "()V"));
+        processMethod(ReferencedMethod.create(internalName, "<clinit>", "()V"));
         return Optional.of(classCollector);
     }
 
@@ -223,7 +224,7 @@ public class GlobalCollector {
             }
             for (String superInternalName : classCollector.getAllSuperInternalNames()) {
                 if (referencedMethods
-                        .contains(ReferencedMethod.from(superInternalName, methodId))) {
+                        .contains(ReferencedMethod.create(superInternalName, methodId))) {
                     addOverrideMethod(internalName, methodId);
                     // break inner loop
                     break;
@@ -259,7 +260,7 @@ public class GlobalCollector {
     }
 
     private void addOverrideMethod(String internalName, String methodId) {
-        ReferencedMethod referencedMethod = ReferencedMethod.from(internalName, methodId);
+        ReferencedMethod referencedMethod = ReferencedMethod.create(internalName, methodId);
         if (!referencedMethods.contains(referencedMethod)) {
             overrides.add(referencedMethod);
         }

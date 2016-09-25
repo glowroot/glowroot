@@ -118,7 +118,7 @@ public class Play2xAspect {
             String viewName = view.getClass().getSimpleName();
             // strip off trailing $
             viewName = viewName.substring(0, viewName.length() - 1);
-            return context.startTraceEntry(MessageSupplier.from("play render: {}", viewName),
+            return context.startTraceEntry(MessageSupplier.create("play render: {}", viewName),
                     timerName);
         }
 

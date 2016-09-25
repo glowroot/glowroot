@@ -39,16 +39,16 @@ public class PreInitializeWeavingClassesTest {
         // "call" AnalyzedWorld constructor to capture types used by LoadingCache
         // (so these types will be in the list of possible subtypes later on)
         globalCollector.processMethodFailIfNotFound(
-                ReferencedMethod.from("org/glowroot/agent/weaving/AnalyzedWorld", "<init>",
+                ReferencedMethod.create("org/glowroot/agent/weaving/AnalyzedWorld", "<init>",
                         "(L" + getGuavaSupplierInternalName()
                                 + ";Ljava/util/List;Ljava/util/List;)V"));
         // "call" WeavingClassFileTransformer constructor
         globalCollector.processMethodFailIfNotFound(
-                ReferencedMethod.from("org/glowroot/agent/weaving/WeavingClassFileTransformer",
+                ReferencedMethod.create("org/glowroot/agent/weaving/WeavingClassFileTransformer",
                         "<init>", "(Lorg/glowroot/agent/weaving/Weaver;)V"));
         // "call" WeavingClassFileTransformer.transform()
         globalCollector.processMethodFailIfNotFound(
-                ReferencedMethod.from("org/glowroot/agent/weaving/WeavingClassFileTransformer",
+                ReferencedMethod.create("org/glowroot/agent/weaving/WeavingClassFileTransformer",
                         "transform", "(Ljava/lang/ClassLoader;Ljava/lang/String;Ljava/lang/Class;"
                                 + "Ljava/security/ProtectionDomain;[B)[B"));
         globalCollector.processOverrides();

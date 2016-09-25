@@ -94,7 +94,7 @@ class TraceDetailHttpService implements HttpService {
         HttpServices.preventCaching(response);
         ctx.write(response);
         // TODO no more point in chunking here
-        ChannelFuture future = ctx.write(ChunkedInputs.from(detail));
+        ChannelFuture future = ctx.write(ChunkedInputs.create(detail));
         HttpServices.addErrorListener(future);
         if (!keepAlive) {
             HttpServices.addCloseListener(future);
