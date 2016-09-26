@@ -372,7 +372,7 @@ HandlebarsRendering = (function () {
 
   var mousedownPageX, mousedownPageY;
 
-  $(document).mousedown(function (e) {
+  $(document).on('mousedown', '.gt-unexpanded-content, .gt-expanded-content', function (e) {
     mousedownPageX = e.pageX;
     mousedownPageY = e.pageY;
   });

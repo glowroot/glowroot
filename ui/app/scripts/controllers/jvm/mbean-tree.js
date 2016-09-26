@@ -131,7 +131,18 @@ glowroot.controller('JvmMBeanTreeCtrl', [
       }
     }
 
-    $('#mbeanTree').on('click', '.gt-mbean-expanded-content', function() {
+    var mousedownPageX, mousedownPageY;
+
+    $(document).on('mousedown', '.gt-mbean-expanded-content, .gt-mbean-unexpanded-content', function (e) {
+      mousedownPageX = e.pageX;
+      mousedownPageY = e.pageY;
+    });
+
+    $('#mbeanTree').on('click', '.gt-mbean-expanded-content', function(e, keyboard) {
+      if (!keyboard && (Math.abs(e.pageX - mousedownPageX) > 5 || Math.abs(e.pageY - mousedownPageY) > 5)) {
+        // not a simple single click, probably highlighting text
+        return;
+      }
       var $parent = $(this).parent();
       var objectName = $parent.data('object-name');
       var index = expandedObjectNames.indexOf(objectName);
@@ -143,7 +154,11 @@ glowroot.controller('JvmMBeanTreeCtrl', [
       $parent.html(JST['mbean-node-unexpanded'](node));
     });
 
-    $('#mbeanTree').on('click', '.gt-mbean-unexpanded-content', function() {
+    $('#mbeanTree').on('click', '.gt-mbean-unexpanded-content', function(e, keyboard) {
+      if (!keyboard && (Math.abs(e.pageX - mousedownPageX) > 5 || Math.abs(e.pageY - mousedownPageY) > 5)) {
+        // not a simple single click, probably highlighting text
+        return;
+      }
       var $parent = $(this).parent();
       var objectName = $parent.data('object-name');
       expandedObjectNames.push(objectName);
