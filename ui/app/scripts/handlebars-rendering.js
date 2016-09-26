@@ -650,6 +650,12 @@ HandlebarsRendering = (function () {
       var beforeRowsStripped = text.substring('jdbc execution: '.length);
       var beforeParamsStripped = beforeRowsStripped.replace(/ => [0-9]+ rows?$/, '');
       var sql = beforeParamsStripped.replace(/ \[.*?]$/, '');
+      var comment = '';
+      if (sql.lastIndexOf('/*', 0) === 0) {
+        var endOfComment = sql.indexOf('*/') + 2;
+        comment = sql.substring(0, endOfComment) + '\n';
+        sql = sql.substring(endOfComment).trim();
+      }
       var formatted = SqlPrettyPrinter.format(sql);
       if (typeof formatted === 'object') {
         // intentional console logging
@@ -659,6 +665,7 @@ HandlebarsRendering = (function () {
           console.log(sql);
         }
       } else {
+        formatted = comment + formatted;
         var rows = beforeRowsStripped.substring(beforeParamsStripped.length + 1);
         var parameters = beforeParamsStripped.substring(sql.length + 1);
         var html = 'jdbc execution:\n\n';
