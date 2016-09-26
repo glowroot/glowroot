@@ -8,14 +8,20 @@
   <baseDirectory>glowroot</baseDirectory>
   <files>
     <file>
-      <source>${project.build.directory}/glowroot-agent-${project.version}-dist0.jar</source>
+      <source>${project.build.directory}/glowroot-${project.version}.jar</source>
       <outputDirectory></outputDirectory>
       <destName>glowroot.jar</destName>
     </file>
   </files>
   <fileSets>
     <fileSet>
-      <directory>${basedir}/../core/src/main/shaded-resources/META-INF</directory>
+      <!-- not using ${basedir} here because maven-shade-plugin changes it to point wherever
+        dependency reduced pom is written, see https://issues.apache.org/jira/browse/MSHADE-124,
+        so using more reliable ${project.build.directory} which will not cause breakage in the case
+        that this maven-shade-plugin behavior is ever fixed -->
+      <directory>
+        ${project.build.directory}/../../core/src/main/shaded-resources/META-INF
+      </directory>
       <includes>
         <include>LICENSE</include>
         <include>NOTICE</include>

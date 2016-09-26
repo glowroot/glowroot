@@ -64,10 +64,10 @@ class PluginJsonTransformer {
             validateConfigItem(pluginDescriptors, pluginConfig);
         }
         String pluginsJson = transform(pluginDescriptors);
-        File targetDir = new File(project.getBuild().getDirectory());
-        File file = new File(targetDir, "glowroot.plugins.json");
-        if (!targetDir.exists() && !targetDir.mkdirs()) {
-            throw new IOException("Could not create directory: " + targetDir.getAbsolutePath());
+        File metaInfDir = new File(project.getBuild().getOutputDirectory(), "META-INF");
+        File file = new File(metaInfDir, "glowroot.plugins.json");
+        if (!metaInfDir.exists() && !metaInfDir.mkdirs()) {
+            throw new IOException("Could not create directory: " + metaInfDir.getAbsolutePath());
         }
         Files.write(pluginsJson, file, Charsets.UTF_8);
     }
