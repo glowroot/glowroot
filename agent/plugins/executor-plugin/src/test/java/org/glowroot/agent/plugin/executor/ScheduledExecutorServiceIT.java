@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.plugin.executor;
 
+import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -62,7 +63,7 @@ public class ScheduledExecutorServiceIT {
         // when
         Trace trace = container.execute(DoScheduledRunnable.class);
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
+        checkTrace(trace);
     }
 
     @Test
@@ -70,11 +71,25 @@ public class ScheduledExecutorServiceIT {
         // when
         Trace trace = container.execute(DoScheduledCallable.class);
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
+        checkTrace(trace);
     }
 
     private static ScheduledExecutorService createScheduledExecutorService() {
         return Executors.newSingleThreadScheduledExecutor();
+    }
+
+    private static void checkTrace(Trace trace) {
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class DoScheduledRunnable implements AppUnderTest, TransactionMarker {

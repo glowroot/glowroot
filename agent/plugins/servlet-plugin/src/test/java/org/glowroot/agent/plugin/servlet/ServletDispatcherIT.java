@@ -64,7 +64,6 @@ public class ServletDispatcherIT {
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("/first-forward");
         assertThat(header.getTransactionName()).isEqualTo("/first-forward");
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(1);
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
 
@@ -84,7 +83,6 @@ public class ServletDispatcherIT {
         Trace.Header header = trace.getHeader();
         assertThat(header.getHeadline()).isEqualTo("/first-include");
         assertThat(header.getTransactionName()).isEqualTo("/first-include");
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(1);
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
 

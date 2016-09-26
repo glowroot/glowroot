@@ -74,7 +74,6 @@ public class AsyncServletIT {
         assertThat(header.getAsync()).isTrue();
         assertThat(header.getHeadline()).isEqualTo("/async");
         assertThat(header.getTransactionName()).isEqualTo("/async");
-        assertThat(header.getEntryCount()).isEqualTo(3);
 
         // check session attributes set across async boundary
         assertThat(SessionAttributeIT.getSessionAttributes(trace)).isNull();
@@ -114,7 +113,6 @@ public class AsyncServletIT {
         assertThat(header.getAsync()).isTrue();
         assertThat(header.getHeadline()).isEqualTo("/async2");
         assertThat(header.getTransactionName()).isEqualTo("/async2");
-        assertThat(header.getEntryCount()).isEqualTo(3);
 
         // check session attributes set across async boundary
         assertThat(SessionAttributeIT.getSessionAttributes(trace)).isNull();
@@ -155,7 +153,6 @@ public class AsyncServletIT {
         assertThat(header.getAsync()).isTrue();
         assertThat(header.getHeadline()).isEqualTo("/async3");
         assertThat(header.getTransactionName()).isEqualTo("/async3");
-        assertThat(header.getEntryCount()).isEqualTo(5);
 
         // and check session attributes set across async and dispatch boundary
         assertThat(SessionAttributeIT.getSessionAttributes(trace)).isNull();

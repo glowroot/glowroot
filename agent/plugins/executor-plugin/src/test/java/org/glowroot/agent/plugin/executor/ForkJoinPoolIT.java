@@ -65,7 +65,7 @@ public class ForkJoinPoolIT {
         // when
         Trace trace = container.execute(DoPoolSubmitCallable.class);
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
+        checkTrace(trace);
     }
 
     @Test
@@ -73,7 +73,7 @@ public class ForkJoinPoolIT {
         // when
         Trace trace = container.execute(DoPoolSubmitRunnable.class);
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
+        checkTrace(trace);
     }
 
     @Test
@@ -81,7 +81,7 @@ public class ForkJoinPoolIT {
         // when
         Trace trace = container.execute(DoPoolSubmitRunnableWithReturnValue.class);
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
+        checkTrace(trace);
     }
 
     @Test
@@ -89,7 +89,7 @@ public class ForkJoinPoolIT {
         // when
         Trace trace = container.execute(DoPoolSubmitForkJoinTask.class);
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
+        checkTrace(trace);
     }
 
     @Test
@@ -97,7 +97,7 @@ public class ForkJoinPoolIT {
         // when
         Trace trace = container.execute(DoPoolSubmitCallableAsForkJoinTask.class);
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
+        checkTrace(trace);
     }
 
     @Test
@@ -105,7 +105,7 @@ public class ForkJoinPoolIT {
         // when
         Trace trace = container.execute(DoPoolSubmitRunnableAsForkJoinTask.class);
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
+        checkTrace(trace);
     }
 
     @Test
@@ -113,7 +113,7 @@ public class ForkJoinPoolIT {
         // when
         Trace trace = container.execute(DoPoolSubmitRunnableAsForkJoinTaskWithReturnValue.class);
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
+        checkTrace(trace);
     }
 
     @Test
@@ -121,7 +121,7 @@ public class ForkJoinPoolIT {
         // when
         Trace trace = container.execute(DoPoolExecuteRunnable.class);
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
+        checkTrace(trace);
     }
 
     @Test
@@ -129,7 +129,7 @@ public class ForkJoinPoolIT {
         // when
         Trace trace = container.execute(DoPoolExecuteForkJoinTask.class);
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
+        checkTrace(trace);
     }
 
     @Test
@@ -137,7 +137,7 @@ public class ForkJoinPoolIT {
         // when
         Trace trace = container.execute(DoPoolInvokeForkJoinTask.class);
         // then
-        assertThat(trace.getHeader().getEntryCount()).isEqualTo(2);
+        checkTrace(trace);
     }
 
     @Test
@@ -146,7 +146,9 @@ public class ForkJoinPoolIT {
         Trace trace = container.execute(DoPoolInvokeAll.class);
 
         // then
-        assertThat(trace.getHeader().getEntryCount()).isBetween(4, 6);
+
+        // count does not include "auxiliary thread" entries
+        assertThat(trace.getHeader().getEntryCount()).isEqualTo(3);
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
 
@@ -157,6 +159,20 @@ public class ForkJoinPoolIT {
             }
         }
         assertThat(count).isEqualTo(3);
+    }
+
+    private static void checkTrace(Trace trace) {
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("auxiliary thread");
+
+        entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(1);
+        assertThat(entry.getMessage()).isEqualTo("trace entry marker / CreateTraceEntry");
+
+        assertThat(i.hasNext()).isFalse();
     }
 
     public static class DoPoolSubmitCallable implements AppUnderTest, TransactionMarker {

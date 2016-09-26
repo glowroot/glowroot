@@ -54,8 +54,8 @@ public class TraceCreator {
             long captureTick) throws IOException {
         // TODO optimize, this is excessive to construct entries just to get count
         Map<String, Integer> sharedQueryTextIndexes = Maps.newLinkedHashMap();
-        int entryCount = transaction
-                .getEntriesProtobuf(captureTick, sharedQueryTextIndexes).size();
+        int entryCount =
+                getEntryCount(transaction.getEntriesProtobuf(captureTick, sharedQueryTextIndexes));
         long mainThreadProfileSampleCount = transaction.getMainThreadProfileSampleCount();
         long auxThreadProfileSampleCount = transaction.getAuxThreadProfileSampleCount();
         // only slow transactions reach this point, so setting slow=true (second arg below)
@@ -67,8 +67,8 @@ public class TraceCreator {
             throws IOException {
         // TODO optimize, this is excessive to construct entries just to get count
         Map<String, Integer> sharedQueryTextIndexes = Maps.newLinkedHashMap();
-        int entryCount = transaction
-                .getEntriesProtobuf(transaction.getEndTick(), sharedQueryTextIndexes).size();
+        int entryCount = getEntryCount(
+                transaction.getEntriesProtobuf(transaction.getEndTick(), sharedQueryTextIndexes));
         long mainProfileSampleCount = transaction.getMainThreadProfileSampleCount();
         long auxProfileSampleCount = transaction.getAuxThreadProfileSampleCount();
         // only slow transactions reach this point, so setting slow=true (second arg below)
@@ -85,7 +85,7 @@ public class TraceCreator {
         Map<String, Integer> sharedQueryTextIndexes = Maps.newLinkedHashMap();
         List<Trace.Entry> entries =
                 transaction.getEntriesProtobuf(captureTick, sharedQueryTextIndexes);
-        int entryCount = entries.size();
+        int entryCount = getEntryCount(entries);
         Profile mainThreadProfile = transaction.getMainThreadProfileProtobuf();
         long mainThreadProfileSampleCount = getProfileSampleCount(mainThreadProfile);
         Profile auxThreadProfile = transaction.getAuxThreadProfileProtobuf();
@@ -166,6 +166,18 @@ public class TraceCreator {
         builder.setAuxThreadProfileSampleLimitExceeded(
                 transaction.isAuxThreadProfileSampleLimitExceeded());
         return builder.build();
+    }
+
+    // don't count "auxiliary thread" entries since those are not counted in
+    // maxTraceEntriesPerTransaction limit (and it's confusing when entry count exceeds the limit)
+    private static int getEntryCount(List<Trace.Entry> entries) {
+        int count = 0;
+        for (Trace.Entry entry : entries) {
+            if (!entry.getMessage().equals(Transaction.AUXILIARY_THREAD_MESSAGE)) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private static long getProfileSampleCount(@Nullable Profile profile) {

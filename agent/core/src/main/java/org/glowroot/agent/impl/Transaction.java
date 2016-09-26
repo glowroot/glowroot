@@ -88,6 +88,8 @@ public class Transaction {
 
     static final int USE_GENERAL_STORE_THRESHOLD = -1;
 
+    static final String AUXILIARY_THREAD_MESSAGE = "auxiliary thread";
+
     // initial capacity is very important, see ThreadSafeCollectionOfTenBenchmark
     private static final int ATTRIBUTE_KEYS_INITIAL_CAPACITY = 16;
 
@@ -1040,7 +1042,7 @@ public class Transaction {
         private static final AuxThreadRootMessageSupplier INSTANCE =
                 new AuxThreadRootMessageSupplier();
 
-        private final Message message = Message.create("auxiliary thread");
+        private final Message message = Message.create(AUXILIARY_THREAD_MESSAGE);
 
         @Override
         public Message get() {
