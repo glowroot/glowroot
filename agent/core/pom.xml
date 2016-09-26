@@ -355,6 +355,8 @@
                     <exclude>META-INF/javamail.charset.map</exclude>
                     <exclude>META-INF/mailcap</exclude>
                     <exclude>META-INF/LICENSE.txt</exclude>
+                    <!-- pom.xml is only present in sources jar -->
+                    <exclude>pom.xml</exclude>
                   </excludes>
                 </filter>
                 <filter>
@@ -365,6 +367,8 @@
                     <exclude>META-INF/javamail.address.map</exclude>
                     <exclude>META-INF/javamail.providers</exclude>
                     <exclude>META-INF/LICENSE.txt</exclude>
+                    <!-- pom.xml is only present in sources jar -->
+                    <exclude>pom.xml</exclude>
                   </excludes>
                 </filter>
               </filters>
