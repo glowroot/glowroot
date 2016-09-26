@@ -43,10 +43,10 @@ public interface TraceEntry {
      * 
      * This is a no-op for async trace entries (those created by
      * {@link ThreadContext#startAsyncTraceEntry(MessageSupplier, TimerName)} and
-     * {@link ThreadContext#startAsyncQueryEntry(String, String, MessageSupplier, TimerName)}). This
-     * is because async trace entries are used when their end is performed by a different thread,
-     * and so a stack trace at that time does not point to the code which executed triggered the
-     * trace entry creation.
+     * {@link ThreadContext#startAsyncQueryEntry(String, String, QueryMessageSupplier, TimerName)}).
+     * This is because async trace entries are used when their end is performed by a different
+     * thread, and so a stack trace at that time does not point to the code which executed triggered
+     * the trace entry creation.
      */
     void endWithStackTrace(long threshold, TimeUnit unit);
 

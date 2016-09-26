@@ -66,6 +66,11 @@ case "$1" in
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
                                   --settings build/travis-ci/settings.xml \
                                   -B
+               else
+                 mvn clean install -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent \
+                                   -Pjavadoc \
+                                   -DargLine="$surefire_jvm_args" \
+                                   -B
                fi
                ;;
 

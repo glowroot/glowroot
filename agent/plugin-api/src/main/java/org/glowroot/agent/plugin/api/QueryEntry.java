@@ -26,9 +26,9 @@ public interface QueryEntry extends TraceEntry {
      * 
      * Special note for async trace entries (those created by
      * {@link ThreadContext#startAsyncTraceEntry(MessageSupplier, TimerName)} and
-     * {@link ThreadContext#startAsyncQueryEntry(String, String, MessageSupplier, TimerName)}): this
-     * method is designed to be (and must be) called by the same thread that created the async trace
-     * entry.
+     * {@link ThreadContext#startAsyncQueryEntry(String, String, QueryMessageSupplier, TimerName)}):
+     * this method is designed to be (and must be) called by the same thread that created the async
+     * trace entry.
      */
     Timer extend();
 
