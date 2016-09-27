@@ -8,7 +8,7 @@
   <baseDirectory>glowroot</baseDirectory>
   <files>
     <file>
-      <source>${project.build.directory}/glowroot-${project.version}.jar</source>
+      <source>${project.build.directory}/glowroot-agent-${project.version}.jar</source>
       <outputDirectory></outputDirectory>
       <destName>glowroot.jar</destName>
     </file>
