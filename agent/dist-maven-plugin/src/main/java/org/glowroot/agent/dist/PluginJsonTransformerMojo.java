@@ -27,7 +27,7 @@ import org.apache.maven.project.MavenProject;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-@Mojo(name = "generate", defaultPhase = LifecyclePhase.PACKAGE,
+@Mojo(name = "generate", defaultPhase = LifecyclePhase.PROCESS_RESOURCES,
         requiresDependencyResolution = ResolutionScope.COMPILE, threadSafe = true)
 public class PluginJsonTransformerMojo extends AbstractMojo {
 

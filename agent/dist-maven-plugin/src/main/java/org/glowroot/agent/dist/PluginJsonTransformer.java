@@ -17,6 +17,7 @@ package org.glowroot.agent.dist;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
@@ -76,7 +77,32 @@ class PluginJsonTransformer {
             throws IOException {
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
         for (Artifact artifact : artifacts) {
-            JarInputStream jarIn = new JarInputStream(new FileInputStream(artifact.getFile()));
+            String content = getGlowrootPluginJson(artifact);
+            if (content == null) {
+                continue;
+            }
+            // de-serialization of shaded immutables objects needs to be done using shaded jackson
+            pluginDescriptors.add(PluginDescriptor.readValue(content));
+        }
+        return pluginDescriptors;
+    }
+
+    private static @Nullable String getGlowrootPluginJson(Artifact artifact) throws IOException {
+        File artifactFile = artifact.getFile();
+        if (artifactFile.isDirectory()) {
+            File jsonFile = new File(artifactFile, "META-INF/glowroot.plugin.json");
+            if (!jsonFile.exists()) {
+                return null;
+            }
+            FileReader reader = new FileReader(jsonFile);
+            try {
+                return CharStreams.toString(reader);
+            } finally {
+                reader.close();
+            }
+        }
+        JarInputStream jarIn = new JarInputStream(new FileInputStream(artifact.getFile()));
+        try {
             JarEntry jarEntry;
             while ((jarEntry = jarIn.getNextJarEntry()) != null) {
                 String name = jarEntry.getName();
@@ -86,13 +112,15 @@ class PluginJsonTransformer {
                 if (!name.equals("META-INF/glowroot.plugin.json")) {
                     continue;
                 }
-                String content = CharStreams.toString(new InputStreamReader(jarIn, Charsets.UTF_8));
-                // de-serialization of shaded immutables objects needs to be done using shaded
-                // jackson
-                pluginDescriptors.add(PluginDescriptor.readValue(content));
+                InputStreamReader in = new InputStreamReader(jarIn, Charsets.UTF_8);
+                String content = CharStreams.toString(in);
+                in.close();
+                return content;
             }
+            return null;
+        } finally {
+            jarIn.close();
         }
-        return pluginDescriptors;
     }
 
     private void validateConfigForDuplicates() throws MojoExecutionException {
