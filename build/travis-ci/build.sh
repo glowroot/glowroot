@@ -53,7 +53,10 @@ case "$1" in
                                 -B
                ;;
 
-     "deploy") mvn clean install -DargLine="$surefire_jvm_args" \
+     "deploy") # build other (non-deployed) modules since many are used by deploy :glowroot-agent-it-harness and :glowroot-agent (below)
+               # javadoc is needed here since deploy :glowroot-agent attaches the javadoc from :glowroot-agent-core
+               mvn clean install -DargLine="$surefire_jvm_args" \
+                                 -Pjavadoc \
                                  -B
                # only deploy snapshot versions (release versions need pgp signature)
                version=`mvn help:evaluate -Dexpression=project.version | grep -v '\['`

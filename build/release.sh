@@ -96,7 +96,9 @@ mv ~/.m2/repository/org/glowroot ~/.m2/repository/org/glowroot_
 rm -rf ui/bower_components ui/node_modules
 commit=$(git rev-parse HEAD)
 
+# javadoc is needed here since deploy :glowroot-agent attaches the javadoc from :glowroot-agent-core
 mvn clean install -pl :glowroot-agent,:glowroot-server -am \
+                  -Pjavadoc \
                   -DskipTests
 
 USERNAME=$built_by mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent \
