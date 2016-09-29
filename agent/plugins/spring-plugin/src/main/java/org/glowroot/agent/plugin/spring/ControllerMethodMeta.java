@@ -15,23 +15,12 @@
  */
 package org.glowroot.agent.plugin.spring;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
-
-import javax.annotation.Nullable;
-
-import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.Logger;
 
 public class ControllerMethodMeta {
 
-    private static final Logger logger = Agent.getLogger(ControllerMethodMeta.class);
-
     private final String controllerClassName;
     private final String methodName;
-
-    private final String path;
 
     private final String altTransactionName;
 
@@ -39,9 +28,6 @@ public class ControllerMethodMeta {
         Class<?> controllerClass = method.getDeclaringClass();
         controllerClassName = controllerClass.getName();
         methodName = method.getName();
-        String classPath = getPath(controllerClass);
-        String methodPath = getPath(method);
-        path = combine(classPath, methodPath);
         altTransactionName = controllerClass.getSimpleName() + "#" + methodName;
     }
 
@@ -53,64 +39,7 @@ public class ControllerMethodMeta {
         return methodName;
     }
 
-    String getPath() {
-        return path;
-    }
-
     String getAltTransactionName() {
         return altTransactionName;
-    }
-
-    private static @Nullable String getPath(AnnotatedElement annotatedElement) {
-        try {
-            for (Annotation annotation : annotatedElement.getDeclaredAnnotations()) {
-                Class<?> annotationClass = annotation.annotationType();
-                if (annotationClass.getName()
-                        .equals("org.springframework.web.bind.annotation.RequestMapping")) {
-                    return getRequestMappingAttribute(annotationClass, annotation, "value");
-                }
-            }
-        } catch (Throwable t) {
-            logger.error(t.getMessage(), t);
-        }
-        return null;
-    }
-
-    private static @Nullable String getRequestMappingAttribute(Class<?> requestMappingClass,
-            Object requestMapping, String attributeName) throws Exception {
-        Method method = requestMappingClass.getMethod(attributeName);
-        String[] values = (String[]) method.invoke(requestMapping);
-        if (values == null || values.length == 0) {
-            return null;
-        }
-        // TODO handle more than one value
-        return values[0];
-    }
-
-    // VisibleForTesting
-    static String combine(@Nullable String classPath, @Nullable String methodPath) {
-        if (classPath == null || classPath.isEmpty() || classPath.equals("/")) {
-            return normalize(methodPath);
-        }
-        if (methodPath == null || methodPath.isEmpty() || methodPath.equals("/")) {
-            return normalize(classPath);
-        }
-        return normalize(classPath) + normalize(methodPath);
-    }
-
-    private static String normalize(@Nullable String path) {
-        if (path == null || path.isEmpty() || path.equals("/")) {
-            return "/";
-        }
-        boolean addLeadingSlash = path.charAt(0) != '/';
-        if (addLeadingSlash) {
-            return '/' + replacePathSegmentsWithAsterisk(path);
-        } else {
-            return replacePathSegmentsWithAsterisk(path);
-        }
-    }
-
-    private static String replacePathSegmentsWithAsterisk(String path) {
-        return path.replaceAll("\\{[^}]*\\}", "*");
     }
 }

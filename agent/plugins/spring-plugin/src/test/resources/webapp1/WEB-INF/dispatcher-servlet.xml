@@ -13,4 +13,7 @@
 
   <mvc:annotation-driven />
 
+  <!-- this is needed for resolving @RequestMapping("${abc.path:abc}") prior to spring 4.3.0 -->
+  <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer" />
+
 </beans>

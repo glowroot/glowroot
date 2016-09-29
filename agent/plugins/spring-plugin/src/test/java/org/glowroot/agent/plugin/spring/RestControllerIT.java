@@ -67,11 +67,36 @@ public class RestControllerIT {
         assertThat(i.hasNext()).isFalse();
     }
 
-    public static class WithNormalServletMappingHittingRest
-            extends InvokeSpringControllerInTomcat {
+    @Test
+    public void shouldCaptureTransactionNameWithNormalServletMappingHittingAbc() throws Exception {
+        // when
+        Trace trace = container.execute(WithNormalServletMappingHittingAbc.class);
+
+        // then
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/abc");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("spring controller:"
+                + " org.glowroot.agent.plugin.spring.RestControllerIT"
+                + "$TestRestWithPropertyController.abc()");
+
+        assertThat(i.hasNext()).isFalse();
+    }
+
+    public static class WithNormalServletMappingHittingRest extends InvokeSpringControllerInTomcat {
         @Override
         public void executeApp() throws Exception {
             executeApp("webapp1", "/rest");
+        }
+    }
+
+    public static class WithNormalServletMappingHittingAbc extends InvokeSpringControllerInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp1", "/abc");
         }
     }
 
@@ -79,6 +104,14 @@ public class RestControllerIT {
     public static class TestRestController {
         @RequestMapping("rest")
         public String rest() {
+            return "";
+        }
+    }
+
+    @RestController
+    public static class TestRestWithPropertyController {
+        @RequestMapping("${abc.path:abc}")
+        public String abc() {
             return "";
         }
     }
