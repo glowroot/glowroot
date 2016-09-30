@@ -90,6 +90,9 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
 
     private static final Logger logger = LoggerFactory.getLogger(DownstreamServiceObserver.class);
 
+    // log startup messages using logger name "org.glowroot"
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
+
     private final ServerConnection serverConnection;
     private final DownstreamServiceStub downstreamServiceStub;
     private final AgentConfigUpdater agentConfigUpdater;
@@ -134,9 +137,9 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
                 @Override
                 public void run() {
                     if (initialConnect) {
-                        logger.info("downstream connection established");
+                        startupLogger.info("downstream connection established");
                     } else {
-                        logger.info("downstream connection re-established");
+                        startupLogger.info("downstream connection re-established");
                     }
                 }
             });
@@ -164,7 +167,8 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
             serverConnection.suppressLogCollector(new Runnable() {
                 @Override
                 public void run() {
-                    logger.warn("unable to establish downstream connection (will keep trying): {}",
+                    startupLogger.warn(
+                            "unable to establish downstream connection (will keep trying): {}",
                             t.getMessage());
                     logger.debug(t.getMessage(), t);
                 }

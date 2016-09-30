@@ -47,6 +47,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent.Level;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.OldAggregateMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.OldTraceMessage;
@@ -330,13 +331,13 @@ class GrpcServer {
             try {
                 LogEvent logEvent = request.getLogEvent();
                 Proto.Throwable t = logEvent.getThrowable();
+                Level level = logEvent.getLevel();
                 if (t == null) {
-                    logger.warn("{} -- {} -- {} -- {}", request.getAgentId(), logEvent.getLevel(),
+                    log(level, "{} -- {} -- {} -- {}", request.getAgentId(), level,
                             logEvent.getLoggerName(), logEvent.getMessage());
                 } else {
-                    logger.warn("{} -- {} -- {} -- {}\n{}", request.getAgentId(),
-                            logEvent.getLevel(), logEvent.getLoggerName(),
-                            logEvent.getMessage(), t);
+                    log(level, "{} -- {} -- {} -- {}\n{}", request.getAgentId(), level,
+                            logEvent.getLoggerName(), logEvent.getMessage(), t);
                 }
             } catch (Throwable t) {
                 responseObserver.onError(t);
@@ -344,6 +345,20 @@ class GrpcServer {
             }
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
+        }
+
+        private void log(Level level, String format, Object... arguments) {
+            switch (level) {
+                case ERROR:
+                    logger.error(format, arguments);
+                    break;
+                case WARN:
+                    logger.warn(format, arguments);
+                    break;
+                default:
+                    logger.info(format, arguments);
+                    break;
+            }
         }
     }
 }
