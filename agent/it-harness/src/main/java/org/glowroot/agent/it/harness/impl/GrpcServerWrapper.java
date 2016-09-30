@@ -87,6 +87,7 @@ class GrpcServerWrapper {
                 .executor(executor)
                 .addService(new CollectorServiceImpl(collector).bindService())
                 .addService(downstreamService.bindService())
+                .maxMessageSize(1024 * 1024 * 100)
                 .build()
                 .start();
     }

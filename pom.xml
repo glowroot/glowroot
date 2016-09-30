@@ -79,10 +79,9 @@
   </scm>
 
   <properties>
-    <grpc.version>0.15.0</grpc.version>
+    <grpc.version>1.0.1</grpc.version>
     <protobuf.version>3.1.0</protobuf.version>
-    <!-- 4.1.2.Final does not work with grpc-java 0.15.0 -->
-    <netty.version>4.1.1.Final</netty.version>
+    <netty.version>4.1.5.Final</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.7</jackson.version>
     <logback.version>1.1.7</logback.version>
