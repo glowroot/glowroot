@@ -17,7 +17,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <grails.version>3.1.10</grails.version>
+    <grails.version>3.1.12</grails.version>
   </properties>
 
   <dependencies>
@@ -144,14 +144,14 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
-      <version>4.3.2.RELEASE</version>
+      <version>4.3.3.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <version>4.3.2.RELEASE</version>
+      <version>4.3.3.RELEASE</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -30,16 +30,13 @@ public class Grails {
             }
             run("3.0." + i);
         }
-        for (int i = 0; i <= 7; i++) {
-            if (i == 1) {
-                // there is no 3.1.1 in maven central
+        for (int i = 0; i <= 12; i++) {
+            if (i == 1 || i == 8) {
+                // there is no 3.1.1 or 3.1.8 in maven central
                 continue;
             }
             run("3.1." + i);
         }
-        // there is no 3.1.8 in maven central
-        run("3.1.9");
-        run("3.1.10");
     }
 
     private static void run(String version) throws Exception {

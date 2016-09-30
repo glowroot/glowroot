@@ -101,7 +101,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>commons-beanutils</groupId>
       <artifactId>commons-beanutils</artifactId>
-      <version>1.9.2</version>
+      <version>1.9.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

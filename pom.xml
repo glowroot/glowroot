@@ -80,15 +80,15 @@
 
   <properties>
     <grpc.version>0.15.0</grpc.version>
-    <protobuf.version>3.0.2</protobuf.version>
+    <protobuf.version>3.1.0</protobuf.version>
     <!-- 4.1.2.Final does not work with grpc-java 0.15.0 -->
     <netty.version>4.1.1.Final</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.7</jackson.version>
     <logback.version>1.1.7</logback.version>
-    <immutables.version>2.3.1</immutables.version>
+    <immutables.version>2.3.3</immutables.version>
     <javax.mail.version>1.5.6</javax.mail.version>
-    <jmh.version>1.14</jmh.version>
+    <jmh.version>1.15</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
@@ -193,11 +193,6 @@
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
         <version>${logback.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.codehaus.janino</groupId>
-        <artifactId>janino</artifactId>
-        <version>2.7.8</version>
       </dependency>
       <dependency>
         <groupId>junit</groupId>
@@ -519,7 +514,7 @@
         <plugin>
           <groupId>org.sonarsource.scanner.maven</groupId>
           <artifactId>sonar-maven-plugin</artifactId>
-          <version>3.0.2</version>
+          <version>3.2</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -733,16 +728,6 @@
     </profile>
     <profile>
       <id>errorprone</id>
-      <pluginRepositories>
-        <pluginRepository>
-          <!-- temporary for using latest errorprone snapshot -->
-          <id>ossrh</id>
-          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-        </pluginRepository>
-      </pluginRepositories>
       <build>
         <plugins>
           <plugin>
@@ -769,7 +754,7 @@
               <dependency>
                 <groupId>com.google.errorprone</groupId>
                 <artifactId>error_prone_core</artifactId>
-                <version>2.0.5-SNAPSHOT</version>
+                <version>2.0.13</version>
               </dependency>
             </dependencies>
           </plugin>

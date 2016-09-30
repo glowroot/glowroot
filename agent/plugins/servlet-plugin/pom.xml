@@ -81,7 +81,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <version>4.3.2.RELEASE</version>
+      <version>4.3.3.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -89,14 +89,14 @@
         org.springframework.mock.web.MockHttpServletRequest -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <version>4.3.2.RELEASE</version>
+      <version>4.3.3.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
       <!-- jetty 9 requires Java 7+ -->
-      <version>8.1.19.v20160209</version>
+      <version>8.1.22.v20160922</version>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -139,7 +139,7 @@ public class HttpClient {
             updateLibVersion("asynchttpclient.version", "1.9." + i);
             runJava7(test, "async-http-client-1.x");
         }
-        for (int i = 0; i <= 11; i++) {
+        for (int i = 0; i <= 15; i++) {
             updateLibVersion("asynchttpclient.version", "2.0." + i);
             runJava8(test, "async-http-client-2.x");
         }

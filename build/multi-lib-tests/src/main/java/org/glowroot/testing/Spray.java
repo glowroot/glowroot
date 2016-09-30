@@ -35,6 +35,7 @@ public class Spray {
         run("1.3.1", "_2.11", "2.4.6", "2.11.8", JAVA8);
         run("1.3.2", "_2.11", "2.4.6", "2.11.8", JAVA8);
         run("1.3.3", "_2.11", "2.4.6", "2.11.8", JAVA8);
+        run("1.3.4", "_2.11", "2.4.6", "2.11.8", JAVA8);
     }
 
     private static void run(String sprayVersion, String sprayArtifactExt, String akkaVersion,

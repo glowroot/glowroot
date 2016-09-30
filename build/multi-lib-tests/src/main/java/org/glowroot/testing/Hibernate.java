@@ -52,6 +52,7 @@ public class Hibernate {
         runJava8("5.2.0.Final");
         runJava8("5.2.1.Final");
         runJava8("5.2.2.Final");
+        runJava8("5.2.3.Final");
     }
 
     private static void run(String version, String annotationsVersion, String... profiles)

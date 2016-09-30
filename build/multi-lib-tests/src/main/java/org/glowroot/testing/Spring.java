@@ -48,9 +48,9 @@ public class Spring {
         for (int i = 0; i <= 7; i++) {
             run("4.2." + i + ".RELEASE");
         }
-        run("4.3.0.RELEASE");
-        run("4.3.1.RELEASE");
-        run("4.3.2.RELEASE");
+        for (int i = 0; i <= 3; i++) {
+            run("4.3." + i + ".RELEASE");
+        }
     }
 
     private static void run(String version, String... profiles) throws Exception {
