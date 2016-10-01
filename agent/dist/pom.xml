@@ -154,6 +154,15 @@
               </manifestEntries>
             </transformer>
           </transformers>
+          <artifactSet>
+            <!-- explicit includes shouldn't be needed, since the transitive dependencies are shaded
+              during multi-module build, but due to https://issues.apache.org/jira/browse/MSHADE-206
+              the transitive dependencies end up being included without this explicit includes -->
+            <includes>
+              <include>org.glowroot:glowroot-agent-core</include>
+              <include>org.glowroot:glowroot-agent-*-plugin</include>
+            </includes>
+          </artifactSet>
           <filters>
             <filter>
               <artifact>org.glowroot:glowroot-agent-*-plugin</artifact>
