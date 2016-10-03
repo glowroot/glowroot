@@ -27,6 +27,7 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
@@ -34,7 +35,6 @@ import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.wire.api.Collector.AgentConfigUpdater;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceStub;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateResponse;

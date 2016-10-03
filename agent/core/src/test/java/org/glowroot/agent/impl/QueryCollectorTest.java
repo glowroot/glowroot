@@ -16,12 +16,11 @@
 package org.glowroot.agent.impl;
 
 import java.util.List;
-import java.util.Map;
 
-import com.google.common.collect.Maps;
 import org.junit.Test;
 
 import org.glowroot.agent.model.QueryCollector;
+import org.glowroot.agent.model.QueryCollector.SharedQueryTextCollector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,9 +35,8 @@ public class QueryCollectorTest {
             queries.mergeQuery("SQL", Integer.toString(i), i, 1, true, 1);
         }
         // when
-        Map<String, Integer> sharedQueryTextIndexes = Maps.newLinkedHashMap();
         List<Aggregate.QueriesByType> queriesByTypeList =
-                queries.toAggregateProto(sharedQueryTextIndexes);
+                queries.toAggregateProto(new SharedQueryTextCollector());
         // then
         assertThat(queriesByTypeList).hasSize(1);
         Aggregate.QueriesByType queriesByType = queriesByTypeList.get(0);
@@ -55,9 +53,8 @@ public class QueryCollectorTest {
             queries.mergeQuery("SQL", Integer.toString(i), i, 1, true, 1);
         }
         // when
-        Map<String, Integer> sharedQueryTextIndexes = Maps.newLinkedHashMap();
         List<Aggregate.QueriesByType> queriesByTypeList =
-                queries.toAggregateProto(sharedQueryTextIndexes);
+                queries.toAggregateProto(new SharedQueryTextCollector());
         // then
         assertThat(queriesByTypeList).hasSize(1);
         Aggregate.QueriesByType queriesByType = queriesByTypeList.get(0);

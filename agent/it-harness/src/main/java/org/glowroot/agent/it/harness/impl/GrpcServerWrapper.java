@@ -16,6 +16,7 @@
 package org.glowroot.agent.it.harness.impl;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -25,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.google.common.base.Stopwatch;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
@@ -36,19 +38,20 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceImplBase;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceImplBase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse.MessageCase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ServerRequest;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -147,30 +150,72 @@ class GrpcServerWrapper {
         }
 
         @Override
-        public void collectAggregates(AggregateMessage request,
-                StreamObserver<EmptyMessage> responseObserver) {
-            responseObserver.onNext(EmptyMessage.getDefaultInstance());
-            responseObserver.onCompleted();
+        public StreamObserver<AggregateStreamMessage> collectAggregateStream(
+                final StreamObserver<EmptyMessage> responseObserver) {
+            return new StreamObserver<AggregateStreamMessage>() {
+                @Override
+                public void onNext(AggregateStreamMessage value) {}
+                @Override
+                public void onError(Throwable t) {
+                    logger.error(t.getMessage(), t);
+                }
+                @Override
+                public void onCompleted() {
+                    responseObserver.onNext(EmptyMessage.getDefaultInstance());
+                    responseObserver.onCompleted();
+                }
+            };
         }
 
         @Override
         public void collectGaugeValues(GaugeValueMessage request,
-                StreamObserver<EmptyMessage> responseObserver) {
-            responseObserver.onNext(EmptyMessage.getDefaultInstance());
-            responseObserver.onCompleted();
-        }
+                StreamObserver<EmptyMessage> responseObserver) {}
 
         @Override
-        public void collectTrace(TraceMessage request,
-                StreamObserver<EmptyMessage> responseObserver) {
-            try {
-                collector.collectTrace(request.getTrace());
-            } catch (Throwable t) {
-                responseObserver.onError(t);
-                return;
-            }
-            responseObserver.onNext(EmptyMessage.getDefaultInstance());
-            responseObserver.onCompleted();
+        public StreamObserver<TraceStreamMessage> collectTraceStream(
+                final StreamObserver<EmptyMessage> responseObserver) {
+            return new StreamObserver<TraceStreamMessage>() {
+
+                private List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+                private @MonotonicNonNull Trace trace;
+
+                @Override
+                public void onNext(TraceStreamMessage value) {
+                    switch (value.getMessageCase()) {
+                        case HEADER:
+                            break;
+                        case SHARED_QUERY_TEXT:
+                            sharedQueryTexts.add(value.getSharedQueryText());
+                            break;
+                        case TRACE:
+                            trace = value.getTrace();
+                            break;
+                        default:
+                            throw new RuntimeException(
+                                    "Unexpected message: " + value.getMessageCase());
+                    }
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    logger.error(t.getMessage(), t);
+                }
+
+                @Override
+                public void onCompleted() {
+                    checkNotNull(trace);
+                    try {
+                        collector.collectTrace(trace.toBuilder()
+                                .addAllSharedQueryText(sharedQueryTexts)
+                                .build());
+                    } catch (Throwable t) {
+                        responseObserver.onError(t);
+                        return;
+                    }
+                    responseObserver.onNext(EmptyMessage.getDefaultInstance());
+                    responseObserver.onCompleted();
+                }
+            };
         }
 
         @Override

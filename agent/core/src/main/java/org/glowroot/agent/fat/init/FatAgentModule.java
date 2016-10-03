@@ -28,6 +28,7 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
+import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.fat.storage.PlatformMBeanServerLifecycle;
@@ -45,7 +46,6 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.UiModule;
-import org.glowroot.wire.api.Collector.AgentConfigUpdater;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;

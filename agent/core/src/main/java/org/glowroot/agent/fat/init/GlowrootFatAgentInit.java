@@ -25,11 +25,11 @@ import javax.annotation.Nullable;
 
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
+import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.NettyWorkaround;
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.wire.api.Collector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

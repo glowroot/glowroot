@@ -44,6 +44,7 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.GaugeConfig;
 import org.glowroot.agent.config.GaugeConfig.MBeanAttribute;
@@ -53,7 +54,6 @@ import org.glowroot.agent.util.LazyPlatformMBeanServer.InitListener;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ScheduledRunnable;
 import org.glowroot.common.util.Styles;
-import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static java.util.concurrent.TimeUnit.SECONDS;

@@ -83,8 +83,8 @@ import org.glowroot.common.util.Styles;
 import org.glowroot.server.util.Messages;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
-import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
+import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
+import org.glowroot.wire.api.model.AggregateOuterClass.OldTransactionAggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.Proto.OptionalDouble;
 
@@ -323,7 +323,8 @@ public class AggregateDao implements AggregateRepository {
         this.deleteNeedsRollup = deleteNeedsRollup;
     }
 
-    public void store(String agentId, long captureTime, List<AggregatesByType> aggregatesByTypeList,
+    public void store(String agentId, long captureTime,
+            List<OldAggregatesByType> aggregatesByTypeList,
             List<Aggregate.SharedQueryText> initialSharedQueryTexts) throws Exception {
         int adjustedTTL = GaugeValueDao.getAdjustedTTL(getTTLs().get(0), captureTime);
         List<ResultSetFuture> futures = Lists.newArrayList();
@@ -347,7 +348,7 @@ public class AggregateDao implements AggregateRepository {
                 sharedQueryTexts.add(sharedQueryText);
             }
         }
-        for (AggregatesByType aggregatesByType : aggregatesByTypeList) {
+        for (OldAggregatesByType aggregatesByType : aggregatesByTypeList) {
             String transactionType = aggregatesByType.getTransactionType();
             // TEMPORARY UNTIL ROLL OUT AGENT 0.9.0
             if (transactionType.equals("Servlet")) {
@@ -357,7 +358,7 @@ public class AggregateDao implements AggregateRepository {
             Aggregate overallAggregate = aggregatesByType.getOverallAggregate();
             futures.addAll(storeOverallAggregate(agentId, transactionType, captureTime,
                     overallAggregate, sharedQueryTexts, adjustedTTL));
-            for (TransactionAggregate transactionAggregate : aggregatesByType
+            for (OldTransactionAggregate transactionAggregate : aggregatesByType
                     .getTransactionAggregateList()) {
                 futures.addAll(storeTransactionAggregate(agentId, transactionType,
                         transactionAggregate.getTransactionName(), captureTime,
@@ -369,7 +370,7 @@ public class AggregateDao implements AggregateRepository {
         // TODO report checker framework issue that occurs without this suppression
         @SuppressWarnings("assignment.type.incompatible")
         Set<String> transactionTypes = aggregatesByTypeList.stream()
-                .map(AggregatesByType::getTransactionType).collect(Collectors.toSet());
+                .map(OldAggregatesByType::getTransactionType).collect(Collectors.toSet());
         // TEMPORARY UNTIL ROLL OUT AGENT 0.9.0
         if (transactionTypes.remove("Servlet")) {
             transactionTypes.add("Web");

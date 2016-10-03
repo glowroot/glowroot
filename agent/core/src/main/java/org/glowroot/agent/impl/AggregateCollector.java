@@ -17,7 +17,6 @@ package org.glowroot.agent.impl;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -31,6 +30,7 @@ import org.glowroot.agent.model.CommonTimerImpl;
 import org.glowroot.agent.model.MutableAggregateTimer;
 import org.glowroot.agent.model.Profile;
 import org.glowroot.agent.model.QueryCollector;
+import org.glowroot.agent.model.QueryCollector.SharedQueryTextCollector;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
@@ -153,8 +153,8 @@ class AggregateCollector {
         return serviceCalls;
     }
 
-    Aggregate build(Map<String, Integer> sharedQueryTextIndexes, ScratchBuffer scratchBuffer)
-            throws IOException {
+    Aggregate build(SharedQueryTextCollector sharedQueryTextCollector,
+            ScratchBuffer scratchBuffer) {
         Aggregate.Builder builder = Aggregate.newBuilder()
                 .setTotalDurationNanos(totalDurationNanos)
                 .setTransactionCount(transactionCount)
@@ -171,7 +171,7 @@ class AggregateCollector {
             builder.setAuxThreadStats(auxThreadStats.toProto());
         }
         if (queries != null) {
-            builder.addAllQueriesByType(queries.toAggregateProto(sharedQueryTextIndexes));
+            builder.addAllQueriesByType(queries.toAggregateProto(sharedQueryTextCollector));
         }
         if (serviceCalls != null) {
             builder.addAllServiceCallsByType(serviceCalls.toProto());

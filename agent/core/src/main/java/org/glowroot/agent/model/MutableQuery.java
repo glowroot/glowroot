@@ -15,8 +15,7 @@
  */
 package org.glowroot.agent.model;
 
-import java.util.Map;
-
+import org.glowroot.agent.model.QueryCollector.SharedQueryTextCollector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
@@ -64,12 +63,8 @@ class MutableQuery {
     }
 
     Aggregate.Query toAggregateProto(String queryText,
-            Map<String, Integer> sharedQueryTextIndexes) {
-        Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(queryText);
-        if (sharedQueryTextIndex == null) {
-            sharedQueryTextIndex = sharedQueryTextIndexes.size();
-            sharedQueryTextIndexes.put(queryText, sharedQueryTextIndex);
-        }
+            SharedQueryTextCollector sharedQueryTextCollector) {
+        int sharedQueryTextIndex = sharedQueryTextCollector.getIndex(queryText);
         Aggregate.Query.Builder builder = Aggregate.Query.newBuilder()
                 .setSharedQueryTextIndex(sharedQueryTextIndex)
                 .setTotalDurationNanos(totalDurationNanos.getDouble())

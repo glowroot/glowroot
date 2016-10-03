@@ -65,7 +65,7 @@ public class QueryCollector {
     }
 
     public List<Aggregate.QueriesByType> toAggregateProto(
-            Map<String, Integer> sharedQueryTextIndexes) {
+            SharedQueryTextCollector sharedQueryTextCollector) {
         if (queries.isEmpty()) {
             return ImmutableList.of();
         }
@@ -74,8 +74,8 @@ public class QueryCollector {
             List<Aggregate.Query> queries =
                     Lists.newArrayListWithCapacity(outerEntry.getValue().values().size());
             for (Entry<String, MutableQuery> entry : outerEntry.getValue().entrySet()) {
-                queries.add(
-                        entry.getValue().toAggregateProto(entry.getKey(), sharedQueryTextIndexes));
+                queries.add(entry.getValue().toAggregateProto(entry.getKey(),
+                        sharedQueryTextCollector));
             }
             if (queries.size() > limit) {
                 orderAggregateQueries(queries);
@@ -188,5 +188,28 @@ public class QueryCollector {
     interface MinQuery {
         MutableQuery query();
         double totalDurationNanos();
+    }
+
+    public static class SharedQueryTextCollector {
+
+        private final Map<String, Integer> sharedQueryTextIndexes = Maps.newHashMap();
+
+        private List<String> latestSharedQueryTexts = Lists.newArrayList();
+
+        public int getIndex(String queryText) {
+            Integer sharedQueryTextIndex = sharedQueryTextIndexes.get(queryText);
+            if (sharedQueryTextIndex == null) {
+                sharedQueryTextIndex = sharedQueryTextIndexes.size();
+                sharedQueryTextIndexes.put(queryText, sharedQueryTextIndex);
+                latestSharedQueryTexts.add(queryText);
+            }
+            return sharedQueryTextIndex;
+        }
+
+        public List<String> getAndClearLastestSharedQueryTexts() {
+            List<String> latestSharedQueryTexts = this.latestSharedQueryTexts;
+            this.latestSharedQueryTexts = Lists.newArrayList();
+            return latestSharedQueryTexts;
+        }
     }
 }

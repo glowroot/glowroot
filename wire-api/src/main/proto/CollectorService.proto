@@ -11,9 +11,12 @@ option java_package = "org.glowroot.wire.api.model";
 
 service CollectorService {
   rpc collectInit(InitMessage) returns (InitResponse);
-  rpc collectAggregates(AggregateMessage) returns (EmptyMessage);
+  rpc collectAggregates(OldAggregateMessage) returns (EmptyMessage); // deprecated in 0.9.5
+                                                               // replaced by collectAggregateStream
+  rpc collectAggregateStream(stream AggregateStreamMessage) returns (EmptyMessage);
   rpc collectGaugeValues(GaugeValueMessage) returns (EmptyMessage);
-  rpc collectTrace(TraceMessage) returns (EmptyMessage);
+  rpc collectTrace(OldTraceMessage) returns (EmptyMessage);
+  rpc collectTraceStream(stream TraceStreamMessage) returns (EmptyMessage);
   rpc log(LogMessage) returns (EmptyMessage);
 }
 
@@ -27,12 +30,22 @@ message InitResponse {
   AgentConfig agent_config = 1;
 }
 
-message AggregateMessage {
+// deprecated in 0.9.5, replaced by AggregateStreamMessage
+message OldAggregateMessage {
   string agent_id = 1;
   int64 capture_time = 2;
-  repeated AggregatesByType aggregates_by_type = 3;
+  repeated OldAggregatesByType aggregates_by_type = 3;
   repeated string old_shared_query_text = 4; // deprecated in 0.9.3, replaced by shared_query_text
   repeated Aggregate.SharedQueryText shared_query_text = 5;
+}
+
+message AggregateStreamMessage {
+  oneof message {
+    AggregateStreamHeader header = 1;
+    Aggregate.SharedQueryText shared_query_text = 2;
+    OverallAggregate overall_aggregate = 3;
+    TransactionAggregate transaction_aggregate = 4;
+  }
 }
 
 message GaugeValueMessage {
@@ -40,9 +53,17 @@ message GaugeValueMessage {
   repeated GaugeValue gauge_values = 2;
 }
 
-message TraceMessage {
+message OldTraceMessage {
   string agent_id = 1;
   Trace trace = 2;
+}
+
+message TraceStreamMessage {
+  oneof message {
+    TraceStreamHeader header = 1;
+    Trace.SharedQueryText shared_query_text = 2;
+    Trace trace = 3;
+  }
 }
 
 message LogMessage {
@@ -77,6 +98,22 @@ message JavaInfo {
   string glowroot_agent_version = 15;
 }
 
+message AggregateStreamHeader {
+  string agent_id = 1;
+  int64 capture_time = 2;
+}
+
+message OverallAggregate {
+  string transaction_type = 1;
+  Aggregate aggregate = 2;
+}
+
+message TransactionAggregate {
+  string transaction_type = 1;
+  string transaction_name = 2;
+  Aggregate aggregate = 3;
+}
+
 message GaugeValue {
   string gauge_name = 1;
   int64 capture_time = 2;
@@ -85,6 +122,10 @@ message GaugeValue {
   // for non-counter gauges, value is just the gauge value, and weight is 1
   double value = 3;
   int64 weight = 4;
+}
+
+message TraceStreamHeader {
+  string agent_id = 1;
 }
 
 message LogEvent {

@@ -24,9 +24,8 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.wire.api.Collector;
+import org.glowroot.agent.collector.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
@@ -50,10 +49,9 @@ public class CollectorProxy implements Collector {
     }
 
     @Override
-    public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType,
-            List<String> sharedQueryTexts) throws Exception {
+    public void collectAggregates(long captureTime, Aggregates aggregates) throws Exception {
         if (instance != null) {
-            instance.collectAggregates(captureTime, aggregatesByType, sharedQueryTexts);
+            instance.collectAggregates(captureTime, aggregates);
         }
     }
 

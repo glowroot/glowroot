@@ -16,7 +16,6 @@
 package org.glowroot.agent.impl;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,13 +23,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.collector.Collector;
+import org.glowroot.agent.collector.Collector.AggregateVisitor;
+import org.glowroot.agent.collector.Collector.Aggregates;
 import org.glowroot.agent.model.Profile;
+import org.glowroot.agent.model.QueryCollector.SharedQueryTextCollector;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
@@ -44,9 +45,7 @@ import org.glowroot.common.model.TransactionErrorSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.util.Clock;
-import org.glowroot.wire.api.Collector;
-import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
-import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 public class AggregateIntervalCollector {
 
@@ -237,29 +236,7 @@ public class AggregateIntervalCollector {
     }
 
     void flush(Collector collector) throws Exception {
-        synchronized (lock) {
-            Map<String, Integer> sharedQueryTextIndexes = Maps.newLinkedHashMap();
-            List<AggregatesByType> aggregatesByTypeList = Lists.newArrayList();
-            ScratchBuffer scratchBuffer = new ScratchBuffer();
-            for (Entry<String, IntervalTypeCollector> e : typeCollectors.entrySet()) {
-                IntervalTypeCollector intervalTypeCollector = e.getValue();
-                AggregatesByType.Builder aggregatesByType = AggregatesByType.newBuilder()
-                        .setTransactionType(e.getKey())
-                        .setOverallAggregate(intervalTypeCollector.overallAggregateCollector
-                                .build(sharedQueryTextIndexes, scratchBuffer));
-                for (Entry<String, AggregateCollector> f : intervalTypeCollector.transactionAggregateCollectors
-                        .entrySet()) {
-                    aggregatesByType.addTransactionAggregate(TransactionAggregate.newBuilder()
-                            .setTransactionName(f.getKey())
-                            .setAggregate(f.getValue().build(sharedQueryTextIndexes, scratchBuffer))
-                            .build());
-                }
-                aggregatesByTypeList.add(aggregatesByType.build());
-            }
-            // collecting even when no aggregates since collection triggers transaction-based alerts
-            collector.collectAggregates(captureTime, aggregatesByTypeList,
-                    ImmutableList.copyOf(sharedQueryTextIndexes.keySet()));
-        }
+        collector.collectAggregates(captureTime, new AggregatesImpl());
     }
 
     void clear() {
@@ -357,6 +334,33 @@ public class AggregateIntervalCollector {
                 }
             }
             return null;
+        }
+    }
+
+    private class AggregatesImpl implements Aggregates {
+        @Override
+        public <T extends Exception> void accept(AggregateVisitor<T> aggregateVisitor) throws T {
+            synchronized (lock) {
+                SharedQueryTextCollector sharedQueryTextCollector = new SharedQueryTextCollector();
+                ScratchBuffer scratchBuffer = new ScratchBuffer();
+                for (Entry<String, IntervalTypeCollector> e : typeCollectors.entrySet()) {
+                    String transactionType = e.getKey();
+                    IntervalTypeCollector intervalTypeCollector = e.getValue();
+                    Aggregate overallAggregate = intervalTypeCollector.overallAggregateCollector
+                            .build(sharedQueryTextCollector, scratchBuffer);
+                    aggregateVisitor.visitOverallAggregate(transactionType,
+                            sharedQueryTextCollector.getAndClearLastestSharedQueryTexts(),
+                            overallAggregate);
+                    for (Entry<String, AggregateCollector> f : intervalTypeCollector.transactionAggregateCollectors
+                            .entrySet()) {
+                        Aggregate transactionAggregate =
+                                f.getValue().build(sharedQueryTextCollector, scratchBuffer);
+                        aggregateVisitor.visitTransactionAggregate(transactionType, f.getKey(),
+                                sharedQueryTextCollector.getAndClearLastestSharedQueryTexts(),
+                                transactionAggregate);
+                    }
+                }
+            }
         }
     }
 }

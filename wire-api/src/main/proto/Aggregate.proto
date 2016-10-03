@@ -7,13 +7,15 @@ package org_glowroot_wire_api_model;
 
 option java_package = "org.glowroot.wire.api.model";
 
-message AggregatesByType {
+// deprecated in 0.9.5
+message OldAggregatesByType {
   string transaction_type = 1;
   Aggregate overall_aggregate = 2;
-  repeated TransactionAggregate transaction_aggregate = 3;
+  repeated OldTransactionAggregate transaction_aggregate = 3;
 }
 
-message TransactionAggregate {
+// deprecated in 0.9.5
+message OldTransactionAggregate {
   string transaction_name = 2;
   Aggregate aggregate = 3;
 }
@@ -88,9 +90,8 @@ message Aggregate {
   }
 
   message SharedQueryText {
-    string full_text = 1;
-    string truncated_text = 2; // sent instead of full_text when full_text_sha1 sent recently
-                               // (truncated to 120 characters)
+    string full_text = 1; // sent when query text <= 120 characters
+    string truncated_text = 2; // sent when query text > 120 characters
     string full_text_sha1 = 3; // sent when query text > 120 characters
   }
 }

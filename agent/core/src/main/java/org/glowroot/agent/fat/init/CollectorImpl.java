@@ -21,14 +21,13 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.fat.storage.AgentDao;
 import org.glowroot.agent.fat.storage.AggregateDao;
 import org.glowroot.agent.fat.storage.GaugeValueDao;
 import org.glowroot.agent.fat.storage.TraceDao;
 import org.glowroot.common.repo.util.AlertingService;
-import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
@@ -62,9 +61,8 @@ class CollectorImpl implements Collector {
     }
 
     @Override
-    public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType,
-            List<String> sharedQueryTexts) throws Exception {
-        aggregateDao.store(captureTime, aggregatesByType, sharedQueryTexts);
+    public void collectAggregates(long captureTime, Aggregates aggregates) throws Exception {
+        aggregateDao.store(captureTime, aggregates);
         try {
             alertingService.checkTransactionAlerts(AGENT_ID, captureTime, null);
         } catch (Exception e) {

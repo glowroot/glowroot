@@ -27,12 +27,12 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

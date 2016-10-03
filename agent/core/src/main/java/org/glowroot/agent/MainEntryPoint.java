@@ -45,13 +45,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.fat.init.DataDirLocking.BaseDirLockedException;
+import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.fat.init.GlowrootFatAgentInit;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.GlowrootThinAgentInit;
 import org.glowroot.agent.util.AppServerDetection;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Version;
-import org.glowroot.wire.api.Collector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

@@ -16,15 +16,17 @@
 package org.glowroot.agent.fat.storage;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.glowroot.agent.collector.Collector.AggregateVisitor;
+import org.glowroot.agent.collector.Collector.Aggregates;
 import org.glowroot.agent.fat.storage.util.CappedDatabase;
 import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.common.live.ImmutableOverallQuery;
@@ -43,8 +45,6 @@ import org.glowroot.common.repo.ImmutableRollupConfig;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
-import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -135,81 +135,75 @@ public class AggregateDaoTest {
 
     // also used by TransactionCommonServiceTest
     public void populateAggregates() throws Exception {
-        Aggregate overallAggregate = Aggregate.newBuilder()
-                .setTotalDurationNanos(1000000)
-                .setErrorCount(0)
-                .setTransactionCount(10)
-                .setDurationNanosHistogram(getFakeHistogram())
-                .build();
-        List<TransactionAggregate> transactionAggregates = Lists.newArrayList();
-        transactionAggregates.add(TransactionAggregate.newBuilder()
-                .setTransactionName("one")
-                .setAggregate(Aggregate.newBuilder()
-                        .setTotalDurationNanos(100000)
-                        .setErrorCount(0)
-                        .setTransactionCount(1)
-                        .setDurationNanosHistogram(getFakeHistogram())
-                        .build())
-                .build());
-        transactionAggregates.add(TransactionAggregate.newBuilder()
-                .setTransactionName("two")
-                .setAggregate(Aggregate.newBuilder()
-                        .setTotalDurationNanos(300000)
-                        .setErrorCount(0)
-                        .setTransactionCount(2)
-                        .setDurationNanosHistogram(getFakeHistogram())
-                        .build())
-                .build());
-        transactionAggregates.add(TransactionAggregate.newBuilder()
-                .setTransactionName("seven")
-                .setAggregate(Aggregate.newBuilder()
-                        .setTotalDurationNanos(1400000)
-                        .setErrorCount(0)
-                        .setTransactionCount(7)
-                        .setDurationNanosHistogram(getFakeHistogram())
-                        .build())
-                .build());
-        AggregatesByType aggregatesByType = AggregatesByType.newBuilder()
-                .setTransactionType("a type")
-                .setOverallAggregate(overallAggregate)
-                .addAllTransactionAggregate(transactionAggregates)
-                .build();
-        aggregateDao.store(10000, ImmutableList.of(aggregatesByType), ImmutableList.<String>of());
+        aggregateDao.store(10000, new Aggregates() {
+            @Override
+            public <T extends Exception> void accept(AggregateVisitor<T> aggregateVisitor)
+                    throws T {
+                aggregateVisitor.visitOverallAggregate("a type", new ArrayList<String>(),
+                        Aggregate.newBuilder()
+                                .setTotalDurationNanos(1000000)
+                                .setErrorCount(0)
+                                .setTransactionCount(10)
+                                .setDurationNanosHistogram(getFakeHistogram())
+                                .build());
+                aggregateVisitor.visitTransactionAggregate("a type", "one", new ArrayList<String>(),
+                        Aggregate.newBuilder()
+                                .setTotalDurationNanos(100000)
+                                .setErrorCount(0)
+                                .setTransactionCount(1)
+                                .setDurationNanosHistogram(getFakeHistogram())
+                                .build());
+                aggregateVisitor.visitTransactionAggregate("a type", "two", new ArrayList<String>(),
+                        Aggregate.newBuilder()
+                                .setTotalDurationNanos(300000)
+                                .setErrorCount(0)
+                                .setTransactionCount(2)
+                                .setDurationNanosHistogram(getFakeHistogram())
+                                .build());
+                aggregateVisitor.visitTransactionAggregate("a type", "seven",
+                        new ArrayList<String>(), Aggregate.newBuilder()
+                                .setTotalDurationNanos(1400000)
+                                .setErrorCount(0)
+                                .setTransactionCount(7)
+                                .setDurationNanosHistogram(getFakeHistogram())
+                                .build());
+            }
+        });
 
-        List<TransactionAggregate> transactionAggregates2 = Lists.newArrayList();
-        transactionAggregates2.add(TransactionAggregate.newBuilder()
-                .setTransactionName("one")
-                .setAggregate(Aggregate.newBuilder()
-                        .setTotalDurationNanos(100000)
-                        .setErrorCount(0)
-                        .setTransactionCount(1)
-                        .setDurationNanosHistogram(getFakeHistogram())
-                        .build())
-                .build());
-        transactionAggregates2.add(TransactionAggregate.newBuilder()
-                .setTransactionName("two")
-                .setAggregate(Aggregate.newBuilder()
-                        .setTotalDurationNanos(300000)
-                        .setErrorCount(0)
-                        .setTransactionCount(2)
-                        .setDurationNanosHistogram(getFakeHistogram())
-                        .build())
-                .build());
-        transactionAggregates2.add(TransactionAggregate.newBuilder()
-                .setTransactionName("seven")
-                .setAggregate(Aggregate.newBuilder()
-                        .setTotalDurationNanos(1400000)
-                        .setErrorCount(0)
-                        .setTransactionCount(7)
-                        .setDurationNanosHistogram(getFakeHistogram())
-                        .build())
-                .build());
-        AggregatesByType aggregatesByType2 = AggregatesByType.newBuilder()
-                .setTransactionType("a type")
-                .setOverallAggregate(overallAggregate)
-                .addAllTransactionAggregate(transactionAggregates2)
-                .build();
-        aggregateDao.store(20000, ImmutableList.of(aggregatesByType2), ImmutableList.<String>of());
+        aggregateDao.store(20000, new Aggregates() {
+            @Override
+            public <T extends Exception> void accept(AggregateVisitor<T> aggregateVisitor)
+                    throws T {
+                aggregateVisitor.visitOverallAggregate("a type", new ArrayList<String>(),
+                        Aggregate.newBuilder()
+                                .setTotalDurationNanos(1000000)
+                                .setErrorCount(0)
+                                .setTransactionCount(10)
+                                .setDurationNanosHistogram(getFakeHistogram())
+                                .build());
+                aggregateVisitor.visitTransactionAggregate("a type", "one", new ArrayList<String>(),
+                        Aggregate.newBuilder()
+                                .setTotalDurationNanos(100000)
+                                .setErrorCount(0)
+                                .setTransactionCount(1)
+                                .setDurationNanosHistogram(getFakeHistogram())
+                                .build());
+                aggregateVisitor.visitTransactionAggregate("a type", "two", new ArrayList<String>(),
+                        Aggregate.newBuilder()
+                                .setTotalDurationNanos(300000)
+                                .setErrorCount(0)
+                                .setTransactionCount(2)
+                                .setDurationNanosHistogram(getFakeHistogram())
+                                .build());
+                aggregateVisitor.visitTransactionAggregate("a type", "seven",
+                        new ArrayList<String>(), Aggregate.newBuilder()
+                                .setTotalDurationNanos(1400000)
+                                .setErrorCount(0)
+                                .setTransactionCount(7)
+                                .setDurationNanosHistogram(getFakeHistogram())
+                                .build());
+            }
+        });
     }
 
     // used by TransactionCommonServiceTest

@@ -21,7 +21,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.wire.api.Collector;
+import org.glowroot.agent.collector.Collector;
 
 public interface GlowrootAgentInit {
 

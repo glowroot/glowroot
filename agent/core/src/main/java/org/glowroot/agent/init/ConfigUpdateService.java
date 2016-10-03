@@ -22,6 +22,7 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.GaugeConfig;
@@ -31,7 +32,6 @@ import org.glowroot.agent.config.PluginConfig;
 import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.config.TransactionConfig;
 import org.glowroot.agent.config.UserRecordingConfig;
-import org.glowroot.wire.api.Collector.AgentConfigUpdater;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 class ConfigUpdateService implements AgentConfigUpdater {

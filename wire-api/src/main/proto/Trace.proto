@@ -18,7 +18,8 @@ message Trace {
   Profile aux_thread_profile = 5;
   bool update = 6; // optimization so server does not need to check for prior partial trace in
                    // common case where this is not an update
-  repeated SharedQueryText shared_query_text = 8;
+  repeated SharedQueryText shared_query_text = 8; // deprecated in 0.9.5,
+                                                  // moved to TraceMessage stream
 
   message Header {
     bool partial = 1;

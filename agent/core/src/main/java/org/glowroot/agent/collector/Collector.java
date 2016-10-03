@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.wire.api;
+package org.glowroot.agent.collector;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
@@ -31,8 +31,7 @@ public interface Collector {
     void init(File glowrootBaseDir, Environment environment, AgentConfig agentConfig,
             AgentConfigUpdater agentConfigUpdater) throws Exception;
 
-    void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType,
-            List<String> sharedQueryTexts) throws Exception;
+    void collectAggregates(long captureTime, Aggregates aggregates) throws Exception;
 
     void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception;
 
@@ -42,5 +41,16 @@ public interface Collector {
 
     interface AgentConfigUpdater {
         void update(AgentConfig agentConfig) throws IOException;
+    }
+
+    public interface Aggregates {
+        <T extends Exception> void accept(AggregateVisitor<T> aggregateVisitor) throws T;
+    }
+
+    public interface AggregateVisitor<T extends Exception> {
+        void visitOverallAggregate(String transactionType, List<String> sharedQueryTexts,
+                Aggregate overallAggregate) throws T;
+        void visitTransactionAggregate(String transactionType, String transactionName,
+                List<String> sharedQueryTexts, Aggregate transactionAggregate) throws T;
     }
 }

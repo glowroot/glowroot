@@ -34,6 +34,8 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.collector.Collector;
+import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.server.ServerCollectorImpl;
@@ -41,8 +43,6 @@ import org.glowroot.agent.util.Tickers;
 import org.glowroot.agent.weaving.PreInitializeWeavingClasses;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.wire.api.Collector;
-import org.glowroot.wire.api.Collector.AgentConfigUpdater;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;

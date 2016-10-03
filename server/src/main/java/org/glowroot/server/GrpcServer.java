@@ -17,12 +17,15 @@ package org.glowroot.server;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import com.datastax.driver.core.exceptions.ReadTimeoutException;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import io.grpc.internal.ServerImpl;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,9 +36,11 @@ import org.glowroot.server.storage.GaugeValueDao;
 import org.glowroot.server.storage.TraceDao;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
+import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
+import org.glowroot.wire.api.model.AggregateOuterClass.OldTransactionAggregate;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceImplBase;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamHeader;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
@@ -43,8 +48,16 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.OldAggregateMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.OldTraceMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.OverallAggregate;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamHeader;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.Proto;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 class GrpcServer {
 
@@ -114,9 +127,74 @@ class GrpcServer {
         }
 
         @Override
-        public void collectAggregates(AggregateMessage request,
+        public StreamObserver<AggregateStreamMessage> collectAggregateStream(
+                final StreamObserver<EmptyMessage> responseObserver) {
+            return new StreamObserver<AggregateStreamMessage>() {
+
+                private @MonotonicNonNull AggregateStreamHeader header;
+                private List<Aggregate.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+                private Map<String, OldAggregatesByType.Builder> aggregatesByTypeMap =
+                        Maps.newHashMap();
+
+                @Override
+                public void onNext(AggregateStreamMessage value) {
+                    switch (value.getMessageCase()) {
+                        case HEADER:
+                            header = value.getHeader();
+                            break;
+                        case SHARED_QUERY_TEXT:
+                            sharedQueryTexts.add(value.getSharedQueryText());
+                            break;
+                        case OVERALL_AGGREGATE:
+                            OverallAggregate overallAggregate = value.getOverallAggregate();
+                            String transactionType = overallAggregate.getTransactionType();
+                            aggregatesByTypeMap.put(transactionType,
+                                    OldAggregatesByType.newBuilder()
+                                            .setTransactionType(transactionType)
+                                            .setOverallAggregate(overallAggregate.getAggregate()));
+                            break;
+                        case TRANSACTION_AGGREGATE:
+                            TransactionAggregate transactionAggregate =
+                                    value.getTransactionAggregate();
+                            OldAggregatesByType.Builder builder = checkNotNull(aggregatesByTypeMap
+                                    .get(transactionAggregate.getTransactionType()));
+                            builder.addTransactionAggregate(OldTransactionAggregate.newBuilder()
+                                    .setTransactionName(transactionAggregate.getTransactionName())
+                                    .setAggregate(transactionAggregate.getAggregate())
+                                    .build());
+                            break;
+                        default:
+                            throw new RuntimeException(
+                                    "Unexpected message: " + value.getMessageCase());
+                    }
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    logger.error(t.getMessage(), t);
+                }
+
+                @Override
+                public void onCompleted() {
+                    checkNotNull(header);
+                    OldAggregateMessage.Builder aggregateMessage =
+                            OldAggregateMessage.newBuilder()
+                                    .setAgentId(header.getAgentId())
+                                    .setCaptureTime(header.getCaptureTime());
+                    for (OldAggregatesByType.Builder aggregatesByType : aggregatesByTypeMap
+                            .values()) {
+                        aggregateMessage.addAggregatesByType(aggregatesByType.build());
+                    }
+                    aggregateMessage.addAllSharedQueryText(sharedQueryTexts);
+                    collectAggregates(aggregateMessage.build(), responseObserver);
+                }
+            };
+        }
+
+        @Override
+        public void collectAggregates(OldAggregateMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
-            List<AggregatesByType> aggregatesByTypeList = request.getAggregatesByTypeList();
+            List<OldAggregatesByType> aggregatesByTypeList = request.getAggregatesByTypeList();
             if (!aggregatesByTypeList.isEmpty()) {
                 try {
                     List<Aggregate.SharedQueryText> sharedQueryTexts;
@@ -177,7 +255,58 @@ class GrpcServer {
         }
 
         @Override
-        public void collectTrace(TraceMessage request,
+        public StreamObserver<TraceStreamMessage> collectTraceStream(
+                final StreamObserver<EmptyMessage> responseObserver) {
+            return new StreamObserver<TraceStreamMessage>() {
+
+                private @MonotonicNonNull TraceStreamHeader header;
+                private List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
+                private @MonotonicNonNull Trace trace;
+
+                @Override
+                public void onNext(TraceStreamMessage value) {
+                    switch (value.getMessageCase()) {
+                        case HEADER:
+                            header = value.getHeader();
+                            break;
+                        case SHARED_QUERY_TEXT:
+                            sharedQueryTexts.add(value.getSharedQueryText());
+                            break;
+                        case TRACE:
+                            trace = value.getTrace();
+                            break;
+                        default:
+                            throw new RuntimeException(
+                                    "Unexpected message: " + value.getMessageCase());
+                    }
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    logger.error(t.getMessage(), t);
+                }
+
+                @Override
+                public void onCompleted() {
+                    checkNotNull(header);
+                    checkNotNull(trace);
+                    try {
+                        traceDao.store(header.getAgentId(), trace.toBuilder()
+                                .addAllSharedQueryText(sharedQueryTexts)
+                                .build());
+                    } catch (Throwable t) {
+                        logger.error(t.getMessage(), t);
+                        responseObserver.onError(t);
+                        return;
+                    }
+                    responseObserver.onNext(EmptyMessage.getDefaultInstance());
+                    responseObserver.onCompleted();
+                }
+            };
+        }
+
+        @Override
+        public void collectTrace(OldTraceMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
             try {
                 traceDao.store(request.getAgentId(), request.getTrace());

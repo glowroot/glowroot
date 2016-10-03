@@ -20,13 +20,13 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.ImmutableAdvancedConfig;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.common.util.Clock;
-import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
@@ -100,13 +100,21 @@ public class AggregatorTest {
                 AgentConfigUpdater agentConfigUpdater) {}
 
         @Override
-        public void collectAggregates(long captureTime, List<AggregatesByType> aggregatesByType,
-                List<String> sharedQueryTexts) {
-            // only capture first non-zero value
-            if (totalDurationNanos == 0 && !aggregatesByType.isEmpty()) {
-                totalDurationNanos =
-                        aggregatesByType.get(0).getOverallAggregate().getTotalDurationNanos();
-            }
+        public void collectAggregates(long captureTime, Aggregates aggregates) {
+            aggregates.accept(new AggregateVisitor<RuntimeException>() {
+                @Override
+                public void visitOverallAggregate(String transactionType,
+                        List<String> sharedQueryTexts, Aggregate overallAggregate) {
+                    // only capture first non-zero value
+                    if (totalDurationNanos == 0) {
+                        totalDurationNanos = overallAggregate.getTotalDurationNanos();
+                    }
+                }
+                @Override
+                public void visitTransactionAggregate(String transactionType,
+                        String transactionName, List<String> sharedQueryTexts,
+                        Aggregate transactionAggregate) {}
+            });
         }
 
         @Override

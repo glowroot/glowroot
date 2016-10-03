@@ -38,31 +38,50 @@ class SharedQueryTextLimiter {
             .maximumSize(10000)
             .build();
 
-    List<Aggregate.SharedQueryText> reduceAggregatePayloadWherePossible(List<String> fullTexts) {
-        List<Aggregate.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
-        for (String fullText : fullTexts) {
-            if (fullText.length() > 120) {
-                String fullTextSha1 =
-                        Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
-                if (sentInThePastDay.getIfPresent(fullTextSha1) == null) {
-                    // need to send full text
-                    sharedQueryTexts.add(Aggregate.SharedQueryText.newBuilder()
-                            .setFullText(fullText)
-                            .build());
-                } else {
-                    // ok to just send truncated text
-                    sharedQueryTexts.add(Aggregate.SharedQueryText.newBuilder()
-                            .setTruncatedText(fullText.substring(0, 120))
-                            .setFullTextSha1(fullTextSha1)
-                            .build());
-                }
-            } else {
-                sharedQueryTexts.add(Aggregate.SharedQueryText.newBuilder()
+    Aggregate.SharedQueryText buildAggregateSharedQueryText(String fullText) {
+        if (fullText.length() > 120) {
+            String fullTextSha1 = Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
+            if (sentInThePastDay.getIfPresent(fullTextSha1) == null) {
+                // need to send full text
+                return Aggregate.SharedQueryText.newBuilder()
                         .setFullText(fullText)
-                        .build());
+                        .build();
+            } else {
+                // ok to just send truncated text
+                return Aggregate.SharedQueryText.newBuilder()
+                        .setTruncatedText(fullText.substring(0, 120))
+                        .setFullTextSha1(fullTextSha1)
+                        .build();
             }
+        } else {
+            return Aggregate.SharedQueryText.newBuilder()
+                    .setFullText(fullText)
+                    .build();
         }
-        return sharedQueryTexts;
+    }
+
+    Trace.SharedQueryText buildTraceSharedQueryText(String fullText) {
+        if (fullText.length() > 240) {
+            String fullTextSha1 = Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
+            if (sentInThePastDay.getIfPresent(fullTextSha1) == null) {
+                // need to send full text
+                return Trace.SharedQueryText.newBuilder()
+                        .setFullText(fullText)
+                        .build();
+            } else {
+                // ok to just send truncated text
+                return Trace.SharedQueryText.newBuilder()
+                        .setTruncatedText(fullText.substring(0, 120))
+                        .setTruncatedEndText(
+                                fullText.substring(fullText.length() - 120, fullText.length()))
+                        .setFullTextSha1(fullTextSha1)
+                        .build();
+            }
+        } else {
+            return Trace.SharedQueryText.newBuilder()
+                    .setFullText(fullText)
+                    .build();
+        }
     }
 
     List<Trace.SharedQueryText> reduceTracePayloadWherePossible(

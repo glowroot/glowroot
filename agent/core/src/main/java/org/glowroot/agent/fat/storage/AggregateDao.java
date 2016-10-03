@@ -33,6 +33,8 @@ import com.google.protobuf.Parser;
 import org.checkerframework.checker.tainting.qual.Untainted;
 import org.immutables.value.Value;
 
+import org.glowroot.agent.collector.Collector.AggregateVisitor;
+import org.glowroot.agent.collector.Collector.Aggregates;
 import org.glowroot.agent.fat.storage.model.Stored;
 import org.glowroot.agent.fat.storage.util.CappedDatabase;
 import org.glowroot.agent.fat.storage.util.DataSource;
@@ -72,8 +74,6 @@ import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
-import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.Proto.OptionalDouble;
 
@@ -193,38 +193,46 @@ public class AggregateDao implements AggregateRepository {
         // TODO initial rollup in case store is not called in a reasonable time
     }
 
-    public void store(long captureTime, List<AggregatesByType> aggregatesByType,
-            List<String> sharedQueryTexts) throws Exception {
-        List<TruncatedQueryText> truncatedQueryTexts = Lists.newArrayList();
-        for (String sharedQueryText : sharedQueryTexts) {
-            String truncatedText;
-            String fullTextSha1;
-            if (sharedQueryText.length() > StorageConfig.QUERY_TEXT_TRUNCATE) {
-                truncatedText = sharedQueryText.substring(0, StorageConfig.QUERY_TEXT_TRUNCATE);
-                fullTextSha1 = fullQueryTextDao.updateLastCaptureTime(sharedQueryText, captureTime);
-            } else {
-                truncatedText = sharedQueryText;
-                fullTextSha1 = null;
-            }
-            truncatedQueryTexts.add(ImmutableTruncatedQueryText.of(truncatedText, fullTextSha1));
-        }
+    public void store(final long captureTime, Aggregates aggregates) throws Exception {
         // intentionally not using batch update as that could cause memory spike while preparing a
         // large batch
-        CappedDatabase cappedDatabase = rollupCappedDatabases.get(0);
-        for (AggregatesByType aggregatesByType1 : aggregatesByType) {
-            String transactionType = aggregatesByType1.getTransactionType();
-            dataSource.update(new AggregateInsert(transactionType, null, captureTime,
-                    aggregatesByType1.getOverallAggregate(), truncatedQueryTexts, 0,
-                    cappedDatabase));
-            transactionTypeDao.updateLastCaptureTime(transactionType, captureTime);
-            for (TransactionAggregate transactionAggregate : aggregatesByType1
-                    .getTransactionAggregateList()) {
-                dataSource.update(new AggregateInsert(transactionType,
-                        transactionAggregate.getTransactionName(), captureTime,
-                        transactionAggregate.getAggregate(), truncatedQueryTexts, 0,
-                        cappedDatabase));
+        final CappedDatabase cappedDatabase = rollupCappedDatabases.get(0);
+        final List<TruncatedQueryText> truncatedQueryTexts = Lists.newArrayList();
+        aggregates.accept(new AggregateVisitor<Exception>() {
+            @Override
+            public void visitOverallAggregate(String transactionType, List<String> sharedQueryTexts,
+                    Aggregate overallAggregate) throws Exception {
+                addToTruncatedQueryTexts(sharedQueryTexts);
+                dataSource.update(new AggregateInsert(transactionType, null, captureTime,
+                        overallAggregate, truncatedQueryTexts, 0, cappedDatabase));
+                transactionTypeDao.updateLastCaptureTime(transactionType, captureTime);
             }
-        }
+            @Override
+            public void visitTransactionAggregate(String transactionType, String transactionName,
+                    List<String> sharedQueryTexts, Aggregate transactionAggregate)
+                    throws Exception {
+                addToTruncatedQueryTexts(sharedQueryTexts);
+                dataSource.update(new AggregateInsert(transactionType, transactionName, captureTime,
+                        transactionAggregate, truncatedQueryTexts, 0, cappedDatabase));
+            }
+            private void addToTruncatedQueryTexts(List<String> sharedQueryTexts) throws SQLException {
+                for (String sharedQueryText : sharedQueryTexts) {
+                    String truncatedText;
+                    String fullTextSha1;
+                    if (sharedQueryText.length() > StorageConfig.QUERY_TEXT_TRUNCATE) {
+                        truncatedText =
+                                sharedQueryText.substring(0, StorageConfig.QUERY_TEXT_TRUNCATE);
+                        fullTextSha1 = fullQueryTextDao.updateLastCaptureTime(sharedQueryText,
+                                captureTime);
+                    } else {
+                        truncatedText = sharedQueryText;
+                        fullTextSha1 = null;
+                    }
+                    truncatedQueryTexts
+                            .add(ImmutableTruncatedQueryText.of(truncatedText, fullTextSha1));
+                }
+            }
+        });
         synchronized (rollupLock) {
             List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
             for (int i = 1; i < rollupConfigs.size(); i++) {

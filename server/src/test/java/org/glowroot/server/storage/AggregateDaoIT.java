@@ -49,8 +49,8 @@ import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.wire.api.model.AggregateOuterClass.AggregatesByType;
-import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
+import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
+import org.glowroot.wire.api.model.AggregateOuterClass.OldTransactionAggregate;
 import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -264,15 +264,15 @@ public class AggregateDaoIT {
         assertThat(query.getExecutionCount()).isEqualTo(4);
     }
 
-    private static List<AggregatesByType> createData() {
-        List<AggregatesByType> aggregatesByType = Lists.newArrayList();
-        aggregatesByType.add(AggregatesByType.newBuilder()
+    private static List<OldAggregatesByType> createData() {
+        List<OldAggregatesByType> aggregatesByType = Lists.newArrayList();
+        aggregatesByType.add(OldAggregatesByType.newBuilder()
                 .setTransactionType("tt0")
                 .setOverallAggregate(createOverallAggregate())
                 .addTransactionAggregate(createTransactionAggregate1())
                 .addTransactionAggregate(createTransactionAggregate2())
                 .build());
-        aggregatesByType.add(AggregatesByType.newBuilder()
+        aggregatesByType.add(OldAggregatesByType.newBuilder()
                 .setTransactionType("tt1")
                 .setOverallAggregate(createOverallAggregate())
                 .addTransactionAggregate(createTransactionAggregate1())
@@ -308,8 +308,8 @@ public class AggregateDaoIT {
                 .build();
     }
 
-    private static TransactionAggregate createTransactionAggregate1() {
-        return TransactionAggregate.newBuilder()
+    private static OldTransactionAggregate createTransactionAggregate1() {
+        return OldTransactionAggregate.newBuilder()
                 .setTransactionName("tn1")
                 .setAggregate(Aggregate.newBuilder()
                         .setTotalDurationNanos(1234)
@@ -336,8 +336,8 @@ public class AggregateDaoIT {
                 .build();
     }
 
-    private static TransactionAggregate createTransactionAggregate2() {
-        return TransactionAggregate.newBuilder()
+    private static OldTransactionAggregate createTransactionAggregate2() {
+        return OldTransactionAggregate.newBuilder()
                 .setTransactionName("tn2")
                 .setAggregate(Aggregate.newBuilder()
                         .setTotalDurationNanos(2345)

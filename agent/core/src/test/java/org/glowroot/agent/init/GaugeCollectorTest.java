@@ -30,6 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 
+import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.GaugeConfig;
@@ -38,7 +39,6 @@ import org.glowroot.agent.config.ImmutableGaugeConfig;
 import org.glowroot.agent.config.ImmutableMBeanAttribute;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.util.Clock;
-import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
