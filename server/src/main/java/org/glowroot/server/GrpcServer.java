@@ -71,18 +71,21 @@ class GrpcServer {
     private final GaugeValueDao gaugeValueDao;
     private final TraceDao traceDao;
     private final AlertingService alertingService;
+    private final String version;
 
     private final DownstreamServiceImpl downstreamService;
 
     private final ServerImpl server;
 
     GrpcServer(int port, AgentDao agentDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,
-            TraceDao traceDao, AlertingService alertingService) throws IOException {
+            TraceDao traceDao, AlertingService alertingService, String version)
+            throws IOException {
         this.agentDao = agentDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
         this.traceDao = traceDao;
         this.alertingService = alertingService;
+        this.version = version;
 
         downstreamService = new DownstreamServiceImpl(agentDao);
 
@@ -116,11 +119,14 @@ class GrpcServer {
                 responseObserver.onError(t);
                 return;
             }
+            logger.info("agent connected: {}, version {}", request.getAgentId(),
+                    request.getEnvironment().getJavaInfo().getGlowrootAgentVersion());
             if (updatedAgentConfig.equals(request.getAgentConfig())) {
                 responseObserver.onNext(InitResponse.getDefaultInstance());
             } else {
                 responseObserver.onNext(InitResponse.newBuilder()
                         .setAgentConfig(updatedAgentConfig)
+                        .setGlowrootServerVersion(version)
                         .build());
             }
             responseObserver.onCompleted();

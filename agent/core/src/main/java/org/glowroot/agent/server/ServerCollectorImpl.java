@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import io.grpc.stub.StreamObserver;
@@ -56,21 +54,25 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 public class ServerCollectorImpl implements Collector {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerCollectorImpl.class);
 
+    // log startup messages using logger name "org.glowroot"
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
+
     private final String agentId;
+    private final String collectorHost;
+    private final int collectorPort;
     private final ServerConnection serverConnection;
     private final CollectorServiceStub collectorServiceStub;
     private final DownstreamServiceObserver downstreamServiceObserver;
 
     private final SharedQueryTextLimiter sharedQueryTextLimiter = new SharedQueryTextLimiter();
 
-    public ServerCollectorImpl(Map<String, String> properties, @Nullable String collectorHost,
+    public ServerCollectorImpl(Map<String, String> properties, String collectorHost,
             LiveJvmServiceImpl liveJvmService, LiveWeavingServiceImpl liveWeavingService,
             LiveTraceRepositoryImpl liveTraceRepository, AgentConfigUpdater agentConfigUpdater)
             throws Exception {
@@ -89,8 +91,9 @@ public class ServerCollectorImpl implements Collector {
         } else {
             collectorPort = Integer.parseInt(collectorPortStr);
         }
-        checkNotNull(collectorHost);
         this.agentId = agentId;
+        this.collectorHost = collectorHost;
+        this.collectorPort = collectorPort;
 
         AtomicBoolean inConnectionFailure = new AtomicBoolean();
         serverConnection = new ServerConnection(collectorHost, collectorPort, inConnectionFailure);
@@ -99,7 +102,6 @@ public class ServerCollectorImpl implements Collector {
         downstreamServiceObserver = new DownstreamServiceObserver(serverConnection,
                 agentConfigUpdater, liveJvmService, liveWeavingService, liveTraceRepository,
                 agentId, inConnectionFailure, sharedQueryTextLimiter);
-        downstreamServiceObserver.connectAsync();
     }
 
     @Override
@@ -116,7 +118,14 @@ public class ServerCollectorImpl implements Collector {
                 collectorServiceStub.collectInit(initMessage, responseObserver);
             }
             @Override
-            void doWithResponse(InitResponse response) {
+            void doWithResponse(final InitResponse response) {
+                serverConnection.suppressLogCollector(new Runnable() {
+                    @Override
+                    public void run() {
+                        startupLogger.info("connected to server {}:{}, version {}", collectorHost,
+                                collectorPort, response.getGlowrootServerVersion());
+                    }
+                });
                 if (response.hasAgentConfig()) {
                     try {
                         agentConfigUpdater.update(response.getAgentConfig());
@@ -124,6 +133,7 @@ public class ServerCollectorImpl implements Collector {
                         logger.error(e.getMessage(), e);
                     }
                 }
+                downstreamServiceObserver.connectAsync();
             }
         });
     }

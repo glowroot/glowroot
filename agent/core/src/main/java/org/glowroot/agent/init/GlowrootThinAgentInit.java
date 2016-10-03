@@ -96,8 +96,9 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
             public @Nullable Void call() throws Exception {
                 Collector collector;
                 if (customCollector == null) {
-                    serverCollector = new ServerCollectorImpl(properties, collectorHost,
-                            agentModule.getLiveJvmService(), agentModule.getLiveWeavingService(),
+                    serverCollector = new ServerCollectorImpl(properties,
+                            checkNotNull(collectorHost), agentModule.getLiveJvmService(),
+                            agentModule.getLiveWeavingService(),
                             agentModule.getLiveTraceRepository(), agentConfigUpdater);
                     collector = serverCollector;
                 } else {

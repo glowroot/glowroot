@@ -74,7 +74,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 class ServerModule {
 
-    private static final Logger logger;
+    private static final Logger startupLogger;
 
     static {
         CodeSource codeSource = ServerModule.class.getProtectionDomain().getCodeSource();
@@ -93,9 +93,9 @@ class ServerModule {
                         logbackXmlOverride.getAbsolutePath());
             }
         }
-        logger = LoggerFactory.getLogger(ServerModule.class);
+        startupLogger = LoggerFactory.getLogger("org.glowroot");
         if (exception != null) {
-            logger.error(exception.getMessage(), exception);
+            startupLogger.error(exception.getMessage(), exception);
         }
     }
 
@@ -118,6 +118,7 @@ class ServerModule {
 
             Clock clock = Clock.systemClock();
             String version = Version.getVersion(Bootstrap.class);
+            startupLogger.info("Glowroot version: {}", version);
 
             ServerConfiguration serverConfig = getServerConfiguration();
             session = connect(serverConfig);
@@ -165,7 +166,7 @@ class ServerModule {
                     triggeredAlertDao, aggregateDao, gaugeValueDao, rollupLevelService,
                     new MailService());
             server = new GrpcServer(serverConfig.grpcPort(), agentDao, aggregateDao, gaugeValueDao,
-                    traceDao, alertingService);
+                    traceDao, alertingService, version);
             DownstreamServiceImpl downstreamService = server.getDownstreamService();
             configRepository.addConfigListener(new ConfigListener() {
                 @Override
@@ -202,7 +203,7 @@ class ServerModule {
                     .version(version)
                     .build();
         } catch (Throwable t) {
-            logger.error(t.getMessage(), t);
+            startupLogger.error(t.getMessage(), t);
             // try to shut down cleanly, otherwise apache commons daemon (via Bootstrap) doesn't
             // know service failed to start up
             if (uiModule != null) {
@@ -259,10 +260,10 @@ class ServerModule {
                         .build();
                 return cluster.connect();
             } catch (NoHostAvailableException e) {
-                logger.debug(e.getMessage(), e);
+                startupLogger.debug(e.getMessage(), e);
                 lastException = e;
                 if (!waitingForCassandraLogged) {
-                    logger.info("waiting for cassandra ({}) ...",
+                    startupLogger.info("waiting for cassandra ({}) ...",
                             Joiner.on(",").join(serverConfig.cassandraContactPoint()));
                 }
                 waitingForCassandraLogged = true;

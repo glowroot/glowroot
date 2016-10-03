@@ -134,9 +134,9 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
                 @Override
                 public void run() {
                     if (initialConnect) {
-                        logger.info("connection has been established to glowroot server");
+                        logger.info("downstream connection established");
                     } else {
-                        logger.info("connection has been re-established to glowroot server");
+                        logger.info("downstream connection re-established");
                     }
                 }
             });
@@ -164,8 +164,8 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
             serverConnection.suppressLogCollector(new Runnable() {
                 @Override
                 public void run() {
-                    logger.warn("unable to connect to glowroot server (will keep trying): "
-                            + t.getMessage());
+                    logger.warn("unable to establish downstream connection (will keep trying): {}",
+                            t.getMessage());
                     logger.debug(t.getMessage(), t);
                 }
             });
