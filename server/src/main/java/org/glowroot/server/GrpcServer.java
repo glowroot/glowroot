@@ -122,14 +122,12 @@ class GrpcServer {
             }
             logger.info("agent connected: {}, version {}", request.getAgentId(),
                     request.getEnvironment().getJavaInfo().getGlowrootAgentVersion());
-            if (updatedAgentConfig.equals(request.getAgentConfig())) {
-                responseObserver.onNext(InitResponse.getDefaultInstance());
-            } else {
-                responseObserver.onNext(InitResponse.newBuilder()
-                        .setAgentConfig(updatedAgentConfig)
-                        .setGlowrootServerVersion(version)
-                        .build());
+            InitResponse.Builder response = InitResponse.newBuilder()
+                    .setGlowrootServerVersion(version);
+            if (!updatedAgentConfig.equals(request.getAgentConfig())) {
+                response.setAgentConfig(updatedAgentConfig);
             }
+            responseObserver.onNext(response.build());
             responseObserver.onCompleted();
         }
 
