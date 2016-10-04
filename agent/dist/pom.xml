@@ -196,7 +196,6 @@
               <descriptors>
                 <descriptor>${project.build.directory}/../dist.xml</descriptor>
               </descriptors>
-              <attach>false</attach>
             </configuration>
             <phase>package</phase>
             <goals>
