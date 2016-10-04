@@ -188,5 +188,26 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>force-java6</id>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <artifactId>maven-compiler-plugin</artifactId>
+              <executions>
+                <execution>
+                  <id>default-testCompile</id>
+                  <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
   </profiles>
 </project>
