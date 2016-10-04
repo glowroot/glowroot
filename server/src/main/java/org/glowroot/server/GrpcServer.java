@@ -16,6 +16,7 @@
 package org.glowroot.server;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 
@@ -67,6 +68,9 @@ class GrpcServer {
 
     private static final Logger logger = LoggerFactory.getLogger(GrpcServer.class);
 
+    // log startup messages using logger name "org.glowroot"
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
+
     private final AgentDao agentDao;
     private final AggregateDao aggregateDao;
     private final GaugeValueDao gaugeValueDao;
@@ -78,9 +82,9 @@ class GrpcServer {
 
     private final ServerImpl server;
 
-    GrpcServer(int port, AgentDao agentDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,
-            TraceDao traceDao, AlertingService alertingService, String version)
-            throws IOException {
+    GrpcServer(String bindAddress, int port, AgentDao agentDao, AggregateDao aggregateDao,
+            GaugeValueDao gaugeValueDao, TraceDao traceDao, AlertingService alertingService,
+            String version) throws IOException {
         this.agentDao = agentDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
@@ -90,12 +94,14 @@ class GrpcServer {
 
         downstreamService = new DownstreamServiceImpl(agentDao);
 
-        server = NettyServerBuilder.forPort(port)
+        server = NettyServerBuilder.forAddress(new InetSocketAddress(bindAddress, port))
                 .addService(new CollectorServiceImpl().bindService())
                 .addService(downstreamService.bindService())
                 .maxMessageSize(1024 * 1024 * GRPC_MAX_MESSAGE_SIZE_MB)
                 .build()
                 .start();
+
+        startupLogger.info("gRPC listening on {}:{}", bindAddress, port);
     }
 
     DownstreamServiceImpl getDownstreamService() {

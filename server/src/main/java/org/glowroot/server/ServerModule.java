@@ -33,12 +33,14 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.Files;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,13 +142,20 @@ class ServerModule {
             RoleDao roleDao = new RoleDao(session, keyspace);
             ConfigRepositoryImpl configRepository =
                     new ConfigRepositoryImpl(serverConfigDao, agentDao, userDao, roleDao);
+            String uiBindAddressOverride = serverConfig.uiBindAddressOverride();
             Integer uiPortOverride = serverConfig.uiPortOverride();
-            if (uiPortOverride != null) {
-                // TODO supplying ui.port in glowroot-server.properties should make the port
-                // non-editable in admin UI
+            if (uiBindAddressOverride != null || uiPortOverride != null) {
+                // TODO supplying ui.bindAddress in glowroot-server.properties should make the bind
+                // address non-editable in admin UI, and supplying ui.port in
+                // glowroot-server.properties should make the port non-editable in admin UI
                 WebConfig webConfig = configRepository.getWebConfig();
-                WebConfig updatedWebConfig =
-                        ImmutableWebConfig.copyOf(webConfig).withPort(uiPortOverride);
+                ImmutableWebConfig updatedWebConfig = ImmutableWebConfig.copyOf(webConfig);
+                if (uiBindAddressOverride != null) {
+                    updatedWebConfig = updatedWebConfig.withBindAddress(uiBindAddressOverride);
+                }
+                if (uiPortOverride != null) {
+                    updatedWebConfig = updatedWebConfig.withPort(uiPortOverride);
+                }
                 configRepository.updateWebConfig(updatedWebConfig, webConfig.version());
             }
             serverConfigDao.setConfigRepository(configRepository);
@@ -165,8 +174,8 @@ class ServerModule {
             AlertingService alertingService = new AlertingService(configRepository,
                     triggeredAlertDao, aggregateDao, gaugeValueDao, rollupLevelService,
                     new MailService());
-            server = new GrpcServer(serverConfig.grpcPort(), agentDao, aggregateDao, gaugeValueDao,
-                    traceDao, alertingService, version);
+            server = new GrpcServer(serverConfig.grpcBindAddress(), serverConfig.grpcPort(),
+                    agentDao, aggregateDao, gaugeValueDao, traceDao, alertingService, version);
             DownstreamServiceImpl downstreamService = server.getDownstreamService();
             configRepository.addConfigListener(new ConfigListener() {
                 @Override
@@ -288,6 +297,12 @@ class ServerModule {
         if (!propFile.exists()) {
             return builder.build();
         }
+        // upgrade from 0.9.4 to 0.9.5
+        String content = Files.toString(propFile, Charsets.UTF_8);
+        if (content.contains("cassandra.contact.points")) {
+            content = content.replace("cassandra.contact.points", "cassandra.contactPoints");
+            Files.write(content, propFile, Charsets.UTF_8);
+        }
         Properties props = new Properties();
         InputStream in = new FileInputStream(propFile);
         try {
@@ -295,7 +310,7 @@ class ServerModule {
         } finally {
             in.close();
         }
-        String cassandraContactPoints = props.getProperty("cassandra.contact.points");
+        String cassandraContactPoints = props.getProperty("cassandra.contactPoints");
         if (!Strings.isNullOrEmpty(cassandraContactPoints)) {
             builder.cassandraContactPoint(Splitter.on(',').trimResults().omitEmptyStrings()
                     .splitToList(cassandraContactPoints));
@@ -304,9 +319,17 @@ class ServerModule {
         if (!Strings.isNullOrEmpty(cassandraKeyspace)) {
             builder.cassandraKeyspace(cassandraKeyspace);
         }
+        String grpcBindAddress = props.getProperty("grpc.bindAddress");
+        if (!Strings.isNullOrEmpty(grpcBindAddress)) {
+            builder.grpcBindAddress(grpcBindAddress);
+        }
         String grpcPortText = props.getProperty("grpc.port");
         if (!Strings.isNullOrEmpty(grpcPortText)) {
             builder.grpcPort(Integer.parseInt(grpcPortText));
+        }
+        String uiBindAddress = props.getProperty("ui.bindAddress");
+        if (!Strings.isNullOrEmpty(uiBindAddress)) {
+            builder.uiBindAddressOverride(uiBindAddress);
         }
         String uiPortText = props.getProperty("ui.port");
         if (!Strings.isNullOrEmpty(uiPortText)) {
@@ -327,9 +350,14 @@ class ServerModule {
             return "glowroot";
         }
         @Value.Default
+        String grpcBindAddress() {
+            return "0.0.0.0";
+        }
+        @Value.Default
         int grpcPort() {
             return 8181;
         }
+        abstract @Nullable String uiBindAddressOverride();
         abstract @Nullable Integer uiPortOverride();
     }
 
