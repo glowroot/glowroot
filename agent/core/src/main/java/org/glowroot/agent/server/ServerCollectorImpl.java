@@ -47,6 +47,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitResponse;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent.Level;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.OverallAggregate;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamHeader;
@@ -119,13 +120,10 @@ public class ServerCollectorImpl implements Collector {
             }
             @Override
             void doWithResponse(final InitResponse response) {
-                serverConnection.suppressLogCollector(new Runnable() {
-                    @Override
-                    public void run() {
-                        startupLogger.info("connected to server {}:{}, version {}", collectorHost,
-                                collectorPort, response.getGlowrootServerVersion());
-                    }
-                });
+                // don't need to suppress sending this log message to the server because startup
+                // logger info messages are never sent to the server
+                startupLogger.info("connected to server {}:{}, version {}", collectorHost,
+                        collectorPort, response.getGlowrootServerVersion());
                 if (response.hasAgentConfig()) {
                     try {
                         agentConfigUpdater.update(response.getAgentConfig());
@@ -272,6 +270,10 @@ public class ServerCollectorImpl implements Collector {
     @Override
     public void log(LogEvent logEvent) {
         if (serverConnection.suppressLogCollector()) {
+            return;
+        }
+        if (logEvent.getLoggerName().equals("org.glowroot") && logEvent.getLevel() == Level.INFO) {
+            // never send startup logger info messages to server
             return;
         }
         final LogMessage logMessage = LogMessage.newBuilder()

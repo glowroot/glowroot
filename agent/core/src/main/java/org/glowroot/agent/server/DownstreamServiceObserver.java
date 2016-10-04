@@ -133,16 +133,15 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
         inMaybeConnectionFailure.set(false);
         boolean errorFixed = inConnectionFailure.getAndSet(false);
         if (initialConnect || errorFixed) {
-            serverConnection.suppressLogCollector(new Runnable() {
-                @Override
-                public void run() {
-                    if (initialConnect) {
-                        startupLogger.info("downstream connection established");
-                    } else {
-                        startupLogger.info("downstream connection re-established");
-                    }
-                }
-            });
+            if (initialConnect) {
+                // don't need to suppress sending this log message to the server because startup
+                // logger info messages are never sent to the server
+                startupLogger.info("downstream connection established with server");
+            } else {
+                // don't need to suppress sending this log message to the server because startup
+                // logger info messages are never sent to the server
+                startupLogger.info("downstream connection re-established with server");
+            }
         }
         if (request.getMessageCase() == MessageCase.HELLO_ACK) {
             return;
@@ -167,9 +166,8 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
             serverConnection.suppressLogCollector(new Runnable() {
                 @Override
                 public void run() {
-                    startupLogger.warn(
-                            "unable to establish downstream connection (will keep trying): {}",
-                            t.getMessage());
+                    startupLogger.warn("unable to establish downstream connection with server"
+                            + " (will keep trying): {}", t.getMessage());
                     logger.debug(t.getMessage(), t);
                 }
             });
