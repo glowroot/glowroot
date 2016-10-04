@@ -99,7 +99,7 @@ public class Version {
     private static String getSnapshotVersion(String version, Attributes mainAttributes) {
         StringBuilder snapshotVersion = new StringBuilder(version);
         String commit = mainAttributes.getValue("Build-Commit");
-        if (commit != null && !commit.isEmpty()) {
+        if (commit != null && !commit.equals("[none]")) {
             if (commit.length() == 40) {
                 snapshotVersion.append(", commit ");
                 snapshotVersion.append(commit.substring(0, 10));

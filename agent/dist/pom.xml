@@ -16,8 +16,7 @@
   <description>Glowroot Agent</description>
 
   <properties>
-    <!-- this is needed, otherwise manifest's Build-Commit is the text "null" when not provided -->
-    <glowroot.build.commit></glowroot.build.commit>
+    <glowroot.build.commit>[none]</glowroot.build.commit>
   </properties>
 
   <dependencies>

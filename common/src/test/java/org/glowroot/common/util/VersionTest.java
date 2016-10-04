@@ -77,6 +77,21 @@ public class VersionTest {
     }
 
     @Test
+    public void testWithNoneBuildCommit() {
+        // given
+        Manifest manifest = mock(Manifest.class);
+        Attributes attributes = mock(Attributes.class);
+        when(manifest.getMainAttributes()).thenReturn(attributes);
+        when(attributes.getValue("Implementation-Version")).thenReturn("0.1.2-SNAPSHOT");
+        when(attributes.getValue("Build-Commit")).thenReturn("[none]");
+        when(attributes.getValue("Build-Time")).thenReturn("xyz");
+        // when
+        String version = Version.getVersion(manifest);
+        // then
+        assertThat(version).isEqualTo("0.1.2-SNAPSHOT, built xyz");
+    }
+
+    @Test
     public void testWithInvalidBuildCommit() {
         // given
         Manifest manifest = mock(Manifest.class);
