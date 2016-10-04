@@ -45,7 +45,7 @@ class ConfigServiceImpl implements ConfigService {
     @Override
     public void updateTransactionConfig(TransactionConfig config) throws Exception {
         AgentConfig agentConfig = server.getAgentConfig();
-        server.updateAgentConfig(AgentConfig.newBuilder(agentConfig)
+        server.updateAgentConfig(agentConfig.toBuilder()
                 .setTransactionConfig(config)
                 .build());
     }
@@ -79,7 +79,7 @@ class ConfigServiceImpl implements ConfigService {
     @Override
     public int updateInstrumentationConfigs(List<InstrumentationConfig> configs) throws Exception {
         AgentConfig agentConfig = server.getAgentConfig();
-        server.updateAgentConfig(AgentConfig.newBuilder(agentConfig)
+        server.updateAgentConfig(agentConfig.toBuilder()
                 .clearInstrumentationConfig()
                 .addAllInstrumentationConfig(configs)
                 .build());
@@ -93,7 +93,7 @@ class ConfigServiceImpl implements ConfigService {
     @Override
     public void updateUserRecordingConfig(UserRecordingConfig config) throws Exception {
         AgentConfig agentConfig = server.getAgentConfig();
-        server.updateAgentConfig(AgentConfig.newBuilder(agentConfig)
+        server.updateAgentConfig(agentConfig.toBuilder()
                 .setUserRecordingConfig(config)
                 .build());
     }
@@ -101,7 +101,7 @@ class ConfigServiceImpl implements ConfigService {
     @Override
     public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
         AgentConfig agentConfig = server.getAgentConfig();
-        server.updateAgentConfig(AgentConfig.newBuilder(agentConfig)
+        server.updateAgentConfig(agentConfig.toBuilder()
                 .setAdvancedConfig(config)
                 .build());
     }
@@ -115,7 +115,7 @@ class ConfigServiceImpl implements ConfigService {
             PluginConfig.Builder pluginConfigBuilder = PluginConfig.newBuilder()
                     .setId(pluginConfig.getId());
             for (PluginProperty pluginProperty : pluginConfig.getPropertyList()) {
-                pluginConfigBuilder.addProperty(PluginProperty.newBuilder(pluginProperty)
+                pluginConfigBuilder.addProperty(pluginProperty.toBuilder()
                         .setValue(pluginProperty.getDefault()));
             }
             builder.addPluginConfig(pluginConfigBuilder.build());
@@ -132,7 +132,7 @@ class ConfigServiceImpl implements ConfigService {
         while (i.hasNext()) {
             PluginProperty existingPluginProperty = i.next();
             if (existingPluginProperty.getName().equals(name)) {
-                i.set(PluginProperty.newBuilder(existingPluginProperty)
+                i.set(existingPluginProperty.toBuilder()
                         .setValue(value)
                         .build());
                 found = true;
@@ -142,7 +142,7 @@ class ConfigServiceImpl implements ConfigService {
         if (!found) {
             throw new IllegalStateException("Could not find plugin property with name: " + name);
         }
-        updatePluginConfig(PluginConfig.newBuilder(pluginConfig)
+        updatePluginConfig(pluginConfig.toBuilder()
                 .clearProperty()
                 .addAllProperty(properties)
                 .build());
@@ -173,7 +173,7 @@ class ConfigServiceImpl implements ConfigService {
         if (!found) {
             throw new IllegalStateException("Could not find plugin with id: " + config.getId());
         }
-        server.updateAgentConfig(AgentConfig.newBuilder(agentConfig)
+        server.updateAgentConfig(agentConfig.toBuilder()
                 .clearPluginConfig()
                 .addAllPluginConfig(pluginConfigs)
                 .build());

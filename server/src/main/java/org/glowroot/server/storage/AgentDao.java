@@ -167,7 +167,7 @@ public class AgentDao implements AgentRepository {
                         continue;
                     }
                     // overlay existing property value
-                    properties.add(PluginProperty.newBuilder(agentProperty)
+                    properties.add(agentProperty.toBuilder()
                             .setValue(existingProperty.getValue())
                             .build());
                 }
@@ -177,7 +177,7 @@ public class AgentDao implements AgentRepository {
                         .addAllProperty(properties)
                         .build());
             }
-            updatedAgentConfig = AgentConfig.newBuilder(existingAgentConfig)
+            updatedAgentConfig = existingAgentConfig.toBuilder()
                     .clearPluginConfig()
                     .addAllPluginConfig(pluginConfigs)
                     .build();

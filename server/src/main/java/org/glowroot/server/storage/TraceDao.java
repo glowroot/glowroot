@@ -356,7 +356,7 @@ public class TraceDao implements TraceRepository {
 
         // TEMPORARY UNTIL ROLL OUT AGENT 0.9.0
         if (header.getTransactionType().equals("Servlet")) {
-            header = Trace.Header.newBuilder(header)
+            header = header.toBuilder()
                     .setTransactionType("Web")
                     .build();
         }

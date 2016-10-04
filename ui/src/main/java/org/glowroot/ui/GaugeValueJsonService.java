@@ -197,7 +197,7 @@ class GaugeValueJsonService {
             // make copy in case ImmutableList
             gaugeValues = Lists.newArrayList(gaugeValues);
             GaugeValue lastGaugeValue = gaugeValues.get(gaugeValues.size() - 1);
-            gaugeValues.set(gaugeValues.size() - 1, GaugeValue.newBuilder(lastGaugeValue)
+            gaugeValues.set(gaugeValues.size() - 1, lastGaugeValue.toBuilder()
                     .setCaptureTime(maxCaptureTime)
                     .build());
             map.put(gaugeName, gaugeValues);

@@ -316,7 +316,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!priorVersion.equals(existingVersion)) {
                 throw new OptimisticLockException();
             }
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+            AgentConfig updatedAgentConfig = agentConfig.toBuilder()
                     .setTransactionConfig(transactionConfig)
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
@@ -333,7 +333,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 throw new IllegalStateException("Agent config not found");
             }
             checkGaugeDoesNotExist(gaugeConfig, agentConfig.getGaugeConfigList());
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+            AgentConfig updatedAgentConfig = agentConfig.toBuilder()
                     .addGaugeConfig(gaugeConfig)
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
@@ -368,7 +368,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!found) {
                 throw new OptimisticLockException();
             }
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+            AgentConfig updatedAgentConfig = agentConfig.toBuilder()
                     .clearGaugeConfig()
                     .addAllGaugeConfig(existingGaugeConfigs)
                     .build();
@@ -399,7 +399,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!found) {
                 throw new OptimisticLockException();
             }
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+            AgentConfig updatedAgentConfig = agentConfig.toBuilder()
                     .clearGaugeConfig()
                     .addAllGaugeConfig(existingGaugeConfigs)
                     .build();
@@ -417,7 +417,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 throw new IllegalStateException("Agent config not found");
             }
             checkAlertDoesNotExist(alertConfig, agentConfig.getAlertConfigList());
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+            AgentConfig updatedAgentConfig = agentConfig.toBuilder()
                     .addAlertConfig(alertConfig)
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
@@ -448,7 +448,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!found) {
                 throw new OptimisticLockException();
             }
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+            AgentConfig updatedAgentConfig = agentConfig.toBuilder()
                     .clearAlertConfig()
                     .addAllAlertConfig(existingAlertConfigs)
                     .build();
@@ -479,7 +479,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!found) {
                 throw new OptimisticLockException();
             }
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+            AgentConfig updatedAgentConfig = agentConfig.toBuilder()
                     .clearAlertConfig()
                     .addAllAlertConfig(existingAlertConfigs)
                     .build();
@@ -501,7 +501,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!priorVersion.equals(existingVersion)) {
                 throw new OptimisticLockException();
             }
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+            AgentConfig updatedAgentConfig = agentConfig.toBuilder()
                     .setUiConfig(uiConfig)
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
@@ -537,7 +537,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!found) {
                 throw new IllegalStateException("Plugin config not found: " + pluginId);
             }
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+            AgentConfig updatedAgentConfig = agentConfig.toBuilder()
                     .clearPluginConfig()
                     .addAllPluginConfig(pluginConfigs)
                     .build();
@@ -557,7 +557,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
             checkInstrumentationDoesNotExist(instrumentationConfig,
                     agentConfig.getInstrumentationConfigList());
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+            AgentConfig updatedAgentConfig = agentConfig.toBuilder()
                     .addInstrumentationConfig(instrumentationConfig)
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
@@ -588,7 +588,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!found) {
                 throw new OptimisticLockException();
             }
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+            AgentConfig updatedAgentConfig = agentConfig.toBuilder()
                     .clearInstrumentationConfig()
                     .addAllInstrumentationConfig(existingInstrumentationConfigs)
                     .build();
@@ -621,7 +621,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!remainingVersions.isEmpty()) {
                 throw new OptimisticLockException();
             }
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+            AgentConfig updatedAgentConfig = agentConfig.toBuilder()
                     .clearInstrumentationConfig()
                     .addAllInstrumentationConfig(existingInstrumentationConfigs)
                     .build();
@@ -639,7 +639,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (agentConfig == null) {
                 throw new IllegalStateException("Agent config not found");
             }
-            AgentConfig.Builder builder = AgentConfig.newBuilder(agentConfig);
+            AgentConfig.Builder builder = agentConfig.toBuilder();
             List<InstrumentationConfig> instrumentationConfigs =
                     agentConfig.getInstrumentationConfigList();
             for (InstrumentationConfig config : configs) {
@@ -668,7 +668,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!priorVersion.equals(existingVersion)) {
                 throw new OptimisticLockException();
             }
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+            AgentConfig updatedAgentConfig = agentConfig.toBuilder()
                     .setUserRecordingConfig(userRecordingConfig)
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
@@ -689,7 +689,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!priorVersion.equals(existingVersion)) {
                 throw new OptimisticLockException();
             }
-            AgentConfig updatedAgentConfig = AgentConfig.newBuilder(agentConfig)
+            AgentConfig updatedAgentConfig = agentConfig.toBuilder()
                     .setAdvancedConfig(advancedConfig)
                     .build();
             agentDao.storeAgentConfig(agentId, updatedAgentConfig);
@@ -878,7 +878,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 throw new IllegalStateException("Plugin property " + prop.getName()
                         + " has incorrect type: " + prop.getValue().getValCase());
             }
-            builder.addProperty(PluginProperty.newBuilder(existingProperty)
+            builder.addProperty(existingProperty.toBuilder()
                     .setValue(prop.getValue()));
         }
         if (!props.isEmpty()) {

@@ -72,8 +72,7 @@ public class InstrumentationConfigOrderingTest {
         // given
         Ordering<InstrumentationConfig> ordering = new InstrumentationConfigOrdering();
         // when
-        int compare = ordering.compare(left,
-                InstrumentationConfig.newBuilder(right).setClassName("a").build());
+        int compare = ordering.compare(left, right.toBuilder().setClassName("a").build());
         // then
         assertThat(compare).isPositive();
     }
@@ -83,9 +82,8 @@ public class InstrumentationConfigOrderingTest {
         // given
         Ordering<InstrumentationConfig> ordering = new InstrumentationConfigOrdering();
         // when
-        int compare = ordering.compare(
-                InstrumentationConfig.newBuilder(left).setMethodName("m").build(),
-                InstrumentationConfig.newBuilder(right).setClassName("a").build());
+        int compare = ordering.compare(left.toBuilder().setMethodName("m").build(),
+                right.toBuilder().setClassName("a").build());
         // then
         assertThat(compare).isPositive();
     }
@@ -95,10 +93,9 @@ public class InstrumentationConfigOrderingTest {
         // given
         Ordering<InstrumentationConfig> ordering = new InstrumentationConfigOrdering();
         // when
-        int compare = ordering.compare(
-                InstrumentationConfig.newBuilder(left).setMethodName("m").build(),
-                InstrumentationConfig.newBuilder(right).setClassName("a")
-                        .addMethodParameterType("java.lang.Throwable").build());
+        int compare =
+                ordering.compare(left.toBuilder().setMethodName("m").build(), right.toBuilder()
+                        .setClassName("a").addMethodParameterType("java.lang.Throwable").build());
         // then
         assertThat(compare).isNegative();
     }
@@ -108,10 +105,8 @@ public class InstrumentationConfigOrderingTest {
         // given
         Ordering<InstrumentationConfig> ordering = new InstrumentationConfigOrdering();
         // when
-        int compare = ordering.compare(
-                InstrumentationConfig.newBuilder(left).setMethodName("m").build(),
-                InstrumentationConfig.newBuilder(right).setClassName("a")
-                        .addMethodParameterType("java.lang.String").build());
+        int compare = ordering.compare(left.toBuilder().setMethodName("m").build(), right
+                .toBuilder().setClassName("a").addMethodParameterType("java.lang.String").build());
         // then
         assertThat(compare).isZero();
     }
