@@ -675,7 +675,7 @@ class DownstreamServiceObserver implements StreamObserver<ServerRequest> {
         }
         EntriesResponse.Builder response = EntriesResponse.newBuilder();
         if (entries != null) {
-            response.addAllEntries(entries.entries());
+            response.addAllEntry(entries.entries());
             response.addAllSharedQueryText(sharedQueryTextLimiter
                     .reduceTracePayloadWherePossible(entries.sharedQueryTexts()));
         }

@@ -578,7 +578,7 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
                             .setTraceId(traceId))
                     .build());
             EntriesResponse response = responseWrapper.getEntriesResponse();
-            List<Trace.Entry> entries = response.getEntriesList();
+            List<Trace.Entry> entries = response.getEntryList();
             if (entries.isEmpty()) {
                 return null;
             }

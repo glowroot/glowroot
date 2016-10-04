@@ -256,7 +256,7 @@ message EntriesRequest {
 }
 
 message EntriesResponse {
-  repeated Trace.Entry entries = 1;
+  repeated Trace.Entry entry = 1;
   // sends full_text_sha1, beginning_text, ending_text if sha1 is known to already exist on server
   // otherwise sends only full_text (with no expectation that sha1 will be stored on server)
   repeated Trace.SharedQueryText shared_query_text = 2;
