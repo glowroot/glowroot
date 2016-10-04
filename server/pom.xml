@@ -120,45 +120,6 @@
         </configuration>
       </plugin>
       <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>dist0</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>dist0.xml</descriptor>
-              </descriptors>
-              <archive>
-                <manifestEntries>
-                  <Implementation-Title>${project.name}</Implementation-Title>
-                  <Implementation-Version>${project.version}</Implementation-Version>
-                  <Build-Commit>${glowroot.build.commit}</Build-Commit>
-                  <Build-Time>${maven.build.timestamp}</Build-Time>
-                  <Main-Class>org.glowroot.server.Bootstrap</Main-Class>
-                </manifestEntries>
-              </archive>
-              <attach>false</attach>
-            </configuration>
-          </execution>
-          <execution>
-            <id>dist</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>dist.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
           <properties>
@@ -191,4 +152,81 @@
       </plugins>
     </pluginManagement>
   </build>
+
+  <profiles>
+    <profile>
+      <id>shade</id>
+      <activation>
+        <property>
+          <name>!glowroot.shade.skip</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-shade-plugin</artifactId>
+            <configuration>
+              <dependencyReducedPomLocation>
+                ${project.build.directory}/dependency-reduced-pom.xml
+              </dependencyReducedPomLocation>
+              <createSourcesJar>true</createSourcesJar>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <manifestEntries>
+                    <Implementation-Title>${project.name}</Implementation-Title>
+                    <Implementation-Version>${project.version}</Implementation-Version>
+                    <Build-Commit>${glowroot.build.commit}</Build-Commit>
+                    <Build-Time>${maven.build.timestamp}</Build-Time>
+                    <Main-Class>org.glowroot.server.Bootstrap</Main-Class>
+                  </manifestEntries>
+                </transformer>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>com.sun.mail:mailapi</artifact>
+                  <excludes>
+                    <!-- pom.xml is only present in sources jar -->
+                    <exclude>pom.xml</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <artifact>com.sun.mail:smtp</artifact>
+                  <excludes>
+                    <!-- pom.xml is only present in sources jar -->
+                    <exclude>pom.xml</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>shade</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <configuration>
+                  <!-- maven-shade-plugin changes ${basedir} to point wherever the dependency
+                    reduced pom is written, see https://issues.apache.org/jira/browse/MSHADE-124,
+                    so cannot use simple relative path "dist.xml" here -->
+                  <descriptors>
+                    <descriptor>${project.build.directory}/../dist.xml</descriptor>
+                  </descriptors>
+                </configuration>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
