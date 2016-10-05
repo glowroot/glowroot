@@ -25,4 +25,9 @@ public class GenericMiscImpl implements GenericMisc<String> {
 
     @Override
     public void execute2(Number obj) {}
+
+    @Override
+    public <S> S getObject(Class<S> clazz) {
+        return null;
+    }
 }

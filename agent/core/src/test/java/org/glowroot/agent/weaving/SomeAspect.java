@@ -130,8 +130,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.agent.weaving.targets.GenericMisc", methodName = "execute*",
-            methodParameterTypes = {"java.lang.Object"})
+    @Pointcut(className = "org.glowroot.agent.weaving.targets.GenericMisc", methodName = "*",
+            methodParameterTypes = {"java.lang.Object|java.lang.Class"})
     public static class GenericMiscAdvice {
         @IsEnabled
         public static boolean isEnabled() {

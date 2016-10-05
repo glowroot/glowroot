@@ -22,4 +22,6 @@ public interface GenericMisc<T> {
     public void execute2(T obj);
 
     public void execute2(Number obj);
+
+    public <S> S getObject(Class<S> clazz);
 }

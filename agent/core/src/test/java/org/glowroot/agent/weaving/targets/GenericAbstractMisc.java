@@ -22,4 +22,9 @@ abstract class GenericAbstractMisc<T> implements GenericMisc<T> {
 
     @Override
     public void execute2(T obj) {}
+
+    @Override
+    public <S> S getObject(Class<S> clazz) {
+        return null;
+    }
 }

@@ -111,6 +111,8 @@ import org.glowroot.agent.weaving.SomeAspect.ThrowableToStringAdvice;
 import org.glowroot.agent.weaving.SomeAspect.WildMethodAdvice;
 import org.glowroot.agent.weaving.SomeAspectThreadLocals.IntegerThreadLocal;
 import org.glowroot.agent.weaving.other.ArrayMisc;
+import org.glowroot.agent.weaving.targets.AbstractMisc.ExtendsAbstractMisc;
+import org.glowroot.agent.weaving.targets.AbstractNotMisc.ExtendsAbstractNotMisc;
 import org.glowroot.agent.weaving.targets.AccessibilityMisc;
 import org.glowroot.agent.weaving.targets.BasicMisc;
 import org.glowroot.agent.weaving.targets.BytecodeWithStackFramesMisc;
@@ -133,8 +135,6 @@ import org.glowroot.agent.weaving.targets.SubException;
 import org.glowroot.agent.weaving.targets.SuperBasic;
 import org.glowroot.agent.weaving.targets.SuperBasicMisc;
 import org.glowroot.agent.weaving.targets.ThrowingMisc;
-import org.glowroot.agent.weaving.targets.AbstractMisc.ExtendsAbstractMisc;
-import org.glowroot.agent.weaving.targets.AbstractNotMisc.ExtendsAbstractNotMisc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -1148,6 +1148,24 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldHandleBridgeCallingSuper() throws Exception {
+        // given
+        @SuppressWarnings("unchecked")
+        GenericMisc<String> test = newWovenObject(GenericAbstractMiscImpl.class, GenericMisc.class,
+                GenericMiscAdvice.class);
+        // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
+        SomeAspectThreadLocals.resetThreadLocals();
+        // when
+        test.getObject(Long.class);
+        // then
+        assertThat(SomeAspectThreadLocals.enabledCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
     }
 
     // ===================== constructor =====================

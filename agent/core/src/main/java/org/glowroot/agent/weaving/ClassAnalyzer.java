@@ -51,6 +51,7 @@ import org.glowroot.agent.weaving.ThinClassVisitor.ThinMethod;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
 import static org.objectweb.asm.Opcodes.ASM5;
+import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 
 class ClassAnalyzer {
 
@@ -285,7 +286,6 @@ class ClassAnalyzer {
             // probably a visibility bridge for public method in package-private super class
             return null;
         }
-        // more than one match, need to drop down to bytecode
         BridgeMethodClassVisitor bmcv = new BridgeMethodClassVisitor();
         new ClassReader(classBytes).accept(bmcv, ClassReader.SKIP_FRAMES);
         Map<String, String> bridgeMethodMap = bmcv.getBridgeTargetMethods();
@@ -537,6 +537,12 @@ class ClassAnalyzer {
                     return;
                 }
                 if (Type.getArgumentTypes(desc).length != bridgeMethodParamCount) {
+                    return;
+                }
+                if (opcode == INVOKESPECIAL) {
+                    // this is a generated bridge method that just calls super, see
+                    // WeaverTest.shouldHandleBridgeCallingSuper(), presumably the super method
+                    // already matches advice
                     return;
                 }
                 bridgeTargetMethods.put(this.bridgeMethodName + this.bridgeMethodDesc, name + desc);
