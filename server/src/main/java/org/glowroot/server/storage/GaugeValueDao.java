@@ -134,12 +134,6 @@ public class GaugeValueDao implements GaugeValueRepository {
             int i = 0;
             boundStatement.setString(i++, agentId);
             String gaugeName = gaugeValue.getGaugeName();
-            // TEMPORARY UNTIL ROLL OUT AGENT 0.9.1
-            int index = gaugeName.lastIndexOf(':');
-            String mbeanObjectName = gaugeName.substring(0, index);
-            String mbeanAttributeName = gaugeName.substring(index + 1);
-            gaugeName = mbeanObjectName + ':' + mbeanAttributeName.replace('/', '.');
-            // END TEMPORARY
             boundStatement.setString(i++, gaugeName);
             long captureTime = gaugeValue.getCaptureTime();
             boundStatement.setTimestamp(i++, new Date(captureTime));

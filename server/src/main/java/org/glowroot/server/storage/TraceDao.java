@@ -344,23 +344,8 @@ public class TraceDao implements TraceRepository {
 
     public void store(String agentId, Trace trace) throws Exception {
         String traceId = trace.getId();
-        // TODO after roll out agent 0.9.1, no need to read header if !trace.getUpdate()
-        Trace.Header priorHeader = readHeader(agentId, traceId);
+        Trace.Header priorHeader = trace.getUpdate() ? readHeader(agentId, traceId) : null;
         Trace.Header header = trace.getHeader();
-
-        // TEMPORARY UNTIL ROLL OUT AGENT 0.9.1
-        traceId = traceId.replaceAll("-", "");
-        traceId = traceId.substring(traceId.length() - 20);
-        traceId = lowerSixBytesHex(header.getStartTime()) + traceId;
-        // END TEMPORARY
-
-        // TEMPORARY UNTIL ROLL OUT AGENT 0.9.0
-        if (header.getTransactionType().equals("Servlet")) {
-            header = header.toBuilder()
-                    .setTransactionType("Web")
-                    .build();
-        }
-        // END TEMPORARY
 
         List<ResultSetFuture> futures = Lists.newArrayList();
 
@@ -1085,11 +1070,6 @@ public class TraceDao implements TraceRepository {
             }
         }
         return true;
-    }
-
-    private static String lowerSixBytesHex(long startTime) {
-        long mask = 1L << 48;
-        return Long.toHexString(mask | (startTime & (mask - 1))).substring(1);
     }
 
     @Value.Immutable

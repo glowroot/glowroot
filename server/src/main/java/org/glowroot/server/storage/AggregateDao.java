@@ -48,7 +48,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.immutables.value.Value;
 
 import org.glowroot.common.config.ConfigDefaults;
-import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
 import org.glowroot.common.live.ImmutableThroughputAggregate;
@@ -350,11 +349,6 @@ public class AggregateDao implements AggregateRepository {
         }
         for (OldAggregatesByType aggregatesByType : aggregatesByTypeList) {
             String transactionType = aggregatesByType.getTransactionType();
-            // TEMPORARY UNTIL ROLL OUT AGENT 0.9.0
-            if (transactionType.equals("Servlet")) {
-                transactionType = "Web";
-            }
-            // END TEMPORARY
             Aggregate overallAggregate = aggregatesByType.getOverallAggregate();
             futures.addAll(storeOverallAggregate(agentId, transactionType, captureTime,
                     overallAggregate, sharedQueryTexts, adjustedTTL));
@@ -371,11 +365,6 @@ public class AggregateDao implements AggregateRepository {
         @SuppressWarnings("assignment.type.incompatible")
         Set<String> transactionTypes = aggregatesByTypeList.stream()
                 .map(OldAggregatesByType::getTransactionType).collect(Collectors.toSet());
-        // TEMPORARY UNTIL ROLL OUT AGENT 0.9.0
-        if (transactionTypes.remove("Servlet")) {
-            transactionTypes.add("Web");
-        }
-        // END TEMPORARY
         for (int i = 1; i < rollupConfigs.size(); i++) {
             long intervalMillis = rollupConfigs.get(i).intervalMillis();
             long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, intervalMillis);
@@ -1290,27 +1279,8 @@ public class AggregateDao implements AggregateRepository {
         List<ResultSetFuture> futures = Lists.newArrayList();
         for (Aggregate.QueriesByType queriesByType : queriesByTypeList) {
             for (Aggregate.Query query : queriesByType.getQueryList()) {
-                Aggregate.SharedQueryText sharedQueryText;
-                if (query.getFullText().isEmpty()) {
-                    sharedQueryText = sharedQueryTexts.get(query.getSharedQueryTextIndex());
-                } else {
-                    // TEMPORARY UNTIL ROLL OUT AGENT 0.9.1
-                    String fullText = query.getFullText();
-                    if (fullText.length() > StorageConfig.QUERY_TEXT_TRUNCATE) {
-                        String fullTextSha1 =
-                                fullQueryTextDao.store(agentRollup, fullText, futures);
-                        sharedQueryText = Aggregate.SharedQueryText.newBuilder()
-                                .setTruncatedText(
-                                        fullText.substring(0, StorageConfig.QUERY_TEXT_TRUNCATE))
-                                .setFullTextSha1(fullTextSha1)
-                                .build();
-                    } else {
-                        sharedQueryText = Aggregate.SharedQueryText.newBuilder()
-                                .setFullText(fullText)
-                                .build();
-                    }
-                    // END TEMPORARY
-                }
+                Aggregate.SharedQueryText sharedQueryText =
+                        sharedQueryTexts.get(query.getSharedQueryTextIndex());
                 BoundStatement boundStatement;
                 if (transactionName == null) {
                     boundStatement = getInsertOverallPS(queryTable, rollupLevel).bind();
