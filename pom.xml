@@ -100,6 +100,7 @@
     <!-- the sonar.jdbc.password system property is set here instead of on the command line so it is
       not visible to ps -->
     <sonar.jdbc.password>${env.SONAR_JDBC_PASSWORD}</sonar.jdbc.password>
+    <glowroot.build.commit>[none]</glowroot.build.commit>
   </properties>
 
   <dependencyManagement>

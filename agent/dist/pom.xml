@@ -15,10 +15,6 @@
   <name>Glowroot Agent</name>
   <description>Glowroot Agent</description>
 
-  <properties>
-    <glowroot.build.commit>[none]</glowroot.build.commit>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
