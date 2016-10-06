@@ -44,6 +44,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.live.ImmutableEntries;
 import org.glowroot.common.live.ImmutableTracePoint;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
@@ -354,12 +355,14 @@ public class TraceDao implements TraceRepository {
             String fullTextSha1 = sharedQueryText.getFullTextSha1();
             if (fullTextSha1.isEmpty()) {
                 String fullText = sharedQueryText.getFullText();
-                if (fullText.length() > 240) {
+                if (fullText.length() > 2 * StorageConfig.TRACE_QUERY_TEXT_TRUNCATE) {
                     fullTextSha1 = fullQueryTextDao.store(agentId, fullText, futures);
                     sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
-                            .setTruncatedText(fullText.substring(0, 120))
-                            .setTruncatedEndText(
-                                    fullText.substring(fullText.length() - 120, fullText.length()))
+                            .setTruncatedText(
+                                    fullText.substring(0, StorageConfig.TRACE_QUERY_TEXT_TRUNCATE))
+                            .setTruncatedEndText(fullText.substring(
+                                    fullText.length() - StorageConfig.TRACE_QUERY_TEXT_TRUNCATE,
+                                    fullText.length()))
                             .setFullTextSha1(fullTextSha1)
                             .build());
                 } else {
@@ -374,7 +377,7 @@ public class TraceDao implements TraceRepository {
         // unlike aggregates and gauge values, traces can get written to server rollups immediately
         List<String> agentRollups = AgentRollups.getAgentRollups(agentId);
 
-        int adjustedTTL = GaugeValueDao.getAdjustedTTL(getTTL(), header.getCaptureTime());
+        int adjustedTTL = AggregateDao.getAdjustedTTL(getTTL(), header.getCaptureTime());
         for (String agentRollup : agentRollups) {
             List<Trace.Attribute> attributes = header.getAttributeList();
             if (header.getSlow()) {

@@ -42,6 +42,7 @@ import org.glowroot.agent.fat.storage.util.RowMappers;
 import org.glowroot.agent.fat.storage.util.Schemas.Column;
 import org.glowroot.agent.fat.storage.util.Schemas.ColumnType;
 import org.glowroot.agent.fat.storage.util.Schemas.Index;
+import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.live.ImmutableEntries;
 import org.glowroot.common.live.ImmutableTracePoint;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
@@ -156,10 +157,12 @@ public class TraceDao implements TraceRepository {
             checkState(sharedQueryText.getTruncatedEndText().isEmpty());
             checkState(sharedQueryText.getFullTextSha1().isEmpty());
             String fullText = sharedQueryText.getFullText();
-            if (fullText.length() > 240) {
-                String truncatedText = fullText.substring(0, 120);
-                String truncatedEndText =
-                        fullText.substring(fullText.length() - 120, fullText.length());
+            if (fullText.length() > 2 * StorageConfig.TRACE_QUERY_TEXT_TRUNCATE) {
+                String truncatedText =
+                        fullText.substring(0, StorageConfig.TRACE_QUERY_TEXT_TRUNCATE);
+                String truncatedEndText = fullText.substring(
+                        fullText.length() - StorageConfig.TRACE_QUERY_TEXT_TRUNCATE,
+                        fullText.length());
                 String fullTextSha1 =
                         fullQueryTextDao.updateLastCaptureTime(fullText, header.getCaptureTime());
                 sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()

@@ -106,9 +106,9 @@ public class QueryCollector {
                 String fullQueryText = entry.getKey();
                 String truncatedQueryText;
                 String fullQueryTextSha1;
-                if (fullQueryText.length() > StorageConfig.QUERY_TEXT_TRUNCATE) {
+                if (fullQueryText.length() > StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE) {
                     truncatedQueryText =
-                            fullQueryText.substring(0, StorageConfig.QUERY_TEXT_TRUNCATE);
+                            fullQueryText.substring(0, StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE);
                     fullQueryTextSha1 =
                             Hashing.sha1().hashString(fullQueryText, Charsets.UTF_8).toString();
                 } else {
@@ -126,7 +126,7 @@ public class QueryCollector {
     public @Nullable String getFullQueryText(String fullQueryTextSha1) {
         for (Entry<String, Map<String, MutableQuery>> entry : queries.entrySet()) {
             for (String fullQueryText : entry.getValue().keySet()) {
-                if (fullQueryText.length() <= StorageConfig.QUERY_TEXT_TRUNCATE) {
+                if (fullQueryText.length() <= StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE) {
                     continue;
                 }
                 String sha1 = Hashing.sha1().hashString(fullQueryText, Charsets.UTF_8).toString();

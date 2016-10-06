@@ -46,7 +46,6 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class GaugeValueDao implements GaugeValueRepository {
 
@@ -138,7 +137,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             boundStatement.setTimestamp(i++, new Date(captureTime));
             boundStatement.setDouble(i++, gaugeValue.getValue());
             boundStatement.setLong(i++, gaugeValue.getWeight());
-            boundStatement.setInt(i++, getAdjustedTTL(ttl, captureTime));
+            boundStatement.setInt(i++, AggregateDao.getAdjustedTTL(ttl, captureTime));
             futures.add(session.executeAsync(boundStatement));
             gaugeNameDao.store(agentId, gaugeName, futures);
         }
@@ -207,7 +206,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             long captureTime = needsRollup.getCaptureTime();
             long from = captureTime - rollupIntervalMillis;
             for (String gaugeName : needsRollup.getKeys()) {
-                int adjustedTTL = getAdjustedTTL(ttl, captureTime);
+                int adjustedTTL = AggregateDao.getAdjustedTTL(ttl, captureTime);
                 rollupOne(rollupLevel, agentRollup, gaugeName, from, captureTime, adjustedTTL);
             }
             AggregateDao.postRollup(agentRollup, rollupLevel, needsRollup, nextRollupIntervalMillis,
@@ -277,12 +276,5 @@ public class GaugeValueDao implements GaugeValueRepository {
             session.execute("truncate gauge_needs_rollup_" + i);
         }
         session.execute("truncate gauge_name");
-    }
-
-    static int getAdjustedTTL(int ttl, long captureTime) {
-        int captureTimeAgoSeconds = Ints
-                .saturatedCast(MILLISECONDS.toSeconds(System.currentTimeMillis() - captureTime));
-        // max is just a safety guard (primarily used for unit tests)
-        return Math.max(ttl - captureTimeAgoSeconds, 60);
     }
 }

@@ -48,6 +48,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.immutables.value.Value;
 
 import org.glowroot.common.config.ConfigDefaults;
+import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
 import org.glowroot.common.live.ImmutableThroughputAggregate;
@@ -89,6 +90,7 @@ import org.glowroot.wire.api.model.Proto.OptionalDouble;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class AggregateDao implements AggregateRepository {
 
@@ -325,17 +327,18 @@ public class AggregateDao implements AggregateRepository {
     public void store(String agentId, long captureTime,
             List<OldAggregatesByType> aggregatesByTypeList,
             List<Aggregate.SharedQueryText> initialSharedQueryTexts) throws Exception {
-        int adjustedTTL = GaugeValueDao.getAdjustedTTL(getTTLs().get(0), captureTime);
+        int adjustedTTL = getAdjustedTTL(getTTLs().get(0), captureTime);
         List<ResultSetFuture> futures = Lists.newArrayList();
         List<Aggregate.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
         for (Aggregate.SharedQueryText sharedQueryText : initialSharedQueryTexts) {
             String fullTextSha1 = sharedQueryText.getFullTextSha1();
             if (fullTextSha1.isEmpty()) {
                 String fullText = sharedQueryText.getFullText();
-                if (fullText.length() > 120) {
+                if (fullText.length() > StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE) {
                     fullTextSha1 = fullQueryTextDao.store(agentId, fullText, futures);
                     sharedQueryTexts.add(Aggregate.SharedQueryText.newBuilder()
-                            .setTruncatedText(fullText.substring(0, 120))
+                            .setTruncatedText(fullText.substring(0,
+                                    StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE))
                             .setFullTextSha1(fullTextSha1)
                             .build());
                     sharedQueryTexts.add(sharedQueryText);
@@ -691,15 +694,15 @@ public class AggregateDao implements AggregateRepository {
         if (rollupLevel + 1 < rollupConfigs.size()) {
             nextRollupIntervalMillis = rollupConfigs.get(rollupLevel + 1).intervalMillis();
         }
-        for (NeedsRollup rollupContent : needsRollupList) {
-            long captureTime = rollupContent.getCaptureTime();
-            int adjustedTTL = GaugeValueDao.getAdjustedTTL(ttl, captureTime);
+        for (NeedsRollup needsRollup : needsRollupList) {
+            long captureTime = needsRollup.getCaptureTime();
+            int adjustedTTL = getAdjustedTTL(ttl, captureTime);
             RollupParams rollupParams = getRollupParams(agentRollup, rollupLevel, adjustedTTL);
             long from = captureTime - rollupIntervalMillis;
-            for (String transactionType : rollupContent.getKeys()) {
+            for (String transactionType : needsRollup.getKeys()) {
                 rollupOne(rollupParams, transactionType, from, captureTime);
             }
-            postRollup(agentRollup, rollupLevel, rollupContent, nextRollupIntervalMillis,
+            postRollup(agentRollup, rollupLevel, needsRollup, nextRollupIntervalMillis,
                     insertNeedsRollup, deleteNeedsRollup, session);
         }
     }
@@ -1541,6 +1544,13 @@ public class AggregateDao implements AggregateRepository {
                     ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE);
         }
         return rollupInfo.build();
+    }
+
+    static int getAdjustedTTL(int ttl, long captureTime) {
+        int captureTimeAgoSeconds = Ints
+                .saturatedCast(MILLISECONDS.toSeconds(System.currentTimeMillis() - captureTime));
+        // max is just a safety guard (primarily used for unit tests)
+        return Math.max(ttl - captureTimeAgoSeconds, 60);
     }
 
     static List<NeedsRollup> getNeedsRollupList(String agentRollup, int rollupLevel,

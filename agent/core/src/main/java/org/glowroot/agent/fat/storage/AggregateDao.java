@@ -215,13 +215,14 @@ public class AggregateDao implements AggregateRepository {
                 dataSource.update(new AggregateInsert(transactionType, transactionName, captureTime,
                         transactionAggregate, truncatedQueryTexts, 0, cappedDatabase));
             }
-            private void addToTruncatedQueryTexts(List<String> sharedQueryTexts) throws SQLException {
+            private void addToTruncatedQueryTexts(List<String> sharedQueryTexts)
+                    throws SQLException {
                 for (String sharedQueryText : sharedQueryTexts) {
                     String truncatedText;
                     String fullTextSha1;
-                    if (sharedQueryText.length() > StorageConfig.QUERY_TEXT_TRUNCATE) {
-                        truncatedText =
-                                sharedQueryText.substring(0, StorageConfig.QUERY_TEXT_TRUNCATE);
+                    if (sharedQueryText.length() > StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE) {
+                        truncatedText = sharedQueryText.substring(0,
+                                StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE);
                         fullTextSha1 = fullQueryTextDao.updateLastCaptureTime(sharedQueryText,
                                 captureTime);
                     } else {
