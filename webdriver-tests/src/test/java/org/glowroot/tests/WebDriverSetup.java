@@ -45,8 +45,8 @@ import org.glowroot.agent.it.harness.impl.LocalContainer;
 
 public class WebDriverSetup {
 
-    protected static final boolean server =
-            Boolean.getBoolean("glowroot.internal.webdriver.server");
+    protected static final boolean useCentral =
+            Boolean.getBoolean("glowroot.internal.webdriver.useCentral");
 
     private static final boolean USE_LOCAL_IE = false;
 
@@ -101,8 +101,8 @@ public class WebDriverSetup {
             seleniumServer.stop();
         }
         container.close();
-        if (server) {
-            Class<?> bootstrapClass = Class.forName("org.glowroot.server.Bootstrap");
+        if (useCentral) {
+            Class<?> bootstrapClass = Class.forName("org.glowroot.central.Bootstrap");
             Method mainMethod = bootstrapClass.getMethod("main", String[].class);
             mainMethod.invoke(null, (Object) new String[] {"stop"});
             CassandraWrapper.stop();
@@ -163,7 +163,7 @@ public class WebDriverSetup {
         int uiPort = getAvailablePort();
         File baseDir = Files.createTempDir();
         Container container;
-        if (server) {
+        if (useCentral) {
             CassandraWrapper.start();
             Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
             Session session = cluster.newSession();
@@ -174,10 +174,10 @@ public class WebDriverSetup {
             session.execute("drop table if exists agent_rollup");
             session.execute("drop table if exists user");
             session.execute("drop table if exists role");
-            session.execute("drop table if exists server_config");
+            session.execute("drop table if exists central_config");
             session.close();
             cluster.close();
-            container = createServerAndContainer(uiPort, baseDir);
+            container = createCentralAndContainer(uiPort, baseDir);
         } else {
             container = createContainer(uiPort, baseDir);
         }
@@ -217,14 +217,14 @@ public class WebDriverSetup {
         }
     }
 
-    private static Container createServerAndContainer(int uiPort, File baseDir) throws Exception {
+    private static Container createCentralAndContainer(int uiPort, File baseDir) throws Exception {
         int grpcPort = getAvailablePort();
-        PrintWriter props = new PrintWriter("glowroot-server.properties");
+        PrintWriter props = new PrintWriter("glowroot-central.properties");
         props.println("cassandra.keyspace=glowroot_unit_tests");
         props.println("grpc.port=" + grpcPort);
         props.println("ui.port=" + uiPort);
         props.close();
-        Class<?> bootstrapClass = Class.forName("org.glowroot.server.Bootstrap");
+        Class<?> bootstrapClass = Class.forName("org.glowroot.central.Bootstrap");
         Method mainMethod = bootstrapClass.getMethod("main", String[].class);
         mainMethod.invoke(null, (Object) new String[] {"start"});
         if (Containers.useJavaagent()) {

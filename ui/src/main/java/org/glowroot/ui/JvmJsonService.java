@@ -489,7 +489,7 @@ class JvmJsonService {
                         writeMonitorInfo("waiting on", thread.getLockInfo(), jg);
                     }
                 } else {
-                    // this condition is for glowroot server when displaying thread dump from
+                    // this condition is for the central ui when displaying thread dump from
                     // glowroot agent prior to 0.9.2
                     String lockName = thread.getLockName();
                     if (!lockName.isEmpty()) {

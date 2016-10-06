@@ -214,7 +214,7 @@ public class InstrumentationConfigIT extends WebDriverIT {
     }
 
     private void clickNewInstrumentation() {
-        if (WebDriverSetup.server) {
+        if (WebDriverSetup.useCentral) {
             Utils.withWait(driver,
                     xpath("//a[@href='config/instrumentation?agent-id=" + agentId + "&new']"))
                     .click();

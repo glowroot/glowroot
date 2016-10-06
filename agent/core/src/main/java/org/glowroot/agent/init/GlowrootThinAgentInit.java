@@ -34,11 +34,11 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.central.CentralCollector;
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
-import org.glowroot.agent.server.ServerCollectorImpl;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.agent.weaving.PreInitializeWeavingClasses;
 import org.glowroot.common.util.Clock;
@@ -50,7 +50,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class GlowrootThinAgentInit implements GlowrootAgentInit {
 
     private @MonotonicNonNull AgentModule agentModule;
-    private @MonotonicNonNull ServerCollectorImpl serverCollector;
+    private @MonotonicNonNull CentralCollector centralCollector;
 
     private @MonotonicNonNull ScheduledExecutorService backgroundExecutor;
 
@@ -96,11 +96,11 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
             public @Nullable Void call() throws Exception {
                 Collector collector;
                 if (customCollector == null) {
-                    serverCollector = new ServerCollectorImpl(properties,
+                    centralCollector = new CentralCollector(properties,
                             checkNotNull(collectorHost), agentModule.getLiveJvmService(),
                             agentModule.getLiveWeavingService(),
                             agentModule.getLiveTraceRepository(), agentConfigUpdater);
-                    collector = serverCollector;
+                    collector = centralCollector;
                 } else {
                     collector = customCollector;
                 }
@@ -124,8 +124,8 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
     @OnlyUsedByTests
     public void close() throws Exception {
         checkNotNull(agentModule).close();
-        if (serverCollector != null) {
-            serverCollector.close();
+        if (centralCollector != null) {
+            centralCollector.close();
         }
         checkNotNull(backgroundExecutor);
         backgroundExecutor.shutdown();
@@ -137,8 +137,8 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
     @Override
     @OnlyUsedByTests
     public void awaitClose() throws Exception {
-        if (serverCollector != null) {
-            serverCollector.awaitClose();
+        if (centralCollector != null) {
+            centralCollector.awaitClose();
         }
     }
 

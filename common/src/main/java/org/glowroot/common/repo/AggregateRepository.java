@@ -44,8 +44,8 @@ public interface AggregateRepository {
             OverallSummaryCollector collector) throws Exception;
 
     // query.from() is non-inclusive
-    // sortOrder and limit are only used by fat agent H2 repository, while the glowroot server
-    // repository which currently has to pull in all records anyways, just delegates ordering and
+    // sortOrder and limit are only used by fat agent H2 repository, while the central cassandra
+    // repository which currently has to pull in all records anyways just delegates ordering and
     // limit to TransactionSummaryCollector
     void mergeTransactionSummariesInto(String agentRollup, OverallQuery query,
             SummarySortOrder sortOrder, int limit, TransactionSummaryCollector collector)
@@ -56,8 +56,8 @@ public interface AggregateRepository {
             OverallErrorSummaryCollector collector) throws Exception;
 
     // query.from() is non-inclusive
-    // sortOrder and limit are only used by fat agent H2 repository, while the glowroot server
-    // repository which currently has to pull in all records anyways, just delegates ordering and
+    // sortOrder and limit are only used by fat agent H2 repository, while the central cassandra
+    // repository which currently has to pull in all records anyways just delegates ordering and
     // limit to TransactionErrorSummaryCollector
     void mergeTransactionErrorSummariesInto(String agentRollup, OverallQuery query,
             ErrorSummarySortOrder sortOrder, int limit, TransactionErrorSummaryCollector collector)

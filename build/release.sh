@@ -26,7 +26,7 @@ fi
 java -version 2>&1 | grep 1.8.0 > /dev/null
 
 if [[ $? != 0 ]]; then
-  echo "you must build release with java 8 (glowroot-server requires java 8+)"
+  echo "you must build release with java 8 (glowroot-central requires java 8+)"
   exit
 fi
 
@@ -97,20 +97,13 @@ rm -rf ui/bower_components ui/node_modules
 commit=$(git rev-parse HEAD)
 
 # javadoc is needed here since deploy :glowroot-agent attaches the javadoc from :glowroot-agent-core
-mvn clean install -pl :glowroot-agent,:glowroot-server -am \
+mvn clean install -pl :glowroot-agent,:glowroot-central -am \
                   -Pjavadoc \
                   -DskipTests
 
-USERNAME=$built_by mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent \
+USERNAME=$built_by mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
                                     -Pjavadoc \
                                     -Prelease \
                                     -Dglowroot.build.commit=$commit \
                                     -DskipTests \
                                     -Dgpg.passphrase=$gpg_passphrase
-
-# package glowroot-server for attaching to github release
-# using release profile to run maven-enforcer-plugin
-USERNAME=$built_by mvn clean package -pl :glowroot-server \
-                                     -Prelease \
-                                     -Dglowroot.build.commit=$commit \
-                                     -DskipTests

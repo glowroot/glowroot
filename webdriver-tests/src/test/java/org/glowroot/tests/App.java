@@ -32,7 +32,7 @@ class App {
 
     void open() throws IOException {
         driver.get(baseUrl);
-        if (WebDriverSetup.server) {
+        if (WebDriverSetup.useCentral) {
             driver.get(driver.getCurrentUrl() + "?agent-id="
                     + InetAddress.getLocalHost().getHostName());
         }

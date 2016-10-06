@@ -208,7 +208,7 @@ public class AlertConfigIT extends WebDriverIT {
     }
 
     private WebElement getNewAlertButton() {
-        if (WebDriverSetup.server) {
+        if (WebDriverSetup.useCentral) {
             return Utils.withWait(driver,
                     xpath("//a[@href='config/alert?agent-id=" + agentId + "&new']"));
         } else {

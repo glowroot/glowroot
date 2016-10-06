@@ -55,7 +55,7 @@ class TracePointJsonService {
     private final TraceRepository traceRepository;
     private final LiveTraceRepository liveTraceRepository;
     private final ConfigRepository configRepository;
-    // null in glowroot server (due to shading issue, and not needed in glowroot server anyways)
+    // null in the central ui (due to shading issue, and not needed in the central ui anyways)
     private final @Nullable Ticker ticker;
     private final Clock clock;
 

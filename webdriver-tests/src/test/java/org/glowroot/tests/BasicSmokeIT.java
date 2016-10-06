@@ -170,7 +170,7 @@ public class BasicSmokeIT extends WebDriverIT {
         JsonNode responseNode = new ObjectMapper().readTree(response.getResponseBody());
         ArrayNode pointsNode = (ArrayNode) responseNode.get("normalPoints");
         String traceId = ((ArrayNode) pointsNode.get(0)).get(3).asText();
-        if (WebDriverSetup.server) {
+        if (WebDriverSetup.useCentral) {
             driver.get(app.getBaseUrl() + "/transaction/traces?agent-id=" + agentId
                     + "&transaction-type=Web&modal-agent-id=" + agentId + "&modal-trace-id="
                     + traceId);
@@ -249,7 +249,7 @@ public class BasicSmokeIT extends WebDriverIT {
         driver.navigate().to(jstackUrl);
 
         jvmSidebar.getHeapDumpLink().click();
-        if (!WebDriverSetup.server) {
+        if (!WebDriverSetup.useCentral) {
             // heap dump is somehow causing cassandra connection to be lost on travis-ci:
             //
             // com.datastax.driver.core.exceptions.NoHostAvailableException: All host(s) tried for
@@ -317,7 +317,7 @@ public class BasicSmokeIT extends WebDriverIT {
         // "click download", verify no error
         String download;
         String urlSuffix = active ? "&check-live-traces=true" : "";
-        if (WebDriverSetup.server) {
+        if (WebDriverSetup.useCentral) {
             download = "http://localhost:" + getUiPort() + "/export/trace?agent-id=" + agentId
                     + "&trace-id=" + traceId + urlSuffix;
         } else {

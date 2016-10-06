@@ -16,8 +16,8 @@ message Trace {
   repeated Entry entry = 3;
   Profile main_thread_profile = 4;
   Profile aux_thread_profile = 5;
-  bool update = 6; // optimization so server does not need to check for prior partial trace in
-                   // common case where this is not an update
+  bool update = 6; // optimization so the central collector does not need to check for prior partial
+                   // trace in common case where this is not an update
   repeated SharedQueryText shared_query_text = 8; // deprecated in 0.9.5,
                                                   // moved to TraceMessage stream
 

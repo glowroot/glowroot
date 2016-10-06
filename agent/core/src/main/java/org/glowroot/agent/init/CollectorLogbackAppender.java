@@ -53,10 +53,10 @@ class CollectorLogbackAppender extends AppenderBase<ILoggingEvent> {
         if (event.getLevel() == Level.DEBUG && event.getLoggerName().startsWith("io.grpc.")) {
             return;
         }
-        if (event.getLoggerName().startsWith("org.glowroot.server.")
+        if (event.getLoggerName().startsWith("org.glowroot.central.")
                 || event.getLoggerName().startsWith("org.glowroot.ui.")) {
-            // this can happen during integration tests when agent and server are running in the
-            // same JVM (using LocalContainer for agent)
+            // this can happen during integration tests when agent and the central collector are
+            // running in the same JVM (using LocalContainer for agent)
             return;
         }
         LogEvent.Builder builder = LogEvent.newBuilder()

@@ -152,8 +152,8 @@ public class RoleConfigPage {
     }
 
     public WebElement getAddButton() {
-        // on server, there are 2 "Add" buttons, one is to add an agent specific permission block,
-        // the other is to save new role
+        // in central ui, there are 2 "Add" buttons, one is to add an agent specific permission
+        // block, the other is to save new role
         return withWait(xpath("//div[@gt-click='save(deferred)']//button"));
     }
 

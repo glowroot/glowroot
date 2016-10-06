@@ -170,7 +170,7 @@ class TraceCommonService {
             RetryCountdown retryCountdown) throws Exception {
         HeaderPlus headerPlus = traceRepository.readHeaderPlus(agentId, traceId);
         while (headerPlus == null && retryCountdown.remaining-- > 0) {
-            // trace may be completed, but still in transit from agent to glowroot server
+            // trace may be completed, but still in transit from agent to the central collector
             Thread.sleep(500);
             headerPlus = traceRepository.readHeaderPlus(agentId, traceId);
         }
@@ -181,7 +181,7 @@ class TraceCommonService {
             RetryCountdown retryCountdown) throws Exception {
         Entries entries = traceRepository.readEntries(agentId, traceId);
         while (entries == null && retryCountdown.remaining-- > 0) {
-            // trace may be completed, but still in transit from agent to glowroot server
+            // trace may be completed, but still in transit from agent to the central collector
             Thread.sleep(500);
             entries = traceRepository.readEntries(agentId, traceId);
         }
@@ -192,7 +192,7 @@ class TraceCommonService {
             RetryCountdown retryCountdown) throws Exception {
         Entries entries = traceRepository.readEntriesForExport(agentId, traceId);
         while (entries == null && retryCountdown.remaining-- > 0) {
-            // trace may be completed, but still in transit from agent to glowroot server
+            // trace may be completed, but still in transit from agent to the central collector
             Thread.sleep(500);
             entries = traceRepository.readEntriesForExport(agentId, traceId);
         }
@@ -203,7 +203,7 @@ class TraceCommonService {
             RetryCountdown retryCountdown) throws Exception {
         Profile profile = traceRepository.readMainThreadProfile(agentId, traceId);
         while (profile == null && retryCountdown.remaining-- > 0) {
-            // trace may be completed, but still in transit from agent to glowroot server
+            // trace may be completed, but still in transit from agent to the central collector
             Thread.sleep(500);
             profile = traceRepository.readMainThreadProfile(agentId, traceId);
         }
@@ -214,7 +214,7 @@ class TraceCommonService {
             RetryCountdown retryCountdown) throws Exception {
         Profile profile = traceRepository.readAuxThreadProfile(agentId, traceId);
         while (profile == null && retryCountdown.remaining-- > 0) {
-            // trace may be completed, but still in transit from agent to glowroot server
+            // trace may be completed, but still in transit from agent to the central collector
             Thread.sleep(500);
             profile = traceRepository.readAuxThreadProfile(agentId, traceId);
         }

@@ -41,16 +41,16 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.FatStorageConfig;
+import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.config.ImmutableFatStorageConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
-import org.glowroot.common.config.ImmutableServerStorageConfig;
 import org.glowroot.common.config.ImmutableSmtpConfig;
 import org.glowroot.common.config.ImmutableUserConfig;
 import org.glowroot.common.config.ImmutableWebConfig;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.config.RoleConfig;
-import org.glowroot.common.config.ServerStorageConfig;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.config.UserConfig;
 import org.glowroot.common.config.WebConfig;
@@ -128,8 +128,8 @@ class AdminJsonService {
             FatStorageConfig config = configRepository.getFatStorageConfig();
             return mapper.writeValueAsString(FatStorageConfigDto.create(config));
         } else {
-            ServerStorageConfig config = configRepository.getServerStorageConfig();
-            return mapper.writeValueAsString(ServerStorageConfigDto.create(config));
+            CentralStorageConfig config = configRepository.getCentralStorageConfig();
+            return mapper.writeValueAsString(CentralStorageConfigDto.create(config));
         }
     }
 
@@ -182,10 +182,10 @@ class AdminJsonService {
             }
             repoAdmin.resizeIfNecessary();
         } else {
-            ServerStorageConfigDto configDto =
-                    mapper.readValue(content, ImmutableServerStorageConfigDto.class);
+            CentralStorageConfigDto configDto =
+                    mapper.readValue(content, ImmutableCentralStorageConfigDto.class);
             try {
-                configRepository.updateServerStorageConfig(configDto.convert(),
+                configRepository.updateCentralStorageConfig(configDto.convert(),
                         configDto.version());
             } catch (OptimisticLockException e) {
                 throw new JsonServiceException(PRECONDITION_FAILED, e);
@@ -401,23 +401,23 @@ class AdminJsonService {
     }
 
     @Value.Immutable
-    abstract static class ServerStorageConfigDto {
+    abstract static class CentralStorageConfigDto {
 
         abstract ImmutableList<Integer> rollupExpirationHours();
         abstract int traceExpirationHours();
         abstract int fullQueryTextExpirationHours();
         abstract String version();
 
-        private ServerStorageConfig convert() {
-            return ImmutableServerStorageConfig.builder()
+        private CentralStorageConfig convert() {
+            return ImmutableCentralStorageConfig.builder()
                     .rollupExpirationHours(rollupExpirationHours())
                     .traceExpirationHours(traceExpirationHours())
                     .fullQueryTextExpirationHours(fullQueryTextExpirationHours())
                     .build();
         }
 
-        private static ServerStorageConfigDto create(ServerStorageConfig config) {
-            return ImmutableServerStorageConfigDto.builder()
+        private static CentralStorageConfigDto create(CentralStorageConfig config) {
+            return ImmutableCentralStorageConfigDto.builder()
                     .addAllRollupExpirationHours(config.rollupExpirationHours())
                     .traceExpirationHours(config.traceExpirationHours())
                     .fullQueryTextExpirationHours(config.fullQueryTextExpirationHours())

@@ -68,8 +68,8 @@ class TraceDetailHttpService implements HttpService {
         List<String> traceIds = decoder.parameters().get("trace-id");
         checkNotNull(traceIds, "Missing trace id in query string: %s", request.uri());
         String traceId = traceIds.get(0);
-        // check-live-traces is an optimization so glowroot server only has to check with remote
-        // agents when necessary
+        // check-live-traces is an optimization so the central collector only has to check with
+        // remote agents when necessary
         List<String> checkLiveTracesParams = decoder.parameters().get("check-live-traces");
         boolean checkLiveTraces = false;
         if (checkLiveTracesParams != null && !checkLiveTracesParams.isEmpty()) {

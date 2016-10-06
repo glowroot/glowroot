@@ -23,7 +23,7 @@ import org.glowroot.agent.fat.storage.util.DataSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// NOTE this is mostly a copy of TriggeredAlertDaoIT in glowroot-server
+// NOTE this is mostly a copy of TriggeredAlertDaoIT in glowroot-central
 //
 // this is not an integration test (*IT.java) since then it would run against shaded agent and fail
 // due to shading issues

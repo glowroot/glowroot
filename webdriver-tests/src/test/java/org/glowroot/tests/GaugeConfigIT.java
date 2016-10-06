@@ -166,7 +166,7 @@ public class GaugeConfigIT extends WebDriverIT {
     }
 
     private void clickNewGauge() {
-        if (WebDriverSetup.server) {
+        if (WebDriverSetup.useCentral) {
             Utils.withWait(driver, xpath("//a[@href='config/gauge?agent-id=" + agentId + "&new']"))
                     .click();
         } else {

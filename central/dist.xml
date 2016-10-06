@@ -1,0 +1,46 @@
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
+  <id>dist</id>
+  <formats>
+    <format>zip</format>
+  </formats>
+  <baseDirectory>glowroot-central</baseDirectory>
+  <files>
+    <file>
+      <source>${project.build.directory}/glowroot-central-${project.version}.jar</source>
+      <outputDirectory></outputDirectory>
+      <destName>glowroot-central.jar</destName>
+    </file>
+  </files>
+  <fileSets>
+    <fileSet>
+      <!-- not using ${basedir} here because maven-shade-plugin changes it to point wherever
+        dependency reduced pom is written, see https://issues.apache.org/jira/browse/MSHADE-124,
+        so using more reliable ${project.build.directory} which will not cause breakage in the case
+        that this maven-shade-plugin behavior is ever fixed -->
+      <directory>${project.build.directory}/../src/main/resources/META-INF</directory>
+      <includes>
+        <include>LICENSE</include>
+        <include>NOTICE</include>
+      </includes>
+      <outputDirectory></outputDirectory>
+    </fileSet>
+    <fileSet>
+      <!-- see comment above about why not using ${basedir} -->
+      <directory>${project.build.directory}/..</directory>
+      <includes>
+        <include>glowroot-central.properties</include>
+      </includes>
+      <outputDirectory></outputDirectory>
+    </fileSet>
+    <fileSet>
+      <!-- see comment above about why not using ${basedir} -->
+      <directory>${project.build.directory}/..</directory>
+      <includes>
+        <include>glowroot-central.properties</include>
+      </includes>
+      <outputDirectory></outputDirectory>
+    </fileSet>
+  </fileSets>
+</assembly>

@@ -25,10 +25,10 @@ case "$1" in
                                  -B
                if [[ "$java_version" > "1.8" && "$SKIP_SHADING" == "true" ]]
                then
-                 # glowroot server requires java 8+
+                 # glowroot central requires java 8+
                  # and needs to run against unshaded it-harness to avoid shading complications
                  mvn clean verify -pl :glowroot-webdriver-tests \
-                                  -Dglowroot.internal.webdriver.server=true \
+                                  -Dglowroot.internal.webdriver.useCentral=true \
                                   -DargLine="$surefire_jvm_args" \
                                   -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                   -B
@@ -63,14 +63,14 @@ case "$1" in
                if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_PULL_REQUEST" == "false" && "$version" == *-SNAPSHOT ]]
                then
                  # deploy only glowroot-parent, glowroot-agent-api, glowroot-agent-plugin-api and glowroot-agent-it-harness artifacts to maven repository
-                 mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-server \
+                 mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
                                   -Pjavadoc \
                                   -DargLine="$surefire_jvm_args" \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
                                   --settings build/travis-ci/settings.xml \
                                   -B
                else
-                 mvn clean install -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-server \
+                 mvn clean install -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
                                    -Pjavadoc \
                                    -DargLine="$surefire_jvm_args" \
                                    -B
@@ -110,11 +110,11 @@ case "$1" in
                  # run integration tests
                  mvn $common_mvn_args -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
-                 # install unshaded to run webdriver tests against server
+                 # install unshaded to run webdriver tests against the central collector
                  mvn clean install -Dglowroot.shade.skip -DskipTests -B
-                 # run webdriver tests against server
+                 # run webdriver tests against the central collector
                  mvn $common_mvn_args -pl :glowroot-webdriver-tests \
-                                      -Dglowroot.internal.webdriver.server=true \
+                                      -Dglowroot.internal.webdriver.useCentral=true \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
                  # install shaded in order to run certain plugin tests

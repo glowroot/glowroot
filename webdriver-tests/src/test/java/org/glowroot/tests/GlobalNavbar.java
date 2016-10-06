@@ -32,11 +32,11 @@ import static org.openqa.selenium.By.xpath;
 class GlobalNavbar {
 
     private final WebDriver driver;
-    private final boolean server;
+    private final boolean central;
 
-    GlobalNavbar(WebDriver driver, boolean server) {
+    GlobalNavbar(WebDriver driver, boolean central) {
         this.driver = driver;
-        this.server = server;
+        this.central = central;
     }
 
     WebElement getTransactionsLink() {
@@ -52,7 +52,7 @@ class GlobalNavbar {
     }
 
     WebElement getConfigLink() {
-        if (server) {
+        if (central) {
             return getNavbarLink(driver, linkText("Config"));
         } else {
             return getNavbarLink(driver, xpath("//nav//a[@ng-href='config/transaction']"));
@@ -60,7 +60,7 @@ class GlobalNavbar {
     }
 
     WebElement getAdminConfigLink() {
-        if (server) {
+        if (central) {
             return getNavbarLink(driver, xpath("//nav//a[@ng-href='admin/user-list']"));
         } else {
             return getNavbarLink(driver, xpath("//nav//a[@ng-href='config/transaction']"));

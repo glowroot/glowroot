@@ -28,7 +28,7 @@ message InitMessage {
 
 message InitResponse {
   AgentConfig agent_config = 1;
-  string glowroot_server_version = 2;
+  string glowroot_central_version = 2;
 }
 
 // deprecated in 0.9.5, replaced by AggregateStreamMessage

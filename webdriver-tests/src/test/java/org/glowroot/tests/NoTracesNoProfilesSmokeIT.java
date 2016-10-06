@@ -45,9 +45,9 @@ public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
     @Test
     public void shouldCheckTransactionPages() throws Exception {
 
-        // this test doesn't work against server because delete all button doesn't exist
+        // this test doesn't work against the central ui because delete all button doesn't exist
         // which then means there may be old traces or old profiles found
-        Assume.assumeFalse(WebDriverSetup.server);
+        Assume.assumeFalse(WebDriverSetup.useCentral);
 
         // given
         App app = app();

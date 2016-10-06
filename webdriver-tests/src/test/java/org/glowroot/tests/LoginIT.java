@@ -69,8 +69,8 @@ public class LoginIT extends WebDriverIT {
         sendKeys(changePasswordPage.getVerifyNewPasswordTextField(), "q");
         changePasswordPage.clickChangePasswordButton();
         // TODO validate password change success
-        // until then, need to sleep a long time since secure password hashing on the server can
-        // take some time on slow travis ci machines
+        // until then, need to sleep a long time since secure password hashing can take some time on
+        // slow travis ci machines
         Thread.sleep(2000);
         globalNavbar.getAdminConfigLink().click();
         Thread.sleep(200);

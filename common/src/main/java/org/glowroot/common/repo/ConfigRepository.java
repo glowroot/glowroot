@@ -27,7 +27,7 @@ import org.immutables.value.Value;
 import org.glowroot.common.config.FatStorageConfig;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.config.RoleConfig;
-import org.glowroot.common.config.ServerStorageConfig;
+import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.config.UserConfig;
@@ -115,7 +115,7 @@ public interface ConfigRepository {
 
     FatStorageConfig getFatStorageConfig();
 
-    ServerStorageConfig getServerStorageConfig();
+    CentralStorageConfig getCentralStorageConfig();
 
     SmtpConfig getSmtpConfig();
 
@@ -178,7 +178,7 @@ public interface ConfigRepository {
     void updateFatStorageConfig(FatStorageConfig storageConfig, String priorVersion)
             throws Exception;
 
-    void updateServerStorageConfig(ServerStorageConfig storageConfig, String priorVersion)
+    void updateCentralStorageConfig(CentralStorageConfig storageConfig, String priorVersion)
             throws Exception;
 
     void updateSmtpConfig(SmtpConfig smtpConfig, String priorVersion) throws Exception;

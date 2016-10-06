@@ -42,6 +42,7 @@ import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.config.TransactionConfig;
 import org.glowroot.agent.config.UiConfig;
 import org.glowroot.agent.config.UserRecordingConfig;
+import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.FatStorageConfig;
 import org.glowroot.common.config.ImmutableFatStorageConfig;
 import org.glowroot.common.config.ImmutableLdapConfig;
@@ -51,7 +52,6 @@ import org.glowroot.common.config.ImmutableUserConfig;
 import org.glowroot.common.config.ImmutableWebConfig;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.config.RoleConfig;
-import org.glowroot.common.config.ServerStorageConfig;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.config.UserConfig;
@@ -323,7 +323,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public ServerStorageConfig getServerStorageConfig() {
+    public CentralStorageConfig getCentralStorageConfig() {
         throw new UnsupportedOperationException();
     }
 
@@ -766,7 +766,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateServerStorageConfig(ServerStorageConfig updatedConfig, String priorVersion) {
+    public void updateCentralStorageConfig(CentralStorageConfig updatedConfig,
+            String priorVersion) {
         throw new UnsupportedOperationException();
     }
 

@@ -46,7 +46,7 @@ public abstract class WebDriverIT {
     protected static final String agentId;
 
     static {
-        if (WebDriverSetup.server) {
+        if (WebDriverSetup.useCentral) {
             try {
                 agentId = InetAddress.getLocalHost().getHostName();
             } catch (UnknownHostException e) {
@@ -93,8 +93,8 @@ public abstract class WebDriverIT {
     @After
     public void afterEachBaseTest() throws Exception {
         setup.afterEachTest();
-        if (WebDriverSetup.server) {
-            resetAllServerConfig();
+        if (WebDriverSetup.useCentral) {
+            resetAllCentralConfig();
         }
     }
 
@@ -108,34 +108,34 @@ public abstract class WebDriverIT {
     }
 
     protected GlobalNavbar globalNavbar() {
-        return new GlobalNavbar(driver, WebDriverSetup.server);
+        return new GlobalNavbar(driver, WebDriverSetup.useCentral);
     }
 
     protected static int getUiPort() throws Exception {
         return setup.getUiPort();
     }
 
-    private static void resetAllServerConfig() throws Exception {
-        resetServerConfig("transaction", ImmutableTransactionConfig.builder().build());
-        resetServerConfig("ui", ImmutableUiConfig.builder().build());
-        resetServerConfig("user-recording",
+    private static void resetAllCentralConfig() throws Exception {
+        resetCentralConfig("transaction", ImmutableTransactionConfig.builder().build());
+        resetCentralConfig("ui", ImmutableUiConfig.builder().build());
+        resetCentralConfig("user-recording",
                 ImmutableUserRecordingConfig.builder().build());
-        resetServerConfig("advanced", ImmutableAdvancedConfig.builder().build());
+        resetCentralConfig("advanced", ImmutableAdvancedConfig.builder().build());
         deleteAllGauges();
         deleteAllAlerts();
         deleteAllInstrumentation();
         resetUsers();
         resetRoles();
-        resetAdminServerConfig("web", "{\"port\":" + getUiPort()
+        resetCentralConfigAdmin("web", "{\"port\":" + getUiPort()
                 + ",\"bindAddress\":\"127.0.0.1\","
                 + "\"sessionTimeoutMinutes\":30,"
                 + "\"sessionCookieName\":\"GLOWROOT_SESSION_ID\","
                 + "\"version\":\"$version\"}");
-        resetAdminServerConfig("storage", "{\"rollupExpirationHours\":[72,336,2160,17520],"
+        resetCentralConfigAdmin("storage", "{\"rollupExpirationHours\":[72,336,2160,17520],"
                 + "\"traceExpirationHours\":336,"
                 + "\"fullQueryTextExpirationHours\":336,"
                 + "\"version\":\"$version\"}");
-        resetAdminServerConfig("smtp", "{\"host\":\"\","
+        resetCentralConfigAdmin("smtp", "{\"host\":\"\","
                 + "\"ssl\":false,"
                 + "\"username\":\"\","
                 + "\"passwordExists\":false,"
@@ -144,7 +144,7 @@ public abstract class WebDriverIT {
                 + "\"fromEmailAddress\":\"\","
                 + "\"fromDisplayName\":\"\","
                 + "\"version\":\"$version\"}");
-        resetAdminServerConfig("ldap", "{\"host\":\"\","
+        resetCentralConfigAdmin("ldap", "{\"host\":\"\","
                 + "\"ssl\":false,"
                 + "\"username\":\"\","
                 + "\"passwordExists\":false,"
@@ -156,7 +156,7 @@ public abstract class WebDriverIT {
                 + "\"version\":\"$version\"}");
     }
 
-    private static void resetServerConfig(String type, Object config) throws Exception {
+    private static void resetCentralConfig(String type, Object config) throws Exception {
         String url = "http://localhost:" + getUiPort() + "/backend/config/" + type + "?agent-id="
                 + agentId;
 
@@ -292,7 +292,7 @@ public abstract class WebDriverIT {
         }
     }
 
-    private static void resetAdminServerConfig(String type, String template)
+    private static void resetCentralConfigAdmin(String type, String template)
             throws Exception {
         String url = "http://localhost:" + getUiPort() + "/backend/admin/" + type;
         Request request = asyncHttpClient

@@ -47,10 +47,10 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceImplBase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ClientResponse.MessageCase;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse.MessageCase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ServerRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -240,10 +240,10 @@ class GrpcServerWrapper {
                 .expireAfterWrite(1, HOURS)
                 .build();
 
-        private final StreamObserver<ClientResponse> responseObserver =
-                new StreamObserver<ClientResponse>() {
+        private final StreamObserver<AgentResponse> responseObserver =
+                new StreamObserver<AgentResponse>() {
                     @Override
-                    public void onNext(ClientResponse value) {
+                    public void onNext(AgentResponse value) {
                         if (value.getMessageCase() == MessageCase.HELLO) {
                             return;
                         }
@@ -276,19 +276,19 @@ class GrpcServerWrapper {
                     }
                 };
 
-        private volatile @MonotonicNonNull StreamObserver<ServerRequest> requestObserver;
+        private volatile @MonotonicNonNull StreamObserver<CentralRequest> requestObserver;
 
         private volatile boolean closedByAgent;
 
         @Override
-        public StreamObserver<ClientResponse> connect(
-                StreamObserver<ServerRequest> requestObserver) {
+        public StreamObserver<AgentResponse> connect(
+                StreamObserver<CentralRequest> requestObserver) {
             this.requestObserver = requestObserver;
             return responseObserver;
         }
 
         private void updateAgentConfig(AgentConfig agentConfig) throws Exception {
-            sendRequest(ServerRequest.newBuilder()
+            sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setAgentConfigUpdateRequest(AgentConfigUpdateRequest.newBuilder()
                             .setAgentConfig(agentConfig))
@@ -296,14 +296,14 @@ class GrpcServerWrapper {
         }
 
         private int reweave() throws Exception {
-            ClientResponse response = sendRequest(ServerRequest.newBuilder()
+            AgentResponse response = sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setReweaveRequest(ReweaveRequest.getDefaultInstance())
                     .build());
             return response.getReweaveResponse().getClassUpdateCount();
         }
 
-        private ClientResponse sendRequest(ServerRequest request) throws Exception {
+        private AgentResponse sendRequest(CentralRequest request) throws Exception {
             ResponseHolder responseHolder = new ResponseHolder();
             responseHolders.put(request.getRequestId(), responseHolder);
             while (requestObserver == null) {
@@ -311,9 +311,9 @@ class GrpcServerWrapper {
             }
             requestObserver.onNext(request);
             // timeout is in case agent never responds
-            // passing ClientResponse.getDefaultInstance() is just dummy (non-null) value
-            ClientResponse response = responseHolder.response
-                    .exchange(ClientResponse.getDefaultInstance(), 1, MINUTES);
+            // passing AgentResponse.getDefaultInstance() is just dummy (non-null) value
+            AgentResponse response = responseHolder.response
+                    .exchange(AgentResponse.getDefaultInstance(), 1, MINUTES);
             if (response.getMessageCase() == MessageCase.UNKNOWN_REQUEST_RESPONSE) {
                 throw new IllegalStateException();
             }
@@ -325,6 +325,6 @@ class GrpcServerWrapper {
     }
 
     private static class ResponseHolder {
-        private final Exchanger<ClientResponse> response = new Exchanger<ClientResponse>();
+        private final Exchanger<AgentResponse> response = new Exchanger<AgentResponse>();
     }
 }
