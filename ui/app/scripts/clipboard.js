@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ window.gtClipboard = function (clipboardSelector, textNodeFn, textFn) {
       });
       client.on('ready', function () {
         client.on('copy', function (event) {
-          var text = textFn().trim();
+          var text = textFn();
           event.clipboardData.setData('text/plain', text + '\n');
           // return focus back to nearest parent, otherwise esc key won't close modal
           var $target = $(event.target);

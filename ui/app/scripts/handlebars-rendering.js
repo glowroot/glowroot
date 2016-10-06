@@ -643,54 +643,59 @@ HandlebarsRendering = (function () {
     }
   }
 
-  function formatSqlIfNeeded(unexpanded, expanded, expandedTextNode) {
-    var text = expandedTextNode.text().trim();
-    // TODO deal with this hacky special case for SQL formatting
-    if (text.lastIndexOf('jdbc execution: ', 0) === 0) {
-      var beforeRowsStripped = text.substring('jdbc execution: '.length);
-      var beforeParamsStripped = beforeRowsStripped.replace(/ => [0-9]+ rows?$/, '');
-      var sql = beforeParamsStripped.replace(/ \[.*?]$/, '');
-      var comment = '';
-      if (sql.lastIndexOf('/*', 0) === 0) {
-        var endOfComment = sql.indexOf('*/') + 2;
-        comment = sql.substring(0, endOfComment) + '\n';
-        sql = sql.substring(endOfComment).trim();
+  function formatSql(unexpanded, expanded, queryText, suffix) {
+    var comment;
+    var sql;
+    if (queryText.lastIndexOf('/*', 0) === 0) {
+      var endOfCommentIndex = queryText.indexOf('*/') + 2;
+      comment = queryText.substring(0, endOfCommentIndex) + '\n';
+      sql = queryText.substring(endOfCommentIndex).trim();
+    } else {
+      comment = '';
+      sql = queryText;
+    }
+    var formatted = SqlPrettyPrinter.format(sql);
+    if (typeof formatted === 'object') {
+      // intentional console logging
+      // need conditional since console does not exist in IE9 unless dev tools is open
+      if (window.console) {
+        console.log(formatted.message);
+        console.log(sql);
       }
-      var formatted = SqlPrettyPrinter.format(sql);
-      if (typeof formatted === 'object') {
-        // intentional console logging
-        // need conditional since console does not exist in IE9 unless dev tools is open
-        if (window.console) {
-          console.log(formatted.message);
-          console.log(sql);
+    } else {
+      if (comment.length) {
+        var spaces = '';
+        for (var i = 0; i < formatted.length; i++) {
+          if (formatted[i] === ' ') {
+            spaces += ' ';
+          } else {
+            break;
+          }
         }
-      } else {
-        formatted = comment + formatted;
-        var rows = beforeRowsStripped.substring(beforeParamsStripped.length + 1);
-        var parameters = beforeParamsStripped.substring(sql.length + 1);
-        var html = 'jdbc execution:\n\n';
-        // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
-        // there are extra newlines after the pre tag
-        html += '<span class="gt-indent2 gt-inline-block" style="white-space: pre-wrap;">'
-            + formatted + '</span>';
-        if (parameters) {
-          // the absolutely positioned &nbsp; is just for the copy to clipboard
-          html += '\n\n<span class="gt-indent2">parameters:</span>\n\n'
-              + '<span class="gt-indent2 gt-inline-block">&nbsp;&nbsp;' + parameters + '</span>';
-        }
-        if (rows) {
-          // the absolutely positioned &nbsp; is just for the copy to clipboard
-          html += '\n\n<span class="gt-indent2">rows:</span>\n\n'
-              + '<span class="gt-indent2 gt-inline-block">&nbsp;&nbsp;' + rows + '</span>';
-        }
-        expanded.css('padding-bottom', '10px');
-        var $clip = expanded.find('.gt-clip');
-        $clip.css('top', '10px');
-        $clip.css('right', '10px');
-        var $message = expanded.find('.gt-pre-wrap');
-        $message.html(html);
-        $message.css('min-width', 0.6 * unexpanded.parent().width());
+        formatted = spaces + comment + formatted;
       }
+      var parameters = suffix.replace(/ => [0-9]+ rows?$/, '');
+      var rows = suffix.substring(parameters.length + 1);
+      var html = 'jdbc execution:\n\n';
+      // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
+      // there are extra newlines after the pre tag
+      html += '<span class="gt-indent2 gt-inline-block" style="white-space: pre-wrap;">'
+          + formatted + '</span>';
+      if (parameters) {
+        html += '\n\n<span class="gt-indent2">parameters:</span>\n\n'
+            + '<span class="gt-indent2">  ' + parameters + '</span>';
+      }
+      if (rows) {
+        html += '\n\n<span class="gt-indent2">rows:</span>\n\n'
+            + '<span class="gt-indent2">  ' + rows + '</span>';
+      }
+      expanded.css('padding-bottom', '10px');
+      var $clip = expanded.find('.gt-clip');
+      $clip.css('top', '10px');
+      $clip.css('right', '10px');
+      var $message = expanded.find('.gt-pre-wrap');
+      $message.html(html);
+      $message.css('min-width', 0.6 * unexpanded.parent().width());
     }
   }
 
@@ -730,7 +735,7 @@ HandlebarsRendering = (function () {
       gtClipboard($clipboardIcon, function () {
         return clipTextNode[0];
       }, function () {
-        var text = clipTextNode.text().trim();
+        var text = clipTextNode.text();
         // TODO deal with this hacky special case for SQL formatting
         if (text.lastIndexOf('jdbc execution:\n\n', 0) === 0) {
           text = text.substring('jdbc execution:\n\n'.length);
@@ -759,7 +764,9 @@ HandlebarsRendering = (function () {
                 expandedTraceEntryNode.text('[the full query text has expired]');
               } else {
                 expandedTraceEntryNode.text(queryMessage.prefix + data.fullText + queryMessage.suffix);
-                formatSqlIfNeeded(unexpanded, expanded, expandedTraceEntryNode);
+                if (queryMessage.prefix === 'jdbc execution: ') {
+                  formatSql(unexpanded, expanded, data.fullText, queryMessage.suffix.trim());
+                }
                 // so other trace entries with same shared query text don't need to go to server
                 queryMessage.sharedQueryText.fullText = data.fullText;
               }
@@ -776,11 +783,20 @@ HandlebarsRendering = (function () {
       } else if (queryMessage && queryMessage.sharedQueryText.fullTextSha1) {
         // already fetched full text for this sha1
         expandedTraceEntryNode.text(queryMessage.prefix + queryMessage.sharedQueryText.fullText + queryMessage.suffix);
-        formatSqlIfNeeded(unexpanded, expanded, expandedTraceEntryNode);
+        if (queryMessage.prefix === 'jdbc execution: ') {
+          formatSql(unexpanded, expanded, queryMessage.sharedQueryText.fullText, queryMessage.suffix.trim());
+        }
         doAfter();
       } else {
-        // the call to formatSqlIfNeeded() is needed here for data collected prior to 0.9.3
-        formatSqlIfNeeded(unexpanded, expanded, expandedTraceEntryNode);
+        // the call to formatSql() is needed here for data collected prior to 0.9.3
+        var text = expandedTraceEntryNode.text().trim();
+        if (text.lastIndexOf('jdbc execution: ', 0) === 0) {
+          var afterPrefixStripped = text.substring('jdbc execution: '.length);
+          var afterRowsStripped = afterPrefixStripped.replace(/ => [0-9]+ rows?$/, '');
+          var queryText = afterRowsStripped.replace(/ \[.*?]$/, '');
+          var suffix = afterPrefixStripped.substring(queryText.length + 1);
+          formatSql(unexpanded, expanded, queryText, suffix);
+        }
         doAfter();
       }
     } else {

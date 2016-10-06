@@ -230,7 +230,19 @@ glowroot.controller('TransactionQueriesCtrl', [
           }
           return;
         }
-        $scope.formattedQuery = comment + formatted;
+        if (comment.length) {
+          var spaces = '';
+          for (var i = 0; i < formatted.length; i++) {
+            if (formatted[i] === ' ') {
+              spaces += ' ';
+            } else {
+              break;
+            }
+          }
+          $scope.formattedQuery = spaces + comment + formatted;
+        } else {
+          $scope.formattedQuery = formatted;
+        }
         $scope.showFormatted = true;
         $formattedQuery.html($scope.formattedQuery);
         $unformattedQuery.hide();
