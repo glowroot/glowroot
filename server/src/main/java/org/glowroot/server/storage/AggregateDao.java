@@ -341,7 +341,6 @@ public class AggregateDao implements AggregateRepository {
                                     StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE))
                             .setFullTextSha1(fullTextSha1)
                             .build());
-                    sharedQueryTexts.add(sharedQueryText);
                 } else {
                     sharedQueryTexts.add(sharedQueryText);
                 }
