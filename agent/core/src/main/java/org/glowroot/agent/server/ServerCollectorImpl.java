@@ -96,6 +96,8 @@ public class ServerCollectorImpl implements Collector {
         this.collectorHost = collectorHost;
         this.collectorPort = collectorPort;
 
+        startupLogger.info("agent id: {}", agentId);
+
         AtomicBoolean inConnectionFailure = new AtomicBoolean();
         serverConnection = new ServerConnection(collectorHost, collectorPort, inConnectionFailure);
         collectorServiceStub = CollectorServiceGrpc.newStub(serverConnection.getChannel())

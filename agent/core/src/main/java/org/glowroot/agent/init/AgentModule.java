@@ -220,7 +220,7 @@ public class AgentModule {
             pluginNames.add(pluginDescriptor.name());
         }
         if (!pluginNames.isEmpty()) {
-            startupLogger.info("Glowroot plugins loaded: {}", Joiner.on(", ").join(pluginNames));
+            startupLogger.info("plugins loaded: {}", Joiner.on(", ").join(pluginNames));
         }
     }
 

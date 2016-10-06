@@ -44,8 +44,8 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.fat.init.DataDirLocking.BaseDirLockedException;
 import org.glowroot.agent.collector.Collector;
+import org.glowroot.agent.fat.init.DataDirLocking.BaseDirLockedException;
 import org.glowroot.agent.fat.init.GlowrootFatAgentInit;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.GlowrootThinAgentInit;
@@ -154,7 +154,7 @@ public class MainEntryPoint {
             glowrootAgentInit = new GlowrootFatAgentInit();
         } else {
             if (customCollector != null) {
-                startupLogger.info("Using collector: {}", customCollector.getClass().getName());
+                startupLogger.info("using collector: {}", customCollector.getClass().getName());
             }
             glowrootAgentInit = new GlowrootThinAgentInit();
         }
