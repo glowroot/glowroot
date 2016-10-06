@@ -112,7 +112,6 @@ public class GaugeValueDao implements GaugeValueRepository {
             insertNeedsRollup.add(session.prepare("insert into gauge_needs_rollup_" + i
                     + " (agent_rollup, capture_time, uniqueness, gauge_names) values"
                     + " (?, ?, ?, ?)"));
-            // limit is just in case rollup falls way behind, to avoid massive memory consumption
             readNeedsRollup.add(session.prepare("select capture_time, uniqueness, gauge_names"
                     + " from gauge_needs_rollup_" + i + " where agent_rollup = ?"));
             deleteNeedsRollup.add(session.prepare("delete from gauge_needs_rollup_" + i
