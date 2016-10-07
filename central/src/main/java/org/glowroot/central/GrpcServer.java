@@ -63,9 +63,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 class GrpcServer {
 
-    private static final int GRPC_MAX_MESSAGE_SIZE_MB =
-            Integer.getInteger("grpc.max.message.size.mb", 100);
-
     private static final Logger logger = LoggerFactory.getLogger(GrpcServer.class);
 
     // log startup messages using logger name "org.glowroot"
@@ -97,7 +94,6 @@ class GrpcServer {
         server = NettyServerBuilder.forAddress(new InetSocketAddress(bindAddress, port))
                 .addService(new CollectorServiceImpl().bindService())
                 .addService(downstreamService.bindService())
-                .maxMessageSize(1024 * 1024 * GRPC_MAX_MESSAGE_SIZE_MB)
                 .build()
                 .start();
 
