@@ -223,7 +223,7 @@ class FatAgentModule {
     @OnlyUsedByTests
     public void close() throws Exception {
         if (uiModule != null) {
-            uiModule.close();
+            uiModule.close(true);
         }
         if (agentModule != null) {
             agentModule.close();

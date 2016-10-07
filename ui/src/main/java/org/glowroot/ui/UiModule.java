@@ -38,7 +38,6 @@ import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.repo.util.MailService;
 import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
-import org.glowroot.common.util.OnlyUsedByTests;
 
 public class UiModule {
 
@@ -131,11 +130,11 @@ public class UiModule {
         return getPort(lazyHttpServer.get());
     }
 
-    @OnlyUsedByTests
-    public void close() throws InterruptedException {
+    // used by tests and by central ui
+    public void close(boolean waitForChannelClose) throws InterruptedException {
         HttpServer httpServer = lazyHttpServer.get();
         if (httpServer != null) {
-            httpServer.close();
+            httpServer.close(waitForChannelClose);
         }
     }
 

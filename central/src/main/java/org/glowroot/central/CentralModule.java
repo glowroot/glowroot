@@ -217,7 +217,7 @@ class CentralModule {
             // try to shut down cleanly, otherwise apache commons daemon (via Bootstrap) doesn't
             // know service failed to start up
             if (uiModule != null) {
-                uiModule.close();
+                uiModule.close(false);
             }
             if (server != null) {
                 server.close();
@@ -285,7 +285,7 @@ class CentralModule {
     }
 
     void close() throws InterruptedException {
-        uiModule.close();
+        uiModule.close(false);
         server.close();
         rollupService.close();
         session.close();

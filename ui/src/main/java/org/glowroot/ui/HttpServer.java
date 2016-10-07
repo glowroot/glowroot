@@ -146,12 +146,17 @@ class HttpServer {
         handler.closeAllButCurrent();
     }
 
-    void close() {
+    // used by tests and by central ui
+    void close(boolean waitForChannelClose) {
         logger.debug("close(): stopping http server");
-        serverChannel.close().awaitUninterruptibly();
+        if (waitForChannelClose) {
+            serverChannel.close().awaitUninterruptibly();
+        } else {
+            serverChannel.close().awaitUninterruptibly(1, SECONDS);
+        }
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
-        handler.close();
+        handler.close(waitForChannelClose);
         logger.debug("close(): http server stopped");
     }
 

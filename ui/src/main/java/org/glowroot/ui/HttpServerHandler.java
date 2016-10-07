@@ -85,6 +85,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Sharable
 class HttpServerHandler extends ChannelInboundHandlerAdapter {
@@ -163,8 +164,12 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         super.channelActive(ctx);
     }
 
-    void close() {
-        allChannels.close().awaitUninterruptibly();
+    void close(boolean waitForChannelClose) {
+        if (waitForChannelClose) {
+            allChannels.close().awaitUninterruptibly();
+        } else {
+            allChannels.close().awaitUninterruptibly(1, SECONDS);
+        }
     }
 
     void closeAllButCurrent() {
