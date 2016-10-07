@@ -118,7 +118,7 @@ class GrpcServer {
                 updatedAgentConfig = agentDao.store(request.getAgentId(), request.getEnvironment(),
                         request.getAgentConfig());
             } catch (Throwable t) {
-                logger.error(t.getMessage(), t);
+                logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
@@ -178,7 +178,11 @@ class GrpcServer {
 
                 @Override
                 public void onError(Throwable t) {
-                    logger.error(t.getMessage(), t);
+                    if (header == null) {
+                        logger.error(t.getMessage(), t);
+                    } else {
+                        logger.error("{} - {}", header.getAgentId(), t.getMessage(), t);
+                    }
                 }
 
                 @Override
@@ -220,7 +224,7 @@ class GrpcServer {
                     aggregateDao.store(request.getAgentId(), request.getCaptureTime(),
                             aggregatesByTypeList, sharedQueryTexts);
                 } catch (Throwable t) {
-                    logger.error(t.getMessage(), t);
+                    logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);
                     responseObserver.onError(t);
                     return;
                 }
@@ -229,7 +233,7 @@ class GrpcServer {
                 alertingService.checkTransactionAlerts(request.getAgentId(),
                         request.getCaptureTime(), ReadTimeoutException.class);
             } catch (Throwable t) {
-                logger.error(t.getMessage(), t);
+                logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);
                 // don't fail collectAggregates()
             }
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
@@ -246,7 +250,7 @@ class GrpcServer {
                     maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
                 }
             } catch (Throwable t) {
-                logger.error(t.getMessage(), t);
+                logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
@@ -254,7 +258,7 @@ class GrpcServer {
                 alertingService.checkGaugeAlerts(request.getAgentId(), maxCaptureTime,
                         ReadTimeoutException.class);
             } catch (Throwable t) {
-                logger.error(t.getMessage(), t);
+                logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);
                 // don't fail collectGaugeValues()
             }
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
@@ -290,7 +294,11 @@ class GrpcServer {
 
                 @Override
                 public void onError(Throwable t) {
-                    logger.error(t.getMessage(), t);
+                    if (header == null) {
+                        logger.error(t.getMessage(), t);
+                    } else {
+                        logger.error("{} - {}", header.getAgentId(), t.getMessage(), t);
+                    }
                 }
 
                 @Override
@@ -302,7 +310,7 @@ class GrpcServer {
                                 .addAllSharedQueryText(sharedQueryTexts)
                                 .build());
                     } catch (Throwable t) {
-                        logger.error(t.getMessage(), t);
+                        logger.error("{} - {}", header.getAgentId(), t.getMessage(), t);
                         responseObserver.onError(t);
                         return;
                     }
@@ -318,7 +326,7 @@ class GrpcServer {
             try {
                 traceDao.store(request.getAgentId(), request.getTrace());
             } catch (Throwable t) {
-                logger.error(t.getMessage(), t);
+                logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);
                 responseObserver.onError(t);
                 return;
             }
