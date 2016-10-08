@@ -68,6 +68,8 @@ public class Gauges {
         patterns.add(
                 new UnitPattern("org.glowroot:type=FileSystem,name=[^:]+:PercentFull", "percent"));
         patterns.add(new UnitPattern("org.apache.cassandra.metrics:type=ColumnFamily,"
+                + "keyspace=[^,]+,scope=[^,]+,name=LiveDiskSpaceUsed:Count", "bytes"));
+        patterns.add(new UnitPattern("org.apache.cassandra.metrics:type=ColumnFamily,"
                 + "keyspace=[^,]+,scope=[^,]+,name=TotalDiskSpaceUsed:Count", "bytes"));
         unitPatterns = ImmutableList.copyOf(patterns);
     }
