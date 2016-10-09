@@ -19,6 +19,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Nullable;
@@ -27,6 +29,8 @@ import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.config.ConfigService;
@@ -53,11 +57,14 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 class FatAgentModule {
 
+    // log startup messages using logger name "org.glowroot"
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
+
     private final Ticker ticker;
     private final Clock clock;
     // only null in viewer mode
     private final @Nullable ScheduledExecutorService backgroundExecutor;
-    private final SimpleRepoModule simpleRepoModule;
+    private volatile @MonotonicNonNull SimpleRepoModule simpleRepoModule;
     private final @Nullable AgentModule agentModule;
     private final @Nullable ViewerAgentModule viewerAgentModule;
     private final File baseDir;
@@ -70,9 +77,11 @@ class FatAgentModule {
 
     private volatile @MonotonicNonNull UiModule uiModule;
 
-    FatAgentModule(File baseDir, Map<String, String> properties,
+    private final CountDownLatch simpleRepoModuleInit = new CountDownLatch(1);
+
+    FatAgentModule(final File baseDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
-            String glowrootVersion, boolean offlineViewer) throws Exception {
+            final String glowrootVersion, boolean offlineViewer) throws Exception {
 
         dataDirLockingCloseable = DataDirLocking.lockDataDir(baseDir);
 
@@ -82,8 +91,8 @@ class FatAgentModule {
         // mem db is only used for testing (by glowroot-agent-it-harness)
         h2MemDb = Boolean.parseBoolean(properties.get("glowroot.internal.h2.memdb"));
 
-        File dataDir = new File(baseDir, "data");
-        DataSource dataSource;
+        final File dataDir = new File(baseDir, "data");
+        final DataSource dataSource;
         if (h2MemDb) {
             // mem db is only used for testing (by glowroot-agent-it-harness)
             dataSource = new DataSource();
@@ -106,7 +115,7 @@ class FatAgentModule {
             // in particular, it needs to be started before StorageModule which uses shaded H2,
             // which loads java.sql.DriverManager, which loads 3rd party jdbc drivers found via
             // services/java.sql.Driver, and those drivers need to be woven
-            CollectorProxy collectorProxy = new CollectorProxy();
+            final CollectorProxy collectorProxy = new CollectorProxy();
             ConfigService configService =
                     ConfigService.create(baseDir, pluginCache.pluginDescriptors());
 
@@ -120,27 +129,49 @@ class FatAgentModule {
             backgroundExecutor = backgroundExecutorSupplier.get();
 
             PreInitializeStorageShutdownClasses.preInitializeClasses();
-            ConfigRepository configRepository = ConfigRepositoryImpl.create(baseDir,
+            final ConfigRepository configRepository = ConfigRepositoryImpl.create(baseDir,
                     agentModule.getConfigService(), pluginCache);
-            simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
-                    configRepository, backgroundExecutor);
-            simpleRepoModule.registerMBeans(
-                    new PlatformMBeanServerLifecycleImpl(agentModule.getLazyPlatformMBeanServer()));
+            Executors.newSingleThreadExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        // TODO report checker framework issue that occurs without checkNotNull
+                        checkNotNull(clock);
+                        checkNotNull(ticker);
+                        checkNotNull(agentModule);
 
-            // now inject the real collector into the proxy
-            CollectorImpl collectorImpl =
-                    new CollectorImpl(simpleRepoModule.getAgentDao(),
-                            simpleRepoModule.getAggregateDao(),
-                            simpleRepoModule.getTraceDao(),
-                            simpleRepoModule.getGaugeValueDao(),
-                            simpleRepoModule.getAlertingService());
-            collectorProxy.setInstance(collectorImpl);
-            // fat agent's CollectorImpl does nothing with agent config parameter
-            collectorImpl.init(baseDir, EnvironmentCreator.create(glowrootVersion),
-                    AgentConfig.getDefaultInstance(), new AgentConfigUpdater() {
-                        @Override
-                        public void update(AgentConfig agentConfig) {}
-                    });
+                        SimpleRepoModule simpleRepoModule = new SimpleRepoModule(dataSource,
+                                dataDir, clock, ticker, configRepository, backgroundExecutor);
+                        simpleRepoModule.registerMBeans(new PlatformMBeanServerLifecycleImpl(
+                                agentModule.getLazyPlatformMBeanServer()));
+
+                        // now inject the real collector into the proxy
+                        CollectorImpl collectorImpl = new CollectorImpl(
+                                simpleRepoModule.getAgentDao(), simpleRepoModule.getAggregateDao(),
+                                simpleRepoModule.getTraceDao(), simpleRepoModule.getGaugeValueDao(),
+                                simpleRepoModule.getAlertingService());
+                        collectorProxy.setInstance(collectorImpl);
+                        // fat agent's CollectorImpl does nothing with agent config parameter
+                        collectorImpl.init(baseDir, EnvironmentCreator.create(glowrootVersion),
+                                AgentConfig.getDefaultInstance(), new AgentConfigUpdater() {
+                                    @Override
+                                    public void update(AgentConfig agentConfig) {}
+                                });
+
+                        FatAgentModule.this.simpleRepoModule = simpleRepoModule;
+
+                    } catch (Throwable t) {
+                        startupLogger.error("Glowroot cannot start: {}", t.getMessage(), t);
+                    } finally {
+                        // TODO report checker framework issue that occurs without checkNotNull
+                        checkNotNull(simpleRepoModuleInit).countDown();
+                    }
+                }
+            });
+            // prefer to wait for repo to start up on its own, then no worry about losing collected
+            // data due to limits in CollectorProxy, but don't wait too long as first launch after
+            // upgrade when adding new columns to large H2 database can take some time
+            simpleRepoModuleInit.await(5, SECONDS);
             viewerAgentModule = null;
         }
 
@@ -149,6 +180,10 @@ class FatAgentModule {
     }
 
     void initEmbeddedServer() throws Exception {
+        if (simpleRepoModule == null) {
+            // repo module failed to start
+            return;
+        }
         if (agentModule != null) {
             uiModule = new CreateUiModuleBuilder()
                     .fat(true)
@@ -197,9 +232,18 @@ class FatAgentModule {
         }
     }
 
+    boolean isSimpleRepoModuleReady() throws InterruptedException {
+        return simpleRepoModuleInit.await(0, SECONDS);
+    }
+
+    void waitForSimpleRepoModule() throws InterruptedException {
+        simpleRepoModuleInit.await();
+    }
+
     @OnlyUsedByTests
-    public SimpleRepoModule getSimpleRepoModule() {
-        return simpleRepoModule;
+    public SimpleRepoModule getSimpleRepoModule() throws InterruptedException {
+        simpleRepoModuleInit.await();
+        return checkNotNull(simpleRepoModule);
     }
 
     @OnlyUsedByTests
@@ -228,7 +272,7 @@ class FatAgentModule {
         if (agentModule != null) {
             agentModule.close();
         }
-        simpleRepoModule.close();
+        checkNotNull(simpleRepoModule).close();
         if (backgroundExecutor != null) {
             // close background executor last to prevent exceptions due to above modules attempting
             // to use a shutdown executor

@@ -16,24 +16,28 @@
 package org.glowroot.agent.fat.init;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
 
 import javax.annotation.Nullable;
 
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.init.NettyWorkaround;
+import org.glowroot.agent.init.NettyWorkaround.NettyInit;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class GlowrootFatAgentInit implements GlowrootAgentInit {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlowrootFatAgentInit.class);
 
     private @MonotonicNonNull FatAgentModule fatAgentModule;
 
@@ -45,12 +49,35 @@ public class GlowrootFatAgentInit implements GlowrootAgentInit {
 
         fatAgentModule = new FatAgentModule(baseDir, properties, instrumentation, glowrootJarFile,
                 glowrootVersion, offlineViewer);
-        NettyWorkaround.run(instrumentation, new Callable</*@Nullable*/ Void>() {
+        NettyWorkaround.run(instrumentation, new NettyInit() {
             @Override
-            public @Nullable Void call() throws Exception {
+            public void execute(boolean newThread) throws Exception {
                 checkNotNull(fatAgentModule);
-                fatAgentModule.initEmbeddedServer();
-                return null;
+                if (fatAgentModule.isSimpleRepoModuleReady()) {
+                    // prefer to run in same thread
+                    fatAgentModule.initEmbeddedServer();
+                    return;
+                }
+                // needs to finish initializing
+                if (newThread) {
+                    // prefer to run in same thread
+                    fatAgentModule.waitForSimpleRepoModule();
+                    fatAgentModule.initEmbeddedServer();
+                    return;
+                }
+                Executors.newSingleThreadExecutor().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            // TODO report checker framework issue that occurs without checkNotNull
+                            checkNotNull(fatAgentModule);
+                            fatAgentModule.waitForSimpleRepoModule();
+                            fatAgentModule.initEmbeddedServer();
+                        } catch (Exception e) {
+                            logger.error(e.getMessage(), e);
+                        }
+                    }
+                });
             }
         });
     }
@@ -67,7 +94,7 @@ public class GlowrootFatAgentInit implements GlowrootAgentInit {
     }
 
     @OnlyUsedByTests
-    public void resetConfig() throws IOException {
+    public void resetConfig() throws Exception {
         FatAgentModule fatAgentModule = checkNotNull(this.fatAgentModule);
         fatAgentModule.getAgentModule().getConfigService().resetConfig();
         ((ConfigRepositoryImpl) fatAgentModule.getSimpleRepoModule().getConfigRepository())

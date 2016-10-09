@@ -29,6 +29,8 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.tainting.qual.Untainted;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.fat.storage.TracePointQueryBuilder.ParameterizedSql;
 import org.glowroot.agent.fat.storage.util.CappedDatabase;
@@ -66,6 +68,9 @@ import static org.glowroot.agent.util.Checkers.castUntainted;
 public class TraceDao implements TraceRepository {
 
     private static final String AGENT_ID = "";
+
+    // log startup messages using logger name "org.glowroot"
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private static final ImmutableList<Column> traceColumns = ImmutableList.<Column>of(
             ImmutableColumn.of("id", ColumnType.VARCHAR),
@@ -136,10 +141,13 @@ public class TraceDao implements TraceRepository {
         traceAttributeNameDao = new TraceAttributeNameDao(dataSource);
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
-        if (dataSource.tableExists("trace")) {
+        if (dataSource.tableExists("trace")
+                && !dataSource.columnExists("trace", "shared_query_texts_capped_id")) {
             // upgrade to 0.9.3
-            dataSource.execute("alter table trace add column if not exists"
-                    + " shared_query_texts_capped_id bigint");
+            startupLogger.info("upgrading glowroot schema, this may delay glowroot startup for a"
+                    + " few minutes (depending on data size)...");
+            dataSource.execute("alter table trace add column shared_query_texts_capped_id bigint");
+            startupLogger.info("glowroot schema upgrade complete");
         }
         dataSource.syncTable("trace", traceColumns);
         dataSource.syncIndexes("trace", traceIndexes);

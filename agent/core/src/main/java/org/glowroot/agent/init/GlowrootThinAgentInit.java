@@ -18,7 +18,6 @@ package org.glowroot.agent.init;
 import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -39,6 +38,7 @@ import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
+import org.glowroot.agent.init.NettyWorkaround.NettyInit;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.agent.weaving.PreInitializeWeavingClasses;
 import org.glowroot.common.util.Clock;
@@ -91,9 +91,9 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
         final AgentConfigUpdater agentConfigUpdater =
                 new ConfigUpdateService(configService, pluginCache);
 
-        NettyWorkaround.run(instrumentation, new Callable</*@Nullable*/ Void>() {
+        NettyWorkaround.run(instrumentation, new NettyInit() {
             @Override
-            public @Nullable Void call() throws Exception {
+            public void execute(boolean newThread) throws Exception {
                 Collector collector;
                 if (customCollector == null) {
                     centralCollector = new CentralCollector(properties,
@@ -107,7 +107,6 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
                 collectorProxy.setInstance(collector);
                 collector.init(baseDir, EnvironmentCreator.create(glowrootVersion),
                         configService.getAgentConfig(), agentConfigUpdater);
-                return null;
             }
         });
         this.agentModule = agentModule;

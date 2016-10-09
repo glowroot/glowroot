@@ -17,9 +17,14 @@ package org.glowroot.agent.init;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,56 +43,100 @@ public class CollectorProxy implements Collector {
 
     private volatile @MonotonicNonNull Collector instance;
 
-    private final List<LogEvent> earlyLogEvents = Lists.newCopyOnWriteArrayList();
+    @GuardedBy("lock")
+    private Map<Long, Aggregates> earlyAggregates = Maps.newLinkedHashMap();
+
+    @GuardedBy("lock")
+    private final List<List<GaugeValue>> earlyGaugeValues = Lists.newArrayList();
+
+    @GuardedBy("lock")
+    private final List<Trace> earlyTraces = Lists.newArrayList();
+
+    @GuardedBy("lock")
+    private final List<LogEvent> earlyLogEvents = Lists.newArrayList();
+
+    private final Object lock = new Object();
 
     @Override
     public void init(File glowrootBaseDir, Environment environment, AgentConfig agentConfig,
             AgentConfigUpdater agentConfigUpdater) throws Exception {
-        if (instance != null) {
-            instance.init(glowrootBaseDir, environment, agentConfig, agentConfigUpdater);
-        }
+        // init is called directly on the instantiated collector, never on the proxy itself
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void collectAggregates(long captureTime, Aggregates aggregates) throws Exception {
-        if (instance != null) {
-            instance.collectAggregates(captureTime, aggregates);
+        synchronized (lock) {
+            if (instance == null) {
+                if (earlyAggregates.size() < 10) { // 10 minutes
+                    earlyAggregates.put(captureTime, aggregates);
+                }
+                return;
+            }
         }
+        instance.collectAggregates(captureTime, aggregates);
     }
 
     @Override
     public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
-        if (instance != null) {
-            instance.collectGaugeValues(gaugeValues);
+        synchronized (lock) {
+            if (instance == null) {
+                if (earlyTraces.size() < 120) { // 10 minutes
+                    earlyGaugeValues.add(gaugeValues);
+                }
+                return;
+            }
         }
+        instance.collectGaugeValues(gaugeValues);
     }
 
     @Override
     public void collectTrace(Trace trace) throws Exception {
-        if (instance != null) {
-            instance.collectTrace(trace);
+        synchronized (lock) {
+            if (instance == null) {
+                if (earlyTraces.size() < 10) {
+                    earlyTraces.add(trace);
+                }
+                return;
+            }
         }
+        instance.collectTrace(trace);
     }
 
     @Override
     public void log(LogEvent logEvent) throws Exception {
-        if (instance != null) {
-            instance.log(logEvent);
-        } else if (earlyLogEvents.size() < 100) {
-            earlyLogEvents.add(logEvent);
+        synchronized (lock) {
+            if (instance == null) {
+                if (earlyLogEvents.size() < 100) {
+                    earlyLogEvents.add(logEvent);
+                }
+                return;
+            }
         }
+        instance.log(logEvent);
     }
 
     @VisibleForTesting
     public void setInstance(Collector instance) {
-        this.instance = instance;
-        try {
-            for (LogEvent logEvent : earlyLogEvents) {
-                instance.log(logEvent);
+        synchronized (lock) {
+            this.instance = instance;
+            try {
+                for (Entry<Long, Aggregates> entry : earlyAggregates.entrySet()) {
+                    instance.collectAggregates(entry.getKey(), entry.getValue());
+                }
+                for (List<GaugeValue> gaugeValues : earlyGaugeValues) {
+                    instance.collectGaugeValues(gaugeValues);
+                }
+                for (Trace trace : earlyTraces) {
+                    instance.collectTrace(trace);
+                }
+                for (LogEvent logEvent : earlyLogEvents) {
+                    instance.log(logEvent);
+                }
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
             }
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            earlyLogEvents.clear();
         }
-        earlyLogEvents.clear();
     }
 }

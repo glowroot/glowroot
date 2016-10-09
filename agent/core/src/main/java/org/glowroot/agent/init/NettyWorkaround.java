@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.glowroot.agent.init;
 
 import java.lang.instrument.Instrumentation;
-import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
 import javax.annotation.Nullable;
@@ -35,9 +34,9 @@ public class NettyWorkaround {
     private NettyWorkaround() {}
 
     public static void run(final @Nullable Instrumentation instrumentation,
-            final Callable<?> notInPremainCallable) throws Exception {
+            final NettyInit doNettyInit) throws Exception {
         if (instrumentation == null) {
-            notInPremainCallable.call();
+            doNettyInit.execute(false);
         } else {
             // cannot start netty in premain otherwise can crash JVM
             // see https://github.com/netty/netty/issues/3233
@@ -48,7 +47,7 @@ public class NettyWorkaround {
                     try {
                         checkNotNull(instrumentation);
                         waitForMain(instrumentation);
-                        notInPremainCallable.call();
+                        doNettyInit.execute(true);
                     } catch (Throwable t) {
                         logger.error(t.getMessage(), t);
                     }
@@ -69,5 +68,9 @@ public class NettyWorkaround {
         }
         // something has gone wrong
         logger.error("sun.misc.Launcher was never loaded");
+    }
+
+    public interface NettyInit {
+        void execute(boolean newThread) throws Exception;
     }
 }
