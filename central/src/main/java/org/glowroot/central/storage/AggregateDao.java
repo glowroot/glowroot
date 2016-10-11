@@ -783,19 +783,12 @@ public class AggregateDao implements AggregateRepository {
             errorCount += row.getLong(0);
             transactionCount += row.getLong(1);
         }
-        BoundStatement boundStatement;
-        if (query.transactionName() == null) {
-            boundStatement = getInsertOverallPS(errorSummaryTable, rollup.rollupLevel()).bind();
-        } else {
-            boundStatement = getInsertTransactionPS(errorSummaryTable, rollup.rollupLevel()).bind();
-        }
+        BoundStatement boundStatement =
+                getInsertOverallPS(errorSummaryTable, rollup.rollupLevel()).bind();
         int i = 0;
         boundStatement.setString(i++, rollup.agentRollup());
         boundStatement.setString(i++, query.transactionType());
         boundStatement.setTimestamp(i++, new Date(query.to()));
-        if (query.transactionName() != null) {
-            boundStatement.setString(i++, query.transactionName());
-        }
         boundStatement.setLong(i++, errorCount);
         boundStatement.setLong(i++, transactionCount);
         boundStatement.setInt(i++, rollup.adjustedTTL());
