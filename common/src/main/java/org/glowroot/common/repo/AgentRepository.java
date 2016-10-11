@@ -26,7 +26,11 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
 public interface AgentRepository {
 
-    List<AgentRollup> readAgentRollups() throws Exception;
+    List<AgentRollup> readAgentRollups();
+
+    boolean isLeaf(String agentRollup);
+
+    boolean isAgentRollupForAgentId(String agentRollup, String agentId);
 
     @Nullable
     Environment readEnvironment(String agentId) throws Exception;
@@ -35,6 +39,6 @@ public interface AgentRepository {
     @Styles.AllParameters
     interface AgentRollup {
         String name();
-        boolean leaf();
+        List<AgentRollup> children();
     }
 }

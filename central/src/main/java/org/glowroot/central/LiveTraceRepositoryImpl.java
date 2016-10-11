@@ -22,60 +22,78 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 
 import org.glowroot.common.live.LiveTraceRepository;
+import org.glowroot.common.repo.AgentRepository;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class LiveTraceRepositoryImpl implements LiveTraceRepository {
 
     private final DownstreamServiceImpl downstreamService;
+    private final AgentRepository agentRepository;
 
-    LiveTraceRepositoryImpl(DownstreamServiceImpl downstreamService) {
+    LiveTraceRepositoryImpl(DownstreamServiceImpl downstreamService,
+            AgentRepository agentRepository) {
         this.downstreamService = downstreamService;
+        this.agentRepository = agentRepository;
     }
 
     @Override
-    public @Nullable Trace.Header getHeader(String agentId, String traceId) throws Exception {
+    public @Nullable Trace.Header getHeader(String agentRollup, String agentId, String traceId)
+            throws Exception {
+        checkValidAgentIdForRequest(agentRollup, agentId);
         return downstreamService.getHeader(agentId, traceId);
     }
 
     @Override
-    public @Nullable Entries getEntries(String agentId, String traceId) throws Exception {
+    public @Nullable Entries getEntries(String agentRollup, String agentId, String traceId)
+            throws Exception {
+        checkValidAgentIdForRequest(agentRollup, agentId);
         return downstreamService.getEntries(agentId, traceId);
     }
 
     @Override
-    public @Nullable Profile getMainThreadProfile(String agentId, String traceId)
-            throws Exception {
+    public @Nullable Profile getMainThreadProfile(String agentRollup, String agentId,
+            String traceId) throws Exception {
+        checkValidAgentIdForRequest(agentRollup, agentId);
         return downstreamService.getMainThreadProfile(agentId, traceId);
     }
 
     @Override
-    public @Nullable Profile getAuxThreadProfile(String agentId, String traceId) throws Exception {
+    public @Nullable Profile getAuxThreadProfile(String agentRollup, String agentId, String traceId)
+            throws Exception {
+        checkValidAgentIdForRequest(agentRollup, agentId);
         return downstreamService.getAuxThreadProfile(agentId, traceId);
     }
 
     @Override
-    public @Nullable Trace getFullTrace(String agentId, String traceId) throws Exception {
+    public @Nullable Trace getFullTrace(String agentRollup, String agentId, String traceId)
+            throws Exception {
+        checkValidAgentIdForRequest(agentRollup, agentId);
         return downstreamService.getFullTrace(agentId, traceId);
     }
 
     @Override
-    public int getMatchingTraceCount(String agentId, String transactionType,
-            @Nullable String transactionName) {
+    public int getMatchingTraceCount(String transactionType, @Nullable String transactionName) {
         return 0;
     }
 
     @Override
-    public List<TracePoint> getMatchingActiveTracePoints(TraceKind traceKind, String agentId,
+    public List<TracePoint> getMatchingActiveTracePoints(TraceKind traceKind,
             String transactionType, @Nullable String transactionName, TracePointFilter filter,
             int limit, long captureTime, long captureTick) {
         return ImmutableList.of();
     }
 
     @Override
-    public List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String agentId,
-            String transactionType, @Nullable String transactionName, TracePointFilter filter,
-            long captureTime) {
+    public List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String transactionType,
+            @Nullable String transactionName, TracePointFilter filter, long captureTime) {
         return ImmutableList.of();
+    }
+
+    private void checkValidAgentIdForRequest(String agentRollup, String agentId) {
+        if (!agentRepository.isAgentRollupForAgentId(agentRollup, agentId)) {
+            throw new IllegalArgumentException(
+                    "Agent " + agentId + " is not a child of rollup " + agentRollup);
+        }
     }
 }

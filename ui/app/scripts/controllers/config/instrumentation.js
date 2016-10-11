@@ -294,7 +294,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
         url = 'backend/config/instrumentation/add';
       }
       var agentId = $scope.agentId;
-      $http.post(url + '?agent-id=' + agentId, postData)
+      $http.post(url + '?agent-id=' + encodeURIComponent(agentId), postData)
           .success(function (data) {
             onNewData(data);
             deferred.resolve(version ? 'Saved' : 'Added');

@@ -34,10 +34,12 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.hash.Hashing;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.Futures;
 import com.google.protobuf.ByteString;
@@ -60,7 +62,6 @@ import org.glowroot.common.repo.ImmutableErrorMessageResult;
 import org.glowroot.common.repo.ImmutableHeaderPlus;
 import org.glowroot.common.repo.TraceRepository;
 import org.glowroot.common.repo.Utils;
-import org.glowroot.common.repo.util.AgentRollups;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.Proto;
@@ -76,11 +77,14 @@ public class TraceDao implements TraceRepository {
             "with compaction = { 'class' : 'DateTieredCompactionStrategy' }";
 
     private final Session session;
+    private final AgentDao agentDao;
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
     private final ConfigRepository configRepository;
 
     private final TraceAttributeNameDao traceAttributeNameDao;
+
+    private final PreparedStatement insertCheck;
 
     private final PreparedStatement insertOverallSlowPoint;
     private final PreparedStatement insertTransactionSlowPoint;
@@ -103,6 +107,8 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement insertMainThreadProfile;
     private final PreparedStatement insertAuxThreadProfile;
 
+    private final PreparedStatement readCheck;
+
     private final PreparedStatement readOverallSlowPoint;
     private final PreparedStatement readTransactionSlowPoint;
     private final PreparedStatement readOverallErrorPoint;
@@ -123,13 +129,18 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement deletePartialOverallSlowCount;
     private final PreparedStatement deletePartialTransactionSlowCount;
 
-    public TraceDao(Session session, TransactionTypeDao transactionTypeDao,
+    public TraceDao(Session session, AgentDao agentDao, TransactionTypeDao transactionTypeDao,
             FullQueryTextDao fullQueryTextDao, ConfigRepository configRepository) {
         this.session = session;
+        this.agentDao = agentDao;
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
         this.configRepository = configRepository;
         traceAttributeNameDao = new TraceAttributeNameDao(session, configRepository);
+
+        session.execute("create table if not exists trace_check (agent_rollup varchar,"
+                + " agent_id varchar, trace_id varchar, primary key ((agent_rollup, agent_id),"
+                + " trace_id)) " + WITH_DTCS);
 
         session.execute("create table if not exists trace_tt_slow_point (agent_rollup varchar,"
                 + " transaction_type varchar, capture_time timestamp, agent_id varchar,"
@@ -219,6 +230,9 @@ public class TraceDao implements TraceRepository {
                 + " transaction_type, transaction_name), capture_time, agent_id, trace_id)) "
                 + WITH_DTCS);
 
+        insertCheck = session.prepare("insert into trace_check (agent_rollup, agent_id, trace_id)"
+                + " values (?, ?, ?) using ttl ?");
+
         insertOverallSlowPoint = session.prepare("insert into trace_tt_slow_point (agent_rollup,"
                 + " transaction_type, capture_time, agent_id, trace_id, duration_nanos, error,"
                 + " user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
@@ -279,6 +293,9 @@ public class TraceDao implements TraceRepository {
 
         insertAuxThreadProfile = session.prepare("insert into trace_aux_thread_profile"
                 + " (agent_id, trace_id, profile) values (?, ?, ?) using ttl ?");
+
+        readCheck = session.prepare("select trace_id from trace_check where agent_rollup = ?"
+                + " and agent_id = ? and trace_id = ?");
 
         readOverallSlowPoint = session.prepare("select agent_id, trace_id, capture_time,"
                 + " duration_nanos, error, headline, user, attributes from trace_tt_slow_point"
@@ -348,6 +365,8 @@ public class TraceDao implements TraceRepository {
         Trace.Header priorHeader = trace.getUpdate() ? readHeader(agentId, traceId) : null;
         Trace.Header header = trace.getHeader();
 
+        List<String> agentRollups = agentDao.readAgentRollups(agentId);
+
         List<ResultSetFuture> futures = Lists.newArrayList();
 
         List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
@@ -356,7 +375,12 @@ public class TraceDao implements TraceRepository {
             if (fullTextSha1.isEmpty()) {
                 String fullText = sharedQueryText.getFullText();
                 if (fullText.length() > 2 * StorageConfig.TRACE_QUERY_TEXT_TRUNCATE) {
-                    fullTextSha1 = fullQueryTextDao.store(agentId, fullText, futures);
+                    fullTextSha1 = Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
+                    futures.addAll(fullQueryTextDao.store(agentId, fullTextSha1, fullText));
+                    for (int i = 1; i < agentRollups.size(); i++) {
+                        futures.addAll(
+                                fullQueryTextDao.updateCheckTTL(agentRollups.get(i), fullTextSha1));
+                    }
                     sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
                             .setTruncatedText(
                                     fullText.substring(0, StorageConfig.TRACE_QUERY_TEXT_TRUNCATE))
@@ -369,16 +393,28 @@ public class TraceDao implements TraceRepository {
                     sharedQueryTexts.add(sharedQueryText);
                 }
             } else {
-                fullQueryTextDao.updateTTL(agentId, fullTextSha1, futures);
+                futures.addAll(fullQueryTextDao.updateTTL(agentId, fullTextSha1));
+                for (int i = 1; i < agentRollups.size(); i++) {
+                    futures.addAll(
+                            fullQueryTextDao.updateCheckTTL(agentRollups.get(i), fullTextSha1));
+                }
                 sharedQueryTexts.add(sharedQueryText);
             }
         }
 
-        // unlike aggregates and gauge values, traces can get written to agent rollups immediately
-        List<String> agentRollups = AgentRollups.getAgentRollups(agentId);
-
         int adjustedTTL = AggregateDao.getAdjustedTTL(getTTL(), header.getCaptureTime());
         for (String agentRollup : agentRollups) {
+
+            if (!agentRollup.equals(agentId)) {
+                BoundStatement boundStatement = insertCheck.bind();
+                int i = 0;
+                boundStatement.setString(i++, agentRollup);
+                boundStatement.setString(i++, agentId);
+                boundStatement.setString(i++, traceId);
+                boundStatement.setInt(i++, adjustedTTL);
+                futures.add(session.executeAsync(boundStatement));
+            }
+
             List<Trace.Attribute> attributes = header.getAttributeList();
             if (header.getSlow()) {
                 BoundStatement boundStatement = insertOverallSlowPoint.bind();
@@ -665,8 +701,7 @@ public class TraceDao implements TraceRepository {
             boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
-        transactionTypeDao.store(agentId, header.getTransactionType(),
-                futures);
+        futures.addAll(transactionTypeDao.store(agentRollups, header.getTransactionType()));
         Futures.allAsList(futures).get();
     }
 
@@ -826,8 +861,9 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable HeaderPlus readHeaderPlus(String agentId, String traceId)
+    public @Nullable HeaderPlus readHeaderPlus(String agentRollup, String agentId, String traceId)
             throws InvalidProtocolBufferException {
+        checkValidAgentIdForRequest(agentRollup, agentId, traceId);
         Trace.Header header = readHeader(agentId, traceId);
         if (header == null) {
             return null;
@@ -839,7 +875,9 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public Entries readEntries(String agentId, String traceId) throws IOException {
+    public Entries readEntries(String agentRollup, String agentId, String traceId)
+            throws IOException {
+        checkValidAgentIdForRequest(agentRollup, agentId, traceId);
         return ImmutableEntries.builder()
                 .addAllEntries(readEntriesInternal(agentId, traceId))
                 .addAllSharedQueryTexts(readSharedQueryTexts(agentId, traceId))
@@ -849,7 +887,9 @@ public class TraceDao implements TraceRepository {
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1) @Override
     @Override
-    public Entries readEntriesForExport(String agentId, String traceId) throws IOException {
+    public Entries readEntriesForExport(String agentRollup, String agentId, String traceId)
+            throws IOException {
+        checkValidAgentIdForRequest(agentRollup, agentId, traceId);
         ImmutableEntries.Builder entries = ImmutableEntries.builder()
                 .addAllEntries(readEntriesInternal(agentId, traceId));
         List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
@@ -877,8 +917,9 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable Profile readMainThreadProfile(String agentId, String traceId)
-            throws InvalidProtocolBufferException {
+    public @Nullable Profile readMainThreadProfile(String agentRollup, String agentId,
+            String traceId) throws InvalidProtocolBufferException {
+        checkValidAgentIdForRequest(agentRollup, agentId, traceId);
         BoundStatement boundStatement = readMainThreadProfile.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
@@ -892,8 +933,9 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable Profile readAuxThreadProfile(String agentId, String traceId)
-            throws InvalidProtocolBufferException {
+    public @Nullable Profile readAuxThreadProfile(String agentRollup, String agentId,
+            String traceId) throws InvalidProtocolBufferException {
+        checkValidAgentIdForRequest(agentRollup, agentId, traceId);
         BoundStatement boundStatement = readAuxThreadProfile.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
@@ -904,6 +946,21 @@ public class TraceDao implements TraceRepository {
         }
         ByteBuffer bytes = checkNotNull(row.getBytes(0));
         return Profile.parseFrom(ByteString.copyFrom(bytes));
+    }
+
+    private void checkValidAgentIdForRequest(String agentRollup, String agentId, String traceId) {
+        if (agentId.equals(agentRollup)) {
+            return;
+        }
+        BoundStatement boundStatement = readCheck.bind();
+        int i = 0;
+        boundStatement.setString(i++, agentRollup);
+        boundStatement.setString(i++, agentId);
+        boundStatement.setString(i++, traceId);
+        if (session.execute(boundStatement).isExhausted()) {
+            throw new IllegalArgumentException("Agent " + agentId + " was not a child of rollup "
+                    + agentRollup + " at the time of trace " + traceId);
+        }
     }
 
     private @Nullable Trace.Header readHeader(String agentId, String traceId)

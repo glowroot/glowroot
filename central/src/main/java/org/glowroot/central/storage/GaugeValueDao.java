@@ -15,10 +15,13 @@
  */
 package org.glowroot.central.storage;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import javax.annotation.Nullable;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
@@ -36,6 +39,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.Futures;
 
 import org.glowroot.central.storage.AggregateDao.NeedsRollup;
+import org.glowroot.central.storage.AggregateDao.NeedsRollupFromChildren;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.repo.GaugeValueRepository;
@@ -56,6 +60,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
     private final Session session;
+    private final AgentDao agentDao;
     private final ConfigRepository configRepository;
 
     private final GaugeNameDao gaugeNameDao;
@@ -64,13 +69,19 @@ public class GaugeValueDao implements GaugeValueRepository {
     private final ImmutableList<PreparedStatement> insertValuePS;
     private final ImmutableList<PreparedStatement> readValuePS;
     private final ImmutableList<PreparedStatement> readValueForRollupPS;
+    private final PreparedStatement readValueForRollupFromChildPS;
 
     private final List<PreparedStatement> insertNeedsRollup;
     private final List<PreparedStatement> readNeedsRollup;
     private final List<PreparedStatement> deleteNeedsRollup;
 
-    public GaugeValueDao(Session session, ConfigRepository configRepository) {
+    private final PreparedStatement insertNeedsRollupFromChild;
+    private final PreparedStatement readNeedsRollupFromChild;
+    private final PreparedStatement deleteNeedsRollupFromChild;
+
+    public GaugeValueDao(Session session, AgentDao agentDao, ConfigRepository configRepository) {
         this.session = session;
+        this.agentDao = agentDao;
         this.configRepository = configRepository;
 
         gaugeNameDao = new GaugeNameDao(session, configRepository);
@@ -99,6 +110,9 @@ public class GaugeValueDao implements GaugeValueRepository {
         this.insertValuePS = ImmutableList.copyOf(insertValuePS);
         this.readValuePS = ImmutableList.copyOf(readValuePS);
         this.readValueForRollupPS = ImmutableList.copyOf(readValueForRollupPS);
+        this.readValueForRollupFromChildPS = session.prepare("select value, weight from"
+                + " gauge_value_rollup_1 where agent_rollup = ? and gauge_name = ?"
+                + " and capture_time = ?");
 
         List<PreparedStatement> insertNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
@@ -119,12 +133,26 @@ public class GaugeValueDao implements GaugeValueRepository {
         this.insertNeedsRollup = insertNeedsRollup;
         this.readNeedsRollup = readNeedsRollup;
         this.deleteNeedsRollup = deleteNeedsRollup;
+
+        session.execute("create table if not exists gauge_needs_rollup_from_child"
+                + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
+                + " child_agent_rollup varchar, gauge_names set<varchar>,"
+                + " primary key (agent_rollup, capture_time, uniqueness)) " + WITH_LCS);
+        insertNeedsRollupFromChild = session.prepare("insert into gauge_needs_rollup_from_child"
+                + " (agent_rollup, capture_time, uniqueness, child_agent_rollup, gauge_names)"
+                + " values (?, ?, ?, ?, ?)");
+        readNeedsRollupFromChild = session.prepare("select capture_time, uniqueness,"
+                + " child_agent_rollup, gauge_names from gauge_needs_rollup_from_child"
+                + " where agent_rollup = ?");
+        deleteNeedsRollupFromChild = session.prepare("delete from gauge_needs_rollup_from_child"
+                + " where agent_rollup = ? and capture_time = ? and uniqueness = ?");
     }
 
     public void store(String agentId, List<GaugeValue> gaugeValues) throws Exception {
         if (gaugeValues.isEmpty()) {
             return;
         }
+        List<String> agentRollups = agentDao.readAgentRollups(agentId);
         int ttl = getTTLs().get(0);
         List<ResultSetFuture> futures = Lists.newArrayList();
         for (GaugeValue gaugeValue : gaugeValues) {
@@ -139,7 +167,9 @@ public class GaugeValueDao implements GaugeValueRepository {
             boundStatement.setLong(i++, gaugeValue.getWeight());
             boundStatement.setInt(i++, AggregateDao.getAdjustedTTL(ttl, captureTime));
             futures.add(session.executeAsync(boundStatement));
-            gaugeNameDao.store(agentId, gaugeName, futures);
+            for (String agentRollup : agentRollups) {
+                futures.addAll(gaugeNameDao.store(agentRollup, gaugeName));
+            }
         }
         // insert into gauge_needs_rollup_1
         SetMultimap<Long, String> rollupCaptureTimes = getRollupCaptureTimes(gaugeValues);
@@ -184,33 +214,24 @@ public class GaugeValueDao implements GaugeValueRepository {
         return gaugeValues;
     }
 
-    public void rollup(String agentRollup) throws Exception {
+    // there is no rollup from children on 5-second gauge values
+    //
+    // child agent rollups should be processed before their parent agent rollup, since initial
+    // parent rollup depends on the 1-minute child rollup
+    public void rollup(String agentRollup, @Nullable String parentAgentRollup, boolean leaf)
+            throws Exception {
         List<Integer> ttls = getTTLs();
-        for (int rollupLevel = 1; rollupLevel <= configRepository.getRollupConfigs()
-                .size(); rollupLevel++) {
+        int rollupLevel;
+        if (leaf) {
+            rollupLevel = 1;
+        } else {
+            rollupFromChildren(agentRollup, parentAgentRollup, ttls.get(1));
+            rollupLevel = 2;
+        }
+        while (rollupLevel <= configRepository.getRollupConfigs().size()) {
             int ttl = ttls.get(rollupLevel);
-            rollupLevel(agentRollup, rollupLevel, ttl);
-        }
-    }
-
-    private void rollupLevel(String agentRollup, int rollupLevel, int ttl) throws Exception {
-        List<NeedsRollup> needsRollupList =
-                AggregateDao.getNeedsRollupList(agentRollup, rollupLevel, readNeedsRollup, session);
-        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
-        long rollupIntervalMillis = rollupConfigs.get(rollupLevel - 1).intervalMillis();
-        Long nextRollupIntervalMillis = null;
-        if (rollupLevel < rollupConfigs.size()) {
-            nextRollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
-        }
-        for (NeedsRollup needsRollup : needsRollupList) {
-            long captureTime = needsRollup.getCaptureTime();
-            long from = captureTime - rollupIntervalMillis;
-            for (String gaugeName : needsRollup.getKeys()) {
-                int adjustedTTL = AggregateDao.getAdjustedTTL(ttl, captureTime);
-                rollupOne(rollupLevel, agentRollup, gaugeName, from, captureTime, adjustedTTL);
-            }
-            AggregateDao.postRollup(agentRollup, rollupLevel, needsRollup, nextRollupIntervalMillis,
-                    insertNeedsRollup, deleteNeedsRollup, session);
+            rollup(agentRollup, parentAgentRollup, rollupLevel, ttl);
+            rollupLevel++;
         }
     }
 
@@ -227,9 +248,114 @@ public class GaugeValueDao implements GaugeValueRepository {
         return rollupCaptureTimes;
     }
 
+    private void rollupFromChildren(String agentRollup, @Nullable String parentAgentRollup, int ttl)
+            throws Exception {
+        final int rollupLevel = 1;
+        List<NeedsRollupFromChildren> needsRollupFromChildrenList = AggregateDao
+                .getNeedsRollupFromChildrenList(agentRollup, readNeedsRollupFromChild, session);
+        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+        long nextRollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
+
+        for (NeedsRollupFromChildren needsRollupFromChildren : needsRollupFromChildrenList) {
+            long captureTime = needsRollupFromChildren.getCaptureTime();
+            List<ResultSetFuture> futures = Lists.newArrayList();
+            for (Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys().asMap()
+                    .entrySet()) {
+                String gaugeName = entry.getKey();
+                Collection<String> childAgentRollups = entry.getValue();
+                int adjustedTTL = AggregateDao.getAdjustedTTL(ttl, captureTime);
+                futures.add(rollupOneFromChildren(rollupLevel, agentRollup, gaugeName,
+                        childAgentRollups, captureTime, adjustedTTL));
+            }
+            // wait for above async work to ensure rollup complete before proceeding
+            Futures.allAsList(futures).get();
+
+            if (parentAgentRollup != null) {
+                // insert needs to happen first before call to postRollup(), see method-level
+                // comment on postRollup
+                BoundStatement boundStatement = insertNeedsRollupFromChild.bind();
+                int i = 0;
+                boundStatement.setString(i++, parentAgentRollup);
+                boundStatement.setTimestamp(i++, new Date(captureTime));
+                boundStatement.setUUID(i++, UUIDs.timeBased());
+                boundStatement.setString(i++, agentRollup);
+                boundStatement.setSet(i++, needsRollupFromChildren.getKeys().keySet());
+                session.execute(boundStatement);
+            }
+            AggregateDao.postRollup(agentRollup, needsRollupFromChildren.getCaptureTime(),
+                    needsRollupFromChildren.getKeys().keySet(),
+                    needsRollupFromChildren.getUniquenessKeysForDeletion(),
+                    nextRollupIntervalMillis, insertNeedsRollup.get(rollupLevel),
+                    deleteNeedsRollupFromChild, session);
+        }
+    }
+
+    private void rollup(String agentRollup, @Nullable String parentAgentRollup, int rollupLevel,
+            int ttl) throws Exception {
+        List<NeedsRollup> needsRollupList =
+                AggregateDao.getNeedsRollupList(agentRollup, rollupLevel, readNeedsRollup, session);
+        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+        long rollupIntervalMillis = rollupConfigs.get(rollupLevel - 1).intervalMillis();
+        Long nextRollupIntervalMillis = null;
+        if (rollupLevel < rollupConfigs.size()) {
+            nextRollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
+        }
+        for (NeedsRollup needsRollup : needsRollupList) {
+            long captureTime = needsRollup.getCaptureTime();
+            long from = captureTime - rollupIntervalMillis;
+            Set<String> gaugeNames = needsRollup.getKeys();
+            List<ResultSetFuture> futures = Lists.newArrayList();
+            for (String gaugeName : gaugeNames) {
+                int adjustedTTL = AggregateDao.getAdjustedTTL(ttl, captureTime);
+                futures.add(rollupOne(rollupLevel, agentRollup, gaugeName, from, captureTime,
+                        adjustedTTL));
+            }
+            // wait for above async work to ensure rollup complete before proceeding
+            Futures.allAsList(futures).get();
+
+            if (rollupLevel == 1 && parentAgentRollup != null) {
+                // insert needs to happen first before call to postRollup(), see method-level
+                // comment on postRollup
+                BoundStatement boundStatement = insertNeedsRollupFromChild.bind();
+                int i = 0;
+                boundStatement.setString(i++, parentAgentRollup);
+                boundStatement.setTimestamp(i++, new Date(captureTime));
+                boundStatement.setUUID(i++, UUIDs.timeBased());
+                boundStatement.setString(i++, agentRollup);
+                boundStatement.setSet(i++, gaugeNames);
+                session.execute(boundStatement);
+            }
+            PreparedStatement insertNeedsRollup = nextRollupIntervalMillis == null ? null
+                    : this.insertNeedsRollup.get(rollupLevel);
+            PreparedStatement deleteNeedsRollup = this.deleteNeedsRollup.get(rollupLevel - 1);
+            AggregateDao.postRollup(agentRollup, needsRollup.getCaptureTime(),
+                    gaugeNames, needsRollup.getUniquenessKeysForDeletion(),
+                    nextRollupIntervalMillis, insertNeedsRollup, deleteNeedsRollup, session);
+        }
+    }
+
+    private ResultSetFuture rollupOneFromChildren(int rollupLevel, String agentRollup,
+            String gaugeName, Collection<String> childAgentRollups, long captureTime,
+            int adjustedTTL) {
+        List<Row> rows = Lists.newArrayList();
+        for (String childAgentRollup : childAgentRollups) {
+            BoundStatement boundStatement = readValueForRollupFromChildPS.bind();
+            int i = 0;
+            boundStatement.setString(i++, childAgentRollup);
+            boundStatement.setString(i++, gaugeName);
+            boundStatement.setTimestamp(i++, new Date(captureTime));
+            Row row = session.execute(boundStatement).one();
+            if (row != null) {
+                rows.add(row);
+            }
+        }
+        return rollupOneFromRows(rollupLevel, agentRollup, gaugeName, captureTime, adjustedTTL,
+                rows);
+    }
+
     // from is non-inclusive
-    private void rollupOne(int rollupLevel, String agentRollup, String gaugeName, long from,
-            long to, int adjustedTTL) throws Exception {
+    private ResultSetFuture rollupOne(int rollupLevel, String agentRollup, String gaugeName,
+            long from, long to, int adjustedTTL) throws Exception {
         BoundStatement boundStatement = readValueForRollupPS.get(rollupLevel - 1).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollup);
@@ -237,23 +363,28 @@ public class GaugeValueDao implements GaugeValueRepository {
         boundStatement.setTimestamp(i++, new Date(from));
         boundStatement.setTimestamp(i++, new Date(to));
         ResultSet results = session.execute(boundStatement);
+        return rollupOneFromRows(rollupLevel, agentRollup, gaugeName, to, adjustedTTL, results);
+    }
+
+    private ResultSetFuture rollupOneFromRows(int rollupLevel, String agentRollup, String gaugeName,
+            long to, int adjustedTTL, Iterable<Row> rows) {
         double totalWeightedValue = 0;
         long totalWeight = 0;
-        for (Row row : results) {
+        for (Row row : rows) {
             double value = row.getDouble(0);
             long weight = row.getLong(1);
             totalWeightedValue += value * weight;
             totalWeight += weight;
         }
-        boundStatement = insertValuePS.get(rollupLevel).bind();
-        i = 0;
+        BoundStatement boundStatement = insertValuePS.get(rollupLevel).bind();
+        int i = 0;
         boundStatement.setString(i++, agentRollup);
         boundStatement.setString(i++, gaugeName);
         boundStatement.setTimestamp(i++, new Date(to));
         boundStatement.setDouble(i++, totalWeightedValue / totalWeight);
         boundStatement.setLong(i++, totalWeight);
         boundStatement.setInt(i++, adjustedTTL);
-        session.execute(boundStatement);
+        return session.executeAsync(boundStatement);
     }
 
     private List<Integer> getTTLs() {
@@ -276,5 +407,6 @@ public class GaugeValueDao implements GaugeValueRepository {
             session.execute("truncate gauge_needs_rollup_" + i);
         }
         session.execute("truncate gauge_name");
+        session.execute("truncate gauge_needs_rollup_from_child");
     }
 }

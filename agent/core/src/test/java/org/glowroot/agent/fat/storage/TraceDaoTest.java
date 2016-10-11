@@ -42,6 +42,7 @@ import static org.mockito.Mockito.mock;
 // due to shading issues
 public class TraceDaoTest {
 
+    private static final String AGENT_ROLLUP = "";
     private static final String AGENT_ID = "";
 
     private DataSource dataSource;
@@ -82,11 +83,12 @@ public class TraceDaoTest {
                 .durationNanosLow(0)
                 .durationNanosHigh(Long.MAX_VALUE)
                 .build();
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
 
         // when
-        Trace.Header header =
-                traceDao.readHeaderPlus(AGENT_ID, queryResult.records().get(0).traceId()).header();
+        Trace.Header header = traceDao
+                .readHeaderPlus(AGENT_ROLLUP, AGENT_ID, queryResult.records().get(0).traceId())
+                .header();
 
         // then
         assertThat(header.getPartial()).isEqualTo(trace.getHeader().getPartial());
@@ -113,7 +115,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
 
         // then
         assertThat(queryResult.records()).hasSize(1);
@@ -135,7 +137,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
 
         // then
         assertThat(queryResult.records()).isEmpty();
@@ -157,7 +159,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
 
         // then
         assertThat(queryResult.records()).isEmpty();
@@ -182,7 +184,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
 
         // then
         assertThat(queryResult.records()).hasSize(1);
@@ -207,7 +209,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
 
         // then
         assertThat(queryResult.records()).hasSize(1);
@@ -232,7 +234,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
 
         // then
         assertThat(queryResult.records()).hasSize(1);
@@ -257,7 +259,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
 
         // then
         assertThat(queryResult.records()).isEmpty();
@@ -282,7 +284,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
 
         // then
         assertThat(queryResult.records()).isEmpty();
@@ -296,6 +298,6 @@ public class TraceDaoTest {
         // when
         traceDao.deleteBefore(100);
         // then
-        assertThat(traceDao.readHeaderPlus(AGENT_ID, trace.getId())).isNull();
+        assertThat(traceDao.readHeaderPlus(AGENT_ROLLUP, AGENT_ID, trace.getId())).isNull();
     }
 }

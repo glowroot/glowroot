@@ -33,40 +33,40 @@ public interface LiveTraceRepository {
 
     // null return value means trace not found
     @Nullable
-    Trace.Header getHeader(String agentId, String traceId) throws Exception;
+    Trace.Header getHeader(String agentRollup, String agentId, String traceId) throws Exception;
 
     // null return value means trace not found or was found but had no entries
     //
     // SharedQueryTexts are returned with either fullTrace or
     // truncatedText/truncatedEndText/fullTraceSha1
     @Nullable
-    Entries getEntries(String agentId, String traceId) throws Exception;
+    Entries getEntries(String agentRollup, String agentId, String traceId) throws Exception;
 
     // null return value means trace not found or was found but had no main thread profile
     @Nullable
-    Profile getMainThreadProfile(String agentId, String traceId) throws Exception;
+    Profile getMainThreadProfile(String agentRollup, String agentId, String traceId)
+            throws Exception;
 
     // null return value means trace not found or was found but had no aux thread profile
     @Nullable
-    Profile getAuxThreadProfile(String agentId, String traceId) throws Exception;
+    Profile getAuxThreadProfile(String agentRollup, String agentId, String traceId)
+            throws Exception;
 
     // null return value means trace not found
     //
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1)
     @Nullable
-    Trace getFullTrace(String agentId, String traceId) throws Exception;
+    Trace getFullTrace(String agentRollup, String agentId, String traceId) throws Exception;
 
-    int getMatchingTraceCount(String agentId, String transactionType,
-            @Nullable String transactionName);
+    int getMatchingTraceCount(String transactionType, @Nullable String transactionName);
 
-    List<TracePoint> getMatchingActiveTracePoints(TraceKind traceKind, String agentId,
-            String transactionType, @Nullable String transactionName, TracePointFilter filter,
-            int limit, long captureTime, long captureTick);
+    List<TracePoint> getMatchingActiveTracePoints(TraceKind traceKind, String transactionType,
+            @Nullable String transactionName, TracePointFilter filter, int limit, long captureTime,
+            long captureTick);
 
-    List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String agentId,
-            String transactionType, @Nullable String transactionName, TracePointFilter filter,
-            long captureTime);
+    List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String transactionType,
+            @Nullable String transactionName, TracePointFilter filter, long captureTime);
 
     @Value.Immutable
     public interface Entries {
@@ -163,45 +163,47 @@ public interface LiveTraceRepository {
     class LiveTraceRepositoryNop implements LiveTraceRepository {
 
         @Override
-        public @Nullable Trace.Header getHeader(String agentId, String traceId) {
+        public @Nullable Trace.Header getHeader(String agentRollup, String agentId,
+                String traceId) {
             return null;
         }
 
         @Override
-        public @Nullable Entries getEntries(String agentId, String traceId) {
+        public @Nullable Entries getEntries(String agentRollup, String agentId, String traceId) {
             return null;
         }
 
         @Override
-        public @Nullable Profile getMainThreadProfile(String agentId, String traceId) {
+        public @Nullable Profile getMainThreadProfile(String agentRollup, String agentId,
+                String traceId) {
             return null;
         }
 
         @Override
-        public @Nullable Profile getAuxThreadProfile(String agentId, String traceId) {
+        public @Nullable Profile getAuxThreadProfile(String agentRollup, String agentId,
+                String traceId) {
             return null;
         }
 
         @Override
-        public @Nullable Trace getFullTrace(String agentId, String traceId) {
+        public @Nullable Trace getFullTrace(String agentRollup, String agentId, String traceId) {
             return null;
         }
 
         @Override
-        public int getMatchingTraceCount(String agentId, String transactionType,
-                @Nullable String transactionName) {
+        public int getMatchingTraceCount(String transactionType, @Nullable String transactionName) {
             return 0;
         }
 
         @Override
-        public List<TracePoint> getMatchingActiveTracePoints(TraceKind traceKind, String agentId,
+        public List<TracePoint> getMatchingActiveTracePoints(TraceKind traceKind,
                 String transactionType, @Nullable String transactionName, TracePointFilter filter,
                 int limit, long captureTime, long captureTick) {
             return ImmutableList.of();
         }
 
         @Override
-        public List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String agentId,
+        public List<TracePoint> getMatchingPendingPoints(TraceKind traceKind,
                 String transactionType, @Nullable String transactionName, TracePointFilter filter,
                 long captureTime) {
             return ImmutableList.of();

@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.common.io.Resources;
@@ -77,11 +76,10 @@ class TraceExportHttpService implements HttpService {
             Authentication authentication) throws Exception {
         auditLogger.info("{} - GET {}", authentication.caseAmbiguousUsername(), request.uri());
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+        List<String> agentRollups = decoder.parameters().get("agent-rollup");
+        String agentRollup = agentRollups == null ? "" : agentRollups.get(0);
         List<String> agentIds = decoder.parameters().get("agent-id");
-        if (agentIds == null) {
-            agentIds = ImmutableList.of("");
-        }
-        String agentId = agentIds.get(0);
+        String agentId = agentIds == null ? "" : agentIds.get(0);
         List<String> traceIds = decoder.parameters().get("trace-id");
         checkNotNull(traceIds, "Missing trace id in query string: %s", request.uri());
         String traceId = traceIds.get(0);
@@ -92,9 +90,13 @@ class TraceExportHttpService implements HttpService {
         if (checkLiveTracesParams != null && !checkLiveTracesParams.isEmpty()) {
             checkLiveTraces = Boolean.parseBoolean(checkLiveTracesParams.get(0));
         }
-        logger.debug("handleRequest(): agentId={}, traceId={}, checkLiveTraces={}", agentId,
-                traceId, checkLiveTraces);
-        TraceExport traceExport = traceCommonService.getExport(agentId, traceId, checkLiveTraces);
+        logger.debug("handleRequest(): agentRollup={}, agentId={}, traceId={}, checkLiveTraces={}",
+                agentRollup, agentId, traceId, checkLiveTraces);
+        if (agentRollup.isEmpty()) {
+            agentRollup = agentId;
+        }
+        TraceExport traceExport =
+                traceCommonService.getExport(agentRollup, agentId, traceId, checkLiveTraces);
         if (traceExport == null) {
             logger.warn("no trace found for id: {}", traceId);
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);

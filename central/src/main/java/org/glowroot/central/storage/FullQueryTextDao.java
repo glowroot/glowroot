@@ -25,16 +25,21 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.base.Charsets;
-import com.google.common.hash.Hashing;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
+import org.immutables.value.Value;
 
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository.RollupConfig;
+import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class FullQueryTextDao {
 
@@ -47,7 +52,7 @@ public class FullQueryTextDao {
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
-    private final RateLimiter<String> rateLimiter = new RateLimiter<>(10000);
+    private final RateLimiter<FullQueryTextKey> rateLimiter = new RateLimiter<>(10000);
 
     public FullQueryTextDao(Session session, ConfigRepository configRepository) {
         this.session = session;
@@ -90,47 +95,76 @@ public class FullQueryTextDao {
         return row.getString(0);
     }
 
-    String store(String agentRollup, String fullText, List<ResultSetFuture> futures) {
-        String fullTextSha1 = Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
-        storeInternal(agentRollup, fullText, fullTextSha1, futures);
-        return fullTextSha1;
+    List<ResultSetFuture> store(String agentRollup, String fullTextSha1, String fullText) {
+        FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollup, fullTextSha1);
+        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+            return ImmutableList.of();
+        }
+        return storeInternal(rateLimiterKey, fullText);
     }
 
-    void updateTTL(String agentRollup, String fullTextSha1, List<ResultSetFuture> futures) {
-        storeInternal(agentRollup, null, fullTextSha1, futures);
+    List<ResultSetFuture> updateTTL(String agentRollup, String fullTextSha1) {
+        FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollup, fullTextSha1);
+        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+            return ImmutableList.of();
+        }
+        BoundStatement boundStatement = readPS.bind();
+        boundStatement.setString(0, fullTextSha1);
+        ResultSet results = session.execute(boundStatement);
+        Row row = results.one();
+        String fullText = checkNotNull(checkNotNull(row).getString(0));
+        return storeInternal(rateLimiterKey, fullText);
     }
 
-    private void storeInternal(String agentRollup, @Nullable String fullText, String fullTextSha1,
-            List<ResultSetFuture> futures) {
-        // not currently rate-limiting inserts into check table
-        BoundStatement boundStatement = insertCheckPS.bind();
+    List<ResultSetFuture> updateCheckTTL(String agentRollup, String fullTextSha1) {
+        FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollup, fullTextSha1);
+        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+            return ImmutableList.of();
+        }
+        List<ResultSetFuture> futures = Lists.newArrayList();
+        storeCheckInternal(rateLimiterKey);
+        return futures;
+    }
+
+    private List<ResultSetFuture> storeInternal(FullQueryTextKey rateLimiterKey, String fullText) {
+        List<ResultSetFuture> futures = Lists.newArrayList();
+        futures.add(storeCheckInternal(rateLimiterKey));
+        BoundStatement boundStatement = insertPS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollup);
-        boundStatement.setString(i++, fullTextSha1);
-        boundStatement.setInt(i++, getTTL());
-        futures.add(session.executeAsync(boundStatement));
-        // rate limit the large query text inserts
-        if (!rateLimiter.tryAcquire(fullTextSha1)) {
-            return;
-        }
-        if (fullText == null) {
-            boundStatement = readPS.bind();
-            boundStatement.setString(0, fullTextSha1);
-            ResultSet results = session.execute(boundStatement);
-            Row row = results.one();
-            fullText = checkNotNull(checkNotNull(row).getString(0));
-        }
-        boundStatement = insertPS.bind();
-        i = 0;
-        boundStatement.setString(i++, fullTextSha1);
+        boundStatement.setString(i++, rateLimiterKey.fullTextSha1());
         boundStatement.setString(i++, fullText);
         boundStatement.setInt(i++, getTTL());
         futures.add(Sessions.executeAsyncWithOnFailure(session, boundStatement,
-                () -> rateLimiter.invalidate(fullTextSha1)));
+                () -> rateLimiter.invalidate(rateLimiterKey)));
+        return futures;
+    }
+
+    private ResultSetFuture storeCheckInternal(FullQueryTextKey rateLimiterKey) {
+        BoundStatement boundStatement = insertCheckPS.bind();
+        int i = 0;
+        boundStatement.setString(i++, rateLimiterKey.agentRollup());
+        boundStatement.setString(i++, rateLimiterKey.fullTextSha1());
+        boundStatement.setInt(i++, getTTL());
+        return Sessions.executeAsyncWithOnFailure(session, boundStatement,
+                () -> rateLimiter.invalidate(rateLimiterKey));
     }
 
     private int getTTL() {
-        return Ints.saturatedCast(HOURS
-                .toSeconds(configRepository.getStorageConfig().fullQueryTextExpirationHours()));
+        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+        RollupConfig lastRollupConfig = rollupConfigs.get(rollupConfigs.size() - 1);
+        // add largest rollup time to account for query being retained slightly longer by rollups
+        long ttl = MILLISECONDS.toSeconds(lastRollupConfig.intervalMillis())
+                // adding 1 day to account for rateLimiter
+                + DAYS.toSeconds(1)
+                + HOURS.toSeconds(
+                        configRepository.getStorageConfig().fullQueryTextExpirationHours());
+        return Ints.saturatedCast(ttl);
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface FullQueryTextKey {
+        String agentRollup();
+        String fullTextSha1();
     }
 }

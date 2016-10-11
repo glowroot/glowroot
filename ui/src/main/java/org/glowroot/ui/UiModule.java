@@ -91,7 +91,7 @@ public class UiModule {
                 transactionCommonService, traceRepository, rollupLevelService, clock);
         ConfigJsonService configJsonService = new ConfigJsonService(configRepository);
         GaugeValueJsonService gaugeValueJsonService = new GaugeValueJsonService(
-                gaugeValueRepository, rollupLevelService, configRepository);
+                gaugeValueRepository, rollupLevelService, agentRepository, configRepository);
         AlertConfigJsonService alertJsonService = new AlertConfigJsonService(configRepository);
         AdminJsonService adminJsonService = new AdminJsonService(fat, configRepository, repoAdmin,
                 liveAggregateRepository, new MailService());

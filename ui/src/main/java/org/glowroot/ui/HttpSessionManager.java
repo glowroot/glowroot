@@ -316,25 +316,25 @@ class HttpSessionManager {
 
         abstract ConfigRepository configRepository();
 
-        boolean isPermitted(String agentId, String permission) {
+        boolean isPermitted(String agentRollup, String permission) {
             if (permission.startsWith("agent:")) {
-                return isAgentPermitted(agentId, permission);
+                return isAgentPermitted(agentRollup, permission);
             } else {
                 return isAdminPermitted(permission);
             }
         }
 
-        boolean isAgentPermitted(String agentId, String permission) {
+        boolean isAgentPermitted(String agentRollup, String permission) {
             checkState(permission.startsWith("agent:"));
             if (offlineViewer()) {
                 return !permission.startsWith("agent:config:edit:");
             }
             if (permission.equals("agent:trace")) {
                 // special case for now
-                return isAgentPermitted(agentId, "agent:transaction:traces")
-                        || isAgentPermitted(agentId, "agent:error:traces");
+                return isAgentPermitted(agentRollup, "agent:transaction:traces")
+                        || isAgentPermitted(agentRollup, "agent:error:traces");
             }
-            return isPermitted(SimplePermission.create(agentId, permission));
+            return isPermitted(SimplePermission.create(agentRollup, permission));
         }
 
         boolean isAdminPermitted(String permission) {

@@ -29,7 +29,10 @@ public class TraceJsonServiceTest {
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
         // when
         String json = traceJsonService.getHeader("",
-                ImmutableHeaderRequest.builder().traceId("1234").build());
+                ImmutableHeaderRequest.builder()
+                        .agentId("")
+                        .traceId("1234")
+                        .build());
         // then
         assertThat(json).isEqualTo("{\"expired\":true}");
     }

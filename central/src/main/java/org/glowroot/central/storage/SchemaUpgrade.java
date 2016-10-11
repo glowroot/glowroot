@@ -46,7 +46,7 @@ public class SchemaUpgrade {
 
     private static final Logger logger = LoggerFactory.getLogger(SchemaUpgrade.class);
 
-    private static final int CURR_SCHEMA_VERSION = 7;
+    private static final int CURR_SCHEMA_VERSION = 9;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -95,6 +95,14 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 7) {
             renameServerConfigTable();
             updateSchemaVersion(7);
+        }
+        if (initialSchemaVersion < 8) {
+            addAgentOneTable();
+            updateSchemaVersion(8);
+        }
+        if (initialSchemaVersion < 9) {
+            addAgentRollupColumn();
+            updateSchemaVersion(9);
         }
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
     }
@@ -219,6 +227,36 @@ public class SchemaUpgrade {
         }
         try {
             session.execute("drop table server_config");
+        } catch (InvalidQueryException e) {
+            logger.debug(e.getMessage(), e);
+        }
+    }
+
+    private void addAgentOneTable() {
+        try {
+            session.execute("create table if not exists agent_one (one int, agent_id varchar,"
+                    + " agent_rollup varchar, primary key (one, agent_id)) " + WITH_LCS);
+        } catch (InvalidQueryException e) {
+            logger.debug(e.getMessage(), e);
+        }
+        ResultSet results = session.execute("select agent_rollup from agent_rollup");
+        PreparedStatement insertPS =
+                session.prepare("insert into agent_one (one, agent_id) values (1, ?)");
+        for (Row row : results) {
+            BoundStatement boundStatement = insertPS.bind();
+            boundStatement.setString(0, row.getString(0));
+            session.execute(boundStatement);
+        }
+        try {
+            session.execute("drop table agent_rollup");
+        } catch (InvalidQueryException e) {
+            logger.debug(e.getMessage(), e);
+        }
+    }
+
+    private void addAgentRollupColumn() {
+        try {
+            session.execute("alter table agent add agent_rollup varchar");
         } catch (InvalidQueryException e) {
             logger.debug(e.getMessage(), e);
         }

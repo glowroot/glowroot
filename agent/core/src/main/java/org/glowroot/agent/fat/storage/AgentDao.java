@@ -54,11 +54,18 @@ public class AgentDao implements AgentRepository {
     }
 
     @Override
-    public List<AgentRollup> readAgentRollups() throws Exception {
-        return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
-                .name("")
-                .leaf(true)
-                .build());
+    public List<AgentRollup> readAgentRollups() {
+        return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder().name("").build());
+    }
+
+    @Override
+    public boolean isLeaf(String agentRollup) {
+        return true;
+    }
+
+    @Override
+    public boolean isAgentRollupForAgentId(String agentRollup, String agentId) {
+        return agentRollup.isEmpty() && agentId.isEmpty();
     }
 
     public void store(Environment environment) throws Exception {

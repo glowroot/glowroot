@@ -25,8 +25,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,6 +38,7 @@ public class GaugeValueDaoIT {
 
     private static Cluster cluster;
     private static Session session;
+    private static AgentDao agentDao;
     private static GaugeValueDao gaugeValueDao;
 
     @BeforeClass
@@ -47,7 +51,7 @@ public class GaugeValueDaoIT {
         KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 
         CentralConfigDao centralConfigDao = new CentralConfigDao(session);
-        AgentDao agentDao = new AgentDao(session);
+        agentDao = new AgentDao(session);
         UserDao userDao = new UserDao(session, keyspace);
         RoleDao roleDao = new RoleDao(session, keyspace);
         ConfigRepository configRepository =
@@ -60,7 +64,7 @@ public class GaugeValueDaoIT {
                 storageConfig.version());
         agentDao.setConfigRepository(configRepository);
         centralConfigDao.setConfigRepository(configRepository);
-        gaugeValueDao = new GaugeValueDao(session, configRepository);
+        gaugeValueDao = new GaugeValueDao(session, agentDao, configRepository);
     }
 
     @AfterClass
@@ -90,12 +94,59 @@ public class GaugeValueDaoIT {
         List<Integer> rollupExpirationHours = Lists.newArrayList(
                 ImmutableCentralStorageConfig.builder().build().rollupExpirationHours());
         rollupExpirationHours.add(0, rollupExpirationHours.get(0));
-        gaugeValueDao.rollup("one");
-        gaugeValueDao.rollup("one");
-        gaugeValueDao.rollup("one");
+        gaugeValueDao.rollup("one", null, true);
+        gaugeValueDao.rollup("one", null, true);
+        gaugeValueDao.rollup("one", null, true);
 
         // check rolled-up data after rollup
         gaugeValues = gaugeValueDao.readGaugeValues("one", "the gauge:attr1", 0, 300000, 1);
+        assertThat(gaugeValues).hasSize(1);
+        assertThat(gaugeValues.get(0).getValue()).isEqualTo(500);
+        assertThat(gaugeValues.get(0).getWeight()).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldRollupFromChildren() throws Exception {
+
+        agentDao.store("one", "the parent", Environment.getDefaultInstance(),
+                AgentConfig.getDefaultInstance());
+
+        gaugeValueDao.truncateAll();
+        gaugeValueDao.store("one", createData(60013));
+        gaugeValueDao.store("one", createData(65009));
+        gaugeValueDao.store("one", createData(360000));
+
+        // rollup
+        gaugeValueDao.rollup("one", "the parent", true);
+        gaugeValueDao.rollup("the parent", null, false);
+
+        // check rolled-up data after rollup
+        List<GaugeValue> gaugeValues =
+                gaugeValueDao.readGaugeValues("the parent", "the gauge:attr1", 0, 300000, 1);
+        assertThat(gaugeValues).hasSize(1);
+        assertThat(gaugeValues.get(0).getValue()).isEqualTo(500);
+        assertThat(gaugeValues.get(0).getWeight()).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldRollupFromGrandChildren() throws Exception {
+
+        agentDao.store("one", "the gp/the parent", Environment.getDefaultInstance(),
+                AgentConfig.getDefaultInstance());
+
+        gaugeValueDao.truncateAll();
+        gaugeValueDao.store("one", createData(60013));
+        gaugeValueDao.store("one", createData(65009));
+        gaugeValueDao.store("one", createData(360000));
+
+        // rollup
+        gaugeValueDao.rollup("one", "the gp/the parent", true);
+        gaugeValueDao.rollup("the gp/the parent", "the gp", false);
+        gaugeValueDao.rollup("the gp", null, false);
+
+        // check rolled-up data after rollup
+        List<GaugeValue> gaugeValues =
+                gaugeValueDao.readGaugeValues("the gp", "the gauge:attr1", 0, 300000, 1);
         assertThat(gaugeValues).hasSize(1);
         assertThat(gaugeValues.get(0).getValue()).isEqualTo(500);
         assertThat(gaugeValues.get(0).getWeight()).isEqualTo(2);

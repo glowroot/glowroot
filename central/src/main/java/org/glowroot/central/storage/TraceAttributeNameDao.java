@@ -33,6 +33,7 @@ import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 class TraceAttributeNameDao {
@@ -100,7 +101,8 @@ class TraceAttributeNameDao {
             }
             maxTTL = Math.max(maxTTL, HOURS.toSeconds(expirationHours));
         }
-        return Ints.saturatedCast(maxTTL);
+        // adding 1 day to account for rateLimiter
+        return Ints.saturatedCast(maxTTL + DAYS.toSeconds(1));
     }
 
     @Value.Immutable

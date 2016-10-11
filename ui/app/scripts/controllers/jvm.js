@@ -42,13 +42,17 @@ glowroot.controller('JvmCtrl', [
     };
 
     function agentRollupUrl(path, agentRollup, leaf) {
-      // preserve query string
-      var query = angular.copy($location.search());
+      // preserve existing query string
+      var search = angular.copy($location.search());
+      delete search['agent-rollup'];
+      delete search['agent-id'];
+      var query = {};
       if (leaf) {
         query['agent-id'] = agentRollup;
       } else {
         query['agent-rollup'] = agentRollup;
       }
+      angular.merge(query, search);
       return path + queryStrings.encodeObject(query);
     }
 

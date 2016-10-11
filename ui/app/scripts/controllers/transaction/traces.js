@@ -330,7 +330,10 @@ glowroot.controller('TracesCtrl', [
             url += '&';
           }
           if (agentId) {
-            url += 'modal-agent-id=' + agentId + '&';
+            if ($scope.agentRollup !== agentId) {
+              url += 'modal-agent-rollup=' + encodeURIComponent($scope.agentRollup) + '&';
+            }
+            url += 'modal-agent-id=' + encodeURIComponent(agentId) + '&';
           }
           url += 'modal-trace-id=' + traceId;
           if (checkLiveTraces) {
@@ -340,6 +343,9 @@ glowroot.controller('TracesCtrl', [
         } else {
           $scope.$apply(function () {
             if (agentId) {
+              if ($scope.agentRollup !== agentId) {
+                $location.search('modal-agent-rollup', $scope.agentRollup);
+              }
               $location.search('modal-agent-id', agentId);
             }
             $location.search('modal-trace-id', traceId);
@@ -427,13 +433,15 @@ glowroot.controller('TracesCtrl', [
         $scope.filterDurationComparator = 'greater';
       }
 
+      var modalAgentRollup = $location.search()['modal-agent-rollup'] || $location.search()['modal-agent-id'] || '';
       var modalAgentId = $location.search()['modal-agent-id'] || '';
       var modalTraceId = $location.search()['modal-trace-id'];
       var modalCheckLiveTraces = $location.search()['modal-check-live-traces'];
       if (modalTraceId) {
         highlightedTraceId = modalTraceId;
-        $('#traceModal').data('location-query', ['modal-agent-id', 'modal-trace-id', 'modal-check-live-traces']);
-        traceModal.displayModal(modalAgentId, modalTraceId, modalCheckLiveTraces);
+        $('#traceModal').data('location-query',
+            ['modal-agent-rollup', 'modal-agent-id', 'modal-trace-id', 'modal-check-live-traces']);
+        traceModal.displayModal(modalAgentRollup, modalAgentId, modalTraceId, modalCheckLiveTraces);
       } else {
         $('#traceModal').modal('hide');
       }
@@ -478,6 +486,7 @@ glowroot.controller('TracesCtrl', [
         query.limit = appliedFilter.limit;
       }
       // preserve modal-*, otherwise refresh on modal trace does not work
+      query['modal-agent-rollup'] = $location.search()['modal-agent-rollup'];
       query['modal-agent-id'] = $location.search()['modal-agent-id'];
       query['modal-trace-id'] = $location.search()['modal-trace-id'];
       query['modal-check-live-traces'] = $location.search()['modal-check-live-traces'];

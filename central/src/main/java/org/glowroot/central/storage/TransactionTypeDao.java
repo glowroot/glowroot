@@ -92,19 +92,23 @@ public class TransactionTypeDao implements TransactionTypeRepository {
         return builder.build();
     }
 
-    void store(String agentRollup, String transactionType, List<ResultSetFuture> futures) {
-        TransactionTypeKey rateLimiterKey =
-                ImmutableTransactionTypeKey.of(agentRollup, transactionType);
-        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
-            return;
+    List<ResultSetFuture> store(List<String> agentRollups, String transactionType) {
+        List<ResultSetFuture> futures = Lists.newArrayList();
+        for (String agentRollup : agentRollups) {
+            TransactionTypeKey rateLimiterKey =
+                    ImmutableTransactionTypeKey.of(agentRollup, transactionType);
+            if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+                continue;
+            }
+            BoundStatement boundStatement = insertPS.bind();
+            int i = 0;
+            boundStatement.setString(i++, agentRollup);
+            boundStatement.setString(i++, transactionType);
+            boundStatement.setInt(i++, getMaxTTL());
+            futures.add(Sessions.executeAsyncWithOnFailure(session, boundStatement,
+                    () -> rateLimiter.invalidate(rateLimiterKey)));
         }
-        BoundStatement boundStatement = insertPS.bind();
-        int i = 0;
-        boundStatement.setString(i++, agentRollup);
-        boundStatement.setString(i++, transactionType);
-        boundStatement.setInt(i++, getMaxTTL());
-        futures.add(Sessions.executeAsyncWithOnFailure(session, boundStatement,
-                () -> rateLimiter.invalidate(rateLimiterKey)));
+        return futures;
     }
 
     private int getMaxTTL() {
@@ -116,6 +120,7 @@ public class TransactionTypeDao implements TransactionTypeRepository {
             }
             maxTTL = Math.max(maxTTL, HOURS.toSeconds(expirationHours));
         }
+        // intentionally not accounting for rateLimiter
         return Ints.saturatedCast(maxTTL);
     }
 

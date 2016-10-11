@@ -263,19 +263,22 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable HeaderPlus readHeaderPlus(String agentId, String traceId) throws Exception {
+    public @Nullable HeaderPlus readHeaderPlus(String agentRollup, String agentId, String traceId)
+            throws Exception {
         return dataSource.queryAtMostOne(new TraceHeaderQuery(traceId));
     }
 
     @Override
-    public @Nullable Entries readEntries(String agentId, String traceId) throws Exception {
+    public @Nullable Entries readEntries(String agentRollup, String agentId, String traceId)
+            throws Exception {
         return dataSource.query(new EntriesQuery(traceId));
     }
 
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1) @Override
     @Override
-    public @Nullable Entries readEntriesForExport(String agentId, String traceId) throws Exception {
+    public @Nullable Entries readEntriesForExport(String agentRollup, String agentId,
+            String traceId) throws Exception {
         Entries entries = dataSource.query(new EntriesQuery(traceId));
         if (entries == null) {
             return null;
@@ -307,8 +310,8 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable Profile readMainThreadProfile(String agentId, String traceId)
-            throws Exception {
+    public @Nullable Profile readMainThreadProfile(String agentRollup, String agentId,
+            String traceId) throws Exception {
         Long cappedId = dataSource.queryForOptionalLong(
                 "select main_thread_profile_capped_id from trace where id = ?", traceId);
         if (cappedId == null) {
@@ -319,8 +322,8 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable Profile readAuxThreadProfile(String agentId, String traceId)
-            throws Exception {
+    public @Nullable Profile readAuxThreadProfile(String agentRollup, String agentId,
+            String traceId) throws Exception {
         Long cappedId = dataSource.queryForOptionalLong(
                 "select aux_thread_profile_capped_id from trace where id = ?", traceId);
         if (cappedId == null) {

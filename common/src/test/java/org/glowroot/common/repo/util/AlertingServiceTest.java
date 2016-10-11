@@ -65,8 +65,8 @@ public class AlertingServiceTest {
     public void beforeEachTest() throws Exception {
         configRepository = mock(ConfigRepository.class);
         agentRepository = mock(AgentRepository.class);
-        when(agentRepository.readAgentRollups())
-                .thenReturn(ImmutableList.<AgentRollup>of(ImmutableAgentRollup.of("", true)));
+        when(agentRepository.readAgentRollups()).thenReturn(
+                ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder().name("").build()));
         triggeredAlertRepository = mock(TriggeredAlertRepository.class);
         aggregateRepository = mock(AggregateRepository.class);
         gaugeValueRepository = mock(GaugeValueRepository.class);

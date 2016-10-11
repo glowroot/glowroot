@@ -92,6 +92,7 @@ public class TriggeredAlertDao implements TriggeredAlertRepository {
             }
             maxTTL = Math.max(maxTTL, HOURS.toSeconds(expirationHours));
         }
+        // intentionally not accounting for rateLimiter
         return Ints.saturatedCast(maxTTL);
     }
 }

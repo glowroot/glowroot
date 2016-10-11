@@ -15,17 +15,17 @@
  */
 package org.glowroot.ui;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import org.immutables.value.Value;
 
@@ -77,140 +77,133 @@ class LayoutService {
     }
 
     private Layout buildLayout(Authentication authentication) throws Exception {
-        // linked hash map to preserve ordering
-        Map<String, AgentRollupLayout> agentRollups = Maps.newLinkedHashMap();
-        Map<String, List<String>> transactionTypesMap = transactionTypeRepository.read();
-        boolean hasSomeAccess = false;
-        boolean showNavbarTransaction = false;
-        boolean showNavbarError = false;
-        boolean showNavbarJvm = false;
-        boolean showNavbarConfig = false;
         if (fat) {
-            Permissions permissions = getPermissions(authentication, AGENT_ID);
-            hasSomeAccess =
-                    permissions.hasSomeAccess() || authentication.isAdminPermitted("admin:view");
-            showNavbarTransaction = permissions.transaction().hasSomeAccess();
-            showNavbarError = permissions.error().hasSomeAccess();
-            showNavbarJvm = permissions.jvm().hasSomeAccess();
-            showNavbarConfig = permissions.config().view();
-            if (hasSomeAccess) {
-                // a couple of special cases for fat agent
-                UiConfig uiConfig = checkNotNull(configRepository.getUiConfig(AGENT_ID));
-                String defaultDisplayedTransactionType =
-                        uiConfig.getDefaultDisplayedTransactionType();
-                Set<String> transactionTypes = Sets.newHashSet();
-                List<String> storedTransactionTypes = transactionTypesMap.get(AGENT_ID);
-                if (storedTransactionTypes != null) {
-                    transactionTypes.addAll(storedTransactionTypes);
-                }
-                transactionTypes.add(defaultDisplayedTransactionType);
-
-                agentRollups.put(AGENT_ID, ImmutableAgentRollupLayout.builder()
-                        .leaf(true)
-                        .permissions(permissions)
-                        .addAllTransactionTypes(transactionTypes)
-                        .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
-                        .defaultDisplayedPercentiles(uiConfig.getDefaultDisplayedPercentileList())
-                        .build());
-                showNavbarConfig = checkNotNull(permissions.config()).view();
-            }
-        } else if (!fat) {
-            // "*" is to check permissions for "all agents"
-            Permissions permissions = getPermissions(authentication, "*");
-            hasSomeAccess =
-                    permissions.hasSomeAccess() || authentication.isAdminPermitted("admin:view");
-            showNavbarTransaction = permissions.transaction().hasSomeAccess();
-            showNavbarError = permissions.error().hasSomeAccess();
-            showNavbarJvm = permissions.jvm().hasSomeAccess();
-            showNavbarConfig = permissions.config().view();
-            for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
-                permissions = getPermissions(authentication, agentRollup.name());
-                if (!permissions.hasSomeAccess()) {
-                    continue;
-                }
-                hasSomeAccess = true;
-                showNavbarTransaction =
-                        showNavbarTransaction || permissions.transaction().hasSomeAccess();
-                showNavbarError = showNavbarError || permissions.error().hasSomeAccess();
-                showNavbarJvm = showNavbarJvm || permissions.jvm().hasSomeAccess();
-                showNavbarConfig = showNavbarConfig || permissions.config().view();
-                UiConfig uiConfig = configRepository.getUiConfig(agentRollup.name());
-                String defaultDisplayedTransactionType;
-                List<Double> defaultDisplayedPercentiles;
-                if (uiConfig == null) {
-                    // TODO these defaults should be shared with UiConfig defaults
-                    defaultDisplayedTransactionType = "Web";
-                    defaultDisplayedPercentiles = ImmutableList.of(50.0, 95.0, 99.0);
-                } else {
-                    defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
-                    defaultDisplayedPercentiles = uiConfig.getDefaultDisplayedPercentileList();
-                }
-                Set<String> transactionTypes = Sets.newHashSet();
-                boolean leaf = agentRollup.leaf();
-                ImmutableAgentRollupLayout.Builder builder = ImmutableAgentRollupLayout.builder()
-                        .leaf(leaf);
-                if (leaf) {
-                    builder.permissions(permissions);
-                }
-                List<String> storedTransactionTypes = transactionTypesMap.get(agentRollup.name());
-                if (storedTransactionTypes != null) {
-                    transactionTypes.addAll(storedTransactionTypes);
-                }
-                transactionTypes.add(defaultDisplayedTransactionType);
-                builder.addAllTransactionTypes(transactionTypes);
-                builder.defaultDisplayedTransactionType(defaultDisplayedTransactionType);
-                builder.defaultDisplayedPercentiles(defaultDisplayedPercentiles);
-                agentRollups.put(agentRollup.name(), builder.build());
-            }
-        }
-        if (hasSomeAccess) {
-            List<Long> rollupExpirationMillis = Lists.newArrayList();
-            for (long hours : configRepository.getStorageConfig().rollupExpirationHours()) {
-                rollupExpirationMillis.add(HOURS.toMillis(hours));
-            }
-            return ImmutableLayout.builder()
-                    .fat(fat)
-                    .offlineViewer(offlineViewer)
-                    .footerMessage("Glowroot version " + version)
-                    .loginEnabled(offlineViewer ? false
-                            : configRepository.namedUsersExist()
-                                    || !configRepository.getLdapConfig().host().isEmpty())
-                    .addAllRollupConfigs(configRepository.getRollupConfigs())
-                    .addAllRollupExpirationMillis(rollupExpirationMillis)
-                    .gaugeCollectionIntervalMillis(
-                            configRepository.getGaugeCollectionIntervalMillis())
-                    .agentRollups(agentRollups)
-                    .showNavbarTransaction(showNavbarTransaction)
-                    .showNavbarError(showNavbarError)
-                    .showNavbarJvm(showNavbarJvm)
-                    .showNavbarConfig(showNavbarConfig)
-                    .adminView(authentication.isAdminPermitted("admin:view"))
-                    .adminEdit(authentication.isAdminPermitted("admin:edit"))
-                    .loggedIn(!authentication.anonymous())
-                    .ldap(authentication.ldap())
-                    .redirectToLogin(false)
-                    .build();
+            return buildLayoutFat(authentication);
         } else {
-            return ImmutableLayout.builder()
-                    .fat(fat)
-                    .offlineViewer(offlineViewer)
-                    .footerMessage("Glowroot version " + version)
-                    .loginEnabled(true)
-                    .gaugeCollectionIntervalMillis(0)
-                    .showNavbarTransaction(false)
-                    .showNavbarError(false)
-                    .showNavbarJvm(false)
-                    .showNavbarConfig(false)
-                    .adminView(false)
-                    .adminEdit(false)
-                    .loggedIn(!authentication.anonymous())
-                    .ldap(authentication.ldap())
-                    .redirectToLogin(true)
-                    .build();
+            return buildLayoutCentral(authentication);
         }
     }
 
-    private static Permissions getPermissions(Authentication authentication, String agentRollup) {
+    private Layout buildLayoutFat(Authentication authentication) throws Exception {
+        Permissions permissions = getPermissions(authentication, AGENT_ID, true);
+        boolean hasSomeAccess =
+                permissions.hasSomeAccess() || authentication.isAdminPermitted("admin:view");
+        if (!hasSomeAccess) {
+            return createNoAccessLayout(authentication);
+        }
+        boolean showNavbarTransaction = permissions.transaction().hasSomeAccess();
+        boolean showNavbarError = permissions.error().hasSomeAccess();
+        boolean showNavbarJvm = permissions.jvm().hasSomeAccess();
+        boolean showNavbarConfig = permissions.config().view();
+        // a couple of special cases for fat agent
+        UiConfig uiConfig = checkNotNull(configRepository.getUiConfig(AGENT_ID));
+        String defaultDisplayedTransactionType =
+                uiConfig.getDefaultDisplayedTransactionType();
+        Set<String> transactionTypes = Sets.newHashSet();
+        List<String> storedTransactionTypes = transactionTypeRepository.read().get(AGENT_ID);
+        if (storedTransactionTypes != null) {
+            transactionTypes.addAll(storedTransactionTypes);
+        }
+        transactionTypes.add(defaultDisplayedTransactionType);
+
+        Map<String, AgentRollupLayout> agentRollups = Maps.newLinkedHashMap();
+        agentRollups.put(AGENT_ID, ImmutableAgentRollupLayout.builder()
+                .depth(0)
+                .leaf(true)
+                .permissions(permissions)
+                .addAllTransactionTypes(transactionTypes)
+                .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
+                .defaultDisplayedPercentiles(uiConfig.getDefaultDisplayedPercentileList())
+                .build());
+        showNavbarConfig = checkNotNull(permissions.config()).view();
+
+        return createLayout(authentication, agentRollups, showNavbarTransaction, showNavbarError,
+                showNavbarJvm, showNavbarConfig);
+    }
+
+    private Layout buildLayoutCentral(Authentication authentication) throws Exception {
+        List<FilteredAgentRollup> agentRollups =
+                filter(agentRepository.readAgentRollups(), authentication);
+        CentralLayoutBuilder centralLayoutBuilder = new CentralLayoutBuilder(authentication);
+        for (FilteredAgentRollup agentRollup : agentRollups) {
+            centralLayoutBuilder.process(agentRollup, 0);
+        }
+        return centralLayoutBuilder.build(authentication);
+    }
+
+    private ImmutableLayout createNoAccessLayout(Authentication authentication) {
+        return ImmutableLayout.builder()
+                .fat(fat)
+                .offlineViewer(offlineViewer)
+                .footerMessage("Glowroot version " + version)
+                .loginEnabled(true)
+                .gaugeCollectionIntervalMillis(0)
+                .showNavbarTransaction(false)
+                .showNavbarError(false)
+                .showNavbarJvm(false)
+                .showNavbarConfig(false)
+                .adminView(false)
+                .adminEdit(false)
+                .loggedIn(!authentication.anonymous())
+                .ldap(authentication.ldap())
+                .redirectToLogin(true)
+                .build();
+    }
+
+    private ImmutableLayout createLayout(Authentication authentication,
+            Map<String, AgentRollupLayout> agentRollups, boolean showNavbarTransaction,
+            boolean showNavbarError, boolean showNavbarJvm, boolean showNavbarConfig) {
+        List<Long> rollupExpirationMillis = Lists.newArrayList();
+        for (long hours : configRepository.getStorageConfig().rollupExpirationHours()) {
+            rollupExpirationMillis.add(HOURS.toMillis(hours));
+        }
+        return ImmutableLayout.builder()
+                .fat(fat)
+                .offlineViewer(offlineViewer)
+                .footerMessage("Glowroot version " + version)
+                .loginEnabled(offlineViewer ? false
+                        : configRepository.namedUsersExist()
+                                || !configRepository.getLdapConfig().host().isEmpty())
+                .addAllRollupConfigs(configRepository.getRollupConfigs())
+                .addAllRollupExpirationMillis(rollupExpirationMillis)
+                .gaugeCollectionIntervalMillis(configRepository.getGaugeCollectionIntervalMillis())
+                .agentRollups(agentRollups)
+                .showNavbarTransaction(showNavbarTransaction)
+                .showNavbarError(showNavbarError)
+                .showNavbarJvm(showNavbarJvm)
+                .showNavbarConfig(showNavbarConfig)
+                .adminView(authentication.isAdminPermitted("admin:view"))
+                .adminEdit(authentication.isAdminPermitted("admin:edit"))
+                .loggedIn(!authentication.anonymous())
+                .ldap(authentication.ldap())
+                .redirectToLogin(false)
+                .build();
+    }
+
+    // need to filter out agent rollups with no access rights, and move children up if needed
+    private List<FilteredAgentRollup> filter(List<AgentRollup> agentRollups,
+            Authentication authentication) {
+        List<FilteredAgentRollup> filtered = Lists.newArrayList();
+        for (AgentRollup agentRollup : agentRollups) {
+            Permissions permissions = getPermissions(authentication, agentRollup.name(),
+                    agentRollup.children().isEmpty());
+            if (permissions.hasSomeAccess()) {
+                filtered.add(ImmutableFilteredAgentRollup.builder()
+                        .name(agentRollup.name())
+                        .addAllChildren(filter(agentRollup.children(), authentication))
+                        .permissions(permissions)
+                        .build());
+            } else {
+                // move children (if they are accessible themselves) up to this level
+                filtered.addAll(filter(agentRollup.children(), authentication));
+            }
+        }
+        // re-sort in case any children were moved up to this level
+        return new FilteredAgentRollupOrdering().sortedCopy(filtered);
+    }
+
+    private static Permissions getPermissions(Authentication authentication, String agentRollup,
+            boolean leaf) {
         return ImmutablePermissions.builder()
                 .transaction(ImmutableTransactionPermissions.builder()
                         .overview(authentication.isAgentPermitted(agentRollup,
@@ -231,44 +224,125 @@ class LayoutService {
                         .build())
                 .jvm(ImmutableJvmPermissions.builder()
                         .gauges(authentication.isAgentPermitted(agentRollup, "agent:jvm:gauges"))
-                        .threadDump(authentication.isAgentPermitted(agentRollup,
+                        .threadDump(leaf && authentication.isAgentPermitted(agentRollup,
                                 "agent:jvm:threadDump"))
-                        .heapDump(
-                                authentication.isAgentPermitted(agentRollup, "agent:jvm:heapDump"))
-                        .heapHistogram(authentication.isAgentPermitted(agentRollup,
+                        .heapDump(leaf && authentication.isAgentPermitted(agentRollup,
+                                "agent:jvm:heapDump"))
+                        .heapHistogram(leaf && authentication.isAgentPermitted(agentRollup,
                                 "agent:jvm:heapHistogram"))
-                        .gc(authentication.isAgentPermitted(agentRollup, "agent:jvm:gc"))
-                        .mbeanTree(
-                                authentication.isAgentPermitted(agentRollup, "agent:jvm:mbeanTree"))
-                        .systemProperties(authentication.isAgentPermitted(agentRollup,
+                        .gc(leaf && authentication.isAgentPermitted(agentRollup, "agent:jvm:gc"))
+                        .mbeanTree(leaf && authentication.isAgentPermitted(agentRollup,
+                                "agent:jvm:mbeanTree"))
+                        .systemProperties(leaf && authentication.isAgentPermitted(agentRollup,
                                 "agent:jvm:systemProperties"))
-                        .environment(authentication.isAgentPermitted(agentRollup,
+                        .environment(leaf && authentication.isAgentPermitted(agentRollup,
                                 "agent:jvm:environment"))
-                        .capabilities(authentication.isAgentPermitted(agentRollup,
+                        .capabilities(leaf && authentication.isAgentPermitted(agentRollup,
                                 "agent:jvm:capabilities"))
                         .build())
                 .config(ImmutableConfigPermissions.builder()
-                        .view(authentication.isAgentPermitted(agentRollup, "agent:config:view"))
+                        .view(leaf && authentication.isAgentPermitted(agentRollup,
+                                "agent:config:view"))
                         .edit(ImmutableEditConfigPermissions.builder()
-                                .transaction(authentication.isAgentPermitted(agentRollup,
+                                .transaction(leaf && authentication.isAgentPermitted(agentRollup,
                                         "agent:config:edit:transaction"))
-                                .gauge(authentication.isAgentPermitted(agentRollup,
+                                .gauge(leaf && authentication.isAgentPermitted(agentRollup,
                                         "agent:config:edit:gauge"))
-                                .alert(authentication.isAgentPermitted(agentRollup,
+                                .alert(leaf && authentication.isAgentPermitted(agentRollup,
                                         "agent:config:edit:alert"))
-                                .ui(authentication.isAgentPermitted(agentRollup,
+                                .ui(leaf && authentication.isAgentPermitted(agentRollup,
                                         "agent:config:edit:ui"))
-                                .plugin(authentication.isAgentPermitted(agentRollup,
+                                .plugin(leaf && authentication.isAgentPermitted(agentRollup,
                                         "agent:config:edit:plugin"))
-                                .instrumentation(authentication.isAgentPermitted(agentRollup,
-                                        "agent:config:edit:instrumentation"))
-                                .advanced(authentication.isAgentPermitted(agentRollup,
+                                .instrumentation(leaf && authentication.isAgentPermitted(
+                                        agentRollup, "agent:config:edit:instrumentation"))
+                                .advanced(leaf && authentication.isAgentPermitted(agentRollup,
                                         "agent:config:edit:advanced"))
-                                .userRecording(authentication.isAgentPermitted(agentRollup,
+                                .userRecording(leaf && authentication.isAgentPermitted(agentRollup,
                                         "agent:config:edit:userRecording"))
                                 .build())
                         .build())
                 .build();
+    }
+
+    private class CentralLayoutBuilder {
+
+        // linked hash map to preserve ordering
+        private final Map<String, AgentRollupLayout> agentRollups = Maps.newLinkedHashMap();
+        private final Map<String, List<String>> transactionTypesMap;
+
+        private boolean hasSomeAccess = false;
+        private boolean showNavbarTransaction = false;
+        private boolean showNavbarError = false;
+        private boolean showNavbarJvm = false;
+        private boolean showNavbarConfig = false;
+
+        private CentralLayoutBuilder(Authentication authentication) throws Exception {
+            transactionTypesMap = transactionTypeRepository.read();
+            // "*" is to check permissions for "all agents"
+            Permissions permissions = getPermissions(authentication, "*", true);
+            hasSomeAccess =
+                    permissions.hasSomeAccess() || authentication.isAdminPermitted("admin:view");
+            showNavbarTransaction = permissions.transaction().hasSomeAccess();
+            showNavbarError = permissions.error().hasSomeAccess();
+            showNavbarJvm = permissions.jvm().hasSomeAccess();
+            showNavbarConfig = permissions.config().view();
+        }
+
+        private void process(FilteredAgentRollup agentRollup, int depth) throws IOException {
+            Permissions permissions = agentRollup.permissions();
+            hasSomeAccess = true;
+            showNavbarTransaction =
+                    showNavbarTransaction || permissions.transaction().hasSomeAccess();
+            showNavbarError = showNavbarError || permissions.error().hasSomeAccess();
+            showNavbarJvm = showNavbarJvm || permissions.jvm().hasSomeAccess();
+            showNavbarConfig = showNavbarConfig || permissions.config().view();
+            UiConfig uiConfig = configRepository.getUiConfig(agentRollup.name());
+            String defaultDisplayedTransactionType;
+            List<Double> defaultDisplayedPercentiles;
+            if (uiConfig == null) {
+                // TODO these defaults should be shared with UiConfig defaults
+                defaultDisplayedTransactionType = "Web";
+                defaultDisplayedPercentiles = ImmutableList.of(50.0, 95.0, 99.0);
+            } else {
+                defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
+                defaultDisplayedPercentiles = uiConfig.getDefaultDisplayedPercentileList();
+            }
+            Set<String> transactionTypes = Sets.newHashSet();
+            List<String> storedTransactionTypes = transactionTypesMap.get(agentRollup.name());
+            if (storedTransactionTypes != null) {
+                transactionTypes.addAll(storedTransactionTypes);
+            }
+            transactionTypes.add(defaultDisplayedTransactionType);
+            agentRollups.put(agentRollup.name(),
+                    ImmutableAgentRollupLayout.builder()
+                            .depth(depth)
+                            .leaf(agentRollup.children().isEmpty())
+                            .permissions(permissions)
+                            .addAllTransactionTypes(transactionTypes)
+                            .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
+                            .defaultDisplayedPercentiles(defaultDisplayedPercentiles)
+                            .build());
+            for (FilteredAgentRollup childAgentRollup : agentRollup.children()) {
+                process(childAgentRollup, depth + 1);
+            }
+        }
+
+        private ImmutableLayout build(Authentication authentication) {
+            if (hasSomeAccess) {
+                return createLayout(authentication, agentRollups, showNavbarTransaction,
+                        showNavbarError, showNavbarJvm, showNavbarConfig);
+            } else {
+                return createNoAccessLayout(authentication);
+            }
+        }
+    }
+
+    @Value.Immutable
+    interface FilteredAgentRollup {
+        String name();
+        List<FilteredAgentRollup> children();
+        Permissions permissions();
     }
 
     @Value.Immutable
@@ -300,9 +374,9 @@ class LayoutService {
 
     @Value.Immutable
     interface AgentRollupLayout {
+        int depth();
         boolean leaf();
-        @Nullable
-        Permissions permissions(); // null for non-leaf agent rollup
+        Permissions permissions();
         List<String> transactionTypes();
         String defaultDisplayedTransactionType();
         List<Double> defaultDisplayedPercentiles();
@@ -383,5 +457,12 @@ class LayoutService {
         boolean instrumentation();
         boolean userRecording();
         boolean advanced();
+    }
+
+    private static class FilteredAgentRollupOrdering extends Ordering<FilteredAgentRollup> {
+        @Override
+        public int compare(FilteredAgentRollup left, FilteredAgentRollup right) {
+            return left.name().compareToIgnoreCase(right.name());
+        }
     }
 }

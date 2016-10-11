@@ -333,9 +333,9 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             return httpService.handleRequest(ctx, request, authentication);
         }
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-        List<String> values = decoder.parameters().get("agent-id");
-        String agentId = values == null ? "" : values.get(0);
-        if (!authentication.isPermitted(agentId, permission)) {
+        List<String> values = decoder.parameters().get("agent-rollup");
+        String agentRollup = values == null ? "" : values.get(0);
+        if (!authentication.isPermitted(agentRollup, permission)) {
             if (authentication.anonymous()) {
                 return handleNotAuthenticated(request);
             } else {

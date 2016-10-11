@@ -46,12 +46,7 @@ glowroot.controller('LoginCtrl', [
               deferred.reject('Password incorrect');
             } else {
               $rootScope.layout = data;
-              if ($rootScope.layout.fat || $rootScope.agentRollup) {
-                var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollup];
-                $rootScope.agentPermissions = agentRollup ? agentRollup.permissions : undefined;
-              } else {
-                $rootScope.agentPermissions = undefined;
-              }
+              $rootScope.initLayout();
               deferred.resolve('Success');
               login.returnToOriginalPath();
             }

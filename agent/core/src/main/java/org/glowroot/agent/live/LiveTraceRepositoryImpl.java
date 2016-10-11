@@ -46,6 +46,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class LiveTraceRepositoryImpl implements LiveTraceRepository {
 
+    private static final String AGENT_ID = "";
+
     private final TransactionRegistry transactionRegistry;
     private final TransactionCollector transactionCollector;
     private final Clock clock;
@@ -62,7 +64,8 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     // checks active traces first, then pending traces (and finally caller should check stored
     // traces) to make sure that the trace is not missed if it is in transition between these states
     @Override
-    public @Nullable Trace.Header getHeader(String agentId, String traceId) throws IOException {
+    public @Nullable Trace.Header getHeader(String agentRollup, String agentId, String traceId)
+            throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
@@ -73,7 +76,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Entries getEntries(String agentId, String traceId) {
+    public @Nullable Entries getEntries(String agentRollup, String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
@@ -90,8 +93,8 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Profile getMainThreadProfile(String agentId, String traceId)
-            throws IOException {
+    public @Nullable Profile getMainThreadProfile(String agentRollup, String agentId,
+            String traceId) throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
@@ -102,7 +105,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Profile getAuxThreadProfile(String agentId, String traceId)
+    public @Nullable Profile getAuxThreadProfile(String agentRollup, String agentId, String traceId)
             throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
@@ -114,7 +117,8 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Trace getFullTrace(String agentId, String traceId) throws IOException {
+    public @Nullable Trace getFullTrace(String agentRollup, String agentId, String traceId)
+            throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
@@ -125,8 +129,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public int getMatchingTraceCount(String agentId, String transactionType,
-            @Nullable String transactionName) {
+    public int getMatchingTraceCount(String transactionType, @Nullable String transactionName) {
         // include active traces, this is mostly for the case where there is just a single very
         // long running active trace and it would be misleading to display Traces (0) on the tab
         int count = 0;
@@ -141,7 +144,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public List<TracePoint> getMatchingActiveTracePoints(TraceKind traceKind, String agentId,
+    public List<TracePoint> getMatchingActiveTracePoints(TraceKind traceKind,
             String transactionType, @Nullable String transactionName, TracePointFilter filter,
             int limit, long captureTime, long captureTick) {
         List<TracePoint> activeTracePoints = Lists.newArrayList();
@@ -150,7 +153,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
             if (matches(transaction, traceKind, transactionType, transactionName, filter)
                     && startTick < captureTick) {
                 activeTracePoints.add(ImmutableTracePoint.builder()
-                        .agentId(agentId)
+                        .agentId(AGENT_ID)
                         .traceId(transaction.getTraceId())
                         .captureTime(captureTime)
                         .durationNanos(captureTick - startTick)
@@ -173,14 +176,13 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String agentId,
-            String transactionType, @Nullable String transactionName, TracePointFilter filter,
-            long captureTime) {
+    public List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String transactionType,
+            @Nullable String transactionName, TracePointFilter filter, long captureTime) {
         List<TracePoint> points = Lists.newArrayList();
         for (Transaction transaction : transactionCollector.getPendingTransactions()) {
             if (matches(transaction, traceKind, transactionType, transactionName, filter)) {
                 points.add(ImmutableTracePoint.builder()
-                        .agentId(agentId)
+                        .agentId(AGENT_ID)
                         .traceId(transaction.getTraceId())
                         .captureTime(captureTime)
                         .durationNanos(transaction.getDurationNanos())

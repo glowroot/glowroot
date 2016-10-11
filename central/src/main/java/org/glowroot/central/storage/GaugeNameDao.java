@@ -23,6 +23,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 import org.immutables.value.Value;
@@ -71,17 +72,17 @@ class GaugeNameDao {
         return gaugeNames;
     }
 
-    void store(String agentRollup, String gaugeName, List<ResultSetFuture> futures) {
+    List<ResultSetFuture> store(String agentRollup, String gaugeName) {
         GaugeNameKey rateLimiterKey = ImmutableGaugeNameKey.of(agentRollup, gaugeName);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
-            return;
+            return ImmutableList.of();
         }
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentRollup);
         boundStatement.setString(i++, gaugeName);
         boundStatement.setInt(i++, getMaxTTL());
-        futures.add(Sessions.executeAsyncWithOnFailure(session, boundStatement,
+        return ImmutableList.of(Sessions.executeAsyncWithOnFailure(session, boundStatement,
                 () -> rateLimiter.invalidate(rateLimiterKey)));
     }
 
@@ -94,6 +95,7 @@ class GaugeNameDao {
             }
             maxTTL = Math.max(maxTTL, HOURS.toSeconds(expirationHours));
         }
+        // intentionally not accounting for rateLimiter
         return Ints.saturatedCast(maxTTL);
     }
 

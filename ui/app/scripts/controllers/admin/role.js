@@ -37,9 +37,9 @@ glowroot.controller('AdminRoleCtrl', [
       var permissionBlock;
       for (i = 0; i < data.config.permissionBlocks.length; i++) {
         permissionBlock = data.config.permissionBlocks[i];
-        permissionBlock.agentIds.sort();
+        permissionBlock.agentRollups.sort();
         permissionBlock.permissions.sort();
-        if (permissionBlock.agentIds.length === 1 && permissionBlock.agentIds[0] === '*') {
+        if (permissionBlock.agentRollups.length === 1 && permissionBlock.agentRollups[0] === '*') {
           // need to put '*' (all agent config) first, to avoid hasChanges()
           data.config.permissionBlocks.splice(i, 1);
           data.config.permissionBlocks.unshift(permissionBlock);
@@ -78,13 +78,20 @@ glowroot.controller('AdminRoleCtrl', [
       });
       angular.forEach(data.config.permissionBlocks, function (configPermissionBlock) {
         var permissionBlock = newPermissionBlock();
-        permissionBlock.agentIds = configPermissionBlock.agentIds;
+        permissionBlock.agentRollups = configPermissionBlock.agentRollups;
         $scope.page.permissionBlocks.push(permissionBlock);
         angular.forEach(configPermissionBlock.permissions, function (permission) {
           populatePermissionBlock(permissionBlock, permission);
         });
       });
-      $scope.allAgentIds = data.allAgentIds;
+      angular.forEach(data.allAgentRollups, function (agentRollup) {
+        var indent = '';
+        for (var i = 0; i < agentRollup.depth; i++) {
+          indent += '\u00a0\u00a0\u00a0\u00a0';
+        }
+        agentRollup.display = indent + agentRollup.name;
+      });
+      $scope.allAgentRollups = data.allAgentRollups;
     }
 
     function populatePermissionBlock(permissionBlock, permission) {
@@ -320,13 +327,13 @@ glowroot.controller('AdminRoleCtrl', [
       $scope.config.permissionBlocks = [];
       angular.forEach($scope.page.permissionBlocks, function (permissionBlock) {
         var configPermissionBlock = {
-          agentIds: permissionBlock.agentIds,
+          agentRollups: permissionBlock.agentRollups,
           permissions: []
         };
         cascadeInsidePermissionsObj(permissionBlock);
         configPermissionBlock.permissions = permissionsObjToList(permissionBlock);
         // need to sort to preserve original (sorted) ordering and avoid hasChanges()
-        configPermissionBlock.agentIds.sort();
+        configPermissionBlock.agentRollups.sort();
         configPermissionBlock.permissions.sort();
         $scope.config.permissionBlocks.push(configPermissionBlock);
       });
@@ -376,7 +383,7 @@ glowroot.controller('AdminRoleCtrl', [
 
     $scope.addPermissionBlock = function () {
       var permissionBlock = newPermissionBlock();
-      permissionBlock.agentIds = [];
+      permissionBlock.agentRollups = [];
       $scope.page.permissionBlocks.push(permissionBlock);
     };
 
@@ -393,7 +400,8 @@ glowroot.controller('AdminRoleCtrl', [
           })
           .error(httpErrors.handler($scope));
     } else if (!$scope.layout.fat) {
-      $http.get('backend/admin/all-agent-ids')
+      // can't just use $scope.layout.agentRollups here since that list is filtered by current user's permission
+      $http.get('backend/admin/all-agent-rollups')
           .success(function (data) {
             $scope.loaded = true;
             onNewData({
@@ -401,7 +409,7 @@ glowroot.controller('AdminRoleCtrl', [
                 permissions: [],
                 permissionBlocks: []
               },
-              allAgentIds: data
+              allAgentRollups: data
             });
           })
           .error(httpErrors.handler($scope));
@@ -411,8 +419,7 @@ glowroot.controller('AdminRoleCtrl', [
         config: {
           permissions: [],
           permissionBlocks: []
-        },
-        allAgentIds: []
+        }
       });
     }
 

@@ -80,8 +80,8 @@ class TracePointJsonService {
         long traceCount = traceRepository.readSlowCount(agentRollup, query);
         boolean includeActiveTraces = shouldIncludeActiveTraces(request);
         if (includeActiveTraces) {
-            traceCount += liveTraceRepository.getMatchingTraceCount(agentRollup,
-                    request.transactionType(), request.transactionName());
+            traceCount += liveTraceRepository.getMatchingTraceCount(request.transactionType(),
+                    request.transactionName());
         }
         return Long.toString(traceCount);
     }
@@ -169,8 +169,8 @@ class TracePointJsonService {
                 // capture active traces first to make sure that none are missed in the transition
                 // between active and pending/stored (possible duplicates are removed below)
                 activeTracePoints.addAll(liveTraceRepository.getMatchingActiveTracePoints(traceKind,
-                        agentRollup, query.transactionType(), query.transactionName(), filter,
-                        limit, captureTime, captureTick));
+                        query.transactionType(), query.transactionName(), filter, limit,
+                        captureTime, captureTick));
             }
             Result<TracePoint> queryResult =
                     getStoredAndPendingPoints(captureTime, captureActiveTracePoints);
@@ -199,8 +199,7 @@ class TracePointJsonService {
                 // important to grab pending traces before stored points to ensure none are
                 // missed in the transition between pending and stored
                 matchingPendingPoints = liveTraceRepository.getMatchingPendingPoints(traceKind,
-                        agentRollup, query.transactionType(), query.transactionName(), filter,
-                        captureTime);
+                        query.transactionType(), query.transactionName(), filter, captureTime);
             } else {
                 matchingPendingPoints = ImmutableList.of();
             }

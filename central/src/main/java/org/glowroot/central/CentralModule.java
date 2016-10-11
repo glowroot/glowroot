@@ -165,11 +165,11 @@ class CentralModule {
             TransactionTypeDao transactionTypeDao =
                     new TransactionTypeDao(session, configRepository);
             FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
-            AggregateDao aggregateDao = new AggregateDao(session, transactionTypeDao,
+            AggregateDao aggregateDao = new AggregateDao(session, agentDao, transactionTypeDao,
                     fullQueryTextDao, configRepository);
-            TraceDao traceDao =
-                    new TraceDao(session, transactionTypeDao, fullQueryTextDao, configRepository);
-            GaugeValueDao gaugeValueDao = new GaugeValueDao(session, configRepository);
+            TraceDao traceDao = new TraceDao(session, agentDao, transactionTypeDao,
+                    fullQueryTextDao, configRepository);
+            GaugeValueDao gaugeValueDao = new GaugeValueDao(session, agentDao, configRepository);
             TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session, configRepository);
             RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
             AlertingService alertingService = new AlertingService(configRepository,
@@ -186,7 +186,7 @@ class CentralModule {
                 }
             });
             rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao,
-                    downstreamService, clock);
+                    alertingService, downstreamService, clock);
 
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();
@@ -206,7 +206,7 @@ class CentralModule {
                     .gaugeValueRepository(gaugeValueDao)
                     .repoAdmin(new NopRepoAdmin())
                     .rollupLevelService(rollupLevelService)
-                    .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService))
+                    .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService, agentDao))
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
                     .liveWeavingService(new LiveWeavingServiceImpl(downstreamService))
                     .numWorkerThreads(50)

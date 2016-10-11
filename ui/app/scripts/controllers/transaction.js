@@ -68,6 +68,16 @@ glowroot.controller('TransactionCtrl', [
 
     $scope.headerQueryString = function (agentRollup, transactionType) {
       var agentRollupObj = $scope.layout.agentRollups[agentRollup];
+      // preserve existing query string
+      var search = angular.copy($location.search());
+      delete search['agent-rollup'];
+      delete search['agent-id'];
+      delete search['transaction-type'];
+      delete search.last;
+      delete search.from;
+      delete search.to;
+      // same transaction name may not exist when switching transaction types and/or switching agent rollups
+      delete search['transaction-name'];
       var query = {};
       if (!$scope.layout.fat) {
         if (agentRollupObj.leaf) {
@@ -89,6 +99,7 @@ glowroot.controller('TransactionCtrl', [
         query.from = $scope.range.chartFrom;
         query.to = $scope.range.chartTo;
       }
+      angular.merge(query, search);
       return queryStrings.encodeObject(query);
     };
 

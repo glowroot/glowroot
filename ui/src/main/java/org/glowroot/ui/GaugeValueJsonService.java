@@ -28,6 +28,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
+import org.glowroot.common.repo.AgentRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.GaugeValueRepository.Gauge;
@@ -45,12 +46,15 @@ class GaugeValueJsonService {
 
     private final GaugeValueRepository gaugeValueRepository;
     private final RollupLevelService rollupLevelService;
+    private final AgentRepository agentRepository;
     private final ConfigRepository configRepository;
 
     GaugeValueJsonService(GaugeValueRepository gaugeValueRepository,
-            RollupLevelService rollupLevelService, ConfigRepository configRepository) {
+            RollupLevelService rollupLevelService, AgentRepository agentRepository,
+            ConfigRepository configRepository) {
         this.gaugeValueRepository = gaugeValueRepository;
         this.rollupLevelService = rollupLevelService;
+        this.agentRepository = agentRepository;
         this.configRepository = configRepository;
     }
 
@@ -59,6 +63,10 @@ class GaugeValueJsonService {
             @BindRequest GaugeValueRequest request) throws Exception {
         int rollupLevel =
                 rollupLevelService.getGaugeRollupLevelForView(request.from(), request.to());
+        if (rollupLevel == 0 && !agentRepository.isLeaf(agentRollup)) {
+            // agent rollups from children do not have level-0 data
+            rollupLevel = 1;
+        }
         long intervalMillis;
         if (rollupLevel == 0) {
             intervalMillis = configRepository.getGaugeCollectionIntervalMillis();

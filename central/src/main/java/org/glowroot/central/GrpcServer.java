@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.datastax.driver.core.exceptions.ReadTimeoutException;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.grpc.internal.ServerImpl;
@@ -108,6 +110,11 @@ class GrpcServer {
         server.shutdown();
     }
 
+    @VisibleForTesting
+    static String trimSpacesAroundAgentRollupSeparator(String agentRollup) {
+        return agentRollup.replaceAll(" */ *", "/").trim();
+    }
+
     private class CollectorServiceImpl extends CollectorServiceImplBase {
 
         @Override
@@ -115,7 +122,11 @@ class GrpcServer {
                 StreamObserver<InitResponse> responseObserver) {
             AgentConfig updatedAgentConfig;
             try {
-                updatedAgentConfig = agentDao.store(request.getAgentId(), request.getEnvironment(),
+                String agentRollup = request.getAgentRollup();
+                // trim spaces around rollup separator "/"
+                agentRollup = trimSpacesAroundAgentRollupSeparator(agentRollup);
+                updatedAgentConfig = agentDao.store(request.getAgentId(),
+                        Strings.emptyToNull(agentRollup), request.getEnvironment(),
                         request.getAgentConfig());
             } catch (Throwable t) {
                 logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);
@@ -188,16 +199,13 @@ class GrpcServer {
                 @Override
                 public void onCompleted() {
                     checkNotNull(header);
-                    OldAggregateMessage.Builder aggregateMessage =
-                            OldAggregateMessage.newBuilder()
-                                    .setAgentId(header.getAgentId())
-                                    .setCaptureTime(header.getCaptureTime());
+                    List<OldAggregatesByType> aggregatesByTypeList = Lists.newArrayList();
                     for (OldAggregatesByType.Builder aggregatesByType : aggregatesByTypeMap
                             .values()) {
-                        aggregateMessage.addAggregatesByType(aggregatesByType.build());
+                        aggregatesByTypeList.add(aggregatesByType.build());
                     }
-                    aggregateMessage.addAllSharedQueryText(sharedQueryTexts);
-                    collectAggregates(aggregateMessage.build(), responseObserver);
+                    collectAggregatesInternal(header.getAgentId(), header.getCaptureTime(),
+                            sharedQueryTexts, aggregatesByTypeList, responseObserver);
                 }
             };
         }
@@ -205,35 +213,43 @@ class GrpcServer {
         @Override
         public void collectAggregates(OldAggregateMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
-            List<OldAggregatesByType> aggregatesByTypeList = request.getAggregatesByTypeList();
+
+            List<Aggregate.SharedQueryText> sharedQueryTexts;
+            List<String> oldSharedQueryTexts = request.getOldSharedQueryTextList();
+            if (oldSharedQueryTexts.isEmpty()) {
+                sharedQueryTexts = request.getSharedQueryTextList();
+            } else {
+                // handle agents prior to 0.9.3
+                sharedQueryTexts = Lists.newArrayList();
+                for (String oldSharedQueryText : oldSharedQueryTexts) {
+                    sharedQueryTexts.add(Aggregate.SharedQueryText.newBuilder()
+                            .setFullText(oldSharedQueryText)
+                            .build());
+                }
+            }
+            collectAggregatesInternal(request.getAgentId(), request.getCaptureTime(),
+                    sharedQueryTexts, request.getAggregatesByTypeList(), responseObserver);
+        }
+
+        private void collectAggregatesInternal(String agentId, long captureTime,
+                List<Aggregate.SharedQueryText> sharedQueryTexts,
+                List<OldAggregatesByType> aggregatesByTypeList,
+                StreamObserver<EmptyMessage> responseObserver) {
             if (!aggregatesByTypeList.isEmpty()) {
                 try {
-                    List<Aggregate.SharedQueryText> sharedQueryTexts;
-                    List<String> oldSharedQueryTexts = request.getOldSharedQueryTextList();
-                    if (oldSharedQueryTexts.isEmpty()) {
-                        sharedQueryTexts = request.getSharedQueryTextList();
-                    } else {
-                        // handle agents prior to 0.9.3
-                        sharedQueryTexts = Lists.newArrayList();
-                        for (String oldSharedQueryText : oldSharedQueryTexts) {
-                            sharedQueryTexts.add(Aggregate.SharedQueryText.newBuilder()
-                                    .setFullText(oldSharedQueryText)
-                                    .build());
-                        }
-                    }
-                    aggregateDao.store(request.getAgentId(), request.getCaptureTime(),
-                            aggregatesByTypeList, sharedQueryTexts);
+                    aggregateDao.store(agentId, captureTime, aggregatesByTypeList,
+                            sharedQueryTexts);
                 } catch (Throwable t) {
-                    logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);
+                    logger.error("{} - {}", agentId, t.getMessage(), t);
                     responseObserver.onError(t);
                     return;
                 }
             }
             try {
-                alertingService.checkTransactionAlerts(request.getAgentId(),
-                        request.getCaptureTime(), ReadTimeoutException.class);
+                alertingService.checkTransactionAlerts(agentId, captureTime,
+                        ReadTimeoutException.class);
             } catch (Throwable t) {
-                logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);
+                logger.error("{} - {}", agentId, t.getMessage(), t);
                 // don't fail collectAggregates()
             }
             responseObserver.onNext(EmptyMessage.getDefaultInstance());

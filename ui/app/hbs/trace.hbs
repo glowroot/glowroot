@@ -1,32 +1,39 @@
+<div class="gt-break-word gt-second-line-indent"
+     style="margin-bottom: 10px;">
+  <strong style="font-size: 18px;">{{headline}}</strong>
+  {{#if showExport}}
+    <button class="gt-flat-btn gt-flat-btn-big gt-link-color download-trace"
+            style="font-size: 16px; margin: -6px 0;">
+      export
+    </button>
+  {{/if}}
+</div>
 {{#if active}}
   <div>
-    <strong style="font-size: 16px;">ACTIVE</strong>
+    <strong>ACTIVE</strong>
   </div>
 {{^}}
   {{#if partial}}
     <div>
-      <strong style="font-size: 16px;">PARTIAL</strong>
+      <strong>PARTIAL</strong>
     </div>
   {{/if}}
 {{/if}}
 {{#if error}}
   <div>
-    <strong style="font-size: 16px;">ERROR</strong>
+    <strong>ERROR</strong>
   </div>
 {{/if}}
 {{#if async}}
   <div>
-    <strong style="font-size: 16px;">ASYNC</strong>
+    <strong>ASYNC</strong>
   </div>
 {{/if}}
-<div class="gt-break-word gt-second-line-indent">
-  <strong style="font-size: 16px;">{{headline}}</strong>
-  {{#if showExport}}
-    <button class="gt-flat-btn gt-flat-btn-big gt-link-color download-trace">
-      export
-    </button>
-  {{/if}}
-</div>
+{{#if agentId}}
+  <div>
+    <strong>{{agentId}}</strong>
+  </div>
+{{/if}}
 <div class="gt-trace-attr-name">Transaction type:&nbsp;</div>
 <div class="gt-trace-attr-value">{{transactionType}}</div>
 <div class="gt-trace-attr-name">Transaction name:&nbsp;</div>

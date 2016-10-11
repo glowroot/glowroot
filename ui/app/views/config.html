@@ -27,11 +27,11 @@
           </a>
           <ul class="dropdown-menu" role="menu">
             <li ng-repeat="(rollup, value) in layout.agentRollups"
-                ng-hide="!value.permissions.config.view || rollup === agentRollup">
+                ng-hide="!value.permissions.config.view">
               <a role="menuitem"
                  tabindex="-1"
                  ng-href="{{agentRollupUrl(rollup, value.leaf)}}">
-                {{rollup}}
+                {{value.display}}
               </a>
             </li>
           </ul>

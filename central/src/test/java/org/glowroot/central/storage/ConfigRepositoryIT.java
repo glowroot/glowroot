@@ -74,7 +74,7 @@ public class ConfigRepositoryIT {
         KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 
         session.execute("drop table if exists agent");
-        session.execute("drop table if exists agent_rollup");
+        session.execute("drop table if exists agent_one");
         session.execute("drop table if exists user");
         session.execute("drop table if exists role");
         session.execute("drop table if exists central_config");
@@ -96,7 +96,7 @@ public class ConfigRepositoryIT {
     public static void tearDown() throws Exception {
         // remove bad data so other tests don't have issue
         session.execute("drop table agent");
-        session.execute("drop table agent_rollup");
+        session.execute("drop table agent_one");
         session.execute("drop table user");
         session.execute("drop table role");
         session.execute("drop table central_config");

@@ -65,6 +65,7 @@ public class CentralCollector implements Collector {
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private final String agentId;
+    private final String agentRollup;
     private final String collectorHost;
     private final int collectorPort;
     private final CentralConnection centralConnection;
@@ -93,10 +94,15 @@ public class CentralCollector implements Collector {
             collectorPort = Integer.parseInt(collectorPortStr);
         }
         this.agentId = agentId;
+        this.agentRollup = Strings.nullToEmpty(properties.get("glowroot.agent.rollup"));
         this.collectorHost = collectorHost;
         this.collectorPort = collectorPort;
 
-        startupLogger.info("agent id: {}", agentId);
+        if (agentRollup.isEmpty()) {
+            startupLogger.info("agent id: {}", agentId);
+        } else {
+            startupLogger.info("agent id: {}, rollup: {}", agentId, agentRollup);
+        }
 
         AtomicBoolean inConnectionFailure = new AtomicBoolean();
         centralConnection =
@@ -113,6 +119,7 @@ public class CentralCollector implements Collector {
             final AgentConfigUpdater agentConfigUpdater) {
         final InitMessage initMessage = InitMessage.newBuilder()
                 .setAgentId(agentId)
+                .setAgentRollup(agentRollup)
                 .setEnvironment(environment)
                 .setAgentConfig(agentConfig)
                 .build();

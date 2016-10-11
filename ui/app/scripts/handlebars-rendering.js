@@ -413,13 +413,15 @@ HandlebarsRendering = (function () {
         renderNext(flattenedTraceEntries, 0);
       } else {
         // this is not an export file
+        var agentRollup = $traceParent.data('gtAgentRollup');
         var agentId = $traceParent.data('gtAgentId');
         var traceId = $traceParent.data('gtTraceId');
         var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
         $selector.data('gtLoading', true);
         var $button = $(this);
         var spinner = Glowroot.showSpinner($button.parent().find('.gt-trace-detail-spinner'));
-        var url = 'backend/trace/entries?agent-id=' + agentId + '&trace-id=' + traceId;
+        var url = 'backend/trace/entries?agent-rollup=' + encodeURIComponent(agentRollup) + '&agent-id='
+            + encodeURIComponent(agentId) + '&trace-id=' + traceId;
         if (checkLiveTraces) {
           url += '&check-live-traces=true';
         }
@@ -497,10 +499,12 @@ HandlebarsRendering = (function () {
     var profile = $traceParent.data('gtMainThreadProfile');
     var url;
     if (!profile) {
+      var agentRollup = $traceParent.data('gtAgentRollup');
       var agentId = $traceParent.data('gtAgentId');
       var traceId = $traceParent.data('gtTraceId');
       var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
-      url = 'backend/trace/main-thread-profile?agent-id=' + agentId + '&trace-id=' + traceId;
+      url = 'backend/trace/main-thread-profile?agent-rollup=' + encodeURIComponent(agentRollup) + '&agent-id='
+          + encodeURIComponent(agentId) + '&trace-id=' + traceId;
       if (checkLiveTraces) {
         url += '&check-live-traces=true';
       }
@@ -514,10 +518,12 @@ HandlebarsRendering = (function () {
     var profile = $traceParent.data('gtAuxThreadProfile');
     var url;
     if (!profile) {
+      var agentRollup = $traceParent.data('gtAgentRollup');
       var agentId = $traceParent.data('gtAgentId');
       var traceId = $traceParent.data('gtTraceId');
       var checkLiveTraces = $traceParent.data('gtCheckLiveTraces');
-      url = 'backend/trace/aux-thread-profile?agent-id=' + agentId + '&trace-id=' + traceId;
+      url = 'backend/trace/aux-thread-profile?agent-rollup=' + encodeURIComponent(agentRollup) + '&agent-id='
+          + encodeURIComponent(agentId) + '&trace-id=' + traceId;
       if (checkLiveTraces) {
         url += '&check-live-traces=true';
       }
@@ -751,13 +757,13 @@ HandlebarsRendering = (function () {
       }
       if (queryMessage && queryMessage.sharedQueryText.fullTextSha1 && !queryMessage.sharedQueryText.fullText) {
         var $traceParent = parent.parents('.gt-trace-parent');
-        var agentId = $traceParent.data('gtAgentId');
+        var agentRollup = $traceParent.data('gtAgentRollup');
         var alreadyDoneAfter;
         var spinner = Glowroot.showSpinner(expanded.find('.gt-trace-detail-spinner'), function () {
           doAfter();
           alreadyDoneAfter = true;
         });
-        $.get('backend/transaction/full-query-text?agent-rollup=' + encodeURIComponent(agentId) + '&full-text-sha1='
+        $.get('backend/transaction/full-query-text?agent-rollup=' + encodeURIComponent(agentRollup) + '&full-text-sha1='
             + queryMessage.sharedQueryText.fullTextSha1)
             .done(function (data) {
               if (data.expired) {
@@ -1211,11 +1217,12 @@ HandlebarsRendering = (function () {
   }
 
   return {
-    renderTrace: function (traceHeader, agentId, traceId, checkLiveTraces, $selector) {
+    renderTrace: function (traceHeader, agentRollup, agentId, traceId, checkLiveTraces, $selector) {
       var html = JST.trace(traceHeader);
       $selector.html(html);
       $selector.addClass('gt-trace-parent');
-      if (agentId !== undefined) {
+      if (agentRollup !== undefined) {
+        $selector.data('gtAgentRollup', agentRollup);
         $selector.data('gtAgentId', agentId);
         $selector.data('gtTraceId', traceId);
         $selector.data('gtCheckLiveTraces', checkLiveTraces);
@@ -1228,7 +1235,7 @@ HandlebarsRendering = (function () {
       $selector.data('gtSharedQueryTexts', sharedQueryTexts);
       $selector.data('gtMainThreadProfile', mainThreadProfile);
       $selector.data('gtAuxThreadProfile', auxThreadProfile);
-      this.renderTrace(traceHeader, undefined, undefined, false, $selector);
+      this.renderTrace(traceHeader, undefined, undefined, undefined, false, $selector);
     },
     formatBytes: formatBytes,
     formatMillis: formatMillis,

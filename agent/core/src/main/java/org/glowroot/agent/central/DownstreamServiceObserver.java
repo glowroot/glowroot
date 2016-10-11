@@ -38,11 +38,13 @@ import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceStub;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AuxThreadProfileResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpaceResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CapabilitiesResponse;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest.MessageCase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ExceptionResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.FullTraceResponse;
@@ -74,8 +76,6 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignaturesR
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignaturesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.PreloadClasspathCacheResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveResponse;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest.MessageCase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.SystemPropertiesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDumpResponse;
@@ -644,7 +644,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             StreamObserver<AgentResponse> responseObserver) throws Exception {
         Trace.Header header;
         try {
-            header = liveTraceRepository.getHeader("", request.getHeaderRequest().getTraceId());
+            header = liveTraceRepository.getHeader("", "", request.getHeaderRequest().getTraceId());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);
@@ -668,7 +668,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             StreamObserver<AgentResponse> responseObserver) throws Exception {
         Entries entries;
         try {
-            entries = liveTraceRepository.getEntries("", request.getEntriesRequest().getTraceId());
+            entries = liveTraceRepository.getEntries("", "",
+                    request.getEntriesRequest().getTraceId());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);
@@ -690,7 +691,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             StreamObserver<AgentResponse> responseObserver) throws Exception {
         Profile profile;
         try {
-            profile = liveTraceRepository.getMainThreadProfile("",
+            profile = liveTraceRepository.getMainThreadProfile("", "",
                     request.getMainThreadProfileRequest().getTraceId());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -715,7 +716,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             StreamObserver<AgentResponse> responseObserver) throws Exception {
         Profile profile;
         try {
-            profile = liveTraceRepository.getAuxThreadProfile("",
+            profile = liveTraceRepository.getAuxThreadProfile("", "",
                     request.getAuxThreadProfileRequest().getTraceId());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -740,7 +741,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             StreamObserver<AgentResponse> responseObserver) throws Exception {
         Trace trace;
         try {
-            trace = liveTraceRepository.getFullTrace("",
+            trace = liveTraceRepository.getFullTrace("", "",
                     request.getFullTraceRequest().getTraceId());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);

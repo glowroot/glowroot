@@ -52,7 +52,7 @@ class TraceDetailHttpService implements HttpService {
 
     @Override
     public String getPermission() {
-        // see special case for "agent:trace" permission in Authentication.isPermitted()
+        // see special case for "agent:trace" permission in Authentication.isAgentPermitted()
         return "agent:trace";
     }
 
@@ -62,6 +62,9 @@ class TraceDetailHttpService implements HttpService {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         String path = decoder.path();
         String traceComponent = path.substring(path.lastIndexOf('/') + 1);
+        List<String> agentRollups = decoder.parameters().get("agent-rollup");
+        checkNotNull(agentRollups, "Missing agent rollup in query string: %s", request.uri());
+        String agentRollup = agentRollups.get(0);
         List<String> agentIds = decoder.parameters().get("agent-id");
         checkNotNull(agentIds, "Missing agent id in query string: %s", request.uri());
         String agentId = agentIds.get(0);
@@ -75,12 +78,12 @@ class TraceDetailHttpService implements HttpService {
         if (checkLiveTracesParams != null && !checkLiveTracesParams.isEmpty()) {
             checkLiveTraces = Boolean.parseBoolean(checkLiveTracesParams.get(0));
         }
-        logger.debug(
-                "handleRequest(): traceComponent={}, agentId={}, traceId={}, checkLiveTraces={}",
-                traceComponent, agentId, traceId, checkLiveTraces);
+        logger.debug("handleRequest(): traceComponent={}, agentRollup={}, agentId={}, traceId={},"
+                + " checkLiveTraces={}", traceComponent, agentRollup, agentId, traceId,
+                checkLiveTraces);
 
-        ChunkSource detail =
-                getDetailChunkSource(traceComponent, agentId, traceId, checkLiveTraces);
+        ChunkSource detail = getDetailChunkSource(traceComponent, agentRollup, agentId, traceId,
+                checkLiveTraces);
         if (detail == null) {
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
         }
@@ -103,11 +106,11 @@ class TraceDetailHttpService implements HttpService {
         return null;
     }
 
-    private @Nullable ChunkSource getDetailChunkSource(String traceComponent, String agentId,
-            String traceId, boolean checkLiveTraces) throws Exception {
+    private @Nullable ChunkSource getDetailChunkSource(String traceComponent, String agentRollup,
+            String agentId, String traceId, boolean checkLiveTraces) throws Exception {
         if (traceComponent.equals("entries")) {
-            String entriesJson =
-                    traceCommonService.getEntriesJson(agentId, traceId, checkLiveTraces);
+            String entriesJson = traceCommonService.getEntriesJson(agentRollup, agentId, traceId,
+                    checkLiveTraces);
             if (entriesJson == null) {
                 // this includes trace was found but the trace had no entries
                 // caller should check trace.entry_count
@@ -116,16 +119,16 @@ class TraceDetailHttpService implements HttpService {
             return ChunkSource.wrap(entriesJson);
         }
         if (traceComponent.equals("main-thread-profile")) {
-            String profileJson = traceCommonService.getMainThreadProfileJson(agentId, traceId,
-                    checkLiveTraces);
+            String profileJson = traceCommonService.getMainThreadProfileJson(agentRollup, agentId,
+                    traceId, checkLiveTraces);
             if (profileJson == null) {
                 return null;
             }
             return ChunkSource.wrap(profileJson);
         }
         if (traceComponent.equals("aux-thread-profile")) {
-            String profileJson = traceCommonService.getAuxThreadProfileJson(agentId, traceId,
-                    checkLiveTraces);
+            String profileJson = traceCommonService.getAuxThreadProfileJson(agentRollup, agentId,
+                    traceId, checkLiveTraces);
             if (profileJson == null) {
                 return null;
             }

@@ -604,13 +604,13 @@
         <legend style="margin-bottom: 5px;">Agent specific permission block</legend>
         <div class="col-lg-9 col-lg-offset-3">
           <div style="padding: 15px 0 10px;">
-            <div ng-if="!allAgentIds.length" style="font-style: italic;">There are no agents yet</div>
-            <div ng-if="allAgentIds.length"
-                 ng-class="{'has-error': !permissionBlock.agentIds.length}">
+            <div ng-if="!allAgentRollups.length" style="font-style: italic;">There are no agents yet</div>
+            <div ng-if="allAgentRollups.length"
+                 ng-class="{'has-error': !permissionBlock.agentRollups.length}">
               <select multiple
                       class="form-control"
-                      ng-model="permissionBlock.agentIds"
-                      ng-options="agentId as agentId for agentId in allAgentIds"
+                      ng-model="permissionBlock.agentRollups"
+                      ng-options="agentRollup.name as agentRollup.display for agentRollup in allAgentRollups"
                       ng-required="true"
                       ng-disabled="!layout.adminEdit"
                       style="width: auto; min-width: 200px; border-top-right-radius: 0; border-bottom-right-radius: 0;">

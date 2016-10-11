@@ -18,6 +18,9 @@ package org.glowroot.central;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.annotation.Nullable;
+
+import com.datastax.driver.core.exceptions.ReadTimeoutException;
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +29,7 @@ import org.glowroot.central.storage.AgentDao;
 import org.glowroot.central.storage.AggregateDao;
 import org.glowroot.central.storage.GaugeValueDao;
 import org.glowroot.common.repo.AgentRepository.AgentRollup;
+import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.util.Clock;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -37,6 +41,7 @@ public class RollupService implements Runnable {
     private final AgentDao agentDao;
     private final AggregateDao aggregateDao;
     private final GaugeValueDao gaugeValueDao;
+    private final AlertingService alertingService;
     private final DownstreamServiceImpl downstreamService;
     private final Clock clock;
 
@@ -45,10 +50,11 @@ public class RollupService implements Runnable {
     private volatile boolean stopped;
 
     public RollupService(AgentDao agentDao, AggregateDao aggregateDao, GaugeValueDao gaugeValueDao,
-            DownstreamServiceImpl downstreamService, Clock clock) {
+            AlertingService alertingService, DownstreamServiceImpl downstreamService, Clock clock) {
         this.agentDao = agentDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
+        this.alertingService = alertingService;
         this.downstreamService = downstreamService;
         this.clock = clock;
         executor = Executors.newSingleThreadExecutor();
@@ -70,14 +76,7 @@ public class RollupService implements Runnable {
             try {
                 Thread.sleep(millisUntilNextRollup(clock.currentTimeMillis()));
                 for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
-                    // rollup one agent at a time, mostly to avoid single large query on
-                    // gauge_needs_rollup_1 that times out due to use of Cassandra queue
-                    // anti-pattern (and lots of tombstones)
-                    aggregateDao.rollup(agentRollup.name());
-                    gaugeValueDao.rollup(agentRollup.name());
-                    if (agentRollup.leaf()) {
-                        downstreamService.updateAgentConfigIfConnectedAndNeeded(agentRollup.name());
-                    }
+                    process(agentRollup, null);
                 }
             } catch (InterruptedException e) {
                 if (stopped) {
@@ -87,6 +86,29 @@ public class RollupService implements Runnable {
                 logger.error(e.getMessage(), e);
             }
         }
+    }
+
+    // rollup one agent at a time, mostly to avoid single large query on
+    // gauge_needs_rollup_1 that times out due to use of Cassandra queue
+    // anti-pattern (and lots of tombstones)
+    private void process(AgentRollup agentRollup, @Nullable String parentAgentRollup)
+            throws Exception {
+        // roll up children first, since gauge values initial roll up from children is done on the
+        // 1-min aggregates of the children
+        for (AgentRollup childAgentRollup : agentRollup.children()) {
+            process(childAgentRollup, agentRollup.name());
+        }
+        aggregateDao.rollup(agentRollup.name(), parentAgentRollup,
+                agentRollup.children().isEmpty());
+        gaugeValueDao.rollup(agentRollup.name(), parentAgentRollup,
+                agentRollup.children().isEmpty());
+        if (agentRollup.children().isEmpty()) {
+            downstreamService.updateAgentConfigIfConnectedAndNeeded(agentRollup.name());
+        }
+        alertingService.checkTransactionAlerts(agentRollup.name(),
+                clock.currentTimeMillis(), ReadTimeoutException.class);
+        alertingService.checkGaugeAlerts(agentRollup.name(), clock.currentTimeMillis(),
+                ReadTimeoutException.class);
     }
 
     @VisibleForTesting

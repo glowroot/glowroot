@@ -82,9 +82,9 @@ class RoleConfigJsonService {
         }
     }
 
-    @GET(path = "/backend/admin/all-agent-ids", permission = "admin:edit:role")
-    String getAllAgentIds() throws Exception {
-        return mapper.writeValueAsString(getAllAgentIdsInternal());
+    @GET(path = "/backend/admin/all-agent-rollups", permission = "admin:edit:role")
+    String getAllAgentRollups() throws Exception {
+        return mapper.writeValueAsString(getFlattenedAgentRollups());
     }
 
     @POST(path = "/backend/admin/roles/add", permission = "admin:edit:role")
@@ -127,19 +127,31 @@ class RoleConfigJsonService {
         ImmutableRoleConfigResponse.Builder response = ImmutableRoleConfigResponse.builder()
                 .config(RoleConfigDto.create(roleConfig, fat));
         if (!fat) {
-            response.allAgentIds(getAllAgentIdsInternal());
+            response.allAgentRollups(getFlattenedAgentRollups());
         }
         return mapper.writeValueAsString(response.build());
     }
 
-    private List<String> getAllAgentIdsInternal() throws Exception {
-        List<String> agentIds = Lists.newArrayList();
-        for (AgentRollup agentRollup : agentRepository.readAgentRollups()) {
-            if (agentRollup.leaf()) {
-                agentIds.add(agentRollup.name());
-            }
+    private List<FlattenedAgentRollup> getFlattenedAgentRollups() {
+        List<AgentRollup> agentRollups = agentRepository.readAgentRollups();
+        List<FlattenedAgentRollup> flattenedAgentRollups = Lists.newArrayList();
+        for (AgentRollup agentRollup : agentRollups) {
+            flattenedAgentRollups.addAll(getFlattenedAgentRollups(agentRollup, 0));
         }
-        return agentIds;
+        return flattenedAgentRollups;
+    }
+
+    private static List<FlattenedAgentRollup> getFlattenedAgentRollups(AgentRollup agentRollup,
+            int depth) {
+        List<FlattenedAgentRollup> flattenedAgentRollups = Lists.newArrayList();
+        flattenedAgentRollups.add(ImmutableFlattenedAgentRollup.builder()
+                .name(agentRollup.name())
+                .depth(depth)
+                .build());
+        for (AgentRollup childAgentRollup : agentRollup.children()) {
+            flattenedAgentRollups.addAll(getFlattenedAgentRollups(childAgentRollup, depth + 1));
+        }
+        return flattenedAgentRollups;
     }
 
     @Value.Immutable
@@ -150,7 +162,13 @@ class RoleConfigJsonService {
     @Value.Immutable
     interface RoleConfigResponse {
         RoleConfigDto config();
-        ImmutableList<String> allAgentIds();
+        ImmutableList<FlattenedAgentRollup> allAgentRollups();
+    }
+
+    @Value.Immutable
+    interface FlattenedAgentRollup {
+        int depth();
+        String name();
     }
 
     @Value.Immutable
@@ -193,7 +211,7 @@ class RoleConfigJsonService {
             }
             for (RolePermissionBlock permissionBlock : permissionBlocks()) {
                 String agentIds =
-                        PermissionParser.quoteIfNecessaryAndJoin(permissionBlock.agentIds());
+                        PermissionParser.quoteIfNecessaryAndJoin(permissionBlock.agentRollups());
                 for (String permission : permissionBlock.permissions()) {
                     builder.addPermissions(
                             "agent:" + agentIds + ":" + permission.substring("agent:".length()));
@@ -229,7 +247,7 @@ class RoleConfigJsonService {
                 for (Entry<List<String>, Collection<String>> entry : permissionBlocks.asMap()
                         .entrySet()) {
                     builder.addPermissionBlocks(ImmutableRolePermissionBlock.builder()
-                            .addAllAgentIds(entry.getKey())
+                            .addAllAgentRollups(entry.getKey())
                             .addAllPermissions(entry.getValue())
                             .build());
                 }
@@ -241,7 +259,7 @@ class RoleConfigJsonService {
 
     @Value.Immutable
     interface RolePermissionBlock {
-        ImmutableList<String> agentIds();
+        ImmutableList<String> agentRollups();
         ImmutableList<String> permissions();
     }
 }

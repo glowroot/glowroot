@@ -29,12 +29,11 @@
             <span class="gt-large-caret"></span>
           </a>
           <ul class="dropdown-menu" role="menu">
-            <li ng-repeat="(rollup, value) in layout.agentRollups"
-                ng-hide="rollup === agentRollup">
+            <li ng-repeat="(rollup, value) in layout.agentRollups">
               <a role="menuitem"
                  tabindex="-1"
                  ng-href="{{currentTabUrl()}}{{headerQueryString(rollup, transactionType)}}">
-                {{rollup}}
+                {{value.display}}
               </a>
             </li>
           </ul>

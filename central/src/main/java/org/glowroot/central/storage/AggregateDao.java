@@ -17,6 +17,7 @@ package org.glowroot.central.storage;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -34,12 +35,16 @@ import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import com.google.common.hash.Hashing;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.Futures;
 import com.google.protobuf.AbstractMessage;
@@ -196,6 +201,7 @@ public class AggregateDao implements AggregateRepository {
             .build();
 
     private final Session session;
+    private final AgentDao agentDao;
     private final TransactionTypeDao transactionTypeDao;
     private final ConfigRepository configRepository;
 
@@ -206,8 +212,10 @@ public class AggregateDao implements AggregateRepository {
     private final Map<Table, List<PreparedStatement>> insertTransactionPS;
     private final Map<Table, List<PreparedStatement>> readOverallPS;
     private final Map<Table, List<PreparedStatement>> readOverallForRollupPS;
+    private final Map<Table, PreparedStatement> readOverallForRollupFromChildPS;
     private final Map<Table, List<PreparedStatement>> readTransactionPS;
     private final Map<Table, List<PreparedStatement>> readTransactionForRollupPS;
+    private final Map<Table, PreparedStatement> readTransactionForRollupFromChildPS;
 
     private final List<PreparedStatement> existsMainThreadProfileOverallPS;
     private final List<PreparedStatement> existsMainThreadProfileTransactionPS;
@@ -218,11 +226,16 @@ public class AggregateDao implements AggregateRepository {
     private final List<PreparedStatement> readNeedsRollup;
     private final List<PreparedStatement> deleteNeedsRollup;
 
+    private final PreparedStatement insertNeedsRollupFromChild;
+    private final PreparedStatement readNeedsRollupFromChild;
+    private final PreparedStatement deleteNeedsRollupFromChild;
+
     private final ImmutableList<Table> allTables;
 
-    public AggregateDao(Session session, TransactionTypeDao transactionTypeDao,
+    public AggregateDao(Session session, AgentDao agentDao, TransactionTypeDao transactionTypeDao,
             FullQueryTextDao fullQueryTextDao, ConfigRepository configRepository) {
         this.session = session;
+        this.agentDao = agentDao;
         this.transactionTypeDao = transactionTypeDao;
         this.configRepository = configRepository;
         this.fullQueryTextDao = fullQueryTextDao;
@@ -236,8 +249,10 @@ public class AggregateDao implements AggregateRepository {
         Map<Table, List<PreparedStatement>> insertTransactionMap = Maps.newHashMap();
         Map<Table, List<PreparedStatement>> readOverallMap = Maps.newHashMap();
         Map<Table, List<PreparedStatement>> readOverallForRollupMap = Maps.newHashMap();
+        Map<Table, PreparedStatement> readOverallForRollupFromChildMap = Maps.newHashMap();
         Map<Table, List<PreparedStatement>> readTransactionMap = Maps.newHashMap();
         Map<Table, List<PreparedStatement>> readTransactionForRollupMap = Maps.newHashMap();
+        Map<Table, PreparedStatement> readTransactionForRollupFromChildMap = Maps.newHashMap();
         for (Table table : allTables) {
             List<PreparedStatement> insertOverallList = Lists.newArrayList();
             List<PreparedStatement> insertTransactionList = Lists.newArrayList();
@@ -273,16 +288,34 @@ public class AggregateDao implements AggregateRepository {
             insertTransactionMap.put(table, ImmutableList.copyOf(insertTransactionList));
             readOverallMap.put(table, ImmutableList.copyOf(readOverallList));
             readOverallForRollupMap.put(table, ImmutableList.copyOf(readOverallForRollupList));
+            if (table.summary()) {
+                readOverallForRollupFromChildMap.put(table,
+                        session.prepare(readSummaryForRollupFromChildPS(table, false, 0)));
+            } else {
+                readOverallForRollupFromChildMap.put(table,
+                        session.prepare(readForRollupFromChildPS(table, false, 0)));
+            }
             readTransactionMap.put(table, ImmutableList.copyOf(readTransactionList));
             readTransactionForRollupMap.put(table,
                     ImmutableList.copyOf(readTransactionForRollupList));
+            if (table.summary()) {
+                readTransactionForRollupFromChildMap.put(table,
+                        session.prepare(readSummaryForRollupFromChildPS(table, true, 0)));
+            } else {
+                readTransactionForRollupFromChildMap.put(table,
+                        session.prepare(readForRollupFromChildPS(table, true, 0)));
+            }
         }
         this.insertOverallPS = ImmutableMap.copyOf(insertOverallMap);
         this.insertTransactionPS = ImmutableMap.copyOf(insertTransactionMap);
         this.readOverallPS = ImmutableMap.copyOf(readOverallMap);
         this.readOverallForRollupPS = ImmutableMap.copyOf(readOverallForRollupMap);
+        this.readOverallForRollupFromChildPS =
+                ImmutableMap.copyOf(readOverallForRollupFromChildMap);
         this.readTransactionPS = ImmutableMap.copyOf(readTransactionMap);
         this.readTransactionForRollupPS = ImmutableMap.copyOf(readTransactionForRollupMap);
+        this.readTransactionForRollupFromChildPS =
+                ImmutableMap.copyOf(readTransactionForRollupFromChildMap);
 
         List<PreparedStatement> existsMainThreadProfileOverallPS = Lists.newArrayList();
         List<PreparedStatement> existsMainThreadProfileTransactionPS = Lists.newArrayList();
@@ -322,11 +355,26 @@ public class AggregateDao implements AggregateRepository {
         this.insertNeedsRollup = insertNeedsRollup;
         this.readNeedsRollup = readNeedsRollup;
         this.deleteNeedsRollup = deleteNeedsRollup;
+
+        session.execute("create table if not exists aggregate_needs_rollup_from_child"
+                + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
+                + " child_agent_rollup varchar, transaction_types set<varchar>,"
+                + " primary key (agent_rollup, capture_time, uniqueness)) " + WITH_LCS);
+        insertNeedsRollupFromChild = session.prepare("insert into aggregate_needs_rollup_from_child"
+                + " (agent_rollup, capture_time, uniqueness, child_agent_rollup, transaction_types)"
+                + " values (?, ?, ?, ?, ?)");
+        readNeedsRollupFromChild = session.prepare("select capture_time, uniqueness,"
+                + " child_agent_rollup, transaction_types from aggregate_needs_rollup_from_child"
+                + " where agent_rollup = ?");
+        deleteNeedsRollupFromChild = session.prepare("delete from aggregate_needs_rollup_from_child"
+                + " where agent_rollup = ? and capture_time = ? and uniqueness = ?");
     }
 
     public void store(String agentId, long captureTime,
             List<OldAggregatesByType> aggregatesByTypeList,
             List<Aggregate.SharedQueryText> initialSharedQueryTexts) throws Exception {
+
+        List<String> agentRollups = agentDao.readAgentRollups(agentId);
         int adjustedTTL = getAdjustedTTL(getTTLs().get(0), captureTime);
         List<ResultSetFuture> futures = Lists.newArrayList();
         List<Aggregate.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
@@ -335,7 +383,9 @@ public class AggregateDao implements AggregateRepository {
             if (fullTextSha1.isEmpty()) {
                 String fullText = sharedQueryText.getFullText();
                 if (fullText.length() > StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE) {
-                    fullTextSha1 = fullQueryTextDao.store(agentId, fullText, futures);
+                    fullTextSha1 =
+                            Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
+                    futures.addAll(fullQueryTextDao.store(agentId, fullTextSha1, fullText));
                     sharedQueryTexts.add(Aggregate.SharedQueryText.newBuilder()
                             .setTruncatedText(fullText.substring(0,
                                     StorageConfig.AGGREGATE_QUERY_TEXT_TRUNCATE))
@@ -345,7 +395,7 @@ public class AggregateDao implements AggregateRepository {
                     sharedQueryTexts.add(sharedQueryText);
                 }
             } else {
-                fullQueryTextDao.updateTTL(agentId, fullTextSha1, futures);
+                futures.addAll(fullQueryTextDao.updateTTL(agentId, fullTextSha1));
                 sharedQueryTexts.add(sharedQueryText);
             }
         }
@@ -360,7 +410,7 @@ public class AggregateDao implements AggregateRepository {
                         transactionAggregate.getTransactionName(), captureTime,
                         transactionAggregate.getAggregate(), sharedQueryTexts, adjustedTTL));
             }
-            transactionTypeDao.store(agentId, transactionType, futures);
+            futures.addAll(transactionTypeDao.store(agentRollups, transactionType));
         }
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         // TODO report checker framework issue that occurs without this suppression
@@ -368,14 +418,25 @@ public class AggregateDao implements AggregateRepository {
         Set<String> transactionTypes = aggregatesByTypeList.stream()
                 .map(OldAggregatesByType::getTransactionType).collect(Collectors.toSet());
 
+        if (agentRollups.size() > 1) {
+            BoundStatement boundStatement = insertNeedsRollupFromChild.bind();
+            int i = 0;
+            boundStatement.setString(i++, agentRollups.get(1));
+            boundStatement.setTimestamp(i++, new Date(captureTime));
+            boundStatement.setUUID(i++, UUIDs.timeBased());
+            boundStatement.setString(i++, agentId);
+            boundStatement.setSet(i++, transactionTypes);
+            futures.add(session.executeAsync(boundStatement));
+        }
         // insert into aggregate_needs_rollup_1
         long intervalMillis = rollupConfigs.get(1).intervalMillis();
         long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, intervalMillis);
         BoundStatement boundStatement = insertNeedsRollup.get(0).bind();
-        boundStatement.setString(0, agentId);
-        boundStatement.setTimestamp(1, new Date(rollupCaptureTime));
-        boundStatement.setUUID(2, UUIDs.timeBased());
-        boundStatement.setSet(3, transactionTypes);
+        int i = 0;
+        boundStatement.setString(i++, agentId);
+        boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
+        boundStatement.setUUID(i++, UUIDs.timeBased());
+        boundStatement.setSet(i++, transactionTypes);
         futures.add(session.executeAsync(boundStatement));
         Futures.allAsList(futures).get();
     }
@@ -673,18 +734,66 @@ public class AggregateDao implements AggregateRepository {
         for (int i = 1; i < configRepository.getRollupConfigs().size(); i++) {
             session.execute("truncate aggregate_needs_rollup_" + i);
         }
+        session.execute("truncate aggregate_needs_rollup_from_child");
     }
 
-    public void rollup(String agentRollup) throws Exception {
+    public void rollup(String agentRollup, @Nullable String parentAgentRollup, boolean leaf)
+            throws Exception {
         List<Integer> ttls = getTTLs();
-        for (int rollupLevel = 1; rollupLevel < configRepository.getRollupConfigs()
-                .size(); rollupLevel++) {
+        if (!leaf) {
+            rollupFromChildren(agentRollup, parentAgentRollup, ttls.get(0));
+        }
+        int rollupLevel = 1;
+        while (rollupLevel < configRepository.getRollupConfigs().size()) {
             int ttl = ttls.get(rollupLevel);
-            rollupLevel(agentRollup, rollupLevel, ttl);
+            rollup(agentRollup, rollupLevel, ttl);
+            rollupLevel++;
         }
     }
 
-    private void rollupLevel(String agentRollup, int rollupLevel, int ttl) throws Exception {
+    private void rollupFromChildren(String agentRollup, @Nullable String parentAgentRollup, int ttl)
+            throws Exception {
+        final int rollupLevel = 0;
+        List<NeedsRollupFromChildren> needsRollupFromChildrenList =
+                getNeedsRollupFromChildrenList(agentRollup, readNeedsRollupFromChild, session);
+        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+        long nextRollupIntervalMillis = rollupConfigs.get(rollupLevel + 1).intervalMillis();
+        for (NeedsRollupFromChildren needsRollupFromChildren : needsRollupFromChildrenList) {
+            long captureTime = needsRollupFromChildren.getCaptureTime();
+            int adjustedTTL = getAdjustedTTL(ttl, captureTime);
+            RollupParams rollupParams = getRollupParams(agentRollup, rollupLevel, adjustedTTL);
+            List<ResultSetFuture> futures = Lists.newArrayList();
+            for (Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys().asMap()
+                    .entrySet()) {
+                String transactionType = entry.getKey();
+                Collection<String> childAgentRollups = entry.getValue();
+                futures.addAll(rollupOneFromChildren(rollupParams, transactionType,
+                        childAgentRollups, captureTime));
+            }
+            // wait for above async work to ensure rollup complete before proceeding
+            Futures.allAsList(futures).get();
+
+            if (parentAgentRollup != null) {
+                // insert needs to happen first before call to postRollup(), see method-level
+                // comment on postRollup
+                BoundStatement boundStatement = insertNeedsRollupFromChild.bind();
+                int i = 0;
+                boundStatement.setString(i++, parentAgentRollup);
+                boundStatement.setTimestamp(i++, new Date(captureTime));
+                boundStatement.setUUID(i++, UUIDs.timeBased());
+                boundStatement.setString(i++, agentRollup);
+                boundStatement.setSet(i++, needsRollupFromChildren.getKeys().keySet());
+                session.execute(boundStatement);
+            }
+            postRollup(agentRollup, needsRollupFromChildren.getCaptureTime(),
+                    needsRollupFromChildren.getKeys().keySet(),
+                    needsRollupFromChildren.getUniquenessKeysForDeletion(),
+                    nextRollupIntervalMillis, insertNeedsRollup.get(rollupLevel),
+                    deleteNeedsRollupFromChild, session);
+        }
+    }
+
+    private void rollup(String agentRollup, int rollupLevel, int ttl) throws Exception {
         List<NeedsRollup> needsRollupList =
                 getNeedsRollupList(agentRollup, rollupLevel, readNeedsRollup, session);
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
@@ -698,26 +807,84 @@ public class AggregateDao implements AggregateRepository {
             int adjustedTTL = getAdjustedTTL(ttl, captureTime);
             RollupParams rollupParams = getRollupParams(agentRollup, rollupLevel, adjustedTTL);
             long from = captureTime - rollupIntervalMillis;
-            for (String transactionType : needsRollup.getKeys()) {
-                rollupOne(rollupParams, transactionType, from, captureTime);
+            Set<String> transactionTypes = needsRollup.getKeys();
+            List<ResultSetFuture> futures = Lists.newArrayList();
+            for (String transactionType : transactionTypes) {
+                futures.addAll(rollupOne(rollupParams, transactionType, from, captureTime));
             }
-            postRollup(agentRollup, rollupLevel, needsRollup, nextRollupIntervalMillis,
+            // wait for above async work to ensure rollup complete before proceeding
+            Futures.allAsList(futures).get();
+
+            PreparedStatement insertNeedsRollup = nextRollupIntervalMillis == null ? null
+                    : this.insertNeedsRollup.get(rollupLevel);
+            PreparedStatement deleteNeedsRollup = this.deleteNeedsRollup.get(rollupLevel - 1);
+            postRollup(agentRollup, needsRollup.getCaptureTime(), transactionTypes,
+                    needsRollup.getUniquenessKeysForDeletion(), nextRollupIntervalMillis,
                     insertNeedsRollup, deleteNeedsRollup, session);
         }
     }
 
-    private void rollupOne(RollupParams rollup, String transactionType, long from, long to)
-            throws Exception {
+    private List<ResultSetFuture> rollupOneFromChildren(RollupParams rollup, String transactionType,
+            Collection<String> childAgentRollups, long captureTime) throws Exception {
+
+        ImmutableTransactionQuery query = ImmutableTransactionQuery.builder()
+                .transactionType(transactionType)
+                .from(captureTime)
+                .to(captureTime)
+                .rollupLevel(rollup.rollupLevel()) // rolling up from same level (which is always 0)
+                .build();
+        List<ResultSetFuture> futures = Lists.newArrayList();
+
+        futures.addAll(rollupOverallSummaryFromChildren(rollup, query, childAgentRollups));
+        futures.addAll(rollupErrorSummaryFromChildren(rollup, query, childAgentRollups));
+
+        List<String> transactionNames = Lists.newArrayList();
+        futures.addAll(rollupTransactionSummaryFromChildren(rollup, query, childAgentRollups,
+                transactionNames));
+        futures.addAll(rollupTransactionErrorSummaryFromChildren(rollup, query, childAgentRollups));
+
         ScratchBuffer scratchBuffer = new ScratchBuffer();
-        TransactionQuery query = ImmutableTransactionQuery.builder()
+        futures.addAll(
+                rollupOtherPartsFromChildren(rollup, query, childAgentRollups, scratchBuffer));
+
+        for (String transactionName : transactionNames) {
+            futures.addAll(rollupOtherPartsFromChildren(rollup,
+                    query.withTransactionName(transactionName), childAgentRollups, scratchBuffer));
+        }
+        return futures;
+    }
+
+    private List<ResultSetFuture> rollupOne(RollupParams rollup, String transactionType, long from,
+            long to) throws Exception {
+
+        ImmutableTransactionQuery query = ImmutableTransactionQuery.builder()
                 .transactionType(transactionType)
                 .from(from)
                 .to(to)
                 .rollupLevel(rollup.rollupLevel() - 1)
                 .build();
         List<ResultSetFuture> futures = Lists.newArrayList();
+
         futures.addAll(rollupOverallSummary(rollup, query));
         futures.addAll(rollupErrorSummary(rollup, query));
+
+        List<String> transactionNames = Lists.newArrayList();
+        futures.addAll(rollupTransactionSummary(rollup, query, transactionNames));
+        futures.addAll(rollupTransactionErrorSummary(rollup, query));
+
+        ScratchBuffer scratchBuffer = new ScratchBuffer();
+        futures.addAll(rollupOtherParts(rollup, query, scratchBuffer));
+
+        for (String transactionName : transactionNames) {
+            futures.addAll(rollupOtherParts(rollup, query.withTransactionName(transactionName),
+                    scratchBuffer));
+        }
+        return futures;
+    }
+
+    private List<ResultSetFuture> rollupOtherParts(RollupParams rollup, TransactionQuery query,
+            ScratchBuffer scratchBuffer) throws Exception {
+        List<ResultSetFuture> futures = Lists.newArrayList();
         futures.addAll(rollupOverview(rollup, query));
         futures.addAll(rollupHistogram(rollup, query, scratchBuffer));
         futures.addAll(rollupThroughput(rollup, query));
@@ -725,26 +892,25 @@ public class AggregateDao implements AggregateRepository {
         futures.addAll(rollupServiceCalls(rollup, query));
         futures.addAll(rollupThreadProfile(rollup, query, mainThreadProfileTable));
         futures.addAll(rollupThreadProfile(rollup, query, auxThreadProfileTable));
+        return futures;
+    }
 
-        List<String> transactionNames = rollupTransactionSummary(rollup, query, futures);
-        futures.addAll(rollupTransactionErrorSummary(rollup, query));
-        for (String transactionName : transactionNames) {
-            query = ImmutableTransactionQuery.builder()
-                    .transactionType(transactionType)
-                    .transactionName(transactionName)
-                    .from(from)
-                    .to(to)
-                    .rollupLevel(rollup.rollupLevel() - 1)
-                    .build();
-            futures.addAll(rollupOverview(rollup, query));
-            futures.addAll(rollupHistogram(rollup, query, scratchBuffer));
-            futures.addAll(rollupThroughput(rollup, query));
-            futures.addAll(rollupQueries(rollup, query));
-            futures.addAll(rollupServiceCalls(rollup, query));
-            futures.addAll(rollupThreadProfile(rollup, query, mainThreadProfileTable));
-            futures.addAll(rollupThreadProfile(rollup, query, auxThreadProfileTable));
-        }
-        Futures.allAsList(futures).get();
+    private List<ResultSetFuture> rollupOtherPartsFromChildren(RollupParams rollup,
+            TransactionQuery query, Collection<String> childAgentRollups,
+            ScratchBuffer scratchBuffer)
+            throws Exception {
+        List<ResultSetFuture> futures = Lists.newArrayList();
+        futures.addAll(rollupOverviewFromChildren(rollup, query, childAgentRollups));
+        futures.addAll(
+                rollupHistogramFromChildren(rollup, query, childAgentRollups, scratchBuffer));
+        futures.addAll(rollupThroughputFromChildren(rollup, query, childAgentRollups));
+        futures.addAll(rollupQueriesFromChildren(rollup, query, childAgentRollups));
+        futures.addAll(rollupServiceCallsFromChildren(rollup, query, childAgentRollups));
+        futures.addAll(rollupThreadProfileFromChildren(rollup, query, childAgentRollups,
+                mainThreadProfileTable));
+        futures.addAll(rollupThreadProfileFromChildren(rollup, query, childAgentRollups,
+                auxThreadProfileTable));
+        return futures;
     }
 
     private List<ResultSetFuture> rollupOverallSummary(RollupParams rollup,
@@ -754,9 +920,24 @@ public class AggregateDao implements AggregateRepository {
             // this probably shouldn't happen
             return ImmutableList.of();
         }
+        return rollupOverallSummaryFromRows(rollup, query, results);
+    }
+
+    private List<ResultSetFuture> rollupOverallSummaryFromChildren(RollupParams rollup,
+            TransactionQuery query, Collection<String> childAgentRollups) {
+        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, summaryTable);
+        if (rows.isEmpty()) {
+            // this probably shouldn't happen
+            return ImmutableList.of();
+        }
+        return rollupOverallSummaryFromRows(rollup, query, rows);
+    }
+
+    private List<ResultSetFuture> rollupOverallSummaryFromRows(RollupParams rollup,
+            TransactionQuery query, Iterable<Row> rows) {
         double totalDurationNanos = 0;
         long transactionCount = 0;
-        for (Row row : results) {
+        for (Row row : rows) {
             totalDurationNanos += row.getDouble(0);
             transactionCount += row.getLong(1);
         }
@@ -775,11 +956,27 @@ public class AggregateDao implements AggregateRepository {
     private List<ResultSetFuture> rollupErrorSummary(RollupParams rollup, TransactionQuery query) {
         ResultSet results = executeQueryForRollup(rollup.agentRollup(), query, errorSummaryTable);
         if (results.isExhausted()) {
+            // this probably shouldn't happen
             return ImmutableList.of();
         }
+        return rollupErrorSummaryFromRows(rollup, query, results);
+    }
+
+    private List<ResultSetFuture> rollupErrorSummaryFromChildren(RollupParams rollup,
+            TransactionQuery query, Collection<String> childAgentRollups) {
+        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, errorSummaryTable);
+        if (rows.isEmpty()) {
+            // this probably shouldn't happen
+            return ImmutableList.of();
+        }
+        return rollupErrorSummaryFromRows(rollup, query, rows);
+    }
+
+    private List<ResultSetFuture> rollupErrorSummaryFromRows(RollupParams rollup,
+            TransactionQuery query, Iterable<Row> rows) {
         long errorCount = 0;
         long transactionCount = 0;
-        for (Row row : results) {
+        for (Row row : rows) {
             errorCount += row.getLong(0);
             transactionCount += row.getLong(1);
         }
@@ -795,6 +992,127 @@ public class AggregateDao implements AggregateRepository {
         return ImmutableList.of(session.executeAsync(boundStatement));
     }
 
+    // transactionNames is passed in empty, and populated by method
+    private List<ResultSetFuture> rollupTransactionSummary(RollupParams rollup,
+            TransactionQuery query, List<String> transactionNames) {
+        BoundStatement boundStatement = checkNotNull(readTransactionForRollupPS.get(summaryTable))
+                .get(query.rollupLevel()).bind();
+        bindQuery(boundStatement, rollup.agentRollup(), query);
+        ResultSet results = session.execute(boundStatement);
+        if (results.isExhausted()) {
+            // this probably shouldn't happen
+            return ImmutableList.of();
+        }
+        return rollupTransactionSummaryFromRows(rollup, query, results, transactionNames);
+    }
+
+    // transactionNames is passed in empty, and populated by method
+    private List<ResultSetFuture> rollupTransactionSummaryFromChildren(RollupParams rollup,
+            TransactionQuery query, Collection<String> childAgentRollups,
+            List<String> transactionNames) {
+        List<Row> rows =
+                getRowsForSummaryRollupFromChildren(query, childAgentRollups, summaryTable);
+        if (rows.isEmpty()) {
+            // this probably shouldn't happen
+            return ImmutableList.of();
+        }
+        return rollupTransactionSummaryFromRows(rollup, query, rows, transactionNames);
+    }
+
+    // transactionNames is passed in empty, and populated by method
+    private List<ResultSetFuture> rollupTransactionSummaryFromRows(RollupParams rollup,
+            TransactionQuery query, Iterable<Row> rows, List<String> transactionNames) {
+        BoundStatement boundStatement;
+        Map<String, MutableSummary> summaries = Maps.newHashMap();
+        for (Row row : rows) {
+            String transactionName = checkNotNull(row.getString(0));
+            MutableSummary summary = summaries.get(transactionName);
+            if (summary == null) {
+                summary = new MutableSummary();
+                summaries.put(transactionName, summary);
+            }
+            summary.totalDurationNanos += row.getDouble(1);
+            summary.transactionCount += row.getLong(2);
+        }
+        List<ResultSetFuture> futures = Lists.newArrayList();
+        PreparedStatement preparedStatement =
+                getInsertTransactionPS(summaryTable, rollup.rollupLevel());
+        for (Entry<String, MutableSummary> entry : summaries.entrySet()) {
+            MutableSummary summary = entry.getValue();
+            boundStatement = preparedStatement.bind();
+            int i = 0;
+            boundStatement.setString(i++, rollup.agentRollup());
+            boundStatement.setString(i++, query.transactionType());
+            boundStatement.setTimestamp(i++, new Date(query.to()));
+            boundStatement.setString(i++, entry.getKey());
+            boundStatement.setDouble(i++, summary.totalDurationNanos);
+            boundStatement.setLong(i++, summary.transactionCount);
+            boundStatement.setInt(i++, rollup.adjustedTTL());
+            futures.add(session.executeAsync(boundStatement));
+        }
+        transactionNames.addAll(summaries.keySet());
+        return futures;
+    }
+
+    private List<ResultSetFuture> rollupTransactionErrorSummary(RollupParams rollup,
+            TransactionQuery query) {
+        BoundStatement boundStatement =
+                checkNotNull(readTransactionForRollupPS.get(errorSummaryTable))
+                        .get(query.rollupLevel()).bind();
+        bindQuery(boundStatement, rollup.agentRollup(), query);
+        ResultSet results = session.execute(boundStatement);
+        if (results.isExhausted()) {
+            // this probably shouldn't happen
+            return ImmutableList.of();
+        }
+        return rollupTransactionErrorSummaryFromRows(rollup, query, results);
+    }
+
+    // transactionNames is passed in empty, and populated by method
+    private List<ResultSetFuture> rollupTransactionErrorSummaryFromChildren(RollupParams rollup,
+            TransactionQuery query, Collection<String> childAgentRollups) {
+        List<Row> rows =
+                getRowsForSummaryRollupFromChildren(query, childAgentRollups, errorSummaryTable);
+        if (rows.isEmpty()) {
+            // this probably shouldn't happen
+            return ImmutableList.of();
+        }
+        return rollupTransactionErrorSummaryFromRows(rollup, query, rows);
+    }
+
+    private List<ResultSetFuture> rollupTransactionErrorSummaryFromRows(RollupParams rollup,
+            TransactionQuery query, Iterable<Row> rows) {
+        BoundStatement boundStatement;
+        Map<String, MutableErrorSummary> summaries = Maps.newHashMap();
+        for (Row row : rows) {
+            String transactionName = checkNotNull(row.getString(0));
+            MutableErrorSummary summary = summaries.get(transactionName);
+            if (summary == null) {
+                summary = new MutableErrorSummary();
+                summaries.put(transactionName, summary);
+            }
+            summary.errorCount += row.getLong(1);
+            summary.transactionCount += row.getLong(2);
+        }
+        PreparedStatement preparedStatement =
+                getInsertTransactionPS(errorSummaryTable, rollup.rollupLevel());
+        List<ResultSetFuture> futures = Lists.newArrayList();
+        for (Entry<String, MutableErrorSummary> entry : summaries.entrySet()) {
+            MutableErrorSummary summary = entry.getValue();
+            boundStatement = preparedStatement.bind();
+            int i = 0;
+            boundStatement.setString(i++, rollup.agentRollup());
+            boundStatement.setString(i++, query.transactionType());
+            boundStatement.setTimestamp(i++, new Date(query.to()));
+            boundStatement.setString(i++, entry.getKey());
+            boundStatement.setLong(i++, summary.errorCount);
+            boundStatement.setLong(i++, summary.transactionCount);
+            boundStatement.setInt(i++, rollup.adjustedTTL());
+            futures.add(session.executeAsync(boundStatement));
+        }
+        return futures;
+    }
+
     private List<ResultSetFuture> rollupOverview(RollupParams rollup, TransactionQuery query)
             throws IOException {
         ResultSet results = executeQueryForRollup(rollup.agentRollup(), query, overviewTable);
@@ -802,6 +1120,21 @@ public class AggregateDao implements AggregateRepository {
             // this probably shouldn't happen
             return ImmutableList.of();
         }
+        return rollupOverviewFromRows(rollup, query, results);
+    }
+
+    private List<ResultSetFuture> rollupOverviewFromChildren(RollupParams rollup,
+            TransactionQuery query, Collection<String> childAgentRollups) throws IOException {
+        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, overviewTable);
+        if (rows.isEmpty()) {
+            // this probably shouldn't happen
+            return ImmutableList.of();
+        }
+        return rollupOverviewFromRows(rollup, query, rows);
+    }
+
+    private List<ResultSetFuture> rollupOverviewFromRows(RollupParams rollup,
+            TransactionQuery query, Iterable<Row> rows) throws IOException {
         double totalDurationNanos = 0;
         long transactionCount = 0;
         boolean asyncTransactions = false;
@@ -810,7 +1143,7 @@ public class AggregateDao implements AggregateRepository {
         List<MutableTimer> asyncTimers = Lists.newArrayList();
         MutableThreadStats mainThreadStats = new MutableThreadStats();
         MutableThreadStats auxThreadStats = new MutableThreadStats();
-        for (Row row : results) {
+        for (Row row : rows) {
             int i = 0;
             totalDurationNanos += row.getDouble(i++);
             transactionCount += row.getLong(i++);
@@ -876,10 +1209,28 @@ public class AggregateDao implements AggregateRepository {
             // this probably shouldn't happen
             return ImmutableList.of();
         }
+        return rollupHistogramFromRows(rollup, query, results, scratchBuffer);
+    }
+
+    private List<ResultSetFuture> rollupHistogramFromChildren(RollupParams rollup,
+            TransactionQuery query, Collection<String> childAgentRollups,
+            ScratchBuffer scratchBuffer)
+            throws Exception {
+        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, histogramTable);
+        if (rows.isEmpty()) {
+            // this probably shouldn't happen
+            return ImmutableList.of();
+        }
+        return rollupHistogramFromRows(rollup, query, rows, scratchBuffer);
+    }
+
+    private List<ResultSetFuture> rollupHistogramFromRows(RollupParams rollup,
+            TransactionQuery query, Iterable<Row> rows, ScratchBuffer scratchBuffer)
+            throws Exception {
         double totalDurationNanos = 0;
         long transactionCount = 0;
         LazyHistogram durationNanosHistogram = new LazyHistogram();
-        for (Row row : results) {
+        for (Row row : rows) {
             totalDurationNanos += row.getDouble(0);
             transactionCount += row.getLong(1);
             ByteBuffer bytes = checkNotNull(row.getBytes(2));
@@ -911,8 +1262,23 @@ public class AggregateDao implements AggregateRepository {
             // this probably shouldn't happen
             return ImmutableList.of();
         }
+        return rollupThroughputFromRows(rollup, query, results);
+    }
+
+    private List<ResultSetFuture> rollupThroughputFromChildren(RollupParams rollup,
+            TransactionQuery query, Collection<String> childAgentRollups) {
+        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, throughputTable);
+        if (rows.isEmpty()) {
+            // this probably shouldn't happen
+            return ImmutableList.of();
+        }
+        return rollupThroughputFromRows(rollup, query, rows);
+    }
+
+    private List<ResultSetFuture> rollupThroughputFromRows(RollupParams rollup,
+            TransactionQuery query, Iterable<Row> rows) {
         long transactionCount = 0;
-        for (Row row : results) {
+        for (Row row : rows) {
             transactionCount += row.getLong(0);
         }
         BoundStatement boundStatement;
@@ -937,10 +1303,26 @@ public class AggregateDao implements AggregateRepository {
             throws IOException {
         ResultSet results = executeQueryForRollup(rollup.agentRollup(), query, queryTable);
         if (results.isExhausted()) {
+            // this probably shouldn't happen
             return ImmutableList.of();
         }
+        return rollupQueriesFromRows(rollup, query, results, false);
+    }
+
+    private List<ResultSetFuture> rollupQueriesFromChildren(RollupParams rollup,
+            TransactionQuery query, Collection<String> childAgentRollups) {
+        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, queryTable);
+        if (rows.isEmpty()) {
+            // this probably shouldn't happen
+            return ImmutableList.of();
+        }
+        return rollupQueriesFromRows(rollup, query, rows, true);
+    }
+
+    private List<ResultSetFuture> rollupQueriesFromRows(RollupParams rollup, TransactionQuery query,
+            Iterable<Row> rows, boolean rollupFromChildren) {
         QueryCollector collector = new QueryCollector(rollup.maxAggregateQueriesPerType());
-        for (Row row : results) {
+        for (Row row : rows) {
             int i = 0;
             String queryType = checkNotNull(row.getString(i++));
             String truncatedText = checkNotNull(row.getString(i++));
@@ -955,18 +1337,34 @@ public class AggregateDao implements AggregateRepository {
         }
         return insertQueries(collector.getSortedQueries(), rollup.rollupLevel(),
                 rollup.agentRollup(), query.transactionType(), query.transactionName(), query.to(),
-                rollup.adjustedTTL());
+                rollup.adjustedTTL(), rollupFromChildren);
     }
 
     private List<ResultSetFuture> rollupServiceCalls(RollupParams rollup, TransactionQuery query)
             throws IOException {
         ResultSet results = executeQueryForRollup(rollup.agentRollup(), query, serviceCallTable);
         if (results.isExhausted()) {
+            // this probably shouldn't happen
             return ImmutableList.of();
         }
+        return rollupServiceCallsFromRows(rollup, query, results);
+    }
+
+    private List<ResultSetFuture> rollupServiceCallsFromChildren(RollupParams rollup,
+            TransactionQuery query, Collection<String> childAgentRollups) {
+        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, serviceCallTable);
+        if (rows.isEmpty()) {
+            // this probably shouldn't happen
+            return ImmutableList.of();
+        }
+        return rollupServiceCallsFromRows(rollup, query, rows);
+    }
+
+    private List<ResultSetFuture> rollupServiceCallsFromRows(RollupParams rollup,
+            TransactionQuery query, Iterable<Row> rows) {
         ServiceCallCollector collector =
                 new ServiceCallCollector(rollup.maxAggregateServiceCallsPerType(), 0);
-        for (Row row : results) {
+        for (Row row : rows) {
             int i = 0;
             String serviceCallType = checkNotNull(row.getString(i++));
             String serviceCallText = checkNotNull(row.getString(i++));
@@ -983,10 +1381,28 @@ public class AggregateDao implements AggregateRepository {
             Table table) throws InvalidProtocolBufferException {
         ResultSet results = executeQueryForRollup(rollup.agentRollup(), query, table);
         if (results.isExhausted()) {
+            // this probably shouldn't happen
             return ImmutableList.of();
         }
+        return rollupThreadProfileFromRows(rollup, query, results, table);
+    }
+
+    private List<ResultSetFuture> rollupThreadProfileFromChildren(RollupParams rollup,
+            TransactionQuery query, Collection<String> childAgentRollups, Table table)
+            throws InvalidProtocolBufferException {
+        List<Row> rows = getRowsForRollupFromChildren(query, childAgentRollups, table);
+        if (rows.isEmpty()) {
+            // this probably shouldn't happen
+            return ImmutableList.of();
+        }
+        return rollupThreadProfileFromRows(rollup, query, rows, table);
+    }
+
+    private List<ResultSetFuture> rollupThreadProfileFromRows(RollupParams rollup,
+            TransactionQuery query, Iterable<Row> rows, Table table)
+            throws InvalidProtocolBufferException {
         MutableProfile profile = new MutableProfile();
-        for (Row row : results) {
+        for (Row row : rows) {
             ByteBuffer bytes = checkNotNull(row.getBytes(0));
             profile.merge(Profile.parseFrom(ByteString.copyFrom(bytes)));
         }
@@ -1008,83 +1424,27 @@ public class AggregateDao implements AggregateRepository {
         return ImmutableList.of(session.executeAsync(boundStatement));
     }
 
-    private List<String> rollupTransactionSummary(RollupParams rollup, TransactionQuery query,
-            List<ResultSetFuture> futures) {
-        BoundStatement boundStatement = checkNotNull(readTransactionForRollupPS.get(summaryTable))
-                .get(query.rollupLevel()).bind();
-        bindQuery(boundStatement, rollup.agentRollup(), query);
-        ResultSet results = session.execute(boundStatement);
-        if (results.isExhausted()) {
-            // this probably shouldn't happen
-            return ImmutableList.of();
-        }
-        Map<String, MutableSummary> summaries = Maps.newHashMap();
-        for (Row row : results) {
-            String transactionName = checkNotNull(row.getString(0));
-            MutableSummary summary = summaries.get(transactionName);
-            if (summary == null) {
-                summary = new MutableSummary();
-                summaries.put(transactionName, summary);
+    private List<Row> getRowsForSummaryRollupFromChildren(TransactionQuery query,
+            Collection<String> childAgentRollups, Table table) {
+        List<Row> rows = Lists.newArrayList();
+        for (String childAgentRollup : childAgentRollups) {
+            BoundStatement boundStatement =
+                    checkNotNull(readTransactionForRollupFromChildPS.get(table)).bind();
+            bindQueryForRollupFromChild(boundStatement, childAgentRollup, query);
+            for (Row row : session.execute(boundStatement)) {
+                rows.add(row);
             }
-            summary.totalDurationNanos += row.getDouble(1);
-            summary.transactionCount += row.getLong(2);
         }
-        PreparedStatement preparedStatement =
-                getInsertTransactionPS(summaryTable, rollup.rollupLevel());
-        for (Entry<String, MutableSummary> entry : summaries.entrySet()) {
-            MutableSummary summary = entry.getValue();
-            boundStatement = preparedStatement.bind();
-            int i = 0;
-            boundStatement.setString(i++, rollup.agentRollup());
-            boundStatement.setString(i++, query.transactionType());
-            boundStatement.setTimestamp(i++, new Date(query.to()));
-            boundStatement.setString(i++, entry.getKey());
-            boundStatement.setDouble(i++, summary.totalDurationNanos);
-            boundStatement.setLong(i++, summary.transactionCount);
-            boundStatement.setInt(i++, rollup.adjustedTTL());
-            futures.add(session.executeAsync(boundStatement));
-        }
-        return ImmutableList.copyOf(summaries.keySet());
+        return rows;
     }
 
-    private List<ResultSetFuture> rollupTransactionErrorSummary(RollupParams rollup,
-            TransactionQuery query) {
-        BoundStatement boundStatement =
-                checkNotNull(readTransactionForRollupPS.get(errorSummaryTable))
-                        .get(query.rollupLevel()).bind();
-        bindQuery(boundStatement, rollup.agentRollup(), query);
-        ResultSet results = session.execute(boundStatement);
-        if (results.isExhausted()) {
-            return ImmutableList.of();
+    private List<Row> getRowsForRollupFromChildren(TransactionQuery query,
+            Collection<String> childAgentRollups, Table table) {
+        List<Row> rows = Lists.newArrayList();
+        for (String childAgentRollup : childAgentRollups) {
+            rows.addAll(executeQueryForRollupFromChild(childAgentRollup, query, table));
         }
-        Map<String, MutableErrorSummary> summaries = Maps.newHashMap();
-        for (Row row : results) {
-            String transactionName = checkNotNull(row.getString(0));
-            MutableErrorSummary summary = summaries.get(transactionName);
-            if (summary == null) {
-                summary = new MutableErrorSummary();
-                summaries.put(transactionName, summary);
-            }
-            summary.errorCount += row.getLong(1);
-            summary.transactionCount += row.getLong(2);
-        }
-        PreparedStatement preparedStatement =
-                getInsertTransactionPS(errorSummaryTable, rollup.rollupLevel());
-        List<ResultSetFuture> futures = Lists.newArrayList();
-        for (Entry<String, MutableErrorSummary> entry : summaries.entrySet()) {
-            MutableErrorSummary summary = entry.getValue();
-            boundStatement = preparedStatement.bind();
-            int i = 0;
-            boundStatement.setString(i++, rollup.agentRollup());
-            boundStatement.setString(i++, query.transactionType());
-            boundStatement.setTimestamp(i++, new Date(query.to()));
-            boundStatement.setString(i++, entry.getKey());
-            boundStatement.setLong(i++, summary.errorCount);
-            boundStatement.setLong(i++, summary.transactionCount);
-            boundStatement.setInt(i++, rollup.adjustedTTL());
-            futures.add(session.executeAsync(boundStatement));
-        }
-        return futures;
+        return rows;
     }
 
     private List<ResultSetFuture> storeOverallAggregate(String agentRollup, String transactionType,
@@ -1315,7 +1675,8 @@ public class AggregateDao implements AggregateRepository {
 
     private List<ResultSetFuture> insertQueries(Map<String, List<MutableQuery>> map,
             int rollupLevel, String agentRollup, String transactionType,
-            @Nullable String transactionName, long captureTime, int adjustedTTL) {
+            @Nullable String transactionName, long captureTime, int adjustedTTL,
+            boolean rollupFromChildren) {
         List<ResultSetFuture> futures = Lists.newArrayList();
         for (Entry<String, List<MutableQuery>> entry : map.entrySet()) {
             for (MutableQuery query : entry.getValue()) {
@@ -1325,6 +1686,7 @@ public class AggregateDao implements AggregateRepository {
                 } else {
                     boundStatement = getInsertTransactionPS(queryTable, rollupLevel).bind();
                 }
+                String fullTextSha1 = query.getFullTextSha1();
                 int i = 0;
                 boundStatement.setString(i++, agentRollup);
                 boundStatement.setString(i++, transactionType);
@@ -1335,7 +1697,7 @@ public class AggregateDao implements AggregateRepository {
                 boundStatement.setString(i++, entry.getKey());
                 boundStatement.setString(i++, query.getTruncatedText());
                 // full_query_text_sha1 cannot be null since it is used in clustering key
-                boundStatement.setString(i++, Strings.nullToEmpty(query.getFullTextSha1()));
+                boundStatement.setString(i++, Strings.nullToEmpty(fullTextSha1));
                 boundStatement.setDouble(i++, query.getTotalDurationNanos());
                 boundStatement.setLong(i++, query.getExecutionCount());
                 if (query.hasTotalRows()) {
@@ -1345,6 +1707,9 @@ public class AggregateDao implements AggregateRepository {
                 }
                 boundStatement.setInt(i++, adjustedTTL);
                 futures.add(session.executeAsync(boundStatement));
+                if (rollupFromChildren && fullTextSha1 != null) {
+                    futures.addAll(fullQueryTextDao.updateTTL(agentRollup, fullTextSha1));
+                }
             }
         }
         return futures;
@@ -1491,6 +1856,18 @@ public class AggregateDao implements AggregateRepository {
         return session.execute(boundStatement);
     }
 
+    private List<Row> executeQueryForRollupFromChild(String childAgentRollup,
+            TransactionQuery query, Table table) {
+        BoundStatement boundStatement;
+        if (query.transactionName() == null) {
+            boundStatement = checkNotNull(readOverallForRollupFromChildPS.get(table)).bind();
+        } else {
+            boundStatement = checkNotNull(readTransactionForRollupFromChildPS.get(table)).bind();
+        }
+        bindQueryForRollupFromChild(boundStatement, childAgentRollup, query);
+        return session.execute(boundStatement).all();
+    }
+
     private void mergeProfilesInto(String agentRollup, TransactionQuery query, Table profileTable,
             ProfileCollector collector) throws InvalidProtocolBufferException {
         ResultSet results = executeQuery(agentRollup, query, profileTable);
@@ -1578,34 +1955,91 @@ public class AggregateDao implements AggregateRepository {
         return needsRollupList;
     }
 
-    // it is important that the insert into next gauge_needs_rollup happens after present
+    static List<NeedsRollupFromChildren> getNeedsRollupFromChildrenList(String agentRollup,
+            PreparedStatement readNeedsRollupFromChild, Session session) {
+        BoundStatement boundStatement = readNeedsRollupFromChild.bind();
+        boundStatement.setString(0, agentRollup);
+        ResultSet results = session.execute(boundStatement);
+        Map<Long, NeedsRollupFromChildren> needsRollupFromChildrenMap = Maps.newLinkedHashMap();
+        for (Row row : results) {
+            int i = 0;
+            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            UUID uniqueness = row.getUUID(i++);
+            String childAgentRollup = checkNotNull(row.getString(i++));
+            Set<String> keys = checkNotNull(row.getSet(i++, String.class));
+            NeedsRollupFromChildren needsRollup = needsRollupFromChildrenMap.get(captureTime);
+            if (needsRollup == null) {
+                needsRollup = new NeedsRollupFromChildren(captureTime);
+                needsRollupFromChildrenMap.put(captureTime, needsRollup);
+            }
+            for (String key : keys) {
+                needsRollup.keys.put(key, childAgentRollup);
+            }
+            needsRollup.uniquenessKeysForDeletion.add(uniqueness);
+        }
+        return ImmutableList.copyOf(needsRollupFromChildrenMap.values());
+    }
+
+    // it is important that the insert into next needs_rollup happens after present
     // rollup and before deleting present rollup
     // if insert before present rollup then possible for the next rollup to occur before
     // present rollup has completed
     // if insert after deleting present rollup then possible for error to occur in between
     // and insert would never happen
-    static void postRollup(String agentRollup, int rollupLevel, NeedsRollup needsRollup,
-            @Nullable Long nextRollupIntervalMillis, List<PreparedStatement> insertNeedsRollup,
-            List<PreparedStatement> deleteNeedsRollup, Session session) {
+    static void postRollup(String agentRollup, long captureTime, Set<String> keys,
+            Set<UUID> uniquenessKeysForDeletion, @Nullable Long nextRollupIntervalMillis,
+            @Nullable PreparedStatement insertNeedsRollup, PreparedStatement deleteNeedsRollup,
+            Session session) throws Exception {
         if (nextRollupIntervalMillis != null) {
-            long rollupCaptureTime = Utils.getRollupCaptureTime(needsRollup.getCaptureTime(),
+            checkNotNull(insertNeedsRollup);
+            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime,
                     nextRollupIntervalMillis);
-            BoundStatement boundStatement = insertNeedsRollup.get(rollupLevel).bind();
+            BoundStatement boundStatement = insertNeedsRollup.bind();
             int i = 0;
             boundStatement.setString(i++, agentRollup);
             boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
             boundStatement.setUUID(i++, UUIDs.timeBased());
-            boundStatement.setSet(i++, needsRollup.getKeys());
+            boundStatement.setSet(i++, keys);
+            // intentionally not async, see method-level comment
             session.execute(boundStatement);
         }
-        for (UUID uniqueness : needsRollup.getUniquenessKeysForDeletion()) {
-            BoundStatement boundStatement = deleteNeedsRollup.get(rollupLevel - 1).bind();
+        List<ResultSetFuture> futures = Lists.newArrayList();
+        for (UUID uniqueness : uniquenessKeysForDeletion) {
+            BoundStatement boundStatement = deleteNeedsRollup.bind();
             int i = 0;
+            boundStatement.setString(i++, agentRollup);
+            boundStatement.setTimestamp(i++, new Date(captureTime));
+            boundStatement.setUUID(i++, uniqueness);
+            futures.add(session.executeAsync(boundStatement));
+        }
+        Futures.allAsList(futures).get();
+    }
+
+    static void postRollupFromChildren(String agentRollup, NeedsRollupFromChildren needsRollup,
+            long nextRollupIntervalMillis, PreparedStatement insertNeedsRollup,
+            PreparedStatement deleteNeedsRollupFromChild, Session session) throws Exception {
+
+        long rollupCaptureTime = Utils.getRollupCaptureTime(needsRollup.getCaptureTime(),
+                nextRollupIntervalMillis);
+        BoundStatement boundStatement = insertNeedsRollup.bind();
+        int i = 0;
+        boundStatement.setString(i++, agentRollup);
+        boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
+        boundStatement.setUUID(i++, UUIDs.timeBased());
+        boundStatement.setSet(i++, needsRollup.getKeys().keySet());
+        // intentionally not async, see method-level comment
+        session.execute(boundStatement);
+
+        List<ResultSetFuture> futures = Lists.newArrayList();
+        for (UUID uniqueness : needsRollup.getUniquenessKeysForDeletion()) {
+            boundStatement = deleteNeedsRollupFromChild.bind();
+            i = 0;
             boundStatement.setString(i++, agentRollup);
             boundStatement.setTimestamp(i++, new Date(needsRollup.getCaptureTime()));
             boundStatement.setUUID(i++, uniqueness);
-            session.execute(boundStatement);
+            futures.add(session.executeAsync(boundStatement));
         }
+        Futures.allAsList(futures).get();
     }
 
     private static void bindQuery(BoundStatement boundStatement, String agentRollup,
@@ -1627,6 +2061,18 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setString(i++, transactionName);
         }
         boundStatement.setTimestamp(i++, new Date(query.from()));
+        boundStatement.setTimestamp(i++, new Date(query.to()));
+    }
+
+    private static void bindQueryForRollupFromChild(BoundStatement boundStatement,
+            String agentRollup, TransactionQuery query) {
+        int i = 0;
+        boundStatement.setString(i++, agentRollup);
+        boundStatement.setString(i++, query.transactionType());
+        String transactionName = query.transactionName();
+        if (transactionName != null) {
+            boundStatement.setString(i++, transactionName);
+        }
         boundStatement.setTimestamp(i++, new Date(query.to()));
     }
 
@@ -1714,6 +2160,20 @@ public class AggregateDao implements AggregateRepository {
             sb.append(" and transaction_name = ?");
         }
         sb.append(" and capture_time > ? and capture_time <= ?");
+        return sb.toString();
+    }
+
+    private static String readForRollupFromChildPS(Table table, boolean transaction, int i) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("select ");
+        appendColumnNames(sb, table.columns());
+        sb.append(" from ");
+        sb.append(getTableName(table.partialName(), transaction, i));
+        sb.append(" where agent_rollup = ? and transaction_type = ?");
+        if (transaction) {
+            sb.append(" and transaction_name = ?");
+        }
+        sb.append(" and capture_time = ?");
         return sb.toString();
     }
 
@@ -1812,8 +2272,22 @@ public class AggregateDao implements AggregateRepository {
         appendColumnNames(sb, table.columns());
         sb.append(" from ");
         sb.append(getTableName(table.partialName(), transaction, i));
-        sb.append(" where agent_rollup = ? and transaction_type = ? and capture_time >");
-        sb.append(" ? and capture_time <= ?");
+        sb.append(" where agent_rollup = ? and transaction_type = ? and capture_time > ?");
+        sb.append(" and capture_time <= ?");
+        return sb.toString();
+    }
+
+    private static String readSummaryForRollupFromChildPS(Table table, boolean transaction,
+            int i) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("select ");
+        if (transaction) {
+            sb.append("transaction_name, ");
+        }
+        appendColumnNames(sb, table.columns());
+        sb.append(" from ");
+        sb.append(getTableName(table.partialName(), transaction, i));
+        sb.append(" where agent_rollup = ? and transaction_type = ? and capture_time = ?");
         return sb.toString();
     }
 
@@ -1911,6 +2385,31 @@ public class AggregateDao implements AggregateRepository {
         }
 
         Set<String> getKeys() {
+            return keys;
+        }
+
+        Set<UUID> getUniquenessKeysForDeletion() {
+            return uniquenessKeysForDeletion;
+        }
+    }
+
+    static class NeedsRollupFromChildren {
+
+        private final long captureTime;
+        // map keys are transaction types or gauge names
+        // map values are childAgentRollups
+        private final Multimap<String, String> keys = HashMultimap.create();
+        private final Set<UUID> uniquenessKeysForDeletion = Sets.newHashSet();
+
+        private NeedsRollupFromChildren(long captureTime) {
+            this.captureTime = captureTime;
+        }
+
+        long getCaptureTime() {
+            return captureTime;
+        }
+
+        Multimap<String, String> getKeys() {
             return keys;
         }
 

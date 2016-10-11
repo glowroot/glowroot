@@ -130,16 +130,18 @@ glowroot.run([
     };
 
     $rootScope.agentRollupUrl = function (agentRollup, leaf) {
-      var url = $location.path().substring(1);
-      // preserve query string
-      var query = angular.copy($location.search());
+      // preserve existing query string
+      var search = angular.copy($location.search());
+      delete search['agent-rollup'];
+      delete search['agent-id'];
+      var query = {};
       if (leaf) {
         query['agent-id'] = agentRollup;
       } else {
         query['agent-rollup'] = agentRollup;
       }
-      url += queryStrings.encodeObject(query);
-      return url;
+      angular.merge(query, search);
+      return $location.path().substring(1) + queryStrings.encodeObject(query);
     };
 
     $rootScope.transactionTypes = function () {
@@ -234,18 +236,30 @@ glowroot.run([
       }
     });
 
-    $rootScope.setLayout = function(data) {
+    $rootScope.initLayout = function () {
+      angular.forEach($rootScope.layout.agentRollups, function (agentRollup, name) {
+        var indent = '';
+        for (var i = 0; i < agentRollup.depth; i++) {
+          indent += '\u00a0\u00a0\u00a0\u00a0';
+        }
+        agentRollup.display = indent + name;
+      });
+      if ($rootScope.layout.fat || $rootScope.agentRollup) {
+        var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollup];
+        $rootScope.agentPermissions = agentRollup ? agentRollup.permissions : undefined;
+      } else {
+        $rootScope.agentPermissions = undefined;
+      }
+    };
+
+    $rootScope.setLayout = function (data) {
       $rootScope.layout = data;
+      $rootScope.initLayout();
       if ($rootScope.layout.redirectToLogin) {
         login.goToLogin();
       } else if ($location.path() === '/login' && (data.loggedIn || !data.loginEnabled)) {
         // authentication is not needed
         $location.path('/').replace();
-      } else if ($rootScope.layout.fat || $rootScope.agentRollup) {
-        var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollup];
-        $rootScope.agentPermissions = agentRollup ? agentRollup.permissions : undefined;
-      } else {
-        $rootScope.agentPermissions = undefined;
       }
     };
 

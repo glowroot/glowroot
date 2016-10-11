@@ -51,14 +51,14 @@ public interface TraceRepository {
 
     // null return value means trace not found
     @Nullable
-    HeaderPlus readHeaderPlus(String agentId, String traceId) throws Exception;
+    HeaderPlus readHeaderPlus(String agentRollup, String agentId, String traceId) throws Exception;
 
     // null return value means trace not found or was found but had no entries
     //
     // SharedQueryTexts are returned with either fullTrace or
     // truncatedText/truncatedEndText/fullTraceSha1
     @Nullable
-    Entries readEntries(String agentId, String traceId) throws Exception;
+    Entries readEntries(String agentRollup, String agentId, String traceId) throws Exception;
 
     // null return value means trace not found or was found but had no entries (and therefore also
     // no queries)
@@ -66,15 +66,18 @@ public interface TraceRepository {
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1)
     @Nullable
-    Entries readEntriesForExport(String agentId, String traceId) throws Exception;
+    Entries readEntriesForExport(String agentRollup, String agentId, String traceId)
+            throws Exception;
 
     // null return value means trace not found or was found but had no main thread profile
     @Nullable
-    Profile readMainThreadProfile(String agentId, String traceId) throws Exception;
+    Profile readMainThreadProfile(String agentRollup, String agentId, String traceId)
+            throws Exception;
 
     // null return value means trace not found or was found but had no aux thread profile
     @Nullable
-    Profile readAuxThreadProfile(String agentId, String traceId) throws Exception;
+    Profile readAuxThreadProfile(String agentRollup, String agentId, String traceId)
+            throws Exception;
 
     @Value.Immutable
     interface TraceQuery {

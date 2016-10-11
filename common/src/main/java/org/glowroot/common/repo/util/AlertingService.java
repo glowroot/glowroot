@@ -74,43 +74,39 @@ public class AlertingService {
         this.mailService = mailService;
     }
 
-    public void checkTransactionAlerts(String agentId, final long endTime,
+    public void checkTransactionAlerts(final String agentRollup, final long endTime,
             @Nullable Class<? extends Exception> retryOnceOnException) throws Exception {
         if (configRepository.getSmtpConfig().host().isEmpty()) {
             return;
         }
-        for (final String agentRollup : AgentRollups.getAgentRollups(agentId)) {
-            for (final AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollup)) {
-                if (alertConfig.getKind() != AlertKind.TRANSACTION) {
-                    continue;
-                }
-                retryOnceOnException(new Retryable() {
-                    @Override
-                    public void execute() throws Exception {
-                        checkTransactionAlert(agentRollup, alertConfig, endTime);
-                    }
-                }, retryOnceOnException);
+        for (final AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollup)) {
+            if (alertConfig.getKind() != AlertKind.TRANSACTION) {
+                continue;
             }
+            retryOnceOnException(new Retryable() {
+                @Override
+                public void execute() throws Exception {
+                    checkTransactionAlert(agentRollup, alertConfig, endTime);
+                }
+            }, retryOnceOnException);
         }
     }
 
-    public void checkGaugeAlerts(String agentId, final long endTime,
+    public void checkGaugeAlerts(final String agentRollup, final long endTime,
             @Nullable Class<? extends Exception> retryOnceOnException) throws Exception {
         if (configRepository.getSmtpConfig().host().isEmpty()) {
             return;
         }
-        for (final String agentRollup : AgentRollups.getAgentRollups(agentId)) {
-            for (final AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollup)) {
-                if (alertConfig.getKind() != AlertKind.GAUGE) {
-                    continue;
-                }
-                retryOnceOnException(new Retryable() {
-                    @Override
-                    public void execute() throws Exception {
-                        checkGaugeAlert(agentRollup, alertConfig, endTime);
-                    }
-                }, retryOnceOnException);
+        for (final AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollup)) {
+            if (alertConfig.getKind() != AlertKind.GAUGE) {
+                continue;
             }
+            retryOnceOnException(new Retryable() {
+                @Override
+                public void execute() throws Exception {
+                    checkGaugeAlert(agentRollup, alertConfig, endTime);
+                }
+            }, retryOnceOnException);
         }
     }
 

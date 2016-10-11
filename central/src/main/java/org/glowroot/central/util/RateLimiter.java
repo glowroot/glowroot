@@ -15,8 +15,6 @@
  */
 package org.glowroot.central.util;
 
-import javax.annotation.Nullable;
-
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
@@ -24,16 +22,18 @@ import static java.util.concurrent.TimeUnit.DAYS;
 
 public class RateLimiter<T extends /*@NonNull*/ Object> {
 
+    private static final int NO_MAXIMUM_SIZE = -1;
+
     private final Cache<T, Boolean> acquiredRecently;
 
     public RateLimiter() {
-        this(null);
+        this(NO_MAXIMUM_SIZE);
     }
 
-    public RateLimiter(@Nullable Integer maximumSize) {
+    public RateLimiter(int maximumSize) {
         CacheBuilder<Object, Object> cache = CacheBuilder.newBuilder()
                 .expireAfterWrite(1, DAYS);
-        if (maximumSize != null) {
+        if (maximumSize != NO_MAXIMUM_SIZE) {
             cache.maximumSize(maximumSize);
         }
         acquiredRecently = cache.build();
