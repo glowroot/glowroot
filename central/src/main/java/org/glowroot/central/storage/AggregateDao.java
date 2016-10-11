@@ -367,16 +367,16 @@ public class AggregateDao implements AggregateRepository {
         @SuppressWarnings("assignment.type.incompatible")
         Set<String> transactionTypes = aggregatesByTypeList.stream()
                 .map(OldAggregatesByType::getTransactionType).collect(Collectors.toSet());
-        for (int i = 1; i < rollupConfigs.size(); i++) {
-            long intervalMillis = rollupConfigs.get(i).intervalMillis();
-            long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, intervalMillis);
-            BoundStatement boundStatement = insertNeedsRollup.get(i - 1).bind();
-            boundStatement.setString(0, agentId);
-            boundStatement.setTimestamp(1, new Date(rollupCaptureTime));
-            boundStatement.setUUID(2, UUIDs.timeBased());
-            boundStatement.setSet(3, transactionTypes);
-            futures.add(session.executeAsync(boundStatement));
-        }
+
+        // insert into aggregate_needs_rollup_1
+        long intervalMillis = rollupConfigs.get(1).intervalMillis();
+        long rollupCaptureTime = Utils.getRollupCaptureTime(captureTime, intervalMillis);
+        BoundStatement boundStatement = insertNeedsRollup.get(0).bind();
+        boundStatement.setString(0, agentId);
+        boundStatement.setTimestamp(1, new Date(rollupCaptureTime));
+        boundStatement.setUUID(2, UUIDs.timeBased());
+        boundStatement.setSet(3, transactionTypes);
+        futures.add(session.executeAsync(boundStatement));
         Futures.allAsList(futures).get();
     }
 
