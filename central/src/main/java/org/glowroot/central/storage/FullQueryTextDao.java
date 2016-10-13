@@ -97,15 +97,10 @@ public class FullQueryTextDao {
     }
 
     void updateTTL(String agentRollup, String fullTextSha1, List<ResultSetFuture> futures) {
-        BoundStatement boundStatement = readPS.bind();
-        boundStatement.setString(0, fullTextSha1);
-        ResultSet results = session.execute(boundStatement);
-        Row row = results.one();
-        String fullText = checkNotNull(checkNotNull(row).getString(0));
-        storeInternal(agentRollup, fullText, fullTextSha1, futures);
+        storeInternal(agentRollup, null, fullTextSha1, futures);
     }
 
-    private void storeInternal(String agentRollup, String fullText, String fullTextSha1,
+    private void storeInternal(String agentRollup, @Nullable String fullText, String fullTextSha1,
             List<ResultSetFuture> futures) {
         // not currently rate-limiting inserts into check table
         BoundStatement boundStatement = insertCheckPS.bind();
@@ -117,6 +112,13 @@ public class FullQueryTextDao {
         // rate limit the large query text inserts
         if (!rateLimiter.tryAcquire(fullTextSha1)) {
             return;
+        }
+        if (fullText == null) {
+            boundStatement = readPS.bind();
+            boundStatement.setString(0, fullTextSha1);
+            ResultSet results = session.execute(boundStatement);
+            Row row = results.one();
+            fullText = checkNotNull(checkNotNull(row).getString(0));
         }
         boundStatement = insertPS.bind();
         i = 0;
