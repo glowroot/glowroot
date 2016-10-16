@@ -86,7 +86,9 @@
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.7</jackson.version>
     <logback.version>1.1.7</logback.version>
-    <immutables.version>2.3.3</immutables.version>
+    <!-- cannot upgrade to immutables 2.3.5 due to
+      https://github.com/immutables/immutables/issues/465 -->
+    <immutables.version>2.3.4</immutables.version>
     <javax.mail.version>1.5.6</javax.mail.version>
     <jmh.version>1.15</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
