@@ -22,8 +22,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.central.storage.SchemaUpgrade;
-
 public class SchemaUpgradeIT {
 
     private static Cluster cluster;
@@ -34,8 +32,7 @@ public class SchemaUpgradeIT {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
         session = cluster.newSession();
-        session.execute("create keyspace if not exists glowroot_unit_tests with replication ="
-                + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
+        Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
     }
 

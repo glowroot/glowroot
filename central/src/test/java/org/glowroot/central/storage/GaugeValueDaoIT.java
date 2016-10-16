@@ -42,13 +42,12 @@ public class GaugeValueDaoIT {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
         session = cluster.newSession();
-        session.execute("create keyspace if not exists glowroot_unit_tests with replication ="
-                + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
+        Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
+        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 
         CentralConfigDao centralConfigDao = new CentralConfigDao(session);
         AgentDao agentDao = new AgentDao(session);
-        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
         UserDao userDao = new UserDao(session, keyspace);
         RoleDao roleDao = new RoleDao(session, keyspace);
         ConfigRepository configRepository =

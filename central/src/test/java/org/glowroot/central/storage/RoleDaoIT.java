@@ -16,12 +16,12 @@
 package org.glowroot.central.storage;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Session;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.central.storage.RoleDao;
 import org.glowroot.common.config.ImmutableRoleConfig;
 import org.glowroot.common.config.RoleConfig;
 
@@ -38,11 +38,11 @@ public class RoleDaoIT {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
         session = cluster.newSession();
-        session.execute("create keyspace if not exists glowroot_unit_tests with replication ="
-                + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
+        Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
+        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 
-        roleDao = new RoleDao(session, cluster.getMetadata().getKeyspace("glowroot_unit_tests"));
+        roleDao = new RoleDao(session, keyspace);
     }
 
     @AfterClass

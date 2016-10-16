@@ -69,9 +69,10 @@ public class ConfigRepositoryIT {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
         session = cluster.newSession();
-        session.execute("create keyspace if not exists glowroot_unit_tests with replication ="
-                + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
+        Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
+        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
+
         session.execute("drop table if exists agent");
         session.execute("drop table if exists agent_rollup");
         session.execute("drop table if exists user");
@@ -80,10 +81,8 @@ public class ConfigRepositoryIT {
 
         CentralConfigDao centralConfigDao = new CentralConfigDao(session);
         agentDao = new AgentDao(session);
-        KeyspaceMetadata keyspaceMetadata =
-                cluster.getMetadata().getKeyspace("glowroot_unit_tests");
-        UserDao userDao = new UserDao(session, keyspaceMetadata);
-        RoleDao roleDao = new RoleDao(session, keyspaceMetadata);
+        UserDao userDao = new UserDao(session, keyspace);
+        RoleDao roleDao = new RoleDao(session, keyspace);
         for (UserConfig userConfig : userDao.read()) {
             userDao.delete(userConfig.username());
         }
