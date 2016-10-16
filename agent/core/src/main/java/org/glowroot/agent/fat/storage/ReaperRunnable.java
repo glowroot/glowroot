@@ -52,8 +52,13 @@ class ReaperRunnable extends ScheduledRunnable {
         long currentTime = clock.currentTimeMillis();
         StorageConfig storageConfig = configRepository.getStorageConfig();
         for (int i = 0; i < storageConfig.rollupExpirationHours().size(); i++) {
-            int hours = storageConfig.rollupExpirationHours().get(i);
-            long captureTime = currentTime - HOURS.toMillis(hours);
+            int expirationHours = storageConfig.rollupExpirationHours().get(i);
+            if (expirationHours == 0) {
+                // zero value expiration means never expire
+                minCaptureTime = 0;
+                continue;
+            }
+            long captureTime = currentTime - HOURS.toMillis(expirationHours);
             aggregateDao.deleteBefore(captureTime, i);
             if (i == 0) {
                 gaugeValueDao.deleteBefore(captureTime, i);
@@ -61,15 +66,22 @@ class ReaperRunnable extends ScheduledRunnable {
             gaugeValueDao.deleteBefore(captureTime, i + 1);
             minCaptureTime = Math.min(minCaptureTime, captureTime);
         }
-        gaugeNameDao.deleteBefore(minCaptureTime);
-
-        long traceCaptureTime = currentTime - HOURS.toMillis(storageConfig.traceExpirationHours());
-        traceDao.deleteBefore(traceCaptureTime);
-        minCaptureTime = Math.min(minCaptureTime, traceCaptureTime);
-
-        transactionTypeDao.deleteBefore(minCaptureTime);
-
-        fullQueryTextDao.deleteBefore(
-                currentTime - HOURS.toMillis(storageConfig.fullQueryTextExpirationHours()));
+        if (minCaptureTime != 0) {
+            gaugeNameDao.deleteBefore(minCaptureTime);
+        }
+        int traceExpirationHours = storageConfig.traceExpirationHours();
+        if (traceExpirationHours != 0) {
+            long traceCaptureTime = currentTime - HOURS.toMillis(traceExpirationHours);
+            traceDao.deleteBefore(traceCaptureTime);
+            minCaptureTime = Math.min(minCaptureTime, traceCaptureTime);
+        }
+        if (minCaptureTime != 0) {
+            transactionTypeDao.deleteBefore(minCaptureTime);
+        }
+        int fullQueryTextExpirationHours = storageConfig.fullQueryTextExpirationHours();
+        if (fullQueryTextExpirationHours != 0) {
+            fullQueryTextDao
+                    .deleteBefore(currentTime - HOURS.toMillis(fullQueryTextExpirationHours));
+        }
     }
 }

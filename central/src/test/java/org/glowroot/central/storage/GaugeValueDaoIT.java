@@ -52,6 +52,12 @@ public class GaugeValueDaoIT {
         RoleDao roleDao = new RoleDao(session, keyspace);
         ConfigRepository configRepository =
                 new ConfigRepositoryImpl(centralConfigDao, agentDao, userDao, roleDao);
+        CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
+        configRepository.updateCentralStorageConfig(
+                ImmutableCentralStorageConfig
+                        .copyOf(storageConfig)
+                        .withRollupExpirationHours(0, 0, 0, 0),
+                storageConfig.version());
         agentDao.setConfigRepository(configRepository);
         centralConfigDao.setConfigRepository(configRepository);
         gaugeValueDao = new GaugeValueDao(session, configRepository);

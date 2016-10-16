@@ -41,8 +41,9 @@ public class RollupLevelService {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         for (int i = 0; i < rollupConfigs.size() - 1; i++) {
             RollupConfig nextRollupConfig = rollupConfigs.get(i + 1);
+            int expirationHours = rollupExpirationHours.get(i);
             if (millis < nextRollupConfig.viewThresholdMillis()
-                    && HOURS.toMillis(rollupExpirationHours.get(i)) > timeAgoMillis) {
+                    && (expirationHours == 0 || HOURS.toMillis(expirationHours) > timeAgoMillis)) {
                 return i;
             }
         }
@@ -58,14 +59,16 @@ public class RollupLevelService {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         // gauge point rollup level 0 shares rollup level 1's expiration
         long viewThresholdMillis = rollupConfigs.get(0).viewThresholdMillis();
+        int expirationHours = rollupExpirationHours.get(0);
         if (millis < viewThresholdMillis * ConfigRepository.GAUGE_VIEW_THRESHOLD_MULTIPLIER
-                && HOURS.toMillis(rollupExpirationHours.get(0)) > timeAgoMillis) {
+                && (expirationHours == 0 || HOURS.toMillis(expirationHours) > timeAgoMillis)) {
             return 0;
         }
         for (int i = 0; i < rollupConfigs.size() - 1; i++) {
             viewThresholdMillis = rollupConfigs.get(i + 1).viewThresholdMillis();
+            expirationHours = rollupExpirationHours.get(i);
             if (millis < viewThresholdMillis * ConfigRepository.GAUGE_VIEW_THRESHOLD_MULTIPLIER
-                    && HOURS.toMillis(rollupExpirationHours.get(i)) > timeAgoMillis) {
+                    && (expirationHours == 0 || HOURS.toMillis(expirationHours) > timeAgoMillis)) {
                 return i + 1;
             }
         }
@@ -82,8 +85,9 @@ public class RollupLevelService {
         for (int i = 0; i < rollupConfigs.size() - 1; i++) {
             RollupConfig currRollupConfig = rollupConfigs.get(i);
             RollupConfig nextRollupConfig = rollupConfigs.get(i + 1);
+            int expirationHours = rollupExpirationHours.get(i);
             if (millis < nextRollupConfig.viewThresholdMillis()
-                    && HOURS.toMillis(rollupExpirationHours.get(i)) > timeAgoMillis) {
+                    && (expirationHours == 0 || HOURS.toMillis(expirationHours) > timeAgoMillis)) {
                 return currRollupConfig.intervalMillis();
             }
         }

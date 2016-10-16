@@ -176,8 +176,9 @@ class TracePointJsonService {
                     getStoredAndPendingPoints(captureTime, captureActiveTracePoints);
             List<TracePoint> points = Lists.newArrayList(queryResult.records());
             removeDuplicatesBetweenActiveAndNormalTracePoints(activeTracePoints, points);
-            boolean expired = points.isEmpty() && query.to() < clock.currentTimeMillis()
-                    - HOURS.toMillis(configRepository.getStorageConfig().traceExpirationHours());
+            int traceExpirationHours = configRepository.getStorageConfig().traceExpirationHours();
+            boolean expired = points.isEmpty() && traceExpirationHours != 0 && query
+                    .to() < clock.currentTimeMillis() - HOURS.toMillis(traceExpirationHours);
             List<String> traceAttributeNames =
                     traceRepository.readTraceAttributeNames(agentRollup, query.transactionType());
             return writeResponse(points, activeTracePoints, queryResult.moreAvailable(), expired,

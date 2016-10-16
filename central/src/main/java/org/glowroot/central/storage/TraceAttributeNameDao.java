@@ -94,6 +94,10 @@ class TraceAttributeNameDao {
     private int getMaxTTL() {
         long maxTTL = 0;
         for (long expirationHours : configRepository.getStorageConfig().rollupExpirationHours()) {
+            if (expirationHours == 0) {
+                // zero value expiration/TTL means never expire
+                return 0;
+            }
             maxTTL = Math.max(maxTTL, HOURS.toSeconds(expirationHours));
         }
         return Ints.saturatedCast(maxTTL);

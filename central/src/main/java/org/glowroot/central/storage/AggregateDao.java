@@ -1539,6 +1539,9 @@ public class AggregateDao implements AggregateRepository {
     }
 
     static int getAdjustedTTL(int ttl, long captureTime) {
+        if (ttl == 0) {
+            return 0;
+        }
         int captureTimeAgoSeconds = Ints
                 .saturatedCast(MILLISECONDS.toSeconds(System.currentTimeMillis() - captureTime));
         // max is just a safety guard (primarily used for unit tests)

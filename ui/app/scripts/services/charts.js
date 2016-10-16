@@ -196,7 +196,8 @@ glowroot.factory('charts', [
         if (useGaugeViewThresholdMultiplier) {
           viewThresholdMillis *= 4;
         }
-        if (millis < viewThresholdMillis && $rootScope.layout.rollupExpirationMillis[i] > timeAgoMillis) {
+        var expirationMillis = $rootScope.layout.rollupExpirationMillis[i];
+        if (millis < viewThresholdMillis && (expirationMillis === 0 || expirationMillis > timeAgoMillis)) {
           return currRollupConfig.intervalMillis;
         }
       }
