@@ -28,7 +28,10 @@
             {{agentRollup || '&lt;agent&gt;'}}
             <span class="gt-large-caret"></span>
           </a>
-          <ul class="dropdown-menu" role="menu">
+          <!-- margin-bottom helps when large menu that extends to the bottom of the page -->
+          <ul class="dropdown-menu"
+              role="menu"
+              style="margin-bottom: 100px;">
             <li ng-repeat="(rollup, value) in layout.agentRollups">
               <a role="menuitem"
                  tabindex="-1"
