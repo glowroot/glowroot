@@ -24,6 +24,9 @@ glowroot.controller('AdminSmtpCtrl', [
   'httpErrors',
   function ($scope, $http, modals, confirmIfHasChanges, httpErrors) {
 
+    // initialize page binding object
+    $scope.page = {};
+
     $scope.hasChanges = function () {
       return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
     };
@@ -59,7 +62,7 @@ glowroot.controller('AdminSmtpCtrl', [
 
     $scope.sendTestEmail = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.testEmailRecipient = $scope.testEmailRecipient;
+      postData.testEmailRecipient = $scope.page.testEmailRecipient;
       $http.post('backend/admin/send-test-email', postData)
           .success(function (data) {
             if (data.error) {
