@@ -121,6 +121,12 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
                         Type.getType(owner).getClassName());
                 return;
             }
+            String traceHeadline = transactionAnnotationVisitor.traceHeadline;
+            if (traceHeadline == null) {
+                // supporting user code compiled against glowroot-agent-api before traceHeadline was
+                // added
+                traceHeadline = transactionNameTemplate;
+            }
             String timerName = transactionAnnotationVisitor.timerName;
             if (timerName == null) {
                 logger.error("@Instrument.Transaction had no timerName attribute: {}",
@@ -131,6 +137,7 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
                     .captureKind(CaptureKind.TRANSACTION)
                     .transactionType(transactionType)
                     .transactionNameTemplate(transactionNameTemplate)
+                    .traceEntryMessageTemplate(traceHeadline)
                     .timerName(timerName)
                     .build());
         }
@@ -195,6 +202,7 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
 
         private @Nullable String transactionType;
         private @Nullable String transactionNameTemplate;
+        private @Nullable String traceHeadline;
         private @Nullable String timerName;
 
         private TransactionAnnotationVisitor() {
@@ -213,6 +221,8 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
             } else if (name.equals("transactionNameTemplate")) {
                 // supporting deprecated transactionNameTemplate
                 transactionNameTemplate = (String) value;
+            } else if (name.equals("traceHeadline")) {
+                traceHeadline = (String) value;
             } else if (name.equals("timerName")) {
                 timerName = (String) value;
             }

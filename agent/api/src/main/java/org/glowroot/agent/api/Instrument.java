@@ -31,6 +31,7 @@ public class Instrument {
     public @interface Transaction {
         String transactionType();
         String transactionName(); // template
+        String traceHeadline(); // template
         String timerName();
     }
 }

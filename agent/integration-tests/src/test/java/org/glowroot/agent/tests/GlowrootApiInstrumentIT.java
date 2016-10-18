@@ -94,7 +94,7 @@ public class GlowrootApiInstrumentIT {
         }
 
         @Instrument.Transaction(transactionType = "abc type", transactionName = "xyz {{0}}",
-                timerName = "mmm")
+                traceHeadline = "abc xyz {{0}}", timerName = "mmm")
         public void captureTransaction(@SuppressWarnings("unused") String str) {}
     }
 
