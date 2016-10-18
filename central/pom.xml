@@ -31,6 +31,12 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <!-- this is used to instrument central itself -->
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-netty</artifactId>
     </dependency>

@@ -38,6 +38,7 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.Futures;
 
+import org.glowroot.agent.api.Instrument;
 import org.glowroot.central.storage.AggregateDao.NeedsRollup;
 import org.glowroot.central.storage.AggregateDao.NeedsRollupFromChildren;
 import org.glowroot.common.repo.ConfigRepository;
@@ -218,6 +219,8 @@ public class GaugeValueDao implements GaugeValueRepository {
     //
     // child agent rollups should be processed before their parent agent rollup, since initial
     // parent rollup depends on the 1-minute child rollup
+    @Instrument.Transaction(transactionType = "Rollup", transactionName = "Gauge rollup",
+            traceHeadline = "Gauge rollup: {{0}}", timerName = "gauge rollup")
     public void rollup(String agentRollup, @Nullable String parentAgentRollup, boolean leaf)
             throws Exception {
         List<Integer> ttls = getTTLs();

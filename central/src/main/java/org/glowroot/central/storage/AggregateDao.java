@@ -52,6 +52,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.immutables.value.Value;
 
+import org.glowroot.agent.api.Instrument;
 import org.glowroot.central.util.Messages;
 import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.config.StorageConfig;
@@ -737,6 +738,8 @@ public class AggregateDao implements AggregateRepository {
         session.execute("truncate aggregate_needs_rollup_from_child");
     }
 
+    @Instrument.Transaction(transactionType = "Rollup", transactionName = "Aggregate rollup",
+            traceHeadline = "Aggregate rollup: {{0}}", timerName = "aggregate rollup")
     public void rollup(String agentRollup, @Nullable String parentAgentRollup, boolean leaf)
             throws Exception {
         List<Integer> ttls = getTTLs();
