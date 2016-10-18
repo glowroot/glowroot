@@ -93,7 +93,7 @@ public class GlowrootApiInstrumentIT {
             captureTransaction("zyx");
         }
 
-        @Instrument.Transaction(transactionType = "abc type", transactionNameTemplate = "xyz {{0}}",
+        @Instrument.Transaction(transactionType = "abc type", transactionName = "xyz {{0}}",
                 timerName = "mmm")
         public void captureTransaction(@SuppressWarnings("unused") String str) {}
     }
@@ -110,7 +110,7 @@ public class GlowrootApiInstrumentIT {
             captureTraceEntry("zyx");
         }
 
-        @Instrument.TraceEntry(messageTemplate = "xyz {{0}} => {{_}}", timerName = "ooo")
+        @Instrument.TraceEntry(message = "xyz {{0}} => {{_}}", timerName = "ooo")
         public String captureTraceEntry(String str) {
             return str + "0";
         }
