@@ -227,10 +227,11 @@ public class GaugeValueDao implements GaugeValueRepository {
             for (Entry<GaugeValue, Long> entry : gaugeValueIdMap.entrySet()) {
                 GaugeValue gaugeValue = entry.getKey();
                 long gaugeId = entry.getValue();
-                preparedStatement.setLong(1, gaugeId);
-                preparedStatement.setLong(2, gaugeValue.getCaptureTime());
-                preparedStatement.setDouble(3, gaugeValue.getValue());
-                preparedStatement.setLong(4, gaugeValue.getWeight());
+                int i = 1;
+                preparedStatement.setLong(i++, gaugeId);
+                preparedStatement.setLong(i++, gaugeValue.getCaptureTime());
+                preparedStatement.setDouble(i++, gaugeValue.getValue());
+                preparedStatement.setLong(i++, gaugeValue.getWeight());
                 preparedStatement.addBatch();
             }
         }
@@ -294,9 +295,10 @@ public class GaugeValueDao implements GaugeValueRepository {
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws SQLException {
-            preparedStatement.setLong(1, gaugeId);
-            preparedStatement.setLong(2, from);
-            preparedStatement.setLong(3, to);
+            int i = 1;
+            preparedStatement.setLong(i++, gaugeId);
+            preparedStatement.setLong(i++, from);
+            preparedStatement.setLong(i++, to);
         }
 
         @Override

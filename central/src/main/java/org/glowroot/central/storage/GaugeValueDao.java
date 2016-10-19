@@ -176,10 +176,11 @@ public class GaugeValueDao implements GaugeValueRepository {
         SetMultimap<Long, String> rollupCaptureTimes = getRollupCaptureTimes(gaugeValues);
         for (Entry<Long, Set<String>> entry : Multimaps.asMap(rollupCaptureTimes).entrySet()) {
             BoundStatement boundStatement = insertNeedsRollup.get(0).bind();
-            boundStatement.setString(0, agentId);
-            boundStatement.setTimestamp(1, new Date(entry.getKey()));
-            boundStatement.setUUID(2, UUIDs.timeBased());
-            boundStatement.setSet(3, entry.getValue());
+            int i = 0;
+            boundStatement.setString(i++, agentId);
+            boundStatement.setTimestamp(i++, new Date(entry.getKey()));
+            boundStatement.setUUID(i++, UUIDs.timeBased());
+            boundStatement.setSet(i++, entry.getValue());
             futures.add(session.executeAsync(boundStatement));
         }
         Futures.allAsList(futures).get();
@@ -199,10 +200,11 @@ public class GaugeValueDao implements GaugeValueRepository {
     public List<GaugeValue> readGaugeValues(String agentRollup, String gaugeName,
             long captureTimeFrom, long captureTimeTo, int rollupLevel) {
         BoundStatement boundStatement = readValuePS.get(rollupLevel).bind();
-        boundStatement.setString(0, agentRollup);
-        boundStatement.setString(1, gaugeName);
-        boundStatement.setTimestamp(2, new Date(captureTimeFrom));
-        boundStatement.setTimestamp(3, new Date(captureTimeTo));
+        int i = 0;
+        boundStatement.setString(i++, agentRollup);
+        boundStatement.setString(i++, gaugeName);
+        boundStatement.setTimestamp(i++, new Date(captureTimeFrom));
+        boundStatement.setTimestamp(i++, new Date(captureTimeTo));
         ResultSet results = session.execute(boundStatement);
         List<GaugeValue> gaugeValues = Lists.newArrayList();
         for (Row row : results) {

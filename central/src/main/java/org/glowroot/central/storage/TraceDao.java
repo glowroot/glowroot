@@ -716,19 +716,21 @@ public class TraceDao implements TraceRepository {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             BoundStatement boundStatement = readOverallSlowPoint.bind();
-            boundStatement.setString(0, agentRollup);
-            boundStatement.setString(1, query.transactionType());
-            boundStatement.setTimestamp(2, new Date(query.from()));
-            boundStatement.setTimestamp(3, new Date(query.to()));
+            int i = 0;
+            boundStatement.setString(i++, agentRollup);
+            boundStatement.setString(i++, query.transactionType());
+            boundStatement.setTimestamp(i++, new Date(query.from()));
+            boundStatement.setTimestamp(i++, new Date(query.to()));
             ResultSet results = session.execute(boundStatement);
             return processPoints(results, filter, limit, false);
         } else {
             BoundStatement boundStatement = readTransactionSlowPoint.bind();
-            boundStatement.setString(0, agentRollup);
-            boundStatement.setString(1, query.transactionType());
-            boundStatement.setString(2, transactionName);
-            boundStatement.setTimestamp(3, new Date(query.from()));
-            boundStatement.setTimestamp(4, new Date(query.to()));
+            int i = 0;
+            boundStatement.setString(i++, agentRollup);
+            boundStatement.setString(i++, query.transactionType());
+            boundStatement.setString(i++, transactionName);
+            boundStatement.setTimestamp(i++, new Date(query.from()));
+            boundStatement.setTimestamp(i++, new Date(query.to()));
             ResultSet results = session.execute(boundStatement);
             return processPoints(results, filter, limit, false);
         }
@@ -740,19 +742,21 @@ public class TraceDao implements TraceRepository {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             BoundStatement boundStatement = readOverallErrorPoint.bind();
-            boundStatement.setString(0, agentRollup);
-            boundStatement.setString(1, query.transactionType());
-            boundStatement.setTimestamp(2, new Date(query.from()));
-            boundStatement.setTimestamp(3, new Date(query.to()));
+            int i = 0;
+            boundStatement.setString(i++, agentRollup);
+            boundStatement.setString(i++, query.transactionType());
+            boundStatement.setTimestamp(i++, new Date(query.from()));
+            boundStatement.setTimestamp(i++, new Date(query.to()));
             ResultSet results = session.execute(boundStatement);
             return processPoints(results, filter, limit, true);
         } else {
             BoundStatement boundStatement = readTransactionErrorPoint.bind();
-            boundStatement.setString(0, agentRollup);
-            boundStatement.setString(1, query.transactionType());
-            boundStatement.setString(2, transactionName);
-            boundStatement.setTimestamp(3, new Date(query.from()));
-            boundStatement.setTimestamp(4, new Date(query.to()));
+            int i = 0;
+            boundStatement.setString(i++, agentRollup);
+            boundStatement.setString(i++, query.transactionType());
+            boundStatement.setString(i++, transactionName);
+            boundStatement.setTimestamp(i++, new Date(query.from()));
+            boundStatement.setTimestamp(i++, new Date(query.to()));
             ResultSet results = session.execute(boundStatement);
             return processPoints(results, filter, limit, true);
         }
@@ -807,17 +811,19 @@ public class TraceDao implements TraceRepository {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             boundStatement = readOverallErrorMessage.bind();
-            boundStatement.setString(0, agentRollup);
-            boundStatement.setString(1, query.transactionType());
-            boundStatement.setTimestamp(2, new Date(query.from()));
-            boundStatement.setTimestamp(3, new Date(query.to()));
+            int i = 0;
+            boundStatement.setString(i++, agentRollup);
+            boundStatement.setString(i++, query.transactionType());
+            boundStatement.setTimestamp(i++, new Date(query.from()));
+            boundStatement.setTimestamp(i++, new Date(query.to()));
         } else {
             boundStatement = readTransactionErrorMessage.bind();
-            boundStatement.setString(0, agentRollup);
-            boundStatement.setString(1, query.transactionType());
-            boundStatement.setString(2, transactionName);
-            boundStatement.setTimestamp(3, new Date(query.from()));
-            boundStatement.setTimestamp(4, new Date(query.to()));
+            int i = 0;
+            boundStatement.setString(i++, agentRollup);
+            boundStatement.setString(i++, query.transactionType());
+            boundStatement.setString(i++, transactionName);
+            boundStatement.setTimestamp(i++, new Date(query.from()));
+            boundStatement.setTimestamp(i++, new Date(query.to()));
         }
         ResultSet results = session.execute(boundStatement);
         // rows are already in order by captureTime, so saving sort step by using linked hash map

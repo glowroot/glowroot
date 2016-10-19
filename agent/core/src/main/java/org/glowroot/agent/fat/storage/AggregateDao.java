@@ -618,9 +618,10 @@ public class AggregateDao implements AggregateRepository {
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws Exception {
-            preparedStatement.setString(1, query.transactionType());
-            preparedStatement.setLong(2, query.from());
-            preparedStatement.setLong(3, query.to());
+            int i = 1;
+            preparedStatement.setString(i++, query.transactionType());
+            preparedStatement.setLong(i++, query.from());
+            preparedStatement.setLong(i++, query.to());
         }
 
         @Override
@@ -675,11 +676,12 @@ public class AggregateDao implements AggregateRepository {
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws SQLException {
-            preparedStatement.setString(1, query.transactionType());
-            preparedStatement.setLong(2, query.from());
-            preparedStatement.setLong(3, query.to());
+            int i = 1;
+            preparedStatement.setString(i++, query.transactionType());
+            preparedStatement.setLong(i++, query.from());
+            preparedStatement.setLong(i++, query.to());
             // limit + 100 since this result still needs to be merged with other results
-            preparedStatement.setInt(4, limit + 100);
+            preparedStatement.setInt(i++, limit + 100);
         }
 
         @Override
@@ -734,9 +736,10 @@ public class AggregateDao implements AggregateRepository {
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws Exception {
-            preparedStatement.setString(1, query.transactionType());
-            preparedStatement.setLong(2, query.from());
-            preparedStatement.setLong(3, query.to());
+            int i = 1;
+            preparedStatement.setString(i++, query.transactionType());
+            preparedStatement.setLong(i++, query.from());
+            preparedStatement.setLong(i++, query.to());
         }
 
         @Override
@@ -791,11 +794,12 @@ public class AggregateDao implements AggregateRepository {
 
         @Override
         public void bind(PreparedStatement preparedStatement) throws SQLException {
-            preparedStatement.setString(1, query.transactionType());
-            preparedStatement.setLong(2, query.from());
-            preparedStatement.setLong(3, query.to());
+            int i = 1;
+            preparedStatement.setString(i++, query.transactionType());
+            preparedStatement.setLong(i++, query.from());
+            preparedStatement.setLong(i++, query.to());
             // limit + 100 since this result still needs to be merged with other results
-            preparedStatement.setInt(4, limit + 100);
+            preparedStatement.setInt(i++, limit + 100);
         }
 
         @Override

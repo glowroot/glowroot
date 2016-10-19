@@ -480,10 +480,11 @@ public class TraceDao implements TraceRepository {
             Trace.Header header = trace.getHeader();
             for (Trace.Attribute attribute : header.getAttributeList()) {
                 for (String value : attribute.getValueList()) {
-                    preparedStatement.setString(1, trace.getId());
-                    preparedStatement.setString(2, attribute.getName());
-                    preparedStatement.setString(3, value);
-                    preparedStatement.setLong(4, header.getCaptureTime());
+                    int i = 1;
+                    preparedStatement.setString(i++, trace.getId());
+                    preparedStatement.setString(i++, attribute.getName());
+                    preparedStatement.setString(i++, value);
+                    preparedStatement.setLong(i++, header.getCaptureTime());
                     preparedStatement.addBatch();
                 }
             }
