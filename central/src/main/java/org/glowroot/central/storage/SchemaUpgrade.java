@@ -29,8 +29,9 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
-import com.datastax.driver.core.exceptions.InvalidQueryException;
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
@@ -41,10 +42,14 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.config.PermissionParser;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SchemaUpgrade {
 
     private static final Logger logger = LoggerFactory.getLogger(SchemaUpgrade.class);
+
+    // log startup messages using logger name "org.glowroot"
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     private static final int CURR_SCHEMA_VERSION = 9;
 
@@ -52,12 +57,14 @@ public class SchemaUpgrade {
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
     private final Session session;
+    private final KeyspaceMetadata keyspace;
 
     private final PreparedStatement insertPS;
     private final @Nullable Integer initialSchemaVersion;
 
     public SchemaUpgrade(Session session, KeyspaceMetadata keyspace) {
         this.session = session;
+        this.keyspace = keyspace;
 
         session.execute("create table if not exists schema_version (one int, schema_version int,"
                 + " primary key (one)) " + WITH_LCS);
@@ -70,8 +77,12 @@ public class SchemaUpgrade {
         return initialSchemaVersion;
     }
 
-    public void upgrade() {
+    public void upgrade() throws InterruptedException {
         checkNotNull(initialSchemaVersion);
+        if (initialSchemaVersion == CURR_SCHEMA_VERSION) {
+            return;
+        }
+        startupLogger.info("upgrading schema version from {}...", initialSchemaVersion);
         // 0.9.1 to 0.9.2
         if (initialSchemaVersion < 2) {
             renameAgentColumnFromSystemInfoToEnvironment();
@@ -105,6 +116,7 @@ public class SchemaUpgrade {
             updateSchemaVersion(9);
         }
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
+        startupLogger.info("upgraded schema version to {}", CURR_SCHEMA_VERSION);
     }
 
     public void updateSchemaVersionToCurent() {
@@ -119,20 +131,14 @@ public class SchemaUpgrade {
     }
 
     private void renameAgentColumnFromSystemInfoToEnvironment() {
-        ResultSet results;
-        try {
-            results = session.execute("select agent_id, system_info from agent");
-        } catch (InvalidQueryException e) {
-            // system_info column does not exist, rename already completed
-            logger.debug(e.getMessage(), e);
+        if (!columnExists("agent", "system_info")) {
+            // previously failed mid-upgrade prior to updating schema version
             return;
         }
-        try {
+        if (!columnExists("agent", "environment")) {
             session.execute("alter table agent add environment blob");
-        } catch (InvalidQueryException e) {
-            // previously failed mid-upgrade
-            logger.debug(e.getMessage(), e);
         }
+        ResultSet results = session.execute("select agent_id, system_info from agent");
         PreparedStatement preparedStatement =
                 session.prepare("insert into agent (agent_id, environment) values (?, ?)");
         for (Row row : results) {
@@ -163,15 +169,11 @@ public class SchemaUpgrade {
     }
 
     private void addConfigUpdateColumns() {
-        try {
+        if (!columnExists("agent", "config_update")) {
             session.execute("alter table agent add config_update boolean");
-        } catch (InvalidQueryException e) {
-            logger.debug(e.getMessage(), e);
         }
-        try {
+        if (!columnExists("agent", "config_update_token")) {
             session.execute("alter table agent add config_update_token uuid");
-        } catch (InvalidQueryException e) {
-            logger.debug(e.getMessage(), e);
         }
     }
 
@@ -192,30 +194,24 @@ public class SchemaUpgrade {
     }
 
     private void addTraceEntryColumns() {
-        try {
+        if (!columnExists("trace_entry", "shared_query_text_index")) {
             session.execute("alter table trace_entry add shared_query_text_index int");
-        } catch (InvalidQueryException e) {
-            logger.debug(e.getMessage(), e);
         }
-        try {
+        if (!columnExists("trace_entry", "query_message_prefix")) {
             session.execute("alter table trace_entry add query_message_prefix varchar");
-        } catch (InvalidQueryException e) {
-            logger.debug(e.getMessage(), e);
         }
-        try {
+        if (!columnExists("trace_entry", "query_message_suffix")) {
             session.execute("alter table trace_entry add query_message_suffix varchar");
-        } catch (InvalidQueryException e) {
-            logger.debug(e.getMessage(), e);
         }
     }
 
-    private void renameServerConfigTable() {
-        try {
-            session.execute("create table if not exists central_config (key varchar, value varchar,"
-                    + " primary key (key)) " + WITH_LCS);
-        } catch (InvalidQueryException e) {
-            logger.debug(e.getMessage(), e);
+    private void renameServerConfigTable() throws InterruptedException {
+        if (!tableExists("server_config")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
         }
+        session.execute("create table if not exists central_config (key varchar, value varchar,"
+                + " primary key (key)) " + WITH_LCS);
         ResultSet results = session.execute("select key, value from server_config");
         PreparedStatement insertPS =
                 session.prepare("insert into central_config (key, value) values (?, ?)");
@@ -225,20 +221,16 @@ public class SchemaUpgrade {
             boundStatement.setString(1, row.getString(1));
             session.execute(boundStatement);
         }
-        try {
-            session.execute("drop table server_config");
-        } catch (InvalidQueryException e) {
-            logger.debug(e.getMessage(), e);
-        }
+        dropTable("server_config");
     }
 
-    private void addAgentOneTable() {
-        try {
-            session.execute("create table if not exists agent_one (one int, agent_id varchar,"
-                    + " agent_rollup varchar, primary key (one, agent_id)) " + WITH_LCS);
-        } catch (InvalidQueryException e) {
-            logger.debug(e.getMessage(), e);
+    private void addAgentOneTable() throws InterruptedException {
+        if (!tableExists("agent_rollup")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
         }
+        session.execute("create table if not exists agent_one (one int, agent_id varchar,"
+                + " agent_rollup varchar, primary key (one, agent_id)) " + WITH_LCS);
         ResultSet results = session.execute("select agent_rollup from agent_rollup");
         PreparedStatement insertPS =
                 session.prepare("insert into agent_one (one, agent_id) values (1, ?)");
@@ -247,19 +239,38 @@ public class SchemaUpgrade {
             boundStatement.setString(0, row.getString(0));
             session.execute(boundStatement);
         }
-        try {
-            session.execute("drop table agent_rollup");
-        } catch (InvalidQueryException e) {
-            logger.debug(e.getMessage(), e);
-        }
+        dropTable("agent_rollup");
     }
 
     private void addAgentRollupColumn() {
-        try {
+        if (!columnExists("agent", "agent_rollup")) {
             session.execute("alter table agent add agent_rollup varchar");
-        } catch (InvalidQueryException e) {
-            logger.debug(e.getMessage(), e);
         }
+    }
+
+    private boolean tableExists(String tableName) {
+        return keyspace.getTable(tableName) != null;
+    }
+
+    private boolean columnExists(String tableName, String columnName) {
+        return keyspace.getTable(tableName).getColumn(columnName) != null;
+    }
+
+    // drop table can timeout, throwing NoHostAvailableException
+    // (see https://github.com/glowroot/glowroot/issues/125)
+    private void dropTable(String tableName) throws InterruptedException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (stopwatch.elapsed(SECONDS) < 30) {
+            try {
+                session.execute("drop table if exists " + tableName);
+                return;
+            } catch (NoHostAvailableException e) {
+                logger.debug(e.getMessage(), e);
+            }
+            Thread.sleep(1000);
+        }
+        // try one last time and let exception bubble up
+        session.execute("drop table if exists " + tableName);
     }
 
     @VisibleForTesting
