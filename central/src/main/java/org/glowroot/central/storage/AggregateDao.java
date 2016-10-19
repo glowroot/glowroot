@@ -2018,33 +2018,6 @@ public class AggregateDao implements AggregateRepository {
         Futures.allAsList(futures).get();
     }
 
-    static void postRollupFromChildren(String agentRollup, NeedsRollupFromChildren needsRollup,
-            long nextRollupIntervalMillis, PreparedStatement insertNeedsRollup,
-            PreparedStatement deleteNeedsRollupFromChild, Session session) throws Exception {
-
-        long rollupCaptureTime = Utils.getRollupCaptureTime(needsRollup.getCaptureTime(),
-                nextRollupIntervalMillis);
-        BoundStatement boundStatement = insertNeedsRollup.bind();
-        int i = 0;
-        boundStatement.setString(i++, agentRollup);
-        boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
-        boundStatement.setUUID(i++, UUIDs.timeBased());
-        boundStatement.setSet(i++, needsRollup.getKeys().keySet());
-        // intentionally not async, see method-level comment
-        session.execute(boundStatement);
-
-        List<ResultSetFuture> futures = Lists.newArrayList();
-        for (UUID uniqueness : needsRollup.getUniquenessKeysForDeletion()) {
-            boundStatement = deleteNeedsRollupFromChild.bind();
-            i = 0;
-            boundStatement.setString(i++, agentRollup);
-            boundStatement.setTimestamp(i++, new Date(needsRollup.getCaptureTime()));
-            boundStatement.setUUID(i++, uniqueness);
-            futures.add(session.executeAsync(boundStatement));
-        }
-        Futures.allAsList(futures).get();
-    }
-
     private static void bindQuery(BoundStatement boundStatement, String agentRollup,
             OverallQuery query) {
         int i = 0;
