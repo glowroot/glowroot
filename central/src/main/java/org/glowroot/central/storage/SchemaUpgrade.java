@@ -51,7 +51,7 @@ public class SchemaUpgrade {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private static final int CURR_SCHEMA_VERSION = 9;
+    private static final int CURR_SCHEMA_VERSION = 10;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -114,6 +114,10 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 9) {
             addAgentRollupColumn();
             updateSchemaVersion(9);
+        }
+        if (initialSchemaVersion < 10) {
+            updateGcSeconds();
+            updateSchemaVersion(10);
         }
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
         startupLogger.info("upgraded schema version to {}", CURR_SCHEMA_VERSION);
@@ -246,6 +250,26 @@ public class SchemaUpgrade {
         if (!columnExists("agent", "agent_rollup")) {
             session.execute("alter table agent add agent_rollup varchar");
         }
+    }
+
+    private void updateGcSeconds() {
+        // reduce from default 10 days to 2 hours
+        // since gauge rollup is idempotent
+        if (tableExists("aggregate_needs_rollup_from_child")) {
+            session.execute(
+                    "alter table aggregate_needs_rollup_from_child with gc_grace_seconds = 7200");
+        }
+        session.execute("alter table aggregate_needs_rollup_1 with gc_grace_seconds = 7200");
+        session.execute("alter table aggregate_needs_rollup_2 with gc_grace_seconds = 7200");
+        session.execute("alter table aggregate_needs_rollup_3 with gc_grace_seconds = 7200");
+        if (tableExists("gauge_needs_rollup_from_child")) {
+            session.execute(
+                    "alter table gauge_needs_rollup_from_child with gc_grace_seconds = 7200");
+        }
+        session.execute("alter table gauge_needs_rollup_1 with gc_grace_seconds = 7200");
+        session.execute("alter table gauge_needs_rollup_2 with gc_grace_seconds = 7200");
+        session.execute("alter table gauge_needs_rollup_3 with gc_grace_seconds = 7200");
+        session.execute("alter table gauge_needs_rollup_4 with gc_grace_seconds = 7200");
     }
 
     private boolean tableExists(String tableName) {
