@@ -32,6 +32,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.api.Instrument;
 import org.glowroot.central.storage.AgentDao;
 import org.glowroot.central.storage.AggregateDao;
 import org.glowroot.central.storage.GaugeValueDao;
@@ -117,6 +118,8 @@ class GrpcServer {
 
     private class CollectorServiceImpl extends CollectorServiceImplBase {
 
+        @Instrument.Transaction(transactionType = "gRPC", transactionName = "Init",
+                traceHeadline = "Collect init: {{0.agentId}}", timerName = "init")
         @Override
         public void collectInit(InitMessage request,
                 StreamObserver<InitResponse> responseObserver) {
@@ -196,6 +199,9 @@ class GrpcServer {
                     }
                 }
 
+                @Instrument.Transaction(transactionType = "gRPC", transactionName = "Aggregates",
+                        traceHeadline = "Collect aggregates: {{this.header.agentId}}",
+                        timerName = "aggregates")
                 @Override
                 public void onCompleted() {
                     checkNotNull(header);
@@ -210,6 +216,8 @@ class GrpcServer {
             };
         }
 
+        @Instrument.Transaction(transactionType = "gRPC", transactionName = "Aggregates",
+                traceHeadline = "Collect aggregates: {{0.agentId}}", timerName = "aggregates")
         @Override
         public void collectAggregates(OldAggregateMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
@@ -256,6 +264,8 @@ class GrpcServer {
             responseObserver.onCompleted();
         }
 
+        @Instrument.Transaction(transactionType = "gRPC", transactionName = "Gauges",
+                traceHeadline = "Collect gauge values: {{0.agentId}}", timerName = "gauges")
         @Override
         public void collectGaugeValues(GaugeValueMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
@@ -317,6 +327,9 @@ class GrpcServer {
                     }
                 }
 
+                @Instrument.Transaction(transactionType = "gRPC", transactionName = "Trace",
+                        traceHeadline = "Collect trace: {{this.header.agentId}}",
+                        timerName = "trace")
                 @Override
                 public void onCompleted() {
                     checkNotNull(header);
@@ -336,6 +349,8 @@ class GrpcServer {
             };
         }
 
+        @Instrument.Transaction(transactionType = "gRPC", transactionName = "Trace",
+                traceHeadline = "Collect trace: {{0.agentId}}", timerName = "trace")
         @Override
         public void collectTrace(OldTraceMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
@@ -350,6 +365,8 @@ class GrpcServer {
             responseObserver.onCompleted();
         }
 
+        @Instrument.Transaction(transactionType = "gRPC", transactionName = "Log",
+                traceHeadline = "Log: {{0.agentId}}", timerName = "log")
         @Override
         public void log(LogMessage request, StreamObserver<EmptyMessage> responseObserver) {
             try {

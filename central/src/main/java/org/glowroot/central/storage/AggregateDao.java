@@ -750,8 +750,8 @@ public class AggregateDao implements AggregateRepository {
         session.execute("truncate aggregate_needs_rollup_from_child");
     }
 
-    @Instrument.Transaction(transactionType = "Rollup", transactionName = "Aggregate rollup",
-            traceHeadline = "Aggregate rollup: {{0}}", timerName = "aggregate rollup")
+    @Instrument.Transaction(transactionType = "Rollup", transactionName = "Aggregates",
+            traceHeadline = "Aggregate rollup: {{0}}", timerName = "aggregates")
     public void rollup(String agentRollup, @Nullable String parentAgentRollup, boolean leaf)
             throws Exception {
         List<Integer> ttls = getTTLs();

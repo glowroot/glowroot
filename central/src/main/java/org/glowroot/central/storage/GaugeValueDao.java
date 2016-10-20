@@ -234,8 +234,8 @@ public class GaugeValueDao implements GaugeValueRepository {
     //
     // child agent rollups should be processed before their parent agent rollup, since initial
     // parent rollup depends on the 1-minute child rollup
-    @Instrument.Transaction(transactionType = "Rollup", transactionName = "Gauge rollup",
-            traceHeadline = "Gauge rollup: {{0}}", timerName = "gauge rollup")
+    @Instrument.Transaction(transactionType = "Rollup", transactionName = "Gauges",
+            traceHeadline = "Gauge rollup: {{0}}", timerName = "gauges")
     public void rollup(String agentRollup, @Nullable String parentAgentRollup, boolean leaf)
             throws Exception {
         List<Integer> ttls = getTTLs();
