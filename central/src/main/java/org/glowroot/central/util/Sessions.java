@@ -18,6 +18,7 @@ package org.glowroot.central.util;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +29,26 @@ public class Sessions {
 
     private static final Logger logger = LoggerFactory.getLogger(Sessions.class);
 
+    private static final String WITH_TWCS =
+            " with compaction = { 'class' : 'TimeWindowCompactionStrategy' }";
+    private static final String WITH_DTCS =
+            " with compaction = { 'class' : 'DateTieredCompactionStrategy' }";
+
     private Sessions() {}
+
+    public static void createKeyspaceIfNotExists(Session session, String keyspace) {
+        session.execute("create keyspace if not exists " + keyspace + " with replication"
+                + " = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
+    }
+
+    public static void createTableWithTWCS(Session session, String createTableQuery) {
+        try {
+            session.execute(createTableQuery + WITH_TWCS);
+        } catch (InvalidConfigurationInQueryException e) {
+            logger.debug(e.getMessage(), e);
+            session.execute(createTableQuery + WITH_DTCS);
+        }
+    }
 
     public static ResultSetFuture executeAsyncWithOnFailure(Session session,
             BoundStatement boundStatement, Runnable onFailure) {

@@ -21,8 +21,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 import org.junit.Test;
 
-import org.glowroot.central.storage.SchemaUpgrade;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SchemaUpgradeTest {

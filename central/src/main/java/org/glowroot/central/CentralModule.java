@@ -60,6 +60,7 @@ import org.glowroot.central.storage.TraceDao;
 import org.glowroot.central.storage.TransactionTypeDao;
 import org.glowroot.central.storage.TriggeredAlertDao;
 import org.glowroot.central.storage.UserDao;
+import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.ImmutableWebConfig;
 import org.glowroot.common.config.WebConfig;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
@@ -126,8 +127,7 @@ class CentralModule {
             CentralConfiguration centralConfig = getCentralConfiguration();
             session = connect(centralConfig);
             cluster = session.getCluster();
-            session.execute("create keyspace if not exists " + centralConfig.cassandraKeyspace()
-                    + " with replication = {'class': 'SimpleStrategy', 'replication_factor': 1}");
+            Sessions.createKeyspaceIfNotExists(session, centralConfig.cassandraKeyspace());
             session.execute("use " + centralConfig.cassandraKeyspace());
 
             KeyspaceMetadata keyspace =
@@ -136,6 +136,7 @@ class CentralModule {
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion != null) {
                 schemaUpgrade.upgrade();
+                schemaUpgrade.updateToMoreRecentCassandraOptions();
             }
             CentralConfigDao centralConfigDao = new CentralConfigDao(session);
             AgentDao agentDao = new AgentDao(session);

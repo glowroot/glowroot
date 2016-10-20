@@ -22,6 +22,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.central.util.Sessions;
+
 public class SchemaUpgradeIT {
 
     private static Cluster cluster;

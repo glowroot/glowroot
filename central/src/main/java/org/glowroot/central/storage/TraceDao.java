@@ -47,6 +47,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.Messages;
+import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.live.ImmutableEntries;
 import org.glowroot.common.live.ImmutableTracePoint;
@@ -73,9 +74,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 public class TraceDao implements TraceRepository {
-
-    private static final String WITH_DTCS =
-            "with compaction = { 'class' : 'DateTieredCompactionStrategy' }";
 
     private final Session session;
     private final AgentDao agentDao;
@@ -142,97 +140,99 @@ public class TraceDao implements TraceRepository {
 
         traceAttributeNameDao = new TraceAttributeNameDao(session, configRepository);
 
-        session.execute("create table if not exists trace_check (agent_rollup varchar,"
-                + " agent_id varchar, trace_id varchar, primary key ((agent_rollup, agent_id),"
-                + " trace_id)) " + WITH_DTCS);
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_check"
+                + " (agent_rollup varchar, agent_id varchar, trace_id varchar, primary key"
+                + " ((agent_rollup, agent_id), trace_id))");
 
-        session.execute("create table if not exists trace_tt_slow_point (agent_rollup varchar,"
-                + " transaction_type varchar, capture_time timestamp, agent_id varchar,"
-                + " trace_id varchar, duration_nanos bigint, error boolean, headline varchar,"
-                + " user varchar, attributes blob, primary key ((agent_rollup, transaction_type),"
-                + " capture_time, agent_id, trace_id)) " + WITH_DTCS);
-
-        session.execute("create table if not exists trace_tn_slow_point (agent_rollup varchar,"
-                + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_tt_slow_point"
+                + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
                 + " agent_id varchar, trace_id varchar, duration_nanos bigint, error boolean,"
                 + " headline varchar, user varchar, attributes blob, primary key ((agent_rollup,"
-                + " transaction_type, transaction_name), capture_time, agent_id, trace_id)) "
-                + WITH_DTCS);
+                + " transaction_type), capture_time, agent_id, trace_id))");
 
-        session.execute("create table if not exists trace_tt_error_point (agent_rollup varchar,"
-                + " transaction_type varchar, capture_time timestamp, agent_id varchar,"
-                + " trace_id varchar, duration_nanos bigint, error_message varchar,"
-                + " headline varchar, user varchar, attributes blob, primary key ((agent_rollup,"
-                + " transaction_type), capture_time, agent_id, trace_id)) " + WITH_DTCS);
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_tn_slow_point"
+                + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
+                + " capture_time timestamp, agent_id varchar, trace_id varchar,"
+                + " duration_nanos bigint, error boolean, headline varchar, user varchar,"
+                + " attributes blob, primary key ((agent_rollup, transaction_type,"
+                + " transaction_name), capture_time, agent_id, trace_id))");
 
-        session.execute("create table if not exists trace_tn_error_point (agent_rollup varchar,"
-                + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_tt_error_point"
+                + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
                 + " agent_id varchar, trace_id varchar, duration_nanos bigint,"
                 + " error_message varchar, headline varchar, user varchar, attributes blob,"
-                + " primary key ((agent_rollup, transaction_type, transaction_name), capture_time,"
-                + " agent_id, trace_id)) " + WITH_DTCS);
+                + " primary key ((agent_rollup, transaction_type), capture_time, agent_id,"
+                + " trace_id))");
 
-        session.execute("create table if not exists trace_tt_error_message (agent_rollup varchar,"
-                + " transaction_type varchar, capture_time timestamp, agent_id varchar,"
-                + " trace_id varchar, error_message varchar, primary key ((agent_rollup,"
-                + " transaction_type), capture_time, agent_id, trace_id)) " + WITH_DTCS);
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_tn_error_point"
+                + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
+                + " capture_time timestamp, agent_id varchar, trace_id varchar,"
+                + " duration_nanos bigint, error_message varchar, headline varchar, user varchar,"
+                + " attributes blob, primary key ((agent_rollup, transaction_type,"
+                + " transaction_name), capture_time, agent_id, trace_id))");
 
-        session.execute("create table if not exists trace_tn_error_message (agent_rollup varchar,"
-                + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_tt_error_message"
+                + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
                 + " agent_id varchar, trace_id varchar, error_message varchar, primary key"
-                + " ((agent_rollup, transaction_type, transaction_name), capture_time, agent_id,"
-                + " trace_id)) " + WITH_DTCS);
+                + " ((agent_rollup, transaction_type), capture_time, agent_id, trace_id))");
 
-        session.execute("create table if not exists trace_header (agent_id varchar,"
-                + " trace_id varchar, header blob, primary key (agent_id, trace_id)) " + WITH_DTCS);
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_tn_error_message"
+                + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
+                + " capture_time timestamp, agent_id varchar, trace_id varchar,"
+                + " error_message varchar, primary key ((agent_rollup, transaction_type,"
+                + " transaction_name), capture_time, agent_id, trace_id))");
+
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_header"
+                + " (agent_id varchar, trace_id varchar, header blob, primary key (agent_id,"
+                + " trace_id))");
 
         // index_ is just to provide uniqueness
-        session.execute("create table if not exists trace_entry (agent_id varchar,"
-                + " trace_id varchar, index_ int, depth int, start_offset_nanos bigint,"
-                + " duration_nanos bigint, active boolean, message varchar,"
-                + " shared_query_text_index int, query_message_prefix varchar,"
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_entry"
+                + " (agent_id varchar, trace_id varchar, index_ int, depth int,"
+                + " start_offset_nanos bigint, duration_nanos bigint, active boolean,"
+                + " message varchar, shared_query_text_index int, query_message_prefix varchar,"
                 + " query_message_suffix varchar, detail blob, location_stack_trace blob,"
-                + " error blob, primary key (agent_id, trace_id, index_)) " + WITH_DTCS);
+                + " error blob, primary key (agent_id, trace_id, index_))");
 
         // index_ is just to provide uniqueness
-        session.execute("create table if not exists trace_shared_query_text (agent_id varchar,"
-                + " trace_id varchar, index_ int, truncated_text varchar,"
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_shared_query_text"
+                + " (agent_id varchar, trace_id varchar, index_ int, truncated_text varchar,"
                 + " truncated_end_text varchar, full_text_sha1 varchar, primary key (agent_id,"
-                + " trace_id, index_)) " + WITH_DTCS);
+                + " trace_id, index_))");
 
-        session.execute("create table if not exists trace_main_thread_profile (agent_id varchar,"
-                + " trace_id varchar, profile blob, primary key (agent_id, trace_id)) "
-                + WITH_DTCS);
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_main_thread_profile"
+                + " (agent_id varchar, trace_id varchar, profile blob, primary key (agent_id,"
+                + " trace_id))");
 
-        session.execute("create table if not exists trace_aux_thread_profile (agent_id varchar,"
-                + " trace_id varchar, profile blob, primary key (agent_id, trace_id)) "
-                + WITH_DTCS);
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_aux_thread_profile"
+                + " (agent_id varchar, trace_id varchar, profile blob, primary key (agent_id,"
+                + " trace_id))");
 
         // agent_rollup/capture_time is not necessarily unique
         // using a counter would be nice since only need sum over capture_time range
         // but counter has no TTL, see https://issues.apache.org/jira/browse/CASSANDRA-2103
         // so adding trace_id to provide uniqueness
-        session.execute("create table if not exists trace_tt_slow_count (agent_rollup varchar,"
-                + " transaction_type varchar, capture_time timestamp, agent_id varchar,"
-                + " trace_id varchar, primary key ((agent_rollup, transaction_type), capture_time,"
-                + " agent_id, trace_id)) " + WITH_DTCS);
-
-        session.execute("create table if not exists trace_tn_slow_count (agent_rollup varchar,"
-                + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_tt_slow_count"
+                + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
                 + " agent_id varchar, trace_id varchar, primary key ((agent_rollup,"
-                + " transaction_type, transaction_name), capture_time, agent_id, trace_id)) "
-                + WITH_DTCS);
+                + " transaction_type), capture_time, agent_id, trace_id))");
 
-        session.execute("create table if not exists trace_tt_error_count (agent_rollup varchar,"
-                + " transaction_type varchar, capture_time timestamp, agent_id varchar,"
-                + " trace_id varchar, primary key ((agent_rollup, transaction_type), capture_time,"
-                + " agent_id, trace_id)) " + WITH_DTCS);
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_tn_slow_count"
+                + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
+                + " capture_time timestamp, agent_id varchar, trace_id varchar, primary key"
+                + " ((agent_rollup, transaction_type, transaction_name), capture_time, agent_id,"
+                + " trace_id))");
 
-        session.execute("create table if not exists trace_tn_error_count (agent_rollup varchar,"
-                + " transaction_type varchar, transaction_name varchar, capture_time timestamp,"
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_tt_error_count"
+                + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
                 + " agent_id varchar, trace_id varchar, primary key ((agent_rollup,"
-                + " transaction_type, transaction_name), capture_time, agent_id, trace_id)) "
-                + WITH_DTCS);
+                + " transaction_type), capture_time, agent_id, trace_id))");
+
+        Sessions.createTableWithTWCS(session, "create table if not exists trace_tn_error_count"
+                + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
+                + " capture_time timestamp, agent_id varchar, trace_id varchar, primary key"
+                + " ((agent_rollup, transaction_type, transaction_name), capture_time, agent_id,"
+                + " trace_id))");
 
         insertCheck = session.prepare("insert into trace_check (agent_rollup, agent_id, trace_id)"
                 + " values (?, ?, ?) using ttl ?");

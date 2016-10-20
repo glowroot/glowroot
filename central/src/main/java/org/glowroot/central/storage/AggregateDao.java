@@ -56,6 +56,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrument;
 import org.glowroot.central.util.Messages;
+import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
@@ -104,8 +105,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class AggregateDao implements AggregateRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(AggregateDao.class);
-
-    private static final String DTCS = "compaction = { 'class' : 'DateTieredCompactionStrategy' }";
 
     private static final String LCS = "compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
@@ -267,8 +266,8 @@ public class AggregateDao implements AggregateRepository {
             List<PreparedStatement> readTransactionForRollupList = Lists.newArrayList();
             for (int i = 0; i < count; i++) {
                 if (table.summary()) {
-                    session.execute(createSummaryTablePS(table, false, i));
-                    session.execute(createSummaryTablePS(table, true, i));
+                    Sessions.createTableWithTWCS(session, createSummaryTableQuery(table, false, i));
+                    Sessions.createTableWithTWCS(session, createSummaryTableQuery(table, true, i));
                     insertOverallList.add(session.prepare(insertSummaryPS(table, false, i)));
                     insertTransactionList.add(session.prepare(insertSummaryPS(table, true, i)));
                     readOverallList.add(session.prepare(readSummaryPS(table, false, i)));
@@ -278,8 +277,8 @@ public class AggregateDao implements AggregateRepository {
                     readTransactionForRollupList
                             .add(session.prepare(readSummaryForRollupPS(table, true, i)));
                 } else {
-                    session.execute(createTablePS(table, false, i));
-                    session.execute(createTablePS(table, true, i));
+                    Sessions.createTableWithTWCS(session, createTableQuery(table, false, i));
+                    Sessions.createTableWithTWCS(session, createTableQuery(table, true, i));
                     insertOverallList.add(session.prepare(insertPS(table, false, i)));
                     insertTransactionList.add(session.prepare(insertPS(table, true, i)));
                     readOverallList.add(session.prepare(readPS(table, false, i)));
@@ -2110,7 +2109,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setTimestamp(i++, new Date(query.to()));
     }
 
-    private static String createTablePS(Table table, boolean transaction, int i) {
+    private static String createTableQuery(Table table, boolean transaction, int i) {
         StringBuilder sb = new StringBuilder();
         sb.append("create table if not exists ");
         sb.append(getTableName(table.partialName(), transaction, i));
@@ -2134,8 +2133,7 @@ public class AggregateDao implements AggregateRepository {
             sb.append(", ");
             sb.append(clusterKey);
         }
-        sb.append(")) with ");
-        sb.append(DTCS);
+        sb.append("))");
         return sb.toString();
     }
 
@@ -2227,7 +2225,7 @@ public class AggregateDao implements AggregateRepository {
         return sb.toString();
     }
 
-    private static String createSummaryTablePS(Table table, boolean transaction, int i) {
+    private static String createSummaryTableQuery(Table table, boolean transaction, int i) {
         StringBuilder sb = new StringBuilder();
         sb.append("create table if not exists ");
         sb.append(getTableName(table.partialName(), transaction, i));
@@ -2245,8 +2243,7 @@ public class AggregateDao implements AggregateRepository {
         if (transaction) {
             sb.append(", transaction_name");
         }
-        sb.append(")) with ");
-        sb.append(DTCS);
+        sb.append("))");
         return sb.toString();
     }
 

@@ -21,6 +21,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.repo.ConfigRepository;
 

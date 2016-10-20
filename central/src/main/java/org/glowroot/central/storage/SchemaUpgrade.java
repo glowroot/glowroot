@@ -34,6 +34,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -125,6 +126,56 @@ public class SchemaUpgrade {
 
     public void updateSchemaVersionToCurent() {
         updateSchemaVersion(CURR_SCHEMA_VERSION);
+    }
+
+    public void updateToMoreRecentCassandraOptions() {
+        List<String> snappyTableNames = Lists.newArrayList();
+        List<String> dtcsTableNames = Lists.newArrayList();
+        for (TableMetadata table : keyspace.getTables()) {
+            String compression = table.getOptions().getCompression().get("class");
+            if (compression != null
+                    && compression.equals("org.apache.cassandra.io.compress.SnappyCompressor")) {
+                snappyTableNames.add(compression);
+            }
+            String compaction = table.getOptions().getCompaction().get("class");
+            if (compaction != null && compaction
+                    .equals("org.apache.cassandra.db.compaction.DateTieredCompactionStrategy")) {
+                dtcsTableNames.add(table.getName());
+            }
+        }
+
+        int snappyUpdatedCount = 0;
+        for (String tableName : snappyTableNames) {
+            session.execute("alter table " + tableName
+                    + " with compression = { 'class' : 'LZ4Compressor' }");
+            if (snappyUpdatedCount++ == 0) {
+                startupLogger.info("upgrading from Snappy to LZ4 compression...");
+            }
+        }
+        if (snappyUpdatedCount > 0) {
+            startupLogger.info("upgraded {} tables from Snappy to LZ4 compression",
+                    snappyUpdatedCount);
+        }
+
+        int dtcsUpdatedCount = 0;
+        for (String tableName : dtcsTableNames) {
+            try {
+                session.execute("alter table " + tableName
+                        + " with compaction = { 'class' : 'TimeWindowCompactionStrategy' }");
+                if (dtcsUpdatedCount++ == 0) {
+                    startupLogger.info("upgrading from DateTieredCompactionStrategy to"
+                            + " TimeWindowCompactionStrategy compression...");
+                }
+            } catch (InvalidConfigurationInQueryException e) {
+                logger.debug(e.getMessage(), e);
+                // TimeWindowCompactionStrategy is only supported by Cassandra 3.8+
+                return;
+            }
+        }
+        if (dtcsUpdatedCount > 0) {
+            startupLogger.info("upgraded {} tables from DateTieredCompactionStrategy to"
+                    + " TimeWindowCompactionStrategy compaction", dtcsUpdatedCount);
+        }
     }
 
     private void updateSchemaVersion(int schemaVersion) {

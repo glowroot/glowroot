@@ -22,6 +22,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.ImmutableUserConfig;
 import org.glowroot.common.config.UserConfig;
 

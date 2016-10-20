@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.api.Instrument;
 import org.glowroot.central.storage.AggregateDao.NeedsRollup;
 import org.glowroot.central.storage.AggregateDao.NeedsRollupFromChildren;
+import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.repo.GaugeValueRepository;
@@ -58,8 +59,6 @@ import static java.util.concurrent.TimeUnit.HOURS;
 public class GaugeValueDao implements GaugeValueRepository {
 
     private static Logger logger = LoggerFactory.getLogger(GaugeValueDao.class);
-
-    private static final String DTCS = "compaction = { 'class' : 'DateTieredCompactionStrategy' }";
 
     private static final String LCS = "compaction = { 'class' : 'LeveledCompactionStrategy' }";
 
@@ -100,10 +99,10 @@ public class GaugeValueDao implements GaugeValueRepository {
         List<PreparedStatement> readValueForRollupPS = Lists.newArrayList();
         for (int i = 0; i <= count; i++) {
             // name already has "[counter]" suffix when it is a counter
-            session.execute("create table if not exists gauge_value_rollup_" + i
-                    + " (agent_rollup varchar, gauge_name varchar, capture_time timestamp,"
+            Sessions.createTableWithTWCS(session, "create table if not exists gauge_value_rollup_"
+                    + i + " (agent_rollup varchar, gauge_name varchar, capture_time timestamp,"
                     + " value double, weight bigint, primary key ((agent_rollup, gauge_name),"
-                    + " capture_time)) with " + DTCS);
+                    + " capture_time))");
             insertValuePS.add(session.prepare("insert into gauge_value_rollup_" + i
                     + " (agent_rollup, gauge_name, capture_time, value, weight)"
                     + " values (?, ?, ?, ?, ?) using ttl ?"));
