@@ -142,13 +142,15 @@ class TransactionCommonService {
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<OverviewAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
-        orderedNonRolledUpAggregates.addAll(
-                aggregateRepository.readOverviewAggregates(agentRollup,
-                        ImmutableTransactionQuery.builder()
-                                .copyFrom(revisedQuery)
-                                .from(nonRolledUpFrom)
-                                .rollupLevel(0)
-                                .build()));
+        if (nonRolledUpFrom <= revisedTo) {
+            orderedNonRolledUpAggregates.addAll(
+                    aggregateRepository.readOverviewAggregates(agentRollup,
+                            ImmutableTransactionQuery.builder()
+                                    .copyFrom(revisedQuery)
+                                    .from(nonRolledUpFrom)
+                                    .rollupLevel(0)
+                                    .build()));
+        }
         if (liveResult != null) {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
         }
@@ -190,13 +192,15 @@ class TransactionCommonService {
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<PercentileAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
-        orderedNonRolledUpAggregates.addAll(
-                aggregateRepository.readPercentileAggregates(agentRollup,
-                        ImmutableTransactionQuery.builder()
-                                .copyFrom(revisedQuery)
-                                .from(nonRolledUpFrom)
-                                .rollupLevel(0)
-                                .build()));
+        if (nonRolledUpFrom <= revisedTo) {
+            orderedNonRolledUpAggregates.addAll(
+                    aggregateRepository.readPercentileAggregates(agentRollup,
+                            ImmutableTransactionQuery.builder()
+                                    .copyFrom(revisedQuery)
+                                    .from(nonRolledUpFrom)
+                                    .rollupLevel(0)
+                                    .build()));
+        }
         if (liveResult != null) {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
         }
@@ -238,13 +242,15 @@ class TransactionCommonService {
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<ThroughputAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
-        orderedNonRolledUpAggregates.addAll(aggregateRepository
-                .readThroughputAggregates(agentRollup,
-                        ImmutableTransactionQuery.builder()
-                                .copyFrom(revisedQuery)
-                                .from(nonRolledUpFrom)
-                                .rollupLevel(0)
-                                .build()));
+        if (nonRolledUpFrom <= revisedTo) {
+            orderedNonRolledUpAggregates.addAll(aggregateRepository
+                    .readThroughputAggregates(agentRollup,
+                            ImmutableTransactionQuery.builder()
+                                    .copyFrom(revisedQuery)
+                                    .from(nonRolledUpFrom)
+                                    .rollupLevel(0)
+                                    .build()));
+        }
         if (liveResult != null) {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
         }
