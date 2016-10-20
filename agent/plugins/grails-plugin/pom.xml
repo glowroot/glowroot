@@ -154,6 +154,13 @@
       <version>4.3.3.RELEASE</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>commons-validator</groupId>
+      <artifactId>commons-validator</artifactId>
+      <version>1.5.1</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -207,6 +214,45 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>grails-3.2.0</id>
+      <!-- this is needed for grails 3.2.0 because grails-plugin-rest 3.2.0 has a dependency on
+        versions 6.0.0.RELEASE of the below artifacts which do not exist in maven central -->
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>org.grails</groupId>
+            <artifactId>grails-datastore-core</artifactId>
+            <version>6.0.1.RELEASE</version>
+            <scope>test</scope>
+          </dependency>
+          <dependency>
+            <groupId>org.grails</groupId>
+            <artifactId>grails-datastore-simple</artifactId>
+            <version>6.0.1.RELEASE</version>
+            <scope>test</scope>
+          </dependency>
+          <dependency>
+            <groupId>org.grails</groupId>
+            <artifactId>grails-datastore-gorm</artifactId>
+            <version>6.0.1.RELEASE</version>
+            <scope>test</scope>
+          </dependency>
+          <dependency>
+            <groupId>org.grails</groupId>
+            <artifactId>grails-datastore-gorm-support</artifactId>
+            <version>6.0.1.RELEASE</version>
+            <scope>test</scope>
+          </dependency>
+          <dependency>
+            <groupId>org.grails</groupId>
+            <artifactId>grails-datastore-gorm-validation</artifactId>
+            <version>6.0.1.RELEASE</version>
+            <scope>test</scope>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
     </profile>
   </profiles>
 </project>

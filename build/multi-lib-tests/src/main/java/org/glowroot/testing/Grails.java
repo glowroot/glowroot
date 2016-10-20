@@ -37,10 +37,16 @@ public class Grails {
             }
             run("3.1." + i);
         }
+        run320("3.2.0");
     }
 
     private static void run(String version) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "grails.version", version);
         Util.runTests(MODULE_PATH, JAVA7, JAVA8);
+    }
+
+    private static void run320(String version) throws Exception {
+        Util.updateLibVersion(MODULE_PATH, "grails.version", version);
+        Util.runTests(MODULE_PATH, "grails-3.2.0", JAVA7, JAVA8);
     }
 }
