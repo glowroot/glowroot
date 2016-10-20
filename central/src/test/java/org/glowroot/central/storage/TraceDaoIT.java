@@ -30,6 +30,7 @@ import org.glowroot.common.model.Result;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ImmutableTraceQuery;
 import org.glowroot.common.repo.TraceRepository.TraceQuery;
+import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,7 +59,7 @@ public class TraceDaoIT {
         when(configRepository.getStorageConfig())
                 .thenReturn(ImmutableCentralStorageConfig.builder().build());
         traceDao = new TraceDao(session, new AgentDao(session), mock(TransactionTypeDao.class),
-                mock(FullQueryTextDao.class), configRepository);
+                mock(FullQueryTextDao.class), configRepository, Clock.systemClock());
     }
 
     @AfterClass

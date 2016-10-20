@@ -50,6 +50,7 @@ import org.glowroot.common.model.TransactionSummaryCollector;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
@@ -93,7 +94,7 @@ public class AggregateDaoIT {
         TransactionTypeDao transactionTypeDao = new TransactionTypeDao(session, configRepository);
         FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
         aggregateDao = new AggregateDao(session, agentDao, transactionTypeDao, fullQueryTextDao,
-                configRepository);
+                configRepository, Clock.systemClock());
     }
 
     @AfterClass

@@ -69,6 +69,7 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 
@@ -130,15 +131,17 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     private final ImmutableMap<Pattern, HttpService> httpServices;
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
     private final HttpSessionManager httpSessionManager;
+    private final Clock clock;
 
     private final ThreadLocal</*@Nullable*/ Channel> currentChannel =
             new ThreadLocal</*@Nullable*/ Channel>();
 
     HttpServerHandler(LayoutService layoutService, Map<Pattern, HttpService> httpServices,
-            HttpSessionManager httpSessionManager, List<Object> jsonServices) {
+            HttpSessionManager httpSessionManager, List<Object> jsonServices, Clock clock) {
         this.layoutService = layoutService;
         this.httpServices = ImmutableMap.copyOf(httpServices);
         this.httpSessionManager = httpSessionManager;
+        this.clock = clock;
         List<JsonServiceMapping> jsonServiceMappings = Lists.newArrayList();
         for (Object jsonService : jsonServices) {
             for (Method method : jsonService.getClass().getDeclaredMethods()) {
@@ -459,7 +462,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         } else {
             response.headers().add(HttpHeaderNames.LAST_MODIFIED, new Date(0));
             response.headers().add(HttpHeaderNames.EXPIRES,
-                    new Date(System.currentTimeMillis() + TEN_YEARS));
+                    new Date(clock.currentTimeMillis() + TEN_YEARS));
         }
         int extensionStartIndex = path.lastIndexOf('.');
         checkState(extensionStartIndex != -1, "found path under %s with no extension: %s",
@@ -471,6 +474,17 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         response.headers().add(HttpHeaderNames.CONTENT_TYPE, mediaType);
         response.headers().add(HttpHeaderNames.CONTENT_LENGTH, Resources.toByteArray(url).length);
         return response;
+    }
+
+    private @Nullable Date getExpiresForPath(String path) {
+        if (path.startsWith("org/glowroot/ui/app-dist/favicon.")) {
+            return new Date(clock.currentTimeMillis() + ONE_DAY);
+        } else if (path.endsWith(".js.map") || path.startsWith("/sources/")) {
+            // javascript source maps and source files are not versioned
+            return new Date(clock.currentTimeMillis() + FIVE_MINUTES);
+        } else {
+            return null;
+        }
     }
 
     private static ImmutableJsonServiceMapping build(HttpMethod httpMethod, String path,
@@ -521,17 +535,6 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             return ClassLoader.getSystemResource(path);
         } else {
             return classLoader.getResource(path);
-        }
-    }
-
-    private static @Nullable Date getExpiresForPath(String path) {
-        if (path.startsWith("org/glowroot/ui/app-dist/favicon.")) {
-            return new Date(System.currentTimeMillis() + ONE_DAY);
-        } else if (path.endsWith(".js.map") || path.startsWith("/sources/")) {
-            // javascript source maps and source files are not versioned
-            return new Date(System.currentTimeMillis() + FIVE_MINUTES);
-        } else {
-            return null;
         }
     }
 

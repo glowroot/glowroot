@@ -62,6 +62,7 @@ import org.glowroot.common.repo.ImmutableErrorMessageResult;
 import org.glowroot.common.repo.ImmutableHeaderPlus;
 import org.glowroot.common.repo.TraceRepository;
 import org.glowroot.common.repo.Utils;
+import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.Proto;
@@ -81,6 +82,7 @@ public class TraceDao implements TraceRepository {
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
     private final ConfigRepository configRepository;
+    private final Clock clock;
 
     private final TraceAttributeNameDao traceAttributeNameDao;
 
@@ -130,12 +132,14 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement deletePartialTransactionSlowCount;
 
     public TraceDao(Session session, AgentDao agentDao, TransactionTypeDao transactionTypeDao,
-            FullQueryTextDao fullQueryTextDao, ConfigRepository configRepository) {
+            FullQueryTextDao fullQueryTextDao, ConfigRepository configRepository, Clock clock) {
         this.session = session;
         this.agentDao = agentDao;
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
         this.configRepository = configRepository;
+        this.clock = clock;
+
         traceAttributeNameDao = new TraceAttributeNameDao(session, configRepository);
 
         session.execute("create table if not exists trace_check (agent_rollup varchar,"
@@ -402,7 +406,7 @@ public class TraceDao implements TraceRepository {
             }
         }
 
-        int adjustedTTL = AggregateDao.getAdjustedTTL(getTTL(), header.getCaptureTime());
+        int adjustedTTL = AggregateDao.getAdjustedTTL(getTTL(), header.getCaptureTime(), clock);
         for (String agentRollup : agentRollups) {
 
             if (!agentRollup.equals(agentId)) {

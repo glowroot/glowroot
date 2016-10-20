@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
@@ -64,7 +65,7 @@ public class GaugeValueDaoIT {
                 storageConfig.version());
         agentDao.setConfigRepository(configRepository);
         centralConfigDao.setConfigRepository(configRepository);
-        gaugeValueDao = new GaugeValueDao(session, agentDao, configRepository);
+        gaugeValueDao = new GaugeValueDao(session, agentDao, configRepository, Clock.systemClock());
     }
 
     @AfterClass

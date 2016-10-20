@@ -116,7 +116,8 @@ public class UiModule {
         int port = configRepository.getWebConfig().port();
         LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, httpSessionManager,
                 indexHtmlHttpService, layoutHttpService, layoutService, traceDetailHttpService,
-                traceExportHttpService, glowrootLogHttpService, jsonServices, numWorkerThreads);
+                traceExportHttpService, glowrootLogHttpService, jsonServices, clock,
+                numWorkerThreads);
 
         lazyHttpServer.init(adminJsonService);
         return new UiModule(lazyHttpServer);

@@ -46,6 +46,7 @@ import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.repo.util.Gauges;
+import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
@@ -63,6 +64,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     private final Session session;
     private final AgentDao agentDao;
     private final ConfigRepository configRepository;
+    private final Clock clock;
 
     private final GaugeNameDao gaugeNameDao;
 
@@ -80,10 +82,12 @@ public class GaugeValueDao implements GaugeValueRepository {
     private final PreparedStatement readNeedsRollupFromChild;
     private final PreparedStatement deleteNeedsRollupFromChild;
 
-    public GaugeValueDao(Session session, AgentDao agentDao, ConfigRepository configRepository) {
+    public GaugeValueDao(Session session, AgentDao agentDao, ConfigRepository configRepository,
+            Clock clock) {
         this.session = session;
         this.agentDao = agentDao;
         this.configRepository = configRepository;
+        this.clock = clock;
 
         gaugeNameDao = new GaugeNameDao(session, configRepository);
 
@@ -166,7 +170,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             boundStatement.setTimestamp(i++, new Date(captureTime));
             boundStatement.setDouble(i++, gaugeValue.getValue());
             boundStatement.setLong(i++, gaugeValue.getWeight());
-            boundStatement.setInt(i++, AggregateDao.getAdjustedTTL(ttl, captureTime));
+            boundStatement.setInt(i++, AggregateDao.getAdjustedTTL(ttl, captureTime, clock));
             futures.add(session.executeAsync(boundStatement));
             for (String agentRollup : agentRollups) {
                 futures.addAll(gaugeNameDao.store(agentRollup, gaugeName));
@@ -268,7 +272,7 @@ public class GaugeValueDao implements GaugeValueRepository {
                     .entrySet()) {
                 String gaugeName = entry.getKey();
                 Collection<String> childAgentRollups = entry.getValue();
-                int adjustedTTL = AggregateDao.getAdjustedTTL(ttl, captureTime);
+                int adjustedTTL = AggregateDao.getAdjustedTTL(ttl, captureTime, clock);
                 futures.add(rollupOneFromChildren(rollupLevel, agentRollup, gaugeName,
                         childAgentRollups, captureTime, adjustedTTL));
             }
@@ -311,7 +315,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             Set<String> gaugeNames = needsRollup.getKeys();
             List<ResultSetFuture> futures = Lists.newArrayList();
             for (String gaugeName : gaugeNames) {
-                int adjustedTTL = AggregateDao.getAdjustedTTL(ttl, captureTime);
+                int adjustedTTL = AggregateDao.getAdjustedTTL(ttl, captureTime, clock);
                 futures.add(rollupOne(rollupLevel, agentRollup, gaugeName, from, captureTime,
                         adjustedTTL));
             }

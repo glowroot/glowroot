@@ -25,6 +25,7 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.util.Clock;
 import org.glowroot.ui.HttpServer.SocketBindException;
 
 class LazyHttpServer {
@@ -42,6 +43,7 @@ class LazyHttpServer {
     private final TraceExportHttpService traceExportHttpService;
     private final GlowrootLogHttpService glowrootLogHttpService;
     private final List<Object> jsonServices;
+    private final Clock clock;
     private final int numWorkerThreads;
 
     private volatile @Nullable HttpServer httpServer;
@@ -51,7 +53,7 @@ class LazyHttpServer {
             LayoutService layoutService, TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService,
             GlowrootLogHttpService glowrootLogHttpService, List<Object> jsonServices,
-            int numWorkerThreads) {
+            Clock clock, int numWorkerThreads) {
         this.bindAddress = bindAddress;
         this.port = port;
         this.httpSessionManager = httpSessionManager;
@@ -62,6 +64,7 @@ class LazyHttpServer {
         this.traceExportHttpService = traceExportHttpService;
         this.glowrootLogHttpService = glowrootLogHttpService;
         this.jsonServices = jsonServices;
+        this.clock = clock;
         this.numWorkerThreads = numWorkerThreads;
     }
 
@@ -117,6 +120,6 @@ class LazyHttpServer {
                 traceDetailHttpService);
         httpServices.put(Pattern.compile("^/log$"), glowrootLogHttpService);
         return new HttpServer(bindAddress, port, numWorkerThreads, layoutService, httpServices,
-                httpSessionManager, jsonServices);
+                httpSessionManager, jsonServices, clock);
     }
 }

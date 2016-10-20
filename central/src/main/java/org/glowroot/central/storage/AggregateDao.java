@@ -85,6 +85,7 @@ import org.glowroot.common.repo.MutableAggregate;
 import org.glowroot.common.repo.MutableThreadStats;
 import org.glowroot.common.repo.MutableTimer;
 import org.glowroot.common.repo.Utils;
+import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
@@ -204,9 +205,9 @@ public class AggregateDao implements AggregateRepository {
     private final Session session;
     private final AgentDao agentDao;
     private final TransactionTypeDao transactionTypeDao;
-    private final ConfigRepository configRepository;
-
     private final FullQueryTextDao fullQueryTextDao;
+    private final ConfigRepository configRepository;
+    private final Clock clock;
 
     // list index is rollupLevel
     private final Map<Table, List<PreparedStatement>> insertOverallPS;
@@ -234,12 +235,13 @@ public class AggregateDao implements AggregateRepository {
     private final ImmutableList<Table> allTables;
 
     public AggregateDao(Session session, AgentDao agentDao, TransactionTypeDao transactionTypeDao,
-            FullQueryTextDao fullQueryTextDao, ConfigRepository configRepository) {
+            FullQueryTextDao fullQueryTextDao, ConfigRepository configRepository, Clock clock) {
         this.session = session;
         this.agentDao = agentDao;
         this.transactionTypeDao = transactionTypeDao;
-        this.configRepository = configRepository;
         this.fullQueryTextDao = fullQueryTextDao;
+        this.configRepository = configRepository;
+        this.clock = clock;
 
         int count = configRepository.getRollupConfigs().size();
 
@@ -376,7 +378,7 @@ public class AggregateDao implements AggregateRepository {
             List<Aggregate.SharedQueryText> initialSharedQueryTexts) throws Exception {
 
         List<String> agentRollups = agentDao.readAgentRollups(agentId);
-        int adjustedTTL = getAdjustedTTL(getTTLs().get(0), captureTime);
+        int adjustedTTL = getAdjustedTTL(getTTLs().get(0), captureTime, clock);
         List<ResultSetFuture> futures = Lists.newArrayList();
         List<Aggregate.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
         for (Aggregate.SharedQueryText sharedQueryText : initialSharedQueryTexts) {
@@ -763,7 +765,7 @@ public class AggregateDao implements AggregateRepository {
         long nextRollupIntervalMillis = rollupConfigs.get(rollupLevel + 1).intervalMillis();
         for (NeedsRollupFromChildren needsRollupFromChildren : needsRollupFromChildrenList) {
             long captureTime = needsRollupFromChildren.getCaptureTime();
-            int adjustedTTL = getAdjustedTTL(ttl, captureTime);
+            int adjustedTTL = getAdjustedTTL(ttl, captureTime, clock);
             RollupParams rollupParams = getRollupParams(agentRollup, rollupLevel, adjustedTTL);
             List<ResultSetFuture> futures = Lists.newArrayList();
             for (Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys().asMap()
@@ -807,7 +809,7 @@ public class AggregateDao implements AggregateRepository {
         }
         for (NeedsRollup needsRollup : needsRollupList) {
             long captureTime = needsRollup.getCaptureTime();
-            int adjustedTTL = getAdjustedTTL(ttl, captureTime);
+            int adjustedTTL = getAdjustedTTL(ttl, captureTime, clock);
             RollupParams rollupParams = getRollupParams(agentRollup, rollupLevel, adjustedTTL);
             long from = captureTime - rollupIntervalMillis;
             Set<String> transactionTypes = needsRollup.getKeys();
@@ -1918,12 +1920,12 @@ public class AggregateDao implements AggregateRepository {
         return rollupInfo.build();
     }
 
-    static int getAdjustedTTL(int ttl, long captureTime) {
+    static int getAdjustedTTL(int ttl, long captureTime, Clock clock) {
         if (ttl == 0) {
             return 0;
         }
-        int captureTimeAgoSeconds = Ints
-                .saturatedCast(MILLISECONDS.toSeconds(System.currentTimeMillis() - captureTime));
+        int captureTimeAgoSeconds =
+                Ints.saturatedCast(MILLISECONDS.toSeconds(clock.currentTimeMillis() - captureTime));
         // max is just a safety guard (primarily used for unit tests)
         return Math.max(ttl - captureTimeAgoSeconds, 60);
     }

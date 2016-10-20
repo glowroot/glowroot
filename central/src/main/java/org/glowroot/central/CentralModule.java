@@ -166,10 +166,11 @@ class CentralModule {
                     new TransactionTypeDao(session, configRepository);
             FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
             AggregateDao aggregateDao = new AggregateDao(session, agentDao, transactionTypeDao,
-                    fullQueryTextDao, configRepository);
+                    fullQueryTextDao, configRepository, clock);
             TraceDao traceDao = new TraceDao(session, agentDao, transactionTypeDao,
-                    fullQueryTextDao, configRepository);
-            GaugeValueDao gaugeValueDao = new GaugeValueDao(session, agentDao, configRepository);
+                    fullQueryTextDao, configRepository, clock);
+            GaugeValueDao gaugeValueDao =
+                    new GaugeValueDao(session, agentDao, configRepository, clock);
             TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session, configRepository);
             RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
             AlertingService alertingService = new AlertingService(configRepository,
