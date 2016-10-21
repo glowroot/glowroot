@@ -76,39 +76,110 @@ public class RollupService implements Runnable {
             try {
                 Thread.sleep(millisUntilNextRollup(clock.currentTimeMillis()));
                 for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
-                    process(agentRollup, null);
+                    rollupAggregates(agentRollup, null);
+                    rollupGauges(agentRollup, null);
+                    checkTransactionAlerts(agentRollup);
+                    checkGaugeAlerts(agentRollup);
+                    updateAgentConfigIfConnectedAndNeeded(agentRollup);
                 }
             } catch (InterruptedException e) {
                 if (stopped) {
                     return;
                 }
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
             }
         }
     }
 
-    // rollup one agent at a time, mostly to avoid single large query on
-    // gauge_needs_rollup_1 that times out due to use of Cassandra queue
-    // anti-pattern (and lots of tombstones)
-    private void process(AgentRollup agentRollup, @Nullable String parentAgentRollup)
-            throws Exception {
-        // roll up children first, since gauge values initial roll up from children is done on the
-        // 1-min aggregates of the children
+    private void rollupAggregates(AgentRollup agentRollup, @Nullable String parentAgentRollup)
+            throws InterruptedException {
         for (AgentRollup childAgentRollup : agentRollup.children()) {
-            process(childAgentRollup, agentRollup.name());
+            rollupAggregates(childAgentRollup, agentRollup.name());
         }
-        aggregateDao.rollup(agentRollup.name(), parentAgentRollup,
-                agentRollup.children().isEmpty());
-        gaugeValueDao.rollup(agentRollup.name(), parentAgentRollup,
-                agentRollup.children().isEmpty());
+        try {
+            aggregateDao.rollup(agentRollup.name(), parentAgentRollup,
+                    agentRollup.children().isEmpty());
+        } catch (InterruptedException e) {
+            // shutdown requested
+            throw e;
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    // returns true on success, false on failure
+    private boolean rollupGauges(AgentRollup agentRollup, @Nullable String parentAgentRollup)
+            throws InterruptedException {
+        // important to roll up children first, since gauge values initial roll up from children is
+        // done on the 1-min aggregates of the children
+        boolean success = true;
+        for (AgentRollup childAgentRollup : agentRollup.children()) {
+            boolean childSuccess = rollupGauges(childAgentRollup, agentRollup.name());
+            success = success && childSuccess;
+        }
+        if (!success) {
+            // also important to not roll up parent if exception occurs while rolling up a child,
+            // since gauge values initial roll up from children is done on the 1-min aggregates of
+            // the children
+            return false;
+        }
+        try {
+            gaugeValueDao.rollup(agentRollup.name(), parentAgentRollup,
+                    agentRollup.children().isEmpty());
+            return true;
+        } catch (InterruptedException e) {
+            // shutdown requested
+            throw e;
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            return false;
+        }
+    }
+
+    private void checkGaugeAlerts(AgentRollup agentRollup) throws InterruptedException {
+        for (AgentRollup childAgentRollup : agentRollup.children()) {
+            checkGaugeAlerts(childAgentRollup);
+        }
+        try {
+            alertingService.checkGaugeAlerts(agentRollup.name(), clock.currentTimeMillis(),
+                    ReadTimeoutException.class);
+        } catch (InterruptedException e) {
+            // shutdown requested
+            throw e;
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    private void checkTransactionAlerts(AgentRollup agentRollup) throws InterruptedException {
+        for (AgentRollup childAgentRollup : agentRollup.children()) {
+            checkTransactionAlerts(childAgentRollup);
+        }
+        try {
+            alertingService.checkTransactionAlerts(agentRollup.name(),
+                    clock.currentTimeMillis(), ReadTimeoutException.class);
+        } catch (InterruptedException e) {
+            // shutdown requested
+            throw e;
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    private void updateAgentConfigIfConnectedAndNeeded(AgentRollup agentRollup)
+            throws InterruptedException {
+        for (AgentRollup childAgentRollup : agentRollup.children()) {
+            updateAgentConfigIfConnectedAndNeeded(childAgentRollup);
+        }
         if (agentRollup.children().isEmpty()) {
-            downstreamService.updateAgentConfigIfConnectedAndNeeded(agentRollup.name());
+            try {
+                downstreamService.updateAgentConfigIfConnectedAndNeeded(agentRollup.name());
+            } catch (InterruptedException e) {
+                // shutdown requested
+                throw e;
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
         }
-        alertingService.checkTransactionAlerts(agentRollup.name(),
-                clock.currentTimeMillis(), ReadTimeoutException.class);
-        alertingService.checkGaugeAlerts(agentRollup.name(), clock.currentTimeMillis(),
-                ReadTimeoutException.class);
     }
 
     @VisibleForTesting

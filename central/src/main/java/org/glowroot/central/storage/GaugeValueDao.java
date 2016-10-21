@@ -36,13 +36,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.Futures;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrument;
 import org.glowroot.central.storage.AggregateDao.NeedsRollup;
 import org.glowroot.central.storage.AggregateDao.NeedsRollupFromChildren;
+import org.glowroot.central.util.Futures;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
@@ -195,7 +195,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             boundStatement.setInt(i++, needsRollupAdjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
-        Futures.allAsList(futures).get();
+        Futures.waitForAll(futures);
     }
 
     @Override
@@ -285,7 +285,7 @@ public class GaugeValueDao implements GaugeValueRepository {
                         childAgentRollups, captureTime, adjustedTTL));
             }
             // wait for above async work to ensure rollup complete before proceeding
-            Futures.allAsList(futures).get();
+            Futures.waitForAll(futures);
 
             int needsRollupAdjustedTTL =
                     AggregateDao.getNeedsRollupAdjustedTTL(adjustedTTL, rollupConfigs);
@@ -341,7 +341,7 @@ public class GaugeValueDao implements GaugeValueRepository {
                 continue;
             }
             // wait for above async work to ensure rollup complete before proceeding
-            Futures.allAsList(futures).get();
+            Futures.waitForAll(futures);
 
             int needsRollupAdjustedTTL =
                     AggregateDao.getNeedsRollupAdjustedTTL(adjustedTTL, rollupConfigs);

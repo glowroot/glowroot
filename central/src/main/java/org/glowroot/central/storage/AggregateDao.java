@@ -46,7 +46,6 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.common.hash.Hashing;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.Futures;
 import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -55,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrument;
+import org.glowroot.central.util.Futures;
 import org.glowroot.central.util.Messages;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.ConfigDefaults;
@@ -450,7 +450,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setSet(i++, transactionTypes);
         boundStatement.setInt(i++, needsRollupAdjustedTTL);
         futures.add(session.executeAsync(boundStatement));
-        Futures.allAsList(futures).get();
+        Futures.waitForAll(futures);
     }
 
     // query.from() is non-inclusive
@@ -786,7 +786,7 @@ public class AggregateDao implements AggregateRepository {
                         childAgentRollups, captureTime));
             }
             // wait for above async work to ensure rollup complete before proceeding
-            Futures.allAsList(futures).get();
+            Futures.waitForAll(futures);
 
             if (parentAgentRollup != null) {
                 // insert needs to happen first before call to postRollup(), see method-level
@@ -840,7 +840,7 @@ public class AggregateDao implements AggregateRepository {
                 continue;
             }
             // wait for above async work to ensure rollup complete before proceeding
-            Futures.allAsList(futures).get();
+            Futures.waitForAll(futures);
 
             PreparedStatement insertNeedsRollup = nextRollupIntervalMillis == null ? null
                     : this.insertNeedsRollup.get(rollupLevel);
@@ -2072,7 +2072,7 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setUUID(i++, uniqueness);
             futures.add(session.executeAsync(boundStatement));
         }
-        Futures.allAsList(futures).get();
+        Futures.waitForAll(futures);
     }
 
     private static void bindQuery(BoundStatement boundStatement, String agentRollup,
