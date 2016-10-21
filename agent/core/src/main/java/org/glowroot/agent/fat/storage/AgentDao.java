@@ -63,11 +63,6 @@ public class AgentDao implements AgentRepository {
         return true;
     }
 
-    @Override
-    public boolean isAgentRollupForAgentId(String agentRollup, String agentId) {
-        return agentRollup.isEmpty() && agentId.isEmpty();
-    }
-
     public void store(Environment environment) throws Exception {
         dataSource.update(new EnvironmentBinder(environment));
     }

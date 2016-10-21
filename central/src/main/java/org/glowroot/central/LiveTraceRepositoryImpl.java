@@ -21,20 +21,20 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
+import org.glowroot.central.storage.AgentDao;
 import org.glowroot.common.live.LiveTraceRepository;
-import org.glowroot.common.repo.AgentRepository;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class LiveTraceRepositoryImpl implements LiveTraceRepository {
 
     private final DownstreamServiceImpl downstreamService;
-    private final AgentRepository agentRepository;
+    private final AgentDao agentDao;
 
     LiveTraceRepositoryImpl(DownstreamServiceImpl downstreamService,
-            AgentRepository agentRepository) {
+            AgentDao agentDao) {
         this.downstreamService = downstreamService;
-        this.agentRepository = agentRepository;
+        this.agentDao = agentDao;
     }
 
     @Override
@@ -91,7 +91,7 @@ class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     private void checkValidAgentIdForRequest(String agentRollup, String agentId) {
-        if (!agentRepository.isAgentRollupForAgentId(agentRollup, agentId)) {
+        if (!agentDao.readAgentRollups(agentId).contains(agentRollup)) {
             throw new IllegalArgumentException(
                     "Agent " + agentId + " is not a child of rollup " + agentRollup);
         }

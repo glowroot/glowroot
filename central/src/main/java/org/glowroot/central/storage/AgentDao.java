@@ -31,6 +31,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -80,7 +81,15 @@ public class AgentDao implements AgentRepository {
 
     private volatile @MonotonicNonNull ConfigRepository configRepository;
 
-    private final LoadingCache<String, Optional<AgentConfig>> cache =
+    private final LoadingCache<String, Optional<String>> agentRollupCache =
+            CacheBuilder.newBuilder().build(new CacheLoader<String, Optional<String>>() {
+                @Override
+                public Optional<String> load(String agentId) throws Exception {
+                    return Optional.fromNullable(readAgentRollupInternal(agentId));
+                }
+            });
+
+    private final LoadingCache<String, Optional<AgentConfig>> agentConfigCache =
             CacheBuilder.newBuilder().build(new CacheLoader<String, Optional<AgentConfig>>() {
                 @Override
                 public Optional<AgentConfig> load(String agentId) throws Exception {
@@ -157,23 +166,7 @@ public class AgentDao implements AgentRepository {
 
     @Override
     public boolean isLeaf(String agentRollup) {
-        BoundStatement boundStatement = readSingleAgentOnePS.bind();
-        boundStatement.setString(0, agentRollup);
-        return !session.execute(boundStatement).isExhausted();
-    }
-
-    @Override
-    public boolean isAgentRollupForAgentId(String agentRollup, String agentId) {
-        if (agentRollup.equals(agentId)) {
-            return true;
-        }
-        BoundStatement boundStatement = readSingleAgentOnePS.bind();
-        boundStatement.setString(0, agentRollup);
-        Row row = session.execute(boundStatement).one();
-        if (row == null) {
-            return false;
-        }
-        return getAgentRollups(checkNotNull(row.getString(0))).contains(agentRollup);
+        return agentRollupCache.getUnchecked(agentRollup).isPresent();
     }
 
     // returns stored agent config
@@ -251,7 +244,8 @@ public class AgentDao implements AgentRepository {
         boundStatement.setString(i++, agentId);
         boundStatement.setString(i++, agentRollup);
         session.execute(boundStatement);
-        cache.invalidate(agentId);
+        agentRollupCache.invalidate(agentId);
+        agentConfigCache.invalidate(agentId);
         return updatedAgentConfig;
     }
 
@@ -300,9 +294,25 @@ public class AgentDao implements AgentRepository {
         session.execute(boundStatement);
     }
 
+    // includes agentId itself
+    // agentId is index 0
+    // its direct parent is index 1
+    // etc...
+    public List<String> readAgentRollups(String agentId) {
+        String agentRollup = agentRollupCache.getUnchecked(agentId).orNull();
+        if (agentRollup == null) {
+            // agent must have been manually deleted
+            return ImmutableList.of(agentId);
+        }
+        List<String> agentRollups = getAgentRollups(agentRollup);
+        Collections.reverse(agentRollups);
+        agentRollups.add(0, agentId);
+        return agentRollups;
+    }
+
     @Nullable
     AgentConfig readAgentConfig(String agentId) {
-        return cache.getUnchecked(agentId).orNull();
+        return agentConfigCache.getUnchecked(agentId).orNull();
     }
 
     void storeAgentConfig(String agentId, AgentConfig agentConfig) {
@@ -313,30 +323,19 @@ public class AgentDao implements AgentRepository {
         boundStatement.setBool(i++, true);
         boundStatement.setUUID(i++, UUIDs.random());
         session.execute(boundStatement);
-        cache.invalidate(agentId);
+        agentConfigCache.invalidate(agentId);
     }
 
-    // includes agentId itself
-    // agentId is index 0
-    // its direct parent is index 1
-    // etc...
-    List<String> readAgentRollups(String agentId) {
+    // returns non-null when agentId exists, so agentRollupCache can be checked for existence
+    private @Nullable String readAgentRollupInternal(String agentId) {
         BoundStatement boundStatement = readAgentRollupPS.bind();
         boundStatement.setString(0, agentId);
         ResultSet results = session.execute(boundStatement);
         Row row = results.one();
         if (row == null) {
-            // agent must have been manually deleted
-            return ImmutableList.of(agentId);
+            return null;
         }
-        String agentRollup = row.getString(0);
-        if (agentRollup == null) {
-            return ImmutableList.of(agentId);
-        }
-        List<String> agentRollups = getAgentRollups(agentRollup);
-        Collections.reverse(agentRollups);
-        agentRollups.add(0, agentId);
-        return agentRollups;
+        return MoreObjects.firstNonNull(row.getString(0), agentId);
     }
 
     private @Nullable AgentConfig readAgentConfigInternal(String agentId)

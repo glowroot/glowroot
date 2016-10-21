@@ -30,8 +30,6 @@ public interface AgentRepository {
 
     boolean isLeaf(String agentRollup);
 
-    boolean isAgentRollupForAgentId(String agentRollup, String agentId);
-
     @Nullable
     Environment readEnvironment(String agentId) throws Exception;
 
