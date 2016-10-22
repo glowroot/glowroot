@@ -370,13 +370,16 @@ public class Transaction {
 
     public long getTotalCpuNanos() {
         long totalCpuNanos = mainThreadContext.getTotalCpuNanos();
-        if (auxThreadContexts != null) {
+        synchronized (mainThreadContext) {
+            if (auxThreadContexts == null) {
+                return totalCpuNanos;
+            }
             for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
                 totalCpuNanos =
                         NotAvailableAware.add(totalCpuNanos, auxThreadContext.getTotalCpuNanos());
             }
+            return totalCpuNanos;
         }
-        return totalCpuNanos;
     }
 
     void mergeAuxThreadStatsInto(ThreadStatsCollector threadStats) {
