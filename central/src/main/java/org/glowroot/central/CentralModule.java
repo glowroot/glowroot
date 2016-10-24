@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
+import com.datastax.driver.core.PoolingOptions;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
@@ -269,6 +270,9 @@ class CentralModule {
                         // let driver know that only idempotent queries are used so it will retry on
                         // timeout
                         .withQueryOptions(new QueryOptions().setDefaultIdempotence(true))
+                        // central runs lots of parallel async queries and is very spiky since all
+                        // aggregates come in right after each minute marker
+                        .withPoolingOptions(new PoolingOptions().setMaxQueueSize(4096))
                         .build();
                 return cluster.connect();
             } catch (NoHostAvailableException e) {
