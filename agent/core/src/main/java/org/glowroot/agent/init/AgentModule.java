@@ -193,15 +193,12 @@ public class AgentModule {
                 clock, ticker);
         // using fixed rate to keep gauge collections close to on the second mark
         long gaugeCollectionIntervalMillis = configService.getGaugeCollectionIntervalMillis();
-        long initialDelay = gaugeCollectionIntervalMillis
-                - (clock.currentTimeMillis() % gaugeCollectionIntervalMillis);
-        gaugeCollector.scheduleWithFixedDelay(initialDelay, gaugeCollectionIntervalMillis,
-                MILLISECONDS);
+        gaugeCollector.scheduleWithFixedDelay(gaugeCollectionIntervalMillis, MILLISECONDS);
         stackTraceCollector = new StackTraceCollector(transactionRegistry, configService, random);
 
         immedateTraceStoreWatcher = new ImmediateTraceStoreWatcher(backgroundExecutor,
                 transactionRegistry, transactionCollector, configService, ticker);
-        immedateTraceStoreWatcher.scheduleWithFixedDelay(backgroundExecutor, 0,
+        immedateTraceStoreWatcher.scheduleWithFixedDelay(backgroundExecutor,
                 ImmediateTraceStoreWatcher.PERIOD_MILLIS, MILLISECONDS);
 
         liveTraceRepository = new LiveTraceRepositoryImpl(transactionRegistry, transactionCollector,

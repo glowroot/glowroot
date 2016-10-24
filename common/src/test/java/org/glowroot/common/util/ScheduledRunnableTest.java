@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,9 +49,9 @@ public class ScheduledRunnableTest {
         // given
         TestScheduledRunnable testScheduledRunnable = new TestScheduledRunnable();
         // when
-        testScheduledRunnable.scheduleWithFixedDelay(scheduledExecutorService, 1, 1, SECONDS);
+        testScheduledRunnable.scheduleWithFixedDelay(scheduledExecutorService, 1, SECONDS);
         // then
-        verify(scheduledExecutorService).scheduleWithFixedDelay(testScheduledRunnable, 1, 1,
+        verify(scheduledExecutorService).scheduleWithFixedDelay(testScheduledRunnable, 0, 1,
                 SECONDS);
         verifyNoMoreInteractions(scheduledExecutorService);
     }
@@ -61,10 +61,10 @@ public class ScheduledRunnableTest {
         // given
         TestScheduledRunnable testScheduledRunnable = new TestScheduledRunnable();
         // when
-        testScheduledRunnable.scheduleWithFixedDelay(scheduledExecutorService, 1, 1, SECONDS);
-        testScheduledRunnable.scheduleWithFixedDelay(scheduledExecutorService, 1, 1, SECONDS);
+        testScheduledRunnable.scheduleWithFixedDelay(scheduledExecutorService, 1, SECONDS);
+        testScheduledRunnable.scheduleWithFixedDelay(scheduledExecutorService, 1, SECONDS);
         // then
-        verify(scheduledExecutorService).scheduleWithFixedDelay(testScheduledRunnable, 1, 1,
+        verify(scheduledExecutorService).scheduleWithFixedDelay(testScheduledRunnable, 0, 1,
                 SECONDS);
         verifyNoMoreInteractions(scheduledExecutorService);
     }

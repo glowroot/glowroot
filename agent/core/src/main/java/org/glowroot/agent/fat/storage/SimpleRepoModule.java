@@ -100,7 +100,7 @@ public class SimpleRepoModule {
         } else {
             reaperRunnable = new ReaperRunnable(configRepository, aggregateDao, traceDao,
                     gaugeValueDao, gaugeNameDao, transactionTypeDao, fullQueryTextDao, clock);
-            reaperRunnable.scheduleWithFixedDelay(backgroundExecutor, 0,
+            reaperRunnable.scheduleWithFixedDelay(backgroundExecutor,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }
     }
