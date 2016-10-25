@@ -22,6 +22,8 @@ import java.sql.SQLException;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.Hashing;
 import org.checkerframework.checker.tainting.qual.Untainted;
@@ -29,10 +31,13 @@ import org.checkerframework.checker.tainting.qual.Untainted;
 import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.agent.fat.storage.util.DataSource.JdbcRowQuery;
 import org.glowroot.agent.fat.storage.util.ImmutableColumn;
+import org.glowroot.agent.fat.storage.util.ImmutableIndex;
 import org.glowroot.agent.fat.storage.util.Schemas.Column;
 import org.glowroot.agent.fat.storage.util.Schemas.ColumnType;
+import org.glowroot.agent.fat.storage.util.Schemas.Index;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.DAYS;
 
 class FullQueryTextDao {
 
@@ -41,30 +46,41 @@ class FullQueryTextDao {
             ImmutableColumn.of("full_text", ColumnType.VARCHAR),
             ImmutableColumn.of("last_capture_time", ColumnType.BIGINT));
 
+    private static final ImmutableList<Index> indexes = ImmutableList.<Index>of(
+            ImmutableIndex.of("full_query_text_idx", ImmutableList.of("full_text_sha1")));
+
     private final DataSource dataSource;
+
+    private final Cache<String, Boolean> lastCaptureTimeUpdatedInThePastDay =
+            CacheBuilder.newBuilder()
+                    .expireAfterWrite(1, DAYS)
+                    .maximumSize(10000)
+                    .build();
 
     private final Object lock = new Object();
 
     FullQueryTextDao(DataSource dataSource) throws Exception {
         this.dataSource = dataSource;
         dataSource.syncTable("full_query_text", columns);
+        dataSource.syncIndexes("full_query_text", indexes);
     }
 
     String updateLastCaptureTime(String fullText, long captureTime) throws SQLException {
         String fullTextSha1 = Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
+        if (lastCaptureTimeUpdatedInThePastDay.getIfPresent(fullTextSha1) != null) {
+            return fullTextSha1;
+        }
         synchronized (lock) {
-            boolean exists = dataSource.queryForExists(
-                    "select 1 from full_query_text where full_text_sha1 = ?", fullTextSha1);
-            if (exists) {
-                dataSource.update(
-                        "update full_query_text set last_capture_time = ? where full_text_sha1 = ?",
-                        captureTime, fullTextSha1);
-            } else {
+            int updateCount = dataSource.update(
+                    "update full_query_text set last_capture_time = ? where full_text_sha1 = ?",
+                    captureTime, fullTextSha1);
+            if (updateCount == 0) {
                 dataSource.update("insert into full_query_text (full_text_sha1, full_text,"
                         + " last_capture_time) values (?, ?, ?)", fullTextSha1, fullText,
                         captureTime);
             }
         }
+        lastCaptureTimeUpdatedInThePastDay.put(fullTextSha1, true);
         return fullTextSha1;
     }
 
@@ -88,8 +104,9 @@ class FullQueryTextDao {
 
     void deleteBefore(long captureTime) throws Exception {
         synchronized (lock) {
+            // subtracting 1 day to account for rate limiting of updates
             dataSource.update("delete from full_query_text where last_capture_time < ?",
-                    captureTime);
+                    captureTime - DAYS.toMillis(1));
         }
     }
 }
