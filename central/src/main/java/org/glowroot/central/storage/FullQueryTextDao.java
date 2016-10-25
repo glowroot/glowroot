@@ -152,7 +152,7 @@ public class FullQueryTextDao {
     private int getTTL() {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         RollupConfig lastRollupConfig = rollupConfigs.get(rollupConfigs.size() - 1);
-        // add largest rollup time to account for query being retained slightly longer by rollups
+        // adding largest rollup time to account for query being retained longer by rollups
         long ttl = MILLISECONDS.toSeconds(lastRollupConfig.intervalMillis())
                 // adding 1 day to account for rateLimiter
                 + DAYS.toSeconds(1)
