@@ -140,9 +140,6 @@ public class Schemas {
             sql.append(columns.get(i).name());
             sql.append(" ");
             sql.append(sqlTypeName);
-            if (columns.get(i).primaryKey()) {
-                sql.append(" primary key");
-            }
         }
         sql.append(")");
         execute(castUntainted(sql.toString()), connection);
@@ -298,10 +295,6 @@ public class Schemas {
         abstract String name();
         @Value.Parameter
         abstract ColumnType type();
-        @Value.Default
-        boolean primaryKey() {
-            return false;
-        }
     }
 
     @Value.Immutable
