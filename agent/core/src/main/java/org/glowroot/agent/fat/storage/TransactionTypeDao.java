@@ -18,6 +18,8 @@ package org.glowroot.agent.fat.storage;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -27,15 +29,23 @@ import org.glowroot.agent.fat.storage.util.Schemas.Column;
 import org.glowroot.agent.fat.storage.util.Schemas.ColumnType;
 import org.glowroot.common.repo.TransactionTypeRepository;
 
+import static java.util.concurrent.TimeUnit.DAYS;
+
 class TransactionTypeDao implements TransactionTypeRepository {
 
     private static final String AGENT_ID = "";
 
-    private static final ImmutableList<Column> columns =
-            ImmutableList.<Column>of(ImmutableColumn.of("transaction_type", ColumnType.VARCHAR),
-                    ImmutableColumn.of("last_capture_time", ColumnType.BIGINT));
+    private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
+            ImmutableColumn.of("transaction_type", ColumnType.VARCHAR),
+            ImmutableColumn.of("last_capture_time", ColumnType.BIGINT));
 
     private final DataSource dataSource;
+
+    private final Cache<String, Boolean> lastCaptureTimeUpdatedInThePastDay =
+            CacheBuilder.newBuilder()
+                    .expireAfterWrite(1, DAYS)
+                    .maximumSize(10000)
+                    .build();
 
     private final Object lock = new Object();
 
@@ -56,19 +66,27 @@ class TransactionTypeDao implements TransactionTypeRepository {
     }
 
     void updateLastCaptureTime(String transactionType, long captureTime) throws Exception {
+        if (lastCaptureTimeUpdatedInThePastDay.getIfPresent(transactionType) != null) {
+            return;
+        }
         synchronized (lock) {
             int updateCount = dataSource.update("update transaction_types set last_capture_time = ?"
                     + " where transaction_type = ?", captureTime, transactionType);
             if (updateCount == 0) {
                 dataSource.update(
-                        "insert into transaction_types (transaction_type,"
-                                + " last_capture_time) values (?, ?)",
+                        "insert into transaction_types (transaction_type, last_capture_time)"
+                                + " values (?, ?)",
                         transactionType, captureTime);
             }
         }
+        lastCaptureTimeUpdatedInThePastDay.put(transactionType, true);
     }
 
     void deleteBefore(long captureTime) throws Exception {
-        dataSource.update("delete from transaction_types where last_capture_time < ?", captureTime);
+        synchronized (lock) {
+            // subtracting 1 day to account for rate limiting of updates
+            dataSource.update("delete from transaction_types where last_capture_time < ?",
+                    captureTime - DAYS.toMillis(1));
+        }
     }
 }

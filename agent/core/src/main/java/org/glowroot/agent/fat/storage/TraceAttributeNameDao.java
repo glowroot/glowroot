@@ -20,16 +20,23 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.tainting.qual.Untainted;
+import org.immutables.value.Value;
 
 import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.agent.fat.storage.util.DataSource.JdbcRowQuery;
 import org.glowroot.agent.fat.storage.util.ImmutableColumn;
+import org.glowroot.agent.fat.storage.util.ImmutableIndex;
 import org.glowroot.agent.fat.storage.util.Schemas.Column;
 import org.glowroot.agent.fat.storage.util.Schemas.ColumnType;
+import org.glowroot.agent.fat.storage.util.Schemas.Index;
+import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.DAYS;
 
 class TraceAttributeNameDao {
 
@@ -38,13 +45,24 @@ class TraceAttributeNameDao {
             ImmutableColumn.of("trace_attribute_name", ColumnType.VARCHAR),
             ImmutableColumn.of("last_capture_time", ColumnType.BIGINT));
 
+    private static final ImmutableList<Index> indexes = ImmutableList.<Index>of(
+            ImmutableIndex.of("trace_attribute_name_idx",
+                    ImmutableList.of("transaction_type", "trace_attribute_name")));
+
     private final DataSource dataSource;
+
+    private final Cache<TraceAttributeNameKey, Boolean> lastCaptureTimeUpdatedInThePastDay =
+            CacheBuilder.newBuilder()
+                    .expireAfterWrite(1, DAYS)
+                    .maximumSize(10000)
+                    .build();
 
     private final Object lock = new Object();
 
     TraceAttributeNameDao(DataSource dataSource) throws Exception {
         this.dataSource = dataSource;
         dataSource.syncTable("trace_attribute_name", columns);
+        dataSource.syncIndexes("trace_attribute_name", indexes);
     }
 
     public List<String> readTraceAttributeNames(String transactionType) throws Exception {
@@ -53,6 +71,11 @@ class TraceAttributeNameDao {
 
     void updateLastCaptureTime(String transactionType, String traceAttributeName, long captureTime)
             throws Exception {
+        TraceAttributeNameKey key =
+                ImmutableTraceAttributeNameKey.of(transactionType, traceAttributeName);
+        if (lastCaptureTimeUpdatedInThePastDay.getIfPresent(key) != null) {
+            return;
+        }
         synchronized (lock) {
             int updateCount = dataSource.update(
                     "update trace_attribute_name set last_capture_time = ?"
@@ -65,11 +88,15 @@ class TraceAttributeNameDao {
                         transactionType, traceAttributeName, captureTime);
             }
         }
+        lastCaptureTimeUpdatedInThePastDay.put(key, true);
     }
 
     void deleteBefore(long captureTime) throws Exception {
-        dataSource.update("delete from trace_attribute_name where last_capture_time < ?",
-                captureTime);
+        synchronized (lock) {
+            // subtracting 1 day to account for rate limiting of updates
+            dataSource.update("delete from trace_attribute_name where last_capture_time < ?",
+                    captureTime - DAYS.toMillis(1));
+        }
     }
 
     private static class TraceAttributeQuery implements JdbcRowQuery<String> {
@@ -95,5 +122,12 @@ class TraceAttributeNameDao {
         public String mapRow(ResultSet resultSet) throws SQLException {
             return checkNotNull(resultSet.getString(1));
         }
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface TraceAttributeNameKey {
+        String transactionType();
+        String traceAttributeName();
     }
 }

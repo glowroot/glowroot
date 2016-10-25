@@ -20,13 +20,18 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.MoreObjects;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 
 import org.glowroot.agent.fat.storage.util.DataSource;
 import org.glowroot.agent.fat.storage.util.ImmutableColumn;
+import org.glowroot.agent.fat.storage.util.ImmutableIndex;
 import org.glowroot.agent.fat.storage.util.Schemas.Column;
 import org.glowroot.agent.fat.storage.util.Schemas.ColumnType;
+import org.glowroot.agent.fat.storage.util.Schemas.Index;
+
+import static java.util.concurrent.TimeUnit.DAYS;
 
 class GaugeNameDao {
 
@@ -35,35 +40,61 @@ class GaugeNameDao {
             ImmutableColumn.of("gauge_name", ColumnType.VARCHAR),
             ImmutableColumn.of("last_capture_time", ColumnType.BIGINT));
 
+    private static final ImmutableList<Index> indexes = ImmutableList.<Index>of(
+            ImmutableIndex.of("gauge_name_id_idx", ImmutableList.of("id")),
+            ImmutableIndex.of("gauge_name_gauge_name_idx", ImmutableList.of("gauge_name")));
+
     private final DataSource dataSource;
+
+    private final Cache<String, Long> lastCaptureTimeUpdatedInThePastDay =
+            CacheBuilder.newBuilder()
+                    .expireAfterWrite(1, DAYS)
+                    .maximumSize(10000)
+                    .build();
 
     private final Object lock = new Object();
 
     GaugeNameDao(DataSource dataSource) throws Exception {
         this.dataSource = dataSource;
         dataSource.syncTable("gauge_name", columns);
+        dataSource.syncIndexes("gauge_name", indexes);
     }
 
     // warning: returns -1 if data source is closing
     long updateLastCaptureTime(String gaugeName, long captureTime) throws SQLException {
+        Long gaugeId = lastCaptureTimeUpdatedInThePastDay.getIfPresent(gaugeName);
+        if (gaugeId != null) {
+            return gaugeId;
+        }
         synchronized (lock) {
-            Long gaugeId = getGaugeId(gaugeName);
-            if (gaugeId != null) {
+            gaugeId = dataSource.queryForOptionalLong(
+                    "select id from gauge_name where gauge_name = ?", gaugeName);
+            if (gaugeId == null) {
+                dataSource.update(
+                        "insert into gauge_name (gauge_name, last_capture_time) values (?, ?)",
+                        gaugeName, captureTime);
+                gaugeId = dataSource.queryForOptionalLong(
+                        "select id from gauge_name where gauge_name = ?", gaugeName);
+                if (gaugeId == null) {
+                    // data source is closing
+                    return -1;
+                }
+            } else {
                 dataSource.update("update gauge_name set last_capture_time = ? where id = ?",
                         captureTime, gaugeId);
-                return gaugeId;
             }
-            dataSource.update(
-                    "insert into gauge_name (gauge_name, last_capture_time) values (?, ?)",
-                    gaugeName, captureTime);
-            gaugeId = getGaugeId(gaugeName);
-            // gaugeId could still be null here if data source is closing
-            return MoreObjects.firstNonNull(gaugeId, -1L);
         }
+        lastCaptureTimeUpdatedInThePastDay.put(gaugeName, gaugeId);
+        return gaugeId;
     }
 
     @Nullable
     Long getGaugeId(String gaugeName) throws SQLException {
+        Long gaugeId = lastCaptureTimeUpdatedInThePastDay.getIfPresent(gaugeName);
+        if (gaugeId != null) {
+            return gaugeId;
+        }
+        // don't put back into cache, since this is old, and if it expires, will get new gauge id
         return dataSource.queryForOptionalLong("select id from gauge_name where gauge_name = ?",
                 gaugeName);
     }
@@ -74,7 +105,9 @@ class GaugeNameDao {
 
     void deleteBefore(long captureTime) throws Exception {
         synchronized (lock) {
-            dataSource.update("delete from gauge_name where last_capture_time < ?", captureTime);
+            // subtracting 1 day to account for rate limiting of updates
+            dataSource.update("delete from gauge_name where last_capture_time < ?",
+                    captureTime - DAYS.toMillis(1));
         }
     }
 }
