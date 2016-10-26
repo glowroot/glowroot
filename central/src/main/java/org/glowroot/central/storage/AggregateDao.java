@@ -427,6 +427,10 @@ public class AggregateDao implements AggregateRepository {
         Set<String> transactionTypes = aggregatesByTypeList.stream()
                 .map(OldAggregatesByType::getTransactionType).collect(Collectors.toSet());
 
+        // wait for success before inserting "needs rollup" records
+        Futures.waitForAll(futures);
+        futures.clear();
+
         int needsRollupAdjustedTTL = getNeedsRollupAdjustedTTL(adjustedTTL, rollupConfigs);
         if (agentRollups.size() > 1) {
             BoundStatement boundStatement = insertNeedsRollupFromChild.bind();

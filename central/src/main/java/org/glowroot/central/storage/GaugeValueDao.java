@@ -179,6 +179,11 @@ public class GaugeValueDao implements GaugeValueRepository {
                 futures.addAll(gaugeNameDao.store(agentRollup, gaugeName));
             }
         }
+
+        // wait for success before inserting "needs rollup" records
+        Futures.waitForAll(futures);
+        futures.clear();
+
         // insert into gauge_needs_rollup_1
         SetMultimap<Long, String> rollupCaptureTimes = getRollupCaptureTimes(gaugeValues);
         for (Entry<Long, Set<String>> entry : Multimaps.asMap(rollupCaptureTimes).entrySet()) {
