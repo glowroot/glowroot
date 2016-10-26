@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -41,12 +42,14 @@ import org.glowroot.central.storage.TraceDao;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.util.AlertingService;
+import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldTransactionAggregate;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceImplBase;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateResponseMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamHeader;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
@@ -81,6 +84,7 @@ class GrpcServer {
     private final TraceDao traceDao;
     private final ConfigRepository configRepository;
     private final AlertingService alertingService;
+    private final Clock clock;
     private final String version;
 
     private final DownstreamServiceImpl downstreamService;
@@ -89,15 +93,19 @@ class GrpcServer {
 
     private final ExecutorService alertCheckingExecutor;
 
+    private volatile long currentMinute;
+    private final AtomicInteger nextDelay = new AtomicInteger();
+
     GrpcServer(String bindAddress, int port, AgentDao agentDao, AggregateDao aggregateDao,
             GaugeValueDao gaugeValueDao, TraceDao traceDao, ConfigRepository configRepository,
-            AlertingService alertingService, String version) throws IOException {
+            AlertingService alertingService, Clock clock, String version) throws IOException {
         this.agentDao = agentDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
         this.traceDao = traceDao;
         this.configRepository = configRepository;
         this.alertingService = alertingService;
+        this.clock = clock;
         this.version = version;
 
         downstreamService = new DownstreamServiceImpl(agentDao);
@@ -120,6 +128,17 @@ class GrpcServer {
     void close() {
         alertCheckingExecutor.shutdown();
         server.shutdown();
+    }
+
+    private int getNextDelayMillis() {
+        long currentishTimeMillis = clock.currentTimeMillis() + 10000;
+        if (currentishTimeMillis > currentMinute) {
+            // race condition here is ok, at worst results in resetting nextDelay multiple times
+            nextDelay.set(0);
+            currentMinute = (long) Math.ceil(currentishTimeMillis / 60000.0) * 60000;
+        }
+        // spread out aggregate collections 100 milliseconds a part, rolling over at 10 seconds
+        return nextDelay.getAndAdd(100) % 10000;
     }
 
     @VisibleForTesting
@@ -160,7 +179,7 @@ class GrpcServer {
 
         @Override
         public StreamObserver<AggregateStreamMessage> collectAggregateStream(
-                final StreamObserver<EmptyMessage> responseObserver) {
+                final StreamObserver<AggregateResponseMessage> responseObserver) {
             return new StreamObserver<AggregateStreamMessage>() {
 
                 private @MonotonicNonNull AggregateStreamHeader header;
@@ -231,7 +250,7 @@ class GrpcServer {
                 traceHeadline = "Collect aggregates: {{0.agentId}}", timerName = "aggregates")
         @Override
         public void collectAggregates(OldAggregateMessage request,
-                StreamObserver<EmptyMessage> responseObserver) {
+                StreamObserver<AggregateResponseMessage> responseObserver) {
 
             List<Aggregate.SharedQueryText> sharedQueryTexts;
             List<String> oldSharedQueryTexts = request.getOldSharedQueryTextList();
@@ -253,7 +272,7 @@ class GrpcServer {
         private void collectAggregatesInternal(String agentId, long captureTime,
                 List<Aggregate.SharedQueryText> sharedQueryTexts,
                 List<OldAggregatesByType> aggregatesByTypeList,
-                StreamObserver<EmptyMessage> responseObserver) {
+                StreamObserver<AggregateResponseMessage> responseObserver) {
             if (!aggregatesByTypeList.isEmpty()) {
                 try {
                     aggregateDao.store(agentId, captureTime, aggregatesByTypeList,
@@ -265,7 +284,9 @@ class GrpcServer {
                 }
             }
             checkTransactionAlerts(agentId, captureTime);
-            responseObserver.onNext(EmptyMessage.getDefaultInstance());
+            responseObserver.onNext(AggregateResponseMessage.newBuilder()
+                    .setNextDelayMillis(getNextDelayMillis())
+                    .build());
             responseObserver.onCompleted();
         }
 

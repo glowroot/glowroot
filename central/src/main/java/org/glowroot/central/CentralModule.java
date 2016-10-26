@@ -180,7 +180,7 @@ class CentralModule {
                     new MailService());
             server = new GrpcServer(centralConfig.grpcBindAddress(), centralConfig.grpcPort(),
                     agentDao, aggregateDao, gaugeValueDao, traceDao, configRepository,
-                    alertingService, version);
+                    alertingService, clock, version);
             DownstreamServiceImpl downstreamService = server.getDownstreamService();
             configRepository.addConfigListener(new ConfigListener() {
                 @Override

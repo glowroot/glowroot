@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceImplBase;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateResponseMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
@@ -49,8 +50,8 @@ import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceImplBa
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse.MessageCase;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -151,7 +152,7 @@ class GrpcServerWrapper {
 
         @Override
         public StreamObserver<AggregateStreamMessage> collectAggregateStream(
-                final StreamObserver<EmptyMessage> responseObserver) {
+                final StreamObserver<AggregateResponseMessage> responseObserver) {
             return new StreamObserver<AggregateStreamMessage>() {
                 @Override
                 public void onNext(AggregateStreamMessage value) {}
@@ -161,7 +162,7 @@ class GrpcServerWrapper {
                 }
                 @Override
                 public void onCompleted() {
-                    responseObserver.onNext(EmptyMessage.getDefaultInstance());
+                    responseObserver.onNext(AggregateResponseMessage.getDefaultInstance());
                     responseObserver.onCompleted();
                 }
             };

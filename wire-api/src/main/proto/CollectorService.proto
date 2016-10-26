@@ -11,10 +11,11 @@ option java_package = "org.glowroot.wire.api.model";
 
 service CollectorService {
   rpc collectInit(InitMessage) returns (InitResponse);
-  rpc collectAggregates(OldAggregateMessage) returns (EmptyMessage); // deprecated in 0.9.5
-                                                               // replaced by collectAggregateStream
-  rpc collectAggregateStream(stream AggregateStreamMessage) returns (EmptyMessage);
+  // deprecated in 0.9.5, replaced by collectAggregateStream
+  rpc collectAggregates(OldAggregateMessage) returns (AggregateResponseMessage);
+  rpc collectAggregateStream(stream AggregateStreamMessage) returns (AggregateResponseMessage);
   rpc collectGaugeValues(GaugeValueMessage) returns (EmptyMessage);
+  // deprecated in 0.9.5, replaced by collectTraceStream
   rpc collectTrace(OldTraceMessage) returns (EmptyMessage);
   rpc collectTraceStream(stream TraceStreamMessage) returns (EmptyMessage);
   rpc log(LogMessage) returns (EmptyMessage);
@@ -48,6 +49,10 @@ message AggregateStreamMessage {
     OverallAggregate overall_aggregate = 3;
     TransactionAggregate transaction_aggregate = 4;
   }
+}
+
+message AggregateResponseMessage {
+  int32 next_delay_millis = 1;
 }
 
 message GaugeValueMessage {

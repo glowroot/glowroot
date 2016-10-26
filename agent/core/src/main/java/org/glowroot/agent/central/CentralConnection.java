@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.common.util.OnlyUsedByTests;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 class CentralConnection {
@@ -102,6 +103,12 @@ class CentralConnection {
 
     // important that these calls are idempotent
     <T extends /*@NonNull*/ Object> void callWithAFewRetries(GrpcCall<T> call) {
+        callWithAFewRetries(0, call);
+    }
+
+    // important that these calls are idempotent
+    <T extends /*@NonNull*/ Object> void callWithAFewRetries(int initialDelayMillis,
+            final GrpcCall<T> call) {
         if (closed) {
             return;
         }
@@ -121,9 +128,22 @@ class CentralConnection {
         // 60 seconds should be enough time to restart central collector instance without losing
         // data (though better to use central collector cluster)
         //
-        // this cannot retry over too long a period since it retains memory of rpc message for that
-        // duration
-        call.call(new RetryingStreamObserver<T>(call, 60, 60));
+        // this cannot retry over too long a period since it retains memory of rpc message for
+        // that duration
+        if (initialDelayMillis > 0) {
+            retryExecutor.schedule(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        call.call(new RetryingStreamObserver<T>(call, 60, 60));
+                    } catch (Throwable t) {
+                        logger.error(t.getMessage(), t);
+                    }
+                }
+            }, initialDelayMillis, MILLISECONDS);
+        } else {
+            call.call(new RetryingStreamObserver<T>(call, 60, 60));
+        }
     }
 
     // important that these calls are idempotent

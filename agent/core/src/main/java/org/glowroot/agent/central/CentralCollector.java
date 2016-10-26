@@ -38,6 +38,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceStub;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateResponseMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamHeader;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateStreamMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
@@ -73,6 +74,8 @@ public class CentralCollector implements Collector {
     private final DownstreamServiceObserver downstreamServiceObserver;
 
     private final SharedQueryTextLimiter sharedQueryTextLimiter = new SharedQueryTextLimiter();
+
+    private volatile int nextAggregateDelayMillis;
 
     public CentralCollector(Map<String, String> properties, String collectorHost,
             LiveJvmServiceImpl liveJvmService, LiveWeavingServiceImpl liveWeavingService,
@@ -149,68 +152,8 @@ public class CentralCollector implements Collector {
     // collecting even when no aggregates since collection triggers transaction-based alerts
     @Override
     public void collectAggregates(final long captureTime, final Aggregates aggregates) {
-        final List<String> fullTextSha1s = Lists.newArrayList();
-        centralConnection.callWithAFewRetries(new GrpcCall<EmptyMessage>() {
-            @Override
-            public void call(StreamObserver<EmptyMessage> responseObserver) {
-                final StreamObserver<AggregateStreamMessage> requestObserver =
-                        collectorServiceStub.collectAggregateStream(responseObserver);
-                requestObserver.onNext(AggregateStreamMessage.newBuilder()
-                        .setHeader(AggregateStreamHeader.newBuilder()
-                                .setAgentId(agentId)
-                                .setCaptureTime(captureTime))
-                        .build());
-                // need to clear in case this is a retry
-                fullTextSha1s.clear();
-                aggregates.accept(new AggregateVisitor<RuntimeException>() {
-                    @Override
-                    public void visitOverallAggregate(String transactionType,
-                            List<String> sharedQueryTexts, Aggregate overallAggregate) {
-                        for (String sharedQueryText : sharedQueryTexts) {
-                            Aggregate.SharedQueryText aggregateSharedQueryText =
-                                    sharedQueryTextLimiter
-                                            .buildAggregateSharedQueryText(sharedQueryText);
-                            String fullTextSha1 = aggregateSharedQueryText.getFullTextSha1();
-                            if (!fullTextSha1.isEmpty()) {
-                                fullTextSha1s.add(fullTextSha1);
-                            }
-                            requestObserver.onNext(AggregateStreamMessage.newBuilder()
-                                    .setSharedQueryText(aggregateSharedQueryText)
-                                    .build());
-                        }
-                        requestObserver.onNext(AggregateStreamMessage.newBuilder()
-                                .setOverallAggregate(OverallAggregate.newBuilder()
-                                        .setTransactionType(transactionType)
-                                        .setAggregate(overallAggregate))
-                                .build());
-                    }
-                    @Override
-                    public void visitTransactionAggregate(String transactionType,
-                            String transactionName, List<String> sharedQueryTexts,
-                            Aggregate transactionAggregate) {
-                        for (String sharedQueryText : sharedQueryTexts) {
-                            requestObserver.onNext(AggregateStreamMessage.newBuilder()
-                                    .setSharedQueryText(sharedQueryTextLimiter
-                                            .buildAggregateSharedQueryText(sharedQueryText))
-                                    .build());
-                        }
-                        requestObserver.onNext(AggregateStreamMessage.newBuilder()
-                                .setTransactionAggregate(TransactionAggregate.newBuilder()
-                                        .setTransactionType(transactionType)
-                                        .setTransactionName(transactionName)
-                                        .setAggregate(transactionAggregate))
-                                .build());
-                    }
-                });
-                requestObserver.onCompleted();
-            }
-            @Override
-            public void doWithResponse(EmptyMessage response) {
-                for (String fullTextSha1 : fullTextSha1s) {
-                    sharedQueryTextLimiter.onSuccessfullySentToCentralCollector(fullTextSha1);
-                }
-            }
-        });
+        centralConnection.callWithAFewRetries(nextAggregateDelayMillis,
+                new CollectAggregatesGrpcCall(aggregates, captureTime));
     }
 
     @Override
@@ -307,5 +250,78 @@ public class CentralCollector implements Collector {
     @OnlyUsedByTests
     public void awaitClose() throws InterruptedException {
         centralConnection.awaitClose();
+    }
+
+    private class CollectAggregatesGrpcCall extends GrpcCall<AggregateResponseMessage> {
+
+        private final Aggregates aggregates;
+        private final long captureTime;
+        private final List<String> fullTextSha1s = Lists.newArrayList();
+
+        private CollectAggregatesGrpcCall(Aggregates aggregates, long captureTime) {
+            this.aggregates = aggregates;
+            this.captureTime = captureTime;
+        }
+
+        @Override
+        public void call(StreamObserver<AggregateResponseMessage> responseObserver) {
+            final StreamObserver<AggregateStreamMessage> requestObserver =
+                    collectorServiceStub.collectAggregateStream(responseObserver);
+            requestObserver.onNext(AggregateStreamMessage.newBuilder()
+                    .setHeader(AggregateStreamHeader.newBuilder()
+                            .setAgentId(agentId)
+                            .setCaptureTime(captureTime))
+                    .build());
+            // need to clear in case this is a retry
+            fullTextSha1s.clear();
+            aggregates.accept(new AggregateVisitor<RuntimeException>() {
+                @Override
+                public void visitOverallAggregate(String transactionType,
+                        List<String> sharedQueryTexts, Aggregate overallAggregate) {
+                    for (String sharedQueryText : sharedQueryTexts) {
+                        Aggregate.SharedQueryText aggregateSharedQueryText = sharedQueryTextLimiter
+                                .buildAggregateSharedQueryText(sharedQueryText);
+                        String fullTextSha1 = aggregateSharedQueryText.getFullTextSha1();
+                        if (!fullTextSha1.isEmpty()) {
+                            fullTextSha1s.add(fullTextSha1);
+                        }
+                        requestObserver.onNext(AggregateStreamMessage.newBuilder()
+                                .setSharedQueryText(aggregateSharedQueryText)
+                                .build());
+                    }
+                    requestObserver.onNext(AggregateStreamMessage.newBuilder()
+                            .setOverallAggregate(OverallAggregate.newBuilder()
+                                    .setTransactionType(transactionType)
+                                    .setAggregate(overallAggregate))
+                            .build());
+                }
+                @Override
+                public void visitTransactionAggregate(String transactionType,
+                        String transactionName, List<String> sharedQueryTexts,
+                        Aggregate transactionAggregate) {
+                    for (String sharedQueryText : sharedQueryTexts) {
+                        requestObserver.onNext(AggregateStreamMessage.newBuilder()
+                                .setSharedQueryText(sharedQueryTextLimiter
+                                        .buildAggregateSharedQueryText(sharedQueryText))
+                                .build());
+                    }
+                    requestObserver.onNext(AggregateStreamMessage.newBuilder()
+                            .setTransactionAggregate(TransactionAggregate.newBuilder()
+                                    .setTransactionType(transactionType)
+                                    .setTransactionName(transactionName)
+                                    .setAggregate(transactionAggregate))
+                            .build());
+                }
+            });
+            requestObserver.onCompleted();
+        }
+        @Override
+        public void doWithResponse(AggregateResponseMessage response) {
+            // Math.min is just for safety
+            nextAggregateDelayMillis = Math.min(response.getNextDelayMillis(), 30000);
+            for (String fullTextSha1 : fullTextSha1s) {
+                sharedQueryTextLimiter.onSuccessfullySentToCentralCollector(fullTextSha1);
+            }
+        }
     }
 }
