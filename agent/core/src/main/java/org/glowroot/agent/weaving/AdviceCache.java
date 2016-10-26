@@ -93,8 +93,13 @@ public class AdviceCache {
                     logger.warn("aspect not found: {}", aspect, e);
                 }
             }
-            lazyAdvisors.putAll(AdviceGenerator.createAdvisors(
-                    pluginDescriptor.instrumentationConfigs(), pluginDescriptor.id(), false));
+            List<InstrumentationConfig> instrumentationConfigs =
+                    pluginDescriptor.instrumentationConfigs();
+            for (InstrumentationConfig instrumentationConfig : instrumentationConfigs) {
+                instrumentationConfig.logValidationErrorsIfAny();
+            }
+            lazyAdvisors.putAll(AdviceGenerator.createAdvisors(instrumentationConfigs,
+                    pluginDescriptor.id(), false));
         }
         for (Entry<Advice, LazyDefinedClass> entry : lazyAdvisors.entrySet()) {
             pluginAdvisors.add(entry.getKey());

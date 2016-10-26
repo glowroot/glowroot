@@ -23,10 +23,8 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -143,19 +141,7 @@ public class ConfigService {
         }
 
         for (InstrumentationConfig instrumentationConfig : this.instrumentationConfigs) {
-            ImmutableList<String> errors = instrumentationConfig.validationErrors();
-            if (!errors.isEmpty()) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Invalid instrumentation config: ");
-                sb.append(Joiner.on(", ").join(errors));
-                sb.append(" ");
-                try {
-                    sb.append(ObjectMappers.create().writeValueAsString(instrumentationConfig));
-                } catch (JsonProcessingException e) {
-                    logger.error(e.getMessage(), e);
-                }
-                logger.error(sb.toString());
-            }
+            instrumentationConfig.logValidationErrorsIfAny();
         }
     }
 

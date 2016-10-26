@@ -162,6 +162,9 @@ public class AnalyzedWorld {
                     className);
             return advisors;
         }
+        for (InstrumentationConfig instrumentationConfig : instrumentationConfigs) {
+            instrumentationConfig.logValidationErrorsIfAny();
+        }
         ImmutableMap<Advice, LazyDefinedClass> newAdvisors =
                 AdviceGenerator.createAdvisors(instrumentationConfigs, null, false);
         try {

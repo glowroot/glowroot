@@ -23,9 +23,12 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
@@ -34,6 +37,8 @@ import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 @Value.Immutable
 public abstract class InstrumentationConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(InstrumentationConfig.class);
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
@@ -198,6 +203,14 @@ public abstract class InstrumentationConfig {
             errors.add("timerName contains invalid characters: " + timerName());
         }
         return ImmutableList.copyOf(errors);
+    }
+
+    public void logValidationErrorsIfAny() {
+        List<String> errors = validationErrors();
+        if (!errors.isEmpty()) {
+            logger.error("Invalid instrumentation config: {} - {}", Joiner.on(", ").join(errors),
+                    this);
+        }
     }
 
     public AgentConfig.InstrumentationConfig toProto() {
