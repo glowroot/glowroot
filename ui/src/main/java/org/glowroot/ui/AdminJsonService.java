@@ -225,7 +225,8 @@ class AdminJsonService {
                 Splitter.on(',').trimResults().splitToList(testEmailRecipient);
         try {
             AlertingService.sendEmail(emailAddresses, "Test email from Glowroot", "",
-                    configDto.convert(configRepository), configRepository, mailService);
+                    configDto.convert(configRepository), configRepository.getSecretKey(),
+                    mailService);
         } catch (Exception e) {
             logger.debug(e.getMessage(), e);
             return createErrorResponse(e.getMessage());

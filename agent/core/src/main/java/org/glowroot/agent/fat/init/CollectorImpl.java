@@ -26,8 +26,11 @@ import org.glowroot.agent.fat.storage.AgentDao;
 import org.glowroot.agent.fat.storage.AggregateDao;
 import org.glowroot.agent.fat.storage.GaugeValueDao;
 import org.glowroot.agent.fat.storage.TraceDao;
+import org.glowroot.common.config.SmtpConfig;
+import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
@@ -43,14 +46,17 @@ class CollectorImpl implements Collector {
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final GaugeValueDao gaugeValueDao;
+    private final ConfigRepository configRepository;
     private final AlertingService alertingService;
 
     CollectorImpl(AgentDao agentDao, AggregateDao aggregateRepository, TraceDao traceRepository,
-            GaugeValueDao gaugeValueRepository, AlertingService alertingService) {
+            GaugeValueDao gaugeValueRepository, ConfigRepository configRepository,
+            AlertingService alertingService) {
         this.agentDao = agentDao;
         this.aggregateDao = aggregateRepository;
         this.traceDao = traceRepository;
         this.gaugeValueDao = gaugeValueRepository;
+        this.configRepository = configRepository;
         this.alertingService = alertingService;
     }
 
@@ -63,24 +69,43 @@ class CollectorImpl implements Collector {
     @Override
     public void collectAggregates(long captureTime, Aggregates aggregates) throws Exception {
         aggregateDao.store(captureTime, aggregates);
-        try {
-            alertingService.checkTransactionAlerts(AGENT_ID, captureTime, null);
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+        SmtpConfig smtpConfig = configRepository.getSmtpConfig();
+        if (smtpConfig.host().isEmpty()) {
+            return;
+        }
+        for (AlertConfig alertConfig : configRepository.getTransactionAlertConfigs(AGENT_ID)) {
+            try {
+                alertingService.checkTransactionAlert(AGENT_ID, alertConfig, captureTime,
+                        smtpConfig);
+            } catch (InterruptedException e) {
+                // shutdown request
+                throw e;
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
         }
     }
 
     @Override
     public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
         gaugeValueDao.store(gaugeValues);
+        SmtpConfig smtpConfig = configRepository.getSmtpConfig();
+        if (smtpConfig.host().isEmpty()) {
+            return;
+        }
         long maxCaptureTime = 0;
         for (GaugeValue gaugeValue : gaugeValues) {
             maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
         }
-        try {
-            alertingService.checkGaugeAlerts(AGENT_ID, maxCaptureTime, null);
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+        for (AlertConfig alertConfig : configRepository.getGaugeAlertConfigs(AGENT_ID)) {
+            try {
+                alertingService.checkGaugeAlert(AGENT_ID, alertConfig, maxCaptureTime, smtpConfig);
+            } catch (InterruptedException e) {
+                // shutdown request
+                throw e;
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
         }
     }
 

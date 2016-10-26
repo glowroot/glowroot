@@ -24,10 +24,10 @@ import javax.crypto.SecretKey;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.FatStorageConfig;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.config.RoleConfig;
-import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.config.UserConfig;
@@ -81,6 +81,10 @@ public interface ConfigRepository {
     GaugeConfig getGaugeConfig(String agentId, String version) throws IOException;
 
     List<AlertConfig> getAlertConfigs(String agentId) throws IOException;
+
+    List<AlertConfig> getTransactionAlertConfigs(String agentId) throws IOException;
+
+    List<AlertConfig> getGaugeAlertConfigs(String agentId) throws IOException;
 
     @Nullable
     AlertConfig getAlertConfig(String agentId, String version) throws IOException;

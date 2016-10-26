@@ -15,6 +15,8 @@
  */
 package org.glowroot.common.repo.util;
 
+import java.security.GeneralSecurityException;
+import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
 
 import javax.crypto.SecretKey;
@@ -53,6 +55,55 @@ public class AlertingServiceTest {
 
     private static final String AGENT_ID = "";
 
+    private static final AlertConfig TRANSACTION_ALERT_CONFIG = AlertConfig.newBuilder()
+            .setKind(AlertKind.TRANSACTION)
+            .setTransactionType("tt")
+            .setTransactionPercentile(OptionalDouble.newBuilder()
+                    .setValue(95.0))
+            .setTransactionThresholdMillis(OptionalInt32.newBuilder()
+                    .setValue(1))
+            .setTimePeriodSeconds(60)
+            .setMinTransactionCount(OptionalInt32.newBuilder()
+                    .setValue(0))
+            .setGaugeName("")
+            .addEmailAddress("to@example.org")
+            .build();
+
+    private static final AlertConfig GAUGE_ALERT_CONFIG = AlertConfig.newBuilder()
+            .setKind(AlertKind.GAUGE)
+            .setGaugeName("java.lang:type=GarbageCollector,name=ConcurrentMarkSweep"
+                    + ":CollectionTime[counter]")
+            .setGaugeThreshold(OptionalDouble.newBuilder()
+                    .setValue(500.0))
+            .setTimePeriodSeconds(60)
+            .setMinTransactionCount(OptionalInt32.newBuilder()
+                    .setValue(0))
+            .setTransactionType("")
+            .addEmailAddress("to@example.org")
+            .build();
+
+    private static final SecretKey SECRET_KEY;
+
+    private static final SmtpConfig SMTP_CONFIG;
+
+    static {
+        try {
+            SECRET_KEY = Encryption.generateNewKey();
+            SMTP_CONFIG = ImmutableSmtpConfig.builder()
+                    .host("localhost")
+                    .ssl(true)
+                    .username("u")
+                    .password(Encryption.encrypt("test", SECRET_KEY))
+                    .putAdditionalProperties("a", "x")
+                    .putAdditionalProperties("b", "y")
+                    .build();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     private ConfigRepository configRepository;
     private AgentRepository agentRepository;
     private TriggeredAlertRepository triggeredAlertRepository;
@@ -72,17 +123,7 @@ public class AlertingServiceTest {
         gaugeValueRepository = mock(GaugeValueRepository.class);
         rollupLevelService = mock(RollupLevelService.class);
         mailService = new MockMailService();
-        SecretKey secretKey = Encryption.generateNewKey();
-        when(configRepository.getSecretKey()).thenReturn(secretKey);
-        SmtpConfig smtpConfig = ImmutableSmtpConfig.builder()
-                .host("localhost")
-                .ssl(true)
-                .username("u")
-                .password(Encryption.encrypt("test", secretKey))
-                .putAdditionalProperties("a", "x")
-                .putAdditionalProperties("b", "y")
-                .build();
-        when(configRepository.getSmtpConfig()).thenReturn(smtpConfig);
+        when(configRepository.getSecretKey()).thenReturn(SECRET_KEY);
     }
 
     @Test
@@ -93,7 +134,7 @@ public class AlertingServiceTest {
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkTransactionAlerts("", 120000, null);
+        alertingService.checkTransactionAlert("", TRANSACTION_ALERT_CONFIG, 120000, SMTP_CONFIG);
         // then
         assertThat(mailService.getMessage()).isNotNull();
     }
@@ -106,7 +147,7 @@ public class AlertingServiceTest {
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkTransactionAlerts("", 120000, null);
+        alertingService.checkTransactionAlert("", TRANSACTION_ALERT_CONFIG, 120000, SMTP_CONFIG);
         // then
         assertThat(mailService.getMessage()).isNull();
     }
@@ -119,7 +160,7 @@ public class AlertingServiceTest {
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkGaugeAlerts("", 120000, null);
+        alertingService.checkGaugeAlert("", GAUGE_ALERT_CONFIG, 120000, SMTP_CONFIG);
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
@@ -134,7 +175,7 @@ public class AlertingServiceTest {
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
         // when
-        alertingService.checkTransactionAlerts("", 120000, null);
+        alertingService.checkGaugeAlert("", GAUGE_ALERT_CONFIG, 120000, SMTP_CONFIG);
         // then
         assertThat(mailService.getMessage()).isNull();
     }
@@ -175,19 +216,6 @@ public class AlertingServiceTest {
     }
 
     private void setupForTransaction(long... histogramValues) throws Exception {
-        AlertConfig alertConfig = AlertConfig.newBuilder()
-                .setKind(AlertKind.TRANSACTION)
-                .setTransactionType("tt")
-                .setTransactionPercentile(OptionalDouble.newBuilder()
-                        .setValue(95.0))
-                .setTransactionThresholdMillis(OptionalInt32.newBuilder()
-                        .setValue(1))
-                .setTimePeriodSeconds(60)
-                .setMinTransactionCount(OptionalInt32.newBuilder()
-                        .setValue(0))
-                .setGaugeName("")
-                .addEmailAddress("to@example.org")
-                .build();
         LazyHistogram lazyHistogram = new LazyHistogram();
         for (long histogramValue : histogramValues) {
             lazyHistogram.add(histogramValue);
@@ -198,8 +226,6 @@ public class AlertingServiceTest {
                 .transactionCount(1)
                 .durationNanosHistogram(lazyHistogram.toProto(new ScratchBuffer()))
                 .build();
-        when(configRepository.getAlertConfigs(AGENT_ID))
-                .thenReturn(ImmutableList.of(alertConfig));
         ImmutableTransactionQuery query = ImmutableTransactionQuery.builder()
                 .transactionType("tt")
                 .from(60001)
@@ -211,26 +237,12 @@ public class AlertingServiceTest {
     }
 
     private void setupForGauge(double value) throws Exception {
-        AlertConfig alertConfig = AlertConfig.newBuilder()
-                .setKind(AlertKind.GAUGE)
-                .setGaugeName("java.lang:type=GarbageCollector,name=ConcurrentMarkSweep"
-                        + ":CollectionTime[counter]")
-                .setGaugeThreshold(OptionalDouble.newBuilder()
-                        .setValue(500.0))
-                .setTimePeriodSeconds(60)
-                .setMinTransactionCount(OptionalInt32.newBuilder()
-                        .setValue(0))
-                .setTransactionType("")
-                .addEmailAddress("to@example.org")
-                .build();
         GaugeValue gaugeValue = GaugeValue.newBuilder()
                 .setGaugeName("abc")
                 .setCaptureTime(120000)
                 .setValue(value)
                 .setWeight(1)
                 .build();
-        when(configRepository.getAlertConfigs(AGENT_ID))
-                .thenReturn(ImmutableList.of(alertConfig));
         when(gaugeValueRepository.readGaugeValues(AGENT_ID,
                 "java.lang:type=GarbageCollector,name=ConcurrentMarkSweep:CollectionTime[counter]",
                 60001, 120000, 0)).thenReturn(ImmutableList.of(gaugeValue));

@@ -54,6 +54,7 @@ import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
@@ -172,6 +173,30 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             return ImmutableList.of();
         }
         return agentConfig.getAlertConfigList();
+    }
+
+    @Override
+    public List<AlertConfig> getTransactionAlertConfigs(String agentId)
+            throws InvalidProtocolBufferException {
+        List<AlertConfig> configs = Lists.newArrayList();
+        for (AlertConfig config : getAlertConfigs(agentId)) {
+            if (config.getKind() == AlertKind.TRANSACTION) {
+                configs.add(config);
+            }
+        }
+        return configs;
+    }
+
+    @Override
+    public List<AlertConfig> getGaugeAlertConfigs(String agentId)
+            throws InvalidProtocolBufferException {
+        List<AlertConfig> configs = Lists.newArrayList();
+        for (AlertConfig config : getAlertConfigs(agentId)) {
+            if (config.getKind() == AlertKind.GAUGE) {
+                configs.add(config);
+            }
+        }
+        return configs;
     }
 
     @Override

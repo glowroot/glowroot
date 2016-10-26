@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
 
-import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 import javax.mail.Address;
 import javax.mail.Authenticator;
@@ -45,7 +44,6 @@ import org.glowroot.common.repo.TriggeredAlertRepository;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertKind;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -74,44 +72,8 @@ public class AlertingService {
         this.mailService = mailService;
     }
 
-    public void checkTransactionAlerts(final String agentRollup, final long endTime,
-            @Nullable Class<? extends Exception> retryOnceOnException) throws Exception {
-        if (configRepository.getSmtpConfig().host().isEmpty()) {
-            return;
-        }
-        for (final AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollup)) {
-            if (alertConfig.getKind() != AlertKind.TRANSACTION) {
-                continue;
-            }
-            retryOnceOnException(new Retryable() {
-                @Override
-                public void execute() throws Exception {
-                    checkTransactionAlert(agentRollup, alertConfig, endTime);
-                }
-            }, retryOnceOnException);
-        }
-    }
-
-    public void checkGaugeAlerts(final String agentRollup, final long endTime,
-            @Nullable Class<? extends Exception> retryOnceOnException) throws Exception {
-        if (configRepository.getSmtpConfig().host().isEmpty()) {
-            return;
-        }
-        for (final AlertConfig alertConfig : configRepository.getAlertConfigs(agentRollup)) {
-            if (alertConfig.getKind() != AlertKind.GAUGE) {
-                continue;
-            }
-            retryOnceOnException(new Retryable() {
-                @Override
-                public void execute() throws Exception {
-                    checkGaugeAlert(agentRollup, alertConfig, endTime);
-                }
-            }, retryOnceOnException);
-        }
-    }
-
-    private void checkTransactionAlert(String agentRollup, AlertConfig alertConfig, long endTime)
-            throws Exception {
+    public void checkTransactionAlert(String agentRollup, AlertConfig alertConfig, long endTime,
+            SmtpConfig smtpConfig) throws Exception {
         // validate config
         if (!alertConfig.hasTransactionPercentile()) {
             // AlertConfig has nice toString() from immutables
@@ -161,16 +123,16 @@ public class AlertingService {
         if (previouslyTriggered && !currentlyTriggered) {
             triggeredAlertRepository.delete(agentRollup, version);
             sendTransactionAlert(agentRollup, alertConfig, percentile, valueAtPercentile,
-                    transactionCount, true);
+                    transactionCount, true, smtpConfig);
         } else if (!previouslyTriggered && currentlyTriggered) {
             triggeredAlertRepository.insert(agentRollup, version);
             sendTransactionAlert(agentRollup, alertConfig, percentile, valueAtPercentile,
-                    transactionCount, false);
+                    transactionCount, false, smtpConfig);
         }
     }
 
-    private void checkGaugeAlert(String agentRollup, AlertConfig alertConfig, long endTime)
-            throws Exception {
+    public void checkGaugeAlert(String agentRollup, AlertConfig alertConfig, long endTime,
+            SmtpConfig smtpConfig) throws Exception {
         if (!alertConfig.hasGaugeThreshold()) {
             // AlertConfig has nice toString() from immutables
             logger.warn("alert config missing gaugeThreshold: {}", alertConfig);
@@ -198,16 +160,16 @@ public class AlertingService {
         boolean currentlyTriggered = average >= threshold;
         if (previouslyTriggered && !currentlyTriggered) {
             triggeredAlertRepository.delete(agentRollup, version);
-            sendGaugeAlert(agentRollup, alertConfig, average, true);
+            sendGaugeAlert(agentRollup, alertConfig, average, true, smtpConfig);
         } else if (!previouslyTriggered && currentlyTriggered) {
             triggeredAlertRepository.insert(agentRollup, version);
-            sendGaugeAlert(agentRollup, alertConfig, average, false);
+            sendGaugeAlert(agentRollup, alertConfig, average, false, smtpConfig);
         }
     }
 
     private void sendTransactionAlert(String agentRollup, AlertConfig alertConfig,
-            double percentile, long valueAtPercentile, long transactionCount, boolean ok)
-            throws Exception {
+            double percentile, long valueAtPercentile, long transactionCount, boolean ok,
+            SmtpConfig smtpConfig) throws Exception {
         String subject = "Glowroot alert";
         if (!agentRollup.equals("")) {
             subject += " - " + agentRollup;
@@ -227,12 +189,12 @@ public class AlertingService {
         sb.append(" minutes was ");
         sb.append(transactionCount);
         sb.append(".");
-        sendEmail(alertConfig.getEmailAddressList(), subject, sb.toString(),
-                configRepository.getSmtpConfig(), configRepository, mailService);
+        sendEmail(alertConfig.getEmailAddressList(), subject, sb.toString(), smtpConfig,
+                configRepository.getSecretKey(), mailService);
     }
 
     private void sendGaugeAlert(String agentRollup, AlertConfig alertConfig, double average,
-            boolean ok) throws Exception {
+            boolean ok, SmtpConfig smtpConfig) throws Exception {
         String subject = "Glowroot alert";
         if (!agentRollup.equals("")) {
             subject += " - " + agentRollup;
@@ -253,14 +215,13 @@ public class AlertingService {
             sb.append(unit);
         }
         sb.append(".\n\n");
-        sendEmail(alertConfig.getEmailAddressList(), subject, sb.toString(),
-                configRepository.getSmtpConfig(), configRepository, mailService);
+        sendEmail(alertConfig.getEmailAddressList(), subject, sb.toString(), smtpConfig,
+                configRepository.getSecretKey(), mailService);
     }
 
     public static void sendEmail(List<String> emailAddresses, String subject, String messageText,
-            SmtpConfig smtpConfig, ConfigRepository configRepository, MailService mailService)
-            throws Exception {
-        Session session = createMailSession(smtpConfig, configRepository.getSecretKey());
+            SmtpConfig smtpConfig, SecretKey secretKey, MailService mailService) throws Exception {
+        Session session = createMailSession(smtpConfig, secretKey);
         Message message = new MimeMessage(session);
         String fromEmailAddress = smtpConfig.fromEmailAddress();
         if (fromEmailAddress.isEmpty()) {
@@ -311,30 +272,5 @@ public class AlertingService {
             };
         }
         return Session.getInstance(props, authenticator);
-    }
-
-    private static void retryOnceOnException(Retryable retryable,
-            @Nullable Class<? extends Exception> retryOnceOnException) {
-        try {
-            retryable.execute();
-        } catch (Exception e) {
-            if (retryOnceOnException != null
-                    && retryOnceOnException.isAssignableFrom(e.getClass())) {
-                try {
-                    retryable.execute();
-                    // log initial exception at debug level only
-                    logger.debug(e.getMessage(), e);
-                } catch (Exception f) {
-                    // log initial exception at error level
-                    logger.error(e.getMessage(), e);
-                }
-            } else {
-                logger.error(e.getMessage(), e);
-            }
-        }
-    }
-
-    private interface Retryable {
-        void execute() throws Exception;
     }
 }

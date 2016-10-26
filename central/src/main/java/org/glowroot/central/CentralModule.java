@@ -179,7 +179,8 @@ class CentralModule {
                     triggeredAlertDao, aggregateDao, gaugeValueDao, rollupLevelService,
                     new MailService());
             server = new GrpcServer(centralConfig.grpcBindAddress(), centralConfig.grpcPort(),
-                    agentDao, aggregateDao, gaugeValueDao, traceDao, alertingService, version);
+                    agentDao, aggregateDao, gaugeValueDao, traceDao, configRepository,
+                    alertingService, version);
             DownstreamServiceImpl downstreamService = server.getDownstreamService();
             configRepository.addConfigListener(new ConfigListener() {
                 @Override
@@ -189,7 +190,7 @@ class CentralModule {
                 }
             });
             rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao,
-                    alertingService, downstreamService, clock);
+                    configRepository, alertingService, downstreamService, clock);
 
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();

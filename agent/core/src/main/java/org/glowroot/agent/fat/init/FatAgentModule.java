@@ -149,7 +149,7 @@ class FatAgentModule {
                         CollectorImpl collectorImpl = new CollectorImpl(
                                 simpleRepoModule.getAgentDao(), simpleRepoModule.getAggregateDao(),
                                 simpleRepoModule.getTraceDao(), simpleRepoModule.getGaugeValueDao(),
-                                simpleRepoModule.getAlertingService());
+                                configRepository, simpleRepoModule.getAlertingService());
                         collectorProxy.setInstance(collectorImpl);
                         // fat agent's CollectorImpl does nothing with agent config parameter
                         collectorImpl.init(baseDir, EnvironmentCreator.create(glowrootVersion),

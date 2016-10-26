@@ -19,8 +19,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import com.datastax.driver.core.exceptions.ReadTimeoutException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
@@ -37,8 +38,11 @@ import org.glowroot.central.storage.AgentDao;
 import org.glowroot.central.storage.AggregateDao;
 import org.glowroot.central.storage.GaugeValueDao;
 import org.glowroot.central.storage.TraceDao;
+import org.glowroot.common.config.SmtpConfig;
+import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldTransactionAggregate;
@@ -75,6 +79,7 @@ class GrpcServer {
     private final AggregateDao aggregateDao;
     private final GaugeValueDao gaugeValueDao;
     private final TraceDao traceDao;
+    private final ConfigRepository configRepository;
     private final AlertingService alertingService;
     private final String version;
 
@@ -82,13 +87,16 @@ class GrpcServer {
 
     private final ServerImpl server;
 
+    private final ExecutorService alertCheckingExecutor;
+
     GrpcServer(String bindAddress, int port, AgentDao agentDao, AggregateDao aggregateDao,
-            GaugeValueDao gaugeValueDao, TraceDao traceDao, AlertingService alertingService,
-            String version) throws IOException {
+            GaugeValueDao gaugeValueDao, TraceDao traceDao, ConfigRepository configRepository,
+            AlertingService alertingService, String version) throws IOException {
         this.agentDao = agentDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
         this.traceDao = traceDao;
+        this.configRepository = configRepository;
         this.alertingService = alertingService;
         this.version = version;
 
@@ -100,6 +108,8 @@ class GrpcServer {
                 .build()
                 .start();
 
+        alertCheckingExecutor = Executors.newSingleThreadExecutor();
+
         startupLogger.info("gRPC listening on {}:{}", bindAddress, port);
     }
 
@@ -108,6 +118,7 @@ class GrpcServer {
     }
 
     void close() {
+        alertCheckingExecutor.shutdown();
         server.shutdown();
     }
 
@@ -253,13 +264,7 @@ class GrpcServer {
                     return;
                 }
             }
-            try {
-                alertingService.checkTransactionAlerts(agentId, captureTime,
-                        ReadTimeoutException.class);
-            } catch (Throwable t) {
-                logger.error("{} - {}", agentId, t.getMessage(), t);
-                // don't fail collectAggregates()
-            }
+            checkTransactionAlerts(agentId, captureTime);
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
         }
@@ -280,13 +285,7 @@ class GrpcServer {
                 responseObserver.onError(t);
                 return;
             }
-            try {
-                alertingService.checkGaugeAlerts(request.getAgentId(), maxCaptureTime,
-                        ReadTimeoutException.class);
-            } catch (Throwable t) {
-                logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);
-                // don't fail collectGaugeValues()
-            }
+            checkGaugeAlerts(request.getAgentId(), maxCaptureTime);
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
         }
@@ -386,6 +385,101 @@ class GrpcServer {
             }
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
+        }
+
+        private void checkTransactionAlerts(String agentId, long captureTime) {
+            SmtpConfig smtpConfig = configRepository.getSmtpConfig();
+            if (smtpConfig.host().isEmpty()) {
+                return;
+            }
+            List<AlertConfig> alertConfigs;
+            try {
+                alertConfigs = configRepository.getTransactionAlertConfigs(agentId);
+            } catch (IOException e) {
+                logger.error("{} - {}", agentId, e.getMessage(), e);
+                return;
+            }
+            if (alertConfigs.isEmpty()) {
+                return;
+            }
+            alertCheckingExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        runInternal();
+                    } catch (Throwable t) {
+                        logger.error(t.getMessage(), t);
+                    }
+                }
+                private void runInternal() throws InterruptedException {
+                    for (AlertConfig alertConfig : alertConfigs) {
+                        try {
+                            checkTransactionAlert(agentId, alertConfig, captureTime, smtpConfig);
+                        } catch (InterruptedException e) {
+                            // shutdown requested
+                            throw e;
+                        } catch (Exception e) {
+                            logger.error(e.getMessage(), e);
+                        }
+                    }
+                }
+            });
+        }
+
+        private void checkGaugeAlerts(String agentId, long captureTime) {
+            SmtpConfig smtpConfig = configRepository.getSmtpConfig();
+            if (smtpConfig.host().isEmpty()) {
+                return;
+            }
+            List<AlertConfig> alertConfigs;
+            try {
+                alertConfigs = configRepository.getGaugeAlertConfigs(agentId);
+            } catch (IOException e) {
+                logger.error("{} - {}", agentId, e.getMessage(), e);
+                return;
+            }
+            if (alertConfigs.isEmpty()) {
+                return;
+            }
+            alertCheckingExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        runInternal();
+                    } catch (Throwable t) {
+                        logger.error(t.getMessage(), t);
+                    }
+                }
+                private void runInternal() throws InterruptedException {
+                    for (AlertConfig alertConfig : alertConfigs) {
+                        try {
+                            checkGaugeAlert(agentId, alertConfig, captureTime, smtpConfig);
+                        } catch (InterruptedException e) {
+                            // shutdown requested
+                            throw e;
+                        } catch (Exception e) {
+                            logger.error(e.getMessage(), e);
+                        }
+                    }
+                }
+            });
+        }
+
+        @Instrument.Transaction(transactionType = "Background",
+                transactionName = "Check transaction alert",
+                traceHeadline = "Check transaction alert: {{0}}",
+                timerName = "check transaction alert")
+        private void checkTransactionAlert(String agentId, AlertConfig alertConfig,
+                long captureTime, SmtpConfig smtpConfig) throws Exception {
+            alertingService.checkTransactionAlert(agentId, alertConfig, captureTime, smtpConfig);
+        }
+
+        @Instrument.Transaction(transactionType = "Background",
+                transactionName = "Check gauge alert",
+                traceHeadline = "Check gauge alert: {{0}}", timerName = "check gauge alert")
+        private void checkGaugeAlert(String agentId, AlertConfig alertConfig, long captureTime,
+                SmtpConfig smtpConfig) throws Exception {
+            alertingService.checkGaugeAlert(agentId, alertConfig, captureTime, smtpConfig);
         }
 
         private void log(Level level, String format, Object... arguments) {
