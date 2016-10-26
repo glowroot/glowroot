@@ -203,7 +203,7 @@ class CentralConnection {
         private final int maxTotalInSeconds;
         private final Stopwatch stopwatch = Stopwatch.createStarted();
 
-        private volatile long nextDelayInSeconds = 1;
+        private volatile long nextDelayInSeconds = 4;
 
         private RetryingStreamObserver(GrpcCall<T> grpcCall, int maxSingleDelayInSeconds,
                 int maxTotalInSeconds) {
@@ -239,6 +239,12 @@ class CentralConnection {
                 }
                 return;
             }
+
+            // retry delay doubles on average each time, randomized +/- 50%
+            double randomizedDoubling = 0.5 + random.nextDouble();
+            long currDelay = (long) (nextDelayInSeconds * randomizedDoubling);
+            nextDelayInSeconds = Math.min(nextDelayInSeconds * 2, maxSingleDelayInSeconds);
+
             // TODO revisit retry/backoff after next grpc version
             retryExecutor.schedule(new Runnable() {
                 @Override
@@ -256,11 +262,7 @@ class CentralConnection {
                         });
                     }
                 }
-            }, nextDelayInSeconds, SECONDS);
-            // retry delay doubles on average each time, randomized +/- 50%
-            double randomizedDoubling = 1.5 + random.nextDouble();
-            nextDelayInSeconds = Math.min((long) (nextDelayInSeconds * randomizedDoubling),
-                    maxSingleDelayInSeconds);
+            }, currDelay, SECONDS);
         }
 
         @Override
