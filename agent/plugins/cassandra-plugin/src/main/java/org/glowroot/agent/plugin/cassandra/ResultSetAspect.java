@@ -133,4 +133,19 @@ public class ResultSetAspect {
             lastQueryEntry.rowNavigationAttempted();
         }
     }
+
+    @Pointcut(className = "com.datastax.driver.core.ResultSet",
+            methodDeclaringClassName = "com.datastax.driver.core.PagingIterable",
+            methodName = "isExhausted", methodParameterTypes = {})
+    public static class IsExhaustedAdvice {
+        @OnReturn
+        public static void onReturn(@BindReceiver ResultSet resultSet) {
+            QueryEntry lastQueryEntry = resultSet.glowroot$getLastQueryEntry();
+            if (lastQueryEntry == null) {
+                // tracing must be disabled (e.g. exceeded trace entry limit)
+                return;
+            }
+            lastQueryEntry.rowNavigationAttempted();
+        }
+    }
 }

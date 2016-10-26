@@ -97,6 +97,26 @@ public class CassandraSyncIT {
     }
 
     @Test
+    public void shouldExecuteStatementReturningNoRecordsCheckIsExhausted() throws Exception {
+        // when
+        Trace trace = container.execute(ExecuteStatementReturningNoRecordsCheckIsExhausted.class);
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("SELECT * FROM test.users where id = 12345");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cql execution: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 0 rows");
+
+        assertThat(i.hasNext()).isFalse();
+    }
+
+    @Test
     public void shouldIterateUsingOneAndAll() throws Exception {
         // when
         Trace trace = container.execute(IterateUsingOneAndAll.class);
@@ -198,6 +218,30 @@ public class CassandraSyncIT {
         @Override
         public void transactionMarker() throws Exception {
             ResultSet results = session.execute("SELECT * FROM test.users where id = 12345");
+            for (Row row : results) {
+                row.getInt("id");
+            }
+        }
+    }
+
+    public static class ExecuteStatementReturningNoRecordsCheckIsExhausted
+            implements AppUnderTest, TransactionMarker {
+
+        private Session session;
+
+        @Override
+        public void executeApp() throws Exception {
+            session = Sessions.createSession();
+            transactionMarker();
+            Sessions.closeSession(session);
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            ResultSet results = session.execute("SELECT * FROM test.users where id = 12345");
+            if (results.isExhausted()) {
+                return;
+            }
             for (Row row : results) {
                 row.getInt("id");
             }
