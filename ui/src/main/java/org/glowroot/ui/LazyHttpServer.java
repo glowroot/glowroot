@@ -85,8 +85,8 @@ class LazyHttpServer {
         if (bindAddress.equals("127.0.0.1")) {
             startupLogger.info("UI listening on {}:{} (to access the UI from remote machines,"
                     + " change the bind address to 0.0.0.0, either in the Glowroot UI under"
-                    + " Configuration > Web, or directly in the admin.json file)", bindAddress,
-                    port);
+                    + " Configuration > Web, or directly in the admin.json file which then requires"
+                    + " restart to take effect)", bindAddress, port);
         } else {
             startupLogger.info("UI listening on {}:{}", bindAddress, port);
         }
