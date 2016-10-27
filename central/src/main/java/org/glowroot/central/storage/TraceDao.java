@@ -45,7 +45,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.immutables.value.Value;
 
-import org.glowroot.central.util.Futures;
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Messages;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.StorageConfig;
@@ -706,7 +706,7 @@ public class TraceDao implements TraceRepository {
             futures.add(session.executeAsync(boundStatement));
         }
         futures.addAll(transactionTypeDao.store(agentRollups, header.getTransactionType()));
-        Futures.waitForAll(futures);
+        MoreFutures.waitForAll(futures);
     }
 
     @Override

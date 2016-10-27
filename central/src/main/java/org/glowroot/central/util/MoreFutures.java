@@ -22,9 +22,9 @@ import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Futures {
+public class MoreFutures {
 
-    private static final Logger logger = LoggerFactory.getLogger(Futures.class);
+    private static final Logger logger = LoggerFactory.getLogger(MoreFutures.class);
 
     // not using guava Futures.allAsList().get() because it logs every error
     public static void waitForAll(List<? extends Future<?>> futures) throws Exception {

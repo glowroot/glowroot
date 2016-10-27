@@ -36,13 +36,17 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Ints;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrument;
 import org.glowroot.central.storage.AggregateDao.NeedsRollup;
 import org.glowroot.central.storage.AggregateDao.NeedsRollupFromChildren;
-import org.glowroot.central.util.Futures;
+import org.glowroot.central.util.DummyResultSet;
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
@@ -181,7 +185,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
 
         // wait for success before inserting "needs rollup" records
-        Futures.waitForAll(futures);
+        MoreFutures.waitForAll(futures);
         futures.clear();
 
         // insert into gauge_needs_rollup_1
@@ -200,7 +204,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             boundStatement.setInt(i++, needsRollupAdjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
-        Futures.waitForAll(futures);
+        MoreFutures.waitForAll(futures);
     }
 
     @Override
@@ -281,16 +285,16 @@ public class GaugeValueDao implements GaugeValueRepository {
         for (NeedsRollupFromChildren needsRollupFromChildren : needsRollupFromChildrenList) {
             long captureTime = needsRollupFromChildren.getCaptureTime();
             int adjustedTTL = AggregateDao.getAdjustedTTL(ttl, captureTime, clock);
-            List<ResultSetFuture> futures = Lists.newArrayList();
+            List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
             for (Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys().asMap()
                     .entrySet()) {
                 String gaugeName = entry.getKey();
                 Collection<String> childAgentRollups = entry.getValue();
-                futures.addAll(rollupOneFromChildren(rollupLevel, agentRollup, gaugeName,
-                        childAgentRollups, captureTime, adjustedTTL));
+                futures.add(rollupOneFromChildren(rollupLevel, agentRollup, gaugeName,
+                        ImmutableList.copyOf(childAgentRollups), captureTime, adjustedTTL));
             }
             // wait for above async work to ensure rollup complete before proceeding
-            Futures.waitForAll(futures);
+            MoreFutures.waitForAll(futures);
 
             int needsRollupAdjustedTTL =
                     AggregateDao.getNeedsRollupAdjustedTTL(adjustedTTL, rollupConfigs);
@@ -330,9 +334,9 @@ public class GaugeValueDao implements GaugeValueRepository {
             long from = captureTime - rollupIntervalMillis;
             int adjustedTTL = AggregateDao.getAdjustedTTL(ttl, captureTime, clock);
             Set<String> gaugeNames = needsRollup.getKeys();
-            List<ResultSetFuture> futures = Lists.newArrayList();
+            List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
             for (String gaugeName : gaugeNames) {
-                futures.addAll(rollupOne(rollupLevel, agentRollup, gaugeName, from, captureTime,
+                futures.add(rollupOne(rollupLevel, agentRollup, gaugeName, from, captureTime,
                         adjustedTTL));
             }
             if (futures.isEmpty()) {
@@ -346,7 +350,7 @@ public class GaugeValueDao implements GaugeValueRepository {
                 continue;
             }
             // wait for above async work to ensure rollup complete before proceeding
-            Futures.waitForAll(futures);
+            MoreFutures.waitForAll(futures);
 
             int needsRollupAdjustedTTL =
                     AggregateDao.getNeedsRollupAdjustedTTL(adjustedTTL, rollupConfigs);
@@ -373,52 +377,79 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
     }
 
-    private List<ResultSetFuture> rollupOneFromChildren(int rollupLevel, String agentRollup,
-            String gaugeName, Collection<String> childAgentRollups, long captureTime,
-            int adjustedTTL) {
-        List<Row> rows = Lists.newArrayList();
+    private ListenableFuture<ResultSet> rollupOneFromChildren(int rollupLevel, String agentRollup,
+            String gaugeName, List<String> childAgentRollups, long captureTime, int adjustedTTL) {
+        List<ListenableFuture<ResultSet>> futures = Lists.newArrayList();
         for (String childAgentRollup : childAgentRollups) {
             BoundStatement boundStatement = readValueForRollupFromChildPS.bind();
             int i = 0;
             boundStatement.setString(i++, childAgentRollup);
             boundStatement.setString(i++, gaugeName);
             boundStatement.setTimestamp(i++, new Date(captureTime));
-            Row row = session.execute(boundStatement).one();
-            if (row != null) {
-                rows.add(row);
-            }
+            futures.add(session.executeAsync(boundStatement));
         }
-        if (rows.isEmpty()) {
-            // this is unexpected since TTL for "needs rollup" records is shorter than TTL for data
-            logger.warn("no gauge value table records found for agentRollup={}, gaugeName={},"
-                    + " captureTime={}, level={}", agentRollup, gaugeName, captureTime,
-                    rollupLevel);
-            return ImmutableList.of();
-        }
-        return rollupOneFromRows(rollupLevel, agentRollup, gaugeName, captureTime, adjustedTTL,
-                rows);
+        return Futures.transformAsync(
+                Futures.allAsList(futures),
+                new AsyncFunction<List<ResultSet>, ResultSet>() {
+                    @Override
+                    public ListenableFuture<ResultSet> apply(@Nullable List<ResultSet> results)
+                            throws Exception {
+                        checkNotNull(results);
+                        List<Row> rows = Lists.newArrayList();
+                        for (int i = 0; i < results.size(); i++) {
+                            Row row = results.get(i).one();
+                            if (row == null) {
+                                // this is unexpected since TTL for "needs rollup" records is
+                                // shorter than TTL for data
+                                logger.warn("no gauge value table records found for agentRollup={},"
+                                        + " gaugeName={}, captureTime={}, level={}",
+                                        childAgentRollups.get(i), gaugeName, captureTime,
+                                        rollupLevel);
+                            } else {
+                                rows.add(row);
+                            }
+                        }
+                        if (rows.isEmpty()) {
+                            // warning(s) already logged above
+                            return Futures.immediateFuture(DummyResultSet.INSTANCE);
+                        }
+                        return rollupOneFromRows(rollupLevel, agentRollup, gaugeName, captureTime,
+                                adjustedTTL, rows);
+                    }
+                });
     }
 
     // from is non-inclusive
-    private List<ResultSetFuture> rollupOne(int rollupLevel, String agentRollup, String gaugeName,
-            long from, long to, int adjustedTTL) throws Exception {
+    private ListenableFuture<ResultSet> rollupOne(int rollupLevel, String agentRollup,
+            String gaugeName, long from, long to, int adjustedTTL) throws Exception {
         BoundStatement boundStatement = readValueForRollupPS.get(rollupLevel - 1).bind();
         int i = 0;
         boundStatement.setString(i++, agentRollup);
         boundStatement.setString(i++, gaugeName);
         boundStatement.setTimestamp(i++, new Date(from));
         boundStatement.setTimestamp(i++, new Date(to));
-        ResultSet results = session.execute(boundStatement);
-        if (results.isExhausted()) {
-            // this is unexpected since TTL for "needs rollup" records is shorter than TTL for data
-            logger.warn("no gauge value table records found for agentRollup={}, gaugeName={},"
-                    + " from={}, to={}, level={}", agentRollup, gaugeName, from, to, rollupLevel);
-            return ImmutableList.of();
-        }
-        return rollupOneFromRows(rollupLevel, agentRollup, gaugeName, to, adjustedTTL, results);
+        return Futures.transformAsync(
+                session.executeAsync(boundStatement),
+                new AsyncFunction<ResultSet, ResultSet>() {
+                    @Override
+                    public ListenableFuture<ResultSet> apply(@Nullable ResultSet results)
+                            throws Exception {
+                        checkNotNull(results);
+                        if (results.isExhausted()) {
+                            // this is unexpected since TTL for "needs rollup" records is shorter
+                            // than TTL for data
+                            logger.warn("no gauge value table records found for agentRollup={},"
+                                    + " gaugeName={}, from={}, to={}, level={}", agentRollup,
+                                    gaugeName, from, to, rollupLevel);
+                            return Futures.immediateFuture(DummyResultSet.INSTANCE);
+                        }
+                        return rollupOneFromRows(rollupLevel, agentRollup, gaugeName, to,
+                                adjustedTTL, results);
+                    }
+                });
     }
 
-    private List<ResultSetFuture> rollupOneFromRows(int rollupLevel, String agentRollup,
+    private ListenableFuture<ResultSet> rollupOneFromRows(int rollupLevel, String agentRollup,
             String gaugeName, long to, int adjustedTTL, Iterable<Row> rows) {
         double totalWeightedValue = 0;
         long totalWeight = 0;
@@ -436,7 +467,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         boundStatement.setDouble(i++, totalWeightedValue / totalWeight);
         boundStatement.setLong(i++, totalWeight);
         boundStatement.setInt(i++, adjustedTTL);
-        return ImmutableList.of(session.executeAsync(boundStatement));
+        return session.executeAsync(boundStatement);
     }
 
     private List<Integer> getTTLs() {

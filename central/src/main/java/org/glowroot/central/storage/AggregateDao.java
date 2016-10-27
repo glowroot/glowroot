@@ -54,8 +54,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrument;
-import org.glowroot.central.util.Futures;
 import org.glowroot.central.util.Messages;
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.ConfigDefaults;
 import org.glowroot.common.config.StorageConfig;
@@ -428,7 +428,7 @@ public class AggregateDao implements AggregateRepository {
                 .map(OldAggregatesByType::getTransactionType).collect(Collectors.toSet());
 
         // wait for success before inserting "needs rollup" records
-        Futures.waitForAll(futures);
+        MoreFutures.waitForAll(futures);
         futures.clear();
 
         int needsRollupAdjustedTTL = getNeedsRollupAdjustedTTL(adjustedTTL, rollupConfigs);
@@ -454,7 +454,7 @@ public class AggregateDao implements AggregateRepository {
         boundStatement.setSet(i++, transactionTypes);
         boundStatement.setInt(i++, needsRollupAdjustedTTL);
         futures.add(session.executeAsync(boundStatement));
-        Futures.waitForAll(futures);
+        MoreFutures.waitForAll(futures);
     }
 
     // query.from() is non-inclusive
@@ -790,7 +790,7 @@ public class AggregateDao implements AggregateRepository {
                         childAgentRollups, captureTime));
             }
             // wait for above async work to ensure rollup complete before proceeding
-            Futures.waitForAll(futures);
+            MoreFutures.waitForAll(futures);
 
             if (parentAgentRollup != null) {
                 // insert needs to happen first before call to postRollup(), see method-level
@@ -844,7 +844,7 @@ public class AggregateDao implements AggregateRepository {
                 continue;
             }
             // wait for above async work to ensure rollup complete before proceeding
-            Futures.waitForAll(futures);
+            MoreFutures.waitForAll(futures);
 
             PreparedStatement insertNeedsRollup = nextRollupIntervalMillis == null ? null
                     : this.insertNeedsRollup.get(rollupLevel);
@@ -2076,7 +2076,7 @@ public class AggregateDao implements AggregateRepository {
             boundStatement.setUUID(i++, uniqueness);
             futures.add(session.executeAsync(boundStatement));
         }
-        Futures.waitForAll(futures);
+        MoreFutures.waitForAll(futures);
     }
 
     private static void bindQuery(BoundStatement boundStatement, String agentRollup,
