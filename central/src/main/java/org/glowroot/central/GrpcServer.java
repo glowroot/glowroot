@@ -126,8 +126,10 @@ class GrpcServer {
     }
 
     void close() {
-        alertCheckingExecutor.shutdown();
+        // shutdown server first to complete existing requests and prevent new requests
         server.shutdown();
+        // then shutdown alert checking executor
+        alertCheckingExecutor.shutdown();
     }
 
     private int getNextDelayMillis() {
