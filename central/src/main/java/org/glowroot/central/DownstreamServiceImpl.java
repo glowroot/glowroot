@@ -42,14 +42,15 @@ import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceImplBase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse.MessageCase;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AuxThreadProfileRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AuxThreadProfileResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpaceRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpaceResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CapabilitiesRequest;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentResponse.MessageCase;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.FullTraceRequest;
@@ -82,7 +83,6 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignature;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignaturesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.PreloadClasspathCacheRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
-import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.SystemPropertiesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDumpRequest;
@@ -355,16 +355,17 @@ public class DownstreamServiceImpl extends DownstreamServiceImplBase {
                 responseHolder.response.exchange(value, 1, MINUTES);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                logger.error(e.getMessage(), e);
+                logger.error("{} - {}", agentId, e.getMessage(), e);
             } catch (TimeoutException e) {
-                logger.error(e.getMessage(), e);
+                logger.error("{} - {}", agentId, e.getMessage(), e);
             }
         }
 
         @Override
         public void onError(Throwable t) {
-            logger.error(t.getMessage(), t);
+            logger.debug("{} - {}", t.getMessage(), t);
             if (agentId != null) {
+                startupLogger.info("downstream connection lost with agent: {}", agentId);
                 connectedAgents.remove(agentId, ConnectedAgent.this);
             }
         }

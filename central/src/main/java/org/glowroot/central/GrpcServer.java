@@ -431,7 +431,7 @@ class GrpcServer {
                     try {
                         runInternal();
                     } catch (Throwable t) {
-                        logger.error(t.getMessage(), t);
+                        logger.error("{} - {}", agentId, t.getMessage(), t);
                     }
                 }
                 private void runInternal() throws InterruptedException {
@@ -442,7 +442,7 @@ class GrpcServer {
                             // shutdown requested
                             throw e;
                         } catch (Exception e) {
-                            logger.error(e.getMessage(), e);
+                            logger.error("{} - {}", agentId, e.getMessage(), e);
                         }
                     }
                 }
@@ -470,7 +470,7 @@ class GrpcServer {
                     try {
                         runInternal();
                     } catch (Throwable t) {
-                        logger.error(t.getMessage(), t);
+                        logger.error("{} - {}", agentId, t.getMessage(), t);
                     }
                 }
                 private void runInternal() throws InterruptedException {
@@ -481,7 +481,7 @@ class GrpcServer {
                             // shutdown requested
                             throw e;
                         } catch (Exception e) {
-                            logger.error(e.getMessage(), e);
+                            logger.error("{} - {}", agentId, e.getMessage(), e);
                         }
                     }
                 }

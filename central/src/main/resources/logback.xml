@@ -26,6 +26,10 @@
     </encoder>
   </appender>
   <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator" />
+  <!-- suppress connection error logging -->
+  <logger name="io.grpc.netty.NettyServerHandler" level="error" />
+  <!-- suppress connection error logging, see https://github.com/grpc/grpc-java/issues/1768 -->
+  <logger name="io.grpc.netty.NettyServerTransport" level="off" />
   <root level="info">
     <appender-ref ref="CONSOLE" />
     <appender-ref ref="FILE" />
