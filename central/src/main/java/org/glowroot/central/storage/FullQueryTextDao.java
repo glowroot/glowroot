@@ -29,6 +29,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Sessions;
@@ -42,6 +44,8 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class FullQueryTextDao {
+
+    private static final Logger logger = LoggerFactory.getLogger(FullQueryTextDao.class);
 
     private final Session session;
     private final ConfigRepository configRepository;
@@ -112,7 +116,13 @@ public class FullQueryTextDao {
         boundStatement.setString(0, fullTextSha1);
         ResultSet results = session.execute(boundStatement);
         Row row = results.one();
-        String fullText = checkNotNull(checkNotNull(row).getString(0));
+        if (row == null) {
+            // this shouldn't happen any more now that full query text insert futures are waited on
+            // prior to inserting aggregate/trace records with sha1
+            logger.warn("full query text record not found for sha1: {}", fullTextSha1);
+            return ImmutableList.of();
+        }
+        String fullText = checkNotNull(row.getString(0));
         return storeInternal(rateLimiterKey, fullText);
     }
 

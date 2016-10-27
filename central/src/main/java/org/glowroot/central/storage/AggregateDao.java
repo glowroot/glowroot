@@ -408,6 +408,12 @@ public class AggregateDao implements AggregateRepository {
                 sharedQueryTexts.add(sharedQueryText);
             }
         }
+
+        // wait for success before proceeding in order to ensure cannot end up with orphaned
+        // fullTextSha1
+        MoreFutures.waitForAll(futures);
+        futures.clear();
+
         for (OldAggregatesByType aggregatesByType : aggregatesByTypeList) {
             String transactionType = aggregatesByType.getTransactionType();
             Aggregate overallAggregate = aggregatesByType.getOverallAggregate();

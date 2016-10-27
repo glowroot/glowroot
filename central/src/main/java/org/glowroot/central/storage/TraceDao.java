@@ -45,8 +45,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.immutables.value.Value;
 
-import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Messages;
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.config.StorageConfig;
 import org.glowroot.common.live.ImmutableEntries;
@@ -405,6 +405,11 @@ public class TraceDao implements TraceRepository {
                 sharedQueryTexts.add(sharedQueryText);
             }
         }
+
+        // wait for success before proceeding in order to ensure cannot end up with orphaned
+        // fullTextSha1
+        MoreFutures.waitForAll(futures);
+        futures.clear();
 
         int adjustedTTL = AggregateDao.getAdjustedTTL(getTTL(), header.getCaptureTime(), clock);
         for (String agentRollup : agentRollups) {
