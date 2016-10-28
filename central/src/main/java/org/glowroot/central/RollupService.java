@@ -110,7 +110,7 @@ public class RollupService implements Runnable {
             // shutdown requested
             throw e;
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("{} - {}", agentRollup.name(), e.getMessage(), e);
         }
     }
 
@@ -138,7 +138,7 @@ public class RollupService implements Runnable {
             // shutdown requested
             throw e;
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("{} - {}", agentRollup.name(), e.getMessage(), e);
             return false;
         }
     }
@@ -153,7 +153,7 @@ public class RollupService implements Runnable {
             // shutdown requested
             throw e;
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("{} - {}", agentRollup.name(), e.getMessage(), e);
         }
     }
 
@@ -167,7 +167,7 @@ public class RollupService implements Runnable {
             // shutdown requested
             throw e;
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("{} - {}", agentRollup.name(), e.getMessage(), e);
         }
     }
 
@@ -183,7 +183,7 @@ public class RollupService implements Runnable {
                 // shutdown requested
                 throw e;
             } catch (Exception e) {
-                logger.error(e.getMessage(), e);
+                logger.error("{} - {}", agentRollup.name(), e.getMessage(), e);
             }
         }
     }
@@ -211,7 +211,7 @@ public class RollupService implements Runnable {
                 // shutdown requested
                 throw e;
             } catch (Exception e) {
-                logger.error(e.getMessage(), e);
+                logger.error("{} - {}", agentId, e.getMessage(), e);
             }
         }
     }
@@ -238,7 +238,7 @@ public class RollupService implements Runnable {
                 // shutdown requested
                 throw e;
             } catch (Exception e) {
-                logger.error(e.getMessage(), e);
+                logger.error("{} - {}", agentId, e.getMessage(), e);
             }
         }
     }
