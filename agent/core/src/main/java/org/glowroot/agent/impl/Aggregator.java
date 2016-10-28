@@ -67,7 +67,7 @@ public class Aggregator {
     @GuardedBy("queueLock")
     private int queueLength;
 
-    private final RateLimitedLogger backPressureLogger = new RateLimitedLogger();
+    private final RateLimitedLogger backPressureLogger = new RateLimitedLogger(Aggregator.class);
 
     public Aggregator(Collector collector, ConfigService configService,
             long aggregateIntervalMillis, Clock clock) {

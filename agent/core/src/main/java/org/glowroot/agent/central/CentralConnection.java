@@ -64,11 +64,13 @@ class CentralConnection {
 
     private final Random random = new Random();
 
-    private final RateLimitedLogger backPressureLogger = new RateLimitedLogger();
+    private final RateLimitedLogger backPressureLogger =
+            new RateLimitedLogger(CentralConnection.class);
     @GuardedBy("backPressureLogger")
     private int pendingRequestCount;
 
-    private final RateLimitedLogger connectionErrorLogger = new RateLimitedLogger();
+    private final RateLimitedLogger connectionErrorLogger =
+            new RateLimitedLogger(CentralConnection.class);
 
     private volatile boolean closed;
 

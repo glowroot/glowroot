@@ -24,7 +24,7 @@ public class RateLimitedLoggerTest {
     @Test
     public void testEmpty() {
         // given
-        RateLimitedLogger rateLimitedLogger = new RateLimitedLogger();
+        RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(RateLimitedLoggerTest.class);
         // when
         Object[] args = rateLimitedLogger.newArgsWithCountSinceLastWarning(new Object[] {});
         // then
@@ -34,7 +34,7 @@ public class RateLimitedLoggerTest {
     @Test
     public void testSingle() {
         // given
-        RateLimitedLogger rateLimitedLogger = new RateLimitedLogger();
+        RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(RateLimitedLoggerTest.class);
         // when
         Object[] args = rateLimitedLogger.newArgsWithCountSinceLastWarning(new Object[] {1});
         // then
@@ -44,7 +44,7 @@ public class RateLimitedLoggerTest {
     @Test
     public void testSingleException() {
         // given
-        RateLimitedLogger rateLimitedLogger = new RateLimitedLogger();
+        RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(RateLimitedLoggerTest.class);
         Exception exception = new Exception();
         // when
         Object[] args =
@@ -56,7 +56,7 @@ public class RateLimitedLoggerTest {
     @Test
     public void testMultiple() {
         // given
-        RateLimitedLogger rateLimitedLogger = new RateLimitedLogger();
+        RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(RateLimitedLoggerTest.class);
         // when
         Object[] args = rateLimitedLogger.newArgsWithCountSinceLastWarning(new Object[] {1, 2});
         // then
@@ -66,7 +66,7 @@ public class RateLimitedLoggerTest {
     @Test
     public void testMultipleException() {
         // given
-        RateLimitedLogger rateLimitedLogger = new RateLimitedLogger();
+        RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(RateLimitedLoggerTest.class);
         Exception exception = new Exception();
         // when
         Object[] args =

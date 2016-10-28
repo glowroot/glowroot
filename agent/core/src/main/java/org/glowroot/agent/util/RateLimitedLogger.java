@@ -27,12 +27,16 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class RateLimitedLogger {
 
-    private static final Logger logger = LoggerFactory.getLogger(RateLimitedLogger.class);
+    private final Logger logger;
 
     private final RateLimiter warningRateLimiter = RateLimiter.create(1.0 / 60);
 
     @GuardedBy("warningRateLimiter")
     private int countSinceLastWarning;
+
+    public RateLimitedLogger(Class<?> clazz) {
+        logger = LoggerFactory.getLogger(clazz);
+    }
 
     public void warn(String format, /*@Nullable*/ Object... args) {
         synchronized (warningRateLimiter) {

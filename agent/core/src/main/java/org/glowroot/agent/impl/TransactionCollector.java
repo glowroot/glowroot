@@ -52,7 +52,8 @@ public class TransactionCollector {
     private final Ticker ticker;
     private final Set<Transaction> pendingTransactions = Sets.newCopyOnWriteArraySet();
 
-    private final RateLimitedLogger backPressureLogger = new RateLimitedLogger();
+    private final RateLimitedLogger backPressureLogger =
+            new RateLimitedLogger(TransactionCollector.class);
 
     private volatile long defaultSlowThresholdNanos;
 
