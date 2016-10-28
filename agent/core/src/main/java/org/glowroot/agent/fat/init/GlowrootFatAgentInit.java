@@ -16,6 +16,7 @@
 package org.glowroot.agent.fat.init;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -89,16 +90,21 @@ public class GlowrootFatAgentInit implements GlowrootAgentInit {
 
     @Override
     @OnlyUsedByTests
-    public AgentModule getAgentModule() {
-        return checkNotNull(fatAgentModule).getAgentModule();
+    public void setSlowThresholdToZero() throws IOException {
+        FatAgentModule fatAgentModule = checkNotNull(this.fatAgentModule);
+        AgentModule agentModule = fatAgentModule.getAgentModule();
+        agentModule.getConfigService().setSlowThresholdToZero();
     }
 
+    @Override
     @OnlyUsedByTests
     public void resetConfig() throws Exception {
         FatAgentModule fatAgentModule = checkNotNull(this.fatAgentModule);
-        fatAgentModule.getAgentModule().getConfigService().resetConfig();
+        AgentModule agentModule = fatAgentModule.getAgentModule();
+        agentModule.getConfigService().resetConfig();
         ((ConfigRepositoryImpl) fatAgentModule.getSimpleRepoModule().getConfigRepository())
                 .resetAdminConfig();
+        agentModule.getLiveWeavingService().reweave("");
     }
 
     @Override

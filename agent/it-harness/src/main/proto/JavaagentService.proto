@@ -8,6 +8,7 @@ service JavaagentService {
   rpc ping(Void) returns (Void);
   rpc executeApp(AppUnderTestClassName) returns (Void);
   rpc interruptApp(Void) returns (Void);
+  rpc setSlowThresholdToZero(Void) returns (Void);
   rpc resetConfig(Void) returns (Void);
   rpc shutdown(Void) returns (Void);
   rpc kill(Void) returns (Void);

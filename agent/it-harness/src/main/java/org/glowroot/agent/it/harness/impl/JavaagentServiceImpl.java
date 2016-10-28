@@ -27,8 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.MainEntryPoint;
-import org.glowroot.agent.fat.init.GlowrootFatAgentInit;
-import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Threads;
@@ -112,16 +110,26 @@ class JavaagentServiceImpl extends JavaagentServiceImplBase {
     }
 
     @Override
+    public void setSlowThresholdToZero(Void request, StreamObserver<Void> responseObserver) {
+        try {
+            GlowrootAgentInit glowrootAgentInit =
+                    checkNotNull(MainEntryPoint.getGlowrootAgentInit());
+            glowrootAgentInit.setSlowThresholdToZero();
+        } catch (Throwable t) {
+            logger.error(t.getMessage(), t);
+            responseObserver.onError(t);
+            return;
+        }
+        responseObserver.onNext(Void.getDefaultInstance());
+        responseObserver.onCompleted();
+    }
+
+    @Override
     public void resetConfig(Void request, StreamObserver<Void> responseObserver) {
         try {
             GlowrootAgentInit glowrootAgentInit =
                     checkNotNull(MainEntryPoint.getGlowrootAgentInit());
-            AgentModule agentModule = glowrootAgentInit.getAgentModule();
-            agentModule.getConfigService().resetConfig();
-            agentModule.getLiveWeavingService().reweave("");
-            if (glowrootAgentInit instanceof GlowrootFatAgentInit) {
-                ((GlowrootFatAgentInit) glowrootAgentInit).resetConfig();
-            }
+            glowrootAgentInit.resetConfig();
         } catch (Throwable t) {
             logger.error(t.getMessage(), t);
             responseObserver.onError(t);

@@ -33,9 +33,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class UiSandboxMain {
 
-    private static final boolean useJavaagent = false;
-    private static final boolean useGlowrootServer = false;
-    private static final boolean useReverseProxy = false;
+    private static final boolean useJavaagent = Boolean.getBoolean("glowroot.sandbox.javaagent");
+    private static final boolean useGlowrootCentral =
+            Boolean.getBoolean("glowroot.sandbox.central");
+    private static final boolean useReverseProxy =
+            Boolean.getBoolean("glowroot.sandbox.reverseProxy");
 
     static {
         if (useReverseProxy) {
@@ -55,10 +57,15 @@ public class UiSandboxMain {
                             + "\"ui\":{\"defaultDisplayedTransactionType\":\"Sandbox\"}}",
                     configFile, Charsets.UTF_8);
         }
-        if (useJavaagent) {
+        if (useJavaagent && useGlowrootCentral) {
+            container = new JavaagentContainer(baseDir, false,
+                    ImmutableList.of("-Dglowroot.agent.id=\"UI Sandbox\"",
+                            "-Dglowroot.collector.host=localhost",
+                            "-Dglowroot.collector.port=8181"));
+        } else if (useJavaagent) {
             container = new JavaagentContainer(baseDir, true, ImmutableList.<String>of());
-        } else if (useGlowrootServer) {
-            container = new LocalContainer(baseDir, true,
+        } else if (useGlowrootCentral) {
+            container = new LocalContainer(baseDir, false,
                     ImmutableMap.of("glowroot.agent.id", "UI Sandbox",
                             "glowroot.collector.host", "localhost",
                             "glowroot.collector.port", "8181"));

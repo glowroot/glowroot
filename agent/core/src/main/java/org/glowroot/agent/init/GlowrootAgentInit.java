@@ -22,6 +22,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.collector.Collector;
+import org.glowroot.common.util.OnlyUsedByTests;
 
 public interface GlowrootAgentInit {
 
@@ -30,9 +31,15 @@ public interface GlowrootAgentInit {
             @Nullable File glowrootJarFile, String glowrootVersion, boolean offlineViewer)
             throws Exception;
 
-    AgentModule getAgentModule();
+    @OnlyUsedByTests
+    void setSlowThresholdToZero() throws Exception;
 
+    @OnlyUsedByTests
+    void resetConfig() throws Exception;
+
+    @OnlyUsedByTests
     void close() throws Exception;
 
+    @OnlyUsedByTests
     void awaitClose() throws Exception;
 }

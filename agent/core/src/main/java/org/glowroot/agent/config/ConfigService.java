@@ -315,6 +315,14 @@ public class ConfigService {
     }
 
     @OnlyUsedByTests
+    public void setSlowThresholdToZero() throws IOException {
+        transactionConfig = ImmutableTransactionConfig.copyOf(transactionConfig)
+                .withSlowThresholdMillis(0);
+        writeAll();
+        notifyConfigListeners();
+    }
+
+    @OnlyUsedByTests
     public void resetConfig() throws IOException {
         transactionConfig = ImmutableTransactionConfig.builder()
                 .slowThresholdMillis(0)

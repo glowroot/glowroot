@@ -20,12 +20,16 @@ import java.util.ListIterator;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import org.glowroot.agent.it.harness.ConfigService;
+import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MBeanAttribute;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
@@ -106,11 +110,19 @@ class ConfigServiceImpl implements ConfigService {
                 .build());
     }
 
+    void setSlowThresholdToZero() throws Exception {
+        AgentConfig agentConfig = server.getAgentConfig();
+        server.updateAgentConfig(agentConfig.toBuilder()
+                .setTransactionConfig(agentConfig.getTransactionConfig().toBuilder()
+                        .setSlowThresholdMillis(of(0)))
+                .build());
+    }
+
     void resetConfig() throws Exception {
         AgentConfig.Builder builder = AgentConfig.newBuilder()
                 .setTransactionConfig(getDefaultTransactionConfig())
-                .setUserRecordingConfig(getDefaultUserRecordingConfig())
                 .setAdvancedConfig(getDefaultAdvancedConfig());
+        builder.addAllGaugeConfig(getDefaultGaugeConfigs());
         for (PluginConfig pluginConfig : server.getAgentConfig().getPluginConfigList()) {
             PluginConfig.Builder pluginConfigBuilder = PluginConfig.newBuilder()
                     .setId(pluginConfig.getId());
@@ -188,10 +200,6 @@ class ConfigServiceImpl implements ConfigService {
                 .build();
     }
 
-    private static UserRecordingConfig getDefaultUserRecordingConfig() {
-        return AgentConfig.UserRecordingConfig.getDefaultInstance();
-    }
-
     private static AdvancedConfig getDefaultAdvancedConfig() {
         // TODO this needs to be kept in sync with default values
         return AdvancedConfig.newBuilder()
@@ -203,6 +211,43 @@ class ConfigServiceImpl implements ConfigService {
                 .setMaxStackTraceSamplesPerTransaction(of(10000))
                 .setMbeanGaugeNotFoundDelaySeconds(of(60))
                 .build();
+    }
+
+    private static List<GaugeConfig> getDefaultGaugeConfigs() {
+        // TODO this needs to be kept in sync with default values
+        List<GaugeConfig> defaultGaugeConfigs = Lists.newArrayList();
+        defaultGaugeConfigs.add(GaugeConfig.newBuilder()
+                .setMbeanObjectName("java.lang:type=Memory")
+                .addMbeanAttribute(MBeanAttribute.newBuilder()
+                        .setName("HeapMemoryUsage.used"))
+                .build());
+        defaultGaugeConfigs.add(GaugeConfig.newBuilder()
+                .setMbeanObjectName("java.lang:type=GarbageCollector,name=*")
+                .addMbeanAttribute(MBeanAttribute.newBuilder()
+                        .setName("CollectionCount")
+                        .setCounter(true))
+                .addMbeanAttribute(MBeanAttribute.newBuilder()
+                        .setName("CollectionTime")
+                        .setCounter(true))
+                .build());
+        defaultGaugeConfigs.add(GaugeConfig.newBuilder()
+                .setMbeanObjectName("java.lang:type=MemoryPool,name=*")
+                .addMbeanAttribute(MBeanAttribute.newBuilder()
+                        .setName("Usage.used"))
+                .build());
+        GaugeConfig.Builder operatingSystemMBean = GaugeConfig.newBuilder()
+                .setMbeanObjectName("java.lang:type=OperatingSystem")
+                .addMbeanAttribute(MBeanAttribute.newBuilder()
+                        .setName("FreePhysicalMemorySize"));
+        if (!JavaVersion.isJava6()) {
+            // these are only available since 1.7
+            operatingSystemMBean.addMbeanAttribute(MBeanAttribute.newBuilder()
+                    .setName("ProcessCpuLoad"));
+            operatingSystemMBean.addMbeanAttribute(MBeanAttribute.newBuilder()
+                    .setName("SystemCpuLoad"));
+        }
+        defaultGaugeConfigs.add(operatingSystemMBean.build());
+        return ImmutableList.copyOf(defaultGaugeConfigs);
     }
 
     private static OptionalInt32 of(int value) {

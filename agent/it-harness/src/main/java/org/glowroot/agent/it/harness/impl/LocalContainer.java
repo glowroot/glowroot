@@ -28,7 +28,6 @@ import com.google.common.collect.Maps;
 import com.google.common.reflect.Reflection;
 
 import org.glowroot.agent.MainEntryPoint;
-import org.glowroot.agent.fat.init.GlowrootFatAgentInit;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
 import org.glowroot.agent.it.harness.AppUnderTest;
@@ -72,23 +71,20 @@ public class LocalContainer implements Container {
             deleteBaseDirOnClose = false;
         }
 
-        int collectorPort;
-        if (fat) {
-            collectorPort = 0;
+        boolean pointingToCentral = extraProperties.containsKey("glowroot.collector.host");
+        final Map<String, String> properties = Maps.newHashMap();
+        properties.put("glowroot.base.dir", this.baseDir.getAbsolutePath());
+        if (fat || pointingToCentral) {
             traceCollector = null;
             server = null;
         } else {
-            collectorPort = getAvailablePort();
+            int collectorPort = getAvailablePort();
             traceCollector = new TraceCollector();
             server = new GrpcServerWrapper(traceCollector, collectorPort);
-        }
-        isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(AppUnderTest.class);
-        final Map<String, String> properties = Maps.newHashMap();
-        properties.put("glowroot.base.dir", this.baseDir.getAbsolutePath());
-        if (collectorPort != 0) {
             properties.put("glowroot.collector.host", "localhost");
             properties.put("glowroot.collector.port", Integer.toString(collectorPort));
         }
+        isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(AppUnderTest.class);
         properties.putAll(extraProperties);
         // start up in separate thread to avoid the main thread from being capture by netty
         // ThreadDeathWatcher, which then causes PermGen OOM during maven test
@@ -103,9 +99,12 @@ public class LocalContainer implements Container {
         glowrootAgentInit = checkNotNull(MainEntryPoint.getGlowrootAgentInit());
         if (server == null) {
             configService = null;
+            glowrootAgentInit.setSlowThresholdToZero();
         } else {
             configService = new ConfigServiceImpl(server, false);
-            configService.resetConfig();
+            // need to set through config service so config service can keep track of changes,
+            // otherwise it will clobber slow threshold value on next update through config service
+            configService.setSlowThresholdToZero();
         }
     }
 
@@ -156,12 +155,12 @@ public class LocalContainer implements Container {
 
     @Override
     public void checkAndReset() throws Exception {
-        if (glowrootAgentInit instanceof GlowrootFatAgentInit) {
-            ((GlowrootFatAgentInit) glowrootAgentInit).resetConfig();
-        } else if (configService != null) {
-            configService.resetConfig();
+        if (configService == null) {
+            glowrootAgentInit.resetConfig();
         } else {
-            // webdriver, using thin agent, pointing to server
+            // need to reset through config service so config service can keep track of changes,
+            // otherwise it will clobber the reset config on next update through config service
+            configService.resetConfig();
         }
         if (traceCollector != null) {
             traceCollector.checkAndResetLogMessages();

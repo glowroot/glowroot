@@ -16,6 +16,7 @@
 package org.glowroot.agent.init;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -115,8 +116,17 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
 
     @Override
     @OnlyUsedByTests
-    public AgentModule getAgentModule() {
-        return checkNotNull(agentModule);
+    public void setSlowThresholdToZero() throws IOException {
+        AgentModule agentModule = checkNotNull(this.agentModule);
+        agentModule.getConfigService().setSlowThresholdToZero();
+    }
+
+    @Override
+    @OnlyUsedByTests
+    public void resetConfig() throws Exception {
+        AgentModule agentModule = checkNotNull(this.agentModule);
+        agentModule.getConfigService().resetConfig();
+        agentModule.getLiveWeavingService().reweave("");
     }
 
     @Override

@@ -131,8 +131,16 @@ public class JavaagentContainer implements Container {
                 }
             }
         });
+
+        boolean pointingToCentral = false;
+        for (String extraJvmArg : extraJvmArgs) {
+            if (extraJvmArg.startsWith("-Dglowroot.collector.host=")) {
+                pointingToCentral = true;
+                break;
+            }
+        }
         int collectorPort;
-        if (fat) {
+        if (fat || pointingToCentral) {
             collectorPort = 0;
             traceCollector = null;
             server = null;
@@ -184,13 +192,14 @@ public class JavaagentContainer implements Container {
         }
         javaagentService = JavaagentServiceGrpc.newBlockingStub(channel)
                 .withCompression("gzip");
-        javaagentService.ping(Void.getDefaultInstance());
         if (server == null) {
             configService = null;
+            javaagentService.setSlowThresholdToZero(Void.getDefaultInstance());
         } else {
             configService = new ConfigServiceImpl(server, true);
-            // this is used to set slowThresholdMillis=0
-            configService.resetConfig();
+            // need to set through config service so config service can keep track of changes,
+            // otherwise it will clobber slow threshold value on next update through config service
+            configService.setSlowThresholdToZero();
         }
         shutdownHook = new ShutdownHookThread(javaagentService);
         // unfortunately, ctrl-c during maven test will kill the maven process, but won't kill the
@@ -249,6 +258,8 @@ public class JavaagentContainer implements Container {
         if (configService == null) {
             javaagentService.resetConfig(Void.getDefaultInstance());
         } else {
+            // need to reset through config service so config service can keep track of changes,
+            // otherwise it will clobber the reset config on next update through config service
             configService.resetConfig();
         }
         if (traceCollector != null) {

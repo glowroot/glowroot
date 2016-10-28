@@ -45,7 +45,6 @@ import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignature;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
@@ -154,9 +153,11 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
 
     @Override
     public int reweave(String agentId) throws Exception {
-        // this action is not displayed in the UI when instrumentation is null
-        // (which is only in dev mode anyways)
-        checkNotNull(instrumentation);
+        if (instrumentation == null) {
+            // this method is called from GlowrootAgentInit.resetConfig() by tests when
+            // instrumentation is null
+            return 0;
+        }
         // this command is filtered out of the UI when retransform classes is not supported
         checkState(instrumentation.isRetransformClassesSupported(),
                 "Retransform classes is not supported");
