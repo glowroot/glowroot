@@ -84,13 +84,15 @@ public class SimpleRepoModule {
         FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(dataSource);
         aggregateDao = new AggregateDao(dataSource, this.rollupCappedDatabases, configRepository,
                 transactionTypeDao, fullQueryTextDao);
-        traceDao =
-                new TraceDao(dataSource, traceCappedDatabase, transactionTypeDao, fullQueryTextDao);
+        TraceAttributeNameDao traceAttributeNameDao = new TraceAttributeNameDao(dataSource);
+        traceDao = new TraceDao(dataSource, traceCappedDatabase, traceAttributeNameDao,
+                transactionTypeDao, fullQueryTextDao);
         GaugeNameDao gaugeNameDao = new GaugeNameDao(dataSource);
         gaugeValueDao = new GaugeValueDao(dataSource, gaugeNameDao, clock);
 
         repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
-                configRepository, agentDao, gaugeValueDao);
+                configRepository, agentDao, gaugeValueDao, gaugeNameDao, traceAttributeNameDao,
+                transactionTypeDao, fullQueryTextDao);
 
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
         alertingService = new AlertingService(configRepository, triggeredAlertDao, aggregateDao,

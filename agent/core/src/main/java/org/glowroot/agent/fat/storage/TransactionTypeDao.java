@@ -89,4 +89,8 @@ class TransactionTypeDao implements TransactionTypeRepository {
                     captureTime - DAYS.toMillis(1));
         }
     }
+
+    void invalidateCache() {
+        lastCaptureTimeUpdatedInThePastDay.invalidateAll();
+    }
 }

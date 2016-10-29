@@ -99,6 +99,10 @@ class TraceAttributeNameDao {
         }
     }
 
+    void invalidateCache() {
+        lastCaptureTimeUpdatedInThePastDay.invalidateAll();
+    }
+
     private static class TraceAttributeQuery implements JdbcRowQuery<String> {
 
         private final String transactionType;

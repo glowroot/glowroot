@@ -58,8 +58,8 @@ public class TraceDaoTest {
         }
         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
         cappedDatabase = new CappedDatabase(cappedFile, 1000000, Ticker.systemTicker());
-        traceDao = new TraceDao(dataSource, cappedDatabase, mock(TransactionTypeDao.class),
-                mock(FullQueryTextDao.class));
+        traceDao = new TraceDao(dataSource, cappedDatabase, mock(TraceAttributeNameDao.class),
+                mock(TransactionTypeDao.class), mock(FullQueryTextDao.class));
     }
 
     @After

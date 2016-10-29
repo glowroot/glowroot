@@ -134,11 +134,11 @@ public class TraceDao implements TraceRepository {
     private final FullQueryTextDao fullQueryTextDao;
 
     TraceDao(DataSource dataSource, CappedDatabase traceCappedDatabase,
-            TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao)
-            throws Exception {
+            TraceAttributeNameDao traceAttributeNameDao, TransactionTypeDao transactionTypeDao,
+            FullQueryTextDao fullQueryTextDao) throws Exception {
         this.dataSource = dataSource;
         this.traceCappedDatabase = traceCappedDatabase;
-        traceAttributeNameDao = new TraceAttributeNameDao(dataSource);
+        this.traceAttributeNameDao = traceAttributeNameDao;
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
         if (dataSource.tableExists("trace")

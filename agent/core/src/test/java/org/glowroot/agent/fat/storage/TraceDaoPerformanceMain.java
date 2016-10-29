@@ -39,7 +39,8 @@ public class TraceDaoPerformanceMain {
         DataSource dataSource = new DataSource();
         CappedDatabase cappedDatabase =
                 new CappedDatabase(new File("glowroot.capped.db"), 1000000, Ticker.systemTicker());
-        TraceDao traceDao = new TraceDao(dataSource, cappedDatabase, mock(TransactionTypeDao.class),
+        TraceDao traceDao = new TraceDao(dataSource, cappedDatabase,
+                mock(TraceAttributeNameDao.class), mock(TransactionTypeDao.class),
                 mock(FullQueryTextDao.class));
 
         Stopwatch stopwatch = Stopwatch.createStarted();

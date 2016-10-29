@@ -109,4 +109,8 @@ class FullQueryTextDao {
                     captureTime - DAYS.toMillis(1));
         }
     }
+
+    void invalidateCache() {
+        lastCaptureTimeUpdatedInThePastDay.invalidateAll();
+    }
 }
