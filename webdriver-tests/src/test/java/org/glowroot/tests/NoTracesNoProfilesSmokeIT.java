@@ -20,9 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Request;
 import com.ning.http.client.Response;
-import org.junit.AfterClass;
 import org.junit.Assume;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
 
@@ -31,16 +29,6 @@ import org.glowroot.tests.config.ConfigSidebar;
 import org.glowroot.tests.util.Utils;
 
 public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
-
-    @BeforeClass
-    public static void setUp() throws Exception {
-        container.checkAndReset();
-    }
-
-    @AfterClass
-    public static void tearDown() throws Exception {
-        container.checkAndReset();
-    }
 
     @Test
     public void shouldCheckTransactionPages() throws Exception {
