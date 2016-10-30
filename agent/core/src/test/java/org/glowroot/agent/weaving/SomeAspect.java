@@ -46,7 +46,7 @@ public class SomeAspect {
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc",
             methodName = "execute1|execute2",
-            methodParameterTypes = {}, timerName = "xyz")
+            methodParameterTypes = {}, timer = "xyz")
     public static class BasicAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -79,7 +79,7 @@ public class SomeAspect {
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.SuperBasicMisc",
             methodName = "superBasic",
-            methodParameterTypes = {}, timerName = "superbasic")
+            methodParameterTypes = {}, timer = "superbasic")
     public static class SuperBasicAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -105,7 +105,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "java.lang.Throwable", methodName = "toString", methodParameterTypes = {},
-            timerName = "throwable to string")
+            timer = "throwable to string")
     public static class ThrowableToStringAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -669,7 +669,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc", methodName = "execute1",
-            methodParameterTypes = {}, timerName = "efg")
+            methodParameterTypes = {}, timer = "efg")
     public static class BindMethodNameAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindMethodName String methodName) {
@@ -847,7 +847,7 @@ public class SomeAspect {
 
     @Pointcut(classAnnotation = "org.glowroot.agent.weaving.SomeAspect$SomeClass",
             methodAnnotation = "org.glowroot.agent.weaving.SomeAspect$SomeMethod",
-            methodParameterTypes = {".."}, timerName = "anno")
+            methodParameterTypes = {".."}, timer = "anno")
     public static class BasicAnnotationBasedAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -947,7 +947,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc", methodName = "execute*",
-            methodParameterTypes = {".."}, timerName = "abc xyz")
+            methodParameterTypes = {".."}, timer = "abc xyz")
     public static class InnerMethodAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc", methodName = "execute*",
@@ -1001,7 +1001,7 @@ public class SomeAspect {
     public static class MethodReturnNarrowingAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc", methodName = "*",
-            methodParameterTypes = {".."}, timerName = "wild")
+            methodParameterTypes = {".."}, timer = "wild")
     public static class WildMethodAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.agent.weaving.targets.PrimitiveMisc",
@@ -1191,7 +1191,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.weaving.GenerateNotPerfectBytecode$Test",
-            methodName = "test*", methodParameterTypes = {}, timerName = "xyz")
+            methodName = "test*", methodParameterTypes = {}, timer = "xyz")
     public static class NotPerfectBytecodeAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -1217,7 +1217,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.weaving.GenerateMoreNotPerfectBytecode$Test",
-            methodName = "execute", methodParameterTypes = {}, timerName = "xyz")
+            methodName = "execute", methodParameterTypes = {}, timer = "xyz")
     public static class MoreNotPerfectBytecodeAdvice {
         @IsEnabled
         public static boolean isEnabled() {

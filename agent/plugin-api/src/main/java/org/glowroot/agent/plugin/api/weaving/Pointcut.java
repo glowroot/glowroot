@@ -65,6 +65,12 @@ public @interface Pointcut {
     // * A's @OnThrow will be called after B's @OnThrow
     // * A's @OnAfter will be called after B's @OnAfter
     int order() default 0;
-    String timerName() default "";
+    String timer() default "";
     String supersedes() default "";
+
+    /**
+     * Replaced by {@link Pointcut#timer()}. Will be removed in version 1.0.0.
+     */
+    @Deprecated
+    String timerName() default "";
 }

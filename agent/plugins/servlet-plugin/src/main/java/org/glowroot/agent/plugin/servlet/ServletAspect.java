@@ -112,7 +112,7 @@ public class ServletAspect {
     @Pointcut(className = "javax.servlet.Servlet", methodName = "service",
             methodParameterTypes = {"javax.servlet.ServletRequest",
                     "javax.servlet.ServletResponse"},
-            nestingGroup = "outer-servlet-or-filter", timerName = "http request")
+            nestingGroup = "outer-servlet-or-filter", timer = "http request")
     public static class ServiceAdvice {
         private static final TimerName timerName = Agent.getTimerName(ServiceAdvice.class);
         @OnBefore
@@ -210,7 +210,7 @@ public class ServletAspect {
     @Pointcut(className = "javax.servlet.Filter", methodName = "doFilter",
             methodParameterTypes = {"javax.servlet.ServletRequest", "javax.servlet.ServletResponse",
                     "javax.servlet.FilterChain"},
-            nestingGroup = "outer-servlet-or-filter", timerName = "http request")
+            nestingGroup = "outer-servlet-or-filter", timer = "http request")
     public static class DoFilterAdvice {
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
@@ -233,7 +233,7 @@ public class ServletAspect {
             methodParameterTypes = {"java.lang.String", "org.eclipse.jetty.server.Request",
                     "javax.servlet.http.HttpServletRequest",
                     "javax.servlet.http.HttpServletResponse"},
-            nestingGroup = "outer-servlet-or-filter", timerName = "http request")
+            nestingGroup = "outer-servlet-or-filter", timer = "http request")
     public static class JettyHandlerAdvice {
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,

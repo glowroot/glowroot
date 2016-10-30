@@ -136,7 +136,7 @@ public class Netty3Aspect {
     @Pointcut(className = "org.jboss.netty.channel.ChannelHandlerContext",
             methodName = "sendUpstream",
             methodParameterTypes = {"org.jboss.netty.channel.ChannelEvent"},
-            nestingGroup = "netty-inbound", timerName = "http request")
+            nestingGroup = "netty-inbound", timer = "http request")
     public static class InboundAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(InboundAdvice.class);

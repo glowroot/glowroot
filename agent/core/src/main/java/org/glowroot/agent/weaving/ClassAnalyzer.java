@@ -245,7 +245,7 @@ class ClassAnalyzer {
         }
         Iterator<Advice> i = advisors.iterator();
         while (i.hasNext()) {
-            String timerName = i.next().pointcut().timerName();
+            String timerName = TimerNames.getTimerName(i.next().pointcut());
             if (superseded.contains(timerName)) {
                 i.remove();
             }

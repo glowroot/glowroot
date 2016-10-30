@@ -32,7 +32,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 public class ExternalJvmMainAspect {
 
     @Pointcut(className = "org.glowroot.agent.it.harness.impl.JavaagentMain", methodName = "main",
-            methodParameterTypes = {"java.lang.String[]"}, timerName = "external jvm main")
+            methodParameterTypes = {"java.lang.String[]"}, timer = "external jvm main")
     public static class MainAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(MainAdvice.class);
@@ -52,7 +52,7 @@ public class ExternalJvmMainAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.it.harness.impl.JavaagentMain",
-            methodName = "timerMarkerOne", methodParameterTypes = {}, timerName = "timer one")
+            methodName = "timerMarkerOne", methodParameterTypes = {}, timer = "timer one")
     public static class TimerMarkerOneAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(TimerMarkerOneAdvice.class);
@@ -69,7 +69,7 @@ public class ExternalJvmMainAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.it.harness.impl.JavaagentMain",
-            methodName = "timerMarkerTwo", methodParameterTypes = {}, timerName = "timer two")
+            methodName = "timerMarkerTwo", methodParameterTypes = {}, timer = "timer two")
     public static class TimerMarkerTwoAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(TimerMarkerTwoAdvice.class);

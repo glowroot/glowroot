@@ -70,6 +70,6 @@ public class TimerNameCacheTest {
     @Pointcut(className = "x", methodName = "y", methodParameterTypes = {})
     private static class B {}
 
-    @Pointcut(className = "x", methodName = "y", methodParameterTypes = {}, timerName = "z")
+    @Pointcut(className = "x", methodName = "y", methodParameterTypes = {}, timer = "z")
     private static class C {}
 }

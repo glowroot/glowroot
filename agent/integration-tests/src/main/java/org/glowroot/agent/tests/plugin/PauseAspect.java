@@ -38,7 +38,7 @@ public class PauseAspect {
             configService.getBooleanProperty("captureTraceEntryStackTraces");
 
     @Pointcut(className = "org.glowroot.agent.tests.app.Pause", methodName = "pause*",
-            methodParameterTypes = {}, timerName = "pause")
+            methodParameterTypes = {}, timer = "pause")
     public static class PauseAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(PauseAdvice.class);
@@ -62,6 +62,6 @@ public class PauseAspect {
     // this is just to generate an additional $glowroot$ method to test that consecutive
     // $glowroot$ methods in an entry stack trace are stripped out correctly
     @Pointcut(className = "org.glowroot.agent.tests.app.LogError", methodName = "pause",
-            methodParameterTypes = {"int"}, timerName = "pause 2")
+            methodParameterTypes = {"int"}, timer = "pause 2")
     public static class PauseAdvice2 {}
 }

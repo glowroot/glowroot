@@ -31,7 +31,7 @@ public class TransactionWorthyAspect {
 
     @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TransactionWorthy",
             methodName = "doSomethingTransactionWorthy", methodParameterTypes = {},
-            timerName = "transaction worthy")
+            timer = "transaction worthy")
     public static class TransactionWorthyAdvice {
 
         private static final TimerName timerName =

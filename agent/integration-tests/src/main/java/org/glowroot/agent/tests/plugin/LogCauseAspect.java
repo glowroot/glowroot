@@ -29,7 +29,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 public class LogCauseAspect {
 
     @Pointcut(className = "org.glowroot.agent.tests.app.LogCause", methodName = "log",
-            methodParameterTypes = {"java.lang.String"}, timerName = "log error")
+            methodParameterTypes = {"java.lang.String"}, timer = "log error")
     public static class LogCauseAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(LogCauseAdvice.class);

@@ -43,7 +43,7 @@ public class SoapOutInterceptorAspect {
     @Pointcut(className = "org.apache.cxf.binding.soap.interceptor.SoapOutInterceptor",
             methodName = "handleMessage",
             methodParameterTypes = {"org.apache.cxf.binding.soap.SoapMessage"},
-            nestingGroup = "http-client", timerName = "cxf client soap request")
+            nestingGroup = "http-client", timer = "cxf client soap request")
     public static class SoapOutInterceptorAdvice {
 
         private static final TimerName timerName =

@@ -33,7 +33,7 @@ public class HttpJspPageAspect {
     @Pointcut(className = "javax.servlet.jsp.HttpJspPage", methodName = "_jspService",
             methodParameterTypes = {"javax.servlet.http.HttpServletRequest",
                     "javax.servlet.http.HttpServletResponse"},
-            nestingGroup = "jsp", timerName = "jsp render")
+            nestingGroup = "jsp", timer = "jsp render")
     public static class HttpJspPageAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(HttpJspPageAdvice.class);

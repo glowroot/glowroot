@@ -42,7 +42,7 @@ public class NestableCallAspect {
     private static final AtomicInteger counter = new AtomicInteger();
 
     @Pointcut(className = "org.glowroot.agent.ui.sandbox.NestableCall", methodName = "execute",
-            methodParameterTypes = {}, nestingGroup = "ui-sandbox-nestable", timerName = "nestable")
+            methodParameterTypes = {}, nestingGroup = "ui-sandbox-nestable", timer = "nestable")
     public static class NestableCallAdvice {
         private static final TimerName timerName = Agent.getTimerName(NestableCallAdvice.class);
         private static final Random random = new Random();

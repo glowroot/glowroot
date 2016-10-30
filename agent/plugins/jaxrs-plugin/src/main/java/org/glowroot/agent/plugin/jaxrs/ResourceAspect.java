@@ -101,7 +101,7 @@ public class ResourceAspect {
     @Pointcut(classAnnotation = "javax.ws.rs.Path",
             methodAnnotation = "javax.ws.rs.Path|javax.ws.rs.DELETE|javax.ws.rs.GET"
                     + "|javax.ws.rs.HEAD|javax.ws.rs.OPTIONS|javax.ws.rs.POST|javax.ws.rs.PUT",
-            methodParameterTypes = {".."}, timerName = "jaxrs resource")
+            methodParameterTypes = {".."}, timer = "jaxrs resource")
     public static class ResourceAdvice {
         private static final TimerName timerName = Agent.getTimerName(ResourceAdvice.class);
         @OnBefore

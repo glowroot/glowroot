@@ -42,7 +42,7 @@ public class GrailsControllerClassAspect {
 
     @Pointcut(className = "grails.core.GrailsControllerClass", methodName = "invoke",
             methodParameterTypes = {"java.lang.Object", "java.lang.String"},
-            timerName = "grails controller")
+            timer = "grails controller")
     public static class ControllerAdvice {
         private static final TimerName timerName = Agent.getTimerName(ControllerAdvice.class);
 

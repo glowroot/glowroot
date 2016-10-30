@@ -33,7 +33,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 public class BeanDescriptorAspect {
 
     @Pointcut(className = "java.beans.BeanDescriptor", methodName = "getBeanClass",
-            methodParameterTypes = {}, timerName = "get bean class")
+            methodParameterTypes = {}, timer = "get bean class")
     public static class GetBeanClassAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(GetBeanClassAdvice.class);
@@ -50,7 +50,7 @@ public class BeanDescriptorAspect {
     }
 
     @Pointcut(className = "java.beans.BeanDescriptor", methodName = "getCustomizerClass",
-            methodParameterTypes = {}, timerName = "get customizer class")
+            methodParameterTypes = {}, timer = "get customizer class")
     public static class GetCustomizerClassAdvice {
 
         private static final TimerName timerName =

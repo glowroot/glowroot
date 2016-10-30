@@ -35,7 +35,7 @@ public class Play1xAspect {
 
     @Pointcut(className = "play.mvc.ActionInvoker", methodName = "invoke",
             methodParameterTypes = {"play.mvc.Http$Request", "play.mvc.Http$Response"},
-            timerName = "http request")
+            timer = "http request")
     public static class ActionInvokerAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(ActionInvokerAdvice.class);

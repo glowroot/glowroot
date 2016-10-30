@@ -32,8 +32,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 public class LevelThreeAspect {
 
     @Pointcut(className = "org.glowroot.agent.tests.app.LevelThree", methodName = "call",
-            methodParameterTypes = {"java.lang.String", "java.lang.String"},
-            timerName = "level three")
+            methodParameterTypes = {"java.lang.String", "java.lang.String"}, timer = "level three")
     public static class LevelThreeAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(LevelThreeAdvice.class);

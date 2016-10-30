@@ -76,7 +76,7 @@ public class RequestDispatcherAspect {
     @Pointcut(className = "javax.servlet.RequestDispatcher", methodName = "forward|include",
             methodParameterTypes = {"javax.servlet.ServletRequest",
                     "javax.servlet.ServletResponse"},
-            nestingGroup = "servlet-dispatch", timerName = "servlet dispatch")
+            nestingGroup = "servlet-dispatch", timer = "servlet dispatch")
     public static class DispatchAdvice {
         private static final TimerName timerName = Agent.getTimerName(DispatchAdvice.class);
         @OnBefore

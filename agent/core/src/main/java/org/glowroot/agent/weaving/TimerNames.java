@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,20 @@
  */
 package org.glowroot.agent.weaving;
 
-import org.glowroot.agent.plugin.api.weaving.BindMethodName;
-import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
-public class WeavingJDK14BytecodeAspect {
+// this is just to support deprecated timerName() attribute for a bit
+public class TimerNames {
 
-    @Pointcut(className = "org.apache.commons.lang.StringUtils", methodName = "isEmpty",
-            methodParameterTypes = {"java.lang.String"}, timer = "is empty")
-    public static class BasicAdvice {
-        @OnBefore
-        public static void onBefore(@SuppressWarnings("unused") @BindMethodName String test) {}
+    private TimerNames() {}
+
+    @SuppressWarnings("deprecation")
+    public static String getTimerName(Pointcut pointcut) {
+        String timerName = pointcut.timer();
+        if (timerName.isEmpty()) {
+            return pointcut.timerName();
+        } else {
+            return timerName;
+        }
     }
 }

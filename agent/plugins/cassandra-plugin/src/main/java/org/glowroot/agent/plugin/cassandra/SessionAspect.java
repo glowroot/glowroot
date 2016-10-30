@@ -95,7 +95,7 @@ public class SessionAspect {
 
     @Pointcut(className = "com.datastax.driver.core.Session", methodName = "execute",
             methodParameterTypes = {"com.datastax.driver.core.Statement"},
-            nestingGroup = "cassandra", timerName = "cql execute")
+            nestingGroup = "cassandra", timer = "cql execute")
     public static class ExecuteAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAdvice.class);
         @OnBefore
@@ -129,7 +129,7 @@ public class SessionAspect {
 
     @Pointcut(className = "com.datastax.driver.core.Session", methodName = "executeAsync",
             methodParameterTypes = {"com.datastax.driver.core.Statement"},
-            nestingGroup = "cassandra", timerName = "cql execute")
+            nestingGroup = "cassandra", timer = "cql execute")
     public static class ExecuteAsyncAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAsyncAdvice.class);
         @OnBefore

@@ -347,6 +347,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$AnnotationCaptureMethodVisitor");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$ThinClass");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$ThinMethod");
+        types.add("org.glowroot.agent.weaving.TimerNames");
         types.add("org.glowroot.agent.weaving.Weaver");
         types.add("org.glowroot.agent.weaving.Weaver$ComputeFramesClassWriter");
         types.add("org.glowroot.agent.weaving.Weaver$JSRInlinerClassVisitor");

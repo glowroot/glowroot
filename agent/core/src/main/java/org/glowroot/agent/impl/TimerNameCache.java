@@ -25,6 +25,7 @@ import org.glowroot.agent.model.ImmutableTimerNameImpl;
 import org.glowroot.agent.model.TimerNameImpl;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
+import org.glowroot.agent.weaving.TimerNames;
 
 // used to ensure one instance per name so that pointer equality can be used instead of String
 // equality
@@ -54,11 +55,13 @@ public class TimerNameCache {
         if (pointcut == null) {
             logger.warn("advice has no @Pointcut: {}", adviceClass.getName());
             return unknownTimerName;
-        } else if (pointcut.timerName().isEmpty()) {
-            logger.warn("advice @Pointcut has no timerName() attribute: {}", adviceClass.getName());
+        }
+        String name = TimerNames.getTimerName(pointcut);
+        if (name.isEmpty()) {
+            logger.warn("advice @Pointcut has no timer() attribute: {}", adviceClass.getName());
             return unknownTimerName;
         } else {
-            return getName(pointcut.timerName());
+            return getName(name);
         }
     }
 

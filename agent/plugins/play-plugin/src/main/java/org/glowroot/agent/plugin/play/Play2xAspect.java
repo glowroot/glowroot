@@ -108,7 +108,7 @@ public class Play2xAspect {
     }
 
     @Pointcut(className = "views.html.*", methodName = "apply", methodParameterTypes = {".."},
-            timerName = "play render", nestingGroup = "play-render")
+            timer = "play render", nestingGroup = "play-render")
     public static class RenderAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(RenderAdvice.class);

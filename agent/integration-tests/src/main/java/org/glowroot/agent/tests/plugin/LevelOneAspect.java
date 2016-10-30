@@ -49,8 +49,7 @@ public class LevelOneAspect {
             configService.getBooleanProperty("starredHeadline");
 
     @Pointcut(className = "org.glowroot.agent.tests.app.LevelOne", methodName = "call",
-            methodParameterTypes = {"java.lang.Object", "java.lang.Object"},
-            timerName = "level one")
+            methodParameterTypes = {"java.lang.Object", "java.lang.Object"}, timer = "level one")
     public static class LevelOneAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(LevelOneAdvice.class);

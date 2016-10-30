@@ -220,7 +220,7 @@ public class ExecutorAspect {
     }
 
     @Pointcut(className = "java.util.concurrent.Future", methodName = "get",
-            methodParameterTypes = {".."}, timerName = "wait on future")
+            methodParameterTypes = {".."}, timer = "wait on future")
     public static class FutureGetAdvice {
         private static final TimerName timerName = Agent.getTimerName(FutureGetAdvice.class);
         @IsEnabled

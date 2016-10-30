@@ -167,9 +167,9 @@ class AdviceGenerator {
         String timerName = config.timerName();
         if (config.isTimerOrGreater()) {
             if (timerName.isEmpty()) {
-                annotationVisitor.visit("timerName", "<no timer name provided>");
+                annotationVisitor.visit("timer", "<no timer provided>");
             } else {
-                annotationVisitor.visit("timerName", timerName);
+                annotationVisitor.visit("timer", timerName);
             }
         }
         String nestingGroup = config.nestingGroup();
@@ -188,7 +188,7 @@ class AdviceGenerator {
                     "Lorg/glowroot/agent/plugin/api/config/ConfigService;", null, null).visitEnd();
         }
         if (config.isTimerOrGreater()) {
-            cw.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "timerName",
+            cw.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "timer",
                     "Lorg/glowroot/agent/plugin/api/TimerName;", null, null).visitEnd();
         }
         if (!config.enabledProperty().isEmpty()) {
@@ -219,7 +219,7 @@ class AdviceGenerator {
             mv.visitLdcInsn(Type.getObjectType(adviceInternalName));
             mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/plugin/api/Agent", "getTimerName",
                     "(Ljava/lang/Class;)Lorg/glowroot/agent/plugin/api/TimerName;", false);
-            mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "timerName",
+            mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "timer",
                     "Lorg/glowroot/agent/plugin/api/TimerName;");
         }
         if (!config.enabledProperty().isEmpty() && pluginId != null) {
@@ -275,7 +275,7 @@ class AdviceGenerator {
             mv.visitJumpInsn(IFNE, label);
             // entryEnabled is false, collect timer only
             mv.visitVarInsn(ALOAD, 0);
-            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "timerName",
+            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "timer",
                     "Lorg/glowroot/agent/plugin/api/TimerName;");
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
                     "startTimer", "(Lorg/glowroot/agent/plugin/api/TimerName;)"
@@ -319,7 +319,7 @@ class AdviceGenerator {
                         + "Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;)"
                         + "Lorg/glowroot/agent/weaving/GenericMessageSupplier;",
                 false);
-        mv.visitFieldInsn(GETSTATIC, adviceInternalName, "timerName",
+        mv.visitFieldInsn(GETSTATIC, adviceInternalName, "timer",
                 "Lorg/glowroot/agent/plugin/api/TimerName;");
         if (config.isTransaction()) {
             mv.visitMethodInsn(INVOKEINTERFACE,
@@ -347,7 +347,7 @@ class AdviceGenerator {
         MethodVisitor mv = visitOnBeforeMethod(cw, "Lorg/glowroot/agent/plugin/api/Timer;");
         mv.visitCode();
         mv.visitVarInsn(ALOAD, 0);
-        mv.visitFieldInsn(GETSTATIC, adviceInternalName, "timerName",
+        mv.visitFieldInsn(GETSTATIC, adviceInternalName, "timer",
                 "Lorg/glowroot/agent/plugin/api/TimerName;");
         mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
                 "startTimer", "(Lorg/glowroot/agent/plugin/api/TimerName;)"

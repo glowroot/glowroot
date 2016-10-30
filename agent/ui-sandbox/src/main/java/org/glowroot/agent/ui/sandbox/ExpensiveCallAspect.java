@@ -47,7 +47,7 @@ public class ExpensiveCallAspect {
             new IllegalStateException("A cause with a different stack trace", nestedCause);
 
     @Pointcut(className = "org.glowroot.agent.ui.sandbox.ExpensiveCall", methodName = "execute0",
-            methodParameterTypes = {}, timerName = "expensive 0")
+            methodParameterTypes = {}, timer = "expensive 0")
     public static class ExpensiveCallAdvice0 {
         private static final TimerName timerName = Agent.getTimerName(ExpensiveCallAdvice0.class);
         @OnBefore
@@ -88,7 +88,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.ui.sandbox.ExpensiveCall", methodName = "execute1",
-            methodParameterTypes = {}, timerName = "expensive 1")
+            methodParameterTypes = {}, timer = "expensive 1")
     public static class ExpensiveCallAdvice1 {
         private static final TimerName timerName = Agent.getTimerName(ExpensiveCallAdvice1.class);
         @OnBefore
@@ -110,7 +110,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.ui.sandbox.ExpensiveCall", methodName = "execute2",
-            methodParameterTypes = {}, timerName = "expensive 2")
+            methodParameterTypes = {}, timer = "expensive 2")
     public static class ExpensiveCallAdvice2 {
         private static final TimerName timerName = Agent.getTimerName(ExpensiveCallAdvice2.class);
         @OnBefore
@@ -132,7 +132,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.ui.sandbox.ExpensiveCall", methodName = "execute3",
-            methodParameterTypes = {}, timerName = "expensive 3")
+            methodParameterTypes = {}, timer = "expensive 3")
     public static class ExpensiveCallAdvice3 {
         private static final TimerName timerName = Agent.getTimerName(ExpensiveCallAdvice3.class);
         @OnBefore
@@ -154,7 +154,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.ui.sandbox.ExpensiveCall", methodName = "execute4",
-            methodParameterTypes = {}, timerName = "expensive 4")
+            methodParameterTypes = {}, timer = "expensive 4")
     public static class ExpensiveCallAdvice4 {
         private static final TimerName timerName = Agent.getTimerName(ExpensiveCallAdvice4.class);
         @OnBefore
@@ -176,7 +176,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.ui.sandbox.ExpensiveCall", methodName = "execute5",
-            methodParameterTypes = {}, timerName = "expensive 5")
+            methodParameterTypes = {}, timer = "expensive 5")
     public static class ExpensiveCallAdvice5 {
         private static final TimerName timerName = Agent.getTimerName(ExpensiveCallAdvice5.class);
         @OnBefore
@@ -198,7 +198,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.ui.sandbox.ExpensiveCall", methodName = "execute6",
-            methodParameterTypes = {}, timerName = "expensive 6")
+            methodParameterTypes = {}, timer = "expensive 6")
     public static class ExpensiveCallAdvice6 {
         private static final TimerName timerName = Agent.getTimerName(ExpensiveCallAdvice6.class);
         @OnBefore
@@ -220,7 +220,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.ui.sandbox.ExpensiveCall", methodName = "execute7",
-            methodParameterTypes = {}, timerName = "expensive 7")
+            methodParameterTypes = {}, timer = "expensive 7")
     public static class ExpensiveCallAdvice7 {
         private static final TimerName timerName = Agent.getTimerName(ExpensiveCallAdvice7.class);
         @OnBefore
@@ -242,7 +242,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.ui.sandbox.ExpensiveCall", methodName = "execute8",
-            methodParameterTypes = {}, timerName = "expensive 8")
+            methodParameterTypes = {}, timer = "expensive 8")
     public static class ExpensiveCallAdvice8 {
         private static final TimerName timerName = Agent.getTimerName(ExpensiveCallAdvice8.class);
         @OnBefore
@@ -264,7 +264,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.agent.ui.sandbox.ExpensiveCall", methodName = "execute9",
-            methodParameterTypes = {}, timerName = "expensive 9 really long to test wrapping")
+            methodParameterTypes = {}, timer = "expensive 9 really long to test wrapping")
     public static class ExpensiveCallAdvice9 {
         private static final TimerName timerName = Agent.getTimerName(ExpensiveCallAdvice9.class);
         @OnBefore
