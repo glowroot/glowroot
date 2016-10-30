@@ -245,7 +245,7 @@ public class RollupService implements Runnable {
 
     @Instrument.Transaction(transactionType = "Background",
             transactionName = "Check transaction alert",
-            traceHeadline = "Check transaction alert: {{0}}", timerName = "check transaction alert")
+            traceHeadline = "Check transaction alert: {{0}}", timer = "check transaction alert")
     private void checkTransactionAlert(String agentId, AlertConfig alertConfig,
             long captureTime, SmtpConfig smtpConfig) throws Exception {
         alertingService.checkTransactionAlert(agentId, alertConfig, captureTime, smtpConfig);
@@ -253,7 +253,7 @@ public class RollupService implements Runnable {
 
     @Instrument.Transaction(transactionType = "Background",
             transactionName = "Check gauge alert",
-            traceHeadline = "Check gauge alert: {{0}}", timerName = "check gauge alert")
+            traceHeadline = "Check gauge alert: {{0}}", timer = "check gauge alert")
     private void checkGaugeAlert(String agentId, AlertConfig alertConfig, long captureTime,
             SmtpConfig smtpConfig) throws Exception {
         alertingService.checkGaugeAlert(agentId, alertConfig, captureTime, smtpConfig);

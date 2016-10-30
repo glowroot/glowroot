@@ -760,7 +760,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     @Instrument.Transaction(transactionType = "Background", transactionName = "Rollup aggregates",
-            traceHeadline = "Rollup aggregates: {{0}}", timerName = "rollup aggregates")
+            traceHeadline = "Rollup aggregates: {{0}}", timer = "rollup aggregates")
     public void rollup(String agentRollup, @Nullable String parentAgentRollup, boolean leaf)
             throws Exception {
         List<Integer> ttls = getTTLs();

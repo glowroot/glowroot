@@ -25,13 +25,13 @@ public class Instrument {
 
     public @interface TraceEntry {
         String message(); // template
-        String timerName();
+        String timer();
     }
 
     public @interface Transaction {
         String transactionType();
         String transactionName(); // template
         String traceHeadline(); // template
-        String timerName();
+        String timer();
     }
 }

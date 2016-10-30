@@ -151,7 +151,7 @@ class GrpcServer {
     private class CollectorServiceImpl extends CollectorServiceImplBase {
 
         @Instrument.Transaction(transactionType = "gRPC", transactionName = "Init",
-                traceHeadline = "Collect init: {{0.agentId}}", timerName = "init")
+                traceHeadline = "Collect init: {{0.agentId}}", timer = "init")
         @Override
         public void collectInit(InitMessage request,
                 StreamObserver<InitResponse> responseObserver) {
@@ -233,7 +233,7 @@ class GrpcServer {
 
                 @Instrument.Transaction(transactionType = "gRPC", transactionName = "Aggregates",
                         traceHeadline = "Collect aggregates: {{this.header.agentId}}",
-                        timerName = "aggregates")
+                        timer = "aggregates")
                 @Override
                 public void onCompleted() {
                     checkNotNull(header);
@@ -249,7 +249,7 @@ class GrpcServer {
         }
 
         @Instrument.Transaction(transactionType = "gRPC", transactionName = "Aggregates",
-                traceHeadline = "Collect aggregates: {{0.agentId}}", timerName = "aggregates")
+                traceHeadline = "Collect aggregates: {{0.agentId}}", timer = "aggregates")
         @Override
         public void collectAggregates(OldAggregateMessage request,
                 StreamObserver<AggregateResponseMessage> responseObserver) {
@@ -293,7 +293,7 @@ class GrpcServer {
         }
 
         @Instrument.Transaction(transactionType = "gRPC", transactionName = "Gauges",
-                traceHeadline = "Collect gauge values: {{0.agentId}}", timerName = "gauges")
+                traceHeadline = "Collect gauge values: {{0.agentId}}", timer = "gauges")
         @Override
         public void collectGaugeValues(GaugeValueMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
@@ -350,8 +350,7 @@ class GrpcServer {
                 }
 
                 @Instrument.Transaction(transactionType = "gRPC", transactionName = "Trace",
-                        traceHeadline = "Collect trace: {{this.header.agentId}}",
-                        timerName = "trace")
+                        traceHeadline = "Collect trace: {{this.header.agentId}}", timer = "trace")
                 @Override
                 public void onCompleted() {
                     checkNotNull(header);
@@ -372,7 +371,7 @@ class GrpcServer {
         }
 
         @Instrument.Transaction(transactionType = "gRPC", transactionName = "Trace",
-                traceHeadline = "Collect trace: {{0.agentId}}", timerName = "trace")
+                traceHeadline = "Collect trace: {{0.agentId}}", timer = "trace")
         @Override
         public void collectTrace(OldTraceMessage request,
                 StreamObserver<EmptyMessage> responseObserver) {
@@ -388,7 +387,7 @@ class GrpcServer {
         }
 
         @Instrument.Transaction(transactionType = "gRPC", transactionName = "Log",
-                traceHeadline = "Log: {{0.agentId}}", timerName = "log")
+                traceHeadline = "Log: {{0.agentId}}", timer = "log")
         @Override
         public void log(LogMessage request, StreamObserver<EmptyMessage> responseObserver) {
             try {
@@ -490,8 +489,7 @@ class GrpcServer {
 
         @Instrument.Transaction(transactionType = "Background",
                 transactionName = "Check transaction alert",
-                traceHeadline = "Check transaction alert: {{0}}",
-                timerName = "check transaction alert")
+                traceHeadline = "Check transaction alert: {{0}}", timer = "check transaction alert")
         private void checkTransactionAlert(String agentId, AlertConfig alertConfig,
                 long captureTime, SmtpConfig smtpConfig) throws Exception {
             alertingService.checkTransactionAlert(agentId, alertConfig, captureTime, smtpConfig);
@@ -499,7 +497,7 @@ class GrpcServer {
 
         @Instrument.Transaction(transactionType = "Background",
                 transactionName = "Check gauge alert",
-                traceHeadline = "Check gauge alert: {{0}}", timerName = "check gauge alert")
+                traceHeadline = "Check gauge alert: {{0}}", timer = "check gauge alert")
         private void checkGaugeAlert(String agentId, AlertConfig alertConfig, long captureTime,
                 SmtpConfig smtpConfig) throws Exception {
             alertingService.checkGaugeAlert(agentId, alertConfig, captureTime, smtpConfig);
