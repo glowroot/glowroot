@@ -19,6 +19,7 @@ import java.io.File;
 import java.net.ServerSocket;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
@@ -129,6 +130,23 @@ public class GrailsIT {
         @Override
         public Collection<String> packageNames() {
             return Lists.newArrayList("org.glowroot.agent.plugin.grails");
+        }
+
+        @Override
+        @SuppressWarnings("rawtypes")
+        public Collection<Class> classes() {
+            Collection<Class> classes = super.classes();
+            List<Class> classesInCorrectClassLoader = Lists.newArrayList();
+            for (Class clazz : classes) {
+                try {
+                    classesInCorrectClassLoader.add(
+                            Class.forName(clazz.getName(), false,
+                                    Application.class.getClassLoader()));
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+            return classesInCorrectClassLoader;
         }
     }
 

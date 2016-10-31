@@ -18,7 +18,7 @@
   <properties>
     <!-- instrumented libraries -->
     <struts1.version>1.3.10</struts1.version>
-    <struts2.version>2.5.2</struts2.version>
+    <struts2.version>2.5.5</struts2.version>
   </properties>
 
   <dependencies>

@@ -86,7 +86,7 @@
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.7</jackson.version>
     <logback.version>1.1.7</logback.version>
-    <immutables.version>2.3.7</immutables.version>
+    <immutables.version>2.3.8</immutables.version>
     <javax.mail.version>1.5.6</javax.mail.version>
     <jmh.version>1.15</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -148,7 +148,7 @@
       <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>2.7</version>
+        <version>2.8.0</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
@@ -755,7 +755,7 @@
               <dependency>
                 <groupId>com.google.errorprone</groupId>
                 <artifactId>error_prone_core</artifactId>
-                <version>2.0.13</version>
+                <version>2.0.14</version>
               </dependency>
             </dependencies>
           </plugin>

@@ -59,9 +59,11 @@ public class JAXRS {
         runJava7("2.22");
         runJava7("2.22.1");
         runJava7("2.22.2");
+        runJava7("2.22.3");
         runJava7("2.23");
         runJava7("2.23.1");
         runJava7("2.23.2");
+        runJava7("2.24");
     }
 
     private static void run(String version) throws Exception {

@@ -233,16 +233,14 @@ public class HttpClient {
             updateLibVersion("spring.version", "4.1." + i + ".RELEASE");
             run(test);
         }
-        for (int i = 0; i <= 7; i++) {
+        for (int i = 0; i <= 8; i++) {
             updateLibVersion("spring.version", "4.2." + i + ".RELEASE");
             run(test);
         }
-        updateLibVersion("spring.version", "4.3.0.RELEASE");
-        run(test);
-        updateLibVersion("spring.version", "4.3.1.RELEASE");
-        run(test);
-        updateLibVersion("spring.version", "4.3.2.RELEASE");
-        run(test);
+        for (int i = 0; i <= 3; i++) {
+            updateLibVersion("spring.version", "4.3." + i + ".RELEASE");
+            run(test);
+        }
     }
 
     private static void updateLibVersion(String property, String version) throws IOException {

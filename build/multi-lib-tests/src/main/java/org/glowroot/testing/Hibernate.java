@@ -44,15 +44,17 @@ public class Hibernate {
         for (int i = 0; i <= 11; i++) {
             run("4.3." + i + ".Final");
         }
-        for (int i = 0; i <= 10; i++) {
+        for (int i = 0; i <= 11; i++) {
             runJava7("5.0." + i + ".Final");
         }
         runJava7("5.1.0.Final");
         runJava7("5.1.1.Final");
+        runJava7("5.1.2.Final");
         runJava8("5.2.0.Final");
         runJava8("5.2.1.Final");
         runJava8("5.2.2.Final");
         runJava8("5.2.3.Final");
+        runJava8("5.2.4.Final");
     }
 
     private static void run(String version, String annotationsVersion, String... profiles)

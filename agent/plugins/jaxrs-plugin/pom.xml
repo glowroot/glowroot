@@ -17,7 +17,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <jersey.version>2.23.2</jersey.version>
+    <jersey.version>2.24</jersey.version>
   </properties>
 
   <dependencies>

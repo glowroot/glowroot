@@ -41,8 +41,10 @@ public class Cassandra {
         run("3.0.1");
         run("3.0.2");
         run("3.0.3");
+        run("3.0.4");
         run("3.1.0");
         run("3.1.1");
+        run("3.1.2");
     }
 
     private static void run(String version) throws Exception {

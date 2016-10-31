@@ -10,10 +10,10 @@
     "eonasdan-bootstrap-datetimepicker": "4.17.43",
     "flot": "trask/flot#glowroot-0.9.1",
     "flot.tooltip": "trask/flot.tooltip#glowroot-0.9.3",
-    "fontawesome": "4.6.3",
+    "fontawesome": "4.7.0",
     "handlebars": "4.0.5",
     "jquery": "3.1.1",
-    "moment": "2.15.1",
+    "moment": "2.15.2",
     "sequeljs": "trask/sequeljs#glowroot-0.9.3",
     "spinjs": "2.3.2",
     "zeroclipboard": "2.1.6"
