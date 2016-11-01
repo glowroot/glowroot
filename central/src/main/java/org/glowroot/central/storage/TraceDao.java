@@ -241,12 +241,12 @@ public class TraceDao implements TraceRepository {
 
         insertOverallSlowPoint = session.prepare("insert into trace_tt_slow_point (agent_rollup,"
                 + " transaction_type, capture_time, agent_id, trace_id, duration_nanos, error,"
-                + " user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+                + " headline, user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertTransactionSlowPoint = session.prepare("insert into trace_tn_slow_point"
                 + " (agent_rollup, transaction_type, transaction_name, capture_time, agent_id,"
-                + " trace_id, duration_nanos, error, user, attributes) values"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+                + " trace_id, duration_nanos, error, headline, user, attributes) values"
+                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertOverallSlowCount = session.prepare("insert into trace_tt_slow_count (agent_rollup,"
                 + " transaction_type, capture_time, agent_id, trace_id) values (?, ?, ?, ?, ?)"
@@ -258,13 +258,13 @@ public class TraceDao implements TraceRepository {
 
         insertOverallErrorPoint = session.prepare("insert into trace_tt_error_point (agent_rollup,"
                 + " transaction_type, capture_time, agent_id, trace_id, duration_nanos,"
-                + " error_message, user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-                + " using ttl ?");
+                + " error_message, headline, user, attributes) values"
+                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertTransactionErrorPoint = session.prepare("insert into trace_tn_error_point"
                 + " (agent_rollup, transaction_type, transaction_name, capture_time, agent_id,"
-                + " trace_id, duration_nanos, error_message, user, attributes) values"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+                + " trace_id, duration_nanos, error_message, headline, user, attributes) values"
+                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertOverallErrorCount = session.prepare("insert into trace_tt_error_count (agent_rollup,"
                 + " transaction_type, capture_time, agent_id, trace_id) values (?, ?, ?, ?, ?)"
@@ -314,12 +314,12 @@ public class TraceDao implements TraceRepository {
                 + " and capture_time > ? and capture_time <= ?");
 
         readOverallErrorPoint = session.prepare("select agent_id, trace_id, capture_time,"
-                + " duration_nanos, headline, error_message, user, attributes"
+                + " duration_nanos, error_message, headline, user, attributes"
                 + " from trace_tt_error_point where agent_rollup = ? and transaction_type = ?"
                 + " and capture_time > ? and capture_time <= ?");
 
         readTransactionErrorPoint = session.prepare("select agent_id, trace_id, capture_time,"
-                + " duration_nanos, headline, error_message, user, attributes"
+                + " duration_nanos, error_message, headline, user, attributes"
                 + " from trace_tn_error_point where agent_rollup = ? and transaction_type = ?"
                 + " and transaction_name = ? and capture_time > ? and capture_time <= ?");
 
@@ -437,6 +437,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, traceId);
                 boundStatement.setLong(i++, header.getDurationNanos());
                 boundStatement.setBool(i++, header.hasError());
+                boundStatement.setString(i++, header.getHeadline());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
                 if (attributes.isEmpty()) {
                     boundStatement.setToNull(i++);
@@ -456,6 +457,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, traceId);
                 boundStatement.setLong(i++, header.getDurationNanos());
                 boundStatement.setBool(i++, header.hasError());
+                boundStatement.setString(i++, header.getHeadline());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
                 if (attributes.isEmpty()) {
                     boundStatement.setToNull(i++);
@@ -561,6 +563,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, traceId);
                 boundStatement.setLong(i++, header.getDurationNanos());
                 boundStatement.setString(i++, header.getError().getMessage());
+                boundStatement.setString(i++, header.getHeadline());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
                 if (attributes.isEmpty()) {
                     boundStatement.setToNull(i++);
@@ -580,6 +583,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, traceId);
                 boundStatement.setLong(i++, header.getDurationNanos());
                 boundStatement.setString(i++, header.getError().getMessage());
+                boundStatement.setString(i++, header.getHeadline());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
                 if (attributes.isEmpty()) {
                     boundStatement.setToNull(i++);
@@ -1084,10 +1088,10 @@ public class TraceDao implements TraceRepository {
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
             long durationNanos = row.getLong(i++);
             boolean error = errorPoints ? true : row.getBool(i++);
-            // headline is always non-null, except for old data prior to when headline column added
-            String headline = Strings.nullToEmpty(row.getString(i++));
             // error points are defined by having an error message, so safe to checkNotNull
             String errorMessage = errorPoints ? checkNotNull(row.getString(i++)) : "";
+            // headline is null for data inserted prior to 0.9.7
+            String headline = Strings.nullToEmpty(row.getString(i++));
             String user = Strings.nullToEmpty(row.getString(i++));
             ByteBuffer attributeBytes = row.getBytes(i++);
             List<Trace.Attribute> attrs =
