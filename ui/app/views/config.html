@@ -34,7 +34,8 @@
               <a role="menuitem"
                  tabindex="-1"
                  ng-href="{{agentRollupUrl(rollup, value.leaf)}}">
-                {{value.display}}
+                <!-- not using value.display here since that includes indentation and no hierarchy on config page -->
+                {{rollup}}
               </a>
             </li>
           </ul>
