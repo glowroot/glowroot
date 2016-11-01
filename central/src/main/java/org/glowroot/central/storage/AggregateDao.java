@@ -245,6 +245,8 @@ public class AggregateDao implements AggregateRepository {
         this.clock = clock;
 
         int count = configRepository.getRollupConfigs().size();
+        List<Integer> rollupExpirationHours =
+                configRepository.getStorageConfig().rollupExpirationHours();
 
         allTables = ImmutableList.of(summaryTable, errorSummaryTable, overviewTable,
                 histogramTable, throughputTable, queryTable, serviceCallTable,
@@ -265,9 +267,12 @@ public class AggregateDao implements AggregateRepository {
             List<PreparedStatement> readTransactionList = Lists.newArrayList();
             List<PreparedStatement> readTransactionForRollupList = Lists.newArrayList();
             for (int i = 0; i < count; i++) {
+                int expirationHours = rollupExpirationHours.get(i);
                 if (table.summary()) {
-                    Sessions.createTableWithTWCS(session, createSummaryTableQuery(table, false, i));
-                    Sessions.createTableWithTWCS(session, createSummaryTableQuery(table, true, i));
+                    Sessions.createTableWithTWCS(session, createSummaryTableQuery(table, false, i),
+                            expirationHours);
+                    Sessions.createTableWithTWCS(session, createSummaryTableQuery(table, true, i),
+                            expirationHours);
                     insertOverallList.add(session.prepare(insertSummaryPS(table, false, i)));
                     insertTransactionList.add(session.prepare(insertSummaryPS(table, true, i)));
                     readOverallList.add(session.prepare(readSummaryPS(table, false, i)));
@@ -277,8 +282,10 @@ public class AggregateDao implements AggregateRepository {
                     readTransactionForRollupList
                             .add(session.prepare(readSummaryForRollupPS(table, true, i)));
                 } else {
-                    Sessions.createTableWithTWCS(session, createTableQuery(table, false, i));
-                    Sessions.createTableWithTWCS(session, createTableQuery(table, true, i));
+                    Sessions.createTableWithTWCS(session, createTableQuery(table, false, i),
+                            expirationHours);
+                    Sessions.createTableWithTWCS(session, createTableQuery(table, true, i),
+                            expirationHours);
                     insertOverallList.add(session.prepare(insertPS(table, false, i)));
                     insertTransactionList.add(session.prepare(insertPS(table, true, i)));
                     readOverallList.add(session.prepare(readPS(table, false, i)));

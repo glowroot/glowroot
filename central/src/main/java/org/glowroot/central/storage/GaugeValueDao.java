@@ -97,6 +97,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         gaugeNameDao = new GaugeNameDao(session, configRepository);
 
         int count = configRepository.getRollupConfigs().size();
+        List<Integer> rollupExpirationHours = getRollupExpirationHours(configRepository);
 
         List<PreparedStatement> insertValuePS = Lists.newArrayList();
         List<PreparedStatement> readValuePS = Lists.newArrayList();
@@ -106,7 +107,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             Sessions.createTableWithTWCS(session, "create table if not exists gauge_value_rollup_"
                     + i + " (agent_rollup varchar, gauge_name varchar, capture_time timestamp,"
                     + " value double, weight bigint, primary key ((agent_rollup, gauge_name),"
-                    + " capture_time))");
+                    + " capture_time))", rollupExpirationHours.get(i));
             insertValuePS.add(session.prepare("insert into gauge_value_rollup_" + i
                     + " (agent_rollup, gauge_name, capture_time, value, weight)"
                     + " values (?, ?, ?, ?, ?) using ttl ?"));
@@ -472,9 +473,7 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     private List<Integer> getTTLs() {
         List<Integer> ttls = Lists.newArrayList();
-        List<Integer> rollupExpirationHours =
-                configRepository.getStorageConfig().rollupExpirationHours();
-        ttls.add(Ints.saturatedCast(HOURS.toSeconds(rollupExpirationHours.get(0))));
+        List<Integer> rollupExpirationHours = getRollupExpirationHours(configRepository);
         for (long expirationHours : rollupExpirationHours) {
             ttls.add(Ints.saturatedCast(HOURS.toSeconds(expirationHours)));
         }
@@ -491,5 +490,12 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
         session.execute("truncate gauge_name");
         session.execute("truncate gauge_needs_rollup_from_child");
+    }
+
+    private static List<Integer> getRollupExpirationHours(ConfigRepository configRepository) {
+        List<Integer> rollupExpirationHours =
+                Lists.newArrayList(configRepository.getStorageConfig().rollupExpirationHours());
+        rollupExpirationHours.add(0, rollupExpirationHours.get(0));
+        return rollupExpirationHours;
     }
 }

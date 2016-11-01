@@ -137,7 +137,6 @@ class CentralModule {
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion != null) {
                 schemaUpgrade.upgrade();
-                schemaUpgrade.updateToMoreRecentCassandraOptions();
             }
             CentralConfigDao centralConfigDao = new CentralConfigDao(session);
             AgentDao agentDao = new AgentDao(session);
@@ -145,6 +144,12 @@ class CentralModule {
             RoleDao roleDao = new RoleDao(session, keyspace);
             ConfigRepositoryImpl configRepository =
                     new ConfigRepositoryImpl(centralConfigDao, agentDao, userDao, roleDao);
+
+            if (initialSchemaVersion != null) {
+                schemaUpgrade.updateToMoreRecentCassandraOptions(
+                        configRepository.getCentralStorageConfig());
+            }
+
             String uiBindAddressOverride = centralConfig.uiBindAddressOverride();
             Integer uiPortOverride = centralConfig.uiPortOverride();
             if (uiBindAddressOverride != null || uiPortOverride != null) {

@@ -29,11 +29,6 @@ public class Sessions {
 
     private static final Logger logger = LoggerFactory.getLogger(Sessions.class);
 
-    private static final String WITH_TWCS =
-            " with compaction = { 'class' : 'TimeWindowCompactionStrategy' }";
-    private static final String WITH_DTCS =
-            " with compaction = { 'class' : 'DateTieredCompactionStrategy' }";
-
     private Sessions() {}
 
     public static void createKeyspaceIfNotExists(Session session, String keyspace) {
@@ -41,12 +36,20 @@ public class Sessions {
                 + " = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
     }
 
-    public static void createTableWithTWCS(Session session, String createTableQuery) {
+    public static void createTableWithTWCS(Session session, String createTableQuery,
+            int expirationHours) {
+        // "Ideally, operators should select a compaction_window_unit and compaction_window_size
+        // pair that produces approximately 20-30 windows"
+        // (http://cassandra.apache.org/doc/latest/operating/compaction.html)
+        int windowSizeHours = expirationHours / 24;
         try {
-            session.execute(createTableQuery + WITH_TWCS);
+            session.execute(createTableQuery + " with compaction = { 'class' :"
+                    + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
+                    + " 'compaction_window_size' : '" + windowSizeHours + "' }");
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
-            session.execute(createTableQuery + WITH_DTCS);
+            session.execute(createTableQuery
+                    + " with compaction = { 'class' : 'DateTieredCompactionStrategy' }");
         }
     }
 

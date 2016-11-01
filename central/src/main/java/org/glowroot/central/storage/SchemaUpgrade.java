@@ -40,6 +40,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.PermissionParser;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -128,9 +129,10 @@ public class SchemaUpgrade {
         updateSchemaVersion(CURR_SCHEMA_VERSION);
     }
 
-    public void updateToMoreRecentCassandraOptions() {
+    public void updateToMoreRecentCassandraOptions(CentralStorageConfig storageConfig) {
         List<String> snappyTableNames = Lists.newArrayList();
         List<String> dtcsTableNames = Lists.newArrayList();
+        List<String> twcsTableNames = Lists.newArrayList();
         for (TableMetadata table : keyspace.getTables()) {
             String compression = table.getOptions().getCompression().get("class");
             if (compression != null
@@ -141,6 +143,25 @@ public class SchemaUpgrade {
             if (compaction != null && compaction
                     .equals("org.apache.cassandra.db.compaction.DateTieredCompactionStrategy")) {
                 dtcsTableNames.add(table.getName());
+            }
+            if (compaction != null && compaction
+                    .equals("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")) {
+                String windowUnit =
+                        table.getOptions().getCompaction().get("compaction_window_unit");
+                String windowSize =
+                        table.getOptions().getCompaction().get("compaction_window_size");
+
+                int expirationHours = getExpirationHoursForTable(table.getName(), storageConfig);
+                if (expirationHours == -1) {
+                    // warning already logged above inside getExpirationHoursForTable()
+                } else {
+                    // this calculation is done to match same calculation below
+                    int windowSizeHours = expirationHours / 24;
+                    if (!"HOURS".equals(windowUnit)
+                            || !Integer.toString(windowSizeHours).equals(windowSize)) {
+                        twcsTableNames.add(table.getName());
+                    }
+                }
             }
         }
 
@@ -160,8 +181,18 @@ public class SchemaUpgrade {
         int dtcsUpdatedCount = 0;
         for (String tableName : dtcsTableNames) {
             try {
-                session.execute("alter table " + tableName
-                        + " with compaction = { 'class' : 'TimeWindowCompactionStrategy' }");
+                int expirationHours = getExpirationHoursForTable(tableName, storageConfig);
+                if (expirationHours == -1) {
+                    // warning already logged above inside getExpirationHoursForTable()
+                    continue;
+                }
+                // "Ideally, operators should select a compaction_window_unit and
+                // compaction_window_size pair that produces approximately 20-30 windows"
+                // (http://cassandra.apache.org/doc/latest/operating/compaction.html)
+                int windowSizeHours = expirationHours / 24;
+                session.execute("alter table " + tableName + " with compaction = { 'class' :"
+                        + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
+                        + " 'compaction_window_size' : '" + windowSizeHours + "' }");
                 if (dtcsUpdatedCount++ == 0) {
                     startupLogger.info("upgrading from DateTieredCompactionStrategy to"
                             + " TimeWindowCompactionStrategy compression...");
@@ -172,9 +203,32 @@ public class SchemaUpgrade {
                 return;
             }
         }
+        int twcsUpdatedCount = 0;
+        for (String tableName : twcsTableNames) {
+            int expirationHours = getExpirationHoursForTable(tableName, storageConfig);
+            if (expirationHours == -1) {
+                // warning already logged above inside getExpirationHoursForTable()
+                continue;
+            }
+            // "Ideally, operators should select a compaction_window_unit and
+            // compaction_window_size pair that produces approximately 20-30 windows"
+            // (http://cassandra.apache.org/doc/latest/operating/compaction.html)
+            int windowSizeHours = expirationHours / 24;
+            session.execute("alter table " + tableName + " with compaction = { 'class' :"
+                    + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
+                    + " 'compaction_window_size' : '" + windowSizeHours + "' }");
+            if (twcsUpdatedCount++ == 0) {
+                startupLogger.info("updating TimeWindowCompactionStrategy compaction windows...");
+            }
+        }
         if (dtcsUpdatedCount > 0) {
             startupLogger.info("upgraded {} tables from DateTieredCompactionStrategy to"
                     + " TimeWindowCompactionStrategy compaction", dtcsUpdatedCount);
+        }
+        if (twcsUpdatedCount > 0) {
+            startupLogger.info(
+                    "updated TimeWindowCompactionStrategy compaction window on {} tables",
+                    twcsUpdatedCount);
         }
     }
 
@@ -346,6 +400,26 @@ public class SchemaUpgrade {
         }
         // try one last time and let exception bubble up
         session.execute("drop table if exists " + tableName);
+    }
+
+    private static int getExpirationHoursForTable(String tableName,
+            CentralStorageConfig storageConfig) {
+        if (tableName.startsWith("trace_")) {
+            return storageConfig.traceExpirationHours();
+        } else if (tableName.startsWith("gauge_value_rollup_")) {
+            int rollupLevel = Integer.parseInt(tableName.substring(tableName.lastIndexOf('_') + 1));
+            if (rollupLevel == 0) {
+                return storageConfig.rollupExpirationHours().get(rollupLevel);
+            } else {
+                return storageConfig.rollupExpirationHours().get(rollupLevel - 1);
+            }
+        } else if (tableName.startsWith("aggregate_")) {
+            int rollupLevel = Integer.parseInt(tableName.substring(tableName.lastIndexOf('_') + 1));
+            return storageConfig.rollupExpirationHours().get(rollupLevel);
+        } else {
+            logger.warn("unexpected table: {}", tableName);
+            return -1;
+        }
     }
 
     @VisibleForTesting
