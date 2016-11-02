@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.DAYS;
 
 public class Sessions {
 
@@ -42,14 +43,25 @@ public class Sessions {
         // pair that produces approximately 20-30 windows"
         // (http://cassandra.apache.org/doc/latest/operating/compaction.html)
         int windowSizeHours = expirationHours / 24;
+
+        // as long as gc_grace_seconds is less than TTL, then tombstones can be collected
+        // immediately (https://issues.apache.org/jira/browse/CASSANDRA-4917)
+        //
+        // not using gc_grace_seconds of 0 since that disables hinted handoff
+        // (http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
+        //
+        // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
+        long gcGraceSeconds = DAYS.toSeconds(1);
         try {
             session.execute(createTableQuery + " with compaction = { 'class' :"
                     + " 'TimeWindowCompactionStrategy', 'compaction_window_unit' : 'HOURS',"
-                    + " 'compaction_window_size' : '" + windowSizeHours + "' }");
+                    + " 'compaction_window_size' : '" + windowSizeHours + "' }"
+                    + " and gc_grace_seconds = " + gcGraceSeconds);
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
             session.execute(createTableQuery
-                    + " with compaction = { 'class' : 'DateTieredCompactionStrategy' }");
+                    + " with compaction = { 'class' : 'DateTieredCompactionStrategy' }"
+                    + " and gc_grace_seconds = " + gcGraceSeconds);
         }
     }
 

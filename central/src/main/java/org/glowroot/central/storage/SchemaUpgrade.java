@@ -44,6 +44,8 @@ import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.PermissionParser;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SchemaUpgrade {
@@ -53,7 +55,7 @@ public class SchemaUpgrade {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private static final int CURR_SCHEMA_VERSION = 10;
+    private static final int CURR_SCHEMA_VERSION = 12;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -117,9 +119,14 @@ public class SchemaUpgrade {
             addAgentRollupColumn();
             updateSchemaVersion(9);
         }
-        if (initialSchemaVersion < 10) {
+        // 0.9.5 to 0.9.6
+        if (initialSchemaVersion < 11) {
+            updateDtcsTwcsGcSeconds();
+            updateSchemaVersion(11);
+        }
+        if (initialSchemaVersion < 12) {
             updateGcSeconds();
-            updateSchemaVersion(10);
+            updateSchemaVersion(12);
         }
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
         startupLogger.info("upgraded schema version to {}", CURR_SCHEMA_VERSION);
@@ -200,7 +207,7 @@ public class SchemaUpgrade {
             } catch (InvalidConfigurationInQueryException e) {
                 logger.debug(e.getMessage(), e);
                 // TimeWindowCompactionStrategy is only supported by Cassandra 3.8+
-                return;
+                break;
             }
         }
         int twcsUpdatedCount = 0;
@@ -357,24 +364,56 @@ public class SchemaUpgrade {
         }
     }
 
+    private void updateDtcsTwcsGcSeconds() {
+        for (TableMetadata table : keyspace.getTables()) {
+            String compaction = table.getOptions().getCompaction().get("class");
+            if (compaction == null) {
+                continue;
+            }
+            if (compaction.equals("org.apache.cassandra.db.compaction.DateTieredCompactionStrategy")
+                    || compaction.equals(
+                            "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")) {
+                // see gc_grace_seconds related comments in Sessions.createTableWithTWCS()
+                // for reasoning behind the value of 1 day
+                session.execute("alter table " + table.getName() + " with gc_grace_seconds = "
+                        + DAYS.toSeconds(1));
+            }
+        }
+    }
+
     private void updateGcSeconds() {
-        // reduce from default 10 days to 2 hours
-        // since gauge rollup is idempotent
+        // reduce from default 10 days to 3 hours
+        //
+        // since aggregate and gauge rollup operations are idempotent, any records resurrected after
+        // gc_grace_seconds would just create extra work, but not have any effect on data
+        //
+        // 3 hours is chosen to match default max_hint_window_in_ms since hints are stored
+        // with a TTL of gc_grace_seconds
+        // (see http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
+        long gcGraceSeconds = HOURS.toSeconds(3);
+
         if (tableExists("aggregate_needs_rollup_from_child")) {
-            session.execute(
-                    "alter table aggregate_needs_rollup_from_child with gc_grace_seconds = 7200");
+            session.execute("alter table aggregate_needs_rollup_from_child with gc_grace_seconds = "
+                    + gcGraceSeconds);
         }
-        session.execute("alter table aggregate_needs_rollup_1 with gc_grace_seconds = 7200");
-        session.execute("alter table aggregate_needs_rollup_2 with gc_grace_seconds = 7200");
-        session.execute("alter table aggregate_needs_rollup_3 with gc_grace_seconds = 7200");
+        session.execute(
+                "alter table aggregate_needs_rollup_1 with gc_grace_seconds = " + gcGraceSeconds);
+        session.execute(
+                "alter table aggregate_needs_rollup_2 with gc_grace_seconds = " + gcGraceSeconds);
+        session.execute(
+                "alter table aggregate_needs_rollup_3 with gc_grace_seconds = " + gcGraceSeconds);
         if (tableExists("gauge_needs_rollup_from_child")) {
-            session.execute(
-                    "alter table gauge_needs_rollup_from_child with gc_grace_seconds = 7200");
+            session.execute("alter table gauge_needs_rollup_from_child with gc_grace_seconds = "
+                    + gcGraceSeconds);
         }
-        session.execute("alter table gauge_needs_rollup_1 with gc_grace_seconds = 7200");
-        session.execute("alter table gauge_needs_rollup_2 with gc_grace_seconds = 7200");
-        session.execute("alter table gauge_needs_rollup_3 with gc_grace_seconds = 7200");
-        session.execute("alter table gauge_needs_rollup_4 with gc_grace_seconds = 7200");
+        session.execute(
+                "alter table gauge_needs_rollup_1 with gc_grace_seconds = " + gcGraceSeconds);
+        session.execute(
+                "alter table gauge_needs_rollup_2 with gc_grace_seconds = " + gcGraceSeconds);
+        session.execute(
+                "alter table gauge_needs_rollup_3 with gc_grace_seconds = " + gcGraceSeconds);
+        session.execute(
+                "alter table gauge_needs_rollup_4 with gc_grace_seconds = " + gcGraceSeconds);
     }
 
     private boolean tableExists(String tableName) {
