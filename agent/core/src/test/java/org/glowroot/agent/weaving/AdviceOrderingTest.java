@@ -116,18 +116,18 @@ public class AdviceOrderingTest {
         assertThat(ordering.compare(adviceTimerNameEmpty2, adviceTimerNameEmpty1)).isZero();
     }
 
-    @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {}, timer = "b",
+    @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {}, timerName = "b",
             order = 1)
     private static class OnlyForTheOrder1 {}
 
-    @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {}, timer = "a",
+    @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {}, timerName = "a",
             order = 2)
     private static class OnlyForTheOrder2 {}
 
-    @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {}, timer = "a")
+    @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {}, timerName = "a")
     private static class OnlyForTheTimerNameA {}
 
-    @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {}, timer = "b")
+    @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {}, timerName = "b")
     private static class OnlyForTheTimerNameB {}
 
     @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {})

@@ -109,7 +109,7 @@ public class NettyAspect {
 
     @Pointcut(className = "io.netty.channel.ChannelHandlerContext", methodName = "fireChannelRead",
             methodParameterTypes = {"java.lang.Object"}, nestingGroup = "netty-inbound",
-            timer = "http request")
+            timerName = "http request")
     public static class InboundAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(InboundAdvice.class);
@@ -159,7 +159,7 @@ public class NettyAspect {
 
     @Pointcut(className = "io.netty.channel.ChannelHandlerContext",
             methodName = "fireChannelReadComplete", methodParameterTypes = {},
-            nestingGroup = "netty-inbound", timer = "http request")
+            nestingGroup = "netty-inbound", timerName = "http request")
     public static class InboundCompleteAdvice {
 
         @OnBefore

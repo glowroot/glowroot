@@ -278,7 +278,7 @@ public class StatementAspect {
 
     @Pointcut(className = "java.sql.Statement", methodName = "execute",
             methodParameterTypes = {"java.lang.String", ".."}, nestingGroup = "jdbc",
-            timer = "jdbc execute")
+            timerName = "jdbc execute")
     public static class StatementExecuteAdvice {
         private static final TimerName timerName = Agent.getTimerName(StatementExecuteAdvice.class);
         @IsEnabled
@@ -320,7 +320,7 @@ public class StatementAspect {
 
     @Pointcut(className = "java.sql.Statement", methodName = "executeQuery",
             methodParameterTypes = {"java.lang.String"}, methodReturnType = "java.sql.ResultSet",
-            nestingGroup = "jdbc", timer = "jdbc execute")
+            nestingGroup = "jdbc", timerName = "jdbc execute")
     public static class StatementExecuteQueryAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
@@ -359,7 +359,7 @@ public class StatementAspect {
 
     @Pointcut(className = "java.sql.Statement", methodName = "executeUpdate",
             methodParameterTypes = {"java.lang.String", ".."}, methodReturnType = "int",
-            nestingGroup = "jdbc", timer = "jdbc execute")
+            nestingGroup = "jdbc", timerName = "jdbc execute")
     public static class StatementExecuteUpdateAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
@@ -389,7 +389,7 @@ public class StatementAspect {
     }
 
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "execute",
-            methodParameterTypes = {}, nestingGroup = "jdbc", timer = "jdbc execute")
+            methodParameterTypes = {}, nestingGroup = "jdbc", timerName = "jdbc execute")
     public static class PreparedStatementExecuteAdvice {
         private static final TimerName timerName =
                 Agent.getTimerName(PreparedStatementExecuteAdvice.class);
@@ -431,7 +431,7 @@ public class StatementAspect {
 
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "executeQuery",
             methodParameterTypes = {}, methodReturnType = "java.sql.ResultSet",
-            nestingGroup = "jdbc", timer = "jdbc execute")
+            nestingGroup = "jdbc", timerName = "jdbc execute")
     public static class PreparedStatementExecuteQueryAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
@@ -466,7 +466,7 @@ public class StatementAspect {
 
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "executeUpdate",
             methodParameterTypes = {}, methodReturnType = "int", nestingGroup = "jdbc",
-            timer = "jdbc execute")
+            timerName = "jdbc execute")
     public static class PreparedStatementExecuteUpdateAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
@@ -492,7 +492,7 @@ public class StatementAspect {
     }
 
     @Pointcut(className = "java.sql.Statement", methodName = "executeBatch",
-            methodParameterTypes = {}, nestingGroup = "jdbc", timer = "jdbc execute")
+            methodParameterTypes = {}, nestingGroup = "jdbc", timerName = "jdbc execute")
     public static class StatementExecuteBatchAdvice {
         private static final TimerName timerName =
                 Agent.getTimerName(StatementExecuteBatchAdvice.class);
@@ -593,7 +593,7 @@ public class StatementAspect {
     // ================== Statement Closing ==================
 
     @Pointcut(className = "java.sql.Statement", methodName = "close", methodParameterTypes = {},
-            nestingGroup = "jdbc", timer = "jdbc statement close")
+            nestingGroup = "jdbc", timerName = "jdbc statement close")
     public static class CloseAdvice {
         private static final TimerName timerName = Agent.getTimerName(CloseAdvice.class);
         @IsEnabled

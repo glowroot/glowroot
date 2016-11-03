@@ -57,7 +57,7 @@ public class ConnectionAspect {
     // capture the sql used to create the PreparedStatement
     @Pointcut(className = "java.sql.Connection", methodName = "prepare*",
             methodParameterTypes = {"java.lang.String", ".."}, nestingGroup = "jdbc",
-            timer = "jdbc prepare")
+            timerName = "jdbc prepare")
     public static class PrepareAdvice {
         private static final TimerName timerName = Agent.getTimerName(PrepareAdvice.class);
         @OnBefore
@@ -95,7 +95,7 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "commit", methodParameterTypes = {},
-            nestingGroup = "jdbc", timer = "jdbc commit")
+            nestingGroup = "jdbc", timerName = "jdbc commit")
     public static class CommitAdvice {
         private static final TimerName timerName = Agent.getTimerName(CommitAdvice.class);
         @OnBefore
@@ -115,7 +115,7 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "rollback", methodParameterTypes = {},
-            nestingGroup = "jdbc", timer = "jdbc rollback")
+            nestingGroup = "jdbc", timerName = "jdbc rollback")
     public static class RollbackAdvice {
         private static final TimerName timerName = Agent.getTimerName(RollbackAdvice.class);
         @OnBefore
@@ -135,7 +135,7 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "close", methodParameterTypes = {},
-            nestingGroup = "jdbc", timer = "jdbc connection close")
+            nestingGroup = "jdbc", timerName = "jdbc connection close")
     public static class CloseAdvice {
         private static final TimerName timerName = Agent.getTimerName(CloseAdvice.class);
         @IsEnabled
@@ -172,7 +172,7 @@ public class ConnectionAspect {
 
     @Pointcut(className = "java.sql.Connection", methodName = "setAutoCommit",
             methodParameterTypes = {"boolean"}, nestingGroup = "jdbc",
-            timer = "jdbc set autocommit")
+            timerName = "jdbc set autocommit")
     public static class SetAutoCommitAdvice {
         private static final TimerName timerName = Agent.getTimerName(SetAutoCommitAdvice.class);
         @IsEnabled

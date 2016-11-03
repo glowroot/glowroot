@@ -65,7 +65,7 @@ public class Log4jAspect {
     @Pointcut(className = "org.apache.log4j.Category", methodName = "forcedLog",
             methodParameterTypes = {"java.lang.String", "org.apache.log4j.Priority",
                     "java.lang.Object", "java.lang.Throwable"},
-            nestingGroup = "logging", timer = TIMER_NAME)
+            nestingGroup = "logging", timerName = TIMER_NAME)
     public static class ForcedLogAdvice {
         private static final TimerName timerName = Agent.getTimerName(ForcedLogAdvice.class);
         @IsEnabled

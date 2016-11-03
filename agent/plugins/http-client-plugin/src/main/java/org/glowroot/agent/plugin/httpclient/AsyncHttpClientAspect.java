@@ -115,7 +115,7 @@ public class AsyncHttpClientAspect {
             methodName = "executeRequest",
             methodParameterTypes = {"org.asynchttpclient.Request|com.ning.http.client.Request",
                     ".."},
-            nestingGroup = "http-client", timer = "http client request")
+            nestingGroup = "http-client", timerName = "http client request")
     public static class ExecuteRequestAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteRequestAdvice.class);
         @OnBefore

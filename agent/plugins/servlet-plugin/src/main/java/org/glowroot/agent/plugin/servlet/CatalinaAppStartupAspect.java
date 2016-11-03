@@ -48,7 +48,7 @@ public class CatalinaAppStartupAspect {
     // abstract method startInternal() which does all of the real work
     @Pointcut(className = "org.apache.catalina.core.StandardContext",
             methodName = "start|startInternal", methodParameterTypes = {},
-            nestingGroup = "servlet-startup", timer = "startup")
+            nestingGroup = "servlet-startup", timerName = "startup")
     public static class StartAdvice {
         private static final TimerName timerName = Agent.getTimerName(StartAdvice.class);
         @OnBefore

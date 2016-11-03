@@ -56,7 +56,7 @@ public class DataSourceAspect {
             configService.getBooleanProperty("captureTransactionLifecycleTraceEntries");
 
     @Pointcut(className = "javax.sql.DataSource", methodName = "getConnection",
-            methodParameterTypes = {".."}, nestingGroup = "jdbc", timer = "jdbc get connection")
+            methodParameterTypes = {".."}, nestingGroup = "jdbc", timerName = "jdbc get connection")
     public static class GetConnectionAdvice {
         private static final TimerName timerName = Agent.getTimerName(GetConnectionAdvice.class);
         @IsEnabled

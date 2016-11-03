@@ -387,7 +387,7 @@ class WeavingClassVisitor extends ClassVisitor {
         MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
         mv = new InitMixins(mv, access, name, desc, mixinTypes, type);
         for (Advice advice : matchingAdvisors) {
-            if (!TimerNames.getTimerName(advice.pointcut()).isEmpty()) {
+            if (!advice.pointcut().timerName().isEmpty()) {
                 logger.warn("cannot add timer to <clinit> or <init> methods at this time");
                 break;
             }

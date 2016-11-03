@@ -28,7 +28,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 public class MockDriverAspect {
 
     @Pointcut(className = "org.glowroot.agent.tests.app.MockDriver", methodName = "getMajorVersion",
-            methodParameterTypes = {}, timer = "get major version")
+            methodParameterTypes = {}, timerName = "get major version")
     public static class GetMajorVersionAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(GetMajorVersionAdvice.class);

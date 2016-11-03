@@ -33,7 +33,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 public class TraceGeneratorAspect {
 
     @Pointcut(className = "org.glowroot.agent.tests.app.TraceGenerator", methodName = "call",
-            methodParameterTypes = {"boolean"}, timer = "trace generator")
+            methodParameterTypes = {"boolean"}, timerName = "trace generator")
     public static class LevelOneAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(LevelOneAdvice.class);

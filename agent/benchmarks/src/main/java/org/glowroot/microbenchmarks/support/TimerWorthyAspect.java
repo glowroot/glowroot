@@ -28,7 +28,7 @@ public class TimerWorthyAspect {
 
     @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TimerWorthy",
             methodName = "doSomethingTimerWorthy", methodParameterTypes = {},
-            timer = "timer worthy")
+            timerName = "timer worthy")
     public static class TimerWorthyAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(TimerWorthyAdvice.class);
@@ -46,7 +46,7 @@ public class TimerWorthyAspect {
 
     @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TimerWorthy",
             methodName = "doSomethingTimerWorthyB", methodParameterTypes = {},
-            timer = "timer worthy B")
+            timerName = "timer worthy B")
     public static class TimerWorthyAdviceB {
 
         private static final TimerName timerName = Agent.getTimerName(TimerWorthyAdviceB.class);

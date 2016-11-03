@@ -29,7 +29,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 public class LogErrorAspect {
 
     @Pointcut(className = "org.glowroot.agent.tests.app.LogError", methodName = "log",
-            methodParameterTypes = {"java.lang.String"}, timer = "log error")
+            methodParameterTypes = {"java.lang.String"}, timerName = "log error")
     public static class LogErrorAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(LogErrorAdvice.class);
@@ -48,7 +48,7 @@ public class LogErrorAspect {
 
     @Pointcut(className = "org.glowroot.agent.tests.app.LogError",
             methodName = "addNestedErrorEntry", methodParameterTypes = {},
-            timer = "add nested error entry")
+            timerName = "add nested error entry")
     public static class AddErrorEntryAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(AddErrorEntryAdvice.class);
@@ -70,6 +70,6 @@ public class LogErrorAspect {
     // this is just to generate an additional $glowroot$ method to test that consecutive
     // $glowroot$ methods in an entry stack trace are stripped out correctly
     @Pointcut(className = "org.glowroot.agent.tests.app.LogError", methodName = "log",
-            methodParameterTypes = {"java.lang.String"}, timer = "log error 2")
+            methodParameterTypes = {"java.lang.String"}, timerName = "log error 2")
     public static class LogErrorAdvice2 {}
 }

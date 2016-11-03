@@ -62,7 +62,7 @@ public class SprayAspect {
 
     @Pointcut(className = "spray.can.server.RequestParsing$$anon$1$$anon$2",
             methodName = "spray$can$server$RequestParsing$$anon$$anon$$handleParsingResult",
-            methodParameterTypes = {"spray.can.parsing.Result"}, timer = "http request")
+            methodParameterTypes = {"spray.can.parsing.Result"}, timerName = "http request")
     public static class Advice4 {
 
         private static final TimerName timerName = Agent.getTimerName(Advice4.class);

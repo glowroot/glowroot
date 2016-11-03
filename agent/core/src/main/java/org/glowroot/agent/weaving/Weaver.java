@@ -433,7 +433,7 @@ public class Weaver {
     }
 
     @Pointcut(className = "", methodName = "", methodParameterTypes = {},
-            timer = "glowroot weaving")
+            timerName = "glowroot weaving")
     private static class OnlyForTheTimerName {
         private OnlyForTheTimerName() {}
     }

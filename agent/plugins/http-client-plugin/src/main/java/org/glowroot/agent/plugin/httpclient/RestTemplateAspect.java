@@ -42,7 +42,7 @@ public class RestTemplateAspect {
 
     @Pointcut(className = "org.springframework.web.client.RestTemplate", methodName = "doExecute",
             methodParameterTypes = {"java.net.URI", "org.springframework.http.HttpMethod", ".."},
-            nestingGroup = "http-client", timer = "http client request")
+            nestingGroup = "http-client", timerName = "http client request")
     public static class ExecuteAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAdvice.class);
         @OnBefore

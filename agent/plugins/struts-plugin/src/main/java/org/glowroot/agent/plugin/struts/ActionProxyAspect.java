@@ -41,7 +41,7 @@ public class ActionProxyAspect {
     }
 
     @Pointcut(className = "com.opensymphony.xwork2.ActionProxy", methodName = "execute",
-            methodParameterTypes = {}, nestingGroup = "struts", timer = "struts action")
+            methodParameterTypes = {}, nestingGroup = "struts", timerName = "struts action")
     public static class ActionProxyAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(ActionProxyAdvice.class);
@@ -73,7 +73,7 @@ public class ActionProxyAspect {
     @Pointcut(className = "org.apache.struts.action.Action", methodName = "execute",
             methodParameterTypes = {"org.apache.struts.action.ActionMapping",
                     "org.apache.struts.action.ActionForm", ".."},
-            nestingGroup = "struts", timer = "struts action")
+            nestingGroup = "struts", timerName = "struts action")
     public static class ActionAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(ActionAdvice.class);

@@ -116,8 +116,8 @@ abstract class Advice {
             if (compare != 0) {
                 return compare;
             }
-            String leftTimerName = TimerNames.getTimerName(left.pointcut());
-            String rightTimerName = TimerNames.getTimerName(right.pointcut());
+            String leftTimerName = left.pointcut().timerName();
+            String rightTimerName = right.pointcut().timerName();
             // empty timer names are placed at the end
             if (leftTimerName.isEmpty() && rightTimerName.isEmpty()) {
                 return 0;

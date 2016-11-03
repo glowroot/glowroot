@@ -46,7 +46,7 @@ public class ApacheHttpClient3xAspect {
             methodParameterTypes = {"org.apache.commons.httpclient.HostConfiguration",
                     "org.apache.commons.httpclient.HttpMethod",
                     "org.apache.commons.httpclient.HttpState"},
-            nestingGroup = "http-client", timer = "http client request")
+            nestingGroup = "http-client", timerName = "http client request")
     public static class ExecuteMethodAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteMethodAdvice.class);
         @OnBefore

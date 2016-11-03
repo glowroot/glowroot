@@ -31,7 +31,7 @@ public class TraceEntryWorthyAspect {
 
     @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TraceEntryWorthy",
             methodName = "doSomethingTraceEntryWorthy", methodParameterTypes = {},
-            timer = "trace entry worthy")
+            timerName = "trace entry worthy")
     public static class TraceEntryWorthyAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(TraceEntryWorthyAdvice.class);

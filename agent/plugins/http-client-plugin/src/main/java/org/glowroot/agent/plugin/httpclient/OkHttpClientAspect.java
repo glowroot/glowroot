@@ -93,7 +93,8 @@ public class OkHttpClientAspect {
     }
 
     @Pointcut(className = "com.squareup.okhttp.Call", methodName = "execute",
-            methodParameterTypes = {}, nestingGroup = "http-client", timer = "http client request")
+            methodParameterTypes = {}, nestingGroup = "http-client",
+            timerName = "http client request")
     public static class ExecuteAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAdvice.class);
         @OnBefore
@@ -136,7 +137,7 @@ public class OkHttpClientAspect {
 
     @Pointcut(className = "com.squareup.okhttp.Call", methodName = "enqueue",
             methodParameterTypes = {"com.squareup.okhttp.Callback"}, nestingGroup = "http-client",
-            timer = "http client request")
+            timerName = "http client request")
     public static class EnqueueAdvice {
         private static final TimerName timerName = Agent.getTimerName(EnqueueAdvice.class);
         @OnBefore

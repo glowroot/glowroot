@@ -71,7 +71,7 @@ public class LogbackAspect {
 
     @Pointcut(className = "ch.qos.logback.classic.Logger", methodName = "callAppenders",
             methodParameterTypes = {"ch.qos.logback.classic.spi.ILoggingEvent"},
-            nestingGroup = "logging", timer = TIMER_NAME)
+            nestingGroup = "logging", timerName = TIMER_NAME)
     public static class CallAppendersAdvice {
         private static final TimerName timerName = Agent.getTimerName(CallAppendersAdvice.class);
         @OnBefore
@@ -123,7 +123,7 @@ public class LogbackAspect {
     // this is for logback prior to 0.9.16
     @Pointcut(className = "ch.qos.logback.classic.Logger", methodName = "callAppenders",
             methodParameterTypes = {"ch.qos.logback.classic.spi.LoggingEvent"},
-            nestingGroup = "logging", timer = TIMER_NAME)
+            nestingGroup = "logging", timerName = TIMER_NAME)
     public static class CallAppenders0xAdvice {
         private static final TimerName timerName = Agent.getTimerName(CallAppenders0xAdvice.class);
         @OnBefore

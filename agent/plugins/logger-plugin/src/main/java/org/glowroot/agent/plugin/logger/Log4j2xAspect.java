@@ -65,7 +65,7 @@ public class Log4j2xAspect {
             methodParameterTypes = {"java.lang.String", "org.apache.logging.log4j.Level",
                     "org.apache.logging.log4j.Marker", "org.apache.logging.log4j.message.Message",
                     "java.lang.Throwable"},
-            nestingGroup = "logging", timer = TIMER_NAME)
+            nestingGroup = "logging", timerName = TIMER_NAME)
     public static class CallAppendersAdvice {
         private static final TimerName timerName = Agent.getTimerName(CallAppendersAdvice.class);
         @OnBefore

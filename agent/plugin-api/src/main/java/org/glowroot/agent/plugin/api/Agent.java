@@ -52,7 +52,7 @@ public class Agent {
      * Returns the {@code TimerName} instance for the specified {@code adviceClass}.
      * 
      * {@code adviceClass} must be a {@code Class} with a {@link Pointcut} annotation that has a
-     * non-empty {@link Pointcut#timer()}. This is how the {@code TimerName} is named.
+     * non-empty {@link Pointcut#timerName()}. This is how the {@code TimerName} is named.
      * 
      * The same {@code TimerName} is always returned for a given {@code adviceClass}.
      * 

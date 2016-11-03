@@ -106,7 +106,7 @@ public class ApacheHttpAsyncClientAspect {
 
     @Pointcut(className = "org.apache.http.nio.client.HttpAsyncClient", methodName = "execute",
             methodParameterTypes = {"org.apache.http.client.methods.HttpUriRequest", ".."},
-            nestingGroup = "http-client", timer = "http client request")
+            nestingGroup = "http-client", timerName = "http client request")
     public static class ExecuteAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAdvice.class);
         @OnBefore
@@ -155,7 +155,7 @@ public class ApacheHttpAsyncClientAspect {
     @Pointcut(className = "org.apache.http.nio.client.HttpAsyncClient", methodName = "execute",
             methodParameterTypes = {"org.apache.http.HttpHost", "org.apache.http.HttpRequest",
                     ".."},
-            nestingGroup = "http-client", timer = "http client request")
+            nestingGroup = "http-client", timerName = "http client request")
     public static class ExecuteWithHostAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteWithHostAdvice.class);
         @OnBefore

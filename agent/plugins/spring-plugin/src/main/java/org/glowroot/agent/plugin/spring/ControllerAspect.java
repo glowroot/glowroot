@@ -183,7 +183,7 @@ public class ControllerAspect {
     @Pointcut(classAnnotation = "org.springframework.stereotype.Controller"
             + "|org.springframework.web.bind.annotation.RestController",
             methodAnnotation = "org.springframework.web.bind.annotation.RequestMapping",
-            methodParameterTypes = {".."}, timer = "spring controller")
+            methodParameterTypes = {".."}, timerName = "spring controller")
     public static class ControllerAdvice {
         private static final TimerName timerName = Agent.getTimerName(ControllerAdvice.class);
         @OnBefore
