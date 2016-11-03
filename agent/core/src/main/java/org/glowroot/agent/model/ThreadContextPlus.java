@@ -22,4 +22,8 @@ public interface ThreadContextPlus extends OptionalThreadContext {
     int getCurrentNestingGroupId();
 
     void setCurrentNestingGroupId(int nestingGroupId);
+
+    int getCurrentSuppressionKeyId();
+
+    void setCurrentSuppressionKeyId(int suppressionKeyId);
 }

@@ -277,4 +277,19 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
             threadContext.setCurrentNestingGroupId(nestingGroupId);
         }
     }
+
+    @Override
+    public int getCurrentSuppressionKeyId() {
+        if (threadContext == null) {
+            return 0;
+        }
+        return threadContext.getCurrentSuppressionKeyId();
+    }
+
+    @Override
+    public void setCurrentSuppressionKeyId(int suppressionKeyId) {
+        if (threadContext != null) {
+            threadContext.setCurrentSuppressionKeyId(suppressionKeyId);
+        }
+    }
 }

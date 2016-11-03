@@ -82,9 +82,12 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     // starts at 1 since 0 is used for "no nesting group"
     private static final AtomicInteger nestingGroupIdCounter = new AtomicInteger(1);
+    // starts at 1 since 0 is used for "no suppression key"
+    private static final AtomicInteger suppressionKeyIdCounter = new AtomicInteger(1);
 
-    // TODO move this to an instance cache
     private static final ConcurrentMap<String, Integer> nestingGroupIds =
+            new ConcurrentHashMap<String, Integer>();
+    private static final ConcurrentMap<String, Integer> suppressionKeyIds =
             new ConcurrentHashMap<String, Integer>();
 
     private final int access;
@@ -103,6 +106,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private final Map<Advice, Integer> enabledLocals = Maps.newHashMap();
     private final Map<Advice, Integer> travelerLocals = Maps.newHashMap();
     private final Map<Advice, Integer> prevNestingGroupIdLocals = Maps.newHashMap();
+    private final Map<Advice, Integer> prevSuppressionKeyIdLocals = Maps.newHashMap();
 
     // don't need map of thread context locals since all advice can share the same
     // threadContextLocal
@@ -137,7 +141,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
         boolean needsOnReturn = false;
         boolean needsOnThrow = false;
         for (Advice advice : advisors) {
-            if (!advice.pointcut().nestingGroup().isEmpty() || advice.onAfterAdvice() != null) {
+            if (!advice.pointcut().nestingGroup().isEmpty()
+                    || !advice.pointcut().suppressionKey().isEmpty()
+                    || advice.onAfterAdvice() != null) {
                 needsOnReturn = true;
                 needsOnThrow = true;
                 break;
@@ -336,8 +342,10 @@ class WeavingMethodVisitor extends AdviceAdapter {
             storeLocal(enabledLocal);
         }
         String nestingGroup = advice.pointcut().nestingGroup();
-        if ((!nestingGroup.isEmpty() || advice.hasBindThreadContext()
-                || advice.hasBindOptionalThreadContext())
+        String suppressionKey = advice.pointcut().suppressionKey();
+        String suppressibleUsingKey = advice.pointcut().suppressibleUsingKey();
+        if ((!nestingGroup.isEmpty() || !suppressionKey.isEmpty()
+                || advice.hasBindThreadContext() || advice.hasBindOptionalThreadContext())
                 && threadContextHolderLocal == null) {
             // need to define thread context local var outside of any branches,
             // but also don't want to load ThreadContext if enabledLocal exists and is false
@@ -357,8 +365,17 @@ class WeavingMethodVisitor extends AdviceAdapter {
             visitIntInsn(BIPUSH, -1);
             storeLocal(prevNestingGroupIdLocal);
         }
-        // futher calculations whether this @Pointcut is enabled..
-        if (!nestingGroup.isEmpty()
+        Integer prevSuppressionKeyIdLocal = null;
+        if (!suppressionKey.isEmpty()) {
+            // need to define thread context local var outside of any branches
+            // but also don't want to load ThreadContext if enabledLocal exists and is false
+            prevSuppressionKeyIdLocal = newLocal(Type.INT_TYPE);
+            prevSuppressionKeyIdLocals.put(advice, prevSuppressionKeyIdLocal);
+            visitIntInsn(BIPUSH, -1);
+            storeLocal(prevSuppressionKeyIdLocal);
+        }
+        // need to load ThreadContext
+        if (!nestingGroup.isEmpty() || !suppressibleUsingKey.isEmpty() || !suppressionKey.isEmpty()
                 || (advice.hasBindThreadContext() && !advice.hasBindOptionalThreadContext())) {
             Label disabledLabel = new Label();
             if (enabledLocal != null) {
@@ -382,18 +399,43 @@ class WeavingMethodVisitor extends AdviceAdapter {
             storeLocal(threadContextLocal);
             if (advice.hasBindThreadContext() && !advice.hasBindOptionalThreadContext()) {
                 visitJumpInsn(IFNULL, disabledLabel);
+                if (!suppressibleUsingKey.isEmpty()) {
+                    checkSuppressibleUsingKey(suppressibleUsingKey, disabledLabel);
+                }
                 if (!nestingGroup.isEmpty()) {
                     checkNotNull(prevNestingGroupIdLocal);
-                    checkNestingGroupId(prevNestingGroupIdLocal, nestingGroup, disabledLabel);
+                    checkAndUpdateNestingGroupId(prevNestingGroupIdLocal, nestingGroup,
+                            disabledLabel);
+                }
+                if (!suppressionKey.isEmpty()) {
+                    checkNotNull(prevSuppressionKeyIdLocal);
+                    updateSuppressionKeyId(prevSuppressionKeyIdLocal, suppressionKey);
                 }
             } else {
-                // this conditional covers !nestingGroup.isEmpty()
-                Label enabledLabel = new Label();
-                // if thread context == null, then not in nesting group
-                visitJumpInsn(IFNULL, enabledLabel);
-                checkNotNull(prevNestingGroupIdLocal);
-                checkNestingGroupId(prevNestingGroupIdLocal, nestingGroup, disabledLabel);
-                visitLabel(enabledLabel);
+                if (!suppressibleUsingKey.isEmpty()) {
+                    Label enabledLabel = new Label();
+                    // if thread context == null, then not suppressible
+                    visitJumpInsn(IFNULL, enabledLabel);
+                    checkSuppressibleUsingKey(suppressibleUsingKey, disabledLabel);
+                    visitLabel(enabledLabel);
+                }
+                if (!nestingGroup.isEmpty()) {
+                    Label enabledLabel = new Label();
+                    // if thread context == null, then not in nesting group
+                    visitJumpInsn(IFNULL, enabledLabel);
+                    checkNotNull(prevNestingGroupIdLocal);
+                    checkAndUpdateNestingGroupId(prevNestingGroupIdLocal, nestingGroup,
+                            disabledLabel);
+                    visitLabel(enabledLabel);
+                }
+                if (!suppressionKey.isEmpty()) {
+                    Label enabledLabel = new Label();
+                    // if thread context == null, then not in nesting group
+                    visitJumpInsn(IFNULL, enabledLabel);
+                    checkNotNull(prevSuppressionKeyIdLocal);
+                    updateSuppressionKeyId(prevSuppressionKeyIdLocal, suppressionKey);
+                    visitLabel(enabledLabel);
+                }
             }
             visitInsn(ICONST_1);
             Label endLabel = new Label();
@@ -415,7 +457,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     @RequiresNonNull("threadContextLocal")
-    private void checkNestingGroupId(int prevNestingGroupIdLocal, String nestingGroup,
+    private void checkAndUpdateNestingGroupId(int prevNestingGroupIdLocal, String nestingGroup,
             Label disabledLabel) {
         loadLocal(threadContextLocal);
         visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
@@ -429,6 +471,29 @@ class WeavingMethodVisitor extends AdviceAdapter {
         visitIntInsn(BIPUSH, nestingGroupId);
         visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
                 "setCurrentNestingGroupId", "(I)V", true);
+    }
+
+    @RequiresNonNull("threadContextLocal")
+    private void checkSuppressibleUsingKey(String suppressibleUsingKey, Label disabledLabel) {
+        loadLocal(threadContextLocal);
+        visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
+                "getCurrentSuppressionKeyId", "()I", true);
+        int suppressionKeyId = getSuppressionKeyId(suppressibleUsingKey);
+        visitIntInsn(BIPUSH, suppressionKeyId);
+        visitJumpInsn(IF_ICMPEQ, disabledLabel);
+    }
+
+    @RequiresNonNull("threadContextLocal")
+    private void updateSuppressionKeyId(int prevSuppressionKeyIdLocal, String suppressionKey) {
+        loadLocal(threadContextLocal);
+        visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
+                "getCurrentSuppressionKeyId", "()I", true);
+        storeLocal(prevSuppressionKeyIdLocal);
+        int suppressionKeyId = getSuppressionKeyId(suppressionKey);
+        loadLocal(threadContextLocal);
+        visitIntInsn(BIPUSH, suppressionKeyId);
+        visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
+                "setCurrentSuppressionKeyId", "(I)V", true);
     }
 
     private void defineTravelerLocalVar(Advice advice) {
@@ -489,6 +554,31 @@ class WeavingMethodVisitor extends AdviceAdapter {
             visitIntInsn(BIPUSH, nestingGroupId);
             visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
                     "setCurrentNestingGroupId", "(I)V", true);
+            visitLabel(label);
+        }
+        String suppressionKey = advice.pointcut().suppressionKey();
+        if (advice.hasBindOptionalThreadContext() && !suppressionKey.isEmpty()) {
+            // need to check if transaction was just started in @OnBefore and update its
+            // currentSuppressionKeyId
+
+            Integer prevSuppressionKeyIdLocal = prevSuppressionKeyIdLocals.get(advice);
+            checkNotNull(prevSuppressionKeyIdLocal);
+            loadLocal(prevSuppressionKeyIdLocal);
+            visitIntInsn(BIPUSH, -1);
+            Label label = new Label();
+            visitJumpInsn(IF_ICMPNE, label);
+            // the only reason prevSuppressionKeyId is -1 here is because no thread context at the
+            // start of the method
+            checkNotNull(threadContextLocal);
+            loadLocal(threadContextLocal);
+            visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
+                    "getCurrentSuppressionKeyId", "()I", true);
+            storeLocal(prevSuppressionKeyIdLocal);
+            loadLocal(threadContextLocal);
+            int suppressionKeyId = getSuppressionKeyId(suppressionKey);
+            visitIntInsn(BIPUSH, suppressionKeyId);
+            visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
+                    "setCurrentSuppressionKeyId", "(I)V", true);
             visitLabel(label);
         }
         if (onBeforeBlockEnd != null) {
@@ -679,6 +769,19 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 loadLocal(prevNestingGroupIdLocal);
                 visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
                         "setCurrentNestingGroupId", "(I)V", true);
+                visitLabel(label);
+            }
+            Integer prevSuppressionKeyIdLocal = prevSuppressionKeyIdLocals.get(advice);
+            if (prevSuppressionKeyIdLocal != null) {
+                loadLocal(prevSuppressionKeyIdLocal);
+                visitIntInsn(BIPUSH, -1);
+                Label label = new Label();
+                visitJumpInsn(IF_ICMPEQ, label);
+                checkNotNull(threadContextLocal);
+                loadLocal(threadContextLocal);
+                loadLocal(prevSuppressionKeyIdLocal);
+                visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
+                        "setCurrentSuppressionKeyId", "(I)V", true);
                 visitLabel(label);
             }
         }
@@ -979,6 +1082,21 @@ class WeavingMethodVisitor extends AdviceAdapter {
         Integer previousValue = nestingGroupIds.putIfAbsent(nestingGroup, nestingGroupId);
         if (previousValue == null) {
             return nestingGroupId;
+        } else {
+            // handling race condition
+            return previousValue;
+        }
+    }
+
+    private static int getSuppressionKeyId(String suppressionKey) {
+        Integer nullableSuppressionKeyId = suppressionKeyIds.get(suppressionKey);
+        if (nullableSuppressionKeyId != null) {
+            return nullableSuppressionKeyId;
+        }
+        int suppressionKeyId = suppressionKeyIdCounter.getAndIncrement();
+        Integer previousValue = suppressionKeyIds.putIfAbsent(suppressionKey, suppressionKeyId);
+        if (previousValue == null) {
+            return suppressionKeyId;
         } else {
             // handling race condition
             return previousValue;

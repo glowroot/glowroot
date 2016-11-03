@@ -16,7 +16,6 @@
 package org.glowroot.agent.plugin.httpclient;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -67,7 +66,6 @@ public class AsyncHttpClientPluginIT {
         assertThat(rootTimer.getChildTimerCount()).isEqualTo(1);
         assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("http client request");
         assertThat(rootTimer.getChildTimer(0).getCount()).isEqualTo(1);
-        assertThat(trace.getHeader().getAuxThreadRootTimerCount()).isZero();
         assertThat(trace.getHeader().getAsyncTimerCount()).isEqualTo(1);
         Trace.Timer asyncTimer = trace.getHeader().getAsyncTimer(0);
         assertThat(asyncTimer.getChildTimerCount()).isZero();
@@ -94,7 +92,6 @@ public class AsyncHttpClientPluginIT {
         assertThat(rootTimer.getChildTimerCount()).isEqualTo(1);
         assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("http client request");
         assertThat(rootTimer.getChildTimer(0).getCount()).isEqualTo(1);
-        assertThat(trace.getHeader().getAuxThreadRootTimerCount()).isZero();
         assertThat(trace.getHeader().getAsyncTimerCount()).isEqualTo(1);
         Trace.Timer asyncTimer = trace.getHeader().getAsyncTimer(0);
         assertThat(asyncTimer.getChildTimerCount()).isZero();
@@ -121,7 +118,6 @@ public class AsyncHttpClientPluginIT {
         assertThat(rootTimer.getChildTimerCount()).isEqualTo(1);
         assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("http client request");
         assertThat(rootTimer.getChildTimer(0).getCount()).isEqualTo(1);
-        assertThat(trace.getHeader().getAuxThreadRootTimerCount()).isZero();
         assertThat(trace.getHeader().getAsyncTimerCount()).isEqualTo(1);
         Trace.Timer asyncTimer = trace.getHeader().getAsyncTimer(0);
         assertThat(asyncTimer.getChildTimerCount()).isZero();

@@ -94,10 +94,9 @@ public class ResultSetFutureAspect {
         void glowroot$setAsyncQueryEntry(@Nullable AsyncQueryEntry asyncQueryEntry);
     }
 
-    // waiting on async result
     @Pointcut(className = "com.datastax.driver.core.ResultSetFuture",
             methodDeclaringClassName = "java.util.concurrent.Future", methodName = "get",
-            methodParameterTypes = {".."}, supersedes = "wait on future")
+            methodParameterTypes = {".."}, suppressionKey = "wait-on-future")
     public static class FutureGetAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver ResultSetFutureMixin resultSetFuture) {

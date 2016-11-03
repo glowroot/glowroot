@@ -85,6 +85,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private @Nullable TimerImpl currentTimer;
 
     private int currentNestingGroupId;
+    private int currentSuppressionKeyId;
 
     private final @Nullable ThreadStatsComponent threadStatsComponent;
 
@@ -209,6 +210,18 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @UsedByGeneratedBytecode
     public void setCurrentNestingGroupId(int nestingGroupId) {
         this.currentNestingGroupId = nestingGroupId;
+    }
+
+    @Override
+    @UsedByGeneratedBytecode
+    public int getCurrentSuppressionKeyId() {
+        return currentSuppressionKeyId;
+    }
+
+    @Override
+    @UsedByGeneratedBytecode
+    public void setCurrentSuppressionKeyId(int suppressionKeyId) {
+        this.currentSuppressionKeyId = suppressionKeyId;
     }
 
     boolean isCompleteAndEmptyExceptForTimersAndThreadStats() {

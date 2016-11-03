@@ -25,6 +25,7 @@ import org.glowroot.agent.plugin.api.AsyncQueryEntry;
 import org.glowroot.agent.plugin.api.QueryEntry;
 import org.glowroot.agent.plugin.api.QueryMessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.Timer;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.config.ConfigService;
@@ -32,6 +33,7 @@ import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
+import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
@@ -95,7 +97,8 @@ public class SessionAspect {
 
     @Pointcut(className = "com.datastax.driver.core.Session", methodName = "execute",
             methodParameterTypes = {"com.datastax.driver.core.Statement"},
-            nestingGroup = "cassandra", timerName = "cql execute")
+            nestingGroup = "cassandra", timerName = "cql execute",
+            suppressionKey = "wait-on-future")
     public static class ExecuteAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAdvice.class);
         @OnBefore
@@ -124,6 +127,21 @@ public class SessionAspect {
             if (queryEntry != null) {
                 queryEntry.endWithError(t);
             }
+        }
+    }
+
+    @Pointcut(className = "com.datastax.driver.core.Session", methodName = "prepare",
+            methodParameterTypes = {"*"}, timerName = "cql prepare",
+            suppressionKey = "wait-on-future")
+    public static class PrepareAdvice {
+        private static final TimerName timerName = Agent.getTimerName(PrepareAdvice.class);
+        @OnBefore
+        public static Timer onBefore(ThreadContext context) {
+            return context.startTimer(timerName);
+        }
+        @OnAfter
+        public static void onAfter(@BindTraveler Timer timer) {
+            timer.stop();
         }
     }
 

@@ -52,6 +52,7 @@ public @interface Pointcut {
     String methodReturnType() default "";
     MethodModifier[] methodModifiers() default {};
     String nestingGroup() default "";
+    String timerName() default "";
     // order is used to order two pointcuts on the same method
     // it is used to nest pointcut inside another, e.g. creating a pointcut on HttpServlet.service()
     // to override transaction type, in which case the pointcut's @OnBefore needs to occur after the
@@ -65,6 +66,11 @@ public @interface Pointcut {
     // * A's @OnThrow will be called after B's @OnThrow
     // * A's @OnAfter will be called after B's @OnAfter
     int order() default 0;
-    String timerName() default "";
-    String supersedes() default "";
+
+    // advanced feature:
+
+    String suppressibleUsingKey() default "";
+    // will suppress nested even if pointcut is not enabled, and even if suppressed pointcut is on
+    // same method but with lower order
+    String suppressionKey() default "";
 }

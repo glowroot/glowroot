@@ -146,7 +146,6 @@ class ClassAnalyzer {
         bridgeTargetAdvisors = Maps.newHashMap();
         for (ThinMethod bridgeMethod : thinClass.bridgeMethods()) {
             List<Advice> advisors = analyzeMethod(bridgeMethod);
-            removeSuperseded(advisors);
             if (!advisors.isEmpty()) {
                 // don't add advisors to bridge method
                 // instead propagate bridge method advice to its target
@@ -158,7 +157,6 @@ class ClassAnalyzer {
         }
         for (ThinMethod nonBridgeMethod : thinClass.nonBridgeMethods()) {
             List<Advice> advisors = analyzeMethod(nonBridgeMethod);
-            removeSuperseded(advisors);
             if (!advisors.isEmpty()) {
                 methodAdvisors.put(nonBridgeMethod.name() + nonBridgeMethod.desc(), advisors);
             }
@@ -233,23 +231,6 @@ class ClassAnalyzer {
         builder.addAllDeclaredOnlyAdvisors(declaredOnlyMatchingAdvisors);
         analyzedClassBuilder.addAnalyzedMethods(builder.build());
         return matchingAdvisors;
-    }
-
-    private void removeSuperseded(List<Advice> advisors) {
-        Set<String> superseded = Sets.newHashSet();
-        for (Advice advice : advisors) {
-            String supersedes = advice.pointcut().supersedes();
-            if (!supersedes.isEmpty()) {
-                superseded.add(supersedes);
-            }
-        }
-        Iterator<Advice> i = advisors.iterator();
-        while (i.hasNext()) {
-            String timerName = i.next().pointcut().timerName();
-            if (superseded.contains(timerName)) {
-                i.remove();
-            }
-        }
     }
 
     // returns mutable list if non-empty

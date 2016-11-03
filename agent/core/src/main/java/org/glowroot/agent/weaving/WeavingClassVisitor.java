@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -141,6 +142,8 @@ class WeavingClassVisitor extends ClassVisitor {
         List<Advice> matchingAdvisors = methodAdvisors.get(name + desc);
         if (matchingAdvisors == null) {
             matchingAdvisors = ImmutableList.of();
+        } else {
+            matchingAdvisors = removeSuperseded(matchingAdvisors);
         }
         checkNotNull(type); // type is non null if there is something to weave
         if (isAbstractOrNativeOrSynthetic(access)) {
@@ -400,6 +403,7 @@ class WeavingClassVisitor extends ClassVisitor {
     private MethodVisitor visitMethodWithAdvice(int access, String name, String desc,
             @Nullable String signature, String /*@Nullable*/[] exceptions,
             Iterable<Advice> matchingAdvisors) {
+        // FIXME remove superseded advisors
         Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, name, desc);
         MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
         return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
@@ -493,9 +497,9 @@ class WeavingClassVisitor extends ClassVisitor {
         for (int i = 0; i < inheritedMethod.exceptions().size(); i++) {
             exceptions[i] = ClassNames.toInternalName(inheritedMethod.exceptions().get(i));
         }
-        MethodVisitor mv =
-                visitMethodWithAdvice(ACC_PUBLIC, inheritedMethod.name(), inheritedMethod.getDesc(),
-                        inheritedMethod.signature(), exceptions, inheritedMethod.advisors());
+        List<Advice> advisors = removeSuperseded(inheritedMethod.advisors());
+        MethodVisitor mv = visitMethodWithAdvice(ACC_PUBLIC, inheritedMethod.name(),
+                inheritedMethod.getDesc(), inheritedMethod.signature(), exceptions, advisors);
         checkNotNull(mv);
         GeneratorAdapter mg = new GeneratorAdapter(mv, ACC_PUBLIC, inheritedMethod.name(),
                 inheritedMethod.getDesc());
@@ -508,6 +512,32 @@ class WeavingClassVisitor extends ClassVisitor {
         mg.invokeConstructor(superType, method);
         mg.returnValue();
         mg.endMethod();
+    }
+
+    private static List<Advice> removeSuperseded(List<Advice> advisors) {
+        if (advisors.size() < 2) {
+            // common case optimization
+            return advisors;
+        }
+        Set<String> suppressionKeys = Sets.newHashSet();
+        for (Advice advice : advisors) {
+            String suppressionKey = advice.pointcut().suppressionKey();
+            if (!suppressionKey.isEmpty()) {
+                suppressionKeys.add(suppressionKey);
+            }
+        }
+        if (suppressionKeys.isEmpty()) {
+            // common case optimization
+            return advisors;
+        }
+        List<Advice> filteredAdvisors = Lists.newArrayList();
+        for (Advice advice : advisors) {
+            String suppressibleUsingKey = advice.pointcut().suppressibleUsingKey();
+            if (suppressibleUsingKey.isEmpty() || !suppressionKeys.contains(suppressibleUsingKey)) {
+                filteredAdvisors.add(advice);
+            }
+        }
+        return filteredAdvisors;
     }
 
     private static boolean isAbstractOrNativeOrSynthetic(int access) {

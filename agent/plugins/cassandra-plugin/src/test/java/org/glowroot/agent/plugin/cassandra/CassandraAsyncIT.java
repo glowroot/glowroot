@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.plugin.cassandra;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -25,6 +26,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SimpleStatement;
+import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -62,7 +64,7 @@ public class CassandraAsyncIT {
         Trace trace = container.execute(ExecuteAsyncStatement.class);
 
         // then
-        checkTimers(trace);
+        checkTimers(trace, false);
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
         List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
@@ -84,7 +86,7 @@ public class CassandraAsyncIT {
         Trace trace = container.execute(ExecuteAsyncStatementReturningNoRecords.class);
 
         // then
-        checkTimers(trace);
+        checkTimers(trace, false);
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
         List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
@@ -106,7 +108,7 @@ public class CassandraAsyncIT {
         Trace trace = container.execute(AsyncIterateUsingOneAndAll.class);
 
         // then
-        checkTimers(trace);
+        checkTimers(trace, false);
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
         List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
@@ -128,7 +130,7 @@ public class CassandraAsyncIT {
         Trace trace = container.execute(AsyncExecuteBoundStatement.class);
 
         // then
-        checkTimers(trace);
+        checkTimers(trace, true);
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
         List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
@@ -151,7 +153,7 @@ public class CassandraAsyncIT {
         Trace trace = container.execute(AsyncExecuteBatchStatement.class);
 
         // then
-        checkTimers(trace);
+        checkTimers(trace, true);
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
         List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
@@ -173,12 +175,21 @@ public class CassandraAsyncIT {
         assertThat(i.hasNext()).isFalse();
     }
 
-    private static void checkTimers(Trace trace) {
+    private static void checkTimers(Trace trace, boolean prepared) {
         Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
-        assertThat(rootTimer.getChildTimerCount()).isEqualTo(1);
-        assertThat(rootTimer.getChildTimer(0).getName()).isEqualTo("cql execute");
-        assertThat(rootTimer.getChildTimer(0).getCount()).isEqualTo(1);
-        assertThat(trace.getHeader().getAuxThreadRootTimerCount()).isZero();
+        List<String> timerNames = Lists.newArrayList();
+        for (Trace.Timer timer : rootTimer.getChildTimerList()) {
+            timerNames.add(timer.getName());
+        }
+        Collections.sort(timerNames);
+        if (prepared) {
+            assertThat(timerNames).containsExactly("cql execute", "cql prepare");
+        } else {
+            assertThat(timerNames).containsExactly("cql execute");
+        }
+        for (Trace.Timer timer : rootTimer.getChildTimerList()) {
+            assertThat(timer.getChildTimerList()).isEmpty();
+        }
         assertThat(trace.getHeader().getAsyncTimerCount()).isEqualTo(1);
         Trace.Timer asyncTimer = trace.getHeader().getAsyncTimer(0);
         assertThat(asyncTimer.getChildTimerCount()).isZero();

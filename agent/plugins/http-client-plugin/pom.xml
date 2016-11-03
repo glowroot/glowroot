@@ -183,6 +183,13 @@
           <version>${asynchttpclient.version}</version>
           <scope>test</scope>
         </dependency>
+        <dependency>
+          <!-- executor plugin is included to test suppression of "wait for future" timer -->
+          <groupId>org.glowroot</groupId>
+          <artifactId>glowroot-agent-executor-plugin</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+        </dependency>
       </dependencies>
       <build>
         <plugins>
@@ -217,6 +224,13 @@
           <groupId>com.ning</groupId>
           <artifactId>async-http-client</artifactId>
           <version>${asynchttpclient.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <!-- executor plugin is included to test suppression of "wait for future" timer -->
+          <groupId>org.glowroot</groupId>
+          <artifactId>glowroot-agent-executor-plugin</artifactId>
+          <version>${project.version}</version>
           <scope>test</scope>
         </dependency>
       </dependencies>
