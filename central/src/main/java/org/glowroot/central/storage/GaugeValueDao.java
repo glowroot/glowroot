@@ -125,6 +125,14 @@ public class GaugeValueDao implements GaugeValueRepository {
                 + " gauge_value_rollup_1 where agent_rollup = ? and gauge_name = ?"
                 + " and capture_time = ?");
 
+        // since gauge rollup operations are idempotent, any records resurrected after
+        // gc_grace_seconds would just create extra work, but not have any other effect
+        //
+        // 3 hours is chosen to match default max_hint_window_in_ms since hints are stored
+        // with a TTL of gc_grace_seconds
+        // (see http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
+        long needsRollupGcGraceSeconds = HOURS.toSeconds(3);
+
         List<PreparedStatement> insertNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> deleteNeedsRollup = Lists.newArrayList();
@@ -132,7 +140,8 @@ public class GaugeValueDao implements GaugeValueRepository {
             session.execute("create table if not exists gauge_needs_rollup_" + i
                     + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
                     + " gauge_names set<varchar>, primary key (agent_rollup, capture_time,"
-                    + " uniqueness)) with gc_grace_seconds = 7200 and " + LCS);
+                    + " uniqueness)) with gc_grace_seconds = " + needsRollupGcGraceSeconds + " and "
+                    + LCS);
             insertNeedsRollup.add(session.prepare("insert into gauge_needs_rollup_" + i
                     + " (agent_rollup, capture_time, uniqueness, gauge_names) values"
                     + " (?, ?, ?, ?) using TTL ?"));
@@ -149,7 +158,7 @@ public class GaugeValueDao implements GaugeValueRepository {
                 + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
                 + " child_agent_rollup varchar, gauge_names set<varchar>,"
                 + " primary key (agent_rollup, capture_time, uniqueness))"
-                + " with gc_grace_seconds = 7200 and " + LCS);
+                + " with gc_grace_seconds = " + needsRollupGcGraceSeconds + " and " + LCS);
         insertNeedsRollupFromChild = session.prepare("insert into gauge_needs_rollup_from_child"
                 + " (agent_rollup, capture_time, uniqueness, child_agent_rollup, gauge_names)"
                 + " values (?, ?, ?, ?, ?) using TTL ?");

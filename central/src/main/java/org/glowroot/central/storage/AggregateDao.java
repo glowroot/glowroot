@@ -347,6 +347,14 @@ public class AggregateDao implements AggregateRepository {
         this.existsAuxThreadProfileOverallPS = existsAuxThreadProfileOverallPS;
         this.existsAuxThreadProfileTransactionPS = existsAuxThreadProfileTransactionPS;
 
+        // since aggregate rollup operations are idempotent, any records resurrected after
+        // gc_grace_seconds would just create extra work, but not have any other effect
+        //
+        // 3 hours is chosen to match default max_hint_window_in_ms since hints are stored
+        // with a TTL of gc_grace_seconds
+        // (see http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
+        long needsRollupGcGraceSeconds = HOURS.toSeconds(3);
+
         List<PreparedStatement> insertNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> readNeedsRollup = Lists.newArrayList();
         List<PreparedStatement> deleteNeedsRollup = Lists.newArrayList();
@@ -354,7 +362,8 @@ public class AggregateDao implements AggregateRepository {
             session.execute("create table if not exists aggregate_needs_rollup_" + i
                     + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
                     + " transaction_types set<varchar>, primary key (agent_rollup, capture_time,"
-                    + " uniqueness)) with gc_grace_seconds = 7200 and " + LCS);
+                    + " uniqueness)) with gc_grace_seconds = " + needsRollupGcGraceSeconds + " and "
+                    + LCS);
             // TTL is used to prevent non-idempotent rolling up of partially expired aggregates
             // (e.g. "needs rollup" record resurrecting due to small gc_grace_seconds)
             insertNeedsRollup.add(session.prepare("insert into aggregate_needs_rollup_" + i
@@ -373,7 +382,7 @@ public class AggregateDao implements AggregateRepository {
                 + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
                 + " child_agent_rollup varchar, transaction_types set<varchar>,"
                 + " primary key (agent_rollup, capture_time, uniqueness))"
-                + " with gc_grace_seconds = 7200 and " + LCS);
+                + " with gc_grace_seconds = " + needsRollupGcGraceSeconds + " and " + LCS);
         // TTL is used to prevent non-idempotent rolling up of partially expired aggregates
         // (e.g. "needs rollup" record resurrecting due to small gc_grace_seconds)
         insertNeedsRollupFromChild = session.prepare("insert into aggregate_needs_rollup_from_child"
