@@ -1984,8 +1984,9 @@ public class AggregateDao implements AggregateRepository {
         }
         int captureTimeAgoSeconds =
                 Ints.saturatedCast(MILLISECONDS.toSeconds(clock.currentTimeMillis() - captureTime));
-        // max is just a safety guard (primarily used for unit tests)
-        return Math.max(ttl - captureTimeAgoSeconds, 60);
+        int adjustedTTL = ttl - captureTimeAgoSeconds;
+        // max is a safety guard
+        return Math.max(adjustedTTL, 60);
     }
 
     static int getNeedsRollupAdjustedTTL(int adjustedTTL, List<RollupConfig> rollupConfigs) {
@@ -1996,7 +1997,10 @@ public class AggregateDao implements AggregateRepository {
         // reduced by an extra 1 hour to make sure that once needs rollup record is retrieved,
         // there is plenty of time to read the all of the data records in the interval before they
         // expire (reading partially expired interval can lead to non-idempotent rollups)
-        return adjustedTTL - Ints.saturatedCast(MILLISECONDS.toSeconds(maxRollupInterval)) - 3600;
+        int needsRollupAdjustedTTL =
+                adjustedTTL - Ints.saturatedCast(MILLISECONDS.toSeconds(maxRollupInterval)) - 3600;
+        // max is a safety guard
+        return Math.max(needsRollupAdjustedTTL, 60);
     }
 
     static List<NeedsRollup> getNeedsRollupList(String agentRollup, int rollupLevel,
