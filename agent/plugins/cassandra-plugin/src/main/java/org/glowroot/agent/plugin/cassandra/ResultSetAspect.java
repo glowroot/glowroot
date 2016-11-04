@@ -135,7 +135,8 @@ public class ResultSetAspect {
     }
 
     @Pointcut(className = "com.datastax.driver.core.ResultSet",
-            methodDeclaringClassName = "com.datastax.driver.core.PagingIterable",
+            methodDeclaringClassName = "com.datastax.driver.core.PagingIterable"
+                    + "|com.datastax.driver.core.ResultSet",
             methodName = "isExhausted", methodParameterTypes = {})
     public static class IsExhaustedAdvice {
         @OnReturn
