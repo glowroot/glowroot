@@ -209,7 +209,7 @@ public class AsyncHttpClientAspect {
         } catch (Throwable t) {
             return t;
         } finally {
-            ignoreFutureGet.set(true);
+            ignoreFutureGet.set(false);
         }
         return null;
     }
