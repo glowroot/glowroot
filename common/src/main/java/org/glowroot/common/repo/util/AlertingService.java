@@ -15,7 +15,11 @@
  */
 package org.glowroot.common.repo.util;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.net.InetAddress;
+import java.text.NumberFormat;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -29,6 +33,7 @@ import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -208,7 +213,7 @@ public class AlertingService {
         sb.append("Average over the last ");
         sb.append(alertConfig.getTimePeriodSeconds() / 60);
         sb.append(" minutes was ");
-        sb.append(average);
+        sb.append(displaySixDigitsOfPrecision(average));
         String unit = gauge.unit();
         if (!unit.isEmpty()) {
             sb.append(" ");
@@ -241,6 +246,19 @@ public class AlertingService {
         message.setSubject(subject);
         message.setText(messageText);
         mailService.send(message);
+    }
+
+    // this mimics the javascript function of same name in gauge-values.js
+    @VisibleForTesting
+    static String displaySixDigitsOfPrecision(double value) {
+        NumberFormat numberFormat = NumberFormat.getNumberInstance();
+        numberFormat.setMaximumFractionDigits(20);
+        if (value < 1000000) {
+            return numberFormat
+                    .format(new BigDecimal(value).round(new MathContext(6, RoundingMode.HALF_UP)));
+        } else {
+            return numberFormat.format(Math.round(value));
+        }
     }
 
     private static Session createMailSession(SmtpConfig smtpConfig, SecretKey secretKey)

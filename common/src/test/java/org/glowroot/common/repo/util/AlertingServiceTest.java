@@ -155,7 +155,7 @@ public class AlertingServiceTest {
     @Test
     public void shouldSendMailForGaugeAlert() throws Exception {
         // given
-        setupForGauge(500);
+        setupForGauge(500.1);
         AlertingService alertingService = new AlertingService(configRepository,
                 triggeredAlertRepository, aggregateRepository, gaugeValueRepository,
                 rollupLevelService, mailService);
@@ -164,7 +164,7 @@ public class AlertingServiceTest {
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
-                .isEqualTo("Average over the last 1 minutes was 500.0 milliseconds per second.");
+                .isEqualTo("Average over the last 1 minutes was 500.1 milliseconds per second.");
     }
 
     @Test
@@ -213,6 +213,36 @@ public class AlertingServiceTest {
         shouldReturnCorrectPercentileName(50.22, "nd");
         shouldReturnCorrectPercentileName(50.23, "rd");
         shouldReturnCorrectPercentileName(50.24, "th");
+    }
+
+    @Test
+    public void testGaugeValueFormatting() {
+        assertThat(AlertingService.displaySixDigitsOfPrecision(3)).isEqualTo("3");
+        assertThat(AlertingService.displaySixDigitsOfPrecision(333333)).isEqualTo("333,333");
+        assertThat(AlertingService.displaySixDigitsOfPrecision(3333333)).isEqualTo("3,333,333");
+
+        assertThat(AlertingService.displaySixDigitsOfPrecision(3.3)).isEqualTo("3.3");
+        assertThat(AlertingService.displaySixDigitsOfPrecision(3333.3)).isEqualTo("3,333.3");
+        assertThat(AlertingService.displaySixDigitsOfPrecision(3333333.3)).isEqualTo("3,333,333");
+
+        assertThat(AlertingService.displaySixDigitsOfPrecision(3.33333)).isEqualTo("3.33333");
+        assertThat(AlertingService.displaySixDigitsOfPrecision(3.333333)).isEqualTo("3.33333");
+        assertThat(AlertingService.displaySixDigitsOfPrecision(3.3333333)).isEqualTo("3.33333");
+
+        assertThat(AlertingService.displaySixDigitsOfPrecision(0.333333)).isEqualTo("0.333333");
+        assertThat(AlertingService.displaySixDigitsOfPrecision(0.3333333)).isEqualTo("0.333333");
+        assertThat(AlertingService.displaySixDigitsOfPrecision(0.33333333)).isEqualTo("0.333333");
+
+        assertThat(AlertingService.displaySixDigitsOfPrecision(0.0333333)).isEqualTo("0.0333333");
+        assertThat(AlertingService.displaySixDigitsOfPrecision(0.03333333)).isEqualTo("0.0333333");
+        assertThat(AlertingService.displaySixDigitsOfPrecision(0.033333333)).isEqualTo("0.0333333");
+
+        assertThat(AlertingService.displaySixDigitsOfPrecision(0.000000333333))
+                .isEqualTo("0.000000333333");
+        assertThat(AlertingService.displaySixDigitsOfPrecision(0.0000003333333))
+                .isEqualTo("0.000000333333");
+        assertThat(AlertingService.displaySixDigitsOfPrecision(0.00000033333333))
+                .isEqualTo("0.000000333333");
     }
 
     private void setupForTransaction(long... histogramValues) throws Exception {
