@@ -99,7 +99,7 @@
               </div>
             </td>
             <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
-            <td>{{count}}</td>
+            <td>{{formatInteger count}}</td>
           </tr>
         {{/eachTimerFlattenedOrdered}}
         </tbody>
@@ -131,7 +131,7 @@
               </div>
             </td>
             <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
-            <td>{{count}}</td>
+            <td>{{formatInteger count}}</td>
           </tr>
         {{/eachTimerOrdered}}
         </tbody>
@@ -165,7 +165,7 @@
               </div>
             </td>
             <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
-            <td>{{count}}</td>
+            <td>{{formatInteger count}}</td>
           </tr>
         {{/eachTimerFlattenedOrdered}}
         </tbody>
@@ -197,7 +197,7 @@
               </div>
             </td>
             <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
-            <td>{{count}}</td>
+            <td>{{formatInteger count}}</td>
           </tr>
         {{/eachTimerOrdered}}
         </tbody>
@@ -231,7 +231,7 @@
               </div>
             </td>
             <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
-            <td>{{count}}</td>
+            <td>{{formatInteger count}}</td>
           </tr>
         {{/each}}
         </tbody>

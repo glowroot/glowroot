@@ -177,6 +177,10 @@ HandlebarsRendering = (function () {
     }
   });
 
+  Handlebars.registerHelper('formatInteger', function (value) {
+    return value.toLocaleString();
+  });
+
   Handlebars.registerHelper('ifExistenceYes', function (existence, options) {
     if (existence === 'yes') {
       return options.fn(this);
@@ -1169,51 +1173,55 @@ HandlebarsRendering = (function () {
     }
   }
 
-  function formatMillis(number) {
-    if (Math.abs(number) < 0.0000005) {
+  function formatMillis(millis) {
+    if (Math.abs(millis) < 0.0000005) {
       // less than 0.5 nanoseconds
       return '0.0';
     }
-    if (Math.abs(number) < 0.000001) {
+    if (Math.abs(millis) < 0.000001) {
       // between 0.5 and 1 nanosecond (round up)
       return '0.000001';
     }
-    if (Math.abs(number) < 0.00001) {
+    if (Math.abs(millis) < 0.00001) {
       // less than 10 nanoseconds
-      return number.toPrecision(1);
+      return millis.toPrecision(1);
     }
-    if (Math.abs(number) < 1) {
-      return number.toPrecision(2);
+    if (Math.abs(millis) < 1) {
+      return millis.toPrecision(2);
     }
-    return number.toFixed(1);
+    return formatWithExactlyOneFractionalDigit(millis);
   }
 
-  function formatCount(number) {
-    if (number === undefined) {
+  function formatCount(count) {
+    if (count === undefined) {
       return '';
     }
-    if (Math.abs(number) < 0.1) {
-      return number.toPrecision(1);
+    if (Math.abs(count) < 0.1) {
+      return count.toPrecision(1);
     }
-    return number.toFixed(1);
+    return formatWithExactlyOneFractionalDigit(count);
   }
 
-  function formatPercent(number) {
-    if (number === 100) {
+  function formatPercent(percent) {
+    if (percent === 100) {
       return '100';
     }
-    if (number > 99.9) {
+    if (percent > 99.9) {
       // don't round up to 100 since that looks incorrect in UI
       return '99.9';
     }
-    if (number === 0) {
+    if (percent === 0) {
       return '0';
     }
-    if (number < 0.1) {
+    if (percent < 0.1) {
       // don't round down to 0 since that looks incorrect in UI
       return '0.1';
     }
-    return formatCount(number);
+    return formatCount(percent);
+  }
+
+  function formatWithExactlyOneFractionalDigit(value) {
+    return (Math.round(value * 10) / 10).toLocaleString(undefined, { minimumFractionDigits: 1 });
   }
 
   return {

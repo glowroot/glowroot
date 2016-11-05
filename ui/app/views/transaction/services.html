@@ -99,7 +99,7 @@
           {{serviceCall.totalDurationNanos / 1000000 | gtMillis}}
         </td>
         <td class="gt-query-other-column">
-          {{serviceCall.executionCount}}
+          {{serviceCall.executionCount | number}}
         </td>
         <td class="gt-query-other-column">
           {{serviceCall.timePerExecution | gtMillis}}

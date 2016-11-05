@@ -501,7 +501,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       } else {
         nonScaledValue = Math.round(value);
       }
-      return $filter('number')(nonScaledValue);
+      return nonScaledValue.toLocaleString(undefined, {maximumFractionDigits: 20});
     }
 
     var chartOptions = {
