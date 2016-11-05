@@ -528,7 +528,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
             tooltip += '</td></tr><tr><td style="padding-right: 10px;">Time:</td><td style="font-weight: 400;">';
             tooltip += moment(xval).format('h:mm:ss.SSS a (Z)') + '</td></tr>';
             tooltip += '<tr><td style="padding-right: 10px;">Value:</td><td style="font-weight: 600;">';
-            tooltip += $filter('number')(nonScaledValue) + gaugeUnits[label] + '</td></tr>';
+            tooltip += displaySixDigitsOfPrecision(nonScaledValue) + gaugeUnits[label] + '</td></tr>';
             tooltip += '</table>';
             return tooltip;
           }
