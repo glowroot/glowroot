@@ -851,7 +851,7 @@
                   interpreted from each module directory -->
                 <arg>-Astubs=${checker.stubs.dir}</arg>
                 <!-- not sure why, but \. doesn't work below in place of [.] -->
-                <arg>-AskipDefs=^org[.]glowroot[.]agent[.]fat[.]storage[.]model[.]|^org[.]glowroot[.]agent[.]it[.]harness[.]grpc[.]</arg>
+                <arg>-AskipDefs=^org[.]glowroot[.]agent[.]embedded[.]repo[.]model[.]|^org[.]glowroot[.]agent[.]it[.]harness[.]grpc[.]</arg>
               </compilerArgs>
             </configuration>
           </plugin>

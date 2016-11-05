@@ -44,11 +44,11 @@
            gt-width="40em"
            gt-required="loaded"
            gt-disabled="name"
-           ng-if="layout.fat"
+           ng-if="layout.embedded"
            class="gt-form-group-without-help-block">
       </div>
       <div class="form-group gt-form-group-without-help-block"
-           ng-if="layout.fat">
+           ng-if="layout.embedded">
         <label class="col-lg-3 control-label">
           Permissions
         </label>
@@ -315,7 +315,7 @@
           </div>
         </div>
       </div>
-      <fieldset ng-if="!layout.fat"
+      <fieldset ng-if="!layout.embedded"
                 style="padding-bottom: 20px;">
         <legend style="margin-bottom: 5px;">Role name</legend>
         <div gt-form-group
@@ -327,7 +327,7 @@
              class="gt-form-group-without-help-block">
         </div>
       </fieldset>
-      <fieldset ng-if="!layout.fat"
+      <fieldset ng-if="!layout.embedded"
                 style="padding-bottom: 25px;">
         <legend style="margin-bottom: 5px;">All agents</legend>
         <div class="col-lg-9 col-lg-offset-3">
@@ -564,7 +564,7 @@
           </div>
         </div>
       </fieldset>
-      <fieldset ng-if="!layout.fat"
+      <fieldset ng-if="!layout.embedded"
                 style="padding-bottom: 25px;">
         <legend style="margin-bottom: 5px;">Server administration</legend>
         <div class="col-lg-9 col-lg-offset-3">
@@ -855,7 +855,7 @@
           </button>
         </div>
       </fieldset>
-      <fieldset ng-if="!layout.fat && layout.adminEdit">
+      <fieldset ng-if="!layout.embedded && layout.adminEdit">
         <legend>Add {{page.permissionBlocks.length ? 'another' : 'an'}} agent specific permission block</legend>
         <button class="btn btn-default"
                 ng-click="addPermissionBlock()"
@@ -866,7 +866,7 @@
       <div class="form-group gt-form-buttons"
            ng-if="layout.adminEdit">
         <div class="col-lg-offset-3 col-lg-9"
-             ng-class="{'gt-sometimes-legend-padding': !layout.fat}">
+             ng-class="{'gt-sometimes-legend-padding': !layout.embedded}">
           <div gt-button-group>
             <div gt-button
                  gt-label="{{config.version ? 'Save changes' : 'Add'}}"

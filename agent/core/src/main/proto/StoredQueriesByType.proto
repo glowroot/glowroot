@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package org_glowroot_agent_fat_storage_model;
 
-option java_package = "org.glowroot.agent.fat.storage.model";
+option java_package = "org.glowroot.agent.embedded.repo.model";
 
 option java_outer_classname = "Stored";
 

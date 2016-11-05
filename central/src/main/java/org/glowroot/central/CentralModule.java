@@ -202,8 +202,8 @@ class CentralModule {
             }
 
             uiModule = new CreateUiModuleBuilder()
-                    .fat(false)
-                    .offlineViewer(false)
+                    .embedded(false)
+                    .offline(false)
                     .clock(clock)
                     .logDir(new File("."))
                     .liveJvmService(new LiveJvmServiceImpl(downstreamService))

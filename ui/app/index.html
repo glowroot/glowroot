@@ -116,7 +116,7 @@
                gt-display="Config"
                gt-item-name="agentConfig"
                gt-url="config/transaction{{configQueryString()}}"
-               ng-if="!layout.fat && layout.showNavbarConfig">
+               ng-if="!layout.embedded && layout.showNavbarConfig">
           </div>
         </ul>
         <ul class="nav navbar-nav navbar-right"
@@ -125,7 +125,7 @@
                gt-display=""
                gt-item-name="gears"
                gt-url="{{gearIconUrl()}}"
-               ng-if="layout.adminView || layout.fat && layout.showNavbarConfig || layout.loggedIn && !layout.ldap">
+               ng-if="layout.adminView || layout.embedded && layout.showNavbarConfig || layout.loggedIn && !layout.ldap">
             <i title="{{gearIconNavbarTitle()}}"
                class="fa fa-gears"
                style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -1px;"></i>

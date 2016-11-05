@@ -399,7 +399,7 @@ glowroot.controller('AdminRoleCtrl', [
             onNewData(data);
           })
           .error(httpErrors.handler($scope));
-    } else if (!$scope.layout.fat) {
+    } else if (!$scope.layout.embedded) {
       // can't just use $scope.layout.agentRollups here since that list is filtered by current user's permission
       $http.get('backend/admin/all-agent-rollups')
           .success(function (data) {

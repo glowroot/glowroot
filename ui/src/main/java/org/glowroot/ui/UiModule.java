@@ -45,8 +45,8 @@ public class UiModule {
 
     @Builder.Factory
     public static UiModule createUiModule(
-            boolean fat,
-            boolean offlineViewer,
+            boolean embedded,
+            boolean offline,
             @Nullable Ticker ticker, // @Nullable to deal with shading from glowroot server
             Clock clock,
             File logDir,
@@ -65,10 +65,10 @@ public class UiModule {
             int numWorkerThreads,
             String version) throws Exception {
 
-        LayoutService layoutService = new LayoutService(fat, offlineViewer, version,
+        LayoutService layoutService = new LayoutService(embedded, offline, version,
                 configRepository, agentRepository, transactionTypeRepository);
         HttpSessionManager httpSessionManager =
-                new HttpSessionManager(fat, offlineViewer, configRepository, clock, layoutService);
+                new HttpSessionManager(embedded, offline, configRepository, clock, layoutService);
         IndexHtmlHttpService indexHtmlHttpService = new IndexHtmlHttpService(layoutService);
         LayoutHttpService layoutHttpService = new LayoutHttpService(layoutService);
         TransactionCommonService transactionCommonService = new TransactionCommonService(
@@ -93,8 +93,8 @@ public class UiModule {
         GaugeValueJsonService gaugeValueJsonService = new GaugeValueJsonService(
                 gaugeValueRepository, rollupLevelService, agentRepository, configRepository);
         AlertConfigJsonService alertJsonService = new AlertConfigJsonService(configRepository);
-        AdminJsonService adminJsonService = new AdminJsonService(fat, configRepository, repoAdmin,
-                liveAggregateRepository, new MailService());
+        AdminJsonService adminJsonService = new AdminJsonService(embedded, configRepository,
+                repoAdmin, liveAggregateRepository, new MailService());
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(transactionJsonService);
@@ -103,7 +103,7 @@ public class UiModule {
         jsonServices.add(errorJsonService);
         jsonServices.add(configJsonService);
         jsonServices.add(new UserConfigJsonService(configRepository));
-        jsonServices.add(new RoleConfigJsonService(fat, configRepository, agentRepository));
+        jsonServices.add(new RoleConfigJsonService(embedded, configRepository, agentRepository));
         jsonServices.add(gaugeValueJsonService);
         jsonServices.add(new JvmJsonService(agentRepository, liveJvmService));
         jsonServices.add(new GaugeConfigJsonService(configRepository, liveJvmService));

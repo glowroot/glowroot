@@ -145,7 +145,7 @@ public class RoleDao {
     private static ImmutableRoleConfig buildRole(Row row) {
         int i = 0;
         return ImmutableRoleConfig.builder()
-                .fat(false)
+                .embedded(false)
                 .name(checkNotNull(row.getString(i++)))
                 .permissions(row.getSet(i++, String.class))
                 .build();

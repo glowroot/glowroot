@@ -107,7 +107,7 @@ glowroot.run([
       $rootScope.agentRollup = $location.search()['agent-rollup'] || $rootScope.agentId;
       if ($rootScope.layout) {
         // layout doesn't exist on first page load when running under grunt serve
-        if ($rootScope.layout.fat || $rootScope.agentRollup) {
+        if ($rootScope.layout.embedded || $rootScope.agentRollup) {
           var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollup];
           $rootScope.agentPermissions = agentRollup ? agentRollup.permissions : undefined;
         } else {
@@ -117,7 +117,7 @@ glowroot.run([
     });
 
     $rootScope.agentQueryString = function () {
-      if ($rootScope.layout.fat) {
+      if ($rootScope.layout.embedded) {
         return '';
       }
       if ($rootScope.agentId) {
@@ -244,7 +244,7 @@ glowroot.run([
         }
         agentRollup.display = indent + name;
       });
-      if ($rootScope.layout.fat || $rootScope.agentRollup) {
+      if ($rootScope.layout.embedded || $rootScope.agentRollup) {
         var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollup];
         $rootScope.agentPermissions = agentRollup ? agentRollup.permissions : undefined;
       } else {

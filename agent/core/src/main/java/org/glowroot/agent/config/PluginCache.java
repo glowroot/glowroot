@@ -59,7 +59,7 @@ public abstract class PluginCache {
     public abstract ImmutableList<File> pluginJars();
     public abstract ImmutableList<PluginDescriptor> pluginDescriptors();
 
-    public static PluginCache create(@Nullable File glowrootJarFile, boolean offlineViewer)
+    public static PluginCache create(@Nullable File glowrootJarFile, boolean offline)
             throws Exception {
         ImmutablePluginCache.Builder builder = ImmutablePluginCache.builder();
         List<URL> descriptorURLs = Lists.newArrayList();
@@ -76,7 +76,7 @@ public abstract class PluginCache {
         }
         // also add descriptors on the class path (this is primarily for integration tests)
         descriptorURLs.addAll(getResources("META-INF/glowroot.plugin.json"));
-        if (offlineViewer) {
+        if (offline) {
             builder.addAllPluginDescriptors(createForOfflineViewer(descriptorURLs));
         } else {
             builder.addAllPluginDescriptors(readPluginDescriptors(descriptorURLs));

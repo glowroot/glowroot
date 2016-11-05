@@ -30,11 +30,11 @@ glowroot.controller('JvmCtrl', [
         // this is ok, under grunt serve and layout hasn't loaded yet
         return true;
       }
-      return $scope.layout.agentRollups.length === 1 || $scope.layout.fat;
+      return $scope.layout.agentRollups.length === 1 || $scope.layout.embedded;
     };
 
     $scope.hideMainContent = function () {
-      return !$scope.agentRollup && !$scope.agentId && !$scope.layout.fat;
+      return !$scope.agentRollup && !$scope.agentId && !$scope.layout.embedded;
     };
 
     $scope.currentUrl = function () {

@@ -31,7 +31,7 @@ glowroot.controller('TransactionCtrl', [
     document.title = headerDisplay + ' \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = shortName;
 
-    if ($scope.layout.fat) {
+    if ($scope.layout.embedded) {
       $scope.headerDisplay = headerDisplay;
     } else {
       $scope.headerDisplay = $scope.agentRollup || '<agent>';
@@ -42,7 +42,7 @@ glowroot.controller('TransactionCtrl', [
     $scope.range = {};
 
     $scope.hideAgentRollupDropdown = function () {
-      return $scope.layout.agentRollups.length === 1 || $scope.layout.fat;
+      return $scope.layout.agentRollups.length === 1 || $scope.layout.embedded;
     };
 
     $scope.hideTransactionTypeDropdown = function () {
@@ -63,7 +63,7 @@ glowroot.controller('TransactionCtrl', [
     };
 
     $scope.hideMainContent = function () {
-      return (!$scope.agentRollup && !$scope.layout.fat) || !$scope.transactionType;
+      return (!$scope.agentRollup && !$scope.layout.embedded) || !$scope.transactionType;
     };
 
     $scope.headerQueryString = function (agentRollup, transactionType) {
@@ -79,7 +79,7 @@ glowroot.controller('TransactionCtrl', [
       // same transaction name may not exist when switching transaction types and/or switching agent rollups
       delete search['transaction-name'];
       var query = {};
-      if (!$scope.layout.fat) {
+      if (!$scope.layout.embedded) {
         if (agentRollupObj.leaf) {
           query['agent-id'] = agentRollup;
         } else {
@@ -166,7 +166,7 @@ glowroot.controller('TransactionCtrl', [
 
     $scope.buildQueryObject = function (baseQuery, allowSeconds) {
       var query = baseQuery || angular.copy($location.search());
-      if (!$scope.layout.fat) {
+      if (!$scope.layout.embedded) {
         var agentRollupObj = $scope.layout.agentRollups[$scope.agentRollup];
         if (agentRollupObj) {
           if (agentRollupObj.leaf) {

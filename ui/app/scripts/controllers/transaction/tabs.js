@@ -103,7 +103,7 @@ glowroot.controller('TransactionTabCtrl', [
       if (!$scope.agentPermissions || !$scope.agentPermissions[shortName].traces) {
         return;
       }
-      if ((!$scope.agentRollup && !$scope.layout.fat) || !$scope.transactionType) {
+      if ((!$scope.agentRollup && !$scope.layout.embedded) || !$scope.transactionType) {
         $scope.traceCount = 0;
         return;
       }

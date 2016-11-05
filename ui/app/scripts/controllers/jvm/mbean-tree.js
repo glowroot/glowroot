@@ -65,7 +65,7 @@ glowroot.controller('JvmMBeanTreeCtrl', [
 
     function updateLocation() {
       var query = {};
-      if (!$scope.layout.fat) {
+      if (!$scope.layout.embedded) {
         query['agent-id'] = $scope.agentId;
       }
       query.expanded = expandedObjectNames;

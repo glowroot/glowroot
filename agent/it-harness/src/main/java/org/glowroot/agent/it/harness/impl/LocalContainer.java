@@ -61,8 +61,8 @@ public class LocalContainer implements Container {
         return new LocalContainer(baseDir, false, ImmutableMap.<String, String>of());
     }
 
-    public LocalContainer(@Nullable File baseDir, boolean fat, Map<String, String> extraProperties)
-            throws Exception {
+    public LocalContainer(@Nullable File baseDir, boolean embedded,
+            Map<String, String> extraProperties) throws Exception {
         if (baseDir == null) {
             this.baseDir = TempDirs.createTempDir("glowroot-test-basedir");
             deleteBaseDirOnClose = true;
@@ -74,7 +74,7 @@ public class LocalContainer implements Container {
         boolean pointingToCentral = extraProperties.containsKey("glowroot.collector.host");
         final Map<String, String> properties = Maps.newHashMap();
         properties.put("glowroot.base.dir", this.baseDir.getAbsolutePath());
-        if (fat || pointingToCentral) {
+        if (embedded || pointingToCentral) {
             traceCollector = null;
             server = null;
         } else {

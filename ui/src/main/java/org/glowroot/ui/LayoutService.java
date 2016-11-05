@@ -48,18 +48,18 @@ class LayoutService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final boolean fat;
-    private final boolean offlineViewer;
+    private final boolean embedded;
+    private final boolean offline;
     private final String version;
     private final ConfigRepository configRepository;
     private final AgentRepository agentRepository;
     private final TransactionTypeRepository transactionTypeRepository;
 
-    LayoutService(boolean fat, boolean offlineViewer, String version,
+    LayoutService(boolean embedded, boolean offline, String version,
             ConfigRepository configRepository, AgentRepository agentRepository,
             TransactionTypeRepository transactionTypeRepository) {
-        this.fat = fat;
-        this.offlineViewer = offlineViewer;
+        this.embedded = embedded;
+        this.offline = offline;
         this.version = version;
         this.configRepository = configRepository;
         this.agentRepository = agentRepository;
@@ -77,7 +77,7 @@ class LayoutService {
     }
 
     private Layout buildLayout(Authentication authentication) throws Exception {
-        if (fat) {
+        if (embedded) {
             return buildLayoutFat(authentication);
         } else {
             return buildLayoutCentral(authentication);
@@ -95,7 +95,7 @@ class LayoutService {
         boolean showNavbarError = permissions.error().hasSomeAccess();
         boolean showNavbarJvm = permissions.jvm().hasSomeAccess();
         boolean showNavbarConfig = permissions.config().view();
-        // a couple of special cases for fat agent
+        // a couple of special cases for embedded ui
         UiConfig uiConfig = checkNotNull(configRepository.getUiConfig(AGENT_ID));
         String defaultDisplayedTransactionType =
                 uiConfig.getDefaultDisplayedTransactionType();
@@ -133,8 +133,8 @@ class LayoutService {
 
     private ImmutableLayout createNoAccessLayout(Authentication authentication) {
         return ImmutableLayout.builder()
-                .fat(fat)
-                .offlineViewer(offlineViewer)
+                .embedded(embedded)
+                .offline(offline)
                 .footerMessage("Glowroot version " + version)
                 .loginEnabled(true)
                 .gaugeCollectionIntervalMillis(0)
@@ -158,10 +158,10 @@ class LayoutService {
             rollupExpirationMillis.add(HOURS.toMillis(hours));
         }
         return ImmutableLayout.builder()
-                .fat(fat)
-                .offlineViewer(offlineViewer)
+                .embedded(embedded)
+                .offline(offline)
                 .footerMessage("Glowroot version " + version)
-                .loginEnabled(offlineViewer ? false
+                .loginEnabled(offline ? false
                         : configRepository.namedUsersExist()
                                 || !configRepository.getLdapConfig().host().isEmpty())
                 .addAllRollupConfigs(configRepository.getRollupConfigs())
@@ -348,8 +348,8 @@ class LayoutService {
     @Value.Immutable
     abstract static class Layout {
 
-        abstract boolean fat();
-        abstract boolean offlineViewer();
+        abstract boolean embedded();
+        abstract boolean offline();
         abstract String footerMessage();
         abstract boolean loginEnabled();
         abstract ImmutableList<RollupConfig> rollupConfigs();

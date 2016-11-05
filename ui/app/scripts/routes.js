@@ -28,7 +28,8 @@ glowroot.config([
             // no need to add transaction-type to url
             return;
           }
-          var hasAgent = $location.search()['agent-id'] || $location.search()['agent-rollup'] || $rootScope.layout.fat;
+          var hasAgent = $location.search()['agent-id'] || $location.search()['agent-rollup']
+              || $rootScope.layout.embedded;
           if (hasAgent && needsTransactionType && !$location.search()['transaction-type']) {
             $location.search('transaction-type', $rootScope.defaultTransactionType());
             $location.replace();
@@ -48,7 +49,7 @@ glowroot.config([
               return;
             }
             var hasAgent = $location.search()['agent-id'] || $location.search()['agent-rollup']
-                || $rootScope.layout.fat;
+                || $rootScope.layout.embedded;
             if (hasAgent && needsTransactionType && !$location.search()['transaction-type']) {
               $location.search('transaction-type', $rootScope.defaultTransactionType());
               $location.replace();
@@ -72,7 +73,7 @@ glowroot.config([
       } else if ($rootScope.layout.showNavbarError) {
         return 'error/messages';
       } else if ($rootScope.layout.showNavbarJvm) {
-        if ($rootScope.layout.fat) {
+        if ($rootScope.layout.embedded) {
           var jvmPermissions = $rootScope.layout.agentRollups[''].permissions.jvm;
           if (jvmPermissions.gauges) {
             return 'jvm/gauges';

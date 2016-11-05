@@ -56,8 +56,8 @@ class HttpSessionManager {
     private static final Logger logger = LoggerFactory.getLogger(HttpSessionManager.class);
     private static final Logger auditLogger = LoggerFactory.getLogger("audit");
 
-    private final boolean fat;
-    private final boolean offlineViewer;
+    private final boolean embedded;
+    private final boolean offline;
     private final ConfigRepository configRepository;
     private final Clock clock;
     private final LayoutService layoutService;
@@ -65,10 +65,10 @@ class HttpSessionManager {
     private final SecureRandom secureRandom = new SecureRandom();
     private final Map<String, Session> sessions = Maps.newConcurrentMap();
 
-    HttpSessionManager(boolean fat, boolean offlineViewer, ConfigRepository configRepository,
+    HttpSessionManager(boolean embedded, boolean offline, ConfigRepository configRepository,
             Clock clock, LayoutService layoutService) {
-        this.fat = fat;
-        this.offlineViewer = offlineViewer;
+        this.embedded = embedded;
+        this.offline = offline;
         this.configRepository = configRepository;
         this.clock = clock;
         this.layoutService = layoutService;
@@ -132,7 +132,7 @@ class HttpSessionManager {
     }
 
     Authentication getAuthentication(HttpRequest request) {
-        if (offlineViewer) {
+        if (offline) {
             return getOfflineViewerAuthentication();
         }
         String sessionId = getSessionId(request);
@@ -170,8 +170,8 @@ class HttpSessionManager {
         UserConfig userConfig = getUserConfigCaseInsensitive("anonymous");
         if (userConfig == null) {
             return ImmutableAuthentication.builder()
-                    .fat(fat)
-                    .offlineViewer(false)
+                    .embedded(embedded)
+                    .offline(false)
                     .anonymous(true)
                     .ldap(false)
                     .caseAmbiguousUsername("anonymous")
@@ -201,8 +201,8 @@ class HttpSessionManager {
 
     private Authentication getAuthentication(String username, Set<String> roles, boolean ldap) {
         return ImmutableAuthentication.builder()
-                .fat(fat)
-                .offlineViewer(false)
+                .embedded(embedded)
+                .offline(false)
                 .anonymous(username.equalsIgnoreCase("anonymous"))
                 .ldap(ldap)
                 .caseAmbiguousUsername(username)
@@ -213,8 +213,8 @@ class HttpSessionManager {
 
     private Authentication getOfflineViewerAuthentication() {
         return ImmutableAuthentication.builder()
-                .fat(true) // offline viewer only applies to fat
-                .offlineViewer(true)
+                .embedded(true) // offline only applies to embedded
+                .offline(true)
                 .anonymous(true)
                 .ldap(false)
                 .caseAmbiguousUsername("anonymous")
@@ -307,8 +307,8 @@ class HttpSessionManager {
     @Value.Immutable
     abstract static class Authentication {
 
-        abstract boolean fat();
-        abstract boolean offlineViewer();
+        abstract boolean embedded();
+        abstract boolean offline();
         abstract boolean anonymous();
         abstract boolean ldap();
         abstract String caseAmbiguousUsername(); // the case is exactly as user entered during login
@@ -326,7 +326,7 @@ class HttpSessionManager {
 
         boolean isAgentPermitted(String agentRollup, String permission) {
             checkState(permission.startsWith("agent:"));
-            if (offlineViewer()) {
+            if (offline()) {
                 return !permission.startsWith("agent:config:edit:");
             }
             if (permission.equals("agent:trace")) {
@@ -339,7 +339,7 @@ class HttpSessionManager {
 
         boolean isAdminPermitted(String permission) {
             checkState(permission.startsWith("admin:"));
-            if (offlineViewer()) {
+            if (offline()) {
                 return permission.equals("admin:view") || permission.startsWith("admin:view:");
             }
             return isPermitted(SimplePermission.create(permission));

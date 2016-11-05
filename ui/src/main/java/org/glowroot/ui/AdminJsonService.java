@@ -76,7 +76,7 @@ class AdminJsonService {
     private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final boolean fat;
+    private final boolean embedded;
     private final ConfigRepository configRepository;
     private final RepoAdmin repoAdmin;
     private final LiveAggregateRepository liveAggregateRepository;
@@ -84,9 +84,9 @@ class AdminJsonService {
 
     private volatile @MonotonicNonNull HttpServer httpServer;
 
-    AdminJsonService(boolean fat, ConfigRepository configRepository, RepoAdmin repoAdmin,
+    AdminJsonService(boolean embedded, ConfigRepository configRepository, RepoAdmin repoAdmin,
             LiveAggregateRepository liveAggregateRepository, MailService mailService) {
-        this.fat = fat;
+        this.embedded = embedded;
         this.configRepository = configRepository;
         this.repoAdmin = repoAdmin;
         this.liveAggregateRepository = liveAggregateRepository;
@@ -124,7 +124,7 @@ class AdminJsonService {
 
     @GET(path = "/backend/admin/storage", permission = "admin:view:storage")
     String getStorageConfig() throws Exception {
-        if (fat) {
+        if (embedded) {
             FatStorageConfig config = configRepository.getFatStorageConfig();
             return mapper.writeValueAsString(FatStorageConfigDto.create(config));
         } else {
@@ -172,7 +172,7 @@ class AdminJsonService {
 
     @POST(path = "/backend/admin/storage", permission = "admin:edit:storage")
     String updateStorageConfig(@BindRequest String content) throws Exception {
-        if (fat) {
+        if (embedded) {
             FatStorageConfigDto configDto =
                     mapper.readValue(content, ImmutableFatStorageConfigDto.class);
             try {

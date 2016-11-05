@@ -69,7 +69,7 @@ glowroot.controller('TracesCtrl', [
     });
 
     function refreshChart(deferred) {
-      if ((!$scope.agentRollup && !$scope.layout.fat) || !$scope.transactionType) {
+      if ((!$scope.agentRollup && !$scope.layout.embedded) || !$scope.transactionType) {
         return;
       }
       var from = appliedFilter.from;

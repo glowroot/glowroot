@@ -494,7 +494,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    // sortOrder and limit are only used by fat agent H2 repository, while the central cassandra
+    // sortOrder and limit are only used by embedded H2 repository, while the central cassandra
     // repository which currently has to pull in all records anyways just delegates ordering and
     // limit to TransactionSummaryCollector
     //
@@ -532,7 +532,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    // sortOrder and limit are only used by fat agent H2 repository, while the central cassandra
+    // sortOrder and limit are only used by embedded H2 repository, while the central cassandra
     // repository which currently has to pull in all records anyways just delegates ordering and
     // limit to TransactionErrorSummaryCollector
     //

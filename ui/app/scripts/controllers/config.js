@@ -22,7 +22,7 @@ glowroot.controller('ConfigCtrl', [
   function ($scope, $location) {
     // \u00b7 is &middot;
     document.title = 'Configuration \u00b7 Glowroot';
-    if ($scope.layout.fat || $location.path().indexOf('/admin/') === 0
+    if ($scope.layout.embedded || $location.path().indexOf('/admin/') === 0
         || $location.path().indexOf('/change-password') === 0) {
       $scope.$parent.activeNavbarItem = 'gears';
     } else {
@@ -38,17 +38,17 @@ glowroot.controller('ConfigCtrl', [
     };
 
     $scope.hideMainContent = function () {
-      return !$scope.agentRollup && !$scope.agentId && !$scope.layout.fat;
+      return !$scope.agentRollup && !$scope.agentId && !$scope.layout.embedded;
     };
 
     $scope.navbarTitle = function () {
       if (!$scope.layout) {
         return '';
       }
-      if ($scope.layout.fat
+      if ($scope.layout.embedded
           && ($scope.agentPermissions && $scope.agentPermissions.config.view || $scope.layout.adminView)) {
         return 'Configuration';
-      } else if (!$scope.layout.fat && $scope.layout.adminView) {
+      } else if (!$scope.layout.embedded && $scope.layout.adminView) {
         return 'Administration';
       } else {
         return 'Profile';
@@ -56,7 +56,7 @@ glowroot.controller('ConfigCtrl', [
     };
 
     $scope.showConfigSidebarItems = function () {
-      if ($scope.layout.fat) {
+      if ($scope.layout.embedded) {
         return $scope.agentPermissions && $scope.agentPermissions.config.view;
       } else {
         return $scope.activeNavbarItem === 'agentConfig';

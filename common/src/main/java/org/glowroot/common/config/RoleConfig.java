@@ -34,7 +34,7 @@ public abstract class RoleConfig {
 
     @JsonIgnore
     @Value.Default
-    public boolean fat() {
+    public boolean embedded() {
         return true;
     }
 
@@ -43,7 +43,7 @@ public abstract class RoleConfig {
     public ImmutableSet<SimplePermission> simplePermissions() {
         Set<SimplePermission> simplePermissions = Sets.newHashSet();
         for (String permission : permissions()) {
-            if (fat()) {
+            if (embedded()) {
                 simplePermissions.add(SimplePermission.create("", permission));
             } else {
                 simplePermissions.add(SimplePermission.create(permission));

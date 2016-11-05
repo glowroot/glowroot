@@ -25,7 +25,7 @@
     <div ng-form
          class="form-horizontal"
          name="formCtrl">
-      <fieldset ng-if="layout.fat">
+      <fieldset ng-if="layout.embedded">
         <legend>data.h2.db</legend>
         <div gt-form-group
              gt-label="Response time and JVM gauge tabs (1&nbsp;minute&nbsp;interval&nbsp;data)"
@@ -123,7 +123,7 @@
           </div>
         </div>
       </fieldset>
-      <fieldset ng-if="layout.fat">
+      <fieldset ng-if="layout.embedded">
         <legend>*.capped.db</legend>
         <div gt-form-group
              gt-label="Queries, service calls and continuous profiling tab data (1&nbsp;minute&nbsp;interval&nbsp;data)"
@@ -208,7 +208,7 @@
           </div>
         </div>
       </fieldset>
-      <div ng-if="!layout.fat">
+      <div ng-if="!layout.embedded">
         <div gt-form-group
              gt-label="1&nbsp;minute&nbsp;interval&nbsp;data"
              gt-model="page.rollupExpirationDays[0]"
@@ -324,11 +324,11 @@
                  gt-dont-validate-form="true"
                  gt-confirm-header="Delete all data?"
                  gt-confirm-body="This will delete all captured data, including aggregated transaction data, traces and gauge data."
-                 ng-show="layout.fat"
+                 ng-show="layout.embedded"
                  class="gt-inline-block">
             </div>
           </div>
-          <div class="help-block" ng-if="!layout.fat">
+          <div class="help-block" ng-if="!layout.embedded">
             Updated expiration settings only apply to data collected from this point forward. Existing data is still
             tagged with the expiration settings in effect at the time the data was captured since using
             <a href="https://docs.datastax.com/en/cql/3.1/cql/cql_using/use_expire_c.html">Cassandra TTL</a>

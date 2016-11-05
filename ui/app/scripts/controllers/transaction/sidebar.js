@@ -88,7 +88,7 @@ glowroot.controller('TransactionSidebarCtrl', [
     });
 
     function updateSummaries(initialLoading, moreLoading) {
-      if ((!$scope.agentRollup && !$scope.layout.fat) || !$scope.transactionType) {
+      if ((!$scope.agentRollup && !$scope.layout.embedded) || !$scope.transactionType) {
         $scope.summariesNoSearch = true;
         return;
       }

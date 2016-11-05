@@ -55,13 +55,13 @@ class RoleConfigJsonService {
         }
     };
 
-    private final boolean fat;
+    private final boolean embedded;
     private final ConfigRepository configRepository;
     private final AgentRepository agentRepository;
 
-    RoleConfigJsonService(boolean fat, ConfigRepository configRepository,
+    RoleConfigJsonService(boolean embedded, ConfigRepository configRepository,
             AgentRepository agentRepository) {
-        this.fat = fat;
+        this.embedded = embedded;
         this.configRepository = configRepository;
         this.agentRepository = agentRepository;
     }
@@ -89,7 +89,7 @@ class RoleConfigJsonService {
 
     @POST(path = "/backend/admin/roles/add", permission = "admin:edit:role")
     String addRole(@BindRequest RoleConfigDto roleConfigDto) throws Exception {
-        RoleConfig roleConfig = roleConfigDto.convert(fat);
+        RoleConfig roleConfig = roleConfigDto.convert(embedded);
         try {
             configRepository.insertRoleConfig(roleConfig);
         } catch (DuplicateRoleNameException e) {
@@ -102,7 +102,7 @@ class RoleConfigJsonService {
 
     @POST(path = "/backend/admin/roles/update", permission = "admin:edit:role")
     String updateRole(@BindRequest RoleConfigDto roleConfigDto) throws Exception {
-        RoleConfig roleConfig = roleConfigDto.convert(fat);
+        RoleConfig roleConfig = roleConfigDto.convert(embedded);
         String version = roleConfigDto.version().get();
         try {
             configRepository.updateRoleConfig(roleConfig, version);
@@ -125,8 +125,8 @@ class RoleConfigJsonService {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }
         ImmutableRoleConfigResponse.Builder response = ImmutableRoleConfigResponse.builder()
-                .config(RoleConfigDto.create(roleConfig, fat));
-        if (!fat) {
+                .config(RoleConfigDto.create(roleConfig, embedded));
+        if (!embedded) {
             response.allAgentRollups(getFlattenedAgentRollups());
         }
         return mapper.writeValueAsString(response.build());
@@ -193,11 +193,11 @@ class RoleConfigJsonService {
         abstract ImmutableList<ImmutableRolePermissionBlock> permissionBlocks();
         abstract Optional<String> version(); // absent for insert operations
 
-        private RoleConfig convert(boolean fat) {
+        private RoleConfig convert(boolean embedded) {
             ImmutableRoleConfig.Builder builder = ImmutableRoleConfig.builder()
-                    .fat(fat)
+                    .embedded(embedded)
                     .name(name());
-            if (fat) {
+            if (embedded) {
                 builder.addAllPermissions(permissions());
             } else {
                 for (String permission : permissions()) {
@@ -220,10 +220,10 @@ class RoleConfigJsonService {
             return builder.build();
         }
 
-        private static RoleConfigDto create(RoleConfig roleConfig, boolean fat) {
+        private static RoleConfigDto create(RoleConfig roleConfig, boolean embedded) {
             ImmutableRoleConfigDto.Builder builder = ImmutableRoleConfigDto.builder()
                     .name(roleConfig.name());
-            if (fat) {
+            if (embedded) {
                 builder.addAllPermissions(roleConfig.permissions());
             } else {
                 Multimap<List<String>, String> permissionBlocks = HashMultimap.create();

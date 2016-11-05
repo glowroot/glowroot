@@ -104,7 +104,7 @@ public class JavaagentContainer implements Container {
         return new JavaagentContainer(null, false, extraJvmArgs);
     }
 
-    public JavaagentContainer(@Nullable File baseDir, boolean fat, List<String> extraJvmArgs)
+    public JavaagentContainer(@Nullable File baseDir, boolean embedded, List<String> extraJvmArgs)
             throws Exception {
         if (baseDir == null) {
             this.baseDir = TempDirs.createTempDir("glowroot-test-basedir");
@@ -140,7 +140,7 @@ public class JavaagentContainer implements Container {
             }
         }
         int collectorPort;
-        if (fat || pointingToCentral) {
+        if (embedded || pointingToCentral) {
             collectorPort = 0;
             traceCollector = null;
             server = null;
