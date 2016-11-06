@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.glowroot.agent.plugin.api.Agent;
@@ -255,22 +254,28 @@ public class ExecutorAspect {
             return runnableMixin.glowroot$getAuxContext() != null;
         }
         @OnBefore
-        public static TraceEntry onBefore(@BindReceiver Runnable runnable) {
+        public static @Nullable TraceEntry onBefore(@BindReceiver Runnable runnable) {
             RunnableEtcMixin runnableMixin = (RunnableEtcMixin) runnable;
-            @SuppressWarnings("nullness") // just checked above in isEnabled()
-            @Nonnull
             AuxThreadContext auxContext = runnableMixin.glowroot$getAuxContext();
+            if (auxContext == null) {
+                // this is unlikely (since checked in @IsEnabled) but possible under concurrency
+                return null;
+            }
             runnableMixin.glowroot$setAuxContext(null);
             return auxContext.start();
         }
         @OnReturn
-        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
-            traceEntry.end();
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.end();
+            }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithError(t);
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.endWithError(t);
+            }
         }
     }
 
@@ -289,22 +294,28 @@ public class ExecutorAspect {
             return callableMixin.glowroot$getAuxContext() != null;
         }
         @OnBefore
-        public static TraceEntry onBefore(@BindReceiver Callable<?> callable) {
+        public static @Nullable TraceEntry onBefore(@BindReceiver Callable<?> callable) {
             RunnableEtcMixin callableMixin = (RunnableEtcMixin) callable;
-            @SuppressWarnings("nullness") // just checked above in isEnabled()
-            @Nonnull
             AuxThreadContext auxContext = callableMixin.glowroot$getAuxContext();
+            if (auxContext == null) {
+                // this is unlikely (since checked in @IsEnabled) but possible under concurrency
+                return null;
+            }
             callableMixin.glowroot$setAuxContext(null);
             return auxContext.start();
         }
         @OnReturn
-        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
-            traceEntry.end();
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.end();
+            }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithError(t);
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.endWithError(t);
+            }
         }
     }
 
@@ -323,22 +334,28 @@ public class ExecutorAspect {
             return taskMixin.glowroot$getAuxContext() != null;
         }
         @OnBefore
-        public static TraceEntry onBefore(@BindReceiver Object task) {
+        public static @Nullable TraceEntry onBefore(@BindReceiver Object task) {
             RunnableEtcMixin taskMixin = (RunnableEtcMixin) task;
-            @SuppressWarnings("nullness") // just checked above in isEnabled()
-            @Nonnull
             AuxThreadContext auxContext = taskMixin.glowroot$getAuxContext();
+            if (auxContext == null) {
+                // this is unlikely (since checked in @IsEnabled) but possible under concurrency
+                return null;
+            }
             taskMixin.glowroot$setAuxContext(null);
             return auxContext.start();
         }
         @OnReturn
-        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
-            traceEntry.end();
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.end();
+            }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithError(t);
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.endWithError(t);
+            }
         }
     }
 
