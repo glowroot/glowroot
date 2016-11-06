@@ -47,9 +47,6 @@ public class ResultSetAspect {
         // across threads and this can piggyback
         private @Nullable QueryEntry glowroot$lastQueryEntry;
 
-        // this is always null for sync queries, and always non-null for async queries
-        private @Nullable Timer glowroot$lastNonAsyncTimer;
-
         @Override
         public @Nullable QueryEntry glowroot$getLastQueryEntry() {
             return glowroot$lastQueryEntry;
