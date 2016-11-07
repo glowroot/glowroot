@@ -24,11 +24,11 @@ public interface QueryEntry extends TraceEntry {
      * Example of query and subsequent iterating over results which goes back to database and pulls
      * more results.
      * 
-     * Special note for async trace entries (those created by
+     * Important note for async trace entries (those created by
      * {@link ThreadContext#startAsyncTraceEntry(MessageSupplier, TimerName)} and
      * {@link ThreadContext#startAsyncQueryEntry(String, String, QueryMessageSupplier, TimerName)}):
-     * this method is designed to be (and must be) called by the same thread that created the async
-     * trace entry.
+     * this method should not be used by a thread other than the one that created the async trace
+     * entry.
      */
     Timer extend();
 

@@ -3,14 +3,6 @@
   "id": "cassandra",
   "properties": [
     {
-      "name": "captureResultSetNavigate",
-      "type": "boolean",
-      "default": true,
-      "label": "ResultSet navigation",
-      "checkboxLabel": "Capture timings for ResultSet navigation",
-      "description": "Capture timings for executions of ResultSet.one()/all() to read the next row in a result set. This defaults to true since the timing for this timer is a good indication of query fetch size issues and cassandra latency, but it can be disabled if it is common to return millions of rows and the overhead of System.nanoTime() becomes relevant."
-    },
-    {
       "name": "stackTraceThresholdMillis",
       "type": "double",
       "default": 1000.0,
