@@ -61,7 +61,7 @@ class ThreadDumpService {
         List<ThreadContextImpl> activeThreadContexts = Lists.newArrayList();
         for (Transaction transaction : transactionRegistry.getTransactions()) {
             ThreadContextImpl mainThreadContext = transaction.getMainThreadContext();
-            if (!mainThreadContext.isCompleted()) {
+            if (mainThreadContext.isActive()) {
                 activeThreadContexts.add(mainThreadContext);
             }
             activeThreadContexts.addAll(transaction.getActiveAuxThreadContexts());
@@ -87,7 +87,7 @@ class ThreadDumpService {
         // so that main thread context will always appear first within a given matched transaction,
         // and its auxiliary threads will be then sorted by age
         for (ThreadContextImpl threadContext : activeThreadContexts) {
-            if (threadContext.isCompleted()) {
+            if (!threadContext.isActive()) {
                 continue;
             }
             long threadId = threadContext.getThreadId();

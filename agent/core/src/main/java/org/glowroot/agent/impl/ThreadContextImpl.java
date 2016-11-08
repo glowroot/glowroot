@@ -119,6 +119,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
     // this is not used much, so overhead of Long seems good tradeoff for avoiding extra field
     private volatile @MonotonicNonNull Long detachedTime;
 
+    // only ever non-null for main thread context
+    private final @Nullable ThreadContextImpl outerTransactionThreadContext;
+
     ThreadContextImpl(Transaction transaction, @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry, MessageSupplier messageSupplier,
             TimerName rootTimerName, long startTick, boolean captureThreadStats,
@@ -140,6 +143,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.ticker = ticker;
         this.threadContextHolder = threadContextHolder;
         this.servletMessageSupplier = servletMessageSupplier;
+        this.outerTransactionThreadContext = threadContextHolder.get();
     }
 
     public Transaction getTransaction() {
@@ -183,6 +187,12 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     public boolean isCompleted() {
         return traceEntryComponent.isCompleted();
+    }
+
+    public boolean isActive() {
+        // checking threadContextHolder.get() to make sure this isn't an outer transaction on hold
+        // while inner transaction is executing
+        return !traceEntryComponent.isCompleted() && threadContextHolder.get() == this;
     }
 
     private boolean isCompleted(long captureTick) {
@@ -392,7 +402,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             if (threadStatsComponent != null) {
                 threadStatsComponent.onComplete();
             }
-            threadContextHolder.set(null);
+            threadContextHolder.set(outerTransactionThreadContext);
         }
     }
 
@@ -474,6 +484,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
         // ensure visibility of recent configuration updates
         transaction.getConfigService().readMemoryBarrier();
+        if (transaction.isOuter()) {
+            return transaction.startInnerTransaction(transactionType, transactionName,
+                    messageSupplier, timerName, threadContextHolder);
+        }
         long startTick = ticker.read();
         TimerImpl timer = startTimer(timerName, startTick);
         if (transaction.allowAnotherEntry()) {
@@ -707,6 +721,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @Override
     public void completeAsyncTransaction() {
         completeAsyncTransaction = true;
+    }
+
+    @Override
+    public void setOuterTransaction() {
+        transaction.setOuter();
     }
 
     @Override

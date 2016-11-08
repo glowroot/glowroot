@@ -26,6 +26,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.api.Instrument;
 import org.glowroot.central.storage.AgentDao;
 import org.glowroot.central.storage.AggregateDao;
@@ -83,18 +84,25 @@ public class RollupService implements Runnable {
         while (true) {
             try {
                 Thread.sleep(millisUntilNextRollup(clock.currentTimeMillis()));
-                for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
-                    rollupAggregates(agentRollup, null);
-                    rollupGauges(agentRollup, null);
-                    checkTransactionAlerts(agentRollup);
-                    checkGaugeAlerts(agentRollup);
-                    updateAgentConfigIfConnectedAndNeeded(agentRollup);
-                }
+                runInternal();
             } catch (InterruptedException e) {
                 if (stopped) {
                     return;
                 }
             }
+        }
+    }
+
+    @Instrument.Transaction(transactionType = "Background", transactionName = "Outer rollup loop",
+            traceHeadline = "Outer rollup loop", timer = "outer rollup loop")
+    private void runInternal() throws InterruptedException {
+        Glowroot.setOuterTransaction();
+        for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
+            rollupAggregates(agentRollup, null);
+            rollupGauges(agentRollup, null);
+            checkTransactionAlerts(agentRollup);
+            checkGaugeAlerts(agentRollup);
+            updateAgentConfigIfConnectedAndNeeded(agentRollup);
         }
     }
 

@@ -20,6 +20,8 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.model.ThreadContextPlus;
 import org.glowroot.agent.plugin.api.AsyncQueryEntry;
@@ -44,6 +46,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class OptionalThreadContextImpl implements ThreadContextPlus {
 
+    private static final Logger logger = LoggerFactory.getLogger(OptionalThreadContextImpl.class);
+
     private @MonotonicNonNull ThreadContextImpl threadContext;
 
     private final TransactionServiceImpl transactionService;
@@ -64,15 +68,33 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     @Override
     public TraceEntry startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName) {
-        if (threadContext != null) {
-            return threadContext.startTraceEntry(messageSupplier, timerName);
+        if (transactionType == null) {
+            logger.error("startTransaction(): argument 'transactionType' must be non-null");
+            return NopTraceEntry.INSTANCE;
         }
-        TraceEntry traceEntry = transactionService.startTransaction(transactionType,
-                transactionName, messageSupplier, timerName, threadContextHolder);
-        ThreadContextImpl threadContext = threadContextHolder.get();
-        checkNotNull(threadContext);
-        this.threadContext = threadContext;
-        return traceEntry;
+        if (transactionName == null) {
+            logger.error("startTransaction(): argument 'transactionName' must be non-null");
+            return NopTraceEntry.INSTANCE;
+        }
+        if (messageSupplier == null) {
+            logger.error("startTransaction(): argument 'messageSupplier' must be non-null");
+            return NopTraceEntry.INSTANCE;
+        }
+        if (timerName == null) {
+            logger.error("startTransaction(): argument 'timerName' must be non-null");
+            return NopTraceEntry.INSTANCE;
+        }
+        if (threadContext == null) {
+            TraceEntry traceEntry = transactionService.startTransaction(transactionType,
+                    transactionName, messageSupplier, timerName, threadContextHolder);
+            ThreadContextImpl threadContext = threadContextHolder.get();
+            checkNotNull(threadContext);
+            this.threadContext = threadContext;
+            return traceEntry;
+        } else {
+            return threadContext.startTransaction(transactionType, transactionName, messageSupplier,
+                    timerName);
+        }
     }
 
     @Override
@@ -168,6 +190,13 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     public void completeAsyncTransaction() {
         if (threadContext != null) {
             threadContext.completeAsyncTransaction();
+        }
+    }
+
+    @Override
+    public void setOuterTransaction() {
+        if (threadContext != null) {
+            threadContext.setOuterTransaction();
         }
     }
 

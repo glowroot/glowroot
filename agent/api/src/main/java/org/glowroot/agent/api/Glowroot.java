@@ -109,4 +109,18 @@ public class Glowroot {
     public static void setTransactionSlowThreshold(long threshold, TimeUnit unit) {
         glowrootService.setTransactionSlowThreshold(threshold, unit);
     }
+
+    /**
+     * FOR ADVANCED USE CASE ONLY.
+     * 
+     * This should be used in very limited circumstances. E.g. a really long "outer" transaction
+     * that processes thousands of objects, where it is useful to track the processing details per
+     * object as separate transactions, but also useful to track the overarching long "outer"
+     * transaction.
+     * 
+     * If there is no current transaction, this method does nothing.
+     */
+    public static void setOuterTransaction() {
+        glowrootService.setOuterTransaction();
+    }
 }

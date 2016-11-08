@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Glowroot;
+import org.glowroot.agent.impl.OptionalThreadContextImpl;
 import org.glowroot.agent.impl.ServiceRegistryImpl;
 import org.glowroot.agent.impl.ThreadContextImpl;
 import org.glowroot.agent.impl.TransactionRegistry;
@@ -182,6 +183,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                 || name.startsWith("org.glowroot.agent.plugin.api.")
                 || name.startsWith("org.glowroot.agent.weaving.GeneratedAdvice")
                 || name.startsWith("org.glowroot.agent.weaving.GeneratedMethodMeta")
+                || name.equals(OptionalThreadContextImpl.class.getName())
                 || name.equals(ServiceRegistryImpl.class.getName())
                 || name.equals(ThreadContextImpl.class.getName())
                 || name.equals(ThreadContextPlus.class.getName())

@@ -108,6 +108,7 @@ public class Transaction {
     private final long startTick;
 
     private volatile boolean async;
+    private volatile boolean outer;
 
     private volatile String transactionType;
     private volatile int transactionTypePriority = Integer.MIN_VALUE;
@@ -315,6 +316,10 @@ public class Transaction {
 
     boolean isAsync() {
         return async;
+    }
+
+    boolean isOuter() {
+        return outer;
     }
 
     TimerImpl getMainThreadRootTimer() {
@@ -549,7 +554,7 @@ public class Transaction {
             }
             List<ThreadContextImpl> activeAuxThreadContexts = Lists.newArrayList();
             for (ThreadContextImpl auxThreadContext : auxThreadContexts) {
-                if (!auxThreadContext.isCompleted()) {
+                if (auxThreadContext.isActive()) {
                     activeAuxThreadContexts.add(auxThreadContext);
                 }
             }
@@ -558,7 +563,11 @@ public class Transaction {
     }
 
     void setAsync() {
-        this.async = true;
+        async = true;
+    }
+
+    void setOuter() {
+        outer = true;
     }
 
     void setTransactionType(String transactionType, int priority) {
@@ -738,6 +747,13 @@ public class Transaction {
             asyncTimers.add(asyncTimer);
         }
         return asyncTimer;
+    }
+
+    TraceEntryImpl startInnerTransaction(String transactionType, String transactionName,
+            MessageSupplier messageSupplier, TimerName timerName,
+            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
+        return transactionService.startTransaction(transactionType, transactionName,
+                messageSupplier, timerName, threadContextHolder);
     }
 
     boolean isEntryLimitExceeded() {

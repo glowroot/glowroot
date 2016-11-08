@@ -99,4 +99,12 @@ public class GlowrootServiceImpl implements GlowrootService {
             transaction.setSlowThresholdMillis(thresholdMillis, Priority.USER_API);
         }
     }
+
+    @Override
+    public void setOuterTransaction() {
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction != null) {
+            transaction.setOuter();
+        }
+    }
 }

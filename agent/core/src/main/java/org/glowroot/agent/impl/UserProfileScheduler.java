@@ -160,7 +160,7 @@ public class UserProfileScheduler {
         private void runInternal() {
             List<ThreadContextImpl> activeThreadContexts = Lists.newArrayList();
             ThreadContextImpl mainThreadContext = transaction.getMainThreadContext();
-            if (!mainThreadContext.isCompleted()) {
+            if (mainThreadContext.isActive()) {
                 activeThreadContexts.add(mainThreadContext);
             }
             activeThreadContexts.addAll(transaction.getActiveAuxThreadContexts());

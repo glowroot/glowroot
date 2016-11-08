@@ -89,6 +89,24 @@ public interface ThreadContext {
     void completeAsyncTransaction();
 
     /**
+     * This should be used in very limited circumstances. E.g. a really long "outer" transaction
+     * that processes thousands of objects, where it is useful to track the processing details per
+     * object as separate transactions, but also useful to track the overarching long "outer"
+     * transaction.
+     * 
+     * Once a transaction is marked as an outer transaction, then
+     * {@link OptionalThreadContext#startTransaction(String, String, MessageSupplier, TimerName)}
+     * will start a new "inner" transaction.
+     * 
+     * To start a new "inner" transaction, the active "outer" transaction is unbound from the
+     * thread, and the new "inner" transaction is started and bound to the thread. When the "inner"
+     * transaction ends, the previously active "outer" transaction is bound back to the thread.
+     * 
+     * If there is no current transaction then this method does nothing.
+     */
+    void setOuterTransaction();
+
+    /**
      * Set the transaction type that is used for aggregation.
      * 
      * Calling this method with a non-null non-empty value overrides the transaction type set in

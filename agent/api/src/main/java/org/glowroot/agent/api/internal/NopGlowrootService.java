@@ -37,4 +37,7 @@ public class NopGlowrootService implements GlowrootService {
 
     @Override
     public void setTransactionSlowThreshold(long threshold, TimeUnit unit) {}
+
+    @Override
+    public void setOuterTransaction() {}
 }

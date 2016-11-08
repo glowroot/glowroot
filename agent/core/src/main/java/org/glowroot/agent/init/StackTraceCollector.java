@@ -136,7 +136,7 @@ class StackTraceCollector {
             for (int i = 0; i < transactions.size(); i++) {
                 Transaction transaction = transactions.get(i);
                 ThreadContextImpl mainThreadContext = transaction.getMainThreadContext();
-                if (!mainThreadContext.isCompleted()) {
+                if (mainThreadContext.isActive()) {
                     activeThreadContexts.add(mainThreadContext);
                 }
                 activeThreadContexts.addAll(transaction.getActiveAuxThreadContexts());

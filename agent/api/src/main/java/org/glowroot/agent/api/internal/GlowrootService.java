@@ -30,4 +30,6 @@ public interface GlowrootService {
     void addTransactionAttribute(String name, @Nullable String value);
 
     void setTransactionSlowThreshold(long threshold, TimeUnit unit);
+
+    void setOuterTransaction();
 }

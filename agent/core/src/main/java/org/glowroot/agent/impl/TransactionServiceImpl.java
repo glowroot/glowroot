@@ -18,8 +18,6 @@ package org.glowroot.agent.impl;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
@@ -27,17 +25,13 @@ import org.glowroot.agent.impl.Transaction.CompletionCallback;
 import org.glowroot.agent.impl.TransactionCollection.TransactionEntry;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.TimerName;
-import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
-import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTraceEntry;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal.Holder;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 public class TransactionServiceImpl implements ConfigListener {
-
-    private static final Logger logger = LoggerFactory.getLogger(TransactionServiceImpl.class);
 
     private final TransactionRegistry transactionRegistry;
     private final TransactionCollector transactionCollector;
@@ -84,36 +78,11 @@ public class TransactionServiceImpl implements ConfigListener {
         this.ticker = ticker;
     }
 
-    // this is used by OptionalThreadContextImpl
-    @UsedByGeneratedBytecode
-    public TraceEntry startTransaction(String transactionType, String transactionName,
+    TraceEntryImpl startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName,
             Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
-        if (transactionType == null) {
-            logger.error("startTransaction(): argument 'transactionType' must be non-null");
-            return NopTraceEntry.INSTANCE;
-        }
-        if (transactionName == null) {
-            logger.error("startTransaction(): argument 'transactionName' must be non-null");
-            return NopTraceEntry.INSTANCE;
-        }
-        if (messageSupplier == null) {
-            logger.error("startTransaction(): argument 'messageSupplier' must be non-null");
-            return NopTraceEntry.INSTANCE;
-        }
-        if (timerName == null) {
-            logger.error("startTransaction(): argument 'timerName' must be non-null");
-            return NopTraceEntry.INSTANCE;
-        }
         // ensure visibility of recent configuration updates
         configService.readMemoryBarrier();
-        return startTransactionInternal(transactionType, transactionName, messageSupplier,
-                timerName, threadContextHolder);
-    }
-
-    private TraceEntry startTransactionInternal(String transactionType, String transactionName,
-            MessageSupplier messageSupplier, TimerName timerName,
-            Holder</*@Nullable*/ ThreadContextImpl> threadContextHolder) {
         long startTick = ticker.read();
         Transaction transaction = new Transaction(clock.currentTimeMillis(), startTick,
                 transactionType, transactionName, messageSupplier, timerName, captureThreadStats,
