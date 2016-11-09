@@ -53,7 +53,7 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.api.Instrument;
+import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.util.Messages;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Sessions;
@@ -775,8 +775,9 @@ public class AggregateDao implements AggregateRepository {
         session.execute("truncate aggregate_needs_rollup_from_child");
     }
 
-    @Instrument.Transaction(transactionType = "Background", transactionName = "Rollup aggregates",
-            traceHeadline = "Rollup aggregates: {{0}}", timer = "rollup aggregates")
+    @Instrumentation.Transaction(transactionType = "Background",
+            transactionName = "Rollup aggregates", traceHeadline = "Rollup aggregates: {{0}}",
+            timer = "rollup aggregates")
     public void rollup(String agentRollup, @Nullable String parentAgentRollup, boolean leaf)
             throws Exception {
         List<Integer> ttls = getTTLs();

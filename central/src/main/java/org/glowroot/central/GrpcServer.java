@@ -34,7 +34,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.api.Instrument;
+import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.storage.AgentDao;
 import org.glowroot.central.storage.AggregateDao;
 import org.glowroot.central.storage.GaugeValueDao;
@@ -150,7 +150,7 @@ class GrpcServer {
 
     private class CollectorServiceImpl extends CollectorServiceImplBase {
 
-        @Instrument.Transaction(transactionType = "gRPC", transactionName = "Init",
+        @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Init",
                 traceHeadline = "Collect init: {{0.agentId}}", timer = "init")
         @Override
         public void collectInit(InitMessage request,
@@ -231,7 +231,8 @@ class GrpcServer {
                     }
                 }
 
-                @Instrument.Transaction(transactionType = "gRPC", transactionName = "Aggregates",
+                @Instrumentation.Transaction(transactionType = "gRPC",
+                        transactionName = "Aggregates",
                         traceHeadline = "Collect aggregates: {{this.header.agentId}}",
                         timer = "aggregates")
                 @Override
@@ -248,7 +249,7 @@ class GrpcServer {
             };
         }
 
-        @Instrument.Transaction(transactionType = "gRPC", transactionName = "Aggregates",
+        @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Aggregates",
                 traceHeadline = "Collect aggregates: {{0.agentId}}", timer = "aggregates")
         @Override
         public void collectAggregates(OldAggregateMessage request,
@@ -292,7 +293,7 @@ class GrpcServer {
             responseObserver.onCompleted();
         }
 
-        @Instrument.Transaction(transactionType = "gRPC", transactionName = "Gauges",
+        @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Gauges",
                 traceHeadline = "Collect gauge values: {{0.agentId}}", timer = "gauges")
         @Override
         public void collectGaugeValues(GaugeValueMessage request,
@@ -349,7 +350,7 @@ class GrpcServer {
                     }
                 }
 
-                @Instrument.Transaction(transactionType = "gRPC", transactionName = "Trace",
+                @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Trace",
                         traceHeadline = "Collect trace: {{this.header.agentId}}", timer = "trace")
                 @Override
                 public void onCompleted() {
@@ -370,7 +371,7 @@ class GrpcServer {
             };
         }
 
-        @Instrument.Transaction(transactionType = "gRPC", transactionName = "Trace",
+        @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Trace",
                 traceHeadline = "Collect trace: {{0.agentId}}", timer = "trace")
         @Override
         public void collectTrace(OldTraceMessage request,
@@ -386,7 +387,7 @@ class GrpcServer {
             responseObserver.onCompleted();
         }
 
-        @Instrument.Transaction(transactionType = "gRPC", transactionName = "Log",
+        @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Log",
                 traceHeadline = "Log: {{0.agentId}}", timer = "log")
         @Override
         public void log(LogMessage request, StreamObserver<EmptyMessage> responseObserver) {
@@ -487,7 +488,7 @@ class GrpcServer {
             });
         }
 
-        @Instrument.Transaction(transactionType = "Background",
+        @Instrumentation.Transaction(transactionType = "Background",
                 transactionName = "Check transaction alert",
                 traceHeadline = "Check transaction alert: {{0}}", timer = "check transaction alert")
         private void checkTransactionAlert(String agentId, AlertConfig alertConfig,
@@ -495,7 +496,7 @@ class GrpcServer {
             alertingService.checkTransactionAlert(agentId, alertConfig, captureTime, smtpConfig);
         }
 
-        @Instrument.Transaction(transactionType = "Background",
+        @Instrumentation.Transaction(transactionType = "Background",
                 transactionName = "Check gauge alert",
                 traceHeadline = "Check gauge alert: {{0}}", timer = "check gauge alert")
         private void checkGaugeAlert(String agentId, AlertConfig alertConfig, long captureTime,

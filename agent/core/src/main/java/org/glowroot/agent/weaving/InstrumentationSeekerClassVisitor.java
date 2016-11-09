@@ -59,14 +59,14 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions) {
-        return new InstrumentAnnotationMethodVisitor(name, desc);
+        return new InstrumentationAnnotationMethodVisitor(name, desc);
     }
 
     List<InstrumentationConfig> getInstrumentationConfigs() {
         return instrumentationConfigs;
     }
 
-    private class InstrumentAnnotationMethodVisitor extends MethodVisitor {
+    private class InstrumentationAnnotationMethodVisitor extends MethodVisitor {
 
         private final String methodName;
         private final String desc;
@@ -75,7 +75,7 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
         private @MonotonicNonNull TraceEntryAnnotationVisitor traceEntryAnnotationVisitor;
         private @MonotonicNonNull TimerAnnotationVisitor timerAnnotationVisitor;
 
-        private InstrumentAnnotationMethodVisitor(String methodName, String desc) {
+        private InstrumentationAnnotationMethodVisitor(String methodName, String desc) {
             super(ASM5);
             this.methodName = methodName;
             this.desc = desc;
@@ -83,13 +83,16 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
 
         @Override
         public @Nullable AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-            if (desc.equals("Lorg/glowroot/agent/api/Instrument$Transaction;")) {
+            if (desc.equals("Lorg/glowroot/agent/api/Instrumentation$Transaction;")
+                    || desc.equals("Lorg/glowroot/agent/api/Instrument$Transaction;")) {
                 transactionAnnotationVisitor = new TransactionAnnotationVisitor();
                 return transactionAnnotationVisitor;
-            } else if (desc.equals("Lorg/glowroot/agent/api/Instrument$TraceEntry;")) {
+            } else if (desc.equals("Lorg/glowroot/agent/api/Instrumentation$TraceEntry;")
+                    || desc.equals("Lorg/glowroot/agent/api/Instrument$TraceEntry;")) {
                 traceEntryAnnotationVisitor = new TraceEntryAnnotationVisitor();
                 return traceEntryAnnotationVisitor;
-            } else if (desc.equals("Lorg/glowroot/agent/api/Instrument$Timer;")) {
+            } else if (desc.equals("Lorg/glowroot/agent/api/Instrumentation$Timer;")
+                    || desc.equals("Lorg/glowroot/agent/api/Instrument$Timer;")) {
                 timerAnnotationVisitor = new TimerAnnotationVisitor();
                 return timerAnnotationVisitor;
             }
@@ -111,13 +114,14 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
             checkNotNull(owner);
             String transactionType = transactionAnnotationVisitor.transactionType;
             if (transactionType == null) {
-                logger.error("@Instrument.Transaction had no transactionType attribute: {}",
+                logger.error("@Instrumentation.Transaction had no transactionType attribute: {}",
                         Type.getType(owner).getClassName());
                 return;
             }
             String transactionNameTemplate = transactionAnnotationVisitor.transactionNameTemplate;
             if (transactionNameTemplate == null) {
-                logger.error("@Instrument.Transaction had no transactionNameTemplate attribute: {}",
+                logger.error(
+                        "@Instrumentation.Transaction had no transactionNameTemplate attribute: {}",
                         Type.getType(owner).getClassName());
                 return;
             }
@@ -129,7 +133,7 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
             }
             String timerName = transactionAnnotationVisitor.timerName;
             if (timerName == null) {
-                logger.error("@Instrument.Transaction had no timerName attribute: {}",
+                logger.error("@Instrumentation.Transaction had no timerName attribute: {}",
                         Type.getType(owner).getClassName());
                 return;
             }
@@ -149,13 +153,13 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
             checkNotNull(owner);
             String messageTemplate = traceEntryAnnotationVisitor.messageTemplate;
             if (messageTemplate == null) {
-                logger.error("@Instrument.TraceEntry had no messageTemplate attribute: {}",
+                logger.error("@Instrumentation.TraceEntry had no messageTemplate attribute: {}",
                         Type.getType(owner).getClassName());
                 return;
             }
             String timerName = traceEntryAnnotationVisitor.timerName;
             if (timerName == null) {
-                logger.error("@Instrument.TraceEntry had no timerName attribute: {}",
+                logger.error("@Instrumentation.TraceEntry had no timerName attribute: {}",
                         Type.getType(owner).getClassName());
                 return;
             }
@@ -173,7 +177,7 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
             checkNotNull(owner);
             String timerName = timerAnnotationVisitor.timerName;
             if (timerName == null) {
-                logger.error("@Instrument.Timer had no value attribute: {}",
+                logger.error("@Instrumentation.Timer had no value attribute: {}",
                         Type.getType(owner).getClassName());
                 return;
             }

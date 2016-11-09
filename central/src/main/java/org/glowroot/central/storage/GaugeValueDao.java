@@ -42,7 +42,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.api.Instrument;
+import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.storage.AggregateDao.NeedsRollup;
 import org.glowroot.central.storage.AggregateDao.NeedsRollupFromChildren;
 import org.glowroot.central.util.DummyResultSet;
@@ -252,7 +252,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     //
     // child agent rollups should be processed before their parent agent rollup, since initial
     // parent rollup depends on the 1-minute child rollup
-    @Instrument.Transaction(transactionType = "Background", transactionName = "Rollup gauges",
+    @Instrumentation.Transaction(transactionType = "Background", transactionName = "Rollup gauges",
             traceHeadline = "Rollup gauges: {{0}}", timer = "rollup gauges")
     public void rollup(String agentRollup, @Nullable String parentAgentRollup, boolean leaf)
             throws Exception {

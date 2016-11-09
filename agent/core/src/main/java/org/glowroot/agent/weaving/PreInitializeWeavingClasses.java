@@ -334,7 +334,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ImmutableThinMethod$Builder");
         types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor");
         types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor"
-                + "$InstrumentAnnotationMethodVisitor");
+                + "$InstrumentationAnnotationMethodVisitor");
         types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor"
                 + "$TimerAnnotationVisitor");
         types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor"

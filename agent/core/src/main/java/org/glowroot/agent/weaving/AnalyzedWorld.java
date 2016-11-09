@@ -143,9 +143,11 @@ public class AnalyzedWorld {
         return getOrCreateAnalyzedClass(className, loader);
     }
 
-    List<Advice> mergeInstrumentAnnotations(List<Advice> advisors, byte[] classBytes,
+    List<Advice> mergeInstrumentationAnnotations(List<Advice> advisors, byte[] classBytes,
             @Nullable ClassLoader loader, String className) {
-        byte[] marker = "Lorg/glowroot/agent/api/Instrument$".getBytes(Charsets.UTF_8);
+        // TODO after removing deprecated @Instrument, change marker to
+        // "Lorg/glowroot/agent/api/Instrumentation$"
+        byte[] marker = "Lorg/glowroot/agent/api/Instrument".getBytes(Charsets.UTF_8);
         if (Bytes.indexOf(classBytes, marker) == -1) {
             return advisors;
         }
@@ -157,9 +159,8 @@ public class AnalyzedWorld {
             return advisors;
         }
         if (loader == null) {
-            logger.warn(
-                    "@Instrument annotations not currently supported in bootstrap class loader: {}",
-                    className);
+            logger.warn("@Instrumentation annotations not currently supported in bootstrap class"
+                    + " loader: {}", className);
             return advisors;
         }
         for (InstrumentationConfig instrumentationConfig : instrumentationConfigs) {
@@ -325,7 +326,7 @@ public class AnalyzedWorld {
             }
         }
         List<Advice> advisors =
-                mergeInstrumentAnnotations(this.advisors.get(), bytes, loader, className);
+                mergeInstrumentationAnnotations(this.advisors.get(), bytes, loader, className);
         ThinClassVisitor accv = new ThinClassVisitor();
         new ClassReader(bytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
@@ -429,7 +430,7 @@ public class AnalyzedWorld {
         for (Class<?> interfaceClass : clazz.getInterfaces()) {
             classBuilder.addInterfaceNames(interfaceClass.getName());
         }
-        // FIXME handle @Instrument.*
+        // FIXME handle @Instrumentation.*
         List<String> classAnnotations = Lists.newArrayList();
         for (Annotation annotation : clazz.getAnnotations()) {
             classAnnotations.add(annotation.annotationType().getName());

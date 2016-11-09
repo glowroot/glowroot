@@ -22,7 +22,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.agent.api.Instrument;
+import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
@@ -31,7 +31,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class GlowrootApiInstrumentIT {
+public class GlowrootApiInstrumentationIT {
 
     private static Container container;
 
@@ -93,7 +93,7 @@ public class GlowrootApiInstrumentIT {
             captureTransaction("zyx");
         }
 
-        @Instrument.Transaction(transactionType = "abc type", transactionName = "xyz {{0}}",
+        @Instrumentation.Transaction(transactionType = "abc type", transactionName = "xyz {{0}}",
                 traceHeadline = "abc xyz {{0}}", timer = "mmm")
         public void captureTransaction(@SuppressWarnings("unused") String str) {}
     }
@@ -110,7 +110,7 @@ public class GlowrootApiInstrumentIT {
             captureTraceEntry("zyx");
         }
 
-        @Instrument.TraceEntry(message = "xyz {{0}} => {{_}}", timer = "ooo")
+        @Instrumentation.TraceEntry(message = "xyz {{0}} => {{_}}", timer = "ooo")
         public String captureTraceEntry(String str) {
             return str + "0";
         }
@@ -130,7 +130,7 @@ public class GlowrootApiInstrumentIT {
     }
 
     public interface QQQ {
-        @Instrument.Timer("qqq")
+        @Instrumentation.Timer("qqq")
         void qqq();
     }
 

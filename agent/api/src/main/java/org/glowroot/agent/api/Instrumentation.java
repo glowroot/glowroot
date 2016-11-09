@@ -15,23 +15,19 @@
  */
 package org.glowroot.agent.api;
 
-@Deprecated
-public class Instrument {
+public class Instrumentation {
 
-    private Instrument() {}
+    private Instrumentation() {}
 
-    @Deprecated
     public @interface Timer {
         String value(); // the timer name
     }
 
-    @Deprecated
     public @interface TraceEntry {
         String message(); // template
         String timer();
     }
 
-    @Deprecated
     public @interface Transaction {
         String transactionType();
         String transactionName(); // template

@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Glowroot;
-import org.glowroot.agent.api.Instrument;
+import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.storage.AgentDao;
 import org.glowroot.central.storage.AggregateDao;
 import org.glowroot.central.storage.GaugeValueDao;
@@ -93,8 +93,9 @@ public class RollupService implements Runnable {
         }
     }
 
-    @Instrument.Transaction(transactionType = "Background", transactionName = "Outer rollup loop",
-            traceHeadline = "Outer rollup loop", timer = "outer rollup loop")
+    @Instrumentation.Transaction(transactionType = "Background",
+            transactionName = "Outer rollup loop", traceHeadline = "Outer rollup loop",
+            timer = "outer rollup loop")
     private void runInternal() throws InterruptedException {
         Glowroot.setOuterTransaction();
         for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
@@ -251,7 +252,7 @@ public class RollupService implements Runnable {
         }
     }
 
-    @Instrument.Transaction(transactionType = "Background",
+    @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check transaction alert",
             traceHeadline = "Check transaction alert: {{0}}", timer = "check transaction alert")
     private void checkTransactionAlert(String agentId, AlertConfig alertConfig,
@@ -259,7 +260,7 @@ public class RollupService implements Runnable {
         alertingService.checkTransactionAlert(agentId, alertConfig, captureTime, smtpConfig);
     }
 
-    @Instrument.Transaction(transactionType = "Background",
+    @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Check gauge alert",
             traceHeadline = "Check gauge alert: {{0}}", timer = "check gauge alert")
     private void checkGaugeAlert(String agentId, AlertConfig alertConfig, long captureTime,

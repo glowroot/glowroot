@@ -120,7 +120,7 @@ public class Weaver {
 
     private byte/*@Nullable*/[] weaveUnderTimer(byte[] classBytes, String className,
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
-        List<Advice> advisors = analyzedWorld.mergeInstrumentAnnotations(this.advisors.get(),
+        List<Advice> advisors = analyzedWorld.mergeInstrumentationAnnotations(this.advisors.get(),
                 classBytes, loader, className);
         ThinClassVisitor accv = new ThinClassVisitor();
         new ClassReader(classBytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
