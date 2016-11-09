@@ -20,8 +20,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.glowroot.central.DownstreamServiceImpl;
-import org.glowroot.central.storage.AgentDao;
+import org.glowroot.central.repo.AgentDao;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
 

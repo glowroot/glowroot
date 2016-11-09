@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.central.storage;
+package org.glowroot.central.repo;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
@@ -23,11 +23,16 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.Sessions;
+import org.glowroot.common.config.ImmutableRoleConfig;
+import org.glowroot.common.config.RoleConfig;
 
-public class SchemaUpgradeIT {
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class RoleDaoIT {
 
     private static Cluster cluster;
     private static Session session;
+    private static RoleDao roleDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -36,6 +41,9 @@ public class SchemaUpgradeIT {
         session = cluster.newSession();
         Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
+        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
+
+        roleDao = new RoleDao(session, keyspace);
     }
 
     @AfterClass
@@ -48,9 +56,15 @@ public class SchemaUpgradeIT {
     @Test
     public void shouldRead() throws Exception {
         // given
-        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
+        roleDao.insert(ImmutableRoleConfig.builder()
+                .embedded(false)
+                .name("abc")
+                .addPermissions("*:*")
+                .build());
         // when
-        new SchemaUpgrade(session, keyspace);
-        // then don't throw exception
+        RoleConfig roleConfig = roleDao.read("abc");
+        // then
+        assertThat(roleConfig.name()).isEqualTo("abc");
+        assertThat(roleConfig.permissions()).containsExactly("*:*");
     }
 }

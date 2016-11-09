@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.central.storage;
+package org.glowroot.central.repo;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
@@ -23,16 +23,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.Sessions;
-import org.glowroot.common.config.ImmutableUserConfig;
-import org.glowroot.common.config.UserConfig;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class UserDaoIT {
+public class SchemaUpgradeIT {
 
     private static Cluster cluster;
     private static Session session;
-    private static UserDao userDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -41,9 +36,6 @@ public class UserDaoIT {
         session = cluster.newSession();
         Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
-        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
-
-        userDao = new UserDao(session, keyspace);
     }
 
     @AfterClass
@@ -56,18 +48,9 @@ public class UserDaoIT {
     @Test
     public void shouldRead() throws Exception {
         // given
-        userDao.insert(ImmutableUserConfig.builder()
-                .username("abc")
-                .passwordHash("xyz")
-                .addRoles("arole", "brole")
-                .build());
-
+        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
         // when
-        UserConfig userConfig = userDao.read("abc");
-
-        // then
-        assertThat(userConfig.username()).isEqualTo("abc");
-        assertThat(userConfig.passwordHash()).isEqualTo("xyz");
-        assertThat(userConfig.roles()).containsExactly("arole", "brole");
+        new SchemaUpgrade(session, keyspace);
+        // then don't throw exception
     }
 }

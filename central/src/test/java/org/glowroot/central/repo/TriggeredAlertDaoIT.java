@@ -13,26 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.central.storage;
+package org.glowroot.central.repo;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Session;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.central.util.Sessions;
-import org.glowroot.common.config.ImmutableRoleConfig;
-import org.glowroot.common.config.RoleConfig;
+import org.glowroot.common.config.ImmutableCentralStorageConfig;
+import org.glowroot.common.repo.ConfigRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-public class RoleDaoIT {
+// NOTE this is mostly a copy of TriggeredAlertDaoTest in glowroot-agent
+public class TriggeredAlertDaoIT {
+
+    private static final String AGENT_ID = "xyz";
 
     private static Cluster cluster;
     private static Session session;
-    private static RoleDao roleDao;
+    private static TriggeredAlertDao triggeredAlertDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -41,9 +45,13 @@ public class RoleDaoIT {
         session = cluster.newSession();
         Sessions.createKeyspaceIfNotExists(session, "glowroot_unit_tests");
         session.execute("use glowroot_unit_tests");
-        KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 
-        roleDao = new RoleDao(session, keyspace);
+        ConfigRepository configRepository = mock(ConfigRepository.class);
+        when(configRepository.getStorageConfig())
+                .thenReturn(ImmutableCentralStorageConfig.builder().build());
+        triggeredAlertDao = new TriggeredAlertDao(session, configRepository);
+
+        session.execute("truncate triggered_alert");
     }
 
     @AfterClass
@@ -54,17 +62,21 @@ public class RoleDaoIT {
     }
 
     @Test
-    public void shouldRead() throws Exception {
-        // given
-        roleDao.insert(ImmutableRoleConfig.builder()
-                .embedded(false)
-                .name("abc")
-                .addPermissions("*:*")
-                .build());
-        // when
-        RoleConfig roleConfig = roleDao.read("abc");
-        // then
-        assertThat(roleConfig.name()).isEqualTo("abc");
-        assertThat(roleConfig.permissions()).containsExactly("*:*");
+    public void shouldNotExist() throws Exception {
+        assertThat(triggeredAlertDao.exists(AGENT_ID, "vvv1")).isFalse();
+    }
+
+    @Test
+    public void shouldExistAfterInsert() throws Exception {
+        triggeredAlertDao.insert(AGENT_ID, "vvv2");
+        assertThat(triggeredAlertDao.exists(AGENT_ID, "vvv1")).isFalse();
+        assertThat(triggeredAlertDao.exists(AGENT_ID, "vvv2")).isTrue();
+    }
+
+    @Test
+    public void shouldNotExistAfterDelete() throws Exception {
+        triggeredAlertDao.insert(AGENT_ID, "vvv3");
+        triggeredAlertDao.delete(AGENT_ID, "vvv3");
+        assertThat(triggeredAlertDao.exists(AGENT_ID, "vvv3")).isFalse();
     }
 }

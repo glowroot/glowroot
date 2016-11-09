@@ -128,7 +128,7 @@
             <property>
               <!-- this is just a test performance optimization -->
               <name>listener</name>
-              <value>org.glowroot.central.storage.SharedSetupRunListener</value>
+              <value>org.glowroot.central.repo.SharedSetupRunListener</value>
             </property>
           </properties>
         </configuration>

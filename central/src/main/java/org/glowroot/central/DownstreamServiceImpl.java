@@ -31,8 +31,8 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.central.storage.AgentDao;
-import org.glowroot.central.storage.AgentDao.AgentConfigUpdate;
+import org.glowroot.central.repo.AgentDao;
+import org.glowroot.central.repo.AgentDao.AgentConfigUpdate;
 import org.glowroot.common.live.ImmutableEntries;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;

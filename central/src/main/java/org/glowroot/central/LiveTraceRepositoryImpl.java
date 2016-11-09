@@ -21,7 +21,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
-import org.glowroot.central.storage.AgentDao;
+import org.glowroot.central.repo.AgentDao;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;

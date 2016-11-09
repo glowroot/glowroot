@@ -35,10 +35,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrumentation;
-import org.glowroot.central.storage.AgentDao;
-import org.glowroot.central.storage.AggregateDao;
-import org.glowroot.central.storage.GaugeValueDao;
-import org.glowroot.central.storage.TraceDao;
+import org.glowroot.central.repo.AgentDao;
+import org.glowroot.central.repo.AggregateDao;
+import org.glowroot.central.repo.GaugeValueDao;
+import org.glowroot.central.repo.TraceDao;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.util.AlertingService;

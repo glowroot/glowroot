@@ -28,9 +28,9 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.api.Instrumentation;
-import org.glowroot.central.storage.AgentDao;
-import org.glowroot.central.storage.AggregateDao;
-import org.glowroot.central.storage.GaugeValueDao;
+import org.glowroot.central.repo.AgentDao;
+import org.glowroot.central.repo.AggregateDao;
+import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.common.config.SmtpConfig;
 import org.glowroot.common.repo.AgentRepository.AgentRollup;
 import org.glowroot.common.repo.ConfigRepository;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.central.storage;
+package org.glowroot.central.repo;
 
 import java.util.Collection;
 import java.util.Date;
@@ -43,8 +43,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrumentation;
-import org.glowroot.central.storage.AggregateDao.NeedsRollup;
-import org.glowroot.central.storage.AggregateDao.NeedsRollupFromChildren;
+import org.glowroot.central.repo.AggregateDao.NeedsRollup;
+import org.glowroot.central.repo.AggregateDao.NeedsRollupFromChildren;
 import org.glowroot.central.util.DummyResultSet;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Sessions;
