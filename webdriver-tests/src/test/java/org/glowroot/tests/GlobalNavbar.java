@@ -61,7 +61,7 @@ class GlobalNavbar {
 
     WebElement getAdminConfigLink() {
         if (central) {
-            return getNavbarLink(driver, xpath("//nav//a[@ng-href='admin/user-list']"));
+            return getNavbarLink(driver, xpath("//nav//a[@ng-href='admin/agent-list']"));
         } else {
             return getNavbarLink(driver, xpath("//nav//a[@ng-href='config/transaction']"));
         }

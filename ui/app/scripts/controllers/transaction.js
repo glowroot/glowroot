@@ -66,8 +66,7 @@ glowroot.controller('TransactionCtrl', [
       return (!$scope.agentRollupId && !$scope.layout.embedded) || !$scope.transactionType;
     };
 
-    $scope.headerQueryString = function (agentRollupId, transactionType) {
-      var agentRollup = $scope.layout.agentRollups[agentRollupId];
+    $scope.headerQueryString = function (agentRollup, transactionType) {
       // preserve existing query string
       var search = angular.copy($location.search());
       delete search['agent-rollup-id'];
@@ -80,10 +79,10 @@ glowroot.controller('TransactionCtrl', [
       delete search['transaction-name'];
       var query = {};
       if (!$scope.layout.embedded) {
-        if (agentRollup.leaf) {
-          query['agent-id'] = agentRollupId;
+        if (agentRollup.agent) {
+          query['agent-id'] = agentRollup.id;
         } else {
-          query['agent-rollup-id'] = agentRollupId;
+          query['agent-rollup-id'] = agentRollup.id;
         }
       }
       if (transactionType) {
@@ -169,7 +168,7 @@ glowroot.controller('TransactionCtrl', [
       if (!$scope.layout.embedded) {
         var agentRollup = $scope.layout.agentRollups[$scope.agentRollupId];
         if (agentRollup) {
-          if (agentRollup.leaf) {
+          if (agentRollup.agent) {
             query['agent-id'] = $scope.agentRollupId;
           } else {
             query['agent-rollup-id'] = $scope.agentRollupId;

@@ -129,16 +129,16 @@ glowroot.run([
       }
     };
 
-    $rootScope.agentRollupUrl = function (agentRollupId, leaf) {
+    $rootScope.agentRollupUrl = function (agentRollup) {
       // preserve existing query string
       var search = angular.copy($location.search());
       delete search['agent-rollup-id'];
       delete search['agent-id'];
       var query = {};
-      if (leaf) {
-        query['agent-id'] = agentRollupId;
+      if (agentRollup.agent) {
+        query['agent-id'] = agentRollup.id;
       } else {
-        query['agent-rollup-id'] = agentRollupId;
+        query['agent-rollup-id'] = agentRollup.id;
       }
       angular.merge(query, search);
       return $location.path().substring(1) + queryStrings.encodeObject(query);
@@ -237,12 +237,13 @@ glowroot.run([
     });
 
     $rootScope.initLayout = function () {
-      angular.forEach($rootScope.layout.agentRollups, function (agentRollup, name) {
+      angular.forEach($rootScope.layout.agentRollups, function (agentRollup, agentRollupId) {
         var indent = '';
         for (var i = 0; i < agentRollup.depth; i++) {
           indent += '\u00a0\u00a0\u00a0\u00a0';
         }
-        agentRollup.display = indent + name;
+        agentRollup.indentedDisplay = indent + agentRollup.display;
+        agentRollup.id = agentRollupId;
       });
       if ($rootScope.layout.embedded || $rootScope.agentRollupId) {
         var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollupId];

@@ -35,6 +35,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.FatStorageConfig;
 import org.glowroot.common.config.ImmutableCentralStorageConfig;
@@ -83,14 +84,14 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     // TODO use optimistic locking with retry instead of synchronization in order to work across
     // cluster
-    private final LoadingCache<String, Object> agentConfigLocks = CacheBuilder.newBuilder()
-            .weakValues()
-            .build(new CacheLoader<String, Object>() {
+    private final LoadingCache<String, Object> agentConfigLocks =
+            CacheBuilder.newBuilder().weakValues().build(new CacheLoader<String, Object>() {
                 @Override
                 public Object load(String key) throws Exception {
                     return new Object();
                 }
             });
+    private final Object agentConfigLock = new Object();
     private final Object userConfigLock = new Object();
     private final Object roleConfigLock = new Object();
     private final Object webConfigLock = new Object();
@@ -250,6 +251,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
         }
         throw new IllegalStateException("Instrumentation config not found: " + version);
+    }
+
+    @Override
+    public @Nullable AgentRollupConfig getAgentRollupConfig(String agentRollupId) {
+        return agentDao.readAgentRollupConfig(agentRollupId);
     }
 
     @Override
@@ -724,6 +730,26 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public void updateAgentRollupConfig(AgentRollupConfig agentRollupConfig, String priorVersion)
+            throws Exception {
+        synchronized (agentConfigLock) {
+            AgentRollupConfig existingConfig =
+                    agentDao.readAgentRollupConfig(agentRollupConfig.id());
+            if (existingConfig == null || !existingConfig.version().equals(priorVersion)) {
+                throw new OptimisticLockException();
+            }
+            agentDao.update(agentRollupConfig);
+        }
+    }
+
+    @Override
+    public void deleteAgentRollupConfig(String agentRollupId) throws Exception {
+        synchronized (agentConfigLock) {
+            agentDao.delete(agentRollupId);
+        }
+    }
+
+    @Override
     public void insertUserConfig(UserConfig userConfig) throws Exception {
         synchronized (userConfigLock) {
             // check for case-insensitive duplicate
@@ -740,13 +766,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateUserConfig(UserConfig userConfig, String priorVersion) throws Exception {
         synchronized (userConfigLock) {
-            boolean found = false;
-            for (UserConfig loopUserConfig : userDao.read()) {
-                if (loopUserConfig.version().equals(priorVersion)) {
-                    found = true;
-                }
-            }
-            if (!found) {
+            UserConfig existingConfig = userDao.read(userConfig.username());
+            if (existingConfig == null || !existingConfig.version().equals(priorVersion)) {
                 throw new OptimisticLockException();
             }
             userDao.insert(userConfig);

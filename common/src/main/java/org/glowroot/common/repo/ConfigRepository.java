@@ -24,6 +24,7 @@ import javax.crypto.SecretKey;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.FatStorageConfig;
 import org.glowroot.common.config.LdapConfig;
@@ -100,6 +101,9 @@ public interface ConfigRepository {
     InstrumentationConfig getInstrumentationConfig(String agentId, String version)
             throws IOException;
 
+    @Nullable
+    AgentRollupConfig getAgentRollupConfig(String agentRollupId);
+
     List<UserConfig> getUserConfigs();
 
     @Nullable
@@ -164,6 +168,11 @@ public interface ConfigRepository {
 
     void updateAdvancedConfig(String agentId, AdvancedConfig advancedConfig, String priorVersion)
             throws Exception;
+
+    void updateAgentRollupConfig(AgentRollupConfig agentRollupConfig, String priorVersion)
+            throws Exception;
+
+    void deleteAgentRollupConfig(String agentRollupId) throws Exception;
 
     void insertUserConfig(UserConfig userConfig) throws Exception;
 

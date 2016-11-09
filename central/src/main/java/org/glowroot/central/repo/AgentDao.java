@@ -18,6 +18,7 @@ package org.glowroot.central.repo;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,12 +29,13 @@ import javax.annotation.Nullable;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -49,9 +51,12 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.AgentRollupConfig;
+import org.glowroot.common.config.ImmutableAgentRollupConfig;
 import org.glowroot.common.repo.AgentRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ImmutableAgentRollup;
+import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
@@ -59,8 +64,6 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-// TODO need to validate cannot have agentIds "A/B/C" and "A/B" since there is logic elsewhere
-// (at least in the UI) that "A/B" is only a rollup
 public class AgentDao implements AgentRepository {
 
     private static final String WITH_LCS =
@@ -70,23 +73,30 @@ public class AgentDao implements AgentRepository {
 
     private final PreparedStatement insertPS;
     private final PreparedStatement insertConfigOnlyPS;
-    private final PreparedStatement readAgentRollupPS;
+    private final PreparedStatement existsPS;
     private final PreparedStatement readEnvironmentPS;
-    private final PreparedStatement readAgentConfigPS;
-    private final PreparedStatement readAgentConfigUpdatePS;
-    private final PreparedStatement markAgentConfigUpdatedPS;
+    private final PreparedStatement readConfigPS;
+    private final PreparedStatement readConfigUpdatePS;
+    private final PreparedStatement markConfigUpdatedPS;
+    private final PreparedStatement deleteAgentPS;
 
-    private final PreparedStatement readSingleAgentOnePS;
-    private final PreparedStatement insertAgentOnePS;
-    private final PreparedStatement readAgentOnePS;
+    private final PreparedStatement readAllAgentRollupPS;
+    private final PreparedStatement readParentAgentRollupPS;
+    private final PreparedStatement insertAgentRollupPS;
+    private final PreparedStatement insertLastCaptureTimePS;
+
+    private final PreparedStatement readAgentRollupConfigPS;
+    private final PreparedStatement insertAgentRollupConfigPS;
+
+    private final PreparedStatement deleteAgentRollupPS;
 
     private volatile @MonotonicNonNull ConfigRepository configRepository;
 
-    private final LoadingCache<String, Optional<String>> agentRollupCache =
+    private final LoadingCache<String, Optional<String>> parentAgentRollupCache =
             CacheBuilder.newBuilder().build(new CacheLoader<String, Optional<String>>() {
                 @Override
                 public Optional<String> load(String agentId) throws Exception {
-                    return Optional.fromNullable(readAgentRollupInternal(agentId));
+                    return Optional.fromNullable(readParentAgentRollupInternal(agentId));
                 }
             });
 
@@ -101,88 +111,55 @@ public class AgentDao implements AgentRepository {
     public AgentDao(Session session) {
         this.session = session;
 
-        session.execute("create table if not exists agent (agent_id varchar, agent_rollup varchar,"
-                + " environment blob, config blob, config_update boolean, config_update_token uuid,"
+        session.execute("create table if not exists agent (agent_id varchar, environment blob,"
+                + " config blob, config_update boolean, config_update_token uuid,"
                 + " primary key (agent_id)) " + WITH_LCS);
         // secondary index is needed for Cassandra 2.x (to avoid error on readAgentConfigUpdatePS)
         session.execute(
                 "create index if not exists agent_config_update_idx on agent (config_update)");
-        session.execute("create table if not exists agent_one (one int, agent_id varchar,"
-                + " agent_rollup varchar, primary key (one, agent_id)) " + WITH_LCS);
+        session.execute("create table if not exists agent_rollup (one int, agent_rollup_id varchar,"
+                + " parent_agent_rollup_id varchar, display varchar, agent boolean,"
+                + " last_capture_time timestamp, primary key (one, agent_rollup_id)) " + WITH_LCS);
 
-        insertPS = session.prepare("insert into agent (agent_id, agent_rollup, environment, config,"
-                + " config_update, config_update_token) values (?, ?, ?, ?, ?, ?)");
+        insertPS = session.prepare("insert into agent (agent_id, environment, config,"
+                + " config_update, config_update_token) values (?, ?, ?, ?, ?)");
         insertConfigOnlyPS = session.prepare("insert into agent (agent_id, config, config_update,"
                 + " config_update_token) values (?, ?, ?, ?)");
-        readAgentRollupPS = session.prepare("select agent_rollup from agent where agent_id = ?");
+        existsPS = session.prepare("select agent_id from agent where agent_id = ?");
         readEnvironmentPS = session.prepare("select environment from agent where agent_id = ?");
-        readAgentConfigPS = session.prepare("select config from agent where agent_id = ?");
-        readAgentConfigUpdatePS = session.prepare("select config, config_update_token from agent"
+        readConfigPS = session.prepare("select config from agent where agent_id = ?");
+        readConfigUpdatePS = session.prepare("select config, config_update_token from agent"
                 + " where agent_id = ? and config_update = true allow filtering");
-        markAgentConfigUpdatedPS = session.prepare("update agent set config_update = false,"
+        markConfigUpdatedPS = session.prepare("update agent set config_update = false,"
                 + " config_update_token = null where agent_id = ? if config_update_token = ?");
+        deleteAgentPS = session.prepare("delete from agent where agent_id = ?");
 
-        readSingleAgentOnePS = session
-                .prepare("select agent_rollup from agent_one where one = 1 and agent_id = ?");
-        insertAgentOnePS = session
-                .prepare("insert into agent_one (one, agent_id, agent_rollup) values (1, ?, ?)");
-        readAgentOnePS =
-                session.prepare("select agent_id, agent_rollup from agent_one where one = 1");
+        readAllAgentRollupPS = session.prepare("select agent_rollup_id, parent_agent_rollup_id,"
+                + " display, agent, last_capture_time from agent_rollup where one = 1");
+        readParentAgentRollupPS = session.prepare("select parent_agent_rollup_id from agent_rollup"
+                + " where one = 1 and agent_rollup_id = ?");
+        insertAgentRollupPS = session.prepare("insert into agent_rollup (one, agent_rollup_id,"
+                + " parent_agent_rollup_id, agent) values (1, ?, ?, ?)");
+        insertLastCaptureTimePS = session.prepare("insert into agent_rollup (one, agent_rollup_id,"
+                + " last_capture_time) values (1, ?, ?)");
+
+        readAgentRollupConfigPS = session
+                .prepare("select display from agent_rollup where one = 1 and agent_rollup_id = ?");
+        insertAgentRollupConfigPS = session.prepare("insert into agent_rollup (one,"
+                + " agent_rollup_id, display) values (1, ?, ?)");
+        deleteAgentRollupPS = session.prepare("delete from agent_rollup where one = 1"
+                + " and agent_rollup_id = ?");
     }
 
     public void setConfigRepository(ConfigRepository configRepository) {
         this.configRepository = configRepository;
     }
 
-    @Override
-    public List<AgentRollup> readAgentRollups() {
-        ResultSet results = session.execute(readAgentOnePS.bind());
-        Set<String> topLevelAgentRollups = Sets.newHashSet();
-        Set<String> bottomLevelAgentRollups = Sets.newHashSet();
-        Multimap<String, String> parentChildMap = ArrayListMultimap.create();
-        for (Row row : results) {
-            String agentId = checkNotNull(row.getString(0));
-            String agentRollupId = row.getString(1);
-            if (agentRollupId == null) {
-                topLevelAgentRollups.add(agentId);
-            } else {
-                bottomLevelAgentRollups.add(agentRollupId);
-                parentChildMap.put(agentRollupId, agentId);
-            }
-        }
-        for (String bottomLevelAgentRollup : bottomLevelAgentRollups) {
-            List<String> agentRollupIds = getAgentRollupIds(bottomLevelAgentRollup);
-            topLevelAgentRollups.add(agentRollupIds.get(0));
-            for (int i = 1; i < agentRollupIds.size(); i++) {
-                parentChildMap.put(agentRollupIds.get(i - 1), agentRollupIds.get(i));
-            }
-        }
-        List<AgentRollup> rollups = Lists.newArrayList();
-        for (String topLevelAgentRollup : Ordering.from(String.CASE_INSENSITIVE_ORDER)
-                .sortedCopy(topLevelAgentRollups)) {
-            rollups.add(createAgentRollup(topLevelAgentRollup, parentChildMap));
-        }
-        return rollups;
-    }
-
-    @Override
-    public boolean isLeaf(String agentRollupId) {
-        return agentRollupCache.getUnchecked(agentRollupId).isPresent();
-    }
-
     // returns stored agent config
     public AgentConfig store(String agentId, @Nullable String agentRollupId,
-            Environment environment,
-            AgentConfig agentConfig) throws InvalidProtocolBufferException {
-        AgentConfig existingAgentConfig = null;
-        // checking if agent exists in agent_one table since if it doesn't, then user no longer
-        // sees the agent in the UI and and it doesn't make sense for it to have an existing config
-        BoundStatement boundStatement = readSingleAgentOnePS.bind();
-        boundStatement.setString(0, agentId);
-        ResultSet results = session.execute(boundStatement);
-        if (results.one() != null) {
-            existingAgentConfig = readAgentConfig(agentId);
-        }
+            Environment environment, AgentConfig agentConfig)
+            throws InvalidProtocolBufferException {
+        AgentConfig existingAgentConfig = readAgentConfig(agentId);
         AgentConfig updatedAgentConfig;
         if (existingAgentConfig == null) {
             updatedAgentConfig = agentConfig;
@@ -228,10 +205,9 @@ public class AgentDao implements AgentRepository {
                     .addAllPluginConfig(pluginConfigs)
                     .build();
         }
-        boundStatement = insertPS.bind();
+        BoundStatement boundStatement = insertPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentId);
-        boundStatement.setString(i++, agentRollupId);
         boundStatement.setBytes(i++, ByteBuffer.wrap(environment.toByteArray()));
         boundStatement.setBytes(i++, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
         // this method is only called by collectInit(), and agent will not consider collectInit()
@@ -239,16 +215,55 @@ public class AgentDao implements AgentRepository {
         boundStatement.setBool(i++, false);
         boundStatement.setToNull(i++);
         session.execute(boundStatement);
-        // insert into agent last so readEnvironment() and readAgentConfig() below are more likely
-        // to return non-null
-        boundStatement = insertAgentOnePS.bind();
+        // insert into agent_rollup last so readEnvironment() and readAgentConfig() below are more
+        // likely to return non-null
+        boundStatement = insertAgentRollupPS.bind();
         i = 0;
         boundStatement.setString(i++, agentId);
         boundStatement.setString(i++, agentRollupId);
+        boundStatement.setBool(i++, true);
         session.execute(boundStatement);
-        agentRollupCache.invalidate(agentId);
+        parentAgentRollupCache.invalidate(agentId);
         agentConfigCache.invalidate(agentId);
         return updatedAgentConfig;
+    }
+
+    @Override
+    public List<AgentRollup> readAgentRollups() {
+        ResultSet results = session.execute(readAllAgentRollupPS.bind());
+        Set<AgentRollupRecord> topLevel = Sets.newHashSet();
+        Multimap<String, AgentRollupRecord> childMultimap = ArrayListMultimap.create();
+        for (Row row : results) {
+            int i = 0;
+            String id = checkNotNull(row.getString(i++));
+            String parentId = row.getString(i++);
+            String display = MoreObjects.firstNonNull(row.getString(i++), id);
+            boolean agent = row.getBool(i++);
+            Date lastCaptureTime = row.getTimestamp(i++);
+            AgentRollupRecord agentRollupRecord = ImmutableAgentRollupRecord.builder()
+                    .id(id)
+                    .display(display)
+                    .agent(agent)
+                    .lastCaptureTime(lastCaptureTime)
+                    .build();
+            if (parentId == null) {
+                topLevel.add(agentRollupRecord);
+            } else {
+                childMultimap.put(parentId, agentRollupRecord);
+            }
+        }
+        List<AgentRollup> agentRollups = Lists.newArrayList();
+        for (AgentRollupRecord topLevelAgentRollup : Ordering.natural().sortedCopy(topLevel)) {
+            agentRollups.add(createAgentRollup(topLevelAgentRollup, childMultimap));
+        }
+        return agentRollups;
+    }
+
+    @Override
+    public boolean isAgentId(String agentId) {
+        BoundStatement boundStatement = existsPS.bind();
+        boundStatement.setString(0, agentId);
+        return !session.execute(boundStatement).isExhausted();
     }
 
     @Override
@@ -272,7 +287,7 @@ public class AgentDao implements AgentRepository {
 
     public @Nullable AgentConfigUpdate readForAgentConfigUpdate(String agentId)
             throws InvalidProtocolBufferException {
-        BoundStatement boundStatement = readAgentConfigUpdatePS.bind();
+        BoundStatement boundStatement = readConfigUpdatePS.bind();
         boundStatement.setString(0, agentId);
         ResultSet results = session.execute(boundStatement);
         Row row = results.one();
@@ -289,7 +304,7 @@ public class AgentDao implements AgentRepository {
     }
 
     public void markAgentConfigUpdated(String agentId, UUID configUpdateToken) {
-        BoundStatement boundStatement = markAgentConfigUpdatedPS.bind();
+        BoundStatement boundStatement = markConfigUpdatedPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentId);
         boundStatement.setUUID(i++, configUpdateToken);
@@ -301,7 +316,7 @@ public class AgentDao implements AgentRepository {
     // its direct parent is index 1
     // etc...
     public List<String> readAgentRollupIds(String agentId) {
-        String agentRollupId = agentRollupCache.getUnchecked(agentId).orNull();
+        String agentRollupId = parentAgentRollupCache.getUnchecked(agentId).orNull();
         if (agentRollupId == null) {
             // agent must have been manually deleted
             return ImmutableList.of(agentId);
@@ -310,6 +325,14 @@ public class AgentDao implements AgentRepository {
         Collections.reverse(agentRollupIds);
         agentRollupIds.add(0, agentId);
         return agentRollupIds;
+    }
+
+    ResultSetFuture updateLastCaptureTime(String agentId, long captureTime) {
+        BoundStatement boundStatement = insertLastCaptureTimePS.bind();
+        int i = 0;
+        boundStatement.setString(i++, agentId);
+        boundStatement.setTimestamp(i++, new Date(captureTime));
+        return session.executeAsync(boundStatement);
     }
 
     @Nullable
@@ -328,21 +351,55 @@ public class AgentDao implements AgentRepository {
         agentConfigCache.invalidate(agentId);
     }
 
+    @Nullable
+    AgentRollupConfig readAgentRollupConfig(String agentRollupId) {
+        BoundStatement boundStatement = readAgentRollupConfigPS.bind();
+        boundStatement.setString(0, agentRollupId);
+        ResultSet results = session.execute(boundStatement);
+        Row row = results.one();
+        if (row == null) {
+            return null;
+        }
+        return ImmutableAgentRollupConfig.builder()
+                .id(agentRollupId)
+                .display(Strings.nullToEmpty(row.getString(0)))
+                .build();
+    }
+
+    void update(AgentRollupConfig agentRollupConfig) {
+        BoundStatement boundStatement = insertAgentRollupConfigPS.bind();
+        int i = 0;
+        boundStatement.setString(i++, agentRollupConfig.id());
+        boundStatement.setString(i++, Strings.emptyToNull(agentRollupConfig.display()));
+        session.execute(boundStatement);
+    }
+
+    void delete(String agentRollupId) {
+        if (isAgentId(agentRollupId)) {
+            BoundStatement boundStatement = deleteAgentPS.bind();
+            boundStatement.setString(0, agentRollupId);
+            session.execute(boundStatement);
+        }
+        BoundStatement boundStatement = deleteAgentRollupPS.bind();
+        boundStatement.setString(0, agentRollupId);
+        session.execute(boundStatement);
+    }
+
     // returns non-null when agentId exists, so agentRollupCache can be checked for existence
-    private @Nullable String readAgentRollupInternal(String agentId) {
-        BoundStatement boundStatement = readAgentRollupPS.bind();
+    private @Nullable String readParentAgentRollupInternal(String agentId) {
+        BoundStatement boundStatement = readParentAgentRollupPS.bind();
         boundStatement.setString(0, agentId);
         ResultSet results = session.execute(boundStatement);
         Row row = results.one();
         if (row == null) {
             return null;
         }
-        return MoreObjects.firstNonNull(row.getString(0), agentId);
+        return row.getString(0);
     }
 
     private @Nullable AgentConfig readAgentConfigInternal(String agentId)
             throws InvalidProtocolBufferException {
-        BoundStatement boundStatement = readAgentConfigPS.bind();
+        BoundStatement boundStatement = readConfigPS.bind();
         boundStatement.setString(0, agentId);
         ResultSet results = session.execute(boundStatement);
         Row row = results.one();
@@ -358,18 +415,22 @@ public class AgentDao implements AgentRepository {
         return AgentConfig.parseFrom(ByteString.copyFrom(bytes));
     }
 
-    private AgentRollup createAgentRollup(String agentRollupId,
-            Multimap<String, String> parentChildMap) {
-        Collection<String> childAgentRollups = parentChildMap.get(agentRollupId);
+    private AgentRollup createAgentRollup(AgentRollupRecord agentRollupRecord,
+            Multimap<String, AgentRollupRecord> parentChildMap) {
+        Collection<AgentRollupRecord> childAgentRollupRecords =
+                parentChildMap.get(agentRollupRecord.id());
         ImmutableAgentRollup.Builder builder = ImmutableAgentRollup.builder()
-                .id(agentRollupId);
-        for (String childAgentRollup : childAgentRollups) {
-            builder.addChildren(createAgentRollup(childAgentRollup, parentChildMap));
+                .id(agentRollupRecord.id())
+                .display(agentRollupRecord.display())
+                .agent(agentRollupRecord.agent())
+                .lastCaptureTime(agentRollupRecord.lastCaptureTime());
+        for (AgentRollupRecord childAgentRollupRecord : Ordering.natural()
+                .sortedCopy(childAgentRollupRecords)) {
+            builder.addChildren(createAgentRollup(childAgentRollupRecord, parentChildMap));
         }
         return builder.build();
     }
 
-    @VisibleForTesting
     static List<String> getAgentRollupIds(String agentRollupId) {
         List<String> agentRollupIds = Lists.newArrayList();
         int lastFoundIndex = -1;
@@ -386,5 +447,21 @@ public class AgentDao implements AgentRepository {
     public interface AgentConfigUpdate {
         AgentConfig config();
         UUID configUpdateToken();
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface AgentRollupRecord extends Comparable<AgentRollupRecord> {
+
+        String id();
+        String display();
+        boolean agent();
+        @Nullable
+        Date lastCaptureTime();
+
+        @Override
+        default public int compareTo(AgentRollupRecord right) {
+            return display().compareToIgnoreCase(right.display());
+        }
     }
 }

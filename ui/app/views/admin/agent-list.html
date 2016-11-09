@@ -1,0 +1,38 @@
+<!--
+  Copyright 2016 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h2>Agents</h2>
+  </div>
+  <div class="panel-body">
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+    <div style="margin: 15px;">
+      <div ng-repeat="agent in agents"
+           style="padding-bottom: 8px;">
+        <div>
+          <a ng-href="admin/agent?agent-rollup-id={{agent.id}}"
+             ng-style="{'margin-left': (20 * agent.depth) + 'px'}">
+            {{agent.display}}
+          </a>
+          <span ng-if="agent.lastCaptureTime" style="margin-left: 10px;">
+            (last capture time {{agent.lastCaptureTime | date:'medium'}})
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

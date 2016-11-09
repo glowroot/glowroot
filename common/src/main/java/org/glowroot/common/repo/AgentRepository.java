@@ -15,6 +15,7 @@
  */
 package org.glowroot.common.repo;
 
+import java.util.Date;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -28,7 +29,7 @@ public interface AgentRepository {
 
     List<AgentRollup> readAgentRollups();
 
-    boolean isLeaf(String agentRollupId);
+    boolean isAgentId(String agentId);
 
     @Nullable
     Environment readEnvironment(String agentId) throws Exception;
@@ -37,6 +38,11 @@ public interface AgentRepository {
     @Styles.AllParameters
     interface AgentRollup {
         String id();
+        String display();
+        // cannot rely on empty children to determine since children could have been deleted
+        boolean agent();
+        @Nullable
+        Date lastCaptureTime();
         List<AgentRollup> children();
     }
 }

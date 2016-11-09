@@ -102,6 +102,7 @@ public class UiModule {
         jsonServices.add(traceJsonService);
         jsonServices.add(errorJsonService);
         jsonServices.add(configJsonService);
+        jsonServices.add(new AgentConfigJsonService(configRepository, agentRepository));
         jsonServices.add(new UserConfigJsonService(configRepository));
         jsonServices.add(new RoleConfigJsonService(embedded, configRepository, agentRepository));
         jsonServices.add(gaugeValueJsonService);

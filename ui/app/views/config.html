@@ -22,20 +22,19 @@
       <span class="gt-inline-block gt-header-menu" ng-if="activeNavbarItem === 'agentConfig'">
         <span class="dropdown">
           <a href="#" role="button" data-toggle="dropdown" class="dropdown-toggle">
-            {{agentRollupId || '&lt;agent&gt;'}}
+            {{layout.agentRollups[agentRollupId].display || '&lt;agent&gt;'}}
             <span class="gt-large-caret"></span>
           </a>
           <!-- margin-bottom helps when large menu that extends to the bottom of the page -->
           <ul class="dropdown-menu"
               role="menu"
               style="margin-bottom: 100px;">
-            <li ng-repeat="(rollup, value) in layout.agentRollups"
-                ng-hide="!value.permissions.config.view">
+            <li ng-repeat="agentRollup in layout.agentRollups"
+                ng-hide="!agentRollup.permissions.config.view">
               <a role="menuitem"
                  tabindex="-1"
-                 ng-href="{{agentRollupUrl(rollup, value.leaf)}}">
-                <!-- not using value.display here since that includes indentation and no hierarchy on config page -->
-                {{rollup}}
+                 ng-href="{{agentRollupUrl(agentRollup)}}">
+                {{agentRollup.display}}
               </a>
             </li>
           </ul>
@@ -101,6 +100,12 @@
   <div class="panel panel-default"
        ng-if="(activeNavbarItem === 'gears' || layout.embedded) && layout.adminView">
     <ul class="list-group">
+      <div gt-sidebar-item
+           gt-display="Agents"
+           gt-url="admin/agent-list"
+           gt-active="currentUrl() === 'admin/agent-list'"
+           gt-sub-active="currentUrl() === 'admin/agent'">
+      </div>
       <div gt-sidebar-item
            gt-display="Users"
            gt-url="admin/user-list"

@@ -22,18 +22,18 @@
       <span class="gt-inline-block gt-header-menu">
         <span class="dropdown">
           <a href="#" role="button" data-toggle="dropdown" class="dropdown-toggle">
-            {{agentRollupId || '&lt;agent&gt;'}}
+            {{layout.agentRollups[agentRollupId].display || '&lt;agent&gt;'}}
             <span class="gt-large-caret"></span>
           </a>
           <!-- margin-bottom helps when large menu that extends to the bottom of the page -->
           <ul class="dropdown-menu"
               role="menu"
               style="margin-bottom: 100px;">
-            <li ng-repeat="(rollup, value) in layout.agentRollups">
+            <li ng-repeat="agentRollup in layout.agentRollups">
               <a role="menuitem"
                  tabindex="-1"
-                 ng-href="{{agentRollupUrl(rollup, value)}}">
-                {{value.display}}
+                 ng-href="{{agentRollupUrl(agentRollup)}}">
+                {{agentRollup.indentedDisplay}}
               </a>
             </li>
           </ul>

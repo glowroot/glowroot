@@ -99,7 +99,7 @@ glowroot.config([
       } else if ($rootScope.layout.showNavbarConfig) {
         return 'config/transaction';
       } else {
-        return 'admin/user-list';
+        return 'admin/agent-list';
       }
     });
     $stateProvider.state('transaction', {
@@ -462,6 +462,16 @@ glowroot.config([
       resolve: {
         waitForLayout: waitForLayout(false)
       }
+    });
+    $stateProvider.state('admin.agentList', {
+      url: '/agent-list',
+      templateUrl: 'views/admin/agent-list.html',
+      controller: 'AdminAgentListCtrl'
+    });
+    $stateProvider.state('admin.agent', {
+      url: '/agent',
+      templateUrl: 'views/admin/agent.html',
+      controller: 'AdminAgentCtrl'
     });
     $stateProvider.state('admin.userList', {
       url: '/user-list',

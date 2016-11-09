@@ -398,7 +398,10 @@ public class AggregateDao implements AggregateRepository {
     public void store(String agentId, long captureTime,
             List<OldAggregatesByType> aggregatesByTypeList,
             List<Aggregate.SharedQueryText> initialSharedQueryTexts) throws Exception {
-
+        if (aggregatesByTypeList.isEmpty()) {
+            agentDao.updateLastCaptureTime(agentId, captureTime).get();
+            return;
+        }
         List<String> agentRollupIds = agentDao.readAgentRollupIds(agentId);
         int adjustedTTL = getAdjustedTTL(getTTLs().get(0), captureTime, clock);
         List<ResultSetFuture> futures = Lists.newArrayList();
@@ -443,15 +446,16 @@ public class AggregateDao implements AggregateRepository {
             }
             futures.addAll(transactionTypeDao.store(agentRollupIds, transactionType));
         }
+        futures.add(agentDao.updateLastCaptureTime(agentId, captureTime));
+        // wait for success before inserting "needs rollup" records
+        MoreFutures.waitForAll(futures);
+        futures.clear();
+
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         // TODO report checker framework issue that occurs without this suppression
         @SuppressWarnings("assignment.type.incompatible")
         Set<String> transactionTypes = aggregatesByTypeList.stream()
                 .map(OldAggregatesByType::getTransactionType).collect(Collectors.toSet());
-
-        // wait for success before inserting "needs rollup" records
-        MoreFutures.waitForAll(futures);
-        futures.clear();
 
         int needsRollupAdjustedTTL = getNeedsRollupAdjustedTTL(adjustedTTL, rollupConfigs);
         if (agentRollupIds.size() > 1) {

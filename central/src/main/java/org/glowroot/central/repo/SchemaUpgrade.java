@@ -55,7 +55,7 @@ public class SchemaUpgrade {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private static final int CURR_SCHEMA_VERSION = 12;
+    private static final int CURR_SCHEMA_VERSION = 13;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -119,7 +119,7 @@ public class SchemaUpgrade {
             addAgentRollupColumn();
             updateSchemaVersion(9);
         }
-        // 0.9.5 to 0.9.6
+        // 0.9.6 to 0.9.7
         if (initialSchemaVersion < 11) {
             updateDtcsTwcsGcSeconds();
             updateSchemaVersion(11);
@@ -127,6 +127,10 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 12) {
             updateGcSeconds();
             updateSchemaVersion(12);
+        }
+        if (initialSchemaVersion < 13) {
+            updateAgentRollup();
+            updateSchemaVersion(13);
         }
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
         startupLogger.info("upgraded schema version to {}", CURR_SCHEMA_VERSION);
@@ -414,6 +418,46 @@ public class SchemaUpgrade {
                 "alter table gauge_needs_rollup_3 with gc_grace_seconds = " + gcGraceSeconds);
         session.execute(
                 "alter table gauge_needs_rollup_4 with gc_grace_seconds = " + gcGraceSeconds);
+    }
+
+    private void updateAgentRollup() throws InterruptedException {
+        if (!tableExists("agent_one")) {
+            // previously failed mid-upgrade prior to updating schema version
+            return;
+        }
+        session.execute("create table if not exists agent_rollup (one int, agent_rollup_id varchar,"
+                + " parent_agent_rollup_id varchar, agent boolean, display varchar,"
+                + " last_capture_time timestamp, primary key (one, agent_rollup_id)) " + WITH_LCS);
+        ResultSet results = session.execute("select agent_id, agent_rollup from agent_one");
+        PreparedStatement insertPS = session.prepare("insert into agent_rollup (one,"
+                + " agent_rollup_id, parent_agent_rollup_id, agent) values (1, ?, ?, ?)");
+        Set<String> parentAgentRollupIds = Sets.newHashSet();
+        for (Row row : results) {
+            String agentRollupId = row.getString(0);
+            String parentAgentRollupId = row.getString(1);
+            BoundStatement boundStatement = insertPS.bind();
+            int i = 0;
+            boundStatement.setString(i++, agentRollupId);
+            boundStatement.setString(i++, parentAgentRollupId);
+            boundStatement.setBool(i++, true);
+            session.execute(boundStatement);
+            if (parentAgentRollupId != null) {
+                parentAgentRollupIds.addAll(AgentDao.getAgentRollupIds(parentAgentRollupId));
+            }
+        }
+        for (String parentAgentRollupId : parentAgentRollupIds) {
+            int index = parentAgentRollupId.lastIndexOf('/');
+            String parentOfParentAgentRollupId =
+                    index == -1 ? null : parentAgentRollupId.substring(0, index);
+            BoundStatement boundStatement = insertPS.bind();
+            int i = 0;
+            boundStatement.setString(i++, parentAgentRollupId);
+            boundStatement.setString(i++, parentOfParentAgentRollupId);
+            boundStatement.setBool(i++, false);
+            session.execute(boundStatement);
+        }
+        session.execute("alter table agent drop agent_rollup");
+        dropTable("agent_one");
     }
 
     private boolean tableExists(String tableName) {

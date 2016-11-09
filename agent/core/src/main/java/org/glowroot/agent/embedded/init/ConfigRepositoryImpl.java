@@ -42,6 +42,7 @@ import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.config.TransactionConfig;
 import org.glowroot.agent.config.UiConfig;
 import org.glowroot.agent.config.UserRecordingConfig;
+import org.glowroot.common.config.AgentRollupConfig;
 import org.glowroot.common.config.CentralStorageConfig;
 import org.glowroot.common.config.FatStorageConfig;
 import org.glowroot.common.config.ImmutableFatStorageConfig;
@@ -283,6 +284,11 @@ class ConfigRepositoryImpl implements ConfigRepository {
             }
         }
         return null;
+    }
+
+    @Override
+    public AgentRollupConfig getAgentRollupConfig(String agentRollup) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -638,6 +644,16 @@ class ConfigRepositoryImpl implements ConfigRepository {
             checkVersionsEqual(currVersion, priorVersion);
             configService.updateAdvancedConfig(AdvancedConfig.create(advancedConfig));
         }
+    }
+
+    @Override
+    public void updateAgentRollupConfig(AgentRollupConfig agentRollupConfig, String priorVersion) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void deleteAgentRollupConfig(String agentRollup) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

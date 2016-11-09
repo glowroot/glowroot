@@ -175,11 +175,13 @@ public class GaugeValueDao implements GaugeValueRepository {
         }
         List<String> agentRollupIds = agentDao.readAgentRollupIds(agentId);
         int ttl = getTTLs().get(0);
+        long maxCaptureTime = 0;
         List<ResultSetFuture> futures = Lists.newArrayList();
         for (GaugeValue gaugeValue : gaugeValues) {
             BoundStatement boundStatement = insertValuePS.get(0).bind();
             String gaugeName = gaugeValue.getGaugeName();
             long captureTime = gaugeValue.getCaptureTime();
+            maxCaptureTime = Math.max(captureTime, maxCaptureTime);
             int adjustedTTL = AggregateDao.getAdjustedTTL(ttl, captureTime, clock);
             int i = 0;
             boundStatement.setString(i++, agentId);

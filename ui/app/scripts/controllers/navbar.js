@@ -71,7 +71,7 @@ glowroot.controller('NavbarCtrl', [
           && ($scope.agentPermissions && $scope.agentPermissions.config.view || $scope.layout.adminView)) {
         return 'config/transaction';
       } else if (!$scope.layout.embedded && $scope.layout.adminView) {
-        return 'admin/user-list';
+        return 'admin/agent-list';
       } else {
         return 'change-password';
       }

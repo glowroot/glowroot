@@ -63,7 +63,7 @@ class GaugeValueJsonService {
             @BindRequest GaugeValueRequest request) throws Exception {
         int rollupLevel =
                 rollupLevelService.getGaugeRollupLevelForView(request.from(), request.to());
-        if (rollupLevel == 0 && !agentRepository.isLeaf(agentRollupId)) {
+        if (rollupLevel == 0 && !agentRepository.isAgentId(agentRollupId)) {
             // agent rollups from children do not have level-0 data
             rollupLevel = 1;
         }

@@ -97,7 +97,7 @@ public class ConfigRepositoryIT {
     public static void tearDown() throws Exception {
         // remove bad data so other tests don't have issue
         session.execute("drop table agent");
-        session.execute("drop table agent_one");
+        session.execute("drop table agent_rollup");
         session.execute("drop table user");
         session.execute("drop table role");
         session.execute("drop table central_config");

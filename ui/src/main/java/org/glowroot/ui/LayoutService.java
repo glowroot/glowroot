@@ -108,8 +108,9 @@ class LayoutService {
 
         Map<String, AgentRollupLayout> agentRollups = Maps.newLinkedHashMap();
         agentRollups.put(AGENT_ID, ImmutableAgentRollupLayout.builder()
+                .display(AGENT_ID)
                 .depth(0)
-                .leaf(true)
+                .agent(true)
                 .permissions(permissions)
                 .addAllTransactionTypes(transactionTypes)
                 .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
@@ -185,11 +186,13 @@ class LayoutService {
             Authentication authentication) {
         List<FilteredAgentRollup> filtered = Lists.newArrayList();
         for (AgentRollup agentRollup : agentRollups) {
-            Permissions permissions = getPermissions(authentication, agentRollup.id(),
-                    agentRollup.children().isEmpty());
+            Permissions permissions =
+                    getPermissions(authentication, agentRollup.id(), agentRollup.agent());
             if (permissions.hasSomeAccess()) {
                 filtered.add(ImmutableFilteredAgentRollup.builder()
                         .id(agentRollup.id())
+                        .display(agentRollup.display())
+                        .agent(agentRollup.agent())
                         .addAllChildren(filter(agentRollup.children(), authentication))
                         .permissions(permissions)
                         .build());
@@ -203,7 +206,7 @@ class LayoutService {
     }
 
     private static Permissions getPermissions(Authentication authentication, String agentRollupId,
-            boolean leaf) {
+            boolean agent) {
         return ImmutablePermissions.builder()
                 .transaction(ImmutableTransactionPermissions.builder()
                         .overview(authentication.isAgentPermitted(agentRollupId,
@@ -225,42 +228,42 @@ class LayoutService {
                         .build())
                 .jvm(ImmutableJvmPermissions.builder()
                         .gauges(authentication.isAgentPermitted(agentRollupId, "agent:jvm:gauges"))
-                        .threadDump(leaf && authentication.isAgentPermitted(agentRollupId,
+                        .threadDump(agent && authentication.isAgentPermitted(agentRollupId,
                                 "agent:jvm:threadDump"))
-                        .heapDump(leaf && authentication.isAgentPermitted(agentRollupId,
+                        .heapDump(agent && authentication.isAgentPermitted(agentRollupId,
                                 "agent:jvm:heapDump"))
-                        .heapHistogram(leaf && authentication.isAgentPermitted(agentRollupId,
+                        .heapHistogram(agent && authentication.isAgentPermitted(agentRollupId,
                                 "agent:jvm:heapHistogram"))
-                        .gc(leaf && authentication.isAgentPermitted(agentRollupId, "agent:jvm:gc"))
-                        .mbeanTree(leaf && authentication.isAgentPermitted(agentRollupId,
+                        .gc(agent && authentication.isAgentPermitted(agentRollupId, "agent:jvm:gc"))
+                        .mbeanTree(agent && authentication.isAgentPermitted(agentRollupId,
                                 "agent:jvm:mbeanTree"))
-                        .systemProperties(leaf && authentication.isAgentPermitted(agentRollupId,
+                        .systemProperties(agent && authentication.isAgentPermitted(agentRollupId,
                                 "agent:jvm:systemProperties"))
-                        .environment(leaf && authentication.isAgentPermitted(agentRollupId,
+                        .environment(agent && authentication.isAgentPermitted(agentRollupId,
                                 "agent:jvm:environment"))
-                        .capabilities(leaf && authentication.isAgentPermitted(agentRollupId,
+                        .capabilities(agent && authentication.isAgentPermitted(agentRollupId,
                                 "agent:jvm:capabilities"))
                         .build())
                 .config(ImmutableConfigPermissions.builder()
-                        .view(leaf && authentication.isAgentPermitted(agentRollupId,
+                        .view(agent && authentication.isAgentPermitted(agentRollupId,
                                 "agent:config:view"))
                         .edit(ImmutableEditConfigPermissions.builder()
-                                .transaction(leaf && authentication.isAgentPermitted(agentRollupId,
+                                .transaction(agent && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:transaction"))
-                                .gauge(leaf && authentication.isAgentPermitted(agentRollupId,
+                                .gauge(agent && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:gauge"))
-                                .alert(leaf && authentication.isAgentPermitted(agentRollupId,
+                                .alert(agent && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:alert"))
-                                .ui(leaf && authentication.isAgentPermitted(agentRollupId,
+                                .ui(agent && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:ui"))
-                                .plugin(leaf && authentication.isAgentPermitted(agentRollupId,
+                                .plugin(agent && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:plugin"))
-                                .instrumentation(leaf && authentication.isAgentPermitted(
+                                .instrumentation(agent && authentication.isAgentPermitted(
                                         agentRollupId, "agent:config:edit:instrumentation"))
-                                .advanced(leaf && authentication.isAgentPermitted(agentRollupId,
+                                .advanced(agent && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:advanced"))
                                 .userRecording(
-                                        leaf && authentication.isAgentPermitted(agentRollupId,
+                                        agent && authentication.isAgentPermitted(agentRollupId,
                                                 "agent:config:edit:userRecording"))
                                 .build())
                         .build())
@@ -318,8 +321,9 @@ class LayoutService {
             transactionTypes.add(defaultDisplayedTransactionType);
             agentRollups.put(agentRollup.id(),
                     ImmutableAgentRollupLayout.builder()
+                            .display(agentRollup.display())
                             .depth(depth)
-                            .leaf(agentRollup.children().isEmpty())
+                            .agent(agentRollup.agent())
                             .permissions(permissions)
                             .addAllTransactionTypes(transactionTypes)
                             .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
@@ -343,8 +347,10 @@ class LayoutService {
     @Value.Immutable
     interface FilteredAgentRollup {
         String id();
-        List<FilteredAgentRollup> children();
+        String display();
+        boolean agent();
         Permissions permissions();
+        List<FilteredAgentRollup> children();
     }
 
     @Value.Immutable
@@ -376,8 +382,9 @@ class LayoutService {
 
     @Value.Immutable
     interface AgentRollupLayout {
+        String display();
         int depth();
-        boolean leaf();
+        boolean agent();
         Permissions permissions();
         List<String> transactionTypes();
         String defaultDisplayedTransactionType();
@@ -464,7 +471,7 @@ class LayoutService {
     private static class FilteredAgentRollupOrdering extends Ordering<FilteredAgentRollup> {
         @Override
         public int compare(FilteredAgentRollup left, FilteredAgentRollup right) {
-            return left.id().compareToIgnoreCase(right.id());
+            return left.display().compareToIgnoreCase(right.display());
         }
     }
 }
