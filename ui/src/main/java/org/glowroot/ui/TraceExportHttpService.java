@@ -76,8 +76,8 @@ class TraceExportHttpService implements HttpService {
             Authentication authentication) throws Exception {
         auditLogger.info("{} - GET {}", authentication.caseAmbiguousUsername(), request.uri());
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-        List<String> agentRollups = decoder.parameters().get("agent-rollup");
-        String agentRollup = agentRollups == null ? "" : agentRollups.get(0);
+        List<String> agentRollupIds = decoder.parameters().get("agent-rollup-id");
+        String agentRollupId = agentRollupIds == null ? "" : agentRollupIds.get(0);
         List<String> agentIds = decoder.parameters().get("agent-id");
         String agentId = agentIds == null ? "" : agentIds.get(0);
         List<String> traceIds = decoder.parameters().get("trace-id");
@@ -90,13 +90,14 @@ class TraceExportHttpService implements HttpService {
         if (checkLiveTracesParams != null && !checkLiveTracesParams.isEmpty()) {
             checkLiveTraces = Boolean.parseBoolean(checkLiveTracesParams.get(0));
         }
-        logger.debug("handleRequest(): agentRollup={}, agentId={}, traceId={}, checkLiveTraces={}",
-                agentRollup, agentId, traceId, checkLiveTraces);
-        if (agentRollup.isEmpty()) {
-            agentRollup = agentId;
+        logger.debug(
+                "handleRequest(): agentRollupId={}, agentId={}, traceId={}, checkLiveTraces={}",
+                agentRollupId, agentId, traceId, checkLiveTraces);
+        if (agentRollupId.isEmpty()) {
+            agentRollupId = agentId;
         }
         TraceExport traceExport =
-                traceCommonService.getExport(agentRollup, agentId, traceId, checkLiveTraces);
+                traceCommonService.getExport(agentRollupId, agentId, traceId, checkLiveTraces);
         if (traceExport == null) {
             logger.warn("no trace found for id: {}", traceId);
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);

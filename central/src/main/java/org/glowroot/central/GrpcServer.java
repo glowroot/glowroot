@@ -144,8 +144,8 @@ class GrpcServer {
     }
 
     @VisibleForTesting
-    static String trimSpacesAroundAgentRollupSeparator(String agentRollup) {
-        return agentRollup.replaceAll(" */ *", "/").trim();
+    static String trimSpacesAroundAgentRollupIdSeparator(String agentRollupId) {
+        return agentRollupId.replaceAll(" */ *", "/").trim();
     }
 
     private class CollectorServiceImpl extends CollectorServiceImplBase {
@@ -157,11 +157,11 @@ class GrpcServer {
                 StreamObserver<InitResponse> responseObserver) {
             AgentConfig updatedAgentConfig;
             try {
-                String agentRollup = request.getAgentRollup();
+                String agentRollupId = request.getAgentRollupId();
                 // trim spaces around rollup separator "/"
-                agentRollup = trimSpacesAroundAgentRollupSeparator(agentRollup);
+                agentRollupId = trimSpacesAroundAgentRollupIdSeparator(agentRollupId);
                 updatedAgentConfig = agentDao.store(request.getAgentId(),
-                        Strings.emptyToNull(agentRollup), request.getEnvironment(),
+                        Strings.emptyToNull(agentRollupId), request.getEnvironment(),
                         request.getAgentConfig());
             } catch (Throwable t) {
                 logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);

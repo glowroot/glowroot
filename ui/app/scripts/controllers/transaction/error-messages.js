@@ -43,7 +43,7 @@ glowroot.controller('ErrorMessagesCtrl', [
     });
 
     function refreshData(deferred) {
-      if ((!$scope.agentRollup && !$scope.layout.embedded) || !$scope.transactionType) {
+      if ((!$scope.agentRollupId && !$scope.layout.embedded) || !$scope.transactionType) {
         return;
       }
       $scope.parsingError = undefined;
@@ -53,7 +53,7 @@ glowroot.controller('ErrorMessagesCtrl', [
         return;
       }
       var query = {
-        agentRollup: $scope.agentRollup,
+        agentRollupId: $scope.agentRollupId,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
         from: $scope.range.chartFrom,

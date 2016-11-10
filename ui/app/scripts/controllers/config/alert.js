@@ -73,7 +73,7 @@ glowroot.controller('ConfigAlertCtrl', [
       }
     }
 
-    $http.get('backend/jvm/all-gauges?agent-rollup=' + encodeURIComponent($scope.agentRollup))
+    $http.get('backend/jvm/all-gauges?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
         .success(function (data) {
           onHalfLoad();
           $scope.gaugeNames = [];

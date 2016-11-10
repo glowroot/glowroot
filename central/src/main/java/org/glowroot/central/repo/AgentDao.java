@@ -31,6 +31,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
@@ -141,19 +142,19 @@ public class AgentDao implements AgentRepository {
         Multimap<String, String> parentChildMap = ArrayListMultimap.create();
         for (Row row : results) {
             String agentId = checkNotNull(row.getString(0));
-            String agentRollup = row.getString(1);
-            if (agentRollup == null) {
+            String agentRollupId = row.getString(1);
+            if (agentRollupId == null) {
                 topLevelAgentRollups.add(agentId);
             } else {
-                bottomLevelAgentRollups.add(agentRollup);
-                parentChildMap.put(agentRollup, agentId);
+                bottomLevelAgentRollups.add(agentRollupId);
+                parentChildMap.put(agentRollupId, agentId);
             }
         }
         for (String bottomLevelAgentRollup : bottomLevelAgentRollups) {
-            List<String> agentRollups = getAgentRollups(bottomLevelAgentRollup);
-            topLevelAgentRollups.add(agentRollups.get(0));
-            for (int i = 1; i < agentRollups.size(); i++) {
-                parentChildMap.put(agentRollups.get(i - 1), agentRollups.get(i));
+            List<String> agentRollupIds = getAgentRollupIds(bottomLevelAgentRollup);
+            topLevelAgentRollups.add(agentRollupIds.get(0));
+            for (int i = 1; i < agentRollupIds.size(); i++) {
+                parentChildMap.put(agentRollupIds.get(i - 1), agentRollupIds.get(i));
             }
         }
         List<AgentRollup> rollups = Lists.newArrayList();
@@ -165,12 +166,13 @@ public class AgentDao implements AgentRepository {
     }
 
     @Override
-    public boolean isLeaf(String agentRollup) {
-        return agentRollupCache.getUnchecked(agentRollup).isPresent();
+    public boolean isLeaf(String agentRollupId) {
+        return agentRollupCache.getUnchecked(agentRollupId).isPresent();
     }
 
     // returns stored agent config
-    public AgentConfig store(String agentId, @Nullable String agentRollup, Environment environment,
+    public AgentConfig store(String agentId, @Nullable String agentRollupId,
+            Environment environment,
             AgentConfig agentConfig) throws InvalidProtocolBufferException {
         AgentConfig existingAgentConfig = null;
         // checking if agent exists in agent_one table since if it doesn't, then user no longer
@@ -229,7 +231,7 @@ public class AgentDao implements AgentRepository {
         boundStatement = insertPS.bind();
         int i = 0;
         boundStatement.setString(i++, agentId);
-        boundStatement.setString(i++, agentRollup);
+        boundStatement.setString(i++, agentRollupId);
         boundStatement.setBytes(i++, ByteBuffer.wrap(environment.toByteArray()));
         boundStatement.setBytes(i++, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
         // this method is only called by collectInit(), and agent will not consider collectInit()
@@ -242,7 +244,7 @@ public class AgentDao implements AgentRepository {
         boundStatement = insertAgentOnePS.bind();
         i = 0;
         boundStatement.setString(i++, agentId);
-        boundStatement.setString(i++, agentRollup);
+        boundStatement.setString(i++, agentRollupId);
         session.execute(boundStatement);
         agentRollupCache.invalidate(agentId);
         agentConfigCache.invalidate(agentId);
@@ -298,16 +300,16 @@ public class AgentDao implements AgentRepository {
     // agentId is index 0
     // its direct parent is index 1
     // etc...
-    public List<String> readAgentRollups(String agentId) {
-        String agentRollup = agentRollupCache.getUnchecked(agentId).orNull();
-        if (agentRollup == null) {
+    public List<String> readAgentRollupIds(String agentId) {
+        String agentRollupId = agentRollupCache.getUnchecked(agentId).orNull();
+        if (agentRollupId == null) {
             // agent must have been manually deleted
             return ImmutableList.of(agentId);
         }
-        List<String> agentRollups = getAgentRollups(agentRollup);
-        Collections.reverse(agentRollups);
-        agentRollups.add(0, agentId);
-        return agentRollups;
+        List<String> agentRollupIds = getAgentRollupIds(agentRollupId);
+        Collections.reverse(agentRollupIds);
+        agentRollupIds.add(0, agentId);
+        return agentRollupIds;
     }
 
     @Nullable
@@ -356,27 +358,28 @@ public class AgentDao implements AgentRepository {
         return AgentConfig.parseFrom(ByteString.copyFrom(bytes));
     }
 
-    private AgentRollup createAgentRollup(String agentRollup,
+    private AgentRollup createAgentRollup(String agentRollupId,
             Multimap<String, String> parentChildMap) {
-        Collection<String> childAgentRollups = parentChildMap.get(agentRollup);
+        Collection<String> childAgentRollups = parentChildMap.get(agentRollupId);
         ImmutableAgentRollup.Builder builder = ImmutableAgentRollup.builder()
-                .name(agentRollup);
+                .id(agentRollupId);
         for (String childAgentRollup : childAgentRollups) {
             builder.addChildren(createAgentRollup(childAgentRollup, parentChildMap));
         }
         return builder.build();
     }
 
-    private static List<String> getAgentRollups(String agentRollup) {
-        List<String> agentRollups = Lists.newArrayList();
+    @VisibleForTesting
+    static List<String> getAgentRollupIds(String agentRollupId) {
+        List<String> agentRollupIds = Lists.newArrayList();
         int lastFoundIndex = -1;
         int nextFoundIndex;
-        while ((nextFoundIndex = agentRollup.indexOf('/', lastFoundIndex)) != -1) {
-            agentRollups.add(agentRollup.substring(0, nextFoundIndex));
+        while ((nextFoundIndex = agentRollupId.indexOf('/', lastFoundIndex)) != -1) {
+            agentRollupIds.add(agentRollupId.substring(0, nextFoundIndex));
             lastFoundIndex = nextFoundIndex + 1;
         }
-        agentRollups.add(agentRollup);
-        return agentRollups;
+        agentRollupIds.add(agentRollupId);
+        return agentRollupIds;
     }
 
     @Value.Immutable

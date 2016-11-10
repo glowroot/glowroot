@@ -24,10 +24,10 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 public interface GaugeValueRepository {
 
-    List<Gauge> getGauges(String agentRollup) throws Exception;
+    List<Gauge> getGauges(String agentRollupId) throws Exception;
 
     // query.from() is INCLUSIVE
-    List<GaugeValue> readGaugeValues(String agentRollup, String gaugeName, long captureTimeFrom,
+    List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception;
 
     @Value.Immutable

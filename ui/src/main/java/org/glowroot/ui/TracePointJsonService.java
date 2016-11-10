@@ -69,7 +69,7 @@ class TracePointJsonService {
     }
 
     @GET(path = "/backend/transaction/trace-count", permission = "agent:transaction:traces")
-    String getTransactionTraceCount(@BindAgentRollup String agentRollup,
+    String getTransactionTraceCount(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType(request.transactionType())
@@ -77,7 +77,7 @@ class TracePointJsonService {
                 .from(request.from())
                 .to(request.to())
                 .build();
-        long traceCount = traceRepository.readSlowCount(agentRollup, query);
+        long traceCount = traceRepository.readSlowCount(agentRollupId, query);
         boolean includeActiveTraces = shouldIncludeActiveTraces(request);
         if (includeActiveTraces) {
             traceCount += liveTraceRepository.getMatchingTraceCount(request.transactionType(),
@@ -87,21 +87,21 @@ class TracePointJsonService {
     }
 
     @GET(path = "/backend/error/trace-count", permission = "agent:error:traces")
-    String getErrorTraceCount(@BindAgentRollup String agentRollup, @BindRequest TraceQuery query)
-            throws Exception {
-        return Long.toString(traceRepository.readErrorCount(agentRollup, query));
+    String getErrorTraceCount(@BindAgentRollupId String agentRollupId,
+            @BindRequest TraceQuery query) throws Exception {
+        return Long.toString(traceRepository.readErrorCount(agentRollupId, query));
     }
 
     @GET(path = "/backend/transaction/points", permission = "agent:transaction:traces")
-    String getTransactionPoints(@BindAgentRollup String agentRollup,
+    String getTransactionPoints(@BindAgentRollupId String agentRollupId,
             @BindRequest TracePointRequest request) throws Exception {
-        return getPoints(TraceKind.SLOW, agentRollup, request);
+        return getPoints(TraceKind.SLOW, agentRollupId, request);
     }
 
     @GET(path = "/backend/error/points", permission = "agent:error:traces")
-    String getErrorPoints(@BindAgentRollup String agentRollup,
+    String getErrorPoints(@BindAgentRollupId String agentRollupId,
             @BindRequest TracePointRequest request) throws Exception {
-        return getPoints(TraceKind.ERROR, agentRollup, request);
+        return getPoints(TraceKind.ERROR, agentRollupId, request);
     }
 
     private boolean shouldIncludeActiveTraces(TransactionDataRequest request) {
@@ -110,7 +110,7 @@ class TracePointJsonService {
                 && request.from() < currentTimeMillis;
     }
 
-    private String getPoints(TraceKind traceKind, String agentRollup, TracePointRequest request)
+    private String getPoints(TraceKind traceKind, String agentRollupId, TracePointRequest request)
             throws Exception {
         double durationMillisLow = request.durationMillisLow();
         long durationNanosLow = Math.round(durationMillisLow * NANOSECONDS_PER_MILLISECOND);
@@ -138,21 +138,21 @@ class TracePointJsonService {
                 .attributeValueComparator(request.attributeValueComparator())
                 .attributeValue(request.attributeValue())
                 .build();
-        return new Handler(traceKind, agentRollup, query, filter, request.limit()).handle();
+        return new Handler(traceKind, agentRollupId, query, filter, request.limit()).handle();
     }
 
     private class Handler {
 
         private final TraceKind traceKind;
-        private final String agentRollup;
+        private final String agentRollupId;
         private final TraceQuery query;
         private final TracePointFilter filter;
         private final int limit;
 
-        private Handler(TraceKind traceKind, String agentRollup, TraceQuery query,
+        private Handler(TraceKind traceKind, String agentRollupId, TraceQuery query,
                 TracePointFilter filter, int limit) {
             this.traceKind = traceKind;
-            this.agentRollup = agentRollup;
+            this.agentRollupId = agentRollupId;
             this.query = query;
             this.filter = filter;
             this.limit = limit;
@@ -180,7 +180,7 @@ class TracePointJsonService {
             boolean expired = points.isEmpty() && traceExpirationHours != 0 && query
                     .to() < clock.currentTimeMillis() - HOURS.toMillis(traceExpirationHours);
             List<String> traceAttributeNames =
-                    traceRepository.readTraceAttributeNames(agentRollup, query.transactionType());
+                    traceRepository.readTraceAttributeNames(agentRollupId, query.transactionType());
             return writeResponse(points, activeTracePoints, queryResult.moreAvailable(), expired,
                     traceAttributeNames);
         }
@@ -205,10 +205,10 @@ class TracePointJsonService {
             }
             Result<TracePoint> queryResult;
             if (traceKind == TraceKind.SLOW) {
-                queryResult = traceRepository.readSlowPoints(agentRollup, query, filter, limit);
+                queryResult = traceRepository.readSlowPoints(agentRollupId, query, filter, limit);
             } else {
                 // TraceKind.ERROR
-                queryResult = traceRepository.readErrorPoints(agentRollup, query, filter, limit);
+                queryResult = traceRepository.readErrorPoints(agentRollupId, query, filter, limit);
             }
             // create single merged and limited list of points
             List<TracePoint> orderedPoints = Lists.newArrayList(queryResult.records());

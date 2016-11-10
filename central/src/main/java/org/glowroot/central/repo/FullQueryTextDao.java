@@ -81,9 +81,9 @@ public class FullQueryTextDao {
     }
 
     @Nullable
-    String getFullText(String agentRollup, String fullTextSha1) {
+    String getFullText(String agentRollupId, String fullTextSha1) {
         BoundStatement boundStatement = readCheckPS.bind();
-        boundStatement.setString(0, agentRollup);
+        boundStatement.setString(0, agentRollupId);
         boundStatement.setString(1, fullTextSha1);
         ResultSet results = session.execute(boundStatement);
         if (results.isExhausted()) {
@@ -99,16 +99,16 @@ public class FullQueryTextDao {
         return row.getString(0);
     }
 
-    List<ResultSetFuture> store(String agentRollup, String fullTextSha1, String fullText) {
-        FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollup, fullTextSha1);
+    List<ResultSetFuture> store(String agentRollupId, String fullTextSha1, String fullText) {
+        FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollupId, fullTextSha1);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
         }
         return storeInternal(rateLimiterKey, fullText);
     }
 
-    List<ResultSetFuture> updateTTL(String agentRollup, String fullTextSha1) {
-        FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollup, fullTextSha1);
+    List<ResultSetFuture> updateTTL(String agentRollupId, String fullTextSha1) {
+        FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollupId, fullTextSha1);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
         }
@@ -126,8 +126,8 @@ public class FullQueryTextDao {
         return storeInternal(rateLimiterKey, fullText);
     }
 
-    List<ResultSetFuture> updateCheckTTL(String agentRollup, String fullTextSha1) {
-        FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollup, fullTextSha1);
+    List<ResultSetFuture> updateCheckTTL(String agentRollupId, String fullTextSha1) {
+        FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollupId, fullTextSha1);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
         }
@@ -152,7 +152,7 @@ public class FullQueryTextDao {
     private ResultSetFuture storeCheckInternal(FullQueryTextKey rateLimiterKey) {
         BoundStatement boundStatement = insertCheckPS.bind();
         int i = 0;
-        boundStatement.setString(i++, rateLimiterKey.agentRollup());
+        boundStatement.setString(i++, rateLimiterKey.agentRollupId());
         boundStatement.setString(i++, rateLimiterKey.fullTextSha1());
         boundStatement.setInt(i++, getTTL());
         return Sessions.executeAsyncWithOnFailure(session, boundStatement,
@@ -174,7 +174,7 @@ public class FullQueryTextDao {
     @Value.Immutable
     @Styles.AllParameters
     interface FullQueryTextKey {
-        String agentRollup();
+        String agentRollupId();
         String fullTextSha1();
     }
 }

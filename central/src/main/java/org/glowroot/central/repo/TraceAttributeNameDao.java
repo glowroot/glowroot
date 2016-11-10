@@ -63,9 +63,9 @@ class TraceAttributeNameDao {
                 + " where agent_rollup = ? and transaction_type = ?");
     }
 
-    List<String> read(String agentRollup, String transactionType) {
+    List<String> read(String agentRollupId, String transactionType) {
         BoundStatement boundStatement = readPS.bind();
-        boundStatement.setString(0, agentRollup);
+        boundStatement.setString(0, agentRollupId);
         boundStatement.setString(1, transactionType);
         ResultSet results = session.execute(boundStatement);
         List<String> attributeNames = Lists.newArrayList();
@@ -75,16 +75,16 @@ class TraceAttributeNameDao {
         return attributeNames;
     }
 
-    void store(String agentRollup, String transactionType, String traceAttributeName,
+    void store(String agentRollupId, String transactionType, String traceAttributeName,
             List<ResultSetFuture> futures) {
-        TraceAttributeNameKey rateLimiterKey =
-                ImmutableTraceAttributeNameKey.of(agentRollup, transactionType, traceAttributeName);
+        TraceAttributeNameKey rateLimiterKey = ImmutableTraceAttributeNameKey.of(agentRollupId,
+                transactionType, traceAttributeName);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return;
         }
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollup);
+        boundStatement.setString(i++, agentRollupId);
         boundStatement.setString(i++, transactionType);
         boundStatement.setString(i++, traceAttributeName);
         boundStatement.setInt(i++, getMaxTTL());
@@ -108,7 +108,7 @@ class TraceAttributeNameDao {
     @Value.Immutable
     @Styles.AllParameters
     interface TraceAttributeNameKey {
-        String agentRollup();
+        String agentRollupId();
         String transactionType();
         String traceAttributeName();
     }

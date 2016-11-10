@@ -160,7 +160,7 @@ public class BasicSmokeIT extends WebDriverIT {
                 + "&attribute-value-comparator=begins"
                 + "&attribute-value="
                 + "&limit=500"
-                + "&agent-rollup=" + agentId;
+                + "&agent-rollup-id=" + agentId;
 
         AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
         Request request = asyncHttpClient

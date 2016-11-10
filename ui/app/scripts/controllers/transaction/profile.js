@@ -121,7 +121,7 @@ glowroot.controller('TransactionProfileCtrl', [
         return;
       }
       var query = {
-        agentRollup: $scope.agentRollup,
+        agentRollupId: $scope.agentRollupId,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
         from: $scope.range.chartFrom,

@@ -77,7 +77,7 @@ public class AlertingService {
         this.mailService = mailService;
     }
 
-    public void checkTransactionAlert(String agentRollup, AlertConfig alertConfig, long endTime,
+    public void checkTransactionAlert(String agentRollupId, AlertConfig alertConfig, long endTime,
             SmtpConfig smtpConfig) throws Exception {
         // validate config
         if (!alertConfig.hasTransactionPercentile()) {
@@ -104,7 +104,7 @@ public class AlertingService {
         startTime++;
         int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
         List<PercentileAggregate> percentileAggregates =
-                aggregateRepository.readPercentileAggregates(agentRollup,
+                aggregateRepository.readPercentileAggregates(agentRollupId,
                         ImmutableTransactionQuery.builder()
                                 .transactionType(alertConfig.getTransactionType())
                                 .from(startTime)
@@ -122,21 +122,21 @@ public class AlertingService {
             return;
         }
         String version = Versions.getVersion(alertConfig);
-        boolean previouslyTriggered = triggeredAlertRepository.exists(agentRollup, version);
+        boolean previouslyTriggered = triggeredAlertRepository.exists(agentRollupId, version);
         long valueAtPercentile = durationNanosHistogram.getValueAtPercentile(percentile);
         boolean currentlyTriggered = valueAtPercentile >= MILLISECONDS.toNanos(thresholdMillis);
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertRepository.delete(agentRollup, version);
-            sendTransactionAlert(agentRollup, alertConfig, percentile, valueAtPercentile,
+            triggeredAlertRepository.delete(agentRollupId, version);
+            sendTransactionAlert(agentRollupId, alertConfig, percentile, valueAtPercentile,
                     transactionCount, true, smtpConfig);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertRepository.insert(agentRollup, version);
-            sendTransactionAlert(agentRollup, alertConfig, percentile, valueAtPercentile,
+            triggeredAlertRepository.insert(agentRollupId, version);
+            sendTransactionAlert(agentRollupId, alertConfig, percentile, valueAtPercentile,
                     transactionCount, false, smtpConfig);
         }
     }
 
-    public void checkGaugeAlert(String agentRollup, AlertConfig alertConfig, long endTime,
+    public void checkGaugeAlert(String agentRollupId, AlertConfig alertConfig, long endTime,
             SmtpConfig smtpConfig) throws Exception {
         if (!alertConfig.hasGaugeThreshold()) {
             // AlertConfig has nice toString() from immutables
@@ -148,7 +148,7 @@ public class AlertingService {
         // don't want to include the aggregate at startTime, so add 1
         startTime++;
         int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
-        List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollup,
+        List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollupId,
                 alertConfig.getGaugeName(), startTime, endTime, rollupLevel);
         if (gaugeValues.isEmpty()) {
             return;
@@ -161,23 +161,23 @@ public class AlertingService {
         }
         double average = totalWeightedValue / totalWeight;
         String version = Versions.getVersion(alertConfig);
-        boolean previouslyTriggered = triggeredAlertRepository.exists(agentRollup, version);
+        boolean previouslyTriggered = triggeredAlertRepository.exists(agentRollupId, version);
         boolean currentlyTriggered = average >= threshold;
         if (previouslyTriggered && !currentlyTriggered) {
-            triggeredAlertRepository.delete(agentRollup, version);
-            sendGaugeAlert(agentRollup, alertConfig, average, true, smtpConfig);
+            triggeredAlertRepository.delete(agentRollupId, version);
+            sendGaugeAlert(agentRollupId, alertConfig, average, true, smtpConfig);
         } else if (!previouslyTriggered && currentlyTriggered) {
-            triggeredAlertRepository.insert(agentRollup, version);
-            sendGaugeAlert(agentRollup, alertConfig, average, false, smtpConfig);
+            triggeredAlertRepository.insert(agentRollupId, version);
+            sendGaugeAlert(agentRollupId, alertConfig, average, false, smtpConfig);
         }
     }
 
-    private void sendTransactionAlert(String agentRollup, AlertConfig alertConfig,
+    private void sendTransactionAlert(String agentRollupId, AlertConfig alertConfig,
             double percentile, long valueAtPercentile, long transactionCount, boolean ok,
             SmtpConfig smtpConfig) throws Exception {
         String subject = "Glowroot alert";
-        if (!agentRollup.equals("")) {
-            subject += " - " + agentRollup;
+        if (!agentRollupId.equals("")) {
+            subject += " - " + agentRollupId;
         }
         subject += " - " + alertConfig.getTransactionType();
         if (ok) {
@@ -198,11 +198,11 @@ public class AlertingService {
                 configRepository.getSecretKey(), mailService);
     }
 
-    private void sendGaugeAlert(String agentRollup, AlertConfig alertConfig, double average,
+    private void sendGaugeAlert(String agentRollupId, AlertConfig alertConfig, double average,
             boolean ok, SmtpConfig smtpConfig) throws Exception {
         String subject = "Glowroot alert";
-        if (!agentRollup.equals("")) {
-            subject += " - " + agentRollup;
+        if (!agentRollupId.equals("")) {
+            subject += " - " + agentRollupId;
         }
         Gauge gauge = Gauges.getGauge(alertConfig.getGaugeName());
         subject += " - " + gauge.display();

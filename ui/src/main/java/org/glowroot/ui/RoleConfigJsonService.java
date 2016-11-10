@@ -145,7 +145,7 @@ class RoleConfigJsonService {
             int depth) {
         List<FlattenedAgentRollup> flattenedAgentRollups = Lists.newArrayList();
         flattenedAgentRollups.add(ImmutableFlattenedAgentRollup.builder()
-                .name(agentRollup.name())
+                .name(agentRollup.id())
                 .depth(depth)
                 .build());
         for (AgentRollup childAgentRollup : agentRollup.children()) {

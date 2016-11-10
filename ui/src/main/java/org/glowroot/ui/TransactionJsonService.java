@@ -81,12 +81,12 @@ class TransactionJsonService {
     }
 
     @GET(path = "/backend/transaction/average", permission = "agent:transaction:overview")
-    String getOverview(@BindAgentRollup String agentRollup,
+    String getOverview(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
         TransactionQuery query = toQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
         List<OverviewAggregate> overviewAggregates =
-                transactionCommonService.getOverviewAggregates(agentRollup, query);
+                transactionCommonService.getOverviewAggregates(agentRollupId, query);
         List<DataSeries> dataSeriesList =
                 getDataSeriesForTimerChart(request, overviewAggregates, liveCaptureTime);
         Map<Long, Long> transactionCounts = getTransactionCounts(overviewAggregates);
@@ -110,12 +110,12 @@ class TransactionJsonService {
     }
 
     @GET(path = "/backend/transaction/percentiles", permission = "agent:transaction:overview")
-    String getPercentiles(@BindAgentRollup String agentRollup,
+    String getPercentiles(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
         TransactionQuery query = toQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
         List<PercentileAggregate> percentileAggregates =
-                transactionCommonService.getPercentileAggregates(agentRollup, query);
+                transactionCommonService.getPercentileAggregates(agentRollupId, query);
         PercentileData percentileData = getDataSeriesForPercentileChart(request,
                 percentileAggregates, request.percentile(), liveCaptureTime);
         Map<Long, Long> transactionCounts = getTransactionCounts2(percentileAggregates);
@@ -132,12 +132,12 @@ class TransactionJsonService {
     }
 
     @GET(path = "/backend/transaction/throughput", permission = "agent:transaction:overview")
-    String getThroughput(@BindAgentRollup String agentRollup,
+    String getThroughput(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
         TransactionQuery query = toQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates =
-                transactionCommonService.getThroughputAggregates(agentRollup, query);
+                transactionCommonService.getThroughputAggregates(agentRollupId, query);
         List<DataSeries> dataSeriesList =
                 getDataSeriesForThroughputChart(request, throughputAggregates, liveCaptureTime);
         long transactionCount = 0;
@@ -168,11 +168,11 @@ class TransactionJsonService {
     }
 
     @GET(path = "/backend/transaction/queries", permission = "agent:transaction:queries")
-    String getQueries(@BindAgentRollup String agentRollup,
+    String getQueries(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
         TransactionQuery query = toQuery(request);
         Map<String, List<MutableQuery>> queries =
-                transactionCommonService.getMergedQueries(agentRollup, query);
+                transactionCommonService.getMergedQueries(agentRollupId, query);
         List<Query> queryList = Lists.newArrayList();
         for (Entry<String, List<MutableQuery>> entry : queries.entrySet()) {
             for (MutableQuery loopQuery : entry.getValue()) {
@@ -186,7 +186,7 @@ class TransactionJsonService {
                         .build());
             }
         }
-        if (queryList.isEmpty() && aggregateRepository.shouldHaveQueries(agentRollup, query)) {
+        if (queryList.isEmpty() && aggregateRepository.shouldHaveQueries(agentRollupId, query)) {
             return "{\"overwritten\":true}";
         }
         StringBuilder sb = new StringBuilder();
@@ -197,10 +197,10 @@ class TransactionJsonService {
     }
 
     @GET(path = "/backend/transaction/full-query-text", permission = "agent:transaction:queries")
-    String getQueryText(@BindAgentRollup String agentRollup,
+    String getQueryText(@BindAgentRollupId String agentRollupId,
             @BindRequest FullQueryTextRequest request) throws Exception {
         String fullQueryText =
-                transactionCommonService.readFullQueryText(agentRollup, request.fullTextSha1());
+                transactionCommonService.readFullQueryText(agentRollupId, request.fullTextSha1());
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
@@ -215,11 +215,11 @@ class TransactionJsonService {
     }
 
     @GET(path = "/backend/transaction/service-calls", permission = "agent:transaction:serviceCalls")
-    String getServiceCalls(@BindAgentRollup String agentRollup,
+    String getServiceCalls(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
         TransactionQuery query = toQuery(request);
         List<Aggregate.ServiceCallsByType> queries =
-                transactionCommonService.getMergedServiceCalls(agentRollup, query);
+                transactionCommonService.getMergedServiceCalls(agentRollupId, query);
         List<ServiceCall> serviceCallList = Lists.newArrayList();
         for (Aggregate.ServiceCallsByType queriesByType : queries) {
             for (Aggregate.ServiceCall aggServiceCall : queriesByType.getServiceCallList()) {
@@ -239,7 +239,7 @@ class TransactionJsonService {
             }
         });
         if (serviceCallList.isEmpty()
-                && aggregateRepository.shouldHaveServiceCalls(agentRollup, query)) {
+                && aggregateRepository.shouldHaveServiceCalls(agentRollupId, query)) {
             return "{\"overwritten\":true}";
         }
         StringBuilder sb = new StringBuilder();
@@ -250,29 +250,29 @@ class TransactionJsonService {
     }
 
     @GET(path = "/backend/transaction/profile", permission = "agent:transaction:profile")
-    String getProfile(@BindAgentRollup String agentRollup,
+    String getProfile(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionProfileRequest request) throws Exception {
         TransactionQuery query = toQuery(request);
         MutableProfile profile =
-                transactionCommonService.getMergedProfile(agentRollup, query, request.auxiliary(),
+                transactionCommonService.getMergedProfile(agentRollupId, query, request.auxiliary(),
                         request.include(), request.exclude(), request.truncateBranchPercentage());
         boolean hasUnfilteredMainThreadProfile;
         boolean hasUnfilteredAuxThreadProfile;
         if (request.auxiliary()) {
             hasUnfilteredMainThreadProfile =
-                    transactionCommonService.hasMainThreadProfile(agentRollup, query);
+                    transactionCommonService.hasMainThreadProfile(agentRollupId, query);
             hasUnfilteredAuxThreadProfile = profile.getUnfilteredSampleCount() > 0;
         } else {
             if (profile.getUnfilteredSampleCount() == 0) {
                 hasUnfilteredMainThreadProfile = false;
                 // return and display aux profile instead
-                profile = transactionCommonService.getMergedProfile(agentRollup, query, true,
+                profile = transactionCommonService.getMergedProfile(agentRollupId, query, true,
                         request.include(), request.exclude(), request.truncateBranchPercentage());
                 hasUnfilteredAuxThreadProfile = profile.getUnfilteredSampleCount() > 0;
             } else {
                 hasUnfilteredMainThreadProfile = true;
                 hasUnfilteredAuxThreadProfile =
-                        transactionCommonService.hasAuxThreadProfile(agentRollup, query);
+                        transactionCommonService.hasAuxThreadProfile(agentRollupId, query);
             }
         }
         StringBuilder sb = new StringBuilder();
@@ -282,10 +282,10 @@ class TransactionJsonService {
         jg.writeBooleanField("hasUnfilteredAuxThreadProfile", hasUnfilteredAuxThreadProfile);
         if (profile.getUnfilteredSampleCount() == 0) {
             if (request.auxiliary()
-                    && aggregateRepository.shouldHaveAuxThreadProfile(agentRollup, query)) {
+                    && aggregateRepository.shouldHaveAuxThreadProfile(agentRollupId, query)) {
                 jg.writeBooleanField("overwritten", true);
             } else if (!request.auxiliary()
-                    && aggregateRepository.shouldHaveMainThreadProfile(agentRollup, query)) {
+                    && aggregateRepository.shouldHaveMainThreadProfile(agentRollupId, query)) {
                 jg.writeBooleanField("overwritten", true);
             }
         }
@@ -297,7 +297,7 @@ class TransactionJsonService {
     }
 
     @GET(path = "/backend/transaction/summaries", permission = "agent:transaction:overview")
-    String getSummaries(@BindAgentRollup String agentRollup,
+    String getSummaries(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionSummaryRequest request) throws Exception {
         ImmutableOverallQuery query = ImmutableOverallQuery.builder()
                 .transactionType(request.transactionType())
@@ -306,9 +306,10 @@ class TransactionJsonService {
                 .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to()))
                 .build();
         OverallSummary overallSummary =
-                transactionCommonService.readOverallSummary(agentRollup, query);
+                transactionCommonService.readOverallSummary(agentRollupId, query);
         Result<TransactionSummary> queryResult = transactionCommonService
-                .readTransactionSummaries(agentRollup, query, request.sortOrder(), request.limit());
+                .readTransactionSummaries(agentRollupId, query, request.sortOrder(),
+                        request.limit());
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -322,11 +323,11 @@ class TransactionJsonService {
     }
 
     @GET(path = "/backend/transaction/flame-graph", permission = "agent:transaction:profile")
-    String getFlameGraph(@BindAgentRollup String agentRollup,
+    String getFlameGraph(@BindAgentRollupId String agentRollupId,
             @BindRequest FlameGraphRequest request) throws Exception {
         TransactionQuery query = toQuery(request);
         MutableProfile profile =
-                transactionCommonService.getMergedProfile(agentRollup, query, request.auxiliary(),
+                transactionCommonService.getMergedProfile(agentRollupId, query, request.auxiliary(),
                         request.include(), request.exclude(), request.truncateBranchPercentage());
         return profile.toFlameGraphJson();
     }

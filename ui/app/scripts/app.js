@@ -104,11 +104,11 @@ glowroot.run([
 
     $rootScope.$on('$locationChangeSuccess', function () {
       $rootScope.agentId = $location.search()['agent-id'] || '';
-      $rootScope.agentRollup = $location.search()['agent-rollup'] || $rootScope.agentId;
+      $rootScope.agentRollupId = $location.search()['agent-rollup-id'] || $rootScope.agentId;
       if ($rootScope.layout) {
         // layout doesn't exist on first page load when running under grunt serve
-        if ($rootScope.layout.embedded || $rootScope.agentRollup) {
-          var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollup];
+        if ($rootScope.layout.embedded || $rootScope.agentRollupId) {
+          var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollupId];
           $rootScope.agentPermissions = agentRollup ? agentRollup.permissions : undefined;
         } else {
           $rootScope.agentPermissions = undefined;
@@ -122,23 +122,23 @@ glowroot.run([
       }
       if ($rootScope.agentId) {
         return '?agent-id=' + encodeURIComponent($rootScope.agentId);
-      } else if ($rootScope.agentRollup) {
-        return '?agent-rollup=' + encodeURIComponent($rootScope.agentRollup);
+      } else if ($rootScope.agentRollupId) {
+        return '?agent-rollup-id=' + encodeURIComponent($rootScope.agentRollupId);
       } else {
         return '';
       }
     };
 
-    $rootScope.agentRollupUrl = function (agentRollup, leaf) {
+    $rootScope.agentRollupUrl = function (agentRollupId, leaf) {
       // preserve existing query string
       var search = angular.copy($location.search());
-      delete search['agent-rollup'];
+      delete search['agent-rollup-id'];
       delete search['agent-id'];
       var query = {};
       if (leaf) {
-        query['agent-id'] = agentRollup;
+        query['agent-id'] = agentRollupId;
       } else {
-        query['agent-rollup'] = agentRollup;
+        query['agent-rollup-id'] = agentRollupId;
       }
       angular.merge(query, search);
       return $location.path().substring(1) + queryStrings.encodeObject(query);
@@ -151,11 +151,11 @@ glowroot.run([
       if (!$rootScope.layout.agentRollups) {
         return [];
       }
-      var agentRollupObj = $rootScope.layout.agentRollups[$rootScope.agentRollup];
-      if (!agentRollupObj) {
+      var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollupId];
+      if (!agentRollup) {
         return [];
       }
-      return agentRollupObj.transactionTypes;
+      return agentRollup.transactionTypes;
     };
 
     $rootScope.defaultTransactionType = function () {
@@ -166,15 +166,15 @@ glowroot.run([
         // login page, not yet authenticated
         return '';
       }
-      // can't use $rootScope.agentRollup here because this function is called from waitForLayout() function in
-      // routes.js before $rootScope.agentRollup is set (note for testing, this is only a problem when not under grunt
+      // can't use $rootScope.agentRollupId here because this function is called from waitForLayout() function in
+      // routes.js before $rootScope.agentRollupId is set (note for testing, this is only a problem when not under grunt
       // serve)
-      var agentRollup = $location.search()['agent-rollup'] || $location.search()['agent-id'] || '';
-      var agentRollupObj = $rootScope.layout.agentRollups[agentRollup];
-      if (!agentRollupObj) {
+      var agentRollupId = $location.search()['agent-rollup-id'] || $location.search()['agent-id'] || '';
+      var agentRollup = $rootScope.layout.agentRollups[agentRollupId];
+      if (!agentRollup) {
         return '';
       }
-      return agentRollupObj.defaultDisplayedTransactionType;
+      return agentRollup.defaultDisplayedTransactionType;
     };
 
     $rootScope.showSignIn = function () {
@@ -244,8 +244,8 @@ glowroot.run([
         }
         agentRollup.display = indent + name;
       });
-      if ($rootScope.layout.embedded || $rootScope.agentRollup) {
-        var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollup];
+      if ($rootScope.layout.embedded || $rootScope.agentRollupId) {
+        var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollupId];
         $rootScope.agentPermissions = agentRollup ? agentRollup.permissions : undefined;
       } else {
         $rootScope.agentPermissions = undefined;

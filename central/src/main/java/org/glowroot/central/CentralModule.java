@@ -319,8 +319,8 @@ class CentralModule {
         }
         // upgrade from 0.9.4 to 0.9.5
         String content = Files.toString(propFile, Charsets.UTF_8);
-        if (content.contains("cassandra.contact.points")) {
-            content = content.replace("cassandra.contact.points", "cassandra.contactPoints");
+        if (content.contains("cassandra.contact.points=")) {
+            content = content.replace("cassandra.contact.points=", "cassandra.contactPoints=");
             Files.write(content, propFile, Charsets.UTF_8);
         }
         Properties props = new Properties();

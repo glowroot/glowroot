@@ -38,7 +38,7 @@ glowroot.controller('ConfigCtrl', [
     };
 
     $scope.hideMainContent = function () {
-      return !$scope.agentRollup && !$scope.agentId && !$scope.layout.embedded;
+      return !$scope.agentRollupId && !$scope.agentId && !$scope.layout.embedded;
     };
 
     $scope.navbarTitle = function () {

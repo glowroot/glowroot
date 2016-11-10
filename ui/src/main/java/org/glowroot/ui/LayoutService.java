@@ -185,11 +185,11 @@ class LayoutService {
             Authentication authentication) {
         List<FilteredAgentRollup> filtered = Lists.newArrayList();
         for (AgentRollup agentRollup : agentRollups) {
-            Permissions permissions = getPermissions(authentication, agentRollup.name(),
+            Permissions permissions = getPermissions(authentication, agentRollup.id(),
                     agentRollup.children().isEmpty());
             if (permissions.hasSomeAccess()) {
                 filtered.add(ImmutableFilteredAgentRollup.builder()
-                        .name(agentRollup.name())
+                        .id(agentRollup.id())
                         .addAllChildren(filter(agentRollup.children(), authentication))
                         .permissions(permissions)
                         .build());
@@ -202,64 +202,66 @@ class LayoutService {
         return new FilteredAgentRollupOrdering().sortedCopy(filtered);
     }
 
-    private static Permissions getPermissions(Authentication authentication, String agentRollup,
+    private static Permissions getPermissions(Authentication authentication, String agentRollupId,
             boolean leaf) {
         return ImmutablePermissions.builder()
                 .transaction(ImmutableTransactionPermissions.builder()
-                        .overview(authentication.isAgentPermitted(agentRollup,
+                        .overview(authentication.isAgentPermitted(agentRollupId,
                                 "agent:transaction:overview"))
-                        .traces(authentication.isAgentPermitted(agentRollup,
+                        .traces(authentication.isAgentPermitted(agentRollupId,
                                 "agent:transaction:traces"))
-                        .queries(authentication.isAgentPermitted(agentRollup,
+                        .queries(authentication.isAgentPermitted(agentRollupId,
                                 "agent:transaction:queries"))
-                        .serviceCalls(authentication.isAgentPermitted(agentRollup,
+                        .serviceCalls(authentication.isAgentPermitted(agentRollupId,
                                 "agent:transaction:serviceCalls"))
-                        .profile(authentication.isAgentPermitted(agentRollup,
+                        .profile(authentication.isAgentPermitted(agentRollupId,
                                 "agent:transaction:profile"))
                         .build())
                 .error(ImmutableErrorPermissions.builder()
-                        .overview(authentication.isAgentPermitted(agentRollup,
+                        .overview(authentication.isAgentPermitted(agentRollupId,
                                 "agent:error:overview"))
-                        .traces(authentication.isAgentPermitted(agentRollup, "agent:error:traces"))
+                        .traces(authentication.isAgentPermitted(agentRollupId,
+                                "agent:error:traces"))
                         .build())
                 .jvm(ImmutableJvmPermissions.builder()
-                        .gauges(authentication.isAgentPermitted(agentRollup, "agent:jvm:gauges"))
-                        .threadDump(leaf && authentication.isAgentPermitted(agentRollup,
+                        .gauges(authentication.isAgentPermitted(agentRollupId, "agent:jvm:gauges"))
+                        .threadDump(leaf && authentication.isAgentPermitted(agentRollupId,
                                 "agent:jvm:threadDump"))
-                        .heapDump(leaf && authentication.isAgentPermitted(agentRollup,
+                        .heapDump(leaf && authentication.isAgentPermitted(agentRollupId,
                                 "agent:jvm:heapDump"))
-                        .heapHistogram(leaf && authentication.isAgentPermitted(agentRollup,
+                        .heapHistogram(leaf && authentication.isAgentPermitted(agentRollupId,
                                 "agent:jvm:heapHistogram"))
-                        .gc(leaf && authentication.isAgentPermitted(agentRollup, "agent:jvm:gc"))
-                        .mbeanTree(leaf && authentication.isAgentPermitted(agentRollup,
+                        .gc(leaf && authentication.isAgentPermitted(agentRollupId, "agent:jvm:gc"))
+                        .mbeanTree(leaf && authentication.isAgentPermitted(agentRollupId,
                                 "agent:jvm:mbeanTree"))
-                        .systemProperties(leaf && authentication.isAgentPermitted(agentRollup,
+                        .systemProperties(leaf && authentication.isAgentPermitted(agentRollupId,
                                 "agent:jvm:systemProperties"))
-                        .environment(leaf && authentication.isAgentPermitted(agentRollup,
+                        .environment(leaf && authentication.isAgentPermitted(agentRollupId,
                                 "agent:jvm:environment"))
-                        .capabilities(leaf && authentication.isAgentPermitted(agentRollup,
+                        .capabilities(leaf && authentication.isAgentPermitted(agentRollupId,
                                 "agent:jvm:capabilities"))
                         .build())
                 .config(ImmutableConfigPermissions.builder()
-                        .view(leaf && authentication.isAgentPermitted(agentRollup,
+                        .view(leaf && authentication.isAgentPermitted(agentRollupId,
                                 "agent:config:view"))
                         .edit(ImmutableEditConfigPermissions.builder()
-                                .transaction(leaf && authentication.isAgentPermitted(agentRollup,
+                                .transaction(leaf && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:transaction"))
-                                .gauge(leaf && authentication.isAgentPermitted(agentRollup,
+                                .gauge(leaf && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:gauge"))
-                                .alert(leaf && authentication.isAgentPermitted(agentRollup,
+                                .alert(leaf && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:alert"))
-                                .ui(leaf && authentication.isAgentPermitted(agentRollup,
+                                .ui(leaf && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:ui"))
-                                .plugin(leaf && authentication.isAgentPermitted(agentRollup,
+                                .plugin(leaf && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:plugin"))
                                 .instrumentation(leaf && authentication.isAgentPermitted(
-                                        agentRollup, "agent:config:edit:instrumentation"))
-                                .advanced(leaf && authentication.isAgentPermitted(agentRollup,
+                                        agentRollupId, "agent:config:edit:instrumentation"))
+                                .advanced(leaf && authentication.isAgentPermitted(agentRollupId,
                                         "agent:config:edit:advanced"))
-                                .userRecording(leaf && authentication.isAgentPermitted(agentRollup,
-                                        "agent:config:edit:userRecording"))
+                                .userRecording(
+                                        leaf && authentication.isAgentPermitted(agentRollupId,
+                                                "agent:config:edit:userRecording"))
                                 .build())
                         .build())
                 .build();
@@ -297,7 +299,7 @@ class LayoutService {
             showNavbarError = showNavbarError || permissions.error().hasSomeAccess();
             showNavbarJvm = showNavbarJvm || permissions.jvm().hasSomeAccess();
             showNavbarConfig = showNavbarConfig || permissions.config().view();
-            UiConfig uiConfig = configRepository.getUiConfig(agentRollup.name());
+            UiConfig uiConfig = configRepository.getUiConfig(agentRollup.id());
             String defaultDisplayedTransactionType;
             List<Double> defaultDisplayedPercentiles;
             if (uiConfig == null) {
@@ -309,12 +311,12 @@ class LayoutService {
                 defaultDisplayedPercentiles = uiConfig.getDefaultDisplayedPercentileList();
             }
             Set<String> transactionTypes = Sets.newHashSet();
-            List<String> storedTransactionTypes = transactionTypesMap.get(agentRollup.name());
+            List<String> storedTransactionTypes = transactionTypesMap.get(agentRollup.id());
             if (storedTransactionTypes != null) {
                 transactionTypes.addAll(storedTransactionTypes);
             }
             transactionTypes.add(defaultDisplayedTransactionType);
-            agentRollups.put(agentRollup.name(),
+            agentRollups.put(agentRollup.id(),
                     ImmutableAgentRollupLayout.builder()
                             .depth(depth)
                             .leaf(agentRollup.children().isEmpty())
@@ -340,7 +342,7 @@ class LayoutService {
 
     @Value.Immutable
     interface FilteredAgentRollup {
-        String name();
+        String id();
         List<FilteredAgentRollup> children();
         Permissions permissions();
     }
@@ -462,7 +464,7 @@ class LayoutService {
     private static class FilteredAgentRollupOrdering extends Ordering<FilteredAgentRollup> {
         @Override
         public int compare(FilteredAgentRollup left, FilteredAgentRollup right) {
-            return left.name().compareToIgnoreCase(right.name());
+            return left.id().compareToIgnoreCase(right.id());
         }
     }
 }

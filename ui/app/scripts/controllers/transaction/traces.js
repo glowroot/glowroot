@@ -69,7 +69,7 @@ glowroot.controller('TracesCtrl', [
     });
 
     function refreshChart(deferred) {
-      if ((!$scope.agentRollup && !$scope.layout.embedded) || !$scope.transactionType) {
+      if ((!$scope.agentRollupId && !$scope.layout.embedded) || !$scope.transactionType) {
         return;
       }
       var from = appliedFilter.from;
@@ -91,7 +91,7 @@ glowroot.controller('TracesCtrl', [
       if ($scope.transactionName) {
         query.transactionName = $scope.transactionName;
       }
-      query.agentRollup = $scope.agentRollup;
+      query.agentRollupId = $scope.agentRollupId;
       var showChartSpinner = !$scope.suppressChartSpinner;
       if (showChartSpinner) {
         $scope.showChartSpinner++;
@@ -330,8 +330,8 @@ glowroot.controller('TracesCtrl', [
             url += '&';
           }
           if (agentId) {
-            if ($scope.agentRollup !== agentId) {
-              url += 'modal-agent-rollup=' + encodeURIComponent($scope.agentRollup) + '&';
+            if ($scope.agentRollupId !== agentId) {
+              url += 'modal-agent-rollup-id=' + encodeURIComponent($scope.agentRollupId) + '&';
             }
             url += 'modal-agent-id=' + encodeURIComponent(agentId) + '&';
           }
@@ -343,8 +343,8 @@ glowroot.controller('TracesCtrl', [
         } else {
           $scope.$apply(function () {
             if (agentId) {
-              if ($scope.agentRollup !== agentId) {
-                $location.search('modal-agent-rollup', $scope.agentRollup);
+              if ($scope.agentRollupId !== agentId) {
+                $location.search('modal-agent-rollup-id', $scope.agentRollupId);
               }
               $location.search('modal-agent-id', agentId);
             }
@@ -433,14 +433,14 @@ glowroot.controller('TracesCtrl', [
         $scope.filterDurationComparator = 'greater';
       }
 
-      var modalAgentRollup = $location.search()['modal-agent-rollup'] || $location.search()['modal-agent-id'] || '';
+      var modalAgentRollup = $location.search()['modal-agent-rollup-id'] || $location.search()['modal-agent-id'] || '';
       var modalAgentId = $location.search()['modal-agent-id'] || '';
       var modalTraceId = $location.search()['modal-trace-id'];
       var modalCheckLiveTraces = $location.search()['modal-check-live-traces'];
       if (modalTraceId) {
         highlightedTraceId = modalTraceId;
         $('#traceModal').data('location-query',
-            ['modal-agent-rollup', 'modal-agent-id', 'modal-trace-id', 'modal-check-live-traces']);
+            ['modal-agent-rollup-id', 'modal-agent-id', 'modal-trace-id', 'modal-check-live-traces']);
         traceModal.displayModal(modalAgentRollup, modalAgentId, modalTraceId, modalCheckLiveTraces);
       } else {
         $('#traceModal').modal('hide');
@@ -486,7 +486,7 @@ glowroot.controller('TracesCtrl', [
         query.limit = appliedFilter.limit;
       }
       // preserve modal-*, otherwise refresh on modal trace does not work
-      query['modal-agent-rollup'] = $location.search()['modal-agent-rollup'];
+      query['modal-agent-rollup-id'] = $location.search()['modal-agent-rollup-id'];
       query['modal-agent-id'] = $location.search()['modal-agent-id'];
       query['modal-trace-id'] = $location.search()['modal-trace-id'];
       query['modal-check-live-traces'] = $location.search()['modal-check-live-traces'];

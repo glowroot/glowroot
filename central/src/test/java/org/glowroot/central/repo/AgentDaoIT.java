@@ -13,22 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.central;
+package org.glowroot.central.repo;
 
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class GrpcServerTest {
+public class AgentDaoIT {
 
     @Test
-    public void test() {
-        assertThat(GrpcServer.trimSpacesAroundAgentRollupIdSeparator("a/b/c")).isEqualTo("a/b/c");
-        assertThat(GrpcServer.trimSpacesAroundAgentRollupIdSeparator("  a/b/c  "))
-                .isEqualTo("a/b/c");
-        assertThat(GrpcServer.trimSpacesAroundAgentRollupIdSeparator("a /  b/c"))
-                .isEqualTo("a/b/c");
-        assertThat(GrpcServer.trimSpacesAroundAgentRollupIdSeparator("a/  b  /c"))
-                .isEqualTo("a/b/c");
+    public void shouldRollup() {
+        assertThat(AgentDao.getAgentRollupIds("a")).containsExactly("a");
+        assertThat(AgentDao.getAgentRollupIds("a/b")).containsExactly("a", "a/b");
+        assertThat(AgentDao.getAgentRollupIds("a/b/c")).containsExactly("a", "a/b", "a/b/c");
     }
 }

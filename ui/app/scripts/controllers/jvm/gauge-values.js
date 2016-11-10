@@ -194,7 +194,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     });
 
     if (!$scope.hideMainContent()) {
-      $http.get('backend/jvm/all-gauges?agent-rollup=' + encodeURIComponent($scope.agentRollup))
+      $http.get('backend/jvm/all-gauges?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
           .success(function (data) {
             $scope.loaded = true;
             $scope.allGauges = data;

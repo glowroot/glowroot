@@ -102,7 +102,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public List<Gauge> getGauges(String agentRollup) throws Exception {
+    public List<Gauge> getGauges(String agentRollupId) throws Exception {
         List<String> allGaugeNames = gaugeNameDao.readAllGaugeNames();
         List<Gauge> gauges = Lists.newArrayList();
         for (String gaugeName : allGaugeNames) {
@@ -153,7 +153,7 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     // query.from() is INCLUSIVE
     @Override
-    public List<GaugeValue> readGaugeValues(String agentRollup, String gaugeName, long from,
+    public List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from,
             long to, int rollupLevel) throws Exception {
         Long gaugeId = gaugeNameDao.getGaugeId(gaugeName);
         if (gaugeId == null) {

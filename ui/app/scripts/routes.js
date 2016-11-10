@@ -28,7 +28,7 @@ glowroot.config([
             // no need to add transaction-type to url
             return;
           }
-          var hasAgent = $location.search()['agent-id'] || $location.search()['agent-rollup']
+          var hasAgent = $location.search()['agent-id'] || $location.search()['agent-rollup-id']
               || $rootScope.layout.embedded;
           if (hasAgent && needsTransactionType && !$location.search()['transaction-type']) {
             $location.search('transaction-type', $rootScope.defaultTransactionType());
@@ -48,7 +48,7 @@ glowroot.config([
               unregisterWatch();
               return;
             }
-            var hasAgent = $location.search()['agent-id'] || $location.search()['agent-rollup']
+            var hasAgent = $location.search()['agent-id'] || $location.search()['agent-rollup-id']
                 || $rootScope.layout.embedded;
             if (hasAgent && needsTransactionType && !$location.search()['transaction-type']) {
               $location.search('transaction-type', $rootScope.defaultTransactionType());
@@ -104,7 +104,7 @@ glowroot.config([
     });
     $stateProvider.state('transaction', {
       abstract: true,
-      url: '/transaction?agent-id&agent-rollup&transaction-type',
+      url: '/transaction?agent-id&agent-rollup-id&transaction-type',
       templateUrl: 'views/transaction.html',
       controller: 'TransactionCtrl',
       resolve: {
@@ -249,7 +249,7 @@ glowroot.config([
     });
     $stateProvider.state('error', {
       abstract: true,
-      url: '/error?agent-id&agent-rollup&transaction-type',
+      url: '/error?agent-id&agent-rollup-id&transaction-type',
       templateUrl: 'views/transaction.html',
       controller: 'TransactionCtrl',
       resolve: {
@@ -328,52 +328,52 @@ glowroot.config([
       }
     });
     $stateProvider.state('jvm.gauges', {
-      url: '/gauges?agent-id&agent-rollup',
+      url: '/gauges?agent-id&agent-rollup-id',
       templateUrl: 'views/jvm/gauge-values.html',
       controller: 'JvmGaugeValuesCtrl'
     });
     $stateProvider.state('jvm.threadDump', {
-      url: '/thread-dump?agent-id&agent-rollup',
+      url: '/thread-dump?agent-id&agent-rollup-id',
       templateUrl: 'views/jvm/thread-dump.html',
       controller: 'JvmThreadDumpCtrl'
     });
     $stateProvider.state('jvm.jstack', {
-      url: '/jstack?agent-id&agent-rollup',
+      url: '/jstack?agent-id&agent-rollup-id',
       templateUrl: 'views/jvm/jstack.html',
       controller: 'JvmJstackCtrl'
     });
     $stateProvider.state('jvm.heapDump', {
-      url: '/heap-dump?agent-id&agent-rollup',
+      url: '/heap-dump?agent-id&agent-rollup-id',
       templateUrl: 'views/jvm/heap-dump.html',
       controller: 'JvmHeapDumpCtrl'
     });
     $stateProvider.state('jvm.heapHistogram', {
-      url: '/heap-histogram?agent-id&agent-rollup',
+      url: '/heap-histogram?agent-id&agent-rollup-id',
       templateUrl: 'views/jvm/heap-histogram.html',
       controller: 'JvmHeapHistogramCtrl'
     });
     $stateProvider.state('jvm.gc', {
-      url: '/gc?agent-id&agent-rollup',
+      url: '/gc?agent-id&agent-rollup-id',
       templateUrl: 'views/jvm/gc.html',
       controller: 'JvmGcCtrl'
     });
     $stateProvider.state('jvm.mbeanTree', {
-      url: '/mbean-tree?agent-id&agent-rollup',
+      url: '/mbean-tree?agent-id&agent-rollup-id',
       templateUrl: 'views/jvm/mbean-tree.html',
       controller: 'JvmMBeanTreeCtrl'
     });
     $stateProvider.state('jvm.systemProperties', {
-      url: '/system-properties?agent-id&agent-rollup',
+      url: '/system-properties?agent-id&agent-rollup-id',
       templateUrl: 'views/jvm/system-properties.html',
       controller: 'JvmSystemPropertiesCtrl'
     });
     $stateProvider.state('jvm.environment', {
-      url: '/environment?agent-id&agent-rollup',
+      url: '/environment?agent-id&agent-rollup-id',
       templateUrl: 'views/jvm/environment.html',
       controller: 'JvmEnvironmentCtrl'
     });
     $stateProvider.state('jvm.capabilities', {
-      url: '/capabilities?agent-id&agent-rollup',
+      url: '/capabilities?agent-id&agent-rollup-id',
       templateUrl: 'views/jvm/capabilities.html',
       controller: 'JvmCapabilitiesCtrl'
     });

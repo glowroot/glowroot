@@ -32,9 +32,9 @@ class TraceJsonService {
 
     // see special case for "agent:trace" permission in Authentication.isPermitted()
     @GET(path = "/backend/trace/header", permission = "agent:trace")
-    String getHeader(@BindAgentRollup String agentRollup, @BindRequest HeaderRequest request)
+    String getHeader(@BindAgentRollupId String agentRollupId, @BindRequest HeaderRequest request)
             throws Exception {
-        String headerJson = traceCommonService.getHeaderJson(agentRollup, request.agentId(),
+        String headerJson = traceCommonService.getHeaderJson(agentRollupId, request.agentId(),
                 request.traceId(), request.checkLiveTraces());
         if (headerJson == null) {
             logger.debug("no trace found for agent id '{}' and trace id '{}'", request.agentId(),

@@ -107,30 +107,30 @@ public class RollupService implements Runnable {
         }
     }
 
-    private void rollupAggregates(AgentRollup agentRollup, @Nullable String parentAgentRollup)
+    private void rollupAggregates(AgentRollup agentRollup, @Nullable String parentAgentRollupId)
             throws InterruptedException {
         for (AgentRollup childAgentRollup : agentRollup.children()) {
-            rollupAggregates(childAgentRollup, agentRollup.name());
+            rollupAggregates(childAgentRollup, agentRollup.id());
         }
         try {
-            aggregateDao.rollup(agentRollup.name(), parentAgentRollup,
+            aggregateDao.rollup(agentRollup.id(), parentAgentRollupId,
                     agentRollup.children().isEmpty());
         } catch (InterruptedException e) {
             // shutdown requested
             throw e;
         } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.name(), e.getMessage(), e);
+            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
         }
     }
 
     // returns true on success, false on failure
-    private boolean rollupGauges(AgentRollup agentRollup, @Nullable String parentAgentRollup)
+    private boolean rollupGauges(AgentRollup agentRollup, @Nullable String parentAgentRollupId)
             throws InterruptedException {
         // important to roll up children first, since gauge values initial roll up from children is
         // done on the 1-min aggregates of the children
         boolean success = true;
         for (AgentRollup childAgentRollup : agentRollup.children()) {
-            boolean childSuccess = rollupGauges(childAgentRollup, agentRollup.name());
+            boolean childSuccess = rollupGauges(childAgentRollup, agentRollup.id());
             success = success && childSuccess;
         }
         if (!success) {
@@ -140,14 +140,14 @@ public class RollupService implements Runnable {
             return false;
         }
         try {
-            gaugeValueDao.rollup(agentRollup.name(), parentAgentRollup,
+            gaugeValueDao.rollup(agentRollup.id(), parentAgentRollupId,
                     agentRollup.children().isEmpty());
             return true;
         } catch (InterruptedException e) {
             // shutdown requested
             throw e;
         } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.name(), e.getMessage(), e);
+            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
             return false;
         }
     }
@@ -157,12 +157,12 @@ public class RollupService implements Runnable {
             checkTransactionAlerts(childAgentRollup);
         }
         try {
-            checkTransactionAlerts(agentRollup.name(), clock.currentTimeMillis());
+            checkTransactionAlerts(agentRollup.id(), clock.currentTimeMillis());
         } catch (InterruptedException e) {
             // shutdown requested
             throw e;
         } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.name(), e.getMessage(), e);
+            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
         }
     }
 
@@ -171,12 +171,12 @@ public class RollupService implements Runnable {
             checkGaugeAlerts(childAgentRollup);
         }
         try {
-            checkGaugeAlerts(agentRollup.name(), clock.currentTimeMillis());
+            checkGaugeAlerts(agentRollup.id(), clock.currentTimeMillis());
         } catch (InterruptedException e) {
             // shutdown requested
             throw e;
         } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.name(), e.getMessage(), e);
+            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
         }
     }
 
@@ -187,12 +187,12 @@ public class RollupService implements Runnable {
         }
         if (agentRollup.children().isEmpty()) {
             try {
-                downstreamService.updateAgentConfigIfConnectedAndNeeded(agentRollup.name());
+                downstreamService.updateAgentConfigIfConnectedAndNeeded(agentRollup.id());
             } catch (InterruptedException e) {
                 // shutdown requested
                 throw e;
             } catch (Exception e) {
-                logger.error("{} - {}", agentRollup.name(), e.getMessage(), e);
+                logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
             }
         }
     }

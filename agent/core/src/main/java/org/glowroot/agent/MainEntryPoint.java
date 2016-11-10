@@ -33,11 +33,13 @@ import java.util.ServiceLoader;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -167,6 +169,12 @@ public class MainEntryPoint {
         Map<String, String> properties = Maps.newHashMap();
         File propFile = new File(baseDir, "glowroot.properties");
         if (propFile.exists()) {
+            // upgrade from 0.9.6 to 0.9.7
+            String content = Files.toString(propFile, Charsets.UTF_8);
+            if (content.contains("agent.rollup=")) {
+                content = content.replace("agent.rollup=", "agent.rollup.id=");
+                Files.write(content, propFile, Charsets.UTF_8);
+            }
             Properties props = new Properties();
             InputStream in = new FileInputStream(propFile);
             try {

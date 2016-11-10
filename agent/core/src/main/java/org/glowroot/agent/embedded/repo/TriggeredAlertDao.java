@@ -42,18 +42,18 @@ class TriggeredAlertDao implements TriggeredAlertRepository {
     }
 
     @Override
-    public void insert(String agentRollup, String version) throws Exception {
+    public void insert(String agentRollupId, String version) throws Exception {
         dataSource.update("insert into triggered_alert (alert_config_version) values (?)", version);
     }
 
     @Override
-    public boolean exists(String agentRollup, String version) throws Exception {
+    public boolean exists(String agentRollupId, String version) throws Exception {
         return dataSource.queryForExists(
                 "select 1 from triggered_alert where alert_config_version = ?", version);
     }
 
     @Override
-    public void delete(String agentRollup, String version) throws Exception {
+    public void delete(String agentRollupId, String version) throws Exception {
         dataSource.update("delete from triggered_alert where alert_config_version = ?", version);
     }
 

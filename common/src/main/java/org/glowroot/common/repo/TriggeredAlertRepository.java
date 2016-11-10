@@ -17,9 +17,9 @@ package org.glowroot.common.repo;
 
 public interface TriggeredAlertRepository {
 
-    boolean exists(String agentRollup, String version) throws Exception;
+    boolean exists(String agentRollupId, String version) throws Exception;
 
-    void delete(String agentRollup, String version) throws Exception;
+    void delete(String agentRollupId, String version) throws Exception;
 
-    void insert(String agentRollup, String version) throws Exception;
+    void insert(String agentRollupId, String version) throws Exception;
 }

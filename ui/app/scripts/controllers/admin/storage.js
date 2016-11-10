@@ -77,7 +77,7 @@ glowroot.controller('AdminStorageCtrl', [
     };
 
     $scope.deleteAllStoredData = function (deferred) {
-      $http.post('backend/admin/delete-all-stored-data', {agentRollup: $scope.agentRollup})
+      $http.post('backend/admin/delete-all-stored-data', {agentRollupId: $scope.agentRollupId})
           .success(function () {
             deferred.resolve('Deleted');
           })

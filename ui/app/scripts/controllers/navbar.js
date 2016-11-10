@@ -25,7 +25,7 @@ glowroot.controller('NavbarCtrl', [
     $scope.queryString = function (preserveAgentSelection, preserveTransactionType) {
       var query = {};
       if (preserveAgentSelection) {
-        query['agent-rollup'] = $location.search()['agent-rollup'];
+        query['agent-rollup-id'] = $location.search()['agent-rollup-id'];
         query['agent-id'] = $location.search()['agent-id'];
       }
       if (preserveTransactionType) {
@@ -53,7 +53,7 @@ glowroot.controller('NavbarCtrl', [
 
     $scope.configQueryString = function () {
       if ($scope.agentPermissions && $scope.agentPermissions.config.view) {
-        return '?agent-id=' + encodeURIComponent($scope.agentId || $scope.agentRollup);
+        return '?agent-id=' + encodeURIComponent($scope.agentId || $scope.agentRollupId);
       } else {
         return '';
       }

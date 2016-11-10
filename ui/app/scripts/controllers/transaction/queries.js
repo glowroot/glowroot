@@ -256,7 +256,7 @@ glowroot.controller('TransactionQueriesCtrl', [
       }
 
       var q = {
-        agentRollup: $scope.agentRollup,
+        agentRollupId: $scope.agentRollupId,
         fullTextSha1: modalQueryTextSha1
       };
       $scope.showModalSpinner++;
@@ -290,7 +290,7 @@ glowroot.controller('TransactionQueriesCtrl', [
 
     function refreshData() {
       var query = {
-        agentRollup: $scope.agentRollup,
+        agentRollupId: $scope.agentRollupId,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
         from: $scope.range.chartFrom,

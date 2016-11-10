@@ -34,42 +34,42 @@ glowroot.controller('JvmCtrl', [
     };
 
     $scope.hideMainContent = function () {
-      return !$scope.agentRollup && !$scope.agentId && !$scope.layout.embedded;
+      return !$scope.agentRollupId && !$scope.agentId && !$scope.layout.embedded;
     };
 
     $scope.currentUrl = function () {
       return $location.path().substring(1);
     };
 
-    function agentRollupUrl(path, agentRollup, leaf) {
+    function agentRollupUrl(path, agentRollupId, leaf) {
       // preserve existing query string
       var search = angular.copy($location.search());
-      delete search['agent-rollup'];
+      delete search['agent-rollup-id'];
       delete search['agent-id'];
       var query = {};
       if (leaf) {
-        query['agent-id'] = agentRollup;
+        query['agent-id'] = agentRollupId;
       } else {
-        query['agent-rollup'] = agentRollup;
+        query['agent-rollup-id'] = agentRollupId;
       }
       angular.merge(query, search);
       return path + queryStrings.encodeObject(query);
     }
 
-    $scope.agentRollupUrl = function (agentRollup, agentRollupObj) {
+    $scope.agentRollupUrl = function (agentRollupId, agentRollup) {
       var path = $location.path().substring(1);
-      if (path === 'jvm/gauges' && !agentRollupObj.permissions.jvm.gauges
-          || path === 'jvm/thread-dump' && !agentRollupObj.permissions.jvm.threadDump
-          || path === 'jvm/heap-dump' && !agentRollupObj.permissions.jvm.heapDump
-          || path === 'jvm/heap-histogram' && !agentRollupObj.permissions.jvm.heapHistogram
-          || path === 'jvm/gc' && !agentRollupObj.permissions.jvm.gc
-          || path === 'jvm/mbean-tree' && !agentRollupObj.permissions.jvm.mbeanTree
-          || path === 'jvm/system-properties' && !agentRollupObj.permissions.jvm.systemProperties
-          || path === 'jvm/environment' && !agentRollupObj.permissions.jvm.environment
-          || path === 'jvm/capabilities' && !agentRollupObj.permissions.jvm.capabilities) {
-        return agentRollupUrl('jvm/gauges', agentRollup, agentRollupObj.leaf);
+      if (path === 'jvm/gauges' && !agentRollup.permissions.jvm.gauges
+          || path === 'jvm/thread-dump' && !agentRollup.permissions.jvm.threadDump
+          || path === 'jvm/heap-dump' && !agentRollup.permissions.jvm.heapDump
+          || path === 'jvm/heap-histogram' && !agentRollup.permissions.jvm.heapHistogram
+          || path === 'jvm/gc' && !agentRollup.permissions.jvm.gc
+          || path === 'jvm/mbean-tree' && !agentRollup.permissions.jvm.mbeanTree
+          || path === 'jvm/system-properties' && !agentRollup.permissions.jvm.systemProperties
+          || path === 'jvm/environment' && !agentRollup.permissions.jvm.environment
+          || path === 'jvm/capabilities' && !agentRollup.permissions.jvm.capabilities) {
+        return agentRollupUrl('jvm/gauges', agentRollupId, agentRollup.leaf);
       } else {
-        return agentRollupUrl(path, agentRollup, agentRollupObj.leaf);
+        return agentRollupUrl(path, agentRollupId, agentRollup.leaf);
       }
     };
 

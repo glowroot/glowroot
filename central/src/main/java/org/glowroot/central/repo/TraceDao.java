@@ -371,7 +371,7 @@ public class TraceDao implements TraceRepository {
         Trace.Header priorHeader = trace.getUpdate() ? readHeader(agentId, traceId) : null;
         Trace.Header header = trace.getHeader();
 
-        List<String> agentRollups = agentDao.readAgentRollups(agentId);
+        List<String> agentRollupIds = agentDao.readAgentRollupIds(agentId);
 
         List<ResultSetFuture> futures = Lists.newArrayList();
 
@@ -383,9 +383,10 @@ public class TraceDao implements TraceRepository {
                 if (fullText.length() > 2 * StorageConfig.TRACE_QUERY_TEXT_TRUNCATE) {
                     fullTextSha1 = Hashing.sha1().hashString(fullText, Charsets.UTF_8).toString();
                     futures.addAll(fullQueryTextDao.store(agentId, fullTextSha1, fullText));
-                    for (int i = 1; i < agentRollups.size(); i++) {
+                    for (int i = 1; i < agentRollupIds.size(); i++) {
                         futures.addAll(
-                                fullQueryTextDao.updateCheckTTL(agentRollups.get(i), fullTextSha1));
+                                fullQueryTextDao.updateCheckTTL(agentRollupIds.get(i),
+                                        fullTextSha1));
                     }
                     sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
                             .setTruncatedText(
@@ -400,9 +401,9 @@ public class TraceDao implements TraceRepository {
                 }
             } else {
                 futures.addAll(fullQueryTextDao.updateTTL(agentId, fullTextSha1));
-                for (int i = 1; i < agentRollups.size(); i++) {
+                for (int i = 1; i < agentRollupIds.size(); i++) {
                     futures.addAll(
-                            fullQueryTextDao.updateCheckTTL(agentRollups.get(i), fullTextSha1));
+                            fullQueryTextDao.updateCheckTTL(agentRollupIds.get(i), fullTextSha1));
                 }
                 sharedQueryTexts.add(sharedQueryText);
             }
@@ -414,12 +415,12 @@ public class TraceDao implements TraceRepository {
         futures.clear();
 
         int adjustedTTL = AggregateDao.getAdjustedTTL(getTTL(), header.getCaptureTime(), clock);
-        for (String agentRollup : agentRollups) {
+        for (String agentRollupId : agentRollupIds) {
 
-            if (!agentRollup.equals(agentId)) {
+            if (!agentRollupId.equals(agentId)) {
                 BoundStatement boundStatement = insertCheck.bind();
                 int i = 0;
-                boundStatement.setString(i++, agentRollup);
+                boundStatement.setString(i++, agentRollupId);
                 boundStatement.setString(i++, agentId);
                 boundStatement.setString(i++, traceId);
                 boundStatement.setInt(i++, adjustedTTL);
@@ -430,7 +431,7 @@ public class TraceDao implements TraceRepository {
             if (header.getSlow()) {
                 BoundStatement boundStatement = insertOverallSlowPoint.bind();
                 int i = 0;
-                boundStatement.setString(i++, agentRollup);
+                boundStatement.setString(i++, agentRollupId);
                 boundStatement.setString(i++, header.getTransactionType());
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
                 boundStatement.setString(i++, agentId);
@@ -449,7 +450,7 @@ public class TraceDao implements TraceRepository {
 
                 boundStatement = insertTransactionSlowPoint.bind();
                 i = 0;
-                boundStatement.setString(i++, agentRollup);
+                boundStatement.setString(i++, agentRollupId);
                 boundStatement.setString(i++, header.getTransactionType());
                 boundStatement.setString(i++, header.getTransactionName());
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
@@ -469,7 +470,7 @@ public class TraceDao implements TraceRepository {
 
                 boundStatement = insertOverallSlowCount.bind();
                 i = 0;
-                boundStatement.setString(i++, agentRollup);
+                boundStatement.setString(i++, agentRollupId);
                 boundStatement.setString(i++, header.getTransactionType());
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
                 boundStatement.setString(i++, agentId);
@@ -479,7 +480,7 @@ public class TraceDao implements TraceRepository {
 
                 boundStatement = insertTransactionSlowCount.bind();
                 i = 0;
-                boundStatement.setString(i++, agentRollup);
+                boundStatement.setString(i++, agentRollupId);
                 boundStatement.setString(i++, header.getTransactionType());
                 boundStatement.setString(i++, header.getTransactionName());
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
@@ -491,7 +492,7 @@ public class TraceDao implements TraceRepository {
                 if (priorHeader != null) {
                     boundStatement = deletePartialOverallSlowPoint.bind();
                     i = 0;
-                    boundStatement.setString(i++, agentRollup);
+                    boundStatement.setString(i++, agentRollupId);
                     boundStatement.setString(i++, priorHeader.getTransactionType());
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
                     boundStatement.setString(i++, agentId);
@@ -500,7 +501,7 @@ public class TraceDao implements TraceRepository {
 
                     boundStatement = deletePartialTransactionSlowPoint.bind();
                     i = 0;
-                    boundStatement.setString(i++, agentRollup);
+                    boundStatement.setString(i++, agentRollupId);
                     boundStatement.setString(i++, priorHeader.getTransactionType());
                     boundStatement.setString(i++, priorHeader.getTransactionName());
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
@@ -510,7 +511,7 @@ public class TraceDao implements TraceRepository {
 
                     boundStatement = deletePartialOverallSlowCount.bind();
                     i = 0;
-                    boundStatement.setString(i++, agentRollup);
+                    boundStatement.setString(i++, agentRollupId);
                     boundStatement.setString(i++, priorHeader.getTransactionType());
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
                     boundStatement.setString(i++, agentId);
@@ -519,7 +520,7 @@ public class TraceDao implements TraceRepository {
 
                     boundStatement = deletePartialTransactionSlowCount.bind();
                     i = 0;
-                    boundStatement.setString(i++, agentRollup);
+                    boundStatement.setString(i++, agentRollupId);
                     boundStatement.setString(i++, priorHeader.getTransactionType());
                     boundStatement.setString(i++, priorHeader.getTransactionName());
                     boundStatement.setTimestamp(i++, new Date(priorHeader.getCaptureTime()));
@@ -533,7 +534,7 @@ public class TraceDao implements TraceRepository {
             if (header.hasError() && !header.getPartial()) {
                 BoundStatement boundStatement = insertOverallErrorMessage.bind();
                 int i = 0;
-                boundStatement.setString(i++, agentRollup);
+                boundStatement.setString(i++, agentRollupId);
                 boundStatement.setString(i++, header.getTransactionType());
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
                 boundStatement.setString(i++, agentId);
@@ -544,7 +545,7 @@ public class TraceDao implements TraceRepository {
 
                 boundStatement = insertTransactionErrorMessage.bind();
                 i = 0;
-                boundStatement.setString(i++, agentRollup);
+                boundStatement.setString(i++, agentRollupId);
                 boundStatement.setString(i++, header.getTransactionType());
                 boundStatement.setString(i++, header.getTransactionName());
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
@@ -556,7 +557,7 @@ public class TraceDao implements TraceRepository {
 
                 boundStatement = insertOverallErrorPoint.bind();
                 i = 0;
-                boundStatement.setString(i++, agentRollup);
+                boundStatement.setString(i++, agentRollupId);
                 boundStatement.setString(i++, header.getTransactionType());
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
                 boundStatement.setString(i++, agentId);
@@ -575,7 +576,7 @@ public class TraceDao implements TraceRepository {
 
                 boundStatement = insertTransactionErrorPoint.bind();
                 i = 0;
-                boundStatement.setString(i++, agentRollup);
+                boundStatement.setString(i++, agentRollupId);
                 boundStatement.setString(i++, header.getTransactionType());
                 boundStatement.setString(i++, header.getTransactionName());
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
@@ -595,7 +596,7 @@ public class TraceDao implements TraceRepository {
 
                 boundStatement = insertOverallErrorCount.bind();
                 i = 0;
-                boundStatement.setString(i++, agentRollup);
+                boundStatement.setString(i++, agentRollupId);
                 boundStatement.setString(i++, header.getTransactionType());
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
                 boundStatement.setString(i++, agentId);
@@ -605,7 +606,7 @@ public class TraceDao implements TraceRepository {
 
                 boundStatement = insertTransactionErrorCount.bind();
                 i = 0;
-                boundStatement.setString(i++, agentRollup);
+                boundStatement.setString(i++, agentRollupId);
                 boundStatement.setString(i++, header.getTransactionType());
                 boundStatement.setString(i++, header.getTransactionName());
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
@@ -615,7 +616,7 @@ public class TraceDao implements TraceRepository {
                 futures.add(session.executeAsync(boundStatement));
             }
             for (Trace.Attribute attributeName : attributes) {
-                traceAttributeNameDao.store(agentRollup,
+                traceAttributeNameDao.store(agentRollupId,
                         header.getTransactionType(), attributeName.getName(), futures);
             }
         }
@@ -716,23 +717,23 @@ public class TraceDao implements TraceRepository {
             boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.executeAsync(boundStatement));
         }
-        futures.addAll(transactionTypeDao.store(agentRollups, header.getTransactionType()));
+        futures.addAll(transactionTypeDao.store(agentRollupIds, header.getTransactionType()));
         MoreFutures.waitForAll(futures);
     }
 
     @Override
-    public List<String> readTraceAttributeNames(String agentRollup, String transactionType) {
-        return traceAttributeNameDao.read(agentRollup, transactionType);
+    public List<String> readTraceAttributeNames(String agentRollupId, String transactionType) {
+        return traceAttributeNameDao.read(agentRollupId, transactionType);
     }
 
     @Override
-    public Result<TracePoint> readSlowPoints(String agentRollup, TraceQuery query,
+    public Result<TracePoint> readSlowPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws IOException {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             BoundStatement boundStatement = readOverallSlowPoint.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollup);
+            boundStatement.setString(i++, agentRollupId);
             boundStatement.setString(i++, query.transactionType());
             boundStatement.setTimestamp(i++, new Date(query.from()));
             boundStatement.setTimestamp(i++, new Date(query.to()));
@@ -741,7 +742,7 @@ public class TraceDao implements TraceRepository {
         } else {
             BoundStatement boundStatement = readTransactionSlowPoint.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollup);
+            boundStatement.setString(i++, agentRollupId);
             boundStatement.setString(i++, query.transactionType());
             boundStatement.setString(i++, transactionName);
             boundStatement.setTimestamp(i++, new Date(query.from()));
@@ -752,13 +753,13 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public Result<TracePoint> readErrorPoints(String agentRollup, TraceQuery query,
+    public Result<TracePoint> readErrorPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws IOException {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             BoundStatement boundStatement = readOverallErrorPoint.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollup);
+            boundStatement.setString(i++, agentRollupId);
             boundStatement.setString(i++, query.transactionType());
             boundStatement.setTimestamp(i++, new Date(query.from()));
             boundStatement.setTimestamp(i++, new Date(query.to()));
@@ -767,7 +768,7 @@ public class TraceDao implements TraceRepository {
         } else {
             BoundStatement boundStatement = readTransactionErrorPoint.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollup);
+            boundStatement.setString(i++, agentRollupId);
             boundStatement.setString(i++, query.transactionType());
             boundStatement.setString(i++, transactionName);
             boundStatement.setTimestamp(i++, new Date(query.from()));
@@ -778,63 +779,63 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public long readSlowCount(String agentRollup, TraceQuery query) {
+    public long readSlowCount(String agentRollupId, TraceQuery query) {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             ResultSet results = session.execute(
                     "select count(*) from trace_tt_slow_count where agent_rollup = ?"
                             + " and transaction_type = ? and capture_time > ?"
                             + " and capture_time <= ?",
-                    agentRollup, query.transactionType(), query.from(), query.to());
+                    agentRollupId, query.transactionType(), query.from(), query.to());
             return results.one().getLong(0);
         } else {
             ResultSet results = session.execute(
                     "select count(*) from trace_tn_slow_count where agent_rollup = ?"
                             + " and transaction_type = ? and transaction_name = ?"
                             + " and capture_time > ? and capture_time <= ?",
-                    agentRollup, query.transactionType(), transactionName, query.from(),
+                    agentRollupId, query.transactionType(), transactionName, query.from(),
                     query.to());
             return results.one().getLong(0);
         }
     }
 
     @Override
-    public long readErrorCount(String agentRollup, TraceQuery query) {
+    public long readErrorCount(String agentRollupId, TraceQuery query) {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             ResultSet results = session.execute(
                     "select count(*) from trace_tt_error_count where agent_rollup = ?"
                             + " and transaction_type = ? and capture_time > ?"
                             + " and capture_time <= ?",
-                    agentRollup, query.transactionType(), query.from(), query.to());
+                    agentRollupId, query.transactionType(), query.from(), query.to());
             return results.one().getLong(0);
         } else {
             ResultSet results = session.execute(
                     "select count(*) from trace_tn_error_count where agent_rollup = ?"
                             + " and transaction_type = ? and transaction_name = ?"
                             + " and capture_time > ? and capture_time <= ?",
-                    agentRollup, query.transactionType(), transactionName, query.from(),
+                    agentRollupId, query.transactionType(), transactionName, query.from(),
                     query.to());
             return results.one().getLong(0);
         }
     }
 
     @Override
-    public ErrorMessageResult readErrorMessages(String agentRollup, TraceQuery query,
+    public ErrorMessageResult readErrorMessages(String agentRollupId, TraceQuery query,
             ErrorMessageFilter filter, long resolutionMillis, int limit) throws Exception {
         BoundStatement boundStatement;
         String transactionName = query.transactionName();
         if (transactionName == null) {
             boundStatement = readOverallErrorMessage.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollup);
+            boundStatement.setString(i++, agentRollupId);
             boundStatement.setString(i++, query.transactionType());
             boundStatement.setTimestamp(i++, new Date(query.from()));
             boundStatement.setTimestamp(i++, new Date(query.to()));
         } else {
             boundStatement = readTransactionErrorMessage.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollup);
+            boundStatement.setString(i++, agentRollupId);
             boundStatement.setString(i++, query.transactionType());
             boundStatement.setString(i++, transactionName);
             boundStatement.setTimestamp(i++, new Date(query.from()));
@@ -882,9 +883,9 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable HeaderPlus readHeaderPlus(String agentRollup, String agentId, String traceId)
+    public @Nullable HeaderPlus readHeaderPlus(String agentRollupId, String agentId, String traceId)
             throws InvalidProtocolBufferException {
-        checkValidAgentIdForRequest(agentRollup, agentId, traceId);
+        checkValidAgentIdForRequest(agentRollupId, agentId, traceId);
         Trace.Header header = readHeader(agentId, traceId);
         if (header == null) {
             return null;
@@ -896,9 +897,9 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public Entries readEntries(String agentRollup, String agentId, String traceId)
+    public Entries readEntries(String agentRollupId, String agentId, String traceId)
             throws IOException {
-        checkValidAgentIdForRequest(agentRollup, agentId, traceId);
+        checkValidAgentIdForRequest(agentRollupId, agentId, traceId);
         return ImmutableEntries.builder()
                 .addAllEntries(readEntriesInternal(agentId, traceId))
                 .addAllSharedQueryTexts(readSharedQueryTexts(agentId, traceId))
@@ -908,9 +909,9 @@ public class TraceDao implements TraceRepository {
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1) @Override
     @Override
-    public Entries readEntriesForExport(String agentRollup, String agentId, String traceId)
+    public Entries readEntriesForExport(String agentRollupId, String agentId, String traceId)
             throws IOException {
-        checkValidAgentIdForRequest(agentRollup, agentId, traceId);
+        checkValidAgentIdForRequest(agentRollupId, agentId, traceId);
         ImmutableEntries.Builder entries = ImmutableEntries.builder()
                 .addAllEntries(readEntriesInternal(agentId, traceId));
         List<Trace.SharedQueryText> sharedQueryTexts = Lists.newArrayList();
@@ -938,9 +939,9 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable Profile readMainThreadProfile(String agentRollup, String agentId,
+    public @Nullable Profile readMainThreadProfile(String agentRollupId, String agentId,
             String traceId) throws InvalidProtocolBufferException {
-        checkValidAgentIdForRequest(agentRollup, agentId, traceId);
+        checkValidAgentIdForRequest(agentRollupId, agentId, traceId);
         BoundStatement boundStatement = readMainThreadProfile.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
@@ -954,9 +955,9 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable Profile readAuxThreadProfile(String agentRollup, String agentId,
+    public @Nullable Profile readAuxThreadProfile(String agentRollupId, String agentId,
             String traceId) throws InvalidProtocolBufferException {
-        checkValidAgentIdForRequest(agentRollup, agentId, traceId);
+        checkValidAgentIdForRequest(agentRollupId, agentId, traceId);
         BoundStatement boundStatement = readAuxThreadProfile.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
@@ -969,18 +970,18 @@ public class TraceDao implements TraceRepository {
         return Profile.parseFrom(ByteString.copyFrom(bytes));
     }
 
-    private void checkValidAgentIdForRequest(String agentRollup, String agentId, String traceId) {
-        if (agentId.equals(agentRollup)) {
+    private void checkValidAgentIdForRequest(String agentRollupId, String agentId, String traceId) {
+        if (agentId.equals(agentRollupId)) {
             return;
         }
         BoundStatement boundStatement = readCheck.bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollup);
+        boundStatement.setString(i++, agentRollupId);
         boundStatement.setString(i++, agentId);
         boundStatement.setString(i++, traceId);
         if (session.execute(boundStatement).isExhausted()) {
             throw new IllegalArgumentException("Agent " + agentId + " was not a child of rollup "
-                    + agentRollup + " at the time of trace " + traceId);
+                    + agentRollupId + " at the time of trace " + traceId);
         }
     }
 

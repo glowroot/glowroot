@@ -33,32 +33,34 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface TraceRepository {
 
-    List<String> readTraceAttributeNames(String agentRollup, String transactionType)
+    List<String> readTraceAttributeNames(String agentRollupId, String transactionType)
             throws Exception;
 
-    Result<TracePoint> readSlowPoints(String agentRollup, TraceQuery query, TracePointFilter filter,
+    Result<TracePoint> readSlowPoints(String agentRollupId, TraceQuery query,
+            TracePointFilter filter,
             int limit) throws Exception;
 
-    Result<TracePoint> readErrorPoints(String agentRollup, TraceQuery query,
+    Result<TracePoint> readErrorPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws Exception;
 
-    long readSlowCount(String agentRollup, TraceQuery query) throws Exception;
+    long readSlowCount(String agentRollupId, TraceQuery query) throws Exception;
 
-    long readErrorCount(String agentRollup, TraceQuery query) throws Exception;
+    long readErrorCount(String agentRollupId, TraceQuery query) throws Exception;
 
-    ErrorMessageResult readErrorMessages(String agentRollup, TraceQuery query,
+    ErrorMessageResult readErrorMessages(String agentRollupId, TraceQuery query,
             ErrorMessageFilter filter, long resolutionMillis, int limit) throws Exception;
 
     // null return value means trace not found
     @Nullable
-    HeaderPlus readHeaderPlus(String agentRollup, String agentId, String traceId) throws Exception;
+    HeaderPlus readHeaderPlus(String agentRollupId, String agentId, String traceId)
+            throws Exception;
 
     // null return value means trace not found or was found but had no entries
     //
     // SharedQueryTexts are returned with either fullTrace or
     // truncatedText/truncatedEndText/fullTraceSha1
     @Nullable
-    Entries readEntries(String agentRollup, String agentId, String traceId) throws Exception;
+    Entries readEntries(String agentRollupId, String agentId, String traceId) throws Exception;
 
     // null return value means trace not found or was found but had no entries (and therefore also
     // no queries)
@@ -66,17 +68,17 @@ public interface TraceRepository {
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1)
     @Nullable
-    Entries readEntriesForExport(String agentRollup, String agentId, String traceId)
+    Entries readEntriesForExport(String agentRollupId, String agentId, String traceId)
             throws Exception;
 
     // null return value means trace not found or was found but had no main thread profile
     @Nullable
-    Profile readMainThreadProfile(String agentRollup, String agentId, String traceId)
+    Profile readMainThreadProfile(String agentRollupId, String agentId, String traceId)
             throws Exception;
 
     // null return value means trace not found or was found but had no aux thread profile
     @Nullable
-    Profile readAuxThreadProfile(String agentRollup, String agentId, String traceId)
+    Profile readAuxThreadProfile(String agentRollupId, String agentId, String traceId)
             throws Exception;
 
     @Value.Immutable

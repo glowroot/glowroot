@@ -64,7 +64,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     // checks active traces first, then pending traces (and finally caller should check stored
     // traces) to make sure that the trace is not missed if it is in transition between these states
     @Override
-    public @Nullable Trace.Header getHeader(String agentRollup, String agentId, String traceId)
+    public @Nullable Trace.Header getHeader(String agentRollupId, String agentId, String traceId)
             throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
@@ -76,7 +76,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Entries getEntries(String agentRollup, String agentId, String traceId) {
+    public @Nullable Entries getEntries(String agentRollupId, String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
@@ -93,7 +93,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Profile getMainThreadProfile(String agentRollup, String agentId,
+    public @Nullable Profile getMainThreadProfile(String agentRollupId, String agentId,
             String traceId) throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
@@ -105,7 +105,8 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Profile getAuxThreadProfile(String agentRollup, String agentId, String traceId)
+    public @Nullable Profile getAuxThreadProfile(String agentRollupId, String agentId,
+            String traceId)
             throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
@@ -117,7 +118,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Trace getFullTrace(String agentRollup, String agentId, String traceId)
+    public @Nullable Trace getFullTrace(String agentRollupId, String agentId, String traceId)
             throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {

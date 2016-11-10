@@ -38,37 +38,38 @@ class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Trace.Header getHeader(String agentRollup, String agentId, String traceId)
+    public @Nullable Trace.Header getHeader(String agentRollupId, String agentId, String traceId)
             throws Exception {
-        checkValidAgentIdForRequest(agentRollup, agentId);
+        checkValidAgentIdForRequest(agentRollupId, agentId);
         return downstreamService.getHeader(agentId, traceId);
     }
 
     @Override
-    public @Nullable Entries getEntries(String agentRollup, String agentId, String traceId)
+    public @Nullable Entries getEntries(String agentRollupId, String agentId, String traceId)
             throws Exception {
-        checkValidAgentIdForRequest(agentRollup, agentId);
+        checkValidAgentIdForRequest(agentRollupId, agentId);
         return downstreamService.getEntries(agentId, traceId);
     }
 
     @Override
-    public @Nullable Profile getMainThreadProfile(String agentRollup, String agentId,
+    public @Nullable Profile getMainThreadProfile(String agentRollupId, String agentId,
             String traceId) throws Exception {
-        checkValidAgentIdForRequest(agentRollup, agentId);
+        checkValidAgentIdForRequest(agentRollupId, agentId);
         return downstreamService.getMainThreadProfile(agentId, traceId);
     }
 
     @Override
-    public @Nullable Profile getAuxThreadProfile(String agentRollup, String agentId, String traceId)
+    public @Nullable Profile getAuxThreadProfile(String agentRollupId, String agentId,
+            String traceId)
             throws Exception {
-        checkValidAgentIdForRequest(agentRollup, agentId);
+        checkValidAgentIdForRequest(agentRollupId, agentId);
         return downstreamService.getAuxThreadProfile(agentId, traceId);
     }
 
     @Override
-    public @Nullable Trace getFullTrace(String agentRollup, String agentId, String traceId)
+    public @Nullable Trace getFullTrace(String agentRollupId, String agentId, String traceId)
             throws Exception {
-        checkValidAgentIdForRequest(agentRollup, agentId);
+        checkValidAgentIdForRequest(agentRollupId, agentId);
         return downstreamService.getFullTrace(agentId, traceId);
     }
 
@@ -90,10 +91,10 @@ class LiveTraceRepositoryImpl implements LiveTraceRepository {
         return ImmutableList.of();
     }
 
-    private void checkValidAgentIdForRequest(String agentRollup, String agentId) {
-        if (!agentDao.readAgentRollups(agentId).contains(agentRollup)) {
+    private void checkValidAgentIdForRequest(String agentRollupId, String agentId) {
+        if (!agentDao.readAgentRollupIds(agentId).contains(agentRollupId)) {
             throw new IllegalArgumentException(
-                    "Agent " + agentId + " is not a child of rollup " + agentRollup);
+                    "Agent " + agentId + " is not a child of rollup " + agentRollupId);
         }
     }
 }

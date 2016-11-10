@@ -78,8 +78,8 @@ class ErrorJsonService {
     }
 
     @GET(path = "/backend/error/messages", permission = "agent:error:overview")
-    String getData(@BindAgentRollup String agentRollup, @BindRequest ErrorMessageRequest request)
-            throws Exception {
+    String getData(@BindAgentRollupId String agentRollupId,
+            @BindRequest ErrorMessageRequest request) throws Exception {
         TraceQuery query = ImmutableTraceQuery.builder()
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
@@ -100,7 +100,7 @@ class ErrorJsonService {
                 .build();
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates =
-                transactionCommonService.getThroughputAggregates(agentRollup, transactionQuery);
+                transactionCommonService.getThroughputAggregates(agentRollupId, transactionQuery);
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
         Map<Long, Long> transactionCountMap = Maps.newHashMap();
@@ -115,7 +115,7 @@ class ErrorJsonService {
                     throughputAggregates.get(throughputAggregates.size() - 1).captureTime();
             long resolutionMillis =
                     rollupLevelService.getDataPointIntervalMillis(query.from(), query.to());
-            ErrorMessageResult result = traceRepository.readErrorMessages(agentRollup,
+            ErrorMessageResult result = traceRepository.readErrorMessages(agentRollupId,
                     ImmutableTraceQuery.builder().copyFrom(query).to(maxCaptureTime).build(),
                     filter, resolutionMillis, request.errorMessageLimit());
             List<ErrorPoint> errorPoints = Lists.newArrayList();
@@ -150,7 +150,7 @@ class ErrorJsonService {
     }
 
     @GET(path = "/backend/error/summaries", permission = "agent:error:overview")
-    String getSummaries(@BindAgentRollup String agentRollup,
+    String getSummaries(@BindAgentRollupId String agentRollupId,
             @BindRequest ErrorSummaryRequest request) throws Exception {
         OverallQuery query = ImmutableOverallQuery.builder()
                 .transactionType(request.transactionType())
@@ -159,9 +159,9 @@ class ErrorJsonService {
                 .rollupLevel(rollupLevelService.getRollupLevelForView(request.from(), request.to()))
                 .build();
         OverallErrorSummary overallSummary =
-                errorCommonService.readOverallErrorSummary(agentRollup, query);
+                errorCommonService.readOverallErrorSummary(agentRollupId, query);
         Result<TransactionErrorSummary> queryResult =
-                errorCommonService.readTransactionErrorSummaries(agentRollup, query,
+                errorCommonService.readTransactionErrorSummaries(agentRollupId, query,
                         request.sortOrder(), request.limit());
 
         StringBuilder sb = new StringBuilder();

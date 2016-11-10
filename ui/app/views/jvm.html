@@ -22,7 +22,7 @@
       <span class="gt-inline-block gt-header-menu">
         <span class="dropdown">
           <a href="#" role="button" data-toggle="dropdown" class="dropdown-toggle">
-            {{agentRollup || '&lt;agent&gt;'}}
+            {{agentRollupId || '&lt;agent&gt;'}}
             <span class="gt-large-caret"></span>
           </a>
           <!-- margin-bottom helps when large menu that extends to the bottom of the page -->
@@ -53,7 +53,7 @@
 </div>
 <div class="gt-sidebar hidden-print">
   <div class="panel panel-default"
-       ng-if="layout.embedded || agentRollup">
+       ng-if="layout.embedded || agentRollupId">
     <ul class="list-group">
       <div gt-sidebar-item
            gt-display="Gauges"

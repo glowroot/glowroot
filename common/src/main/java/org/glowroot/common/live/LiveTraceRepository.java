@@ -33,23 +33,23 @@ public interface LiveTraceRepository {
 
     // null return value means trace not found
     @Nullable
-    Trace.Header getHeader(String agentRollup, String agentId, String traceId) throws Exception;
+    Trace.Header getHeader(String agentRollupId, String agentId, String traceId) throws Exception;
 
     // null return value means trace not found or was found but had no entries
     //
     // SharedQueryTexts are returned with either fullTrace or
     // truncatedText/truncatedEndText/fullTraceSha1
     @Nullable
-    Entries getEntries(String agentRollup, String agentId, String traceId) throws Exception;
+    Entries getEntries(String agentRollupId, String agentId, String traceId) throws Exception;
 
     // null return value means trace not found or was found but had no main thread profile
     @Nullable
-    Profile getMainThreadProfile(String agentRollup, String agentId, String traceId)
+    Profile getMainThreadProfile(String agentRollupId, String agentId, String traceId)
             throws Exception;
 
     // null return value means trace not found or was found but had no aux thread profile
     @Nullable
-    Profile getAuxThreadProfile(String agentRollup, String agentId, String traceId)
+    Profile getAuxThreadProfile(String agentRollupId, String agentId, String traceId)
             throws Exception;
 
     // null return value means trace not found
@@ -57,7 +57,7 @@ public interface LiveTraceRepository {
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1)
     @Nullable
-    Trace getFullTrace(String agentRollup, String agentId, String traceId) throws Exception;
+    Trace getFullTrace(String agentRollupId, String agentId, String traceId) throws Exception;
 
     int getMatchingTraceCount(String transactionType, @Nullable String transactionName);
 
@@ -163,30 +163,30 @@ public interface LiveTraceRepository {
     class LiveTraceRepositoryNop implements LiveTraceRepository {
 
         @Override
-        public @Nullable Trace.Header getHeader(String agentRollup, String agentId,
+        public @Nullable Trace.Header getHeader(String agentRollupId, String agentId,
                 String traceId) {
             return null;
         }
 
         @Override
-        public @Nullable Entries getEntries(String agentRollup, String agentId, String traceId) {
+        public @Nullable Entries getEntries(String agentRollupId, String agentId, String traceId) {
             return null;
         }
 
         @Override
-        public @Nullable Profile getMainThreadProfile(String agentRollup, String agentId,
+        public @Nullable Profile getMainThreadProfile(String agentRollupId, String agentId,
                 String traceId) {
             return null;
         }
 
         @Override
-        public @Nullable Profile getAuxThreadProfile(String agentRollup, String agentId,
+        public @Nullable Profile getAuxThreadProfile(String agentRollupId, String agentId,
                 String traceId) {
             return null;
         }
 
         @Override
-        public @Nullable Trace getFullTrace(String agentRollup, String agentId, String traceId) {
+        public @Nullable Trace getFullTrace(String agentRollupId, String agentId, String traceId) {
             return null;
         }
 

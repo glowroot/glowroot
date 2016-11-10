@@ -199,25 +199,25 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public List<String> readTraceAttributeNames(String agentRollup, String transactionType)
+    public List<String> readTraceAttributeNames(String agentRollupId, String transactionType)
             throws Exception {
         return traceAttributeNameDao.readTraceAttributeNames(transactionType);
     }
 
     @Override
-    public Result<TracePoint> readSlowPoints(String agentRollup, TraceQuery query,
+    public Result<TracePoint> readSlowPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws Exception {
         return readPoints(TraceKind.SLOW, query, filter, limit);
     }
 
     @Override
-    public Result<TracePoint> readErrorPoints(String agentRollup, TraceQuery query,
+    public Result<TracePoint> readErrorPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws Exception {
         return readPoints(TraceKind.ERROR, query, filter, limit);
     }
 
     @Override
-    public long readSlowCount(String agentRollup, TraceQuery query) throws Exception {
+    public long readSlowCount(String agentRollupId, TraceQuery query) throws Exception {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             return dataSource.queryForLong(
@@ -233,7 +233,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public long readErrorCount(String agentRollup, TraceQuery query) throws Exception {
+    public long readErrorCount(String agentRollupId, TraceQuery query) throws Exception {
         String transactionName = query.transactionName();
         if (transactionName == null) {
             return dataSource.queryForLong(
@@ -249,7 +249,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public ErrorMessageResult readErrorMessages(String agentRollup, TraceQuery query,
+    public ErrorMessageResult readErrorMessages(String agentRollupId, TraceQuery query,
             ErrorMessageFilter filter, long resolutionMillis, int limit) throws Exception {
         List<ErrorMessagePoint> points =
                 dataSource.query(new ErrorPointQuery(query, filter, resolutionMillis));
@@ -263,13 +263,13 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable HeaderPlus readHeaderPlus(String agentRollup, String agentId, String traceId)
+    public @Nullable HeaderPlus readHeaderPlus(String agentRollupId, String agentId, String traceId)
             throws Exception {
         return dataSource.queryAtMostOne(new TraceHeaderQuery(traceId));
     }
 
     @Override
-    public @Nullable Entries readEntries(String agentRollup, String agentId, String traceId)
+    public @Nullable Entries readEntries(String agentRollupId, String agentId, String traceId)
             throws Exception {
         return dataSource.query(new EntriesQuery(traceId));
     }
@@ -277,7 +277,7 @@ public class TraceDao implements TraceRepository {
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1) @Override
     @Override
-    public @Nullable Entries readEntriesForExport(String agentRollup, String agentId,
+    public @Nullable Entries readEntriesForExport(String agentRollupId, String agentId,
             String traceId) throws Exception {
         Entries entries = dataSource.query(new EntriesQuery(traceId));
         if (entries == null) {
@@ -310,7 +310,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable Profile readMainThreadProfile(String agentRollup, String agentId,
+    public @Nullable Profile readMainThreadProfile(String agentRollupId, String agentId,
             String traceId) throws Exception {
         Long cappedId = dataSource.queryForOptionalLong(
                 "select main_thread_profile_capped_id from trace where id = ?", traceId);
@@ -322,7 +322,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable Profile readAuxThreadProfile(String agentRollup, String agentId,
+    public @Nullable Profile readAuxThreadProfile(String agentRollupId, String agentId,
             String traceId) throws Exception {
         Long cappedId = dataSource.queryForOptionalLong(
                 "select aux_thread_profile_capped_id from trace where id = ?", traceId);

@@ -61,9 +61,9 @@ class GaugeNameDao {
         readPS = session.prepare("select gauge_name from gauge_name where agent_rollup = ?");
     }
 
-    List<String> getGaugeNames(String agentRollup) {
+    List<String> getGaugeNames(String agentRollupId) {
         BoundStatement boundStatement = readPS.bind();
-        boundStatement.setString(0, agentRollup);
+        boundStatement.setString(0, agentRollupId);
         ResultSet results = session.execute(boundStatement);
         List<String> gaugeNames = Lists.newArrayList();
         for (Row row : results) {
@@ -72,14 +72,14 @@ class GaugeNameDao {
         return gaugeNames;
     }
 
-    List<ResultSetFuture> store(String agentRollup, String gaugeName) {
-        GaugeNameKey rateLimiterKey = ImmutableGaugeNameKey.of(agentRollup, gaugeName);
+    List<ResultSetFuture> store(String agentRollupId, String gaugeName) {
+        GaugeNameKey rateLimiterKey = ImmutableGaugeNameKey.of(agentRollupId, gaugeName);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
         }
         BoundStatement boundStatement = insertPS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollup);
+        boundStatement.setString(i++, agentRollupId);
         boundStatement.setString(i++, gaugeName);
         boundStatement.setInt(i++, getMaxTTL());
         return ImmutableList.of(Sessions.executeAsyncWithOnFailure(session, boundStatement,
@@ -102,7 +102,7 @@ class GaugeNameDao {
     @Value.Immutable
     @Styles.AllParameters
     interface GaugeNameKey {
-        String agentRollup();
+        String agentRollupId();
         String gaugeName();
     }
 }

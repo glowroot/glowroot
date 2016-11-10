@@ -34,7 +34,7 @@ glowroot.controller('TransactionCtrl', [
     if ($scope.layout.embedded) {
       $scope.headerDisplay = headerDisplay;
     } else {
-      $scope.headerDisplay = $scope.agentRollup || '<agent>';
+      $scope.headerDisplay = $scope.agentRollupId || '<agent>';
     }
     $scope.shortName = shortName;
     $scope.defaultSummarySortOrder = defaultSummarySortOrder;
@@ -46,7 +46,7 @@ glowroot.controller('TransactionCtrl', [
     };
 
     $scope.hideTransactionTypeDropdown = function () {
-      var agentRollup = $scope.layout.agentRollups[$scope.agentRollup];
+      var agentRollup = $scope.layout.agentRollups[$scope.agentRollupId];
       if (!agentRollup) {
         // show empty dropdown
         return false;
@@ -63,14 +63,14 @@ glowroot.controller('TransactionCtrl', [
     };
 
     $scope.hideMainContent = function () {
-      return (!$scope.agentRollup && !$scope.layout.embedded) || !$scope.transactionType;
+      return (!$scope.agentRollupId && !$scope.layout.embedded) || !$scope.transactionType;
     };
 
-    $scope.headerQueryString = function (agentRollup, transactionType) {
-      var agentRollupObj = $scope.layout.agentRollups[agentRollup];
+    $scope.headerQueryString = function (agentRollupId, transactionType) {
+      var agentRollup = $scope.layout.agentRollups[agentRollupId];
       // preserve existing query string
       var search = angular.copy($location.search());
-      delete search['agent-rollup'];
+      delete search['agent-rollup-id'];
       delete search['agent-id'];
       delete search['transaction-type'];
       delete search.last;
@@ -80,16 +80,16 @@ glowroot.controller('TransactionCtrl', [
       delete search['transaction-name'];
       var query = {};
       if (!$scope.layout.embedded) {
-        if (agentRollupObj.leaf) {
-          query['agent-id'] = agentRollup;
+        if (agentRollup.leaf) {
+          query['agent-id'] = agentRollupId;
         } else {
-          query['agent-rollup'] = agentRollup;
+          query['agent-rollup-id'] = agentRollupId;
         }
       }
       if (transactionType) {
         query['transaction-type'] = transactionType;
       } else {
-        query['transaction-type'] = agentRollupObj.defaultDisplayedTransactionType;
+        query['transaction-type'] = agentRollup.defaultDisplayedTransactionType;
       }
       if ($scope.range.last) {
         if ($scope.range.last !== 4 * 60 * 60 * 1000) {
@@ -167,12 +167,12 @@ glowroot.controller('TransactionCtrl', [
     $scope.buildQueryObject = function (baseQuery, allowSeconds) {
       var query = baseQuery || angular.copy($location.search());
       if (!$scope.layout.embedded) {
-        var agentRollupObj = $scope.layout.agentRollups[$scope.agentRollup];
-        if (agentRollupObj) {
-          if (agentRollupObj.leaf) {
-            query['agent-id'] = $scope.agentRollup;
+        var agentRollup = $scope.layout.agentRollups[$scope.agentRollupId];
+        if (agentRollup) {
+          if (agentRollup.leaf) {
+            query['agent-id'] = $scope.agentRollupId;
           } else {
-            query['agent-rollup'] = $scope.agentRollup;
+            query['agent-rollup-id'] = $scope.agentRollupId;
           }
         }
       }

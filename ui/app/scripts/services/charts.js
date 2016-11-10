@@ -267,7 +267,7 @@ glowroot.factory('charts', [
       var chartFrom = $scope.range.chartFrom;
       var chartTo = $scope.range.chartTo;
       var query = {
-        agentRollup: $scope.agentRollup,
+        agentRollupId: $scope.agentRollupId,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
         from: chartFrom,

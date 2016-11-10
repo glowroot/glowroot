@@ -59,11 +59,11 @@ class GaugeValueJsonService {
     }
 
     @GET(path = "/backend/jvm/gauges", permission = "agent:jvm:gauges")
-    String getGaugeValues(@BindAgentRollup String agentRollup,
+    String getGaugeValues(@BindAgentRollupId String agentRollupId,
             @BindRequest GaugeValueRequest request) throws Exception {
         int rollupLevel =
                 rollupLevelService.getGaugeRollupLevelForView(request.from(), request.to());
-        if (rollupLevel == 0 && !agentRepository.isLeaf(agentRollup)) {
+        if (rollupLevel == 0 && !agentRepository.isLeaf(agentRollupId)) {
             // agent rollups from children do not have level-0 data
             rollupLevel = 1;
         }
@@ -81,7 +81,7 @@ class GaugeValueJsonService {
         Map<String, List<GaugeValue>> map = Maps.newLinkedHashMap();
         for (String gaugeName : request.gaugeNames()) {
             map.put(gaugeName,
-                    getGaugeValues(agentRollup, revisedFrom, revisedTo, gaugeName, rollupLevel));
+                    getGaugeValues(agentRollupId, revisedFrom, revisedTo, gaugeName, rollupLevel));
         }
         if (rollupLevel != 0) {
             syncManualRollupCaptureTimes(map, rollupLevel);
@@ -101,16 +101,16 @@ class GaugeValueJsonService {
     }
 
     @GET(path = "/backend/jvm/all-gauges", permission = "agent:jvm:gauges")
-    String getAllGaugeNames(@BindAgentRollup String agentRollup) throws Exception {
-        List<Gauge> gauges = gaugeValueRepository.getGauges(agentRollup);
+    String getAllGaugeNames(@BindAgentRollupId String agentRollupId) throws Exception {
+        List<Gauge> gauges = gaugeValueRepository.getGauges(agentRollupId);
         ImmutableList<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
         return mapper.writeValueAsString(sortedGauges);
     }
 
-    private List<GaugeValue> getGaugeValues(String agentRollup, long from, long to,
+    private List<GaugeValue> getGaugeValues(String agentRollupId, long from, long to,
             String gaugeName, int rollupLevel) throws Exception {
-        List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollup, gaugeName,
-                from, to, rollupLevel);
+        List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollupId,
+                gaugeName, from, to, rollupLevel);
         if (rollupLevel == 0) {
             return gaugeValues;
         }
@@ -120,7 +120,7 @@ class GaugeValueJsonService {
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<GaugeValue> orderedNonRolledUpGaugeValues = Lists.newArrayList();
-        orderedNonRolledUpGaugeValues.addAll(gaugeValueRepository.readGaugeValues(agentRollup,
+        orderedNonRolledUpGaugeValues.addAll(gaugeValueRepository.readGaugeValues(agentRollupId,
                 gaugeName, nonRolledUpFrom, to, 0));
         gaugeValues = Lists.newArrayList(gaugeValues);
         gaugeValues

@@ -610,7 +610,7 @@
               <select multiple
                       class="form-control"
                       ng-model="permissionBlock.agentRollups"
-                      ng-options="agentRollup.name as agentRollup.display for agentRollup in allAgentRollups"
+                      ng-options="agentRollup.id as agentRollup.display for agentRollup in allAgentRollups"
                       ng-required="true"
                       ng-disabled="!layout.adminEdit"
                       style="width: auto; min-width: 200px; border-top-right-radius: 0; border-bottom-right-radius: 0;">

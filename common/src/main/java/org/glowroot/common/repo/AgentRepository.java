@@ -28,7 +28,7 @@ public interface AgentRepository {
 
     List<AgentRollup> readAgentRollups();
 
-    boolean isLeaf(String agentRollup);
+    boolean isLeaf(String agentRollupId);
 
     @Nullable
     Environment readEnvironment(String agentId) throws Exception;
@@ -36,7 +36,7 @@ public interface AgentRepository {
     @Value.Immutable
     @Styles.AllParameters
     interface AgentRollup {
-        String name();
+        String id();
         List<AgentRollup> children();
     }
 }

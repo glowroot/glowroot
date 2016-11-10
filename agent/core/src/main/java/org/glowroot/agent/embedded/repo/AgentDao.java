@@ -55,11 +55,11 @@ public class AgentDao implements AgentRepository {
 
     @Override
     public List<AgentRollup> readAgentRollups() {
-        return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder().name("").build());
+        return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder().id("").build());
     }
 
     @Override
-    public boolean isLeaf(String agentRollup) {
+    public boolean isLeaf(String agentRollupId) {
         return true;
     }
 

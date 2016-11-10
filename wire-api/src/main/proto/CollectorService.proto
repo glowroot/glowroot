@@ -23,7 +23,7 @@ service CollectorService {
 
 message InitMessage {
   string agent_id = 1;
-  string agent_rollup = 4;
+  string agent_rollup_id = 4;
   Environment environment = 2;
   AgentConfig agent_config = 3;
 }

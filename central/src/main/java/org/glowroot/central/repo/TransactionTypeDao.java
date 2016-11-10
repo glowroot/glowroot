@@ -74,14 +74,14 @@ public class TransactionTypeDao implements TransactionTypeRepository {
         String currAgentRollup = null;
         List<String> currTransactionTypes = Lists.newArrayList();
         for (Row row : results) {
-            String agentRollup = checkNotNull(row.getString(0));
+            String agentRollupId = checkNotNull(row.getString(0));
             String transactionType = checkNotNull(row.getString(1));
             if (currAgentRollup == null) {
-                currAgentRollup = agentRollup;
+                currAgentRollup = agentRollupId;
             }
-            if (!agentRollup.equals(currAgentRollup)) {
+            if (!agentRollupId.equals(currAgentRollup)) {
                 builder.put(currAgentRollup, ImmutableList.copyOf(currTransactionTypes));
-                currAgentRollup = agentRollup;
+                currAgentRollup = agentRollupId;
                 currTransactionTypes = Lists.newArrayList();
             }
             currTransactionTypes.add(transactionType);
@@ -94,15 +94,15 @@ public class TransactionTypeDao implements TransactionTypeRepository {
 
     List<ResultSetFuture> store(List<String> agentRollups, String transactionType) {
         List<ResultSetFuture> futures = Lists.newArrayList();
-        for (String agentRollup : agentRollups) {
+        for (String agentRollupId : agentRollups) {
             TransactionTypeKey rateLimiterKey =
-                    ImmutableTransactionTypeKey.of(agentRollup, transactionType);
+                    ImmutableTransactionTypeKey.of(agentRollupId, transactionType);
             if (!rateLimiter.tryAcquire(rateLimiterKey)) {
                 continue;
             }
             BoundStatement boundStatement = insertPS.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollup);
+            boundStatement.setString(i++, agentRollupId);
             boundStatement.setString(i++, transactionType);
             boundStatement.setInt(i++, getMaxTTL());
             futures.add(Sessions.executeAsyncWithOnFailure(session, boundStatement,
@@ -127,7 +127,7 @@ public class TransactionTypeDao implements TransactionTypeRepository {
     @Value.Immutable
     @Styles.AllParameters
     interface TransactionTypeKey {
-        String agentRollup();
+        String agentRollupId();
         String transactionType();
     }
 }

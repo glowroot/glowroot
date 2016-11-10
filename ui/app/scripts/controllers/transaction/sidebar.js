@@ -88,13 +88,13 @@ glowroot.controller('TransactionSidebarCtrl', [
     });
 
     function updateSummaries(initialLoading, moreLoading) {
-      if ((!$scope.agentRollup && !$scope.layout.embedded) || !$scope.transactionType) {
+      if ((!$scope.agentRollupId && !$scope.layout.embedded) || !$scope.transactionType) {
         $scope.summariesNoSearch = true;
         return;
       }
       $scope.summariesNoSearch = false;
       var query = {
-        agentRollup: $scope.agentRollup,
+        agentRollupId: $scope.agentRollupId,
         transactionType: $scope.transactionType,
         // need floor/ceil when on trace point chart which allows second granularity
         from: Math.floor($scope.range.chartFrom / 60000) * 60000,

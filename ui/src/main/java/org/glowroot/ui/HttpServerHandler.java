@@ -336,9 +336,9 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             return httpService.handleRequest(ctx, request, authentication);
         }
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-        List<String> values = decoder.parameters().get("agent-rollup");
-        String agentRollup = values == null ? "" : values.get(0);
-        if (!authentication.isPermitted(agentRollup, permission)) {
+        List<String> agentRollupIds = decoder.parameters().get("agent-rollup-id");
+        String agentRollupId = agentRollupIds == null ? "" : agentRollupIds.get(0);
+        if (!authentication.isPermitted(agentRollupId, permission)) {
             if (authentication.anonymous()) {
                 return handleNotAuthenticated(request);
             } else {
@@ -379,16 +379,17 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             queryParameters.remove("agent-id");
             permitted = authentication.isAgentPermitted(agentId, jsonServiceMapping.permission());
         } else if (jsonServiceMapping.bindAgentRollup()) {
-            List<String> values = queryParameters.get("agent-rollup");
-            if (values == null) {
-                throw new JsonServiceException(BAD_REQUEST, "missing agent-rollup query parameter");
+            List<String> agentRollupIds = queryParameters.get("agent-rollup-id");
+            if (agentRollupIds == null) {
+                throw new JsonServiceException(BAD_REQUEST,
+                        "missing agent-rollup-id query parameter");
             }
-            String agentRollup = values.get(0);
+            String agentRollupId = agentRollupIds.get(0);
             parameterTypes.add(String.class);
-            parameters.add(agentRollup);
-            queryParameters.remove("agent-rollup");
+            parameters.add(agentRollupId);
+            queryParameters.remove("agent-rollup-id");
             permitted =
-                    authentication.isAgentPermitted(agentRollup, jsonServiceMapping.permission());
+                    authentication.isAgentPermitted(agentRollupId, jsonServiceMapping.permission());
         } else {
             permitted = jsonServiceMapping.permission().isEmpty()
                     || authentication.isAdminPermitted(jsonServiceMapping.permission());
@@ -498,7 +499,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             for (Annotation annotation : parameterAnnotations) {
                 if (annotation.annotationType() == BindAgentId.class) {
                     bindAgentId = true;
-                } else if (annotation.annotationType() == BindAgentRollup.class) {
+                } else if (annotation.annotationType() == BindAgentRollupId.class) {
                     bindAgentRollup = true;
                 } else if (annotation.annotationType() == BindRequest.class) {
                     bindRequest = method.getParameterTypes()[i];

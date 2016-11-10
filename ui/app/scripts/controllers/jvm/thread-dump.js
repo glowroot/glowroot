@@ -69,7 +69,7 @@ glowroot.controller('JvmThreadDumpCtrl', [
       var modalCheckLiveTraces = $location.search()['modal-check-live-traces'];
       if (modalTraceId) {
         $('#traceModal').data('location-query', ['modal-trace-id', 'modal-check-live-traces']);
-        traceModal.displayModal($scope.agentRollup, $scope.agentId, modalTraceId, modalCheckLiveTraces);
+        traceModal.displayModal($scope.agentRollupId, $scope.agentId, modalTraceId, modalCheckLiveTraces);
       } else {
         $('#traceModal').modal('hide');
       }

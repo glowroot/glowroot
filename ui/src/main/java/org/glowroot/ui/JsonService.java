@@ -42,7 +42,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @interface BindAgentId {}
 
 @Retention(RUNTIME)
-@interface BindAgentRollup {}
+@interface BindAgentRollupId {}
 
 @Retention(RUNTIME)
 @interface BindRequest {}
