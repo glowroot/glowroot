@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.base.Stopwatch;
 import com.ning.http.client.AsyncHttpClient;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -34,6 +35,7 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ServletDispatcherIT {
@@ -59,6 +61,13 @@ public class ServletDispatcherIT {
     public void testForwardServlet() throws Exception {
         // when
         Trace trace = container.execute(InvokeFowardServlet.class);
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (hasServletInit(trace) && stopwatch.elapsed(SECONDS) < 10) {
+            trace = container.execute(InvokeFowardServlet.class);
+        }
+        if (hasServletInit(trace)) {
+            throw new AssertionError("Timed out waiting for the real trace");
+        }
 
         // then
         Trace.Header header = trace.getHeader();
@@ -78,6 +87,13 @@ public class ServletDispatcherIT {
     public void testIncludeServlet() throws Exception {
         // when
         Trace trace = container.execute(InvokeIncludeServlet.class);
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (hasServletInit(trace) && stopwatch.elapsed(SECONDS) < 10) {
+            trace = container.execute(InvokeFowardServlet.class);
+        }
+        if (hasServletInit(trace)) {
+            throw new AssertionError("Timed out waiting for the real trace");
+        }
 
         // then
         Trace.Header header = trace.getHeader();
@@ -91,6 +107,11 @@ public class ServletDispatcherIT {
         assertThat(entry.getMessage()).isEqualTo("servlet dispatch: /second");
 
         assertThat(i.hasNext()).isFalse();
+    }
+
+    private static boolean hasServletInit(Trace trace) {
+        Trace.Entry lastEntry = trace.getEntry(trace.getEntryCount() - 1);
+        return lastEntry.getMessage().startsWith("servlet init: ");
     }
 
     public static class InvokeFowardServlet extends InvokeServletInTomcat {
