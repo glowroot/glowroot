@@ -141,6 +141,9 @@ public class AlertingServiceTest {
         alertingService.checkTransactionAlert("", TRANSACTION_ALERT_CONFIG, 120000, SMTP_CONFIG);
         // then
         assertThat(mailService.getMessage()).isNotNull();
+        assertThat(((String) mailService.getMessage().getContent()).trim())
+                .isEqualTo("95th percentile over the last 1 minute exceeded alert threshold of"
+                        + " 1 millisecond.");
     }
 
     @Test
@@ -168,7 +171,8 @@ public class AlertingServiceTest {
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
-                .isEqualTo("Average over the last 1 minutes was 500.1 milliseconds per second.");
+                .isEqualTo("Average over the last 1 minute exceeded alert threshold of"
+                        + " 500 milliseconds per second.");
     }
 
     @Test

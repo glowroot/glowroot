@@ -127,12 +127,12 @@ public class AlertingService {
         boolean currentlyTriggered = valueAtPercentile >= MILLISECONDS.toNanos(thresholdMillis);
         if (previouslyTriggered && !currentlyTriggered) {
             triggeredAlertRepository.delete(agentRollupId, version);
-            sendTransactionAlert(agentRollupId, alertConfig, percentile, valueAtPercentile,
-                    transactionCount, true, smtpConfig);
+            sendTransactionAlert(agentRollupId, alertConfig, percentile, thresholdMillis, true,
+                    smtpConfig);
         } else if (!previouslyTriggered && currentlyTriggered) {
             triggeredAlertRepository.insert(agentRollupId, version);
-            sendTransactionAlert(agentRollupId, alertConfig, percentile, valueAtPercentile,
-                    transactionCount, false, smtpConfig);
+            sendTransactionAlert(agentRollupId, alertConfig, percentile, thresholdMillis, false,
+                    smtpConfig);
         }
     }
 
@@ -165,55 +165,67 @@ public class AlertingService {
         boolean currentlyTriggered = average >= threshold;
         if (previouslyTriggered && !currentlyTriggered) {
             triggeredAlertRepository.delete(agentRollupId, version);
-            sendGaugeAlert(agentRollupId, alertConfig, average, true, smtpConfig);
+            sendGaugeAlert(agentRollupId, alertConfig, threshold, true, smtpConfig);
         } else if (!previouslyTriggered && currentlyTriggered) {
             triggeredAlertRepository.insert(agentRollupId, version);
-            sendGaugeAlert(agentRollupId, alertConfig, average, false, smtpConfig);
+            sendGaugeAlert(agentRollupId, alertConfig, threshold, false, smtpConfig);
         }
     }
 
     private void sendTransactionAlert(String agentRollupId, AlertConfig alertConfig,
-            double percentile, long valueAtPercentile, long transactionCount, boolean ok,
-            SmtpConfig smtpConfig) throws Exception {
+            double percentile, long thresholdMillis, boolean ok, SmtpConfig smtpConfig)
+            throws Exception {
+        // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
         if (!agentRollupId.equals("")) {
             subject += " - " + agentRollupId;
         }
         subject += " - " + alertConfig.getTransactionType();
-        if (ok) {
-            subject += " - OK";
-        }
         StringBuilder sb = new StringBuilder();
         sb.append(Utils.getPercentileWithSuffix(percentile));
         sb.append(" percentile over the last ");
         sb.append(alertConfig.getTimePeriodSeconds() / 60);
-        sb.append(" minutes was ");
-        sb.append(Math.round(valueAtPercentile / 1000000.0));
-        sb.append(" milliseconds.\n\nTotal transaction count over the last ");
-        sb.append(alertConfig.getTimePeriodSeconds() / 60);
-        sb.append(" minutes was ");
-        sb.append(transactionCount);
+        sb.append(" minute");
+        if (alertConfig.getTimePeriodSeconds() != 60) {
+            sb.append("s");
+        }
+        if (ok) {
+            sb.append(" has dropped back below alert threshold of ");
+        } else {
+            sb.append(" exceeded alert threshold of ");
+        }
+        sb.append(thresholdMillis);
+        sb.append(" millisecond");
+        if (thresholdMillis != 1) {
+            sb.append("s");
+        }
         sb.append(".");
         sendEmail(alertConfig.getEmailAddressList(), subject, sb.toString(), smtpConfig,
                 configRepository.getSecretKey(), mailService);
     }
 
-    private void sendGaugeAlert(String agentRollupId, AlertConfig alertConfig, double average,
+    private void sendGaugeAlert(String agentRollupId, AlertConfig alertConfig, double threshold,
             boolean ok, SmtpConfig smtpConfig) throws Exception {
+        // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Glowroot alert";
         if (!agentRollupId.equals("")) {
             subject += " - " + agentRollupId;
         }
         Gauge gauge = Gauges.getGauge(alertConfig.getGaugeName());
         subject += " - " + gauge.display();
-        if (ok) {
-            subject += " - OK";
-        }
         StringBuilder sb = new StringBuilder();
         sb.append("Average over the last ");
         sb.append(alertConfig.getTimePeriodSeconds() / 60);
-        sb.append(" minutes was ");
-        sb.append(displaySixDigitsOfPrecision(average));
+        sb.append(" minute");
+        if (alertConfig.getTimePeriodSeconds() != 60) {
+            sb.append("s");
+        }
+        if (ok) {
+            sb.append(" has dropped back below alert threshold of ");
+        } else {
+            sb.append(" exceeded alert threshold of ");
+        }
+        sb.append(displaySixDigitsOfPrecision(threshold));
         String unit = gauge.unit();
         if (!unit.isEmpty()) {
             sb.append(" ");
