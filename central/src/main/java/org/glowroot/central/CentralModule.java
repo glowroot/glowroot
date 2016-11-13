@@ -135,7 +135,9 @@ class CentralModule {
                     cluster.getMetadata().getKeyspace(centralConfig.cassandraKeyspace());
             SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, keyspace);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
-            if (initialSchemaVersion != null) {
+            if (initialSchemaVersion == null) {
+                startupLogger.info("creating cassandra schema...");
+            } else {
                 schemaUpgrade.upgrade();
             }
             CentralConfigDao centralConfigDao = new CentralConfigDao(session);
@@ -183,6 +185,12 @@ class CentralModule {
             AlertingService alertingService = new AlertingService(configRepository,
                     triggeredAlertDao, aggregateDao, gaugeValueDao, rollupLevelService,
                     new MailService());
+
+            if (initialSchemaVersion == null) {
+                schemaUpgrade.updateSchemaVersionToCurent();
+                startupLogger.info("cassandra schema created");
+            }
+
             server = new GrpcServer(centralConfig.grpcBindAddress(), centralConfig.grpcPort(),
                     agentDao, aggregateDao, gaugeValueDao, traceDao, configRepository,
                     alertingService, clock, version);
@@ -196,10 +204,6 @@ class CentralModule {
             });
             rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao,
                     configRepository, alertingService, downstreamService, clock);
-
-            if (initialSchemaVersion == null) {
-                schemaUpgrade.updateSchemaVersionToCurent();
-            }
 
             uiModule = new CreateUiModuleBuilder()
                     .embedded(false)

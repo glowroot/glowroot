@@ -86,7 +86,7 @@ public class SchemaUpgrade {
         if (initialSchemaVersion == CURR_SCHEMA_VERSION) {
             return;
         }
-        startupLogger.info("upgrading schema version from {}...", initialSchemaVersion);
+        startupLogger.info("upgrading cassandra schema from version {}...", initialSchemaVersion);
         // 0.9.1 to 0.9.2
         if (initialSchemaVersion < 2) {
             renameAgentColumnFromSystemInfoToEnvironment();
@@ -133,7 +133,7 @@ public class SchemaUpgrade {
             updateSchemaVersion(13);
         }
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
-        startupLogger.info("upgraded schema version to {}", CURR_SCHEMA_VERSION);
+        startupLogger.info("upgraded cassandra schema to version {}", CURR_SCHEMA_VERSION);
     }
 
     public void updateSchemaVersionToCurent() {
