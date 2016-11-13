@@ -19,7 +19,8 @@
 // and that would significantly increase the size of the exported trace files
 
 // Glowroot dependency is used for spinner, but is not used in export file
-/* global $, Handlebars, JST, moment, Glowroot, SqlPrettyPrinter, gtClipboard, gtParseIncludesExcludes, console */
+// angular dependency is used to call login.goToLogin() on 401 responses, but is not used in export file
+/* global $, Handlebars, JST, moment, Glowroot, angular, SqlPrettyPrinter, gtClipboard, gtParseIncludesExcludes, console */
 
 // IMPORTANT: DO NOT USE ANGULAR IN THIS FILE
 // that would require adding angular to trace-export.js
@@ -395,6 +396,19 @@ HandlebarsRendering = (function () {
     smartToggle($(this).parent(), e, keyboard);
   });
 
+  function goToLogin(timedOut) {
+    var $injector = angular.element(document.body).injector();
+    var $rootScope = $injector.get('$rootScope');
+    var login = $injector.get('login');
+    $rootScope.$apply(function () {
+      if (timedOut) {
+        login.goToLogin('Your session has timed out');
+      } else {
+        login.goToLogin();
+      }
+    });
+  }
+
   $(document).on('click', '.gt-entries-toggle', function () {
     var $selector = $('#entries');
     if ($selector.data('gtLoading')) {
@@ -450,9 +464,13 @@ HandlebarsRendering = (function () {
                 renderNext(flattenedTraceEntries, 0);
               }
             })
-            .fail(function () {
-              $selector.append(
-                  '<div class="gt-red" style="padding: 1em;">An error occurred retrieving the trace entries</div>');
+            .fail(function (jqXHR) {
+              if (jqXHR.status === 401) {
+                goToLogin(jqXHR.responseJSON.timedOut);
+              } else {
+                $selector.append(
+                    '<div class="gt-red" style="padding: 1em;">An error occurred retrieving the trace entries</div>');
+              }
             })
             .always(function () {
               spinner.stop();
@@ -565,10 +583,14 @@ HandlebarsRendering = (function () {
               }
               $selector.removeClass('hide');
             })
-            .fail(function () {
-              $selector.find('.gt-profile').html(
-                  '<div class="gt-red" style="padding: 1em 0;">An error occurred retrieving the profile</div>');
-              $selector.removeClass('hide');
+            .fail(function (jqXHR) {
+              if (jqXHR.status === 401) {
+                goToLogin(jqXHR.responseJSON.timedOut);
+              } else {
+                $selector.find('.gt-profile').html(
+                    '<div class="gt-red" style="padding: 1em 0;">An error occurred retrieving the profile</div>');
+                $selector.removeClass('hide');
+              }
             })
             .always(function () {
               spinner.stop();
@@ -781,8 +803,12 @@ HandlebarsRendering = (function () {
                 queryMessage.sharedQueryText.fullText = data.fullText;
               }
             })
-            .fail(function () {
-              expandedTraceEntryNode.html('<div class="gt-red">An error occurred retrieving the full query text</div>');
+            .fail(function (jqXHR) {
+              if (jqXHR.status === 401) {
+                goToLogin(jqXHR.responseJSON.timedOut);
+              } else {
+                expandedTraceEntryNode.html('<div class="gt-red">An error occurred retrieving the full query text</div>');
+              }
             })
             .always(function () {
               spinner.stop();
