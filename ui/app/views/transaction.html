@@ -63,7 +63,9 @@
           <ul class="dropdown-menu" role="menu">
             <li ng-repeat="tt in layout.agentRollups[agentRollupId].transactionTypes"
                 ng-hide="tt === transactionType">
-              <a role="menuitem" tabindex="-1" ng-href="{{currentTabUrl()}}{{headerQueryString(agentRollupId, tt)}}">
+              <a role="menuitem"
+                 tabindex="-1"
+                 ng-href="{{currentTabUrl()}}{{headerQueryString(layout.agentRollups[agentRollupId], tt)}}">
                 {{tt}}
               </a>
             </li>
