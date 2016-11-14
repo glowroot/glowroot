@@ -242,13 +242,14 @@ public class TraceDao implements TraceRepository {
                 + " values (?, ?, ?) using ttl ?");
 
         insertOverallSlowPoint = session.prepare("insert into trace_tt_slow_point (agent_rollup,"
-                + " transaction_type, capture_time, agent_id, trace_id, duration_nanos, error,"
-                + " headline, user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+                + " transaction_type, capture_time, agent_id, trace_id, duration_nanos, partial,"
+                + " error, headline, user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                + " using ttl ?");
 
         insertTransactionSlowPoint = session.prepare("insert into trace_tn_slow_point"
                 + " (agent_rollup, transaction_type, transaction_name, capture_time, agent_id,"
-                + " trace_id, duration_nanos, error, headline, user, attributes) values"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+                + " trace_id, duration_nanos, partial, error, headline, user, attributes) values"
+                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertOverallSlowCount = session.prepare("insert into trace_tt_slow_count (agent_rollup,"
                 + " transaction_type, capture_time, agent_id, trace_id) values (?, ?, ?, ?, ?)"
@@ -259,14 +260,14 @@ public class TraceDao implements TraceRepository {
                 + " trace_id) values (?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertOverallErrorPoint = session.prepare("insert into trace_tt_error_point (agent_rollup,"
-                + " transaction_type, capture_time, agent_id, trace_id, duration_nanos,"
+                + " transaction_type, capture_time, agent_id, trace_id, duration_nanos, partial,"
                 + " error_message, headline, user, attributes) values"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertTransactionErrorPoint = session.prepare("insert into trace_tn_error_point"
                 + " (agent_rollup, transaction_type, transaction_name, capture_time, agent_id,"
-                + " trace_id, duration_nanos, error_message, headline, user, attributes) values"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+                + " trace_id, duration_nanos, partial, error_message, headline, user, attributes)"
+                + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertOverallErrorCount = session.prepare("insert into trace_tt_error_count (agent_rollup,"
                 + " transaction_type, capture_time, agent_id, trace_id) values (?, ?, ?, ?, ?)"
@@ -439,6 +440,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, agentId);
                 boundStatement.setString(i++, traceId);
                 boundStatement.setLong(i++, header.getDurationNanos());
+                boundStatement.setBool(i++, header.getPartial());
                 boundStatement.setBool(i++, header.hasError());
                 boundStatement.setString(i++, header.getHeadline());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
@@ -459,6 +461,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, agentId);
                 boundStatement.setString(i++, traceId);
                 boundStatement.setLong(i++, header.getDurationNanos());
+                boundStatement.setBool(i++, header.getPartial());
                 boundStatement.setBool(i++, header.hasError());
                 boundStatement.setString(i++, header.getHeadline());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
@@ -565,6 +568,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, agentId);
                 boundStatement.setString(i++, traceId);
                 boundStatement.setLong(i++, header.getDurationNanos());
+                boundStatement.setBool(i++, header.getPartial());
                 boundStatement.setString(i++, header.getError().getMessage());
                 boundStatement.setString(i++, header.getHeadline());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
@@ -585,6 +589,7 @@ public class TraceDao implements TraceRepository {
                 boundStatement.setString(i++, agentId);
                 boundStatement.setString(i++, traceId);
                 boundStatement.setLong(i++, header.getDurationNanos());
+                boundStatement.setBool(i++, header.getPartial());
                 boundStatement.setString(i++, header.getError().getMessage());
                 boundStatement.setString(i++, header.getHeadline());
                 boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
