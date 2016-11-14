@@ -21,6 +21,10 @@
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div style="margin: 15px;">
+      <div ng-if="!agents.length"
+           style="font-style: italic;">
+        There are no agents
+      </div>
       <div ng-repeat="agent in agents"
            style="padding-bottom: 8px;">
         <div>
