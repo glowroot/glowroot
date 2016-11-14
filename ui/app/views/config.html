@@ -104,7 +104,8 @@
            gt-display="Agents"
            gt-url="admin/agent-list"
            gt-active="currentUrl() === 'admin/agent-list'"
-           gt-sub-active="currentUrl() === 'admin/agent'">
+           gt-sub-active="currentUrl() === 'admin/agent'"
+           ng-if="!layout.embedded">
       </div>
       <div gt-sidebar-item
            gt-display="Users"
