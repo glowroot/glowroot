@@ -241,7 +241,13 @@ public interface ConfigRepository {
     class UserNotFoundException extends Exception {}
 
     @SuppressWarnings("serial")
+    class CannotDeleteLastUserException extends Exception {}
+
+    @SuppressWarnings("serial")
     class RoleNotFoundException extends Exception {}
+
+    @SuppressWarnings("serial")
+    class CannotDeleteLastRoleException extends Exception {}
 
     @SuppressWarnings("serial")
     class DuplicateMBeanObjectNameException extends Exception {}

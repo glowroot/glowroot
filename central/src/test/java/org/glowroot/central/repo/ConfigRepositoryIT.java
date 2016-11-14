@@ -75,7 +75,7 @@ public class ConfigRepositoryIT {
         KeyspaceMetadata keyspace = cluster.getMetadata().getKeyspace("glowroot_unit_tests");
 
         session.execute("drop table if exists agent");
-        session.execute("drop table if exists agent_one");
+        session.execute("drop table if exists agent_rollup");
         session.execute("drop table if exists user");
         session.execute("drop table if exists role");
         session.execute("drop table if exists central_config");
@@ -84,12 +84,6 @@ public class ConfigRepositoryIT {
         agentDao = new AgentDao(session);
         UserDao userDao = new UserDao(session, keyspace);
         RoleDao roleDao = new RoleDao(session, keyspace);
-        for (UserConfig userConfig : userDao.read()) {
-            userDao.delete(userConfig.username());
-        }
-        for (RoleConfig roleConfig : roleDao.read()) {
-            roleDao.delete(roleConfig.name());
-        }
         configRepository = new ConfigRepositoryImpl(centralConfigDao, agentDao, userDao, roleDao);
     }
 
@@ -407,8 +401,8 @@ public class ConfigRepositoryIT {
         List<UserConfig> userConfigs = configRepository.getUserConfigs();
 
         // then
-        assertThat(userConfigs).hasSize(1);
-        assertThat(userConfigs.get(0)).isEqualTo(userConfig);
+        assertThat(userConfigs).hasSize(2);
+        assertThat(userConfigs.get(1)).isEqualTo(userConfig);
 
         // and further
 
@@ -423,8 +417,8 @@ public class ConfigRepositoryIT {
         userConfigs = configRepository.getUserConfigs();
 
         // then
-        assertThat(userConfigs).hasSize(1);
-        assertThat(userConfigs.get(0)).isEqualTo(updatedUserConfig);
+        assertThat(userConfigs).hasSize(2);
+        assertThat(userConfigs.get(1)).isEqualTo(updatedUserConfig);
 
         // and further
 
@@ -433,7 +427,8 @@ public class ConfigRepositoryIT {
         userConfigs = configRepository.getUserConfigs();
 
         // then
-        assertThat(userConfigs).isEmpty();
+        assertThat(userConfigs).hasSize(1);
+        assertThat(userConfigs.get(0).username()).isEqualTo("anonymous");
     }
 
     @Test
@@ -451,8 +446,8 @@ public class ConfigRepositoryIT {
         List<RoleConfig> roleConfigs = configRepository.getRoleConfigs();
 
         // then
-        assertThat(roleConfigs).hasSize(1);
-        assertThat(roleConfigs.get(0)).isEqualTo(roleConfig);
+        assertThat(roleConfigs).hasSize(2);
+        assertThat(roleConfigs.get(1)).isEqualTo(roleConfig);
 
         // and further
 
@@ -470,8 +465,8 @@ public class ConfigRepositoryIT {
         roleConfigs = configRepository.getRoleConfigs();
 
         // then
-        assertThat(roleConfigs).hasSize(1);
-        assertThat(roleConfigs.get(0)).isEqualTo(updatedRoleConfig);
+        assertThat(roleConfigs).hasSize(2);
+        assertThat(roleConfigs.get(1)).isEqualTo(updatedRoleConfig);
 
         // and further
 
@@ -480,7 +475,8 @@ public class ConfigRepositoryIT {
         roleConfigs = configRepository.getRoleConfigs();
 
         // then
-        assertThat(roleConfigs).isEmpty();
+        assertThat(roleConfigs).hasSize(1);
+        assertThat(roleConfigs.get(0).name()).isEqualTo("Administrator");
     }
 
     @Test

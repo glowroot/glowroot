@@ -35,6 +35,7 @@ import org.glowroot.common.config.ImmutableUserConfig;
 import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.config.UserConfig;
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository.CannotDeleteLastUserException;
 import org.glowroot.common.repo.ConfigRepository.DuplicateUsernameException;
 import org.glowroot.common.repo.ConfigRepository.UserNotFoundException;
 import org.glowroot.common.util.ObjectMappers;
@@ -117,8 +118,13 @@ class UserConfigJsonService {
     }
 
     @POST(path = "/backend/admin/users/remove", permission = "admin:edit:user")
-    void removeUser(@BindRequest UserConfigRequest request) throws Exception {
-        configRepository.deleteUserConfig(request.username().get());
+    String removeUser(@BindRequest UserConfigRequest request) throws Exception {
+        try {
+            configRepository.deleteUserConfig(request.username().get());
+        } catch (CannotDeleteLastUserException e) {
+            return "{\"errorCannotDeleteLastUser\":true}";
+        }
+        return "{}";
     }
 
     private String getUserConfigInternal(String username) throws Exception {

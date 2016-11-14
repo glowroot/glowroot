@@ -715,6 +715,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
             if (!found) {
                 throw new UserNotFoundException();
             }
+            if (getSmtpConfig().host().isEmpty() && configs.isEmpty()) {
+                throw new CannotDeleteLastUserException();
+            }
             configService.updateAdminConfig(USERS_KEY, configs);
             userConfigs = ImmutableList.copyOf(configs);
         }
@@ -778,6 +781,9 @@ class ConfigRepositoryImpl implements ConfigRepository {
             }
             if (!found) {
                 throw new RoleNotFoundException();
+            }
+            if (configs.isEmpty()) {
+                throw new CannotDeleteLastRoleException();
             }
             configService.updateAdminConfig(ROLES_KEY, configs);
             roleConfigs = ImmutableList.copyOf(configs);

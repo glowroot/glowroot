@@ -777,6 +777,20 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void deleteUserConfig(String username) throws Exception {
         synchronized (userConfigLock) {
+            boolean found = false;
+            List<UserConfig> userConfigs = userDao.read();
+            for (UserConfig loopUserConfig : userConfigs) {
+                if (loopUserConfig.username().equalsIgnoreCase(username)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new UserNotFoundException();
+            }
+            if (getSmtpConfig().host().isEmpty() && userConfigs.size() == 1) {
+                throw new CannotDeleteLastUserException();
+            }
             userDao.delete(username);
         }
     }
@@ -802,6 +816,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             for (RoleConfig loopRoleConfig : roleDao.read()) {
                 if (loopRoleConfig.version().equals(priorVersion)) {
                     found = true;
+                    break;
                 }
             }
             if (!found) {
@@ -814,6 +829,20 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void deleteRoleConfig(String name) throws Exception {
         synchronized (roleConfigLock) {
+            boolean found = false;
+            List<RoleConfig> roleConfigs = roleDao.read();
+            for (RoleConfig loopRoleConfig : roleConfigs) {
+                if (loopRoleConfig.name().equalsIgnoreCase(name)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new RoleNotFoundException();
+            }
+            if (roleConfigs.size() == 1) {
+                throw new CannotDeleteLastRoleException();
+            }
             roleDao.delete(name);
         }
     }

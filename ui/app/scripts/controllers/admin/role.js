@@ -481,7 +481,11 @@ glowroot.controller('AdminRoleCtrl', [
         name: $scope.name
       };
       $http.post('backend/admin/roles/remove', postData)
-          .success(function () {
+          .success(function (data) {
+            if (data.errorCannotDeleteLastRole) {
+              deferred.reject('Cannot delete last role');
+              return;
+            }
             removeConfirmIfHasChangesListener();
             $location.url('admin/role-list').replace();
           })

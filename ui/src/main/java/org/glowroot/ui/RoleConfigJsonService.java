@@ -37,6 +37,7 @@ import org.glowroot.common.config.RoleConfig;
 import org.glowroot.common.repo.AgentRepository;
 import org.glowroot.common.repo.AgentRepository.AgentRollup;
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ConfigRepository.CannotDeleteLastRoleException;
 import org.glowroot.common.repo.ConfigRepository.DuplicateRoleNameException;
 import org.glowroot.common.util.ObjectMappers;
 
@@ -115,8 +116,13 @@ class RoleConfigJsonService {
     }
 
     @POST(path = "/backend/admin/roles/remove", permission = "admin:edit:role")
-    void removeRole(@BindRequest RoleConfigRequest request) throws Exception {
-        configRepository.deleteRoleConfig(request.name().get());
+    String removeRole(@BindRequest RoleConfigRequest request) throws Exception {
+        try {
+            configRepository.deleteRoleConfig(request.name().get());
+        } catch (CannotDeleteLastRoleException e) {
+            return "{\"errorCannotDeleteLastRole\":true}";
+        }
+        return "{}";
     }
 
     private String getRoleConfigInternal(String name) throws Exception {
