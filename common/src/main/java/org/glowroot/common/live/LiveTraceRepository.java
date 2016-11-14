@@ -149,6 +149,7 @@ public interface LiveTraceRepository {
         String traceId();
         long captureTime();
         long durationNanos();
+        boolean partial();
         boolean error();
     }
 

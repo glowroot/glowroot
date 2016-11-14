@@ -280,19 +280,24 @@ class TracePointJsonService {
             jg.writeStartObject();
             jg.writeArrayFieldStart("normalPoints");
             for (TracePoint point : points) {
-                if (!point.error()) {
+                if (!point.error() && !point.partial()) {
                     writePoint(point, jg);
                 }
             }
             jg.writeEndArray();
             jg.writeArrayFieldStart("errorPoints");
             for (TracePoint point : points) {
-                if (point.error()) {
+                if (point.error() && !point.partial()) {
                     writePoint(point, jg);
                 }
             }
             jg.writeEndArray();
-            jg.writeArrayFieldStart("activePoints");
+            jg.writeArrayFieldStart("partialPoints");
+            for (TracePoint point : points) {
+                if (point.partial()) {
+                    writePoint(point, jg);
+                }
+            }
             for (TracePoint activePoint : activePoints) {
                 writePoint(activePoint, jg);
             }

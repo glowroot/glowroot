@@ -118,7 +118,7 @@ glowroot.controller('TracesCtrl', [
               if (tryHighlight(data.errorPoints, plot.getData()[1])) {
                 return;
               }
-              tryHighlight(data.activePoints, plot.getData()[2]);
+              tryHighlight(data.partialPoints, plot.getData()[2]);
             }
 
             // clear http error, especially useful for auto refresh on live data to clear a sporadic error from earlier
@@ -130,7 +130,7 @@ glowroot.controller('TracesCtrl', [
               // ignore this response, another response has been stacked
               return;
             }
-            var traceCount = data.normalPoints.length + data.errorPoints.length + data.activePoints.length;
+            var traceCount = data.normalPoints.length + data.errorPoints.length + data.partialPoints.length;
             $scope.chartNoData = traceCount === 0;
             $scope.showExpiredMessage = data.expired;
             $scope.chartLimitExceeded = data.limitExceeded;
@@ -141,7 +141,7 @@ glowroot.controller('TracesCtrl', [
             plot.getAxes().xaxis.options.max = to;
             plot.getAxes().yaxis.options.min = durationMillisLow;
             plot.getAxes().yaxis.options.realMax = durationMillisHigh;
-            plot.setData([data.normalPoints, data.errorPoints, data.activePoints]);
+            plot.setData([data.normalPoints, data.errorPoints, data.partialPoints]);
             // setupGrid is needed in case yaxis.max === undefined
             if (highlightedTraceId) {
               plot.unhighlight();

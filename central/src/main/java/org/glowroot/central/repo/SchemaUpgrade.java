@@ -55,7 +55,7 @@ public class SchemaUpgrade {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    private static final int CURR_SCHEMA_VERSION = 13;
+    private static final int CURR_SCHEMA_VERSION = 14;
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -131,6 +131,10 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 13) {
             updateAgentRollup();
             updateSchemaVersion(13);
+        }
+        if (initialSchemaVersion < 14) {
+            addTracePointPartialColumn();
+            updateSchemaVersion(14);
         }
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
         startupLogger.info("upgraded cassandra schema to version {}", CURR_SCHEMA_VERSION);
@@ -255,9 +259,7 @@ public class SchemaUpgrade {
             // previously failed mid-upgrade prior to updating schema version
             return;
         }
-        if (!columnExists("agent", "environment")) {
-            session.execute("alter table agent add environment blob");
-        }
+        addColumnIfNotExists("agent", "environment", "blob");
         ResultSet results = session.execute("select agent_id, system_info from agent");
         PreparedStatement preparedStatement =
                 session.prepare("insert into agent (agent_id, environment) values (?, ?)");
@@ -289,12 +291,8 @@ public class SchemaUpgrade {
     }
 
     private void addConfigUpdateColumns() {
-        if (!columnExists("agent", "config_update")) {
-            session.execute("alter table agent add config_update boolean");
-        }
-        if (!columnExists("agent", "config_update_token")) {
-            session.execute("alter table agent add config_update_token uuid");
-        }
+        addColumnIfNotExists("agent", "config_update", "boolean");
+        addColumnIfNotExists("agent", "config_update_token", "uuid");
     }
 
     private void revertCompressionChunkLength() {
@@ -314,15 +312,9 @@ public class SchemaUpgrade {
     }
 
     private void addTraceEntryColumns() {
-        if (!columnExists("trace_entry", "shared_query_text_index")) {
-            session.execute("alter table trace_entry add shared_query_text_index int");
-        }
-        if (!columnExists("trace_entry", "query_message_prefix")) {
-            session.execute("alter table trace_entry add query_message_prefix varchar");
-        }
-        if (!columnExists("trace_entry", "query_message_suffix")) {
-            session.execute("alter table trace_entry add query_message_suffix varchar");
-        }
+        addColumnIfNotExists("trace_entry", "shared_query_text_index", "int");
+        addColumnIfNotExists("trace_entry", "query_message_prefix", "varchar");
+        addColumnIfNotExists("trace_entry", "query_message_suffix", "varchar");
     }
 
     private void renameServerConfigTable() throws InterruptedException {
@@ -363,9 +355,7 @@ public class SchemaUpgrade {
     }
 
     private void addAgentRollupColumn() {
-        if (!columnExists("agent", "agent_rollup")) {
-            session.execute("alter table agent add agent_rollup varchar");
-        }
+        addColumnIfNotExists("agent", "agent_rollup", "varchar");
     }
 
     private void updateDtcsTwcsGcSeconds() {
@@ -458,6 +448,19 @@ public class SchemaUpgrade {
         }
         session.execute("alter table agent drop agent_rollup");
         dropTable("agent_one");
+    }
+
+    private void addTracePointPartialColumn() {
+        addColumnIfNotExists("trace_tt_slow_point", "partial", "boolean");
+        addColumnIfNotExists("trace_tn_slow_point", "partial", "boolean");
+        addColumnIfNotExists("trace_tt_error_point", "partial", "boolean");
+        addColumnIfNotExists("trace_tn_error_point", "partial", "boolean");
+    }
+
+    private void addColumnIfNotExists(String tableName, String columnName, String cqlType) {
+        if (!columnExists(tableName, columnName)) {
+            session.execute("alter table " + tableName + " add " + columnName + " " + cqlType);
+        }
     }
 
     private boolean tableExists(String tableName) {

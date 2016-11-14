@@ -147,20 +147,21 @@ public class TraceDao implements TraceRepository {
 
         Sessions.createTableWithTWCS(session, "create table if not exists trace_tt_slow_point"
                 + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
-                + " agent_id varchar, trace_id varchar, duration_nanos bigint, error boolean,"
-                + " headline varchar, user varchar, attributes blob, primary key ((agent_rollup,"
-                + " transaction_type), capture_time, agent_id, trace_id))", expirationHours);
+                + " agent_id varchar, trace_id varchar, duration_nanos bigint, partial boolean,"
+                + " error boolean, headline varchar, user varchar, attributes blob, primary key"
+                + " ((agent_rollup, transaction_type), capture_time, agent_id, trace_id))",
+                expirationHours);
 
         Sessions.createTableWithTWCS(session, "create table if not exists trace_tn_slow_point"
                 + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
                 + " capture_time timestamp, agent_id varchar, trace_id varchar,"
-                + " duration_nanos bigint, error boolean, headline varchar, user varchar,"
-                + " attributes blob, primary key ((agent_rollup, transaction_type,"
+                + " duration_nanos bigint, partial boolean, error boolean, headline varchar,"
+                + " user varchar, attributes blob, primary key ((agent_rollup, transaction_type,"
                 + " transaction_name), capture_time, agent_id, trace_id))", expirationHours);
 
         Sessions.createTableWithTWCS(session, "create table if not exists trace_tt_error_point"
                 + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
-                + " agent_id varchar, trace_id varchar, duration_nanos bigint,"
+                + " agent_id varchar, trace_id varchar, duration_nanos bigint, partial boolean,"
                 + " error_message varchar, headline varchar, user varchar, attributes blob,"
                 + " primary key ((agent_rollup, transaction_type), capture_time, agent_id,"
                 + " trace_id))", expirationHours);
@@ -168,9 +169,10 @@ public class TraceDao implements TraceRepository {
         Sessions.createTableWithTWCS(session, "create table if not exists trace_tn_error_point"
                 + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
                 + " capture_time timestamp, agent_id varchar, trace_id varchar,"
-                + " duration_nanos bigint, error_message varchar, headline varchar, user varchar,"
-                + " attributes blob, primary key ((agent_rollup, transaction_type,"
-                + " transaction_name), capture_time, agent_id, trace_id))", expirationHours);
+                + " duration_nanos bigint, partial boolean, error_message varchar,"
+                + " headline varchar, user varchar, attributes blob, primary key ((agent_rollup,"
+                + " transaction_type, transaction_name), capture_time, agent_id, trace_id))",
+                expirationHours);
 
         Sessions.createTableWithTWCS(session, "create table if not exists trace_tt_error_message"
                 + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
@@ -304,22 +306,22 @@ public class TraceDao implements TraceRepository {
                 + " and agent_id = ? and trace_id = ?");
 
         readOverallSlowPoint = session.prepare("select agent_id, trace_id, capture_time,"
-                + " duration_nanos, error, headline, user, attributes from trace_tt_slow_point"
-                + " where agent_rollup = ? and transaction_type = ? and capture_time > ?"
-                + " and capture_time <= ?");
-
-        readTransactionSlowPoint = session.prepare("select agent_id, trace_id, capture_time,"
-                + " duration_nanos, error, headline, user, attributes from trace_tn_slow_point"
-                + " where agent_rollup = ? and transaction_type = ? and transaction_name = ?"
+                + " duration_nanos, partial, error, headline, user, attributes"
+                + " from trace_tt_slow_point where agent_rollup = ? and transaction_type = ?"
                 + " and capture_time > ? and capture_time <= ?");
 
+        readTransactionSlowPoint = session.prepare("select agent_id, trace_id, capture_time,"
+                + " duration_nanos, partial, error, headline, user, attributes"
+                + " from trace_tn_slow_point where agent_rollup = ? and transaction_type = ?"
+                + " and transaction_name = ? and capture_time > ? and capture_time <= ?");
+
         readOverallErrorPoint = session.prepare("select agent_id, trace_id, capture_time,"
-                + " duration_nanos, error_message, headline, user, attributes"
+                + " duration_nanos, partial, error_message, headline, user, attributes"
                 + " from trace_tt_error_point where agent_rollup = ? and transaction_type = ?"
                 + " and capture_time > ? and capture_time <= ?");
 
         readTransactionErrorPoint = session.prepare("select agent_id, trace_id, capture_time,"
-                + " duration_nanos, error_message, headline, user, attributes"
+                + " duration_nanos, partial, error_message, headline, user, attributes"
                 + " from trace_tn_error_point where agent_rollup = ? and transaction_type = ?"
                 + " and transaction_name = ? and capture_time > ? and capture_time <= ?");
 
@@ -1088,6 +1090,7 @@ public class TraceDao implements TraceRepository {
             String traceId = checkNotNull(row.getString(i++));
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
             long durationNanos = row.getLong(i++);
+            boolean partial = row.getBool(i++);
             boolean error = errorPoints ? true : row.getBool(i++);
             // error points are defined by having an error message, so safe to checkNotNull
             String errorMessage = errorPoints ? checkNotNull(row.getString(i++)) : "";
@@ -1109,6 +1112,7 @@ public class TraceDao implements TraceRepository {
                         .traceId(traceId)
                         .captureTime(captureTime)
                         .durationNanos(durationNanos)
+                        .partial(partial)
                         .error(error)
                         .build());
             }

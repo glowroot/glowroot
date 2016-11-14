@@ -158,6 +158,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                         .traceId(transaction.getTraceId())
                         .captureTime(captureTime)
                         .durationNanos(captureTick - startTick)
+                        .partial(true)
                         .error(transaction.getErrorMessage() != null)
                         .build());
             }
@@ -187,6 +188,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                         .traceId(transaction.getTraceId())
                         .captureTime(captureTime)
                         .durationNanos(transaction.getDurationNanos())
+                        .partial(false)
                         .error(transaction.getErrorMessage() != null)
                         .build());
             }

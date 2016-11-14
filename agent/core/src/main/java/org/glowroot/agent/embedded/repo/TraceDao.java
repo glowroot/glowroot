@@ -515,13 +515,15 @@ public class TraceDao implements TraceRepository {
 
         @Override
         public TracePoint mapRow(ResultSet resultSet) throws SQLException {
-            String traceId = checkNotNull(resultSet.getString(1));
+            int i = 1;
+            String traceId = checkNotNull(resultSet.getString(i++));
             return ImmutableTracePoint.builder()
                     .agentId(AGENT_ID)
                     .traceId(traceId)
-                    .captureTime(resultSet.getLong(2))
-                    .durationNanos(resultSet.getLong(3))
-                    .error(resultSet.getBoolean(4))
+                    .captureTime(resultSet.getLong(i++))
+                    .durationNanos(resultSet.getLong(i++))
+                    .partial(resultSet.getBoolean(i++))
+                    .error(resultSet.getBoolean(i++))
                     .build();
         }
     }
