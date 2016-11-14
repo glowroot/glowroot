@@ -22,8 +22,6 @@ matrix:
     - jdk: oraclejdk8
       env: TARGET=deploy
     - jdk: oraclejdk8
-      env: TARGET=sonar
-    - jdk: oraclejdk8
       env: TARGET=checker
       # chrome
     - jdk: oraclejdk8
