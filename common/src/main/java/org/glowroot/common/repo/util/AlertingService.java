@@ -260,10 +260,13 @@ public class AlertingService {
         mailService.send(message);
     }
 
+    private static String displaySixDigitsOfPrecision(double value) {
+        return displaySixDigitsOfPrecision(value, NumberFormat.getNumberInstance());
+    }
+
     // this mimics the javascript function of same name in gauge-values.js
     @VisibleForTesting
-    static String displaySixDigitsOfPrecision(double value) {
-        NumberFormat numberFormat = NumberFormat.getNumberInstance();
+    static String displaySixDigitsOfPrecision(double value, NumberFormat numberFormat) {
         numberFormat.setMaximumFractionDigits(20);
         if (value < 1000000) {
             return numberFormat
