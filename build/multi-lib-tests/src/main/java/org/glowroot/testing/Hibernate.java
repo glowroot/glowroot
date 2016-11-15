@@ -50,11 +50,13 @@ public class Hibernate {
         runJava7("5.1.0.Final");
         runJava7("5.1.1.Final");
         runJava7("5.1.2.Final");
+        runJava7("5.1.3.Final");
         runJava8("5.2.0.Final");
         runJava8("5.2.1.Final");
         runJava8("5.2.2.Final");
         runJava8("5.2.3.Final");
         runJava8("5.2.4.Final");
+        runJava8("5.2.5.Final");
     }
 
     private static void run(String version, String annotationsVersion, String... profiles)

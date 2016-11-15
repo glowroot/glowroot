@@ -42,6 +42,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.ObjectMappers;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 @Value.Immutable
 public abstract class PluginCache {
 
@@ -86,6 +88,7 @@ public abstract class PluginCache {
         if (plugins != null) {
             List<PluginDescriptor> pluginDescriptors = mapper.readValue(plugins,
                     new TypeReference<List<ImmutablePluginDescriptor>>() {});
+            checkNotNull(pluginDescriptors);
             builder.addAllPluginDescriptors(pluginDescriptors);
         }
         return builder.build();

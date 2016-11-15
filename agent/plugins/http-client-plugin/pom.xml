@@ -23,7 +23,7 @@
     <apache.httpcore.version>4.4.5</apache.httpcore.version>
     <okhttpclient.version>2.7.5</okhttpclient.version>
     <cxf.version>3.1.8</cxf.version>
-    <spring.version>4.3.3.RELEASE</spring.version>
+    <spring.version>4.3.4.RELEASE</spring.version>
   </properties>
 
   <dependencies>

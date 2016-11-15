@@ -13,7 +13,7 @@
     "fontawesome": "4.7.0",
     "handlebars": "4.0.5",
     "jquery": "3.1.1",
-    "moment": "2.15.2",
+    "moment": "2.17.0",
     "sequeljs": "trask/sequeljs#1cb6103d300c76eda3abeb47117a9f26d2023096",
     "spinjs": "2.3.2",
     "zeroclipboard": "2.1.6"

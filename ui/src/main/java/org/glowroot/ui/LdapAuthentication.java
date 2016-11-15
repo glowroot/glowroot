@@ -35,6 +35,8 @@ import org.immutables.value.Value;
 import org.glowroot.common.config.LdapConfig;
 import org.glowroot.common.repo.util.Encryption;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 class LdapAuthentication {
 
     static Set<String> getGlowrootRoles(Set<String> ldapGroupDns, LdapConfig ldapConfig)
@@ -99,7 +101,7 @@ class LdapAuthentication {
         if (!namingEnum.hasMore()) {
             return null;
         }
-        SearchResult result = (SearchResult) namingEnum.next();
+        SearchResult result = (SearchResult) checkNotNull(namingEnum.next());
         String userDn = result.getNameInNamespace();
         if (namingEnum.hasMore()) {
             throw new IllegalStateException("More than matching user: " + username);
@@ -116,7 +118,7 @@ class LdapAuthentication {
                 ldapConfig.groupSearchFilter(), new String[] {userDn}, searchCtls);
         Set<String> ldapGroups = Sets.newHashSet();
         while (namingEnum.hasMore()) {
-            SearchResult result = (SearchResult) namingEnum.next();
+            SearchResult result = (SearchResult) checkNotNull(namingEnum.next());
             ldapGroups.add(result.getNameInNamespace());
         }
         namingEnum.close();
