@@ -69,6 +69,7 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.api.Glowroot;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
@@ -222,6 +223,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
             Authentication authentication = httpSessionManager.getAuthentication(request);
+            Glowroot.setTransactionUser(authentication.caseAmbiguousUsername());
             response = handleRequest(path, ctx, request, authentication);
             if (response != null) {
                 sendFullResponse(ctx, request, response, authentication);
@@ -317,11 +319,13 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         if (path.equals("/backend/login")) {
             String content = request.content().toString(Charsets.ISO_8859_1);
             Credentials credentials = mapper.readValue(content, ImmutableCredentials.class);
+            Glowroot.setTransactionUser(credentials.username());
             return httpSessionManager.login(credentials.username(), credentials.password());
         }
         if (path.equals("/backend/sign-out")) {
             httpSessionManager.signOut(request);
             Authentication authentication = httpSessionManager.getAnonymousAuthentication();
+            Glowroot.setTransactionUser(authentication.caseAmbiguousUsername());
             String anonymousLayout = layoutService.getLayout(authentication);
             FullHttpResponse response = HttpServices.createJsonResponse(anonymousLayout, OK);
             httpSessionManager.deleteSessionCookie(response);

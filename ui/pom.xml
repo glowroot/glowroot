@@ -30,6 +30,12 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <!-- this is used to instrument the glowroot UI itself -->
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
       <!-- immutables is only needed at compile time -->
