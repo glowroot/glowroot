@@ -100,7 +100,7 @@
 
         <div class="gt-inline-block" style="vertical-align: top;">
           {{transactionsPerMin | gtCount}} transactions per minute<br>
-          ({{transactionCount}}
+          ({{transactionCount | number}}
           <span ng-pluralize
                 count="transactionCount"
                 when="{'1':'transaction','other':'transactions'}">
