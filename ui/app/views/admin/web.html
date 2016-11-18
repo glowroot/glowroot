@@ -59,6 +59,9 @@
             This change requires JVM restart. Active value is <code>{{activeBindAddress}}</code>.
           </div>
           Address that the user interface listens on.
+          <span ng-if="originalConfig.bindAddress === '127.0.0.1'">
+            To access the UI from remote machines, change the bind address to 0.0.0.0
+          </span>
         </div>
       </div>
       <div gt-form-group
