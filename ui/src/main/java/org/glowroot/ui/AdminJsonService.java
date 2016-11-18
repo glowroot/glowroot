@@ -345,6 +345,7 @@ class AdminJsonService {
 
         abstract int port();
         abstract String bindAddress();
+        abstract String contextPath();
         abstract int sessionTimeoutMinutes();
         abstract String sessionCookieName();
         abstract String version();
@@ -353,6 +354,7 @@ class AdminJsonService {
             return ImmutableWebConfig.builder()
                     .port(port())
                     .bindAddress(bindAddress())
+                    .contextPath(contextPath())
                     .sessionTimeoutMinutes(sessionTimeoutMinutes())
                     .sessionCookieName(sessionCookieName())
                     .build();
@@ -362,6 +364,7 @@ class AdminJsonService {
             return ImmutableWebConfigDto.builder()
                     .port(config.port())
                     .bindAddress(config.bindAddress())
+                    .contextPath(config.contextPath())
                     .sessionTimeoutMinutes(config.sessionTimeoutMinutes())
                     .sessionCookieName(config.sessionCookieName())
                     .version(config.version())

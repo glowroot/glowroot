@@ -25,6 +25,7 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Clock;
 import org.glowroot.ui.HttpServer.SocketBindException;
 
@@ -39,6 +40,7 @@ class LazyHttpServer {
     private final IndexHtmlHttpService indexHtmlHttpService;
     private final LayoutHttpService layoutHttpService;
     private final LayoutService layoutService;
+    private final ConfigRepository configRepository;
     private final TraceDetailHttpService traceDetailHttpService;
     private final TraceExportHttpService traceExportHttpService;
     private final GlowrootLogHttpService glowrootLogHttpService;
@@ -50,7 +52,8 @@ class LazyHttpServer {
 
     LazyHttpServer(String bindAddress, int port, HttpSessionManager httpSessionManager,
             IndexHtmlHttpService indexHtmlHttpService, LayoutHttpService layoutHttpService,
-            LayoutService layoutService, TraceDetailHttpService traceDetailHttpService,
+            LayoutService layoutService, ConfigRepository configRepository,
+            TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService,
             GlowrootLogHttpService glowrootLogHttpService, List<Object> jsonServices,
             Clock clock, int numWorkerThreads) {
@@ -60,6 +63,7 @@ class LazyHttpServer {
         this.indexHtmlHttpService = indexHtmlHttpService;
         this.layoutHttpService = layoutHttpService;
         this.layoutService = layoutService;
+        this.configRepository = configRepository;
         this.traceDetailHttpService = traceDetailHttpService;
         this.traceExportHttpService = traceExportHttpService;
         this.glowrootLogHttpService = glowrootLogHttpService;
@@ -119,7 +123,7 @@ class LazyHttpServer {
         httpServices.put(Pattern.compile("^/backend/trace/aux-thread-profile$"),
                 traceDetailHttpService);
         httpServices.put(Pattern.compile("^/log$"), glowrootLogHttpService);
-        return new HttpServer(bindAddress, port, numWorkerThreads, layoutService, httpServices,
-                httpSessionManager, jsonServices, clock);
+        return new HttpServer(bindAddress, port, numWorkerThreads, layoutService, configRepository,
+                httpServices, httpSessionManager, jsonServices, clock);
     }
 }

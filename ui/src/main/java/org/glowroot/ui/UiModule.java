@@ -69,7 +69,8 @@ public class UiModule {
                 configRepository, agentRepository, transactionTypeRepository);
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(embedded, offline, configRepository, clock, layoutService);
-        IndexHtmlHttpService indexHtmlHttpService = new IndexHtmlHttpService(layoutService);
+        IndexHtmlHttpService indexHtmlHttpService =
+                new IndexHtmlHttpService(layoutService, configRepository);
         LayoutHttpService layoutHttpService = new LayoutHttpService(layoutService);
         TransactionCommonService transactionCommonService = new TransactionCommonService(
                 aggregateRepository, liveAggregateRepository, configRepository, clock);
@@ -116,9 +117,9 @@ public class UiModule {
         String bindAddress = configRepository.getWebConfig().bindAddress();
         int port = configRepository.getWebConfig().port();
         LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, httpSessionManager,
-                indexHtmlHttpService, layoutHttpService, layoutService, traceDetailHttpService,
-                traceExportHttpService, glowrootLogHttpService, jsonServices, clock,
-                numWorkerThreads);
+                indexHtmlHttpService, layoutHttpService, layoutService, configRepository,
+                traceDetailHttpService, traceExportHttpService, glowrootLogHttpService,
+                jsonServices, clock, numWorkerThreads);
 
         lazyHttpServer.init(adminJsonService);
         return new UiModule(lazyHttpServer);

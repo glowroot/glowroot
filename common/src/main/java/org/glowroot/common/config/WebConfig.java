@@ -33,6 +33,11 @@ public abstract class WebConfig {
         return "127.0.0.1";
     }
 
+    @Value.Default
+    public String contextPath() {
+        return "/";
+    }
+
     // timeout 0 means sessions do not time out (except on jvm restart)
     @Value.Default
     public int sessionTimeoutMinutes() {

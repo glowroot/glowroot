@@ -36,14 +36,6 @@ public class UiSandboxMain {
     private static final boolean useJavaagent = Boolean.getBoolean("glowroot.sandbox.javaagent");
     private static final boolean useGlowrootCentral =
             Boolean.getBoolean("glowroot.sandbox.central");
-    private static final boolean useReverseProxy =
-            Boolean.getBoolean("glowroot.sandbox.reverseProxy");
-
-    static {
-        if (useReverseProxy) {
-            System.setProperty("glowroot.ui.base", "http://localhost:9000/xyzzy/");
-        }
-    }
 
     private UiSandboxMain() {}
 

@@ -101,30 +101,6 @@ module.exports = function (grunt) {
             ];
           }
         }
-      },
-      xyzzy: {
-        proxies: [
-          {
-            // this is for simulating a reverse proxy with custom base href
-            context: '/xyzzy',
-            host: 'localhost',
-            port: 4000,
-            rewrite: {
-              '^/xyzzy': ''
-            }
-          }
-        ],
-        options: {
-          port: 9000,
-          // Change this to '0.0.0.0' to access the server from outside.
-          hostname: 'localhost',
-          open: 'http://localhost:9000/xyzzy',
-          middleware: function (connect) {
-            return [
-              require('grunt-connect-proxy/lib/utils').proxyRequest
-            ];
-          }
-        }
       }
     },
 

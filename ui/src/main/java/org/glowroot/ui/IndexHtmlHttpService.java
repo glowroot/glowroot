@@ -20,7 +20,6 @@ import java.net.URL;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Strings;
 import com.google.common.io.Resources;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -30,6 +29,7 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpRequest;
 
+import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
@@ -37,24 +37,15 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 class IndexHtmlHttpService implements HttpService {
 
-    private static final String BASE_HREF;
-
     private static final @Nullable String GOOGLE_ANALYTICS_TRACKING_ID =
             System.getProperty("glowroot.internal.googleAnalyticsTrackingId");
 
-    static {
-        String uiBase = System.getProperty("glowroot.ui.base");
-        if (Strings.isNullOrEmpty(uiBase)) {
-            BASE_HREF = "/";
-        } else {
-            BASE_HREF = uiBase;
-        }
-    }
-
     private final LayoutService layoutService;
+    private final ConfigRepository configRepository;
 
-    IndexHtmlHttpService(LayoutService layoutService) {
+    IndexHtmlHttpService(LayoutService layoutService, ConfigRepository configRepository) {
         this.layoutService = layoutService;
+        this.configRepository = configRepository;
     }
 
     @Override
@@ -69,8 +60,11 @@ class IndexHtmlHttpService implements HttpService {
         URL url = Resources.getResource("org/glowroot/ui/app-dist/index.html");
         String indexHtml = Resources.toString(url, Charsets.UTF_8);
         String layout = layoutService.getLayout(authentication);
+        String contextPath = configRepository.getWebConfig().contextPath();
+        String baseHref = contextPath.equals("/") ? "/" : contextPath + "/";
         indexHtml = indexHtml.replaceFirst("<base href=\"/\">",
-                "<base href=\"" + BASE_HREF + "\"><script>var layout=" + layout + "</script>");
+                "<base href=\"" + baseHref + "\"><script>var layout=" + layout
+                        + ";var contextPath='" + contextPath + "'</script>");
         // this is to work around an issue with IE10-11 (IE9 is OK)
         // (even without reverse proxy/non-root base href)
         // IE doesn't use the base href when loading the favicon

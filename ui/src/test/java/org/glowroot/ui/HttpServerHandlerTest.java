@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,5 +136,15 @@ public class HttpServerHandlerTest {
         assertThat(node.get("message").asText()).isEqualTo("Wrapped message");
         assertThat(node.get("stackTrace")).isNotNull();
         assertThat(httpResponse.status()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Test
+    public void shouldStripContextPath() {
+        assertThat(HttpServerHandler.stripContextPath("/one", "/")).isEqualTo("/one");
+        assertThat(HttpServerHandler.stripContextPath("/", "/")).isEqualTo("/");
+        assertThat(HttpServerHandler.stripContextPath("/one", "/one")).isEqualTo("/");
+        assertThat(HttpServerHandler.stripContextPath("/one/", "/one")).isEqualTo("/");
+        assertThat(HttpServerHandler.stripContextPath("/one/two", "/one")).isEqualTo("/two");
+        assertThat(HttpServerHandler.stripContextPath("/one/two/", "/one")).isEqualTo("/two/");
     }
 }

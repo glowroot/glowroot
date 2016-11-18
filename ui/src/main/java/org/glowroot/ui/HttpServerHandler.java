@@ -69,6 +69,7 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.ui.HttpSessionManager.Authentication;
@@ -77,6 +78,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
+import static io.netty.handler.codec.http.HttpResponseStatus.FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_MODIFIED;
@@ -128,6 +130,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     private final ChannelGroup allChannels;
 
     private final LayoutService layoutService;
+    private final ConfigRepository configRepository;
     private final ImmutableMap<Pattern, HttpService> httpServices;
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
     private final HttpSessionManager httpSessionManager;
@@ -136,9 +139,11 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     private final ThreadLocal</*@Nullable*/ Channel> currentChannel =
             new ThreadLocal</*@Nullable*/ Channel>();
 
-    HttpServerHandler(LayoutService layoutService, Map<Pattern, HttpService> httpServices,
-            HttpSessionManager httpSessionManager, List<Object> jsonServices, Clock clock) {
+    HttpServerHandler(LayoutService layoutService, ConfigRepository configRepository,
+            Map<Pattern, HttpService> httpServices, HttpSessionManager httpSessionManager,
+            List<Object> jsonServices, Clock clock) {
         this.layoutService = layoutService;
+        this.configRepository = configRepository;
         this.httpServices = ImmutableMap.copyOf(httpServices);
         this.httpSessionManager = httpSessionManager;
         this.clock = clock;
@@ -202,6 +207,14 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         try {
             QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
             String path = decoder.path();
+            String contextPath = configRepository.getWebConfig().contextPath();
+            if (!path.startsWith(contextPath)) {
+                DefaultFullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, FOUND);
+                response.headers().set(HttpHeaderNames.LOCATION, contextPath);
+                sendFullResponse(ctx, request, response, HttpUtil.isKeepAlive(request));
+                return;
+            }
+            path = stripContextPath(path, contextPath);
             logger.debug("handleRequest(): path={}", path);
             FullHttpResponse response = handleIfLoginOrLogoutRequest(path, request);
             if (response != null) {
@@ -519,6 +532,17 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 .bindRequest(bindRequest)
                 .bindCaseAmbiguousUsername(bindCaseAmbiguousUsername)
                 .build();
+    }
+
+    @VisibleForTesting
+    static String stripContextPath(String path, String contextPath) {
+        if (contextPath.equals("/")) {
+            return path;
+        }
+        if (path.equals(contextPath)) {
+            return "/";
+        }
+        return path.substring(contextPath.length());
     }
 
     private static @Nullable URL getSecureUrlForPath(String path) {

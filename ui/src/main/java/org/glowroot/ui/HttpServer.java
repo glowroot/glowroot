@@ -43,6 +43,7 @@ import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.util.Clock;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -62,8 +63,9 @@ class HttpServer {
     private volatile int port;
 
     HttpServer(String bindAddress, int port, int numWorkerThreads, LayoutService layoutService,
-            Map<Pattern, HttpService> httpServices, HttpSessionManager httpSessionManager,
-            List<Object> jsonServices, Clock clock) throws SocketBindException {
+            ConfigRepository configRepository, Map<Pattern, HttpService> httpServices,
+            HttpSessionManager httpSessionManager, List<Object> jsonServices, Clock clock)
+            throws SocketBindException {
 
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
 
@@ -78,8 +80,8 @@ class HttpServer {
         bossGroup = new NioEventLoopGroup(1, bossThreadFactory);
         workerGroup = new NioEventLoopGroup(numWorkerThreads, workerThreadFactory);
 
-        final HttpServerHandler handler = new HttpServerHandler(layoutService, httpServices,
-                httpSessionManager, jsonServices, clock);
+        final HttpServerHandler handler = new HttpServerHandler(layoutService, configRepository,
+                httpServices, httpSessionManager, jsonServices, clock);
 
         bootstrap = new ServerBootstrap();
         bootstrap.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
