@@ -128,6 +128,7 @@ public abstract class WebDriverIT {
         resetRoles();
         resetCentralConfigAdmin("web", "{\"port\":" + getUiPort()
                 + ",\"bindAddress\":\"127.0.0.1\","
+                + "\"contextPath\":\"/\","
                 + "\"sessionTimeoutMinutes\":30,"
                 + "\"sessionCookieName\":\"GLOWROOT_SESSION_ID\","
                 + "\"version\":\"$version\"}");

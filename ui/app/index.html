@@ -39,7 +39,7 @@
 
   <!--[if IE 9]>
   <script>
-    if (location.pathname === contextPath) {
+    if (contextPath !== '/' && location.pathname === contextPath) {
       location.pathname += '/';
     }
   </script>
