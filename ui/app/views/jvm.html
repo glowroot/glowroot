@@ -52,14 +52,13 @@
   </div>
 </div>
 <div class="gt-sidebar hidden-print">
-  <div class="panel panel-default"
-       ng-if="layout.embedded || agentRollupId">
+  <div class="panel panel-default">
     <ul class="list-group">
       <div gt-sidebar-item
            gt-display="Gauges"
            gt-url="jvm/gauges{{agentQueryString()}}"
            gt-active="currentUrl() === 'jvm/gauges'"
-           ng-if="agentPermissions.jvm.gauges">
+           ng-if="agentPermissions.jvm.gauges || (!layout.embedded && !agentRollupId)">
       </div>
       <div gt-sidebar-item
            gt-display="Thread dump"
