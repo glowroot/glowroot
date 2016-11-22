@@ -604,9 +604,7 @@
         <legend style="margin-bottom: 5px;">Agent specific permission block</legend>
         <div class="col-lg-9 col-lg-offset-3">
           <div style="padding: 15px 0 10px;">
-            <div ng-if="!allAgentRollups.length" style="font-style: italic;">There are no agents yet</div>
-            <div ng-if="allAgentRollups.length"
-                 ng-class="{'has-error': !permissionBlock.agentRollups.length}">
+            <div ng-class="{'has-error': !permissionBlock.agentRollups.length}">
               <select multiple
                       class="form-control"
                       ng-model="permissionBlock.agentRollups"
@@ -857,11 +855,16 @@
       </fieldset>
       <fieldset ng-if="!layout.embedded && layout.adminEdit">
         <legend>Add {{page.permissionBlocks.length ? 'another' : 'an'}} agent specific permission block</legend>
-        <button class="btn btn-default"
-                ng-click="addPermissionBlock()"
-                style="margin-bottom: 23px; margin-left: 14px;">
-          Add
-        </button>
+        <div style="margin-bottom: 23px; margin-left: 14px;">
+          <div ng-if="!allAgentRollups.length" style="font-style: italic;">
+            There are no agents
+          </div>
+          <button class="btn btn-default"
+                  ng-click="addPermissionBlock()"
+                  ng-if="allAgentRollups.length">
+            Add
+          </button>
+        </div>
       </fieldset>
       <div class="form-group gt-form-buttons"
            ng-if="layout.adminEdit">
