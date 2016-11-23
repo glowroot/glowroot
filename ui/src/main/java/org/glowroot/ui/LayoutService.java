@@ -99,7 +99,7 @@ class LayoutService {
         UiConfig uiConfig = checkNotNull(configRepository.getUiConfig(AGENT_ID));
         String defaultDisplayedTransactionType =
                 uiConfig.getDefaultDisplayedTransactionType();
-        Set<String> transactionTypes = Sets.newHashSet();
+        Set<String> transactionTypes = Sets.newTreeSet(String.CASE_INSENSITIVE_ORDER);
         List<String> storedTransactionTypes = transactionTypeRepository.read().get(AGENT_ID);
         if (storedTransactionTypes != null) {
             transactionTypes.addAll(storedTransactionTypes);
@@ -313,7 +313,7 @@ class LayoutService {
                 defaultDisplayedTransactionType = uiConfig.getDefaultDisplayedTransactionType();
                 defaultDisplayedPercentiles = uiConfig.getDefaultDisplayedPercentileList();
             }
-            Set<String> transactionTypes = Sets.newHashSet();
+            Set<String> transactionTypes = Sets.newTreeSet(String.CASE_INSENSITIVE_ORDER);
             List<String> storedTransactionTypes = transactionTypesMap.get(agentRollup.id());
             if (storedTransactionTypes != null) {
                 transactionTypes.addAll(storedTransactionTypes);
