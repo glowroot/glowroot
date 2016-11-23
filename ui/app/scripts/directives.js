@@ -54,6 +54,7 @@ glowroot.factory('gtButtonGroupControllerFactory', [
               if (spinner) {
                 spinner.stop();
               }
+              Glowroot.cancelFadeSuccessMessage($buttonMessage);
               $buttonMessage.text(error);
               $buttonMessage.removeClass('gt-button-message-success');
               $buttonMessage.addClass('gt-button-message-error');

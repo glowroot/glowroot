@@ -321,6 +321,17 @@ Glowroot = (function () {
     });
   }
 
+  function cancelFadeMessage(selector) {
+    $(selector).each(function () {
+      var $this = $(this);
+      if ($this.data('gtTimeout')) {
+        clearTimeout($this.data('gtTimeout'));
+      }
+      $this.stop().animate({opacity: '100'});
+      $this.removeClass('hide');
+    });
+  }
+
   function fadeOut(selector, duration) {
     // fade out and then override jquery behavior and use hide class instead of display: none
     var $selector = $(selector);
@@ -357,6 +368,7 @@ Glowroot = (function () {
     showAndFadeSuccessMessage: function (selector) {
       showAndFadeMessage(selector, 1500);
     },
+    cancelFadeSuccessMessage: cancelFadeMessage,
     fadeOut: fadeOut,
     showSpinner: showSpinner
   };
