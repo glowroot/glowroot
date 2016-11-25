@@ -47,9 +47,10 @@ public class UiModule {
     public static UiModule createUiModule(
             boolean embedded,
             boolean offline,
+            File baseDir,
+            File glowrootDir,
             @Nullable Ticker ticker, // @Nullable to deal with shading from glowroot server
             Clock clock,
-            File logDir,
             @Nullable LiveJvmService liveJvmService,
             final ConfigRepository configRepository,
             AgentRepository agentRepository,
@@ -85,7 +86,7 @@ public class UiModule {
                 new TraceDetailHttpService(traceCommonService);
         TraceExportHttpService traceExportHttpService =
                 new TraceExportHttpService(traceCommonService, version);
-        GlowrootLogHttpService glowrootLogHttpService = new GlowrootLogHttpService(logDir);
+        GlowrootLogHttpService glowrootLogHttpService = new GlowrootLogHttpService(baseDir);
         ErrorCommonService errorCommonService =
                 new ErrorCommonService(aggregateRepository, liveAggregateRepository);
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
@@ -94,8 +95,8 @@ public class UiModule {
         GaugeValueJsonService gaugeValueJsonService = new GaugeValueJsonService(
                 gaugeValueRepository, rollupLevelService, agentRepository, configRepository);
         AlertConfigJsonService alertJsonService = new AlertConfigJsonService(configRepository);
-        AdminJsonService adminJsonService = new AdminJsonService(embedded, configRepository,
-                repoAdmin, liveAggregateRepository, new MailService());
+        AdminJsonService adminJsonService = new AdminJsonService(embedded, glowrootDir,
+                configRepository, repoAdmin, liveAggregateRepository, new MailService());
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(transactionJsonService);
@@ -119,7 +120,7 @@ public class UiModule {
         LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, httpSessionManager,
                 indexHtmlHttpService, layoutHttpService, layoutService, configRepository,
                 traceDetailHttpService, traceExportHttpService, glowrootLogHttpService,
-                jsonServices, clock, numWorkerThreads);
+                jsonServices, baseDir, clock, numWorkerThreads);
 
         lazyHttpServer.init(adminJsonService);
         return new UiModule(lazyHttpServer);

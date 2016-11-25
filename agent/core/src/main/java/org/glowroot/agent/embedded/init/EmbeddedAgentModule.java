@@ -25,6 +25,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
@@ -60,6 +61,8 @@ class EmbeddedAgentModule {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
+    private final File baseDir;
+    private final File glowrootDir;
     private final Ticker ticker;
     private final Clock clock;
     // only null in viewer mode
@@ -67,7 +70,6 @@ class EmbeddedAgentModule {
     private volatile @MonotonicNonNull SimpleRepoModule simpleRepoModule;
     private final @Nullable AgentModule agentModule;
     private final @Nullable ViewerAgentModule viewerAgentModule;
-    private final File baseDir;
 
     private final Closeable dataDirLockingCloseable;
 
@@ -176,6 +178,11 @@ class EmbeddedAgentModule {
         }
 
         this.baseDir = baseDir;
+        if (glowrootJarFile == null) {
+            glowrootDir = baseDir;
+        } else {
+            glowrootDir = MoreObjects.firstNonNull(glowrootJarFile.getParentFile(), baseDir);
+        }
         this.version = glowrootVersion;
     }
 
@@ -188,9 +195,10 @@ class EmbeddedAgentModule {
             uiModule = new CreateUiModuleBuilder()
                     .embedded(true)
                     .offline(false)
+                    .baseDir(baseDir)
+                    .glowrootDir(glowrootDir)
                     .ticker(ticker)
                     .clock(clock)
-                    .logDir(baseDir)
                     .liveJvmService(agentModule.getLiveJvmService())
                     .configRepository(simpleRepoModule.getConfigRepository())
                     .agentRepository(simpleRepoModule.getAgentDao())
@@ -211,9 +219,10 @@ class EmbeddedAgentModule {
             uiModule = new CreateUiModuleBuilder()
                     .embedded(true)
                     .offline(true)
+                    .baseDir(baseDir)
+                    .glowrootDir(glowrootDir)
                     .ticker(ticker)
                     .clock(clock)
-                    .logDir(baseDir)
                     .liveJvmService(null)
                     .configRepository(simpleRepoModule.getConfigRepository())
                     .agentRepository(simpleRepoModule.getAgentDao())

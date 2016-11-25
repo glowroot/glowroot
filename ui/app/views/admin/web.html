@@ -65,6 +65,26 @@
         </div>
       </div>
       <div gt-form-group
+           gt-type="checkbox"
+           gt-label="Use HTTPS"
+           gt-model="config.https"
+           gt-disabled="!layout.adminEdit"
+           gt-col-class1="col-lg-4"
+           gt-col-class2="col-lg-8">
+        <div class="help-block">
+          <div class="gt-yellow"
+               ng-show="originalConfig.https !== activeHttps"
+               style="padding-bottom: 5px;">
+            Active value is <code>{{activeHttps}}</code>.
+          </div>
+          Serve the user interface over HTTPS. The SSL certificate and private key to be used must be placed in the
+          glowroot directory ({{glowrootDir}}) with filenames <em>certificate.pem</em> and
+          <em>private.pem</em> before enabling HTTPS. The private key should not have a passphrase.
+          E.g. a self signed certificate can be generated at the command line using
+          <em>openssl req -new -x509 -nodes -days 365 -out certificate.pem -keyout private.pem</em>
+        </div>
+      </div>
+      <div gt-form-group
            gt-label="Context path"
            gt-model="config.contextPath"
            gt-pattern="/^\/$|^\/.*[^/]$/"

@@ -15,6 +15,7 @@
  */
 package org.glowroot.ui;
 
+import java.io.File;
 import java.net.InetAddress;
 
 import javax.mail.Message;
@@ -39,7 +40,7 @@ public class AdminJsonServiceTest {
     @Before
     public void beforeEachTest() {
         mailService = new MockMailService();
-        adminJsonService = new AdminJsonService(false, mock(ConfigRepository.class),
+        adminJsonService = new AdminJsonService(false, new File("."), mock(ConfigRepository.class),
                 mock(RepoAdmin.class), mock(LiveAggregateRepository.class), mailService);
     }
 

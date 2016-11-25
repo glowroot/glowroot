@@ -16,6 +16,8 @@
 package org.glowroot.common.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Versions;
@@ -31,6 +33,12 @@ public abstract class WebConfig {
     @Value.Default
     public String bindAddress() {
         return "127.0.0.1";
+    }
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public boolean https() {
+        return false;
     }
 
     @Value.Default

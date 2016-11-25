@@ -15,6 +15,7 @@
  */
 package org.glowroot.ui;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.InetAddress;
@@ -35,6 +36,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.ssl.SslContextBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
@@ -77,6 +79,7 @@ class AdminJsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final boolean embedded;
+    private final File glowrootDir;
     private final ConfigRepository configRepository;
     private final RepoAdmin repoAdmin;
     private final LiveAggregateRepository liveAggregateRepository;
@@ -84,9 +87,11 @@ class AdminJsonService {
 
     private volatile @MonotonicNonNull HttpServer httpServer;
 
-    AdminJsonService(boolean embedded, ConfigRepository configRepository, RepoAdmin repoAdmin,
-            LiveAggregateRepository liveAggregateRepository, MailService mailService) {
+    AdminJsonService(boolean embedded, File glowrootDir, ConfigRepository configRepository,
+            RepoAdmin repoAdmin, LiveAggregateRepository liveAggregateRepository,
+            MailService mailService) {
         this.embedded = embedded;
+        this.glowrootDir = glowrootDir;
         this.configRepository = configRepository;
         this.repoAdmin = repoAdmin;
         this.liveAggregateRepository = liveAggregateRepository;
@@ -160,14 +165,38 @@ class AdminJsonService {
     Object updateWebConfig(@BindRequest WebConfigDto configDto) throws Exception {
         // this code cannot be reached when httpServer is null
         checkNotNull(httpServer);
-        WebConfig priorConfig = configRepository.getWebConfig();
         WebConfig config = configDto.convert();
+
+        if (config.https() && !httpServer.getHttps()) {
+            // validate certificate and private key exist and are valid
+            File certificateFile = new File(glowrootDir, "certificate.pem");
+            if (!certificateFile.exists()) {
+                return "{\"httpsRequiredFilesDoNotExist\":true}";
+            }
+            File privateKeyFile = new File(glowrootDir, "private.pem");
+            if (!privateKeyFile.exists()) {
+                return "{\"httpsRequiredFilesDoNotExist\":true}";
+            }
+            try {
+                SslContextBuilder.forServer(new File(glowrootDir, "certificate.pem"),
+                        new File(glowrootDir, "private.pem"));
+            } catch (Exception e) {
+                logger.debug(e.getMessage(), e);
+                StringWriter sw = new StringWriter();
+                JsonGenerator jg = mapper.getFactory().createGenerator(sw);
+                jg.writeStartObject();
+                jg.writeStringField("httpsValidationError", e.getMessage());
+                jg.writeEndObject();
+                jg.close();
+                return sw.toString();
+            }
+        }
         try {
             configRepository.updateWebConfig(config, configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return onSuccessfulAccessUpdate(priorConfig, config);
+        return onSuccessfulWebUpdate(config);
     }
 
     @POST(path = "/backend/admin/storage", permission = "admin:edit:storage")
@@ -270,24 +299,29 @@ class AdminJsonService {
     }
 
     @RequiresNonNull("httpServer")
-    private Object onSuccessfulAccessUpdate(WebConfig priorConfig, WebConfig config)
-            throws Exception {
-        boolean portChangedSucceeded = false;
-        boolean portChangedFailed = false;
-        if (priorConfig.port() != config.port()) {
+    private Object onSuccessfulWebUpdate(WebConfig config) throws Exception {
+        boolean closeCurrentChannel = false;
+        boolean portChangeFailed = false;
+        if (config.port() != httpServer.getPort()) {
             try {
                 httpServer.changePort(config.port());
-                portChangedSucceeded = true;
+                closeCurrentChannel = true;
             } catch (PortChangeFailedException e) {
                 logger.error(e.getMessage(), e);
-                portChangedFailed = true;
+                portChangeFailed = true;
             }
         }
-        String responseText = getWebConfig(portChangedFailed);
+        if (config.https() != httpServer.getHttps() && !portChangeFailed) {
+            // only change protocol if port change did not fail, otherwise confusing to display
+            // message that port change failed while at the same time redirecting user to HTTP/S
+            httpServer.changeProtocol(config.https());
+            closeCurrentChannel = true;
+        }
+        String responseText = getWebConfig(portChangeFailed);
         ByteBuf responseContent = Unpooled.copiedBuffer(responseText, Charsets.ISO_8859_1);
         FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, responseContent);
-        if (portChangedSucceeded) {
-            response.headers().set("Glowroot-Port-Changed", "true");
+        if (closeCurrentChannel) {
+            response.headers().set("Glowroot-Close-Channel", "true");
         }
         return response;
     }
@@ -299,6 +333,8 @@ class AdminJsonService {
                 .config(WebConfigDto.create(config))
                 .activePort(httpServer.getPort())
                 .activeBindAddress(httpServer.getBindAddress())
+                .activeHttps(httpServer.getHttps())
+                .glowrootDir(glowrootDir.getAbsolutePath())
                 .portChangeFailed(portChangeFailed)
                 .build());
     }
@@ -325,6 +361,8 @@ class AdminJsonService {
         WebConfigDto config();
         int activePort();
         String activeBindAddress();
+        boolean activeHttps();
+        String glowrootDir();
         boolean portChangeFailed();
     }
 
@@ -345,6 +383,7 @@ class AdminJsonService {
 
         abstract int port();
         abstract String bindAddress();
+        abstract boolean https();
         abstract String contextPath();
         abstract int sessionTimeoutMinutes();
         abstract String sessionCookieName();
@@ -354,6 +393,7 @@ class AdminJsonService {
             return ImmutableWebConfig.builder()
                     .port(port())
                     .bindAddress(bindAddress())
+                    .https(https())
                     .contextPath(contextPath())
                     .sessionTimeoutMinutes(sessionTimeoutMinutes())
                     .sessionCookieName(sessionCookieName())
@@ -364,6 +404,7 @@ class AdminJsonService {
             return ImmutableWebConfigDto.builder()
                     .port(config.port())
                     .bindAddress(config.bindAddress())
+                    .https(config.https())
                     .contextPath(config.contextPath())
                     .sessionTimeoutMinutes(config.sessionTimeoutMinutes())
                     .sessionCookieName(config.sessionCookieName())

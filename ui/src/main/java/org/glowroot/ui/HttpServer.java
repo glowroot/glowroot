@@ -15,6 +15,7 @@
  */
 package org.glowroot.ui;
 
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Slf4JLoggerFactory;
@@ -58,14 +61,16 @@ class HttpServer {
     private final EventLoopGroup workerGroup;
 
     private final String bindAddress;
+    private final File baseDir;
 
+    private volatile @Nullable SslContext sslContext;
     private volatile Channel serverChannel;
     private volatile int port;
 
     HttpServer(String bindAddress, int port, int numWorkerThreads, LayoutService layoutService,
             ConfigRepository configRepository, Map<Pattern, HttpService> httpServices,
-            HttpSessionManager httpSessionManager, List<Object> jsonServices, Clock clock)
-            throws SocketBindException {
+            HttpSessionManager httpSessionManager, List<Object> jsonServices, File baseDir,
+            Clock clock) throws Exception {
 
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
 
@@ -83,12 +88,24 @@ class HttpServer {
         final HttpServerHandler handler = new HttpServerHandler(layoutService, configRepository,
                 httpServices, httpSessionManager, jsonServices, clock);
 
+        if (configRepository.getWebConfig().https()) {
+            sslContext = SslContextBuilder
+                    .forServer(new File(baseDir, "certificate.pem"),
+                            new File(baseDir, "private.pem"))
+                    .build();
+        }
+        this.baseDir = baseDir;
+
         bootstrap = new ServerBootstrap();
         bootstrap.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ChannelPipeline p = ch.pipeline();
+                        SslContext sslContextLocal = sslContext;
+                        if (sslContextLocal != null) {
+                            p.addLast(sslContextLocal.newHandler(ch.alloc()));
+                        }
                         // bumping maxInitialLineLength (first arg below) from default 4096 to 32768
                         // in order to handle long urls on /jvm/gauges view
                         // bumping maxHeaderSize (second arg below) from default 8192 to 32768 for
@@ -127,7 +144,11 @@ class HttpServer {
         return port;
     }
 
-    void changePort(final int newPort) throws PortChangeFailedException {
+    boolean getHttps() {
+        return sslContext != null;
+    }
+
+    void changePort(int newPort) throws PortChangeFailedException {
         // need to call from separate thread, since netty throws exception if I/O thread (serving
         // http request) calls awaitUninterruptibly(), which is called by bind() below
         Channel previousServerChannel = this.serverChannel;
@@ -147,6 +168,18 @@ class HttpServer {
             executor.shutdown();
         }
         previousServerChannel.close();
+        handler.closeAllButCurrent();
+    }
+
+    void changeProtocol(boolean ssl) throws Exception {
+        if (ssl) {
+            sslContext = SslContextBuilder
+                    .forServer(new File(baseDir, "certificate.pem"),
+                            new File(baseDir, "private.pem"))
+                    .build();
+        } else {
+            sslContext = null;
+        }
         handler.closeAllButCurrent();
     }
 

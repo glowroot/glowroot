@@ -244,12 +244,12 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                     layoutService.getLayoutVersion(authentication));
         }
         boolean keepAlive = HttpUtil.isKeepAlive(request);
-        if (response.headers().contains("Glowroot-Port-Changed")) {
-            // current connection is the only open channel on the old port, keepAlive=false will add
-            // the listener below to close the channel after the response completes
+        if (response.headers().contains("Glowroot-Close-Channel")) {
+            // current connection is the only open channel on the old port/protocol, keepAlive=false
+            // will add the listener below to close the channel after the response completes
             //
             // remove the hacky header, no need to send it back to client
-            response.headers().remove("Glowroot-Port-Changed");
+            response.headers().remove("Glowroot-Close-Channel");
             response.headers().add("Connection", "close");
             keepAlive = false;
         }

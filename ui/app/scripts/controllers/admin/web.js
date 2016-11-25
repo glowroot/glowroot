@@ -37,38 +37,55 @@ glowroot.controller('AdminWebCtrl', [
       $scope.originalConfig = angular.copy(data.config);
       $scope.activePort = data.activePort;
       $scope.activeBindAddress = data.activeBindAddress;
+      $scope.activeHttps = data.activeHttps;
+      $scope.glowrootDir = data.glowrootDir;
     }
 
     $scope.save = function (deferred) {
       // another copy to modify for the http post data
       var postData = angular.copy($scope.config);
-      var changingPort = false;
-      var previousActivePort;
-      if ($scope.originalConfig.port !== $scope.config.port) {
-        changingPort = true;
-        previousActivePort = $scope.activePort;
-      }
+      var changingPort = $scope.config.port !== $scope.activePort;
+      var previousActivePort = $scope.activePort;
+      var changingHttps = $scope.config.https !== $scope.activeHttps;
       $http.post('backend/admin/web', postData)
           .success(function (data) {
+            if (data.httpsRequiredFilesDoNotExist) {
+              deferred.reject('The SSL certificate and private key to be used must be placed in the glowroot directory'
+                  + ' with filenames certificate.pem and private.pem before enabling HTTPS');
+              return;
+            }
+            if (data.httpsValidationError) {
+              deferred.reject(data.httpsValidationError);
+              return;
+            }
+            if (data.portChangeFailed) {
+              deferred.reject('Save succeeded, but switching over to the new port failed');
+              return;
+            }
             onNewData(data);
-            if (!changingPort) {
+            if (!changingPort && !changingHttps) {
               // normal path
               deferred.resolve('Saved');
               return;
             }
-            if (changingPort && data.portChangeFailed) {
-              deferred.reject('Save succeeded, but switching over to the new port failed');
-              return;
+            var text;
+            if (changingPort && !changingHttps) {
+              text = 'port';
+            } else if (!changingPort && changingHttps) {
+              text = 'protocol';
+            } else {
+              text = 'port and protocol';
             }
             if ($location.port() !== previousActivePort) {
               deferred.reject('The save succeeded, and switching the http listener over to the new port' +
-              ' succeeded, but you are not being redirected to the new port since it seems you are using an' +
+              ' succeeded, but you are not being redirected to the new ' + text + ' since it seems you are using an' +
               ' intermediary proxy?');
               return;
             }
-            deferred.resolve('Saved, redirecting to new port ...');
+            deferred.resolve('Saved, redirecting to new ' + text + ' ...');
             $timeout(function () {
-              var newUrl = $location.protocol() + '://' + $location.host();
+              var newProtocol = data.activeHttps ? 'https' : 'http';
+              var newUrl = newProtocol + '://' + $location.host();
               if (data.activePort !== 80) {
                 newUrl += ':' + data.activePort;
               }

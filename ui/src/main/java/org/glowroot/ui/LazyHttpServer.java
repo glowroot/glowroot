@@ -15,6 +15,7 @@
  */
 package org.glowroot.ui;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -45,6 +46,7 @@ class LazyHttpServer {
     private final TraceExportHttpService traceExportHttpService;
     private final GlowrootLogHttpService glowrootLogHttpService;
     private final List<Object> jsonServices;
+    private final File baseDir;
     private final Clock clock;
     private final int numWorkerThreads;
 
@@ -56,7 +58,7 @@ class LazyHttpServer {
             TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService,
             GlowrootLogHttpService glowrootLogHttpService, List<Object> jsonServices,
-            Clock clock, int numWorkerThreads) {
+            File baseDir, Clock clock, int numWorkerThreads) {
         this.bindAddress = bindAddress;
         this.port = port;
         this.httpSessionManager = httpSessionManager;
@@ -68,11 +70,12 @@ class LazyHttpServer {
         this.traceExportHttpService = traceExportHttpService;
         this.glowrootLogHttpService = glowrootLogHttpService;
         this.jsonServices = jsonServices;
+        this.baseDir = baseDir;
         this.clock = clock;
         this.numWorkerThreads = numWorkerThreads;
     }
 
-    void init(AdminJsonService adminJsonService) {
+    void init(AdminJsonService adminJsonService) throws Exception {
         HttpServer httpServer;
         try {
             httpServer = build();
@@ -80,6 +83,11 @@ class LazyHttpServer {
             startupLogger.error(
                     "Error binding socket to {}:{}, the user interface will not be available",
                     bindAddress, port, e.getCause());
+            return;
+        } catch (Exception e) {
+            startupLogger.error(
+                    "Error starting the user interface, the user interface will not be available",
+                    e.getCause());
             return;
         }
         this.httpServer = httpServer;
@@ -102,7 +110,7 @@ class LazyHttpServer {
     }
 
     // httpServer is only null if it could not even bind to port 0 (any available port)
-    private HttpServer build() throws SocketBindException {
+    private HttpServer build() throws Exception {
         Map<Pattern, HttpService> httpServices = Maps.newHashMap();
         // http services
         httpServices.put(Pattern.compile("^/$"), indexHtmlHttpService);
@@ -124,6 +132,6 @@ class LazyHttpServer {
                 traceDetailHttpService);
         httpServices.put(Pattern.compile("^/log$"), glowrootLogHttpService);
         return new HttpServer(bindAddress, port, numWorkerThreads, layoutService, configRepository,
-                httpServices, httpSessionManager, jsonServices, clock);
+                httpServices, httpSessionManager, jsonServices, baseDir, clock);
     }
 }
