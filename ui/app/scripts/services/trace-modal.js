@@ -35,6 +35,7 @@ glowroot.factory('traceModal', [
       $http.get(url)
           .success(function (data) {
             spinner.stop();
+            $('#chart canvas').hide();
             if (data.expired) {
               $modalContent.html('expired');
             } else {
