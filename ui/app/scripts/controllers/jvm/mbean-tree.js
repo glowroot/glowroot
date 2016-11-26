@@ -133,7 +133,8 @@ glowroot.controller('JvmMBeanTreeCtrl', [
 
     var mousedownPageX, mousedownPageY;
 
-    $(document).on('mousedown', '.gt-mbean-expanded-content, .gt-mbean-unexpanded-content', function (e) {
+    $(document).off('mousedown.mbeanTree');
+    $(document).on('mousedown.mbeanTree', '.gt-mbean-expanded-content, .gt-mbean-unexpanded-content', function (e) {
       mousedownPageX = e.pageX;
       mousedownPageY = e.pageY;
     });

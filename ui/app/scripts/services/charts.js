@@ -257,7 +257,8 @@ glowroot.factory('charts', [
       };
       chartState.plot = $.plot($chart, data, $.extend(true, options, chartOptions));
       chartState.plot.getAxes().yaxis.options.max = undefined;
-      $(document).on('touchstart', function() {
+      $(document).off('touchstart.chart');
+      $(document).on('touchstart.chart', function() {
         chartState.plot.hideTooltip();
       });
     }
