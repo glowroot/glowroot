@@ -8,9 +8,10 @@ Glowroot &nbsp;&nbsp; [![Build Status](https://img.shields.io/travis/glowroot/gl
 ## Quick start
 
 1. Download and unzip [glowroot-0.9.7-dist.zip](https://github.com/glowroot/glowroot/releases/download/v0.9.7/glowroot-0.9.7-dist.zip)
-2. Add `-javaagent:path/to/glowroot.jar` to your application's JVM arguments
-3. Start your application
-4. Point your browser to http://localhost:4000
+2. Add `-javaagent:path/to/glowroot.jar` to your JVM args [[where are my application server's JVM args?](https://github.com/glowroot/glowroot/wiki/Where-are-my-application-server's-JVM-args%3F)]
+3. Check that the user account that runs the JVM has write access to the glowroot folder
+4. Start your application
+5. Point your browser to http://localhost:4000
 
 See the [wiki](https://github.com/glowroot/glowroot/wiki/Agent-Installation) for optional post-installation steps.
 
