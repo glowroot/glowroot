@@ -65,6 +65,7 @@ import org.glowroot.common.repo.util.Encryption;
 import org.glowroot.common.repo.util.MailService;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.ui.HttpServer.PortChangeFailedException;
+import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.ui.LdapAuthentication.AuthenticationException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -105,9 +106,9 @@ class AdminJsonService {
     // all users have permission to change their own password
     @POST(path = "/backend/change-password", permission = "")
     String changePassword(@BindRequest ChangePassword changePassword,
-            @BindCaseAmbiguousUsername String caseAmbiguousUsername) throws Exception {
-        UserConfig userConfig =
-                configRepository.getUserConfigCaseInsensitive(caseAmbiguousUsername);
+            @BindAuthentication Authentication authentication) throws Exception {
+        UserConfig userConfig = configRepository
+                .getUserConfigCaseInsensitive(authentication.caseAmbiguousUsername());
         checkNotNull(userConfig, "user no longer exists");
         if (!PasswordHash.validatePassword(changePassword.currentPassword(),
                 userConfig.passwordHash())) {

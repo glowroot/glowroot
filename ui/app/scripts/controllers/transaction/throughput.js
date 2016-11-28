@@ -68,7 +68,7 @@ glowroot.controller('TransactionThroughputCtrl', [
         stack: false
       },
       yaxis: {
-        label: 'transactions per min'
+        label: 'transactions per minute'
       },
       tooltipOpts: {
         content: function (label, xval, yval) {

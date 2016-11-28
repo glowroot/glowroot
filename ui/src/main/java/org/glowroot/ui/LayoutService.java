@@ -16,9 +16,11 @@
 package org.glowroot.ui;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -78,16 +80,17 @@ class LayoutService {
 
     private Layout buildLayout(Authentication authentication) throws Exception {
         if (embedded) {
-            return buildLayoutFat(authentication);
+            return buildLayoutEmbedded(authentication);
         } else {
             return buildLayoutCentral(authentication);
         }
     }
 
-    private Layout buildLayoutFat(Authentication authentication) throws Exception {
+    private Layout buildLayoutEmbedded(Authentication authentication) throws Exception {
         Permissions permissions = getPermissions(authentication, AGENT_ID, true);
         boolean hasSomeAccess =
-                permissions.hasSomeAccess() || authentication.isAdminPermitted("admin:view");
+                permissions.hasSomeAccess()
+                        || authentication.isAdminPermitted("admin:view");
         if (!hasSomeAccess) {
             return createNoAccessLayout(authentication);
         }
@@ -148,6 +151,7 @@ class LayoutService {
                 .loggedIn(!authentication.anonymous())
                 .ldap(authentication.ldap())
                 .redirectToLogin(true)
+                .defaultTimeZoneId(TimeZone.getDefault().getID())
                 .build();
     }
 
@@ -178,6 +182,8 @@ class LayoutService {
                 .loggedIn(!authentication.anonymous())
                 .ldap(authentication.ldap())
                 .redirectToLogin(false)
+                .defaultTimeZoneId(TimeZone.getDefault().getID())
+                .addAllTimeZoneIds(Arrays.asList(TimeZone.getAvailableIDs()))
                 .build();
     }
 
@@ -287,7 +293,8 @@ class LayoutService {
             // "*" is to check permissions for "all agents"
             Permissions permissions = getPermissions(authentication, "*", true);
             hasSomeAccess =
-                    permissions.hasSomeAccess() || authentication.isAdminPermitted("admin:view");
+                    permissions.hasSomeAccess()
+                            || authentication.isAdminPermitted("admin:view");
             showNavbarTransaction = permissions.transaction().hasSomeAccess();
             showNavbarError = permissions.error().hasSomeAccess();
             showNavbarJvm = permissions.jvm().hasSomeAccess();
@@ -373,6 +380,8 @@ class LayoutService {
         abstract boolean loggedIn();
         abstract boolean ldap();
         abstract boolean redirectToLogin();
+        abstract String defaultTimeZoneId();
+        abstract List<String> timeZoneIds();
 
         @Value.Derived
         public String version() {

@@ -21,6 +21,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
 import org.glowroot.common.config.ConfigDefaults;
@@ -155,8 +156,10 @@ class TransactionCommonService {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
         }
         aggregates = Lists.newArrayList(aggregates);
-        aggregates.addAll(
-                rollUpOverviewAggregates(orderedNonRolledUpAggregates, revisedQuery.rollupLevel()));
+        long fixedIntervalMillis = configRepository.getRollupConfigs()
+                .get(revisedQuery.rollupLevel()).intervalMillis();
+        aggregates.addAll(rollUpOverviewAggregates(orderedNonRolledUpAggregates,
+                new RollupCaptureTimeFn(fixedIntervalMillis)));
         if (aggregates.size() >= 2) {
             long currentTime = clock.currentTimeMillis();
             OverviewAggregate nextToLastAggregate = aggregates.get(aggregates.size() - 2);
@@ -205,8 +208,10 @@ class TransactionCommonService {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
         }
         aggregates = Lists.newArrayList(aggregates);
+        long fixedIntervalMillis = configRepository.getRollupConfigs()
+                .get(revisedQuery.rollupLevel()).intervalMillis();
         aggregates.addAll(rollUpPercentileAggregates(orderedNonRolledUpAggregates,
-                revisedQuery.rollupLevel()));
+                new RollupCaptureTimeFn(fixedIntervalMillis)));
         if (aggregates.size() >= 2) {
             long currentTime = clock.currentTimeMillis();
             PercentileAggregate nextToLastAggregate = aggregates.get(aggregates.size() - 2);
@@ -255,8 +260,10 @@ class TransactionCommonService {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
         }
         aggregates = Lists.newArrayList(aggregates);
+        long fixedIntervalMillis = configRepository.getRollupConfigs()
+                .get(revisedQuery.rollupLevel()).intervalMillis();
         aggregates.addAll(rollUpThroughputAggregates(orderedNonRolledUpAggregates,
-                revisedQuery.rollupLevel()));
+                new RollupCaptureTimeFn(fixedIntervalMillis)));
         if (aggregates.size() >= 2) {
             long currentTime = clock.currentTimeMillis();
             ThroughputAggregate nextToLastAggregate = aggregates.get(aggregates.size() - 2);
@@ -376,19 +383,16 @@ class TransactionCommonService {
         return false;
     }
 
-    private List<OverviewAggregate> rollUpOverviewAggregates(
-            List<OverviewAggregate> orderedNonRolledUpOverviewAggregates, int rollupLevel)
-            throws Exception {
-        long fixedIntervalMillis =
-                configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
+    static List<OverviewAggregate> rollUpOverviewAggregates(
+            List<OverviewAggregate> orderedNonRolledUpOverviewAggregates,
+            Function<Long, Long> rollupCaptureTimeFn) throws Exception {
         List<OverviewAggregate> rolledUpOverviewAggregates = Lists.newArrayList();
         MutableAggregate currMergedAggregate = new MutableAggregate(0, 0);
         long currRollupCaptureTime = Long.MIN_VALUE;
         long maxCaptureTime = Long.MIN_VALUE;
         for (OverviewAggregate nonRolledUpOverviewAggregate : orderedNonRolledUpOverviewAggregates) {
             maxCaptureTime = nonRolledUpOverviewAggregate.captureTime();
-            long rollupCaptureTime =
-                    Utils.getRollupCaptureTime(maxCaptureTime, fixedIntervalMillis);
+            long rollupCaptureTime = rollupCaptureTimeFn.apply(maxCaptureTime);
             if (rollupCaptureTime != currRollupCaptureTime && !currMergedAggregate.isEmpty()) {
                 rolledUpOverviewAggregates
                         .add(currMergedAggregate.toOverviewAggregate(currRollupCaptureTime));
@@ -416,19 +420,16 @@ class TransactionCommonService {
         return rolledUpOverviewAggregates;
     }
 
-    private List<PercentileAggregate> rollUpPercentileAggregates(
-            List<PercentileAggregate> orderedNonRolledUpPercentileAggregates, int rollupLevel)
-            throws Exception {
-        long fixedIntervalMillis =
-                configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
+    static List<PercentileAggregate> rollUpPercentileAggregates(
+            List<PercentileAggregate> orderedNonRolledUpPercentileAggregates,
+            Function<Long, Long> rollupCaptureTimeFn) throws Exception {
         List<PercentileAggregate> rolledUpPercentileAggregates = Lists.newArrayList();
         MutableAggregate currMergedAggregate = new MutableAggregate(0, 0);
         long currRollupCaptureTime = Long.MIN_VALUE;
         long maxCaptureTime = Long.MIN_VALUE;
         for (PercentileAggregate nonRolledUpPercentileAggregate : orderedNonRolledUpPercentileAggregates) {
             maxCaptureTime = nonRolledUpPercentileAggregate.captureTime();
-            long rollupCaptureTime =
-                    Utils.getRollupCaptureTime(maxCaptureTime, fixedIntervalMillis);
+            long rollupCaptureTime = rollupCaptureTimeFn.apply(maxCaptureTime);
             if (rollupCaptureTime != currRollupCaptureTime && !currMergedAggregate.isEmpty()) {
                 rolledUpPercentileAggregates
                         .add(currMergedAggregate.toPercentileAggregate(currRollupCaptureTime));
@@ -450,19 +451,16 @@ class TransactionCommonService {
         return rolledUpPercentileAggregates;
     }
 
-    private List<ThroughputAggregate> rollUpThroughputAggregates(
-            List<ThroughputAggregate> orderedNonRolledUpThroughputAggregates, int rollupLevel)
-            throws Exception {
-        long fixedIntervalMillis =
-                configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
+    static List<ThroughputAggregate> rollUpThroughputAggregates(
+            List<ThroughputAggregate> orderedNonRolledUpThroughputAggregates,
+            Function<Long, Long> rollupCaptureTimeFn) throws Exception {
         List<ThroughputAggregate> rolledUpThroughputAggregates = Lists.newArrayList();
         long currTransactionCount = 0;
         long currRollupCaptureTime = Long.MIN_VALUE;
         long maxCaptureTime = Long.MIN_VALUE;
         for (ThroughputAggregate nonRolledUpThroughputAggregate : orderedNonRolledUpThroughputAggregates) {
             maxCaptureTime = nonRolledUpThroughputAggregate.captureTime();
-            long rollupCaptureTime =
-                    Utils.getRollupCaptureTime(maxCaptureTime, fixedIntervalMillis);
+            long rollupCaptureTime = rollupCaptureTimeFn.apply(maxCaptureTime);
             if (rollupCaptureTime != currRollupCaptureTime && currTransactionCount > 0) {
                 rolledUpThroughputAggregates
                         .add(ImmutableThroughputAggregate.of(currRollupCaptureTime,
@@ -531,6 +529,20 @@ class TransactionCommonService {
             return advancedConfig.getMaxAggregateServiceCallsPerType().getValue();
         } else {
             return ConfigDefaults.MAX_AGGREGATE_SERVICE_CALLS_PER_TYPE;
+        }
+    }
+
+    private static class RollupCaptureTimeFn implements Function<Long, Long> {
+
+        private final long fixedIntervalMillis;
+
+        private RollupCaptureTimeFn(long fixedIntervalMillis) {
+            this.fixedIntervalMillis = fixedIntervalMillis;
+        }
+
+        @Override
+        public Long apply(Long captureTime) {
+            return Utils.getRollupCaptureTime(captureTime, fixedIntervalMillis);
         }
     }
 }

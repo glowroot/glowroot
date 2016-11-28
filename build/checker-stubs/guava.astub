@@ -3,6 +3,10 @@ import org.checkerframework.checker.nullness.qual.*;
 /* ========================================================================== */
 package com.google.common.base;
 
+public interface Function<F, T> {
+    T apply(F input);
+}
+
 public class Objects {
     public static <T extends @Nullable Object> @NonNull T firstNonNull(T first, @NonNull T second);
 }

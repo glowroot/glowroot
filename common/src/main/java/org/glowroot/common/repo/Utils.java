@@ -16,6 +16,9 @@
 package org.glowroot.common.repo;
 
 import java.text.DecimalFormat;
+import java.util.TimeZone;
+
+import javax.annotation.Nullable;
 
 public class Utils {
 
@@ -50,6 +53,13 @@ public class Utils {
     }
 
     public static long getRollupCaptureTime(long captureTime, long intervalMillis) {
-        return (long) Math.ceil(captureTime / (double) intervalMillis) * intervalMillis;
+        return getRollupCaptureTime(captureTime, intervalMillis, null);
+    }
+
+    public static long getRollupCaptureTime(long captureTime, long intervalMillis,
+            @Nullable TimeZone timeZone) {
+        int timeZoneOffset = timeZone == null ? 0 : timeZone.getOffset(captureTime);
+        return (long) Math.ceil((captureTime + timeZoneOffset) / (double) intervalMillis)
+                * intervalMillis - timeZoneOffset;
     }
 }

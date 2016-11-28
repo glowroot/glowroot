@@ -93,7 +93,7 @@ public class SchemaUpgrade {
             updateSchemaVersion(2);
         }
         if (initialSchemaVersion < 3) {
-            upgradeRoles();
+            updateRoles();
             updateSchemaVersion(3);
         }
         if (initialSchemaVersion < 4) {
@@ -136,6 +136,7 @@ public class SchemaUpgrade {
             addTracePointPartialColumn();
             updateSchemaVersion(14);
         }
+
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
         startupLogger.info("upgraded cassandra schema to version {}", CURR_SCHEMA_VERSION);
     }
@@ -272,7 +273,7 @@ public class SchemaUpgrade {
         session.execute("alter table agent drop system_info");
     }
 
-    private void upgradeRoles() {
+    private void updateRoles() {
         PreparedStatement insertPS =
                 session.prepare("insert into role (name, permissions) values (?, ?)");
         ResultSet results = session.execute("select name, permissions from role");

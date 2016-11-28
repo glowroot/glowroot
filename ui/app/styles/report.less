@@ -1,0 +1,63 @@
+/*
+ * Copyright 2016 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+@import "variables";
+
+.gt-report-sidebar .gt-sidebar {
+  width: 100%;
+}
+
+@media screen and (min-width: @screen-sm-min) {
+  .gt-report-sidebar {
+    display: inline-block;
+    width: 220px;
+    vertical-align: top;
+  }
+
+  .gt-report-main-column {
+    display: inline-block;
+    width: 476px;
+    // this makes total 20px gap between sidebar and main
+    margin-left: 16px;
+  }
+}
+
+@media screen and (min-width: @screen-md-min) {
+  .gt-report-sidebar {
+    width: 300px;
+  }
+
+  .gt-report-main-column {
+    width: 620px;
+  }
+}
+
+@media screen and (min-width: @screen-lg-min) {
+  .gt-report-main-column {
+    width: 820px;
+  }
+}
+
+@media screen and (min-width: 1400px) {
+  .gt-report-main-column {
+    width: 1020px;
+  }
+}
+
+@media screen and (min-width: 1600px) {
+  .gt-report-main-column {
+    width: 1220px;
+  }
+}

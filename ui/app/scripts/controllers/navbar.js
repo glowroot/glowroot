@@ -24,11 +24,12 @@ glowroot.controller('NavbarCtrl', [
 
     $scope.queryString = function (preserveAgentSelection, preserveTransactionType) {
       var query = {};
-      if (preserveAgentSelection) {
+      var onReportPage = $location.path().substr(0, '/report/'.length) === '/report/';
+      if (preserveAgentSelection && !onReportPage) {
         query['agent-rollup-id'] = $location.search()['agent-rollup-id'];
         query['agent-id'] = $location.search()['agent-id'];
       }
-      if (preserveTransactionType) {
+      if (preserveTransactionType && !onReportPage) {
         var transactionType = $location.search()['transaction-type'];
         if (!transactionType) {
           transactionType = $scope.defaultTransactionType();

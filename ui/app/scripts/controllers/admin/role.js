@@ -62,6 +62,10 @@ glowroot.controller('AdminRoleCtrl', [
       };
       $scope.page.permissionBlocks = [];
       angular.forEach(data.config.permissions, function (permission) {
+        if (permission === 'report') {
+          $scope.page.permissions.report = true;
+          return;
+        }
         if (permission === 'admin') {
           $scope.page.permissions.admin._ = true;
           return;
@@ -301,6 +305,9 @@ glowroot.controller('AdminRoleCtrl', [
       }
       if (permissionsObj.config.edit.advanced) {
         permissions.push('agent:config:edit:advanced');
+      }
+      if (permissionsObj.report) {
+        permissions.push('report');
       }
       if (permissionsObj.admin && permissionsObj.admin._) {
         permissions.push('admin');

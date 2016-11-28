@@ -92,10 +92,13 @@ public class UiModule {
                 new ErrorCommonService(aggregateRepository, liveAggregateRepository);
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
                 transactionCommonService, traceRepository, rollupLevelService, clock);
+        ReportJsonService reportJsonService =
+                new ReportJsonService(aggregateRepository, agentRepository);
         ConfigJsonService configJsonService = new ConfigJsonService(configRepository);
         GaugeValueJsonService gaugeValueJsonService = new GaugeValueJsonService(
                 gaugeValueRepository, rollupLevelService, agentRepository, configRepository);
-        AlertConfigJsonService alertJsonService = new AlertConfigJsonService(configRepository);
+        AlertConfigJsonService alertConfigJsonService =
+                new AlertConfigJsonService(configRepository);
         AdminJsonService adminJsonService = new AdminJsonService(embedded, glowrootDir,
                 configRepository, repoAdmin, liveAggregateRepository, new MailService());
 
@@ -104,16 +107,17 @@ public class UiModule {
         jsonServices.add(tracePointJsonService);
         jsonServices.add(traceJsonService);
         jsonServices.add(errorJsonService);
+        jsonServices.add(gaugeValueJsonService);
+        jsonServices.add(new JvmJsonService(agentRepository, liveJvmService));
+        jsonServices.add(reportJsonService);
         jsonServices.add(configJsonService);
         jsonServices.add(new AgentConfigJsonService(configRepository, agentRepository));
         jsonServices.add(new UserConfigJsonService(configRepository));
         jsonServices.add(new RoleConfigJsonService(embedded, configRepository, agentRepository));
-        jsonServices.add(gaugeValueJsonService);
-        jsonServices.add(new JvmJsonService(agentRepository, liveJvmService));
         jsonServices.add(new GaugeConfigJsonService(configRepository, liveJvmService));
         jsonServices.add(new InstrumentationConfigJsonService(configRepository, liveWeavingService,
                 liveJvmService));
-        jsonServices.add(alertJsonService);
+        jsonServices.add(alertConfigJsonService);
         jsonServices.add(adminJsonService);
 
         String bindAddress = configRepository.getWebConfig().bindAddress();

@@ -48,7 +48,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @interface BindRequest {}
 
 @Retention(RUNTIME)
-@interface BindCaseAmbiguousUsername {}
+@interface BindAuthentication {}
 
 // used for "expected" exceptions, these are not logged and their stack trace is not sent back to
 // browser

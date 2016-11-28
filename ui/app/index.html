@@ -126,6 +126,12 @@
                gt-url="config/transaction{{configQueryString()}}"
                ng-if="!layout.embedded && layout.showNavbarConfig">
           </div>
+          <div gt-navbar-item
+               gt-display="Reports"
+               gt-item-name="report"
+               gt-url="report/ad-hoc"
+               ng-if="!layout.embedded && (layout.showNavbarTransaction || layout.showNavbarError || layout.showNavbarJvm)">
+          </div>
         </ul>
         <ul class="nav navbar-nav navbar-right"
             style="margin-right: 0;">
@@ -210,6 +216,7 @@
 <!-- stackedMap is needed by tooltip -->
 <script src="bower_components/angular-ui-bootstrap/src/stackedMap/stackedMap.js"></script>
 <script src="bower_components/moment/moment.js"></script>
+<script src="bower_components/moment-timezone/builds/moment-timezone-with-data-2010-2020.js"></script>
 <script src="bower_components/eonasdan-bootstrap-datetimepicker/src/js/bootstrap-datetimepicker.js"></script>
 <script src="bower_components/bootstrap-select/js/bootstrap-select.js"></script>
 <script src="bower_components/flot/src/jquery.flot.js"></script>
@@ -272,6 +279,8 @@
 <script src="scripts/controllers/jvm/system-properties.js"></script>
 <script src="scripts/controllers/jvm/environment.js"></script>
 <script src="scripts/controllers/jvm/capabilities.js"></script>
+<script src="scripts/controllers/report.js"></script>
+<script src="scripts/controllers/report/adhoc.js"></script>
 <script src="scripts/controllers/config.js"></script>
 <script src="scripts/controllers/config/common.js"></script>
 <script src="scripts/controllers/config/gauge-list.js"></script>

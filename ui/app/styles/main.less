@@ -62,11 +62,12 @@
 @import "chart";
 @import "transaction-sidebar";
 @import "traces";
-@import "config";
-@import "environment";
-@import "sidebar";
+@import "report";
 @import "gauges";
 @import "thread-dump";
+@import "environment";
+@import "config";
+@import "sidebar";
 @import "common";
 @import "sticky-footer";
 @import "variables";
@@ -418,6 +419,10 @@ hr.soften {
 .caret.gt-caret-sort-ascending {
   border-top-width: 0;
   border-bottom: 4px solid;
+}
+
+.gt-visibility-hidden {
+  visibility: hidden;
 }
 
 .gt-sortable-table-header {

@@ -286,12 +286,17 @@ public class AgentDao implements AgentRepository {
     }
 
     @Override
-    // TODO report checker framework issue that occurs without this suppression
-    @SuppressWarnings("methodref.receiver.invalid")
     public String readAgentRollupDisplay(String agentRollupId) {
-        return agentRollupConfigCache.getUnchecked(agentRollupId)
-                .transform(AgentRollupConfig::display)
-                .or(agentRollupId);
+        AgentRollupConfig agentRollupConfig =
+                agentRollupConfigCache.getUnchecked(agentRollupId).orNull();
+        if (agentRollupConfig == null) {
+            return agentRollupId;
+        }
+        String display = agentRollupConfig.display();
+        if (display.isEmpty()) {
+            return agentRollupId;
+        }
+        return display;
     }
 
     @Override

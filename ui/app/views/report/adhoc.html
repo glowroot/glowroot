@@ -1,0 +1,239 @@
+<!--
+  Copyright 2016 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<div ng-include src="'template/gt-http-error-overlay.html'"></div>
+<div style="margin: 15px;">
+  <div ng-hide="hasAgents()" style="font-style: italic;">
+    There are no agents
+  </div>
+  <!-- using ng-show instead of ng-if so that controller init can access $('#chart') -->
+  <div ng-show="hasAgents()">
+    <div ng-form
+         class="form-horizontal"
+         name="formCtrl"
+         style="padding-top: 15px;">
+
+      <div class="form-group"
+           ng-if="!layout.embedded">
+        <label class="col-lg-3 control-label"
+               for="reportAgentRollupIds">
+          Agents
+        </label>
+        <div class="col-lg-9">
+          <!-- using layout.agentRollupValues instead of layout.agentRollups in case there are any agent rollup ids
+               that start with '$', because angular silently ignores object keys starting with '$' -->
+          <select multiple
+                  ng-model="report.agentRollupIds"
+                  ng-options="agentRollup.id as agentRollup.indentedDisplay for agentRollup in layout.agentRollupValues"
+                  class="form-control"
+                  id="reportAgentRollupIds"
+                  style="width: auto; min-width: 200px; border-top-right-radius: 0; border-bottom-right-radius: 0;">
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-lg-3 control-label"
+               for="reportMetric">
+          Metric
+        </label>
+        <div class="col-lg-9">
+          <select ng-model="report.metricId"
+                  class="form-control"
+                  id="reportMetric"
+                  style="width: 100%; max-width: 25em;">
+            <option value=""></option>
+            <option ng-repeat="metric in metrics"
+                    value="{{metric.id}}"
+                    ng-selected="metric.id === report.metricId">
+              {{metric.display}}
+            </option>
+          </select>
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Percentile"
+           gt-model="report.metricPercentile"
+           gt-number="true"
+           gt-pattern="pattern.percentile"
+           gt-width="7em"
+           gt-addon="percentile"
+           ng-if="report.metricId === 'response-time-percentile'">
+      </div>
+      <div class="form-group">
+        <label class="col-lg-3 control-label"
+               for="reportTransactionType">
+          Transaction type
+        </label>
+        <div class="col-lg-9">
+          <select ng-model="report.transactionType"
+                  class="form-control"
+                  id="reportTransactionType"
+                  style="width: 100%; max-width: 25em;">
+            <option value=""></option>
+            <option ng-repeat="transactionType in allTransactionTypes"
+                    value="{{transactionType}}"
+                    ng-selected="transactionType === report.transactionType">
+              {{transactionType}}
+            </option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-lg-3 control-label"
+               for="reportFromDate">
+          From
+        </label>
+        <div class="col-lg-9">
+          <div gt-date-picker gt-model="report.fromDate" gt-id="reportFromDate"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-lg-3 control-label"
+               for="reportToDate">
+          To
+        </label>
+        <div class="col-lg-9">
+          <div gt-date-picker gt-model="report.toDate" gt-id="reportToDate"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-lg-3 control-label"
+               for="reportRollup">
+          Rollup
+        </label>
+        <div class="col-lg-9">
+          <select ng-model="report.rollup"
+                  ng-options="rollup.toLowerCase() as rollup for rollup in rollups"
+                  class="form-control"
+                  id="reportRollup"
+                  style="width: 100%; max-width: 10em;">
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-lg-3 control-label"
+               for="reportTimeZone">
+          Time zone
+        </label>
+        <div class="col-lg-9">
+          <select ng-model="report.timeZoneId"
+                  ng-options="timeZoneId for timeZoneId in layout.timeZoneIds"
+                  class="form-control"
+                  id="reportTimeZone"
+                  style="width: 100%; max-width: 25em;">
+          </select>
+        </div>
+      </div>
+      <div class="form-group gt-form-buttons">
+        <div class="col-lg-offset-3 col-lg-9">
+          <div gt-button
+               gt-label="Run report"
+               gt-click="runReport(deferred)"
+               class="gt-inline-block">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div ng-show="showChart" style="position: relative;">
+      <div class="gt-panel-overlay"
+           ng-show="showChartSpinner"
+           style="right: -20px; pointer-events: none;">
+      </div>
+      <div class="gt-chart-container">
+        <div gt-spinner
+             gt-show="showChartSpinner"
+             gt-no-delay="true"
+             id="chartSpinner"
+             class="gt-chart-panel">
+        </div>
+        <div class="gt-chart-dimensions" id="chart"></div>
+        <div ng-show="chartNoData && !showChartSpinner"
+             class="gt-chart-panel"
+             style="display: table;">
+          <div style="display: table-cell; text-align: center; vertical-align: middle;">
+            <div class="gt-chart-no-data">No data for this time period</div>
+          </div>
+        </div>
+      </div>
+      <div class="legend" id="chartLegend"
+           ng-hide="chartNoData"
+           style="text-align: center; margin-top: 10px; width: 100%;">
+        <div class="gt-inline-block" style="max-width: 600px;">
+          <div class="gt-inline-block" ng-repeat="seriesLabel in seriesLabels"
+               style="margin: 0 6px;">
+            <div class="legendColorBox gt-inline-block"
+                 style="border: 1px solid rgb(204, 204, 204); padding: 1px;">
+              <div style="width: 4px; height: 0px; border: 5px solid rgb(237, 194, 64); overflow: hidden;"
+                   ng-style="{'border': '5px solid ' + seriesLabel.color}">
+              </div>
+            </div>
+            <div class="legendLabel gt-inline-block">{{seriesLabel.text}}</div>
+          </div>
+        </div>
+      </div>
+      <table class="table"
+             style="margin-top: 50px;"
+             ng-if="seriesLabels">
+        <thead>
+        <tr>
+          <th></th>
+          <th ng-repeat="xval in allXvals" style="text-align: right;">
+            <a ng-click="sort(xval)"
+               class="gt-sortable-table-header"
+               style="cursor: pointer;">
+              <span ng-class="sortIconClass(xval)">
+              </span>
+              {{columnHeader(xval)}}
+            </a>
+          </th>
+          <th style="text-align: right;">
+            <a ng-click="sort('overall')"
+               class="gt-sortable-table-header"
+               style="cursor: pointer; white-space: nowrap;">
+              <span ng-class="sortIconClass('overall')">
+              </span>
+              Overall
+            </a>
+          </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="tableRow in tableRows | orderBy:[sortAttr,'-overall']:sortAsc">
+          <td>{{tableRow.label}}</td>
+          <td ng-repeat="xval in allXvals" style="text-align: right;">
+            <a ng-href="{{drillDownLink(tableRow.agentRollupId, xval)}}"
+               ng-if="tableRow[xval] !== NEGATIVE_INFINITY">
+              {{tableRow[xval] | gtMillis}}
+            </a>
+            <span ng-if="tableRow[xval] === NEGATIVE_INFINITY">
+              -
+            </span>
+          </td>
+          <td style="text-align: right;">
+            <a ng-href="{{drillDownLinkOverall(tableRow.agentRollupId)}}"
+               ng-if="tableRow.overall !== NEGATIVE_INFINITY">
+              {{tableRow.overall | gtMillis}}
+            </a>
+            <span ng-if="tableRow.overall === NEGATIVE_INFINITY">
+              -
+            </span>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

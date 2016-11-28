@@ -377,6 +377,19 @@ glowroot.config([
       templateUrl: 'views/jvm/capabilities.html',
       controller: 'JvmCapabilitiesCtrl'
     });
+    $stateProvider.state('report', {
+      url: '/report',
+      templateUrl: 'views/report.html',
+      controller: 'ReportCtrl',
+      resolve: {
+        waitForLayout: waitForLayout(false)
+      }
+    });
+    $stateProvider.state('report.adhoc', {
+      url: '/ad-hoc',
+      templateUrl: 'views/report/adhoc.html',
+      controller: 'ReportAdhocCtrl'
+    });
     $stateProvider.state('config', {
       url: '/config',
       templateUrl: 'views/config.html',

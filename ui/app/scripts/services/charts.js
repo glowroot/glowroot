@@ -258,7 +258,7 @@ glowroot.factory('charts', [
       chartState.plot = $.plot($chart, data, $.extend(true, options, chartOptions));
       chartState.plot.getAxes().yaxis.options.max = undefined;
       $(document).off('touchstart.chart');
-      $(document).on('touchstart.chart', function() {
+      $(document).on('touchstart.chart', function () {
         chartState.plot.hideTooltip();
       });
     }
@@ -356,19 +356,28 @@ glowroot.factory('charts', [
     }
 
     function renderTooltipHtml(from, to, transactionCount, dataIndex, highlightSeriesIndex, plot, display,
-                               headerSuffix, nonStacked) {
+                               headerSuffix, nonStacked, dateFormat, altBetweenText) {
       function smartFormat(millis) {
-        if (millis % 60000 === 0) {
-          return moment(millis).format('LT');
+        var date = moment(millis);
+        if (dateFormat) {
+          return date.format(dateFormat);
+        } else if (date.valueOf() % 60000 === 0) {
+          return date.format('LT');
         } else {
-          return moment(millis).format('LTS');
+          return date.format('LTS');
         }
       }
 
       var html = '<table class="gt-chart-tooltip"><thead><tr><td colspan="3" style="font-weight: 600;">';
       html += smartFormat(from);
-      html += ' to ';
-      html += smartFormat(to);
+      if (to) {
+        if (altBetweenText) {
+          html += altBetweenText;
+        } else {
+          html += ' to ';
+        }
+        html += smartFormat(to);
+      }
       if (headerSuffix) {
         html += '<span style="font-weight: 400;">' + headerSuffix + '</span>';
       }

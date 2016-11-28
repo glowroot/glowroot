@@ -421,7 +421,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         Object responseObject;
         try {
             responseObject = callMethod(jsonServiceMapping, parameterTypes, parameters,
-                    queryParameters, authentication.caseAmbiguousUsername(), request);
+                    queryParameters, authentication, request);
         } catch (Exception e) {
             return newHttpResponseFromException(e);
         }
@@ -510,7 +510,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         boolean bindAgentId = false;
         boolean bindAgentRollup = false;
         Class<?> bindRequest = null;
-        boolean bindCaseAmbiguousUsername = false;
+        boolean bindAuthentication = false;
         for (int i = 0; i < method.getParameterAnnotations().length; i++) {
             Annotation[] parameterAnnotations = method.getParameterAnnotations()[i];
             for (Annotation annotation : parameterAnnotations) {
@@ -520,8 +520,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                     bindAgentRollup = true;
                 } else if (annotation.annotationType() == BindRequest.class) {
                     bindRequest = method.getParameterTypes()[i];
-                } else if (annotation.annotationType() == BindCaseAmbiguousUsername.class) {
-                    bindCaseAmbiguousUsername = true;
+                } else if (annotation.annotationType() == BindAuthentication.class) {
+                    bindAuthentication = true;
                 }
             }
         }
@@ -534,7 +534,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 .bindAgentId(bindAgentId)
                 .bindAgentRollup(bindAgentRollup)
                 .bindRequest(bindRequest)
-                .bindCaseAmbiguousUsername(bindCaseAmbiguousUsername)
+                .bindAuthentication(bindAuthentication)
                 .build();
     }
 
@@ -641,7 +641,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     private static @Nullable Object callMethod(JsonServiceMapping jsonServiceMapping,
             List<Class<?>> parameterTypes, List<Object> parameters,
-            Map<String, List<String>> queryParameters, String usernameCaseAmbiguous,
+            Map<String, List<String>> queryParameters, Authentication authentication,
             FullHttpRequest request) throws Exception {
         Class<?> bindRequest = jsonServiceMapping.bindRequest();
         if (bindRequest != null) {
@@ -650,8 +650,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 parameters.add(QueryStrings.decode(queryParameters, bindRequest));
             } else {
                 String content = request.content().toString(Charsets.ISO_8859_1);
-                auditLogger.info("{} - POST {} - {}", usernameCaseAmbiguous, request.uri(),
-                        content);
+                auditLogger.info("{} - POST {} - {}", authentication.caseAmbiguousUsername(),
+                        request.uri(), content);
                 if (bindRequest == String.class) {
                     parameters.add(content);
                 } else {
@@ -663,9 +663,9 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 }
             }
         }
-        if (jsonServiceMapping.bindCaseAmbiguousUsername()) {
-            parameterTypes.add(String.class);
-            parameters.add(usernameCaseAmbiguous);
+        if (jsonServiceMapping.bindAuthentication()) {
+            parameterTypes.add(Authentication.class);
+            parameters.add(authentication);
         }
         Object service = jsonServiceMapping.service();
         if (logger.isDebugEnabled()) {
@@ -694,7 +694,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         boolean bindAgentRollup();
         @Nullable
         Class<?> bindRequest();
-        boolean bindCaseAmbiguousUsername();
+        boolean bindAuthentication();
     }
 
     enum HttpMethod {

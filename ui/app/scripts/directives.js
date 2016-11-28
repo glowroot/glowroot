@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, Glowroot, $, Spinner */
+/* global glowroot, angular, Glowroot, $, Spinner, moment */
 
 glowroot.factory('gtButtonGroupControllerFactory', [
   '$q',
@@ -415,6 +415,42 @@ glowroot.directive('gtSelectpicker', [
 
         scope.$on('$destroy', function () {
           iElement.selectpicker('destroy');
+        });
+      }
+    };
+  }
+]);
+
+glowroot.directive('gtDatePicker', [
+  '$timeout',
+  function ($timeout) {
+    return {
+      scope: {
+        gtModel: '=',
+        gtId: '@'
+      },
+      templateUrl: 'template/gt-date-picker.html',
+      link: function (scope, iElement) {
+        var dateElement = iElement.find('.date');
+        var icons = {
+          time: 'fa fa-clock-o',
+          date: 'fa fa-calendar',
+          up: 'fa fa-chevron-up',
+          down: 'fa fa-chevron-down',
+          previous: 'fa fa-chevron-left',
+          next: 'fa fa-chevron-right'
+        };
+        var dateElementPicker = dateElement.datetimepicker({
+          icons: icons,
+          format: 'L'
+        });
+        scope.$watch('gtModel', function (newValue, oldValue) {
+          dateElement.data('DateTimePicker').date(moment(newValue));
+        });
+        dateElementPicker.on('dp.change', function (event) {
+          $timeout(function () {
+            scope.gtModel = event.date.valueOf();
+          });
         });
       }
     };

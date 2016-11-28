@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global angular, $, Spinner, ZeroClipboard, alert */
+/* global angular, moment, $, Spinner, ZeroClipboard, alert */
 
 var glowroot = angular.module('glowroot', [
   'ui.router',
@@ -256,6 +256,17 @@ glowroot.run([
       } else {
         $rootScope.agentPermissions = undefined;
       }
+      var timeZoneIdMap = {};
+      angular.forEach(moment.tz.names(), function (timeZoneId) {
+        timeZoneIdMap[timeZoneId] = true;
+      });
+      var timeZoneIds = [];
+      angular.forEach($rootScope.layout.timeZoneIds, function (timeZoneId) {
+        if (timeZoneIdMap[timeZoneId]) {
+          timeZoneIds.push(timeZoneId);
+        }
+      });
+      $rootScope.layout.timeZoneIds = timeZoneIds;
     };
 
     $rootScope.setLayout = function (data) {
