@@ -89,6 +89,8 @@ public class RollupService implements Runnable {
                 if (stopped) {
                     return;
                 }
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
             }
         }
     }
