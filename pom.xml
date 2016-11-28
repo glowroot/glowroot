@@ -69,7 +69,6 @@
     <module>agent/ui-sandbox</module>
     <module>agent/dist-maven-plugin</module>
     <module>agent/dist</module>
-    <module>webdriver-tests</module>
   </modules>
 
   <scm>
@@ -79,16 +78,15 @@
   </scm>
 
   <properties>
-    <grpc.version>0.15.0</grpc.version>
+    <grpc.version>1.0.2</grpc.version>
     <protobuf.version>3.1.0</protobuf.version>
-    <!-- 4.1.2.Final does not work with grpc-java 0.15.0 -->
-    <netty.version>4.1.1.Final</netty.version>
+    <netty.version>4.1.6.Final</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.7</jackson.version>
     <logback.version>1.1.7</logback.version>
-    <immutables.version>2.3.9</immutables.version>
+    <immutables.version>2.3.10</immutables.version>
     <javax.mail.version>1.5.6</javax.mail.version>
-    <jmh.version>1.17</jmh.version>
+    <jmh.version>1.17.2</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
@@ -290,19 +288,19 @@
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-core</artifactId>
         <!-- tomcat 8 requires JDK 7+ -->
-        <version>7.0.72</version>
+        <version>7.0.73</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-jasper</artifactId>
         <!-- tomcat 8 requires JDK 7+ -->
-        <version>7.0.72</version>
+        <version>7.0.73</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-logging-juli</artifactId>
         <!-- tomcat 8 requires JDK 7+ -->
-        <version>7.0.72</version>
+        <version>7.0.73</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -640,6 +638,8 @@
       </activation>
       <modules>
         <module>central</module>
+        <!-- selenium 3.0+ requires Java 8+ -->
+        <module>webdriver-tests</module>
       </modules>
     </profile>
     <profile>
@@ -755,7 +755,7 @@
               <dependency>
                 <groupId>com.google.errorprone</groupId>
                 <artifactId>error_prone_core</artifactId>
-                <version>2.0.14</version>
+                <version>2.0.15</version>
               </dependency>
             </dependencies>
           </plugin>
@@ -768,7 +768,7 @@
       <properties>
         <checker.qual.group.id>org.checkerframework</checker.qual.group.id>
         <checker.qual.artifact.id>checker-qual</checker.qual.artifact.id>
-        <checker.qual.version>2.1.5</checker.qual.version>
+        <checker.qual.version>2.1.6</checker.qual.version>
       </properties>
       <dependencies>
         <dependency>

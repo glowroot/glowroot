@@ -53,6 +53,7 @@ env:
     - TARGET=test SKIP_SHADING=true GLOWROOT_HARNESS=javaagent
     - TARGET=test SKIP_SHADING=true GLOWROOT_HARNESS=local
 addons:
+  firefox: "latest"
   sauce_connect:
     # this is needed on android, see https://support.saucelabs.com/customer/en/portal/questions/13056252
     no_ssl_bump_domains: all

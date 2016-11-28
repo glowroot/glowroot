@@ -40,13 +40,18 @@ public class Utils {
                 if (elements.isEmpty()) {
                     return null;
                 }
-                WebElement element = elements.get(0);
-                try {
-                    if (!element.isDisplayed()) {
-                        return null;
+                WebElement foundElement = null;
+                for (WebElement element : elements) {
+                    try {
+                        if (element.isDisplayed()) {
+                            foundElement = element;
+                            break;
+                        }
+                    } catch (StaleElementReferenceException e) {
+                        // dom was updated in between findElements() and isDisplayed()
                     }
-                } catch (StaleElementReferenceException e) {
-                    // dom was updated in between findElements() and isDisplayed()
+                }
+                if (foundElement == null) {
                     return null;
                 }
                 List<WebElement> overlayElements =
@@ -61,7 +66,7 @@ public class Utils {
                         return null;
                     }
                 }
-                return element;
+                return foundElement;
             }
         });
     }
