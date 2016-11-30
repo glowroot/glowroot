@@ -34,6 +34,7 @@ import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.model.MutableProfile;
+import org.glowroot.common.repo.AgentRepository;
 import org.glowroot.common.repo.TraceRepository;
 import org.glowroot.common.repo.TraceRepository.HeaderPlus;
 import org.glowroot.common.util.Styles;
@@ -47,10 +48,13 @@ class TraceCommonService {
 
     private final TraceRepository traceRepository;
     private final LiveTraceRepository liveTraceRepository;
+    private final AgentRepository agentRepository;
 
-    TraceCommonService(TraceRepository traceRepository, LiveTraceRepository liveTraceRepository) {
+    TraceCommonService(TraceRepository traceRepository, LiveTraceRepository liveTraceRepository,
+            AgentRepository agentRepository) {
         this.traceRepository = traceRepository;
         this.liveTraceRepository = liveTraceRepository;
+        this.agentRepository = agentRepository;
     }
 
     @Nullable
@@ -321,7 +325,7 @@ class TraceCommonService {
         return mutableProfile.toJson();
     }
 
-    private static String toJsonLiveHeader(String agentId, Trace.Header header) throws IOException {
+    private String toJsonLiveHeader(String agentId, Trace.Header header) throws IOException {
         boolean hasProfile = header.getMainThreadProfileSampleCount() > 0
                 || header.getAuxThreadProfileSampleCount() > 0;
         return toJson(agentId, header, header.getPartial(),
@@ -329,18 +333,18 @@ class TraceCommonService {
                 hasProfile ? Existence.YES : Existence.NO);
     }
 
-    private static String toJsonRepoHeader(String agentId, HeaderPlus header) throws IOException {
+    private String toJsonRepoHeader(String agentId, HeaderPlus header) throws IOException {
         return toJson(agentId, header.header(), false, header.entriesExistence(),
                 header.profileExistence());
     }
 
-    private static String toJson(String agentId, Trace.Header header, boolean active,
+    private String toJson(String agentId, Trace.Header header, boolean active,
             Existence entriesExistence, Existence profileExistence) throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         if (!agentId.isEmpty()) {
-            jg.writeStringField("agentId", agentId);
+            jg.writeStringField("agent", agentRepository.readAgentRollupDisplay(agentId));
         }
         if (active) {
             jg.writeBooleanField("active", active);

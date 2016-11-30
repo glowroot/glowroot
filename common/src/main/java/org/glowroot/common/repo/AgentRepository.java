@@ -29,6 +29,8 @@ public interface AgentRepository {
 
     List<AgentRollup> readAgentRollups();
 
+    String readAgentRollupDisplay(String agentRollupId);
+
     boolean isAgentId(String agentId);
 
     @Nullable

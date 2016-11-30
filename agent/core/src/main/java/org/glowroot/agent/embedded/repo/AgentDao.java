@@ -63,6 +63,11 @@ public class AgentDao implements AgentRepository {
     }
 
     @Override
+    public String readAgentRollupDisplay(String agentRollupId) {
+        return "";
+    }
+
+    @Override
     public boolean isAgentId(String agentId) {
         return true;
     }

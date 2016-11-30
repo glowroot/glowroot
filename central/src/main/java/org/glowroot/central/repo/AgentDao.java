@@ -82,6 +82,7 @@ public class AgentDao implements AgentRepository {
 
     private final PreparedStatement readAllAgentRollupPS;
     private final PreparedStatement readParentAgentRollupPS;
+    private final PreparedStatement readAgentRollupDisplayPS;
     private final PreparedStatement insertAgentRollupPS;
     private final PreparedStatement insertLastCaptureTimePS;
 
@@ -97,6 +98,14 @@ public class AgentDao implements AgentRepository {
                 @Override
                 public Optional<String> load(String agentId) throws Exception {
                     return Optional.fromNullable(readParentAgentRollupInternal(agentId));
+                }
+            });
+
+    private final LoadingCache<String, Optional<String>> agentRollupDisplayCache =
+            CacheBuilder.newBuilder().build(new CacheLoader<String, Optional<String>>() {
+                @Override
+                public Optional<String> load(String agentId) throws Exception {
+                    return Optional.fromNullable(readAgentRollupDisplayInternal(agentId));
                 }
             });
 
@@ -138,6 +147,8 @@ public class AgentDao implements AgentRepository {
                 + " display, agent, last_capture_time from agent_rollup where one = 1");
         readParentAgentRollupPS = session.prepare("select parent_agent_rollup_id from agent_rollup"
                 + " where one = 1 and agent_rollup_id = ?");
+        readAgentRollupDisplayPS = session
+                .prepare("select display from agent_rollup where one = 1 and agent_rollup_id = ?");
         insertAgentRollupPS = session.prepare("insert into agent_rollup (one, agent_rollup_id,"
                 + " parent_agent_rollup_id, agent) values (1, ?, ?, ?)");
         insertLastCaptureTimePS = session.prepare("insert into agent_rollup (one, agent_rollup_id,"
@@ -238,6 +249,10 @@ public class AgentDao implements AgentRepository {
         }
 
         parentAgentRollupCache.invalidate(agentId);
+        // currently agent rollup display cannot be changed from agent (via glowroot.properties)
+        // but this will probably change, and likely to forget to invalidate agent rollup display
+        // cache at that time, so...
+        agentRollupDisplayCache.invalidate(agentId);
         agentConfigCache.invalidate(agentId);
         return updatedAgentConfig;
     }
@@ -271,6 +286,11 @@ public class AgentDao implements AgentRepository {
             agentRollups.add(createAgentRollup(topLevelAgentRollup, childMultimap));
         }
         return agentRollups;
+    }
+
+    @Override
+    public String readAgentRollupDisplay(String agentRollupId) {
+        return agentRollupDisplayCache.getUnchecked(agentRollupId).or(agentRollupId);
     }
 
     @Override
@@ -386,6 +406,7 @@ public class AgentDao implements AgentRepository {
         boundStatement.setString(i++, agentRollupConfig.id());
         boundStatement.setString(i++, Strings.emptyToNull(agentRollupConfig.display()));
         session.execute(boundStatement);
+        agentRollupDisplayCache.invalidate(agentRollupConfig.id());
     }
 
     void delete(String agentRollupId) {
@@ -409,6 +430,17 @@ public class AgentDao implements AgentRepository {
             return null;
         }
         return row.getString(0);
+    }
+
+    private @Nullable String readAgentRollupDisplayInternal(String agentRollupId) {
+        BoundStatement boundStatement = readAgentRollupDisplayPS.bind();
+        boundStatement.setString(0, agentRollupId);
+        ResultSet results = session.execute(boundStatement);
+        Row row = results.one();
+        if (row == null) {
+            return null;
+        }
+        return MoreObjects.firstNonNull(row.getString(0), agentRollupId);
     }
 
     private @Nullable AgentConfig readAgentConfigInternal(String agentId)
