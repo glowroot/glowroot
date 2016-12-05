@@ -223,6 +223,20 @@ public class AgentDao implements AgentRepository {
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setBool(i++, true);
         session.execute(boundStatement);
+        if (agentRollupId != null) {
+            List<String> agentRollupIds = getAgentRollupIds(agentRollupId);
+            for (int j = agentRollupIds.size() - 1; j >= 0; j--) {
+                String loopAgentRollupId = agentRollupIds.get(j);
+                String loopParentAgentRollupId = j == 0 ? null : agentRollupIds.get(j - 1);
+                boundStatement = insertAgentRollupPS.bind();
+                i = 0;
+                boundStatement.setString(i++, loopAgentRollupId);
+                boundStatement.setString(i++, loopParentAgentRollupId);
+                boundStatement.setBool(i++, false);
+                session.execute(boundStatement);
+            }
+        }
+
         parentAgentRollupCache.invalidate(agentId);
         agentConfigCache.invalidate(agentId);
         return updatedAgentConfig;
