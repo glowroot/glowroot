@@ -148,12 +148,6 @@ class TransactionJsonService {
                 transactionCount += throughputAggregate.transactionCount();
             }
         }
-        if (!throughputAggregates.isEmpty()
-                && throughputAggregates.get(0).captureTime() == request.from()) {
-            // the left most aggregate is not really in the requested interval since it is for
-            // prior capture times
-            throughputAggregates = throughputAggregates.subList(1, throughputAggregates.size());
-        }
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
