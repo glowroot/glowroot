@@ -123,6 +123,10 @@ class GrpcServerWrapper {
         if (!server.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate channel");
         }
+        // not sure why, but server needs a little extra time to shut down properly
+        // without this sleep, this warning is logged (but tests still pass):
+        // io.grpc.netty.NettyServerHandler - Connection Error: RejectedExecutionException
+        Thread.sleep(100);
         executor.shutdown();
         if (!executor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
