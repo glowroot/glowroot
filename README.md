@@ -15,8 +15,6 @@ Glowroot &nbsp;&nbsp; [![Build Status](https://img.shields.io/travis/glowroot/gl
 
 See the [wiki](https://github.com/glowroot/glowroot/wiki/Agent-Installation) for optional post-installation steps.
 
-## Application server support
-
 ## Please report any issues!
 
  * [GitHub issue tracker](https://github.com/glowroot/glowroot/issues)
