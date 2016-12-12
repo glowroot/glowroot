@@ -62,7 +62,7 @@ class IndexHtmlHttpService implements HttpService {
         String layout = layoutService.getLayout(authentication);
         String contextPath = configRepository.getWebConfig().contextPath();
         String baseHref = contextPath.equals("/") ? "/" : contextPath + "/";
-        indexHtml = indexHtml.replaceFirst("<base href=\"/\">",
+        indexHtml = indexHtml.replace("<base href=\"/\">",
                 "<base href=\"" + baseHref + "\"><script>var layout=" + layout
                         + ";var contextPath='" + contextPath + "'</script>");
         // this is to work around an issue with IE10-11 (IE9 is OK)
@@ -78,7 +78,7 @@ class IndexHtmlHttpService implements HttpService {
             indexHtml = indexHtml.replaceFirst(
                     "<div class=\"navbar-brand\">(\\s*)Glowroot(\\s*)</div>",
                     "<a href=\"https://glowroot.org\" class=\"navbar-brand\">$1Glowroot$2</a>");
-            indexHtml = indexHtml.replaceFirst("</body>",
+            indexHtml = indexHtml.replace("</body>",
                     "<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]"
                             + "||function(){(i[r].q=i[r].q||[]).push(arguments)},"
                             + "i[r].l=1*new Date();a=s.createElement(o),"
