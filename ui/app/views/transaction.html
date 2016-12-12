@@ -32,7 +32,9 @@
           <ul class="dropdown-menu"
               role="menu"
               style="margin-bottom: 100px;">
-            <li ng-repeat="agentRollup in layout.agentRollups">
+            <!-- using layout.agentRollupValues instead of layout.agentRollups in case there are any agent rollup ids
+                 that start with '$', because angular silently ignores object keys starting with '$' -->
+            <li ng-repeat="agentRollup in layout.agentRollupValues">
               <a role="menuitem"
                  tabindex="-1"
                  ng-href="{{currentTabUrl()}}{{headerQueryString(agentRollup, transactionType)}}">

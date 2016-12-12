@@ -237,6 +237,10 @@ glowroot.run([
     });
 
     $rootScope.initLayout = function () {
+      // agentRollupValues is needed when using angular ng-repeat over agentRollups in case there are
+      // any agent rollup ids that start with '$', because angular silently ignores object keys starting with '$'
+      // see https://docs.angularjs.org/api/ng/directive/ngRepeat
+      $rootScope.layout.agentRollupValues = [];
       angular.forEach($rootScope.layout.agentRollups, function (agentRollup, agentRollupId) {
         var indent = '';
         for (var i = 0; i < agentRollup.depth; i++) {
@@ -244,6 +248,7 @@ glowroot.run([
         }
         agentRollup.indentedDisplay = indent + agentRollup.display;
         agentRollup.id = agentRollupId;
+        $rootScope.layout.agentRollupValues.push(agentRollup);
       });
       if ($rootScope.layout.embedded || $rootScope.agentRollupId) {
         var agentRollup = $rootScope.layout.agentRollups[$rootScope.agentRollupId];
