@@ -77,8 +77,9 @@ public class UiModule {
                 aggregateRepository, liveAggregateRepository, configRepository, clock);
         TraceCommonService traceCommonService =
                 new TraceCommonService(traceRepository, liveTraceRepository, agentRepository);
-        TransactionJsonService transactionJsonService = new TransactionJsonService(
-                transactionCommonService, aggregateRepository, rollupLevelService, clock);
+        TransactionJsonService transactionJsonService =
+                new TransactionJsonService(transactionCommonService, aggregateRepository,
+                        configRepository, rollupLevelService, clock);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(traceRepository,
                 liveTraceRepository, configRepository, ticker, clock);
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);

@@ -50,6 +50,7 @@ import org.glowroot.common.model.Result;
 import org.glowroot.common.model.TransactionSummaryCollector.SummarySortOrder;
 import org.glowroot.common.model.TransactionSummaryCollector.TransactionSummary;
 import org.glowroot.common.repo.AggregateRepository;
+import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.Utils;
 import org.glowroot.common.repo.util.RollupLevelService;
 import org.glowroot.common.util.Clock;
@@ -68,14 +69,16 @@ class TransactionJsonService {
 
     private final TransactionCommonService transactionCommonService;
     private final AggregateRepository aggregateRepository;
+    private final ConfigRepository configRepository;
     private final RollupLevelService rollupLevelService;
     private final Clock clock;
 
     TransactionJsonService(TransactionCommonService transactionCommonService,
-            AggregateRepository aggregateRepository, RollupLevelService rollupLevelService,
-            Clock clock) {
+            AggregateRepository aggregateRepository, ConfigRepository configRepository,
+            RollupLevelService rollupLevelService, Clock clock) {
         this.transactionCommonService = transactionCommonService;
         this.aggregateRepository = aggregateRepository;
+        this.configRepository = configRepository;
         this.rollupLevelService = rollupLevelService;
         this.clock = clock;
     }
@@ -83,20 +86,23 @@ class TransactionJsonService {
     @GET(path = "/backend/transaction/average", permission = "agent:transaction:overview")
     String getOverview(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
-        TransactionQuery query = toQuery(request);
+        TransactionQuery query = toChartQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
         List<OverviewAggregate> overviewAggregates =
                 transactionCommonService.getOverviewAggregates(agentRollupId, query);
         List<DataSeries> dataSeriesList =
                 getDataSeriesForTimerChart(request, overviewAggregates, liveCaptureTime);
         Map<Long, Long> transactionCounts = getTransactionCounts(overviewAggregates);
-        if (!overviewAggregates.isEmpty()
-                && overviewAggregates.get(0).captureTime() == request.from()) {
-            // the left most aggregate is not really in the requested interval since it is for
-            // prior capture times
-            overviewAggregates = overviewAggregates.subList(1, overviewAggregates.size());
+        // TODO more precise aggregate when from/to not on rollup grid
+        List<OverviewAggregate> overviewAggregatesForMerging = Lists.newArrayList();
+        for (OverviewAggregate overviewAggregate : overviewAggregates) {
+            long captureTime = overviewAggregate.captureTime();
+            if (captureTime > request.from() && captureTime <= request.to()) {
+                overviewAggregatesForMerging.add(overviewAggregate);
+            }
         }
-        MergedAggregate mergedAggregate = AggregateMerging.getMergedAggregate(overviewAggregates);
+        MergedAggregate mergedAggregate =
+                AggregateMerging.getMergedAggregate(overviewAggregatesForMerging);
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -112,7 +118,7 @@ class TransactionJsonService {
     @GET(path = "/backend/transaction/percentiles", permission = "agent:transaction:overview")
     String getPercentiles(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
-        TransactionQuery query = toQuery(request);
+        TransactionQuery query = toChartQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
         List<PercentileAggregate> percentileAggregates =
                 transactionCommonService.getPercentileAggregates(agentRollupId, query);
@@ -134,17 +140,17 @@ class TransactionJsonService {
     @GET(path = "/backend/transaction/throughput", permission = "agent:transaction:overview")
     String getThroughput(@BindAgentRollupId String agentRollupId,
             @BindRequest TransactionDataRequest request) throws Exception {
-        TransactionQuery query = toQuery(request);
+        TransactionQuery query = toChartQuery(request);
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates =
                 transactionCommonService.getThroughputAggregates(agentRollupId, query);
         List<DataSeries> dataSeriesList =
                 getDataSeriesForThroughputChart(request, throughputAggregates, liveCaptureTime);
+        // TODO more precise aggregate when from/to not on rollup grid
         long transactionCount = 0;
         for (ThroughputAggregate throughputAggregate : throughputAggregates) {
-            // not including transaction count where captureTime == request.from() since that
-            // will be transaction count for interval outside of chart
-            if (throughputAggregate.captureTime() > request.from()) {
+            long captureTime = throughputAggregate.captureTime();
+            if (captureTime > request.from() && captureTime <= request.to()) {
                 transactionCount += throughputAggregate.transactionCount();
             }
         }
@@ -326,6 +332,23 @@ class TransactionJsonService {
         return profile.toFlameGraphJson();
     }
 
+    private TransactionQuery toChartQuery(RequestBase request) throws Exception {
+        int rollupLevel = rollupLevelService.getRollupLevelForView(request.from(), request.to());
+        long rollupIntervalMillis =
+                configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
+        // read the closest rollup to the left and right of chart, in order to display line sloping
+        // correctly off the chart to the left and right
+        long from = RollupLevelService.getFloorRollupTime(request.from(), rollupIntervalMillis);
+        long to = RollupLevelService.getCeilRollupTime(request.to(), rollupIntervalMillis);
+        return ImmutableTransactionQuery.builder()
+                .transactionType(request.transactionType())
+                .transactionName(request.transactionName())
+                .from(from)
+                .to(to)
+                .rollupLevel(rollupLevel)
+                .build();
+    }
+
     private TransactionQuery toQuery(RequestBase request) throws Exception {
         return ImmutableTransactionQuery.builder()
                 .transactionType(request.transactionType())
@@ -389,38 +412,37 @@ class TransactionJsonService {
         double totalDurationNanos = 0;
         LazyHistogram mergedHistogram = new LazyHistogram();
 
-        PercentileAggregate lastPercentileAggregate = null;
+        PercentileAggregate priorPercentileAggregate = null;
         for (PercentileAggregate percentileAggregate : percentileAggregates) {
-            if (lastPercentileAggregate == null) {
+            long captureTime = percentileAggregate.captureTime();
+            if (priorPercentileAggregate == null) {
                 // first aggregate
-                dataSeriesHelper.addInitialUpslopeIfNeeded(request.from(),
-                        percentileAggregate.captureTime(), dataSeriesList, null);
+                dataSeriesHelper.addInitialUpslopeIfNeeded(request.from(), captureTime,
+                        dataSeriesList, null);
             } else {
-                dataSeriesHelper.addGapIfNeeded(lastPercentileAggregate.captureTime(),
-                        percentileAggregate.captureTime(), dataSeriesList, null);
+                dataSeriesHelper.addGapIfNeeded(priorPercentileAggregate.captureTime(), captureTime,
+                        dataSeriesList, null);
             }
-            lastPercentileAggregate = percentileAggregate;
             LazyHistogram durationNanosHistogram =
                     new LazyHistogram(percentileAggregate.durationNanosHistogram());
             for (int i = 0; i < percentiles.size(); i++) {
                 DataSeries dataSeries = dataSeriesList.get(i);
                 double percentile = percentiles.get(i);
                 // convert to milliseconds
-                dataSeries.add(percentileAggregate.captureTime(),
-                        durationNanosHistogram.getValueAtPercentile(percentile)
-                                / NANOSECONDS_PER_MILLISECOND);
+                dataSeries.add(captureTime, durationNanosHistogram.getValueAtPercentile(percentile)
+                        / NANOSECONDS_PER_MILLISECOND);
             }
-            if (percentileAggregate.captureTime() > request.from()) {
-                // filtering out the left most aggregate since it is not really in the requested
-                // interval since it is for prior capture times
+            // TODO more precise aggregate when from/to not on rollup grid
+            if (captureTime > request.from() && captureTime <= request.to()) {
                 transactionCount += percentileAggregate.transactionCount();
                 totalDurationNanos += percentileAggregate.totalDurationNanos();
                 mergedHistogram.merge(durationNanosHistogram);
             }
+            priorPercentileAggregate = percentileAggregate;
         }
-        if (lastPercentileAggregate != null) {
+        if (priorPercentileAggregate != null) {
             dataSeriesHelper.addFinalDownslopeIfNeeded(dataSeriesList, null,
-                    lastPercentileAggregate.captureTime());
+                    priorPercentileAggregate.captureTime());
         }
 
         List<PercentileValue> percentileValues = Lists.newArrayList();
@@ -451,27 +473,27 @@ class TransactionJsonService {
                 new DataSeriesHelper(liveCaptureTime, dataPointIntervalMillis);
         DataSeries dataSeries = new DataSeries("throughput");
         List<DataSeries> dataSeriesList = Lists.newArrayList(dataSeries);
-        ThroughputAggregate lastThroughputAggregate = null;
+        ThroughputAggregate priorThroughputAggregate = null;
         for (ThroughputAggregate throughputAggregate : throughputAggregates) {
-            if (lastThroughputAggregate == null) {
+            if (priorThroughputAggregate == null) {
                 // first aggregate
                 dataSeriesHelper.addInitialUpslopeIfNeeded(request.from(),
                         throughputAggregate.captureTime(), dataSeriesList, null);
             } else {
-                dataSeriesHelper.addGapIfNeeded(lastThroughputAggregate.captureTime(),
+                dataSeriesHelper.addGapIfNeeded(priorThroughputAggregate.captureTime(),
                         throughputAggregate.captureTime(), dataSeriesList, null);
             }
-            lastThroughputAggregate = throughputAggregate;
             long from = throughputAggregate.captureTime() - dataPointIntervalMillis;
             // this math is to deal with live aggregate
             from = Utils.getRollupCaptureTime(from, dataPointIntervalMillis);
             double transactionsPerMin = 60000.0 * throughputAggregate.transactionCount()
                     / (throughputAggregate.captureTime() - from);
             dataSeries.add(throughputAggregate.captureTime(), transactionsPerMin);
+            priorThroughputAggregate = throughputAggregate;
         }
-        if (lastThroughputAggregate != null) {
+        if (priorThroughputAggregate != null) {
             dataSeriesHelper.addFinalDownslopeIfNeeded(dataSeriesList, null,
-                    lastThroughputAggregate.captureTime());
+                    priorThroughputAggregate.captureTime());
         }
         return dataSeriesList;
     }
@@ -489,18 +511,17 @@ class TransactionJsonService {
         // need 'other' data series even if < topX timers in order to capture root timers,
         // e.g. time spent in 'servlet' timer but not in any nested timer
         DataSeries otherDataSeries = new DataSeries(null);
-        OverviewAggregate lastOverviewAggregate = null;
+        OverviewAggregate priorOverviewAggregate = null;
         for (StackedPoint stackedPoint : stackedPoints) {
             OverviewAggregate overviewAggregate = stackedPoint.getOverviewAggregate();
-            if (lastOverviewAggregate == null) {
+            if (priorOverviewAggregate == null) {
                 // first aggregate
                 dataSeriesHelper.addInitialUpslopeIfNeeded(request.from(),
                         overviewAggregate.captureTime(), dataSeriesList, otherDataSeries);
             } else {
-                dataSeriesHelper.addGapIfNeeded(lastOverviewAggregate.captureTime(),
+                dataSeriesHelper.addGapIfNeeded(priorOverviewAggregate.captureTime(),
                         overviewAggregate.captureTime(), dataSeriesList, otherDataSeries);
             }
-            lastOverviewAggregate = overviewAggregate;
             MutableDoubleMap<String> stackedTimers = stackedPoint.getStackedTimers();
             double totalOtherNanos = overviewAggregate.totalDurationNanos();
             for (DataSeries dataSeries : dataSeriesList) {
@@ -523,10 +544,11 @@ class TransactionJsonService {
                         (totalOtherNanos / overviewAggregate.transactionCount())
                                 / NANOSECONDS_PER_MILLISECOND);
             }
+            priorOverviewAggregate = overviewAggregate;
         }
-        if (lastOverviewAggregate != null) {
+        if (priorOverviewAggregate != null) {
             dataSeriesHelper.addFinalDownslopeIfNeeded(dataSeriesList, otherDataSeries,
-                    lastOverviewAggregate.captureTime());
+                    priorOverviewAggregate.captureTime());
         }
         dataSeriesList.add(otherDataSeries);
         return dataSeriesList;
