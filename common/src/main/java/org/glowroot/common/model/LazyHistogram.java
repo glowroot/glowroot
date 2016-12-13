@@ -93,14 +93,14 @@ public class LazyHistogram {
     }
 
     public void merge(LazyHistogram toBeMergedHistogram) {
-        if (histogram == null) {
-            convertValuesToHistogram();
-        }
         if (toBeMergedHistogram.histogram == null) {
             for (int i = 0; i < toBeMergedHistogram.size; i++) {
-                histogram.recordValue(toBeMergedHistogram.values[i]);
+                add(toBeMergedHistogram.values[i]);
             }
         } else {
+            if (histogram == null) {
+                convertValuesToHistogram();
+            }
             histogram.add(toBeMergedHistogram.histogram);
         }
     }
