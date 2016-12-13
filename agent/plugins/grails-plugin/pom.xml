@@ -137,14 +137,18 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.aspectj</groupId>
       <artifactId>aspectjweaver</artifactId>
-      <version>1.8.9</version>
+      <version>1.8.10</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
-      <version>4.3.4.RELEASE</version>
+      <!-- the tests pass with 4.3.4.RELEASE, but log error:
+        Destroy method on bean with name 'grailsApplicationPostProcessor' threw an exception
+        java.lang.IllegalStateException: ApplicationEventMulticaster not initialized -
+        call 'refresh' before multicasting events via the context -->
+      <version>4.3.3.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -181,7 +185,7 @@
       <plugins>
         <plugin>
           <!-- this is just so eclipse will use Java 7 for this module, since Java 7 is needed for
-            running the tests -->
+            running the tests against the latest version of grails -->
           <artifactId>maven-compiler-plugin</artifactId>
           <executions>
             <execution>

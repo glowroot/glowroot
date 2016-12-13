@@ -63,12 +63,12 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <!-- Java 7 is needed for compiling and running the ForkJoinPool tests -->
           <artifactId>maven-compiler-plugin</artifactId>
           <executions>
             <execution>
               <id>default-testCompile</id>
               <configuration>
-                <!-- Java 7 is needed for compiling and running ForkJoinPool tests -->
                 <source>1.7</source>
                 <target>1.7</target>
               </configuration>

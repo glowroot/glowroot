@@ -83,7 +83,7 @@
     <netty.version>4.1.6.Final</netty.version>
     <!-- jackson 2.7 requires JDK 7+ -->
     <jackson.version>2.6.7</jackson.version>
-    <logback.version>1.1.7</logback.version>
+    <logback.version>1.1.8</logback.version>
     <immutables.version>2.3.10</immutables.version>
     <javax.mail.version>1.5.6</javax.mail.version>
     <jmh.version>1.17.2</jmh.version>
@@ -523,7 +523,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.7.7.201606060606</version>
+          <version>0.7.8</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.m2e</groupId>

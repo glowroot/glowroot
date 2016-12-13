@@ -1,6 +1,6 @@
 {
   "devDependencies": {
-    "bower": "1.7.9",
+    "bower": "1.8.0",
     "grunt": "0.4.5",
     "grunt-cli": "1.2.0",
     "grunt-angular-templates": "1.1.0",
@@ -11,7 +11,7 @@
     "grunt-contrib-cssmin": "1.0.2",
     "grunt-contrib-handlebars": "1.0.0",
     "grunt-contrib-htmlmin": "2.0.0",
-    "grunt-contrib-jshint": "1.0.0",
+    "grunt-contrib-jshint": "1.1.0",
     "grunt-contrib-less": "1.4.0",
     "grunt-connect-proxy": "0.2.0",
     "grunt-connect-rewrite": "0.2.1",

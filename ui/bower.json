@@ -13,9 +13,9 @@
     "fontawesome": "4.7.0",
     "handlebars": "4.0.5",
     "jquery": "3.1.1",
-    "moment": "2.17.0",
+    "moment": "2.17.1",
     "sequeljs": "trask/sequeljs#glowroot-0.9.8",
     "spinjs": "2.3.2",
-    "zeroclipboard": "2.1.6"
+    "zeroclipboard": "2.3.0"
   }
 }

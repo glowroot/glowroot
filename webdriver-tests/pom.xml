@@ -186,7 +186,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-client</artifactId>
-      <version>9.2.18.v20160721</version>
+      <version>9.4.0.v20161208</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

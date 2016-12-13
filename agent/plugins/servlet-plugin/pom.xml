@@ -125,12 +125,15 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <!-- this is just so eclipse will use Java 7 for this module, since Java 7 is needed for
+            running tests in eclipse because some tests depend on the executor plugin which targets
+            Java 7 for default-testCompile just so eclipse will use Java 7 for that module, in order
+            to run that module's own ForkJoinPool tests -->
           <artifactId>maven-compiler-plugin</artifactId>
           <executions>
             <execution>
               <id>default-testCompile</id>
               <configuration>
-                <!-- Java 7 is needed for running tests -->
                 <source>1.7</source>
                 <target>1.7</target>
               </configuration>
