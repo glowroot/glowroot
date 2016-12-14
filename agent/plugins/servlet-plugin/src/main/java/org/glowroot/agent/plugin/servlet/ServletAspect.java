@@ -94,6 +94,10 @@ public class ServletAspect {
         Object getAttribute(String name);
 
         void removeAttribute(String name);
+
+        // not currently used by servlet plugin, but here to be available for other plugins
+        @Nullable
+        String getRemoteAddr();
     }
 
     @Shim("javax.servlet.http.HttpSession")
