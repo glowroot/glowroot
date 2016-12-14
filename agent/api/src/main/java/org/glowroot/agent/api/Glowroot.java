@@ -55,7 +55,7 @@ public class Glowroot {
     /**
      * Set the transaction type that is used for aggregation.
      * 
-     * If there is no current transaction, this method does nothing.
+     * If there is no current transaction then this method does nothing.
      */
     public static void setTransactionType(@Nullable String transactionType) {
         glowrootService.setTransactionType(transactionType);
@@ -64,7 +64,7 @@ public class Glowroot {
     /**
      * Set the transaction name that is used for aggregation.
      * 
-     * If there is no current transaction, this method does nothing.
+     * If there is no current transaction then this method does nothing.
      */
     public static void setTransactionName(@Nullable String transactionName) {
         glowrootService.setTransactionName(transactionName);
@@ -73,7 +73,7 @@ public class Glowroot {
     /**
      * Sets the user attribute on the transaction.
      * 
-     * If there is no current transaction, this method does nothing.
+     * If there is no current transaction then this method does nothing.
      */
     public static void setTransactionUser(@Nullable String user) {
         glowrootService.setTransactionUser(user);
@@ -88,7 +88,7 @@ public class Glowroot {
      * an additional attribute if there is not already an attribute with the same {@code name} and
      * {@code value}.
      * 
-     * If there is no current transaction, this method does nothing.
+     * If there is no current transaction then this method does nothing.
      * 
      * {@code null} values are normalized to the empty string.
      */
@@ -104,7 +104,7 @@ public class Glowroot {
      * If this is called multiple times for a given transaction, the minimum {@code threshold} will
      * be used.
      * 
-     * If there is no current transaction, this method does nothing.
+     * If there is no current transaction then this method does nothing.
      */
     public static void setTransactionSlowThreshold(long threshold, TimeUnit unit) {
         glowrootService.setTransactionSlowThreshold(threshold, unit);
@@ -118,7 +118,7 @@ public class Glowroot {
      * object as separate transactions, but also useful to track the overarching long "outer"
      * transaction.
      * 
-     * If there is no current transaction, this method does nothing.
+     * If there is no current transaction then this method does nothing.
      */
     public static void setOuterTransaction() {
         glowrootService.setOuterTransaction();
