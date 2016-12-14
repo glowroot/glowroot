@@ -30,7 +30,7 @@ public class Bootstrap {
             centralModule = new CentralModule();
         } else if (args[0].equals("stop")) {
             if (centralModule != null) {
-                centralModule.close();
+                centralModule.shutdown();
             }
         } else {
             throw new IllegalStateException("Unexpected arg: " + args[0]);

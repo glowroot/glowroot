@@ -301,12 +301,18 @@ class CentralModule {
         throw lastException;
     }
 
-    void close() throws InterruptedException {
-        uiModule.close(false);
-        server.close();
-        rollupService.close();
-        session.close();
-        cluster.close();
+    void shutdown() {
+        startupLogger.info("shutting down...");
+        try {
+            uiModule.close(false);
+            server.close();
+            rollupService.close();
+            session.close();
+            cluster.close();
+            startupLogger.info("shutdown complete");
+        } catch (Throwable t) {
+            startupLogger.error("error during shutdown: {}", t.getMessage(), t);
+        }
     }
 
     private static CentralConfiguration getCentralConfiguration() throws IOException {
