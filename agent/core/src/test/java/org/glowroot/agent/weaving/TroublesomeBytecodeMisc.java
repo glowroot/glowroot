@@ -19,7 +19,6 @@ import com.google.common.reflect.Reflection;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 
-import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
 import org.glowroot.agent.weaving.targets.Misc;
 
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;

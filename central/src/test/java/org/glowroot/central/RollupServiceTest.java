@@ -17,8 +17,6 @@ package org.glowroot.central;
 
 import org.junit.Test;
 
-import org.glowroot.central.RollupService;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RollupServiceTest {

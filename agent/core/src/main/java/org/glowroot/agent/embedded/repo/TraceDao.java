@@ -194,8 +194,8 @@ public class TraceDao implements TraceRepository {
                         attribute.getName(), header.getCaptureTime());
             }
         }
-        transactionTypeDao.updateLastCaptureTime(trace.getHeader().getTransactionType(),
-                trace.getHeader().getCaptureTime());
+        transactionTypeDao.updateLastCaptureTime(header.getTransactionType(),
+                header.getCaptureTime());
     }
 
     @Override

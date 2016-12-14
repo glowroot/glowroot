@@ -40,7 +40,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 import org.immutables.value.Value;
@@ -245,60 +244,13 @@ class CentralModule {
             if (cluster != null) {
                 cluster.close();
             }
-            throw Throwables.propagate(t);
+            throw t;
         }
         this.cluster = cluster;
         this.session = session;
         this.rollupService = rollupService;
         this.server = server;
         this.uiModule = uiModule;
-    }
-
-    @VisibleForTesting
-    static @Nullable File getGlowrootCentralJarFile(@Nullable CodeSource codeSource)
-            throws URISyntaxException {
-        if (codeSource == null) {
-            return null;
-        }
-        File codeSourceFile = new File(codeSource.getLocation().toURI());
-        if (codeSourceFile.getName().endsWith(".jar")) {
-            return codeSourceFile;
-        }
-        return null;
-    }
-
-    private static Session connect(CentralConfiguration centralConfig) throws InterruptedException {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        boolean waitingForCassandraLogged = false;
-        NoHostAvailableException lastException = null;
-        while (stopwatch.elapsed(MINUTES) < 10) {
-            try {
-                Cluster cluster = Cluster.builder()
-                        .addContactPoints(
-                                centralConfig.cassandraContactPoint().toArray(new String[0]))
-                        // aggressive reconnect policy seems ok since not many clients
-                        .withReconnectionPolicy(new ConstantReconnectionPolicy(1000))
-                        // let driver know that only idempotent queries are used so it will retry on
-                        // timeout
-                        .withQueryOptions(new QueryOptions().setDefaultIdempotence(true))
-                        // central runs lots of parallel async queries and is very spiky since all
-                        // aggregates come in right after each minute marker
-                        .withPoolingOptions(new PoolingOptions().setMaxQueueSize(4096))
-                        .build();
-                return cluster.connect();
-            } catch (NoHostAvailableException e) {
-                startupLogger.debug(e.getMessage(), e);
-                lastException = e;
-                if (!waitingForCassandraLogged) {
-                    startupLogger.info("waiting for cassandra ({}) ...",
-                            Joiner.on(",").join(centralConfig.cassandraContactPoint()));
-                }
-                waitingForCassandraLogged = true;
-                Thread.sleep(1000);
-            }
-        }
-        checkNotNull(lastException);
-        throw lastException;
     }
 
     void shutdown() {
@@ -367,6 +319,53 @@ class CentralModule {
             builder.uiPortOverride(Integer.parseInt(uiPortText));
         }
         return builder.build();
+    }
+
+    private static Session connect(CentralConfiguration centralConfig) throws InterruptedException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        boolean waitingForCassandraLogged = false;
+        NoHostAvailableException lastException = null;
+        while (stopwatch.elapsed(MINUTES) < 10) {
+            try {
+                Cluster cluster = Cluster.builder()
+                        .addContactPoints(
+                                centralConfig.cassandraContactPoint().toArray(new String[0]))
+                        // aggressive reconnect policy seems ok since not many clients
+                        .withReconnectionPolicy(new ConstantReconnectionPolicy(1000))
+                        // let driver know that only idempotent queries are used so it will retry on
+                        // timeout
+                        .withQueryOptions(new QueryOptions().setDefaultIdempotence(true))
+                        // central runs lots of parallel async queries and is very spiky since all
+                        // aggregates come in right after each minute marker
+                        .withPoolingOptions(new PoolingOptions().setMaxQueueSize(4096))
+                        .build();
+                return cluster.connect();
+            } catch (NoHostAvailableException e) {
+                startupLogger.debug(e.getMessage(), e);
+                lastException = e;
+                if (!waitingForCassandraLogged) {
+                    startupLogger.info("waiting for cassandra ({}) ...",
+                            Joiner.on(",").join(centralConfig.cassandraContactPoint()));
+                }
+                waitingForCassandraLogged = true;
+                Thread.sleep(1000);
+            }
+        }
+        checkNotNull(lastException);
+        throw lastException;
+    }
+
+    @VisibleForTesting
+    static @Nullable File getGlowrootCentralJarFile(@Nullable CodeSource codeSource)
+            throws URISyntaxException {
+        if (codeSource == null) {
+            return null;
+        }
+        File codeSourceFile = new File(codeSource.getLocation().toURI());
+        if (codeSourceFile.getName().endsWith(".jar")) {
+            return codeSourceFile;
+        }
+        return null;
     }
 
     @Value.Immutable

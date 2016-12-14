@@ -562,8 +562,7 @@ public class AggregateDao implements AggregateRepository {
     // query.from() is INCLUSIVE
     @Override
     public List<OverviewAggregate> readOverviewAggregates(String agentRollupId,
-            TransactionQuery query)
-            throws IOException {
+            TransactionQuery query) throws IOException {
         ResultSet results = executeQuery(agentRollupId, query, overviewTable);
         List<OverviewAggregate> overviewAggregates = Lists.newArrayList();
         for (Row row : results) {

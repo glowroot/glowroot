@@ -139,9 +139,8 @@ public class GrailsIT {
             List<Class> classesInCorrectClassLoader = Lists.newArrayList();
             for (Class clazz : classes) {
                 try {
-                    classesInCorrectClassLoader.add(
-                            Class.forName(clazz.getName(), false,
-                                    Application.class.getClassLoader()));
+                    classesInCorrectClassLoader.add(Class.forName(clazz.getName(), false,
+                            Application.class.getClassLoader()));
                 } catch (ClassNotFoundException e) {
                     throw new IllegalStateException(e);
                 }
