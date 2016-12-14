@@ -456,7 +456,11 @@ class AdviceGenerator {
             mv.visitIntInsn(BIPUSH, Priority.USER_CONFIG);
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
                     "setTransactionSlowThreshold", "(JLjava/util/concurrent/TimeUnit;I)V", true);
-
+        }
+        if (config.transactionOuter()) {
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
+                    "setOuterTransaction", "()V", true);
         }
     }
 

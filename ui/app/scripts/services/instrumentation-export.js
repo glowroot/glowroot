@@ -38,8 +38,23 @@ glowroot.factory('instrumentationExport', [
       if (!config.nestingGroup) {
         delete config.nestingGroup;
       }
-      if (!config.timerName) {
-        delete config.timerName;
+      if (!config.priority) {
+        delete config.priority;
+      }
+      if (!config.transactionType) {
+        delete config.transactionType;
+      }
+      if (!config.transactionNameTemplate) {
+        delete config.transactionNameTemplate;
+      }
+      if (!config.transactionUserTemplate) {
+        delete config.transactionUserTemplate;
+      }
+      if (!config.transactionAttributeTemplates || !Object.keys(config.transactionAttributeTemplates).length) {
+        delete config.transactionAttributeTemplates;
+      }
+      if (!config.transactionOuter) {
+        delete config.transactionOuter;
       }
       if (!config.traceEntryMessageTemplate) {
         delete config.traceEntryMessageTemplate;
@@ -50,20 +65,8 @@ glowroot.factory('instrumentationExport', [
       if (!config.traceEntryCaptureSelfNested) {
         delete config.traceEntryCaptureSelfNested;
       }
-      if (!config.transactionType) {
-        delete config.transactionType;
-      }
-      if (!config.transactionNameTemplate) {
-        delete config.transactionNameTemplate;
-      }
-      if (!config.transactionSlowThresholdMillis) {
-        delete config.transactionSlowThresholdMillis;
-      }
-      if (!config.transactionUserTemplate) {
-        delete config.transactionUserTemplate;
-      }
-      if (!config.transactionAttributeTemplates || !Object.keys(config.transactionAttributeTemplates).length) {
-        delete config.transactionAttributeTemplates;
+      if (!config.timerName) {
+        delete config.timerName;
       }
       if (!config.enabledProperty) {
         delete config.enabledProperty;

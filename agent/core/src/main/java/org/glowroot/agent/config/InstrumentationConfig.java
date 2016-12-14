@@ -124,6 +124,12 @@ public abstract class InstrumentationConfig {
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
+    public boolean transactionOuter() {
+        return false;
+    }
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String traceEntryMessageTemplate() {
         return "";
     }
@@ -208,7 +214,7 @@ public abstract class InstrumentationConfig {
     public void logValidationErrorsIfAny() {
         List<String> errors = validationErrors();
         if (!errors.isEmpty()) {
-            logger.error("Invalid instrumentation config: {} - {}", Joiner.on(", ").join(errors),
+            logger.error("invalid instrumentation config: {} - {}", Joiner.on(", ").join(errors),
                     this);
         }
     }
@@ -235,7 +241,8 @@ public abstract class InstrumentationConfig {
             builder.setTransactionSlowThresholdMillis(
                     OptionalInt32.newBuilder().setValue(transactionSlowThresholdMillis));
         }
-        builder.setTraceEntryMessageTemplate(traceEntryMessageTemplate());
+        builder.setTransactionOuter(transactionOuter())
+                .setTraceEntryMessageTemplate(traceEntryMessageTemplate());
         Integer traceEntryStackThresholdMillis = traceEntryStackThresholdMillis();
         if (traceEntryStackThresholdMillis != null) {
             builder.setTraceEntryStackThresholdMillis(
@@ -268,7 +275,8 @@ public abstract class InstrumentationConfig {
             builder.transactionSlowThresholdMillis(
                     config.getTransactionSlowThresholdMillis().getValue());
         }
-        builder.traceEntryMessageTemplate(config.getTraceEntryMessageTemplate());
+        builder.transactionOuter(config.getTransactionOuter())
+                .traceEntryMessageTemplate(config.getTraceEntryMessageTemplate());
         if (config.hasTraceEntryStackThresholdMillis()) {
             builder.traceEntryStackThresholdMillis(
                     config.getTraceEntryStackThresholdMillis().getValue());

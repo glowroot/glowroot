@@ -97,6 +97,7 @@ message AgentConfig {
     string transaction_user_template = 18;
     map<string, string> transaction_attribute_templates = 19;
     OptionalInt32 transaction_slow_threshold_millis = 20; // absent means N/A
+    bool transaction_outer = 23;
     string enabled_property = 21;
     string trace_entry_enabled_property = 22;
 

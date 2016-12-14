@@ -52,9 +52,9 @@ glowroot.controller('ConfigInstrumentationCtrl', [
         $scope.selectedMethodName = data.config.methodName;
         $scope.methodSignatures = data.methodSignatures || [];
         $scope.captureKindTransaction = captureKind === 'transaction';
-        $scope.showTimer = captureKind === 'timer' || captureKind === 'trace-entry' || captureKind === 'transaction';
         $scope.showTraceEntry = captureKind === 'trace-entry' || captureKind === 'transaction';
         $scope.showTraceEntryStackThreshold = captureKind === 'trace-entry';
+        $scope.showTimer = captureKind === 'timer' || captureKind === 'trace-entry' || captureKind === 'transaction';
 
         $scope.methodSignatures.unshift({
           name: $scope.config.methodName,
@@ -119,7 +119,10 @@ glowroot.controller('ConfigInstrumentationCtrl', [
                 transactionType: '',
                 transactionNameTemplate: '',
                 transactionUserTemplate: '',
+                transactionOuter: false,
+                traceEntryMessageTemplate: '',
                 traceEntryCaptureSelfNested: false,
+                timerName: '',
                 enabledProperty: '',
                 traceEntryEnabledProperty: ''
               }

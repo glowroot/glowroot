@@ -169,8 +169,10 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
           transactionType: '',
           transactionNameTemplate: '',
           transactionUserTemplate: '',
+          transactionOuter: false,
           traceEntryMessageTemplate: '',
           traceEntryCaptureSelfNested: false,
+          timerName: '',
           enabledProperty: '',
           traceEntryEnabledProperty: ''
         };

@@ -333,15 +333,16 @@ class InstrumentationConfigJsonService {
         abstract String nestingGroup();
         abstract int priority();
         abstract CaptureKind captureKind();
-        abstract String timerName();
-        abstract String traceEntryMessageTemplate();
-        abstract @Nullable Integer traceEntryStackThresholdMillis();
-        abstract boolean traceEntryCaptureSelfNested();
         abstract String transactionType();
         abstract String transactionNameTemplate();
         abstract String transactionUserTemplate();
         abstract Map<String, String> transactionAttributeTemplates();
         abstract @Nullable Integer transactionSlowThresholdMillis();
+        abstract boolean transactionOuter();
+        abstract String traceEntryMessageTemplate();
+        abstract @Nullable Integer traceEntryStackThresholdMillis();
+        abstract boolean traceEntryCaptureSelfNested();
+        abstract String timerName();
         abstract String enabledProperty();
         abstract String traceEntryEnabledProperty();
         abstract Optional<String> version(); // absent for insert operations
@@ -357,14 +358,6 @@ class InstrumentationConfigJsonService {
                     .setNestingGroup(nestingGroup())
                     .setPriority(priority())
                     .setCaptureKind(captureKind())
-                    .setTimerName(timerName())
-                    .setTraceEntryMessageTemplate(traceEntryMessageTemplate());
-            Integer traceEntryStackThresholdMillis = traceEntryStackThresholdMillis();
-            if (traceEntryStackThresholdMillis != null) {
-                builder.setTraceEntryStackThresholdMillis(
-                        OptionalInt32.newBuilder().setValue(traceEntryStackThresholdMillis));
-            }
-            builder.setTraceEntryCaptureSelfNested(traceEntryCaptureSelfNested())
                     .setTransactionType(transactionType())
                     .setTransactionNameTemplate(transactionNameTemplate())
                     .setTransactionUserTemplate(transactionUserTemplate())
@@ -374,7 +367,16 @@ class InstrumentationConfigJsonService {
                 builder.setTransactionSlowThresholdMillis(
                         OptionalInt32.newBuilder().setValue(transactionSlowThresholdMillis));
             }
-            return builder.setEnabledProperty(enabledProperty())
+            builder.setTransactionOuter(transactionOuter())
+                    .setTraceEntryMessageTemplate(traceEntryMessageTemplate());
+            Integer traceEntryStackThresholdMillis = traceEntryStackThresholdMillis();
+            if (traceEntryStackThresholdMillis != null) {
+                builder.setTraceEntryStackThresholdMillis(
+                        OptionalInt32.newBuilder().setValue(traceEntryStackThresholdMillis));
+            }
+            return builder.setTraceEntryCaptureSelfNested(traceEntryCaptureSelfNested())
+                    .setTimerName(timerName())
+                    .setEnabledProperty(enabledProperty())
                     .setTraceEntryEnabledProperty(traceEntryEnabledProperty())
                     .build();
         }
@@ -393,23 +395,24 @@ class InstrumentationConfigJsonService {
                             .nestingGroup(config.getNestingGroup())
                             .priority(config.getPriority())
                             .captureKind(config.getCaptureKind())
-                            .timerName(config.getTimerName())
-                            .traceEntryMessageTemplate(config.getTraceEntryMessageTemplate());
-            if (config.hasTraceEntryStackThresholdMillis()) {
-                builder.traceEntryStackThresholdMillis(
-                        config.getTraceEntryStackThresholdMillis().getValue());
-            }
-            builder.traceEntryCaptureSelfNested(config.getTraceEntryCaptureSelfNested())
-                    .transactionType(config.getTransactionType())
-                    .transactionNameTemplate(config.getTransactionNameTemplate())
-                    .transactionUserTemplate(config.getTransactionUserTemplate())
-                    .putAllTransactionAttributeTemplates(
-                            config.getTransactionAttributeTemplatesMap());
+                            .transactionType(config.getTransactionType())
+                            .transactionNameTemplate(config.getTransactionNameTemplate())
+                            .transactionUserTemplate(config.getTransactionUserTemplate())
+                            .putAllTransactionAttributeTemplates(
+                                    config.getTransactionAttributeTemplatesMap());
             if (config.hasTransactionSlowThresholdMillis()) {
                 builder.transactionSlowThresholdMillis(
                         config.getTransactionSlowThresholdMillis().getValue());
             }
-            return builder.enabledProperty(config.getEnabledProperty())
+            builder.transactionOuter(config.getTransactionOuter())
+                    .traceEntryMessageTemplate(config.getTraceEntryMessageTemplate());
+            if (config.hasTraceEntryStackThresholdMillis()) {
+                builder.traceEntryStackThresholdMillis(
+                        config.getTraceEntryStackThresholdMillis().getValue());
+            }
+            return builder.traceEntryCaptureSelfNested(config.getTraceEntryCaptureSelfNested())
+                    .timerName(config.getTimerName())
+                    .enabledProperty(config.getEnabledProperty())
                     .traceEntryEnabledProperty(config.getTraceEntryEnabledProperty())
                     .version(Versions.getVersion(config))
                     .build();
