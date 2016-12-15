@@ -122,6 +122,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
     // only ever non-null for main thread context
     private final @Nullable ThreadContextImpl outerTransactionThreadContext;
 
+    // this is needed in for pointcuts that startTransaction() on an outer transaction thread
+    // context, and then proceed to immediately call setTransaction...() on that same outer
+    // transaction thread context
+    private @Nullable ThreadContextImpl innerTransactionThreadContext;
+
     ThreadContextImpl(Transaction transaction, @Nullable TraceEntryImpl parentTraceEntry,
             @Nullable TraceEntryImpl parentThreadContextPriorEntry, MessageSupplier messageSupplier,
             TimerName rootTimerName, long startTick, boolean captureThreadStats,
@@ -403,6 +408,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 threadStatsComponent.onComplete();
             }
             threadContextHolder.set(outerTransactionThreadContext);
+            if (outerTransactionThreadContext != null) {
+                outerTransactionThreadContext.innerTransactionThreadContext = null;
+            }
         }
     }
 
@@ -485,8 +493,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
         // ensure visibility of recent configuration updates
         transaction.getConfigService().readMemoryBarrier();
         if (transaction.isOuter()) {
-            return transaction.startInnerTransaction(transactionType, transactionName,
-                    messageSupplier, timerName, threadContextHolder);
+            TraceEntryImpl traceEntry = transaction.startInnerTransaction(transactionType,
+                    transactionName, messageSupplier, timerName, threadContextHolder);
+            innerTransactionThreadContext = checkNotNull(threadContextHolder.get());
+            return traceEntry;
         }
         long startTick = ticker.read();
         TimerImpl timer = startTimer(timerName, startTick);
@@ -715,17 +725,29 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public void setAsyncTransaction() {
-        transaction.setAsync();
+        if (innerTransactionThreadContext == null) {
+            transaction.setAsync();
+        } else {
+            innerTransactionThreadContext.setAsyncTransaction();
+        }
     }
 
     @Override
     public void completeAsyncTransaction() {
-        completeAsyncTransaction = true;
+        if (innerTransactionThreadContext == null) {
+            completeAsyncTransaction = true;
+        } else {
+            innerTransactionThreadContext.completeAsyncTransaction();
+        }
     }
 
     @Override
     public void setOuterTransaction() {
-        transaction.setOuter();
+        if (innerTransactionThreadContext == null) {
+            transaction.setOuter();
+        } else {
+            innerTransactionThreadContext.setOuterTransaction();
+        }
     }
 
     @Override
@@ -733,7 +755,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
         if (Strings.isNullOrEmpty(transactionType)) {
             return;
         }
-        transaction.setTransactionType(transactionType, priority);
+        if (innerTransactionThreadContext == null) {
+            transaction.setTransactionType(transactionType, priority);
+        } else {
+            innerTransactionThreadContext.setTransactionType(transactionType, priority);
+        }
     }
 
     @Override
@@ -741,7 +767,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
         if (Strings.isNullOrEmpty(transactionName)) {
             return;
         }
-        transaction.setTransactionName(transactionName, priority);
+        if (innerTransactionThreadContext == null) {
+            transaction.setTransactionName(transactionName, priority);
+        } else {
+            innerTransactionThreadContext.setTransactionName(transactionName, priority);
+        }
     }
 
     @Override
@@ -749,7 +779,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
         if (Strings.isNullOrEmpty(user)) {
             return;
         }
-        transaction.setUser(user, priority);
+        if (innerTransactionThreadContext == null) {
+            transaction.setUser(user, priority);
+        } else {
+            innerTransactionThreadContext.setTransactionUser(user, priority);
+        }
     }
 
     @Override
@@ -758,7 +792,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
             logger.error("addTransactionAttribute(): argument 'name' must be non-null");
             return;
         }
-        transaction.addAttribute(name, value);
+        if (innerTransactionThreadContext == null) {
+            transaction.addAttribute(name, value);
+        } else {
+            innerTransactionThreadContext.addTransactionAttribute(name, value);
+        }
     }
 
     @Override
@@ -772,13 +810,21 @@ public class ThreadContextImpl implements ThreadContextPlus {
             logger.error("setTransactionSlowThreshold(): argument 'unit' must be non-null");
             return;
         }
-        int thresholdMillis = Ints.saturatedCast(unit.toMillis(threshold));
-        transaction.setSlowThresholdMillis(thresholdMillis, priority);
+        if (innerTransactionThreadContext == null) {
+            int thresholdMillis = Ints.saturatedCast(unit.toMillis(threshold));
+            transaction.setSlowThresholdMillis(thresholdMillis, priority);
+        } else {
+            innerTransactionThreadContext.setTransactionSlowThreshold(threshold, unit, priority);
+        }
     }
 
     @Override
     public void setTransactionError(Throwable t) {
-        transaction.setError(null, t);
+        if (innerTransactionThreadContext == null) {
+            transaction.setError(null, t);
+        } else {
+            innerTransactionThreadContext.setTransactionError(t);
+        }
     }
 
     @Override
@@ -786,12 +832,20 @@ public class ThreadContextImpl implements ThreadContextPlus {
         if (Strings.isNullOrEmpty(message)) {
             return;
         }
-        transaction.setError(message, null);
+        if (innerTransactionThreadContext == null) {
+            transaction.setError(message, null);
+        } else {
+            innerTransactionThreadContext.setTransactionError(message);
+        }
     }
 
     @Override
     public void setTransactionError(@Nullable String message, @Nullable Throwable t) {
-        transaction.setError(message, t);
+        if (innerTransactionThreadContext == null) {
+            transaction.setError(message, t);
+        } else {
+            innerTransactionThreadContext.setTransactionError(message, t);
+        }
     }
 
     @Override
