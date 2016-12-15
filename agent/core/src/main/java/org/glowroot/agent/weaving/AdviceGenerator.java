@@ -459,7 +459,7 @@ class AdviceGenerator {
         if (config.transactionOuter()) {
             mv.visitVarInsn(ALOAD, 0);
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
-                    "setOuterTransaction", "()V", true);
+                    "setTransactionOuter", "()V", true);
         }
     }
 

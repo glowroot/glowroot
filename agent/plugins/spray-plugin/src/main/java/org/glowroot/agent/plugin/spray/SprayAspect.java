@@ -99,7 +99,7 @@ public class SprayAspect {
             }
             TraceEntry traceEntry = context.startTransaction("Web", path,
                     MessageSupplier.create(message), timerName);
-            context.setAsyncTransaction();
+            context.setTransactionAsync();
             return traceEntry;
         }
 
@@ -139,7 +139,7 @@ public class SprayAspect {
     public static class RenderResponseAdvice {
         @OnAfter
         public static void onAfter(ThreadContext context) {
-            context.completeAsyncTransaction();
+            context.setTransactionAsyncComplete();
         }
     }
 }

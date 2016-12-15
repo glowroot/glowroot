@@ -31,5 +31,5 @@ public interface GlowrootService {
 
     void setTransactionSlowThreshold(long threshold, TimeUnit unit);
 
-    void setOuterTransaction();
+    void setTransactionOuter();
 }

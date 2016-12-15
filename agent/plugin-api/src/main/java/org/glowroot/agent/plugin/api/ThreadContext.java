@@ -84,9 +84,15 @@ public interface ThreadContext {
      */
     AuxThreadContext createAuxThreadContext();
 
-    void setAsyncTransaction();
+    /**
+     * TODO
+     */
+    void setTransactionAsync();
 
-    void completeAsyncTransaction();
+    /**
+     * TODO
+     */
+    void setTransactionAsyncComplete();
 
     /**
      * This should be used in very limited circumstances. E.g. a really long "outer" transaction
@@ -104,7 +110,7 @@ public interface ThreadContext {
      * 
      * If there is no current transaction then this method does nothing.
      */
-    void setOuterTransaction();
+    void setTransactionOuter();
 
     /**
      * Set the transaction type that is used for aggregation.
@@ -317,6 +323,24 @@ public interface ThreadContext {
      * Special purpose method.
      */
     void setServletMessageSupplier(@Nullable MessageSupplier messageSupplier);
+
+    /**
+     * @deprecated Replaced by {@link #setTransactionAsync()}.
+     */
+    @Deprecated
+    void setAsyncTransaction();
+
+    /**
+     * @deprecated Replaced by {@link #setTransactionAsyncComplete()}.
+     */
+    @Deprecated
+    void completeAsyncTransaction();
+
+    /**
+     * @deprecated Replaced by {@link #setTransactionOuter()}.
+     */
+    @Deprecated
+    void setOuterTransaction();
 
     interface Priority {
         int CORE_PLUGIN = -100;

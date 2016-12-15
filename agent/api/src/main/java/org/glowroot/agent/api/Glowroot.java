@@ -120,7 +120,15 @@ public class Glowroot {
      * 
      * If there is no current transaction then this method does nothing.
      */
+    public static void setTransactionOuter() {
+        glowrootService.setTransactionOuter();
+    }
+
+    /**
+     * @deprecated Replaced by {@link #setTransactionOuter()}.
+     */
+    @Deprecated
     public static void setOuterTransaction() {
-        glowrootService.setOuterTransaction();
+        setTransactionOuter();
     }
 }

@@ -93,7 +93,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
     private final TraceEntryComponent traceEntryComponent;
 
     // only accessed by the thread context's thread
-    private boolean completeAsyncTransaction;
+    private boolean transactionAsyncComplete;
 
     // linked lists of QueryData instances for safe concurrent access
     private @MonotonicNonNull QueryData headQueryData;
@@ -401,8 +401,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 // this is a limit exceeded auxiliary thread context
                 transaction.mergeLimitExceededAuxThreadContext(this);
             }
-            if (!isAuxiliary() || completeAsyncTransaction) {
-                transaction.end(endTick, completeAsyncTransaction);
+            if (!isAuxiliary() || transactionAsyncComplete) {
+                transaction.end(endTick, transactionAsyncComplete);
             }
             if (threadStatsComponent != null) {
                 threadStatsComponent.onComplete();
@@ -724,29 +724,29 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public void setAsyncTransaction() {
+    public void setTransactionAsync() {
         if (innerTransactionThreadContext == null) {
             transaction.setAsync();
         } else {
-            innerTransactionThreadContext.setAsyncTransaction();
+            innerTransactionThreadContext.setTransactionAsync();
         }
     }
 
     @Override
-    public void completeAsyncTransaction() {
+    public void setTransactionAsyncComplete() {
         if (innerTransactionThreadContext == null) {
-            completeAsyncTransaction = true;
+            transactionAsyncComplete = true;
         } else {
-            innerTransactionThreadContext.completeAsyncTransaction();
+            innerTransactionThreadContext.setTransactionAsyncComplete();
         }
     }
 
     @Override
-    public void setOuterTransaction() {
+    public void setTransactionOuter() {
         if (innerTransactionThreadContext == null) {
             transaction.setOuter();
         } else {
-            innerTransactionThreadContext.setOuterTransaction();
+            innerTransactionThreadContext.setTransactionOuter();
         }
     }
 
@@ -871,6 +871,24 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @Override
     public void setServletMessageSupplier(@Nullable MessageSupplier messageSupplier) {
         this.servletMessageSupplier = messageSupplier;
+    }
+
+    @Override
+    @Deprecated
+    public void setAsyncTransaction() {
+        setTransactionAsync();
+    }
+
+    @Override
+    @Deprecated
+    public void completeAsyncTransaction() {
+        setTransactionAsyncComplete();
+    }
+
+    @Override
+    @Deprecated
+    public void setOuterTransaction() {
+        setTransactionOuter();
     }
 
     boolean hasTraceEntries() {

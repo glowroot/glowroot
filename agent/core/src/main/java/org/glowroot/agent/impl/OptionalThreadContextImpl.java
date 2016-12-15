@@ -178,23 +178,23 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
-    public void setAsyncTransaction() {
+    public void setTransactionAsync() {
         if (threadContext != null) {
-            threadContext.setAsyncTransaction();
+            threadContext.setTransactionAsync();
         }
     }
 
     @Override
-    public void completeAsyncTransaction() {
+    public void setTransactionAsyncComplete() {
         if (threadContext != null) {
-            threadContext.completeAsyncTransaction();
+            threadContext.setTransactionAsyncComplete();
         }
     }
 
     @Override
-    public void setOuterTransaction() {
+    public void setTransactionOuter() {
         if (threadContext != null) {
-            threadContext.setOuterTransaction();
+            threadContext.setTransactionOuter();
         }
     }
 
@@ -288,6 +288,24 @@ public class OptionalThreadContextImpl implements ThreadContextPlus {
         if (threadContext != null) {
             threadContext.setServletMessageSupplier(messageSupplier);
         }
+    }
+
+    @Override
+    @Deprecated
+    public void setAsyncTransaction() {
+        setTransactionAsync();
+    }
+
+    @Override
+    @Deprecated
+    public void completeAsyncTransaction() {
+        setTransactionAsyncComplete();
+    }
+
+    @Override
+    @Deprecated
+    public void setOuterTransaction() {
+        setTransactionOuter();
     }
 
     @Override

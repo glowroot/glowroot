@@ -79,7 +79,7 @@ class AuxThreadContextImpl implements AuxThreadContext {
         ThreadContextImpl context = threadContextHolder.get();
         if (context != null) {
             if (completeAsyncTransaction) {
-                context.completeAsyncTransaction();
+                context.setTransactionAsyncComplete();
             }
             return NopTraceEntry.INSTANCE;
         }
@@ -96,7 +96,7 @@ class AuxThreadContextImpl implements AuxThreadContext {
                     Thread.currentThread().getName(), new Exception());
         }
         if (completeAsyncTransaction) {
-            context.completeAsyncTransaction();
+            context.setTransactionAsyncComplete();
         }
         return context.getRootEntry();
     }

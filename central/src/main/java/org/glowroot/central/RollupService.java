@@ -99,7 +99,7 @@ public class RollupService implements Runnable {
             transactionName = "Outer rollup loop", traceHeadline = "Outer rollup loop",
             timer = "outer rollup loop")
     private void runInternal() throws InterruptedException {
-        Glowroot.setOuterTransaction();
+        Glowroot.setTransactionOuter();
         for (AgentRollup agentRollup : agentDao.readAgentRollups()) {
             rollupAggregates(agentRollup, null);
             rollupGauges(agentRollup, null);

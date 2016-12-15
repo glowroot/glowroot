@@ -238,7 +238,7 @@ public class Netty3Aspect {
 
         private static void completeAsyncTransaction(ThreadContext context,
                 ChannelHandlerContext channelHandlerContext) {
-            context.completeAsyncTransaction();
+            context.setTransactionAsyncComplete();
             ChannelMixin channel = channelHandlerContext.glowroot$getChannel();
             if (channel != null) {
                 channel.glowroot$setCompleteAsyncTransaction(false);
@@ -289,7 +289,7 @@ public class Netty3Aspect {
 
         @OnBefore
         public static void onBefore(ThreadContext context) {
-            context.completeAsyncTransaction();
+            context.setTransactionAsyncComplete();
         }
     }
 }

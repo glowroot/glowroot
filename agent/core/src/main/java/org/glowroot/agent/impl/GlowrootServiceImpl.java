@@ -101,7 +101,7 @@ public class GlowrootServiceImpl implements GlowrootService {
     }
 
     @Override
-    public void setOuterTransaction() {
+    public void setTransactionOuter() {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
             transaction.setOuter();

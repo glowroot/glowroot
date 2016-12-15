@@ -221,7 +221,7 @@ public class NettyAspect {
 
         private static void completeAsyncTransaction(ThreadContext context,
                 ChannelHandlerContext channelHandlerContext) {
-            context.completeAsyncTransaction();
+            context.setTransactionAsyncComplete();
             ChannelMixin channel = channelHandlerContext.glowroot$channel();
             if (channel != null) {
                 channel.glowroot$setCompleteAsyncTransaction(false);
@@ -239,7 +239,7 @@ public class NettyAspect {
 
         @OnBefore
         public static void onBefore(ThreadContext context) {
-            context.completeAsyncTransaction();
+            context.setTransactionAsyncComplete();
         }
     }
 
@@ -254,7 +254,7 @@ public class NettyAspect {
         }
         TraceEntry traceEntry =
                 context.startTransaction("Web", path, MessageSupplier.create(message), timerName);
-        context.setAsyncTransaction();
+        context.setTransactionAsync();
         return traceEntry;
     }
 
