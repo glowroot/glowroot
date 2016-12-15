@@ -66,7 +66,6 @@ import static org.objectweb.asm.Opcodes.ANEWARRAY;
 import static org.objectweb.asm.Opcodes.ASM5;
 import static org.objectweb.asm.Opcodes.ASTORE;
 import static org.objectweb.asm.Opcodes.ATHROW;
-import static org.objectweb.asm.Opcodes.BIPUSH;
 import static org.objectweb.asm.Opcodes.DUP;
 import static org.objectweb.asm.Opcodes.F_SAME;
 import static org.objectweb.asm.Opcodes.F_SAME1;
@@ -260,11 +259,11 @@ class WeavingClassVisitor extends ClassVisitor {
                 mv.visitInsn(DUP);
                 loadType(mv, type, metaHolderType);
                 mv.visitLdcInsn(methodMetaGroup.methodName());
-                mv.visitIntInsn(BIPUSH, methodMetaGroup.methodParameterTypes().size());
+                mv.visitLdcInsn(methodMetaGroup.methodParameterTypes().size());
                 mv.visitTypeInsn(ANEWARRAY, "java/lang/Class");
                 for (int i = 0; i < methodMetaGroup.methodParameterTypes().size(); i++) {
                     mv.visitInsn(DUP);
-                    mv.visitIntInsn(BIPUSH, i);
+                    mv.visitLdcInsn(i);
                     loadType(mv, methodMetaGroup.methodParameterTypes().get(i), metaHolderType);
                     mv.visitInsn(AASTORE);
                 }
@@ -340,7 +339,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private static void loadArrayType(MethodVisitor mv, Type type, Type ownerType) {
         loadType(mv, type.getElementType(), ownerType);
-        mv.visitIntInsn(BIPUSH, type.getDimensions());
+        mv.visitLdcInsn(type.getDimensions());
         mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(GeneratedBytecodeUtil.class),
                 "getArrayClass", "(Ljava/lang/Class;I)Ljava/lang/Class;", false);
     }

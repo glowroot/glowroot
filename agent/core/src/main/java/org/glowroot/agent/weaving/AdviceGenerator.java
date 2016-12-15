@@ -46,7 +46,6 @@ import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ACONST_NULL;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ARETURN;
-import static org.objectweb.asm.Opcodes.BIPUSH;
 import static org.objectweb.asm.Opcodes.CHECKCAST;
 import static org.objectweb.asm.Opcodes.GETFIELD;
 import static org.objectweb.asm.Opcodes.GETSTATIC;
@@ -412,7 +411,7 @@ class AdviceGenerator {
         if (!config.transactionType().isEmpty() && !config.isTransaction()) {
             mv.visitVarInsn(ALOAD, 0);
             mv.visitLdcInsn(config.transactionType());
-            mv.visitIntInsn(BIPUSH, Priority.USER_CONFIG);
+            mv.visitLdcInsn(Priority.USER_CONFIG);
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
                     "setTransactionType", "(Ljava/lang/String;I)V", true);
         }
@@ -453,7 +452,7 @@ class AdviceGenerator {
             mv.visitLdcInsn(slowThresholdMillis.longValue());
             mv.visitFieldInsn(GETSTATIC, "java/util/concurrent/TimeUnit", "MILLISECONDS",
                     "Ljava/util/concurrent/TimeUnit;");
-            mv.visitIntInsn(BIPUSH, Priority.USER_CONFIG);
+            mv.visitLdcInsn(Priority.USER_CONFIG);
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
                     "setTransactionSlowThreshold", "(JLjava/util/concurrent/TimeUnit;I)V", true);
         }
@@ -625,7 +624,7 @@ class AdviceGenerator {
                 false);
         mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/agent/weaving/GenericMessageSupplier",
                 "getMessageText", "()Ljava/lang/String;", false);
-        mv.visitIntInsn(BIPUSH, Priority.USER_CONFIG);
+        mv.visitLdcInsn(Priority.USER_CONFIG);
         mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
                 threadContextSetterName, "(Ljava/lang/String;I)V", true);
     }

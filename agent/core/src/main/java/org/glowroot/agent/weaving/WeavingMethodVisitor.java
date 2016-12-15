@@ -465,10 +465,10 @@ class WeavingMethodVisitor extends AdviceAdapter {
         dup();
         storeLocal(prevNestingGroupIdLocal);
         int nestingGroupId = getNestingGroupId(nestingGroup);
-        visitIntInsn(BIPUSH, nestingGroupId);
+        mv.visitLdcInsn(nestingGroupId);
         visitJumpInsn(IF_ICMPEQ, disabledLabel);
         loadLocal(threadContextLocal);
-        visitIntInsn(BIPUSH, nestingGroupId);
+        mv.visitLdcInsn(nestingGroupId);
         visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
                 "setCurrentNestingGroupId", "(I)V", true);
     }
@@ -479,7 +479,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
                 "getCurrentSuppressionKeyId", "()I", true);
         int suppressionKeyId = getSuppressionKeyId(suppressibleUsingKey);
-        visitIntInsn(BIPUSH, suppressionKeyId);
+        mv.visitLdcInsn(suppressionKeyId);
         visitJumpInsn(IF_ICMPEQ, disabledLabel);
     }
 
@@ -491,7 +491,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         storeLocal(prevSuppressionKeyIdLocal);
         int suppressionKeyId = getSuppressionKeyId(suppressionKey);
         loadLocal(threadContextLocal);
-        visitIntInsn(BIPUSH, suppressionKeyId);
+        mv.visitLdcInsn(suppressionKeyId);
         visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
                 "setCurrentSuppressionKeyId", "(I)V", true);
     }
@@ -551,7 +551,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             storeLocal(prevNestingGroupIdLocal);
             loadLocal(threadContextLocal);
             int nestingGroupId = getNestingGroupId(nestingGroup);
-            visitIntInsn(BIPUSH, nestingGroupId);
+            mv.visitLdcInsn(nestingGroupId);
             visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
                     "setCurrentNestingGroupId", "(I)V", true);
             visitLabel(label);
@@ -576,7 +576,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             storeLocal(prevSuppressionKeyIdLocal);
             loadLocal(threadContextLocal);
             int suppressionKeyId = getSuppressionKeyId(suppressionKey);
-            visitIntInsn(BIPUSH, suppressionKeyId);
+            mv.visitLdcInsn(suppressionKeyId);
             visitMethodInsn(INVOKEINTERFACE, threadContextPlusType.getInternalName(),
                     "setCurrentSuppressionKeyId", "(I)V", true);
             visitLabel(label);
