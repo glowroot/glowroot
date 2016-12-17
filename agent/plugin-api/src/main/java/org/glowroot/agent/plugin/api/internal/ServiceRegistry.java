@@ -22,5 +22,7 @@ public interface ServiceRegistry {
 
     TimerName getTimerName(Class<?> adviceClass);
 
+    TimerName getTimerName(String name);
+
     ConfigService getConfigService(String pluginId);
 }

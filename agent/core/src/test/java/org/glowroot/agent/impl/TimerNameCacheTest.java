@@ -30,7 +30,7 @@ public class TimerNameCacheTest {
         // given
         TimerNameCache timerNameCache = new TimerNameCache();
         // when
-        TimerName timerName = timerNameCache.getTimerName(null);
+        TimerName timerName = timerNameCache.getTimerName((Class<?>) null);
         // then
         assertThat(((TimerNameImpl) timerName).name()).isEqualTo("unknown");
     }

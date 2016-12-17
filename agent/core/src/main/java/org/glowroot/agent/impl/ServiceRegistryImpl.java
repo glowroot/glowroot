@@ -55,6 +55,11 @@ public class ServiceRegistryImpl implements ServiceRegistry {
     }
 
     @Override
+    public TimerName getTimerName(String name) {
+        return timerNameCache.getTimerName(name);
+    }
+
+    @Override
     public ConfigService getConfigService(String pluginId) {
         return configServices.getUnchecked(pluginId);
     }

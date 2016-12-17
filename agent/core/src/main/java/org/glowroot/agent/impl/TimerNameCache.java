@@ -47,7 +47,7 @@ public class TimerNameCache {
 
     public TimerName getTimerName(Class<?> adviceClass) {
         if (adviceClass == null) {
-            logger.error("get(): argument 'adviceClass' must be non-null");
+            logger.error("getTimerName(): argument 'adviceClass' must be non-null");
             return unknownTimerName;
         }
         Pointcut pointcut = adviceClass.getAnnotation(Pointcut.class);
@@ -60,6 +60,14 @@ public class TimerNameCache {
         } else {
             return getName(pointcut.timerName());
         }
+    }
+
+    public TimerName getTimerName(String name) {
+        if (name == null) {
+            logger.error("getTimerName(): argument 'name' must be non-null");
+            return unknownTimerName;
+        }
+        return getName(name);
     }
 
     TimerName getAuxThreadTimerName() {

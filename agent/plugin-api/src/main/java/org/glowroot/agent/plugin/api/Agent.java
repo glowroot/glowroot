@@ -68,6 +68,15 @@ public class Agent {
         }
     }
 
+    public static TimerName getTimerName(String name) {
+        ServiceRegistry serviceRegistry = getServiceRegistry();
+        if (serviceRegistry == null) {
+            return NopTimerName.INSTANCE;
+        } else {
+            return serviceRegistry.getTimerName(name);
+        }
+    }
+
     /**
      * Returns the {@code ConfigService} instance for the specified {@code pluginId}.
      * 
