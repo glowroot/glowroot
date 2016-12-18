@@ -11,7 +11,7 @@
     </thead>
     <tbody>
     <tr class="align-top"
-        ng-repeat="flattenedTimer in flattenedTimers">
+        ng-repeat="flattenedTimer in flattenedTimers | filter:{show: true}">
       <td style="text-align: left;">
         <div class="gt-indent2">
           <div class="gt-break-word gt-second-line-indent">{{flattenedTimer.name}}</div>
@@ -19,6 +19,34 @@
       </td>
       <td>{{flattenedTimer.totalNanos / (1000000 * transactionCount) | gtMillis}}</td>
       <td>{{flattenedTimer.count / transactionCount | gtCount}}</td>
+    </tr>
+    <tr class="align-top">
+      <td style="text-align: left;">
+        <div class="gt-indent2">
+          <div style="margin-left: -6px;">
+            <span tabindex="-1"></span>
+            <button class="gt-flat-btn gt-link-color"
+                    ng-click="clickShowMore()"
+                    ng-if="ftShowMore">
+              show more
+            </button>
+            <span ng-if="ftShowMoreAndLess">/</span>
+            <button class="gt-flat-btn gt-link-color"
+                    ng-click="clickShowLessFT()"
+                    ng-if="showLess">
+              show less
+            </button>
+            <span ng-if="ftShowMore">
+            /
+            <button class="gt-flat-btn gt-link-color"
+                    ng-click="clickShowAll()"
+                    ng-if="ftShowMore">
+              show all
+            </button>
+            </span>
+          </div>
+        </div>
+      </td>
     </tr>
     </tbody>
   </table>
@@ -40,7 +68,7 @@
     </thead>
     <tbody>
     <tr class="align-top"
-        ng-repeat="treeTimer in treeTimers">
+        ng-repeat="treeTimer in treeTimers | filter:{show: true}">
       <td style="text-align: left;">
         <div class="gt-indent2">
           <div class="gt-break-word gt-second-line-indent" ng-style="{'margin-left': treeTimer.nestingIndent + 'px'}">
@@ -50,6 +78,34 @@
       </td>
       <td>{{treeTimer.totalNanos / (1000000 * transactionCount) | gtMillis}}</td>
       <td>{{treeTimer.count / transactionCount | gtCount}}</td>
+    </tr>
+    <tr class="align-top">
+      <td style="text-align: left;">
+        <div class="gt-indent2">
+          <div style="margin-left: -6px;">
+            <span tabindex="-1"></span>
+            <button class="gt-flat-btn gt-link-color"
+                    ng-click="clickShowMore()"
+                    ng-if="ttShowMore">
+              show more
+            </button>
+            <span ng-if="ttShowMoreAndLess">/</span>
+            <button class="gt-flat-btn gt-link-color"
+                    ng-click="clickShowLessTT()"
+                    ng-if="showLess">
+              show less
+            </button>
+            <span ng-if="ttShowMore">
+            /
+            <button class="gt-flat-btn gt-link-color"
+                    ng-click="clickShowAll()"
+                    ng-if="ttShowMore">
+              show all
+            </button>
+            </span>
+          </div>
+        </div>
+      </td>
     </tr>
     </tbody>
   </table>

@@ -97,8 +97,8 @@ glowroot.controller('TransactionAverageCtrl', [
           timer.childTimers.sort(function (a, b) {
             return b.totalNanos - a.totalNanos;
           });
-          $.each(timer.childTimers, function (index, nestedTimer) {
-            traverse(nestedTimer, nestingLevel + 1);
+          angular.forEach(timer.childTimers, function (childTimer) {
+            traverse(childTimer, nestingLevel + 1);
           });
         }
       }

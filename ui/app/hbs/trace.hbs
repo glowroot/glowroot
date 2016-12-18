@@ -91,8 +91,8 @@
         </tr>
         </thead>
         <tbody>
-        {{#eachTimerFlattenedOrdered mainThreadRootTimer}}
-          <tr class="align-top">
+        {{#each mainBreakdown.flattenedTimers}}
+          <tr class="align-top" id="mft{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
             <td style="text-align: left;">
               <div class="gt-indent2 gt-break-word gt-second-line-indent">
                 {{name}}
@@ -101,13 +101,39 @@
             <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
             <td>{{formatInteger count}}</td>
           </tr>
-        {{/eachTimerFlattenedOrdered}}
+        {{/each}}
+        <tr class="align-top">
+          <td style="text-align: left;">
+            <div class="gt-indent2">
+              <div style="margin-left: -6px;">
+                <span tabindex="-1" id="mftForFocus"></span>
+                <button class="gt-flat-btn gt-link-color"
+                        id="mftShowMore"{{#unless mainBreakdown.ftShowMore}} style="display: none;"{{/unless}}>
+                  show more
+                </button>
+                <span id="mftShowMoreAndLess" style="display: none;">/</span>
+                <button class="gt-flat-btn gt-link-color"
+                        id="mftShowLess"
+                        style="display: none;">
+                  show less
+                </button>
+                <span id="mftShowAll"{{#unless mainBreakdown.ftShowMore}} style="display: none;"{{/unless}}>
+                  /
+                  <button class="gt-flat-btn gt-link-color">
+                    show all
+                  </button>
+                </span>
+              </div>
+            </div>
+          </td>
+        </tr>
         </tbody>
       </table>
-      <button class="gt-indent1 gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
-              style="vertical-align: top; margin-top: -1px;">
-        switch to tree view
-      </button>
+      <div style="display: inline-block; vertical-align: top; margin-top: -1px;">
+        <button class="gt-indent1 gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle">
+          switch to tree view
+        </button>
+      </div>
     </div>
     <div class="hide gt-timers-table">
       <table class="gt-inline-block" style="border-spacing: 0;">
@@ -121,8 +147,8 @@
         </tr>
         </thead>
         <tbody>
-        {{#eachTimerOrdered mainThreadRootTimer}}
-          <tr class="align-top">
+        {{#each mainBreakdown.timers}}
+          <tr class="align-top" id="mtt{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
             <td style="text-align: left;">
               <div class="gt-indent2">
                 <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
@@ -133,7 +159,32 @@
             <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
             <td>{{formatInteger count}}</td>
           </tr>
-        {{/eachTimerOrdered}}
+        {{/each}}
+        <tr class="align-top">
+          <td style="text-align: left;">
+            <div class="gt-indent2">
+              <div style="margin-left: -6px;">
+                <span tabindex="-1" id="mttForFocus"></span>
+                <button class="gt-flat-btn gt-link-color"
+                        id="mttShowMore"{{#unless mainBreakdown.ttShowMore}} style="display: none;"{{/unless}}>
+                  show more
+                </button>
+                <span id="mttShowMoreAndLess" style="display: none;">/</span>
+                <button class="gt-flat-btn gt-link-color"
+                        id="mttShowLess"
+                        style="display: none;">
+                  show less
+                </button>
+                <span id="mttShowAll"{{#unless mainBreakdown.ttShowMore}} style="display: none;"{{/unless}}>
+                  /
+                  <button class="gt-flat-btn gt-link-color">
+                    show all
+                  </button>
+                </span>
+              </div>
+            </div>
+          </td>
+        </tr>
         </tbody>
       </table>
       <button class="gt-indent1 gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
@@ -157,8 +208,8 @@
         </tr>
         </thead>
         <tbody>
-        {{#eachTimerFlattenedOrdered auxThreadRootTimers}}
-          <tr class="align-top">
+        {{#each auxBreakdown.flattenedTimers}}
+          <tr class="align-top" id="aft{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
             <td style="text-align: left;">
               <div class="gt-indent2 gt-break-word gt-second-line-indent">
                 {{name}}
@@ -167,7 +218,32 @@
             <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
             <td>{{formatInteger count}}</td>
           </tr>
-        {{/eachTimerFlattenedOrdered}}
+        {{/each}}
+        <tr class="align-top">
+          <td style="text-align: left;">
+            <div class="gt-indent2">
+              <div style="margin-left: -6px;">
+                <span tabindex="-1" id="aftForFocus"></span>
+                <button class="gt-flat-btn gt-link-color"
+                        id="aftShowMore"{{#unless auxBreakdown.ftShowMore}} style="display: none;"{{/unless}}>
+                  show more
+                </button>
+                <span id="aftShowMoreAndLess" style="display: none;">/</span>
+                <button class="gt-flat-btn gt-link-color"
+                        id="aftShowLess"
+                        style="display: none;">
+                  show less
+                </button>
+                <span id="aftShowAll"{{#unless auxBreakdown.ftShowMore}} style="display: none;"{{/unless}}>
+                  /
+                  <button class="gt-flat-btn gt-link-color">
+                    show all
+                  </button>
+                </span>
+              </div>
+            </div>
+          </td>
+        </tr>
         </tbody>
       </table>
       <button class="gt-indent1 gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
@@ -187,8 +263,8 @@
         </tr>
         </thead>
         <tbody>
-        {{#eachTimerOrdered auxThreadRootTimers}}
-          <tr class="align-top">
+        {{#each auxBreakdown.timers}}
+          <tr class="align-top" id="att{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
             <td style="text-align: left;">
               <div class="gt-indent2">
                 <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
@@ -199,7 +275,32 @@
             <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
             <td>{{formatInteger count}}</td>
           </tr>
-        {{/eachTimerOrdered}}
+        {{/each}}
+        <tr class="align-top">
+          <td style="text-align: left;">
+            <div class="gt-indent2">
+              <div style="margin-left: -6px;">
+                <span tabindex="-1" id="attForFocus"></span>
+                <button class="gt-flat-btn gt-link-color"
+                        id="attShowMore"{{#unless auxBreakdown.ttShowMore}} style="display: none;"{{/unless}}>
+                  show more
+                </button>
+                <span id="attShowMoreAndLess" style="display: none;">/</span>
+                <button class="gt-flat-btn gt-link-color"
+                        id="attShowLess"
+                        style="display: none;">
+                  show less
+                </button>
+                <span id="attShowAll"{{#unless auxBreakdown.ttShowMore}} style="display: none;"{{/unless}}>
+                  /
+                  <button class="gt-flat-btn gt-link-color">
+                    show all
+                  </button>
+                </span>
+              </div>
+            </div>
+          </td>
+        </tr>
         </tbody>
       </table>
       <button class="gt-indent1 gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"

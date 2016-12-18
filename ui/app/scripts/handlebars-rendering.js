@@ -57,34 +57,138 @@ HandlebarsRendering = (function () {
     return buffer;
   });
 
-  Handlebars.registerHelper('eachTimerOrdered', function (rootTimer, options) {
-    var buffer = '';
-
+  function traverseTimers(timers, callback) {
     function traverse(timer, depth) {
-      timer.depth = depth;
-      buffer += options.fn(timer);
+      callback(timer, depth);
       if (timer.childTimers) {
-        timer.childTimers.sort(function (a, b) {
-          return b.totalNanos - a.totalNanos;
-        });
-        $.each(timer.childTimers, function (index, nestedTimer) {
-          traverse(nestedTimer, depth + 1);
+        $.each(timer.childTimers, function (index, childTimer) {
+          traverse(childTimer, depth + 1);
         });
       }
     }
 
     // add the root node(s)
-    if ($.isArray(rootTimer)) {
-      $.each(rootTimer, function (index, item) {
-        traverse(item, 0);
+    if ($.isArray(timers)) {
+      $.each(timers, function (index, timer) {
+        traverse(timer, 0);
       });
     } else {
-      traverse(rootTimer, 0);
+      traverse(timers, 0);
     }
-    return buffer;
-  });
+  }
 
-  Handlebars.registerHelper('eachTimerFlattenedOrdered', function (rootTimer, options) {
+  function initTotalNanosList(breakdown) {
+    if (!breakdown.treeTimers) {
+      // e.g. no auxiliary threads
+      return;
+    }
+    breakdown.treeTotalNanosList = buildTotalNanosList(breakdown.treeTimers);
+    breakdown.flattenedTotalNanosList = buildTotalNanosList(breakdown.flattenedTimers);
+  }
+
+  function buildTotalNanosList(timers) {
+    var totalNanosList = [];
+    traverseTimers(timers, function (timer) {
+      totalNanosList.push(timer.totalNanos);
+    });
+    totalNanosList.sort(function (a, b) {
+      return b - a;
+    });
+    return totalNanosList;
+  }
+
+  function initOneLimit(breakdown, timers, totalNanosList) {
+    var limit = Math.min(breakdown.limit, totalNanosList.length);
+    var thresholdNanos = totalNanosList[limit - 1];
+    var count = 0;
+    traverseTimers(timers, function (timer) {
+      // count is to handle multiple timers equal to the threshold
+      timer.show = timer.totalNanos >= thresholdNanos && count++ < breakdown.limit;
+    });
+  }
+
+  function updateOneLimit(breakdown, prefix, timers) {
+    traverseTimers(timers, function (timer) {
+      if (timer.show) {
+        $('#' + breakdown.prefix + prefix + timer.id).show();
+      } else {
+        $('#' + breakdown.prefix + prefix + timer.id).hide();
+      }
+    });
+  }
+
+  function initLimit(breakdown) {
+    breakdown.ftShowMore = breakdown.limit < breakdown.flattenedTimers.length;
+    breakdown.ttShowMore = breakdown.limit < breakdown.timers.length;
+    breakdown.showLess = breakdown.limit !== 10;
+    initOneLimit(breakdown, breakdown.treeTimers, breakdown.treeTotalNanosList);
+    initOneLimit(breakdown, breakdown.flattenedTimers, breakdown.flattenedTotalNanosList);
+  }
+
+  function updateLimit(breakdown) {
+
+    initLimit(breakdown);
+
+    // note: multiple focus calls ok since calling focus on hidden element (e.g. flattened timers) has no effect
+    if (!breakdown.ftShowMore) {
+      // re-focus on visible element, otherwise up/down/pgup/pgdown/ESC don't work
+      $('#' + breakdown.prefix + 'ftForFocus').focus();
+    }
+    if (!breakdown.ttShowMore) {
+      // re-focus on visible element, otherwise up/down/pgup/pgdown/ESC don't work
+      $('#' + breakdown.prefix + 'ttForFocus').focus();
+    }
+    if (!breakdown.showLess) {
+      // re-focus on visible element, otherwise up/down/pgup/pgdown/ESC don't work
+      $('#' + breakdown.prefix + 'ttForFocus').focus();
+      $('#' + breakdown.prefix + 'ftForFocus').focus();
+    }
+
+    setTimeout(function () {
+      updateOneLimit(breakdown, 'tt', breakdown.treeTimers);
+      updateOneLimit(breakdown, 'ft', breakdown.flattenedTimers);
+
+      $('#' + breakdown.prefix + 'ttShowMore').toggle(breakdown.ttShowMore);
+      $('#' + breakdown.prefix + 'ttShowAll').toggle(breakdown.ttShowMore);
+
+      $('#' + breakdown.prefix + 'ftShowMore').toggle(breakdown.ftShowMore);
+      $('#' + breakdown.prefix + 'ftShowAll').toggle(breakdown.ftShowMore);
+
+      $('#' + breakdown.prefix + 'ttShowLess').toggle(breakdown.showLess);
+      $('#' + breakdown.prefix + 'ftShowLess').toggle(breakdown.showLess);
+
+      $('#' + breakdown.prefix + 'ttShowMoreAndLess').toggle(breakdown.ttShowMore && breakdown.showLess);
+      $('#' + breakdown.prefix + 'ftShowMoreAndLess').toggle(breakdown.ftShowMore && breakdown.showLess);
+    });
+  }
+
+  function initTimers(breakdown) {
+    if (!breakdown.treeTimers) {
+      // e.g. no auxiliary threads
+      return;
+    }
+    var nextId = 0;
+    var timers = [];
+
+    traverseTimers(breakdown.treeTimers, function (timer, depth) {
+      timer.id = nextId++;
+      timer.depth = depth;
+      timers.push(timer);
+      if (timer.childTimers) {
+        timer.childTimers.sort(function (a, b) {
+          return b.totalNanos - a.totalNanos;
+        });
+      }
+    });
+    breakdown.timers = timers;
+  }
+
+  function initFlattenedTimers(breakdown) {
+    if (!breakdown.treeTimers) {
+      // e.g. no auxiliary threads
+      return;
+    }
+    var nextId = 0;
     var flattenedTimerMap = {};
     var flattenedTimers = [];
 
@@ -95,7 +199,8 @@ HandlebarsRendering = (function () {
           name: timer.name,
           totalNanos: timer.totalNanos,
           count: timer.count,
-          active: timer.active
+          active: timer.active,
+          id: nextId++
         };
         flattenedTimerMap[timer.name] = flattenedTimer;
         flattenedTimers.push(flattenedTimer);
@@ -114,23 +219,20 @@ HandlebarsRendering = (function () {
     }
 
     // add the root node(s)
-    if ($.isArray(rootTimer)) {
-      $.each(rootTimer, function (index, item) {
+    if ($.isArray(breakdown.treeTimers)) {
+      $.each(breakdown.treeTimers, function (index, item) {
         traverse(item, []);
       });
     } else {
-      traverse(rootTimer, []);
+      traverse(breakdown.treeTimers, []);
     }
 
     flattenedTimers.sort(function (a, b) {
       return b.totalNanos - a.totalNanos;
     });
-    var buffer = '';
-    $.each(flattenedTimers, function (index, timer) {
-      buffer += options.fn(timer);
-    });
-    return buffer;
-  });
+
+    breakdown.flattenedTimers = flattenedTimers;
+  }
 
   Handlebars.registerHelper('ifNonEmptyObject', function (value, options) {
     if (value && !$.isEmptyObject(value)) {
@@ -216,6 +318,12 @@ HandlebarsRendering = (function () {
 
   Handlebars.registerHelper('entryDetailHtml', function (detail) {
     return messageDetailHtml(detail);
+  });
+
+  Handlebars.registerHelper('initialMftStyle', function (id) {
+    if (id > 10) {
+      return ' style="display: none;"';
+    }
   });
 
   function messageDetailHtml(detail, bold) {
@@ -1247,11 +1355,75 @@ HandlebarsRendering = (function () {
   }
 
   function formatWithExactlyOneFractionalDigit(value) {
-    return (Math.round(value * 10) / 10).toLocaleString(undefined, { minimumFractionDigits: 1 });
+    return (Math.round(value * 10) / 10).toLocaleString(undefined, {minimumFractionDigits: 1});
+  }
+
+  function registerShowMoreHandler(breakdown) {
+    $('#' + breakdown.prefix + 'ttShowMore').click(function () {
+      breakdown.limit *= 2;
+      updateLimit(breakdown);
+    });
+    $('#' + breakdown.prefix + 'ftShowMore').click(function () {
+      breakdown.limit *= 2;
+      updateLimit(breakdown);
+    });
+  }
+
+  function registerShowLessHandler(breakdown) {
+    $('#' + breakdown.prefix + 'ttShowLess').click(function () {
+      breakdown.limit /= 2;
+      updateLimit(breakdown);
+    });
+    $('#' + breakdown.prefix + 'ftShowLess').click(function () {
+      breakdown.limit /= 2;
+      while (breakdown.limit >= breakdown.flattenedTimers.length) {
+        // show less should always leave displayed list less than full list
+        breakdown.limit /= 2;
+      }
+      updateLimit(breakdown);
+    });
+  }
+
+  function registerShowAllHandler(breakdown) {
+    $('#' + breakdown.prefix + 'ttShowAll').click(function () {
+      while (breakdown.limit < breakdown.timers.length) {
+        breakdown.limit *= 2;
+      }
+      updateLimit(breakdown);
+    });
+    $('#' + breakdown.prefix + 'ftShowAll').click(function () {
+      while (breakdown.limit < breakdown.timers.length) {
+        breakdown.limit *= 2;
+      }
+      updateLimit(breakdown);
+    });
   }
 
   return {
     renderTrace: function (traceHeader, agentRollupId, agentId, traceId, checkLiveTraces, $selector) {
+
+      traceHeader.mainBreakdown = {
+        treeTimers: traceHeader.mainThreadRootTimer,
+        prefix: 'm',
+        limit: 10
+      };
+      traceHeader.auxBreakdown = {
+        treeTimers: traceHeader.auxThreadRootTimers,
+        prefix: 'a',
+        limit: 10
+      };
+      // initializing timers needs to occur before rendering
+      initTimers(traceHeader.mainBreakdown);
+      initTimers(traceHeader.auxBreakdown);
+      initFlattenedTimers(traceHeader.mainBreakdown);
+      initFlattenedTimers(traceHeader.auxBreakdown);
+
+      initTotalNanosList(traceHeader.mainBreakdown);
+      initTotalNanosList(traceHeader.auxBreakdown);
+
+      initLimit(traceHeader.mainBreakdown);
+      initLimit(traceHeader.auxBreakdown);
+
       var html = JST.trace(traceHeader);
       $selector.html(html);
       $selector.addClass('gt-trace-parent');
@@ -1262,6 +1434,15 @@ HandlebarsRendering = (function () {
         $selector.data('gtCheckLiveTraces', checkLiveTraces);
       }
       traceDurationNanos = traceHeader.durationNanos;
+
+      registerShowMoreHandler(traceHeader.mainBreakdown);
+      registerShowMoreHandler(traceHeader.auxBreakdown);
+
+      registerShowLessHandler(traceHeader.mainBreakdown);
+      registerShowLessHandler(traceHeader.auxBreakdown);
+
+      registerShowAllHandler(traceHeader.mainBreakdown);
+      registerShowAllHandler(traceHeader.auxBreakdown);
     },
     renderTraceFromExport: function (traceHeader, $selector, entries, sharedQueryTexts, mainThreadProfile,
                                      auxThreadProfile) {
