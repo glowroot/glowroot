@@ -111,6 +111,7 @@ class EmbeddedAgentModule {
                     viewerAgentModule.getConfigService(), pluginCache);
             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
                     configRepository, null);
+            simpleRepoModuleInit.countDown();
         } else {
             // trace module needs to be started as early as possible, so that weaving will be
             // applied to as many classes as possible
