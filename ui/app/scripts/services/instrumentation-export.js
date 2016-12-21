@@ -53,6 +53,9 @@ glowroot.factory('instrumentationExport', [
       if (!config.transactionAttributeTemplates || !Object.keys(config.transactionAttributeTemplates).length) {
         delete config.transactionAttributeTemplates;
       }
+      if (config.transactionSlowThresholdMillis === null) {
+        delete config.transactionSlowThresholdMillis;
+      }
       if (!config.transactionOuter) {
         delete config.transactionOuter;
       }
