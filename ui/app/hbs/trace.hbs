@@ -80,7 +80,7 @@
 {{#if mainThreadRootTimer}}
   <div class="gt-timers">
     <div class="gt-timers-table">
-      <table class="gt-inline-block" style="border-spacing: 0;">
+      <table class="gt-inline-block gt-trace-timer-table" style="border-spacing: 0;">
         <thead>
         <tr>
           <td class="gt-bold gt-breakdown-header" style="text-align: left;">
@@ -94,7 +94,7 @@
         {{#each mainBreakdown.flattenedTimers}}
           <tr class="align-top" id="mft{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
             <td style="text-align: left;">
-              <div class="gt-indent2 gt-break-word gt-second-line-indent">
+              <div class="gt-indent2 gt-break-word gt-break-word-plus gt-second-line-indent">
                 {{name}}
               </div>
             </td>
@@ -136,7 +136,7 @@
       </div>
     </div>
     <div class="hide gt-timers-table">
-      <table class="gt-inline-block" style="border-spacing: 0;">
+      <table class="gt-inline-block gt-trace-timer-table" style="border-spacing: 0;">
         <thead>
         <tr>
           <td class="gt-bold gt-breakdown-header" style="text-align: left;">
@@ -151,7 +151,7 @@
           <tr class="align-top" id="mtt{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
             <td style="text-align: left;">
               <div class="gt-indent2">
-                <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
+                <div class="gt-break-word gt-break-word-plus gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
                   {{name}}{{#if extended}} (extended){{/if}}
                 </div>
               </div>
@@ -197,7 +197,7 @@
 {{#if auxThreadRootTimers}}
   <div class="gt-timers">
     <div class="gt-timers-table">
-      <table class="gt-inline-block" style="border-spacing: 0;">
+      <table class="gt-inline-block gt-trace-timer-table" style="border-spacing: 0;">
         <thead>
         <tr>
           <td class="gt-bold gt-breakdown-header" style="text-align: left;">
@@ -211,7 +211,7 @@
         {{#each auxBreakdown.flattenedTimers}}
           <tr class="align-top" id="aft{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
             <td style="text-align: left;">
-              <div class="gt-indent2 gt-break-word gt-second-line-indent">
+              <div class="gt-indent2 gt-break-word gt-break-word-plus gt-second-line-indent">
                 {{name}}
               </div>
             </td>
@@ -252,7 +252,7 @@
       </button>
     </div>
     <div class="hide gt-timers-table">
-      <table class="gt-inline-block" style="border-spacing: 0;">
+      <table class="gt-inline-block gt-trace-timer-table" style="border-spacing: 0;">
         <thead>
         <tr>
           <td class="gt-bold gt-breakdown-header" style="text-align: left;">
@@ -267,7 +267,7 @@
           <tr class="align-top" id="att{{id}}"{{#unless show}} style="display: none;"{{/unless}}>
             <td style="text-align: left;">
               <div class="gt-indent2">
-                <div class="gt-break-word gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
+                <div class="gt-break-word gt-break-word-plus gt-second-line-indent" style="margin-left: {{timerIndent .}}px;">
                   {{name}}{{#if extended}} (extended){{/if}}
                 </div>
               </div>
@@ -327,7 +327,7 @@
         {{#each asyncTimers}}
           <tr class="align-top">
             <td style="text-align: left;">
-              <div class="gt-indent2 gt-break-word gt-second-line-indent">
+              <div class="gt-indent2 gt-break-word gt-break-word-plus gt-second-line-indent">
                 {{name}}
               </div>
             </td>
