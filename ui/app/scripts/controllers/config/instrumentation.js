@@ -114,7 +114,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
                 methodDeclaringClassName: '',
                 methodAnnotation: '',
                 nestingGroup: '',
-                priority: 0,
+                order: 0,
                 captureKind: 'transaction',
                 transactionType: '',
                 transactionNameTemplate: '',

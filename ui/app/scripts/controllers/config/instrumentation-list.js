@@ -165,7 +165,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
           methodAnnotation: '',
           methodReturnType: '',
           nestingGroup: '',
-          priority: 0,
+          order: 0,
           transactionType: '',
           transactionNameTemplate: '',
           transactionUserTemplate: '',

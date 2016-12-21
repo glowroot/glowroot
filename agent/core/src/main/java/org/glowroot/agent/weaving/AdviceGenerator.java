@@ -177,7 +177,7 @@ class AdviceGenerator {
         } else if (!config.traceEntryCaptureSelfNested()) {
             annotationVisitor.visit("nestingGroup", "__GeneratedAdvice" + uniqueNum);
         }
-        annotationVisitor.visit("priority", config.priority());
+        annotationVisitor.visit("order", config.order());
         annotationVisitor.visitEnd();
     }
 

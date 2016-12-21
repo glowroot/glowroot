@@ -86,7 +86,7 @@ message AgentConfig {
     string method_return_type = 7;
     repeated MethodModifier method_modifier = 8;
     string nesting_group = 9;
-    int32 priority = 10;
+    int32 order = 10;
     CaptureKind capture_kind = 11;
     string timer_name = 12;
     string trace_entry_message_template = 13;

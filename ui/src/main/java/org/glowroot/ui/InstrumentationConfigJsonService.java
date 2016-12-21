@@ -331,7 +331,7 @@ class InstrumentationConfigJsonService {
         abstract String methodReturnType();
         abstract ImmutableList<MethodModifier> methodModifiers();
         abstract String nestingGroup();
-        abstract int priority();
+        abstract int order();
         abstract CaptureKind captureKind();
         abstract String transactionType();
         abstract String transactionNameTemplate();
@@ -356,7 +356,7 @@ class InstrumentationConfigJsonService {
                     .setMethodReturnType(methodReturnType())
                     .addAllMethodModifier(methodModifiers())
                     .setNestingGroup(nestingGroup())
-                    .setPriority(priority())
+                    .setOrder(order())
                     .setCaptureKind(captureKind())
                     .setTransactionType(transactionType())
                     .setTransactionNameTemplate(transactionNameTemplate())
@@ -393,7 +393,7 @@ class InstrumentationConfigJsonService {
                             .methodReturnType(config.getMethodReturnType())
                             .addAllMethodModifiers(config.getMethodModifierList())
                             .nestingGroup(config.getNestingGroup())
-                            .priority(config.getPriority())
+                            .order(config.getOrder())
                             .captureKind(config.getCaptureKind())
                             .transactionType(config.getTransactionType())
                             .transactionNameTemplate(config.getTransactionNameTemplate())

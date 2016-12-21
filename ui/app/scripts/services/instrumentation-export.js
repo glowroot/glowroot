@@ -38,8 +38,8 @@ glowroot.factory('instrumentationExport', [
       if (!config.nestingGroup) {
         delete config.nestingGroup;
       }
-      if (!config.priority) {
-        delete config.priority;
+      if (!config.order) {
+        delete config.order;
       }
       if (!config.transactionType) {
         delete config.transactionType;

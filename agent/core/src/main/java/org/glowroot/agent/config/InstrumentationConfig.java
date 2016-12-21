@@ -91,7 +91,7 @@ public abstract class InstrumentationConfig {
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
-    public int priority() {
+    public int order() {
         return 0;
     }
 
@@ -230,7 +230,7 @@ public abstract class InstrumentationConfig {
                         .addAllMethodParameterType(methodParameterTypes())
                         .setMethodReturnType(methodReturnType())
                         .addAllMethodModifier(methodModifiers())
-                        .setPriority(priority())
+                        .setOrder(order())
                         .setCaptureKind(captureKind())
                         .setTransactionType(transactionType())
                         .setTransactionNameTemplate(transactionNameTemplate())
@@ -265,7 +265,7 @@ public abstract class InstrumentationConfig {
                 .addAllMethodParameterTypes(config.getMethodParameterTypeList())
                 .methodReturnType(config.getMethodReturnType())
                 .addAllMethodModifiers(config.getMethodModifierList())
-                .priority(config.getPriority())
+                .order(config.getOrder())
                 .captureKind(config.getCaptureKind())
                 .transactionType(config.getTransactionType())
                 .transactionNameTemplate(config.getTransactionNameTemplate())
