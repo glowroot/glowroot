@@ -81,17 +81,18 @@ glowroot.controller('ConfigGaugeCtrl', [
 
     if (version) {
       $http.get('backend/config/gauges?agent-id=' + encodeURIComponent($scope.agentId) + '&version=' + version)
-          .success(function (data) {
+          .then(function (response) {
             $scope.loaded = true;
-            $scope.agentNotConnected = data.agentNotConnected;
-            onNewData(data);
-          })
-          .error(httpErrors.handler($scope));
+            $scope.agentNotConnected = response.data.agentNotConnected;
+            onNewData(response.data);
+          }, function (response) {
+            httpErrors.handle(response, $scope);
+          });
     } else {
       $http.get('backend/config/new-gauge-check-agent-connected?agent-id=' + encodeURIComponent($scope.agentId))
-          .success(function (data) {
+          .then(function (response) {
             $scope.loaded = true;
-            $scope.agentNotConnected = !data;
+            $scope.agentNotConnected = !response.data;
             onNewData({
               config: {
                 mbeanAttributes: []
@@ -99,8 +100,9 @@ glowroot.controller('ConfigGaugeCtrl', [
               mbeanAvailable: false,
               mbeanAvailableAttributeNames: []
             });
-          })
-          .error(httpErrors.handler($scope));
+          }, function (response) {
+            httpErrors.handle(response, $scope);
+          });
     }
 
     $scope.$watch('allMBeanAttributes', function (newValue, oldValue) {
@@ -145,7 +147,7 @@ glowroot.controller('ConfigGaugeCtrl', [
             return response.data;
           }, function (response) {
             $scope.showMBeanObjectNameSpinner--;
-            httpErrors.handler($scope)(response.data, response.status);
+            httpErrors.handle(response, $scope);
           });
     };
 
@@ -177,8 +179,9 @@ glowroot.controller('ConfigGaugeCtrl', [
       };
       $scope.mbeanAttributesLoading = true;
       $http.get('backend/config/mbean-attributes' + queryStrings.encodeObject(queryData))
-          .success(function (data) {
+          .then(function (response) {
             $scope.mbeanAttributesLoading = false;
+            var data = response.data;
             $scope.mbeanUnavailable = data.mbeanUnavailable;
             $scope.mbeanUnmatched = data.mbeanUnmatched;
             $scope.duplicateMBean = data.duplicateMBean;
@@ -191,10 +194,9 @@ glowroot.controller('ConfigGaugeCtrl', [
                 available: true
               });
             });
-          })
-          .error(function (data, status) {
+          }, function (response) {
             $scope.mbeanAttributesLoading = false;
-            httpErrors.handler($scope)(data, status);
+            httpErrors.handle(response, $scope);
           });
     }
 
@@ -218,24 +220,23 @@ glowroot.controller('ConfigGaugeCtrl', [
       }
       var agentId = $scope.agentId;
       $http.post(url + '?agent-id=' + encodeURIComponent(agentId), postData)
-          .success(function (data) {
-            onNewData(data);
+          .then(function (response) {
+            onNewData(response.data);
             deferred.resolve(version ? 'Saved' : 'Added');
-            version = data.config.version;
+            version = response.data.config.version;
             // fix current url (with updated version) before returning to list page in case back button is used later
             if (agentId) {
               $location.search({'agent-id': agentId, v: version}).replace();
             } else {
               $location.search({v: version}).replace();
             }
-          })
-          .error(function (data, status) {
-            if (status === 409 && data.message === 'mbeanObjectName') {
+          }, function (response) {
+            if (response.status === 409 && response.data.message === 'mbeanObjectName') {
               $scope.duplicateMBean = true;
               deferred.reject('There is already a gauge for this MBean');
               return;
             }
-            httpErrors.handler($scope, deferred)(data, status);
+            httpErrors.handle(response, $scope, deferred);
           });
     };
 
@@ -245,15 +246,16 @@ glowroot.controller('ConfigGaugeCtrl', [
       };
       var agentId = $scope.agentId;
       $http.post('backend/config/gauges/remove?agent-id=' + encodeURIComponent(agentId), postData)
-          .success(function () {
+          .then(function () {
             removeConfirmIfHasChangesListener();
             if (agentId) {
               $location.url('config/gauge-list?agent-id=' + encodeURIComponent(agentId)).replace();
             } else {
               $location.url('config/gauge-list').replace();
             }
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
   }
 ]);

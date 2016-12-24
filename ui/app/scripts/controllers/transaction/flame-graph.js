@@ -68,8 +68,9 @@ glowroot.controller('TransactionFlameGraphCtrl', [
         truncateBranchPercentage: $scope.truncateBranchPercentage
       };
       $http.get('backend/transaction/flame-graph' + queryStrings.encodeObject(query))
-          .success(function (data) {
+          .then(function (response) {
             $scope.loaded = true;
+            var data = response.data;
             if (data.rootNodes.length === 0) {
               $scope.chartNoData = true;
             } else {
@@ -96,8 +97,9 @@ glowroot.controller('TransactionFlameGraphCtrl', [
                   .datum(chartData)
                   .call(flameGraph);
             }
-          })
-          .error(httpErrors.handler($scope));
+          }, function (response) {
+            httpErrors.handle(response, $scope);
+          });
     }
   }
 ]);

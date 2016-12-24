@@ -39,8 +39,8 @@ class App {
     }
 
     String getBaseUrl() {
-        if (driver.getCurrentUrl().contains("/#/")) {
-            return baseUrl + "/#";
+        if (driver.getCurrentUrl().contains("/#!/")) {
+            return baseUrl + "/#!";
         } else {
             return baseUrl;
         }

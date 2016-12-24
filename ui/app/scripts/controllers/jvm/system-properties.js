@@ -33,15 +33,17 @@ glowroot.controller('JvmSystemPropertiesCtrl', [
     };
 
     $http.get('backend/jvm/system-properties?agent-id=' + encodeURIComponent($scope.agentId))
-        .success(function (data) {
+        .then(function (response) {
           $scope.loaded = true;
+          var data = response.data;
           $scope.agentNotConnected = data.agentNotConnected;
           $scope.agentUnsupportedOperation = data.agentUnsupportedOperation;
           if ($scope.agentNotConnected || $scope.agentUnsupportedOperation) {
             return;
           }
           $scope.properties = data.properties;
-        })
-        .error(httpErrors.handler($scope));
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
   }
 ]);

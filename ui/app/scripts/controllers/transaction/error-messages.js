@@ -68,7 +68,7 @@ glowroot.controller('ErrorMessagesCtrl', [
       }
       $scope.suppressChartSpinner = false;
       $http.get('backend/error/messages' + queryStrings.encodeObject(query))
-          .success(function (data) {
+          .then(function (response) {
             // clear http error, especially useful for auto refresh on live data to clear a sporadic error from earlier
             $scope.httpError = undefined;
             if (showChartSpinner) {
@@ -78,6 +78,7 @@ glowroot.controller('ErrorMessagesCtrl', [
               // ignore this response, another response has been stacked
               return;
             }
+            var data = response.data;
             $scope.chartNoData = !data.dataSeries.data.length;
             // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
             chartState.plot.getAxes().xaxis.options.min = query.from;
@@ -97,12 +98,11 @@ glowroot.controller('ErrorMessagesCtrl', [
             if (deferred) {
               deferred.resolve();
             }
-          })
-          .error(function (data, status) {
+          }, function (response) {
             if (showChartSpinner) {
               $scope.showChartSpinner--;
             }
-            httpErrors.handler($scope, deferred)(data, status);
+            httpErrors.handle(response, $scope, deferred);
           });
     }
 

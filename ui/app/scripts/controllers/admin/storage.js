@@ -69,24 +69,29 @@ glowroot.controller('AdminStorageCtrl', [
 
     $scope.save = function (deferred) {
       $http.post('backend/admin/storage', $scope.config)
-          .success(function (data) {
-            onNewData(data);
+          .then(function (response) {
+            onNewData(response.data);
             deferred.resolve('Saved');
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $scope.deleteAllStoredData = function (deferred) {
       $http.post('backend/admin/delete-all-stored-data', {agentRollupId: $scope.agentRollupId})
-          .success(function () {
+          .then(function () {
             deferred.resolve('Deleted');
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $http.get('backend/admin/storage')
-        .success(onNewData)
-        .error(httpErrors.handler($scope));
+        .then(function (response) {
+          onNewData(response.data);
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
 
     // not using gt-form-autofocus-on-first-input in order to handle special case #rollup-capped-database-size and
     // #trace-capped-database-size urls

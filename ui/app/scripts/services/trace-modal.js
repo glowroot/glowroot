@@ -33,7 +33,8 @@ glowroot.factory('traceModal', [
         url += '&check-live-traces=true';
       }
       $http.get(url)
-          .success(function (data) {
+          .then(function (response) {
+            var data = response.data;
             spinner.stop();
             $('#chart canvas').hide();
             if (data.expired) {
@@ -56,8 +57,7 @@ glowroot.factory('traceModal', [
                 window.location = url;
               });
             }
-          })
-          .error(function () {
+          }, function () {
             $modalContent.html(
                 '<div class="gt-red" style="padding: 1em;">An error occurred retrieving the trace</div>');
           });

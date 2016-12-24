@@ -401,25 +401,27 @@ glowroot.controller('AdminRoleCtrl', [
 
     if ($scope.name) {
       $http.get('backend/admin/roles?name=' + encodeURIComponent($scope.name))
-          .success(function (data) {
+          .then(function (response) {
             $scope.loaded = true;
-            onNewData(data);
-          })
-          .error(httpErrors.handler($scope));
+            onNewData(response.data);
+          }, function (response) {
+            httpErrors.handle(response, $scope);
+          });
     } else if (!$scope.layout.embedded) {
       // can't just use $scope.layout.agentRollups here since that list is filtered by current user's permission
       $http.get('backend/admin/all-agent-rollups')
-          .success(function (data) {
+          .then(function (response) {
             $scope.loaded = true;
             onNewData({
               config: {
                 permissions: [],
                 permissionBlocks: []
               },
-              allAgentRollups: data
+              allAgentRollups: response.data
             });
-          })
-          .error(httpErrors.handler($scope));
+          }, function (response) {
+            httpErrors.handle(response, $scope);
+          });
     } else {
       $scope.loaded = true;
       onNewData({
@@ -460,7 +462,8 @@ glowroot.controller('AdminRoleCtrl', [
         url = 'backend/admin/roles/add';
       }
       $http.post(url, postData)
-          .success(function (data) {
+          .then(function (response) {
+            var data = response.data;
             // preserve permission ordering if possible in order to preserve permission block ordering
             // otherwise maybe confusing to user to have order suddenly change after save
             if (listsEqualOrderInsensitive(data.config.permissions, postData.permissions)) {
@@ -472,14 +475,13 @@ glowroot.controller('AdminRoleCtrl', [
               $scope.name = data.config.name;
               $location.search({name: $scope.name}).replace();
             }
-          })
-          .error(function (data, status) {
-            if (status === 409 && data.message === 'name') {
+          }, function (response) {
+            if (response.status === 409 && response.data.message === 'name') {
               $scope.duplicateName = true;
               deferred.reject('There is already a role with this name');
               return;
             }
-            httpErrors.handler($scope, deferred)(data, status);
+            httpErrors.handle(response, $scope, deferred);
           });
     };
 
@@ -488,15 +490,16 @@ glowroot.controller('AdminRoleCtrl', [
         name: $scope.name
       };
       $http.post('backend/admin/roles/remove', postData)
-          .success(function (data) {
-            if (data.errorCannotDeleteLastRole) {
+          .then(function (response) {
+            if (response.data.errorCannotDeleteLastRole) {
               deferred.reject('Cannot delete last role');
               return;
             }
             removeConfirmIfHasChangesListener();
             $location.url('admin/role-list').replace();
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
   }
 ]);

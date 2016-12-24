@@ -97,8 +97,9 @@ glowroot.controller('TransactionServicesCtrl', [
 
       $scope.showSpinner++;
       $http.get('backend/transaction/service-calls' + queryStrings.encodeObject(query))
-          .success(function (data) {
+          .then(function (response) {
             $scope.showSpinner--;
+            var data = response.data;
             if (data.overwritten) {
               $scope.showOverwrittenMessage = true;
               $scope.showServiceCalls = false;
@@ -122,10 +123,9 @@ glowroot.controller('TransactionServicesCtrl', [
             if ($scope.type && $scope.types.indexOf($scope.type) === -1) {
               $scope.types.push($scope.type);
             }
-          })
-          .error(function (data, status) {
+          }, function (response) {
             $scope.showSpinner--;
-            httpErrors.handler($scope)(data, status);
+            httpErrors.handle(response, $scope);
           });
     }
   }

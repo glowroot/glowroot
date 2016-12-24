@@ -219,13 +219,14 @@ glowroot.controller('ReportAdhocCtrl', [
       $scope.showChartSpinner++;
       $scope.showChart = true;
       $http.get('backend/report' + queryStrings.encodeObject(query))
-          .success(function (data) {
+          .then(function (response) {
             $scope.showChartSpinner--;
             if ($scope.showChartSpinner) {
               // ignore this response, another response has been stacked
               return;
             }
             var nodata = true;
+            var data = response.data;
             for (var i = 0; i < data.dataSeries.length; i++) {
               var points = data.dataSeries[i].data;
               if (nodata) {
@@ -311,10 +312,9 @@ glowroot.controller('ReportAdhocCtrl', [
                 agentRollupId: query.agentRollupIds[seriesIndex]
               });
             }
-          })
-          .error(function (data, status) {
+          }, function (response) {
             $scope.showChartSpinner--;
-            httpErrors.handler($scope)(data, status);
+            httpErrors.handle(response, $scope);
           });
     }
 

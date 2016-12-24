@@ -77,20 +77,21 @@ glowroot.controller('JvmThreadDumpCtrl', [
 
     $scope.refresh = function (deferred) {
       $http.get('backend/jvm/thread-dump?agent-id=' + encodeURIComponent($scope.agentId))
-          .success(function (data) {
+          .then(function (response) {
             $scope.loaded = true;
-            $scope.agentNotConnected = data.agentNotConnected;
+            $scope.agentNotConnected = response.data.agentNotConnected;
             if ($scope.agentNotConnected) {
               return;
             }
             // $.trim() is needed because this template is sensitive to surrounding spaces
-            threadDumpHtml = $.trim(JST['thread-dump'](data));
+            threadDumpHtml = $.trim(JST['thread-dump'](response.data));
             $('#threadDump').html('<br>' + threadDumpHtml);
             if (deferred) {
               deferred.resolve('Refreshed');
             }
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $scope.refresh();

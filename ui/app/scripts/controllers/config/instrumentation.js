@@ -86,17 +86,18 @@ glowroot.controller('ConfigInstrumentationCtrl', [
 
     if (version) {
       $http.get('backend/config/instrumentation?agent-id=' + encodeURIComponent($scope.agentId) + '&version=' + version)
-          .success(function (data) {
+          .then(function (response) {
             $scope.loaded = true;
-            $scope.agentNotConnected = data.agentNotConnected;
-            onNewData(data);
-          })
-          .error(httpErrors.handler($scope));
+            $scope.agentNotConnected = response.data.agentNotConnected;
+            onNewData(response.data);
+          }, function (response) {
+            httpErrors.handle(response, $scope);
+          });
     } else {
       $http.get('backend/config/new-instrumentation-check-agent-connected?agent-id=' + encodeURIComponent($scope.agentId))
-          .success(function (data) {
+          .then(function (response) {
             $scope.loaded = true;
-            $scope.agentNotConnected = !data;
+            $scope.agentNotConnected = !response.data;
             if ($scope.agentNotConnected) {
               $scope.methodSignatures = [{
                 name: '',
@@ -127,8 +128,9 @@ glowroot.controller('ConfigInstrumentationCtrl', [
                 traceEntryEnabledProperty: ''
               }
             });
-          })
-          .error(httpErrors.handler($scope));
+          }, function (response) {
+            httpErrors.handle(response, $scope);
+          });
     }
 
     $scope.hasChanges = function () {
@@ -163,7 +165,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
             return response.data;
           }, function (response) {
             $scope.showClassNameSpinner--;
-            httpErrors.handler($scope)(response.data, response.status);
+            httpErrors.handle(response, $scope);
           });
     };
 
@@ -203,7 +205,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
             return response.data;
           }, function (response) {
             $scope.showMethodNameSpinner--;
-            httpErrors.handler($scope)(response.data, response.status);
+            httpErrors.handle(response, $scope);
           });
     };
 
@@ -298,18 +300,19 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       }
       var agentId = $scope.agentId;
       $http.post(url + '?agent-id=' + encodeURIComponent(agentId), postData)
-          .success(function (data) {
-            onNewData(data);
+          .then(function (response) {
+            onNewData(response.data);
             deferred.resolve(version ? 'Saved' : 'Added');
-            version = data.config.version;
+            version = response.data.config.version;
             // fix current url (with updated version) before returning to list page in case back button is used later
             if (agentId) {
               $location.search({'agent-id': agentId, v: version}).replace();
             } else {
               $location.search({v: version}).replace();
             }
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $scope.delete = function (deferred) {
@@ -320,15 +323,16 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       };
       var agentId = $scope.agentId;
       $http.post('backend/config/instrumentation/remove?agent-id=' + encodeURIComponent(agentId), postData)
-          .success(function () {
+          .then(function () {
             removeConfirmIfHasChangesListener();
             if (agentId) {
               $location.url('config/instrumentation-list?agent-id=' + encodeURIComponent(agentId)).replace();
             } else {
               $location.url('config/instrumentation-list').replace();
             }
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $scope.exportToJson = function () {
@@ -360,23 +364,22 @@ glowroot.controller('ConfigInstrumentationCtrl', [
         methodName: methodName
       };
       $http.get('backend/config/method-signatures' + queryStrings.encodeObject(queryData))
-          .success(function (data) {
+          .then(function (response) {
             resetMethodSignatures(methodName);
-            $scope.methodSignatures = data;
+            $scope.methodSignatures = response.data;
             $scope.methodSignatures.unshift({
               name: methodName,
               parameterTypes: ['..'],
               returnType: '',
               modifiers: []
             });
-            if (data.length === 1) {
-              $scope.selectedMethodSignature = data[0];
+            if (response.data.length === 1) {
+              $scope.selectedMethodSignature = response.data[0];
             } else {
               $scope.selectedMethodSignature = undefined;
             }
-          })
-          .error(function (data, status) {
-            httpErrors.handler($scope)(data, status);
+          }, function (response) {
+            httpErrors.handle(response, $scope);
           });
     }
 

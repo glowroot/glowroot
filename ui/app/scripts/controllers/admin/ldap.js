@@ -81,11 +81,12 @@ glowroot.controller('AdminLdapCtrl', [
 
     $scope.save = function (deferred) {
       $http.post('backend/admin/ldap', $scope.config)
-          .success(function (data) {
+          .then(function (response) {
             deferred.resolve('Saved');
-            onNewData(data);
-          })
-          .error(httpErrors.handler($scope, deferred));
+            onNewData(response.data);
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $scope.testConnection = function (deferred) {
@@ -94,7 +95,8 @@ glowroot.controller('AdminLdapCtrl', [
       postData.authTestUsername = $scope.page.authTestUsername;
       postData.authTestPassword = $scope.page.authTestPassword;
       $http.post('backend/admin/test-ldap-connection', postData)
-          .success(function (data) {
+          .then(function (response) {
+            var data = response.data;
             if (data.error) {
               deferred.reject(data.message);
             } else if (data.glowrootRoles.length) {
@@ -107,12 +109,16 @@ glowroot.controller('AdminLdapCtrl', [
               deferred.reject(
                   'Authentication succeeded, but the LDAP group query did not find any groups for this user');
             }
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $http.get('backend/admin/ldap')
-        .success(onNewData)
-        .error(httpErrors.handler($scope));
+        .then(function (response) {
+          onNewData(response.data);
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
   }
 ]);

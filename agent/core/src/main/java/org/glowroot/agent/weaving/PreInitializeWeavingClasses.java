@@ -374,6 +374,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.ClassVisitor");
         types.add("org.objectweb.asm.ClassWriter");
         types.add("org.objectweb.asm.Context");
+        types.add("org.objectweb.asm.CurrentFrame");
         types.add("org.objectweb.asm.Edge");
         types.add("org.objectweb.asm.FieldVisitor");
         types.add("org.objectweb.asm.FieldWriter");

@@ -16,7 +16,7 @@
   <description>Glowroot Agent Core</description>
 
   <properties>
-    <asm.version>5.1</asm.version>
+    <asm.version>5.2</asm.version>
   </properties>
 
   <dependencies>
@@ -173,7 +173,7 @@
       <!-- this is included to test weaving against jdk 1.7 bytecode -->
       <groupId>io.undertow</groupId>
       <artifactId>undertow-core</artifactId>
-      <version>1.4.7.Final</version>
+      <version>1.4.8.Final</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -181,7 +181,7 @@
         dependencies -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <version>4.3.4.RELEASE</version>
+      <version>4.3.5.RELEASE</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

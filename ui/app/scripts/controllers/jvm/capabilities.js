@@ -29,14 +29,15 @@ glowroot.controller('JvmCapabilitiesCtrl', [
     }
 
     $http.get('backend/jvm/capabilities?agent-id=' + encodeURIComponent($scope.agentId))
-        .success(function (data) {
+        .then(function (response) {
           $scope.loaded = true;
-          $scope.agentNotConnected = data.agentNotConnected;
+          $scope.agentNotConnected = response.data.agentNotConnected;
           if ($scope.agentNotConnected) {
             return;
           }
-          $scope.capabilities = data;
-        })
-        .error(httpErrors.handler($scope));
+          $scope.capabilities = response.data;
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
   }
 ]);

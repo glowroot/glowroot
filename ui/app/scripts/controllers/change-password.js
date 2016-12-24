@@ -40,15 +40,16 @@ glowroot.controller('ChangePasswordCtrl', [
         newPassword: $scope.page.newPassword
       };
       $http.post('backend/change-password', postData)
-          .success(function (data) {
-            if (data.currentPasswordIncorrect) {
+          .then(function (response) {
+            if (response.data.currentPasswordIncorrect) {
               deferred.reject('Current password is incorrect');
               return;
             }
             $scope.page = {};
             deferred.resolve('Password has been changed');
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
   }
 ]);

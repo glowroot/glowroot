@@ -23,10 +23,11 @@ glowroot.controller('AdminRoleListCtrl', [
   function ($scope, $http, httpErrors) {
 
     $http.get('backend/admin/roles')
-        .success(function (data) {
+        .then(function (response) {
           $scope.loaded = true;
-          $scope.roles = data;
-        })
-        .error(httpErrors.handler($scope));
+          $scope.roles = response.data;
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
   }
 ]);

@@ -53,29 +53,34 @@ glowroot.controller('AdminSmtpCtrl', [
 
     $scope.save = function (deferred) {
       $http.post('backend/admin/smtp', $scope.config)
-          .success(function (data) {
-            onNewData(data);
+          .then(function (response) {
+            onNewData(response.data);
             deferred.resolve('Saved');
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $scope.sendTestEmail = function (deferred) {
       var postData = angular.copy($scope.config);
       postData.testEmailRecipient = $scope.page.testEmailRecipient;
       $http.post('backend/admin/send-test-email', postData)
-          .success(function (data) {
-            if (data.error) {
-              deferred.reject(data.message);
+          .then(function (response) {
+            if (response.data.error) {
+              deferred.reject(response.data.message);
             } else {
               deferred.resolve('Sent');
             }
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $http.get('backend/admin/smtp')
-        .success(onNewData)
-        .error(httpErrors.handler($scope));
+        .then(function (response) {
+          onNewData(response.data);
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
   }
 ]);

@@ -38,11 +38,11 @@ glowroot.controller('ConfigPluginListCtrl', [
     };
 
     $http.get('backend/config/plugins?agent-id=' + encodeURIComponent($scope.agentId))
-        .success(function (data) {
+        .then(function (response) {
           $scope.loaded = true;
           $scope.plugins = [];
           var pluginsWithNoConfig = [];
-          angular.forEach(data, function (plugin) {
+          angular.forEach(response.data, function (plugin) {
             if (plugin.hasConfig) {
               $scope.plugins.push(plugin);
             } else {
@@ -50,7 +50,8 @@ glowroot.controller('ConfigPluginListCtrl', [
             }
           });
           $scope.pluginsWithNoConfig = pluginsWithNoConfig.join(', ');
-        })
-        .error(httpErrors.handler($scope));
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
   }
 ]);

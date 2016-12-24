@@ -48,7 +48,8 @@ glowroot.controller('AdminWebCtrl', [
       var previousActivePort = $scope.activePort;
       var changingHttps = $scope.config.https !== $scope.activeHttps;
       $http.post('backend/admin/web', postData)
-          .success(function (data) {
+          .then(function (response) {
+            var data = response.data;
             if (data.httpsRequiredFilesDoNotExist) {
               deferred.reject('The SSL certificate and private key to be used must be placed in the glowroot directory'
                   + ' with filenames certificate.pem and private.pem before enabling HTTPS');
@@ -78,8 +79,8 @@ glowroot.controller('AdminWebCtrl', [
             }
             if ($location.port() !== previousActivePort) {
               deferred.reject('The save succeeded, and switching the http listener over to the new port' +
-              ' succeeded, but you are not being redirected to the new ' + text + ' since it seems you are using an' +
-              ' intermediary proxy?');
+                  ' succeeded, but you are not being redirected to the new ' + text + ' since it seems you are using an' +
+                  ' intermediary proxy?');
               return;
             }
             deferred.resolve('Saved, redirecting to new ' + text + ' ...');
@@ -92,12 +93,16 @@ glowroot.controller('AdminWebCtrl', [
               newUrl += $location.path();
               document.location.href = newUrl;
             }, 500);
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $http.get('backend/admin/web')
-        .success(onNewData)
-        .error(httpErrors.handler($scope));
+        .then(function (response) {
+          onNewData(response.data);
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
   }
 ]);

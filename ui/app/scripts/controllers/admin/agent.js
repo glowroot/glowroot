@@ -38,11 +38,12 @@ glowroot.controller('AdminAgentCtrl', [
     }
 
     $http.get('backend/admin/agent-rollups?agent-rollup-id=' + encodeURIComponent(agentRollupId))
-        .success(function (data) {
+        .then(function (response) {
           $scope.loaded = true;
-          onNewData(data);
-        })
-        .error(httpErrors.handler($scope));
+          onNewData(response.data);
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
 
     $scope.hasChanges = function () {
       return !angular.equals($scope.config, $scope.originalConfig);
@@ -52,11 +53,12 @@ glowroot.controller('AdminAgentCtrl', [
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
       $http.post('backend/admin/agent-rollups/update', postData)
-          .success(function (data) {
-            onNewData(data);
+          .then(function (response) {
+            onNewData(response.data);
             deferred.resolve('Saved');
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $scope.displayDeleteConfirmationModal = function () {
@@ -69,15 +71,14 @@ glowroot.controller('AdminAgentCtrl', [
       };
       $scope.deleting = true;
       $http.post('backend/admin/agent-rollups/remove', postData)
-          .success(function () {
+          .then(function () {
             $scope.deleting = false;
             $('#deleteConfirmationModal').modal('hide');
             removeConfirmIfHasChangesListener();
             $location.url('admin/agent-list').replace();
-          })
-          .error(function (data, status) {
+          }, function (response) {
             $scope.deleting = false;
-            httpErrors.handler($scope)(data, status);
+            httpErrors.handle(response, $scope);
           });
     };
   }

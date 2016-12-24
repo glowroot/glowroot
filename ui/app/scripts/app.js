@@ -46,10 +46,11 @@ glowroot.config([
             var layoutVersion = response.headers('Glowroot-Layout-Version');
             if (layoutVersion && $rootScope.layout && layoutVersion !== $rootScope.layout.version) {
               $injector.get('$http').get('backend/layout')
-                  .success(function (data) {
-                    $rootScope.setLayout(data);
+                  .then(function (response) {
+                    $rootScope.setLayout(response.data);
+                  }, function (response) {
+                    // TODO handle error()
                   });
-              // TODO handle error() above
             }
             return response;
           },
@@ -199,16 +200,15 @@ glowroot.run([
       $navbarCollapse.removeClass('in');
       $navbarCollapse.addClass('collapse');
       $http.post('backend/sign-out')
-          .success(function (data) {
-            $rootScope.setLayout(data);
+          .then(function (response) {
+            $rootScope.setLayout(response.data);
             if (!$rootScope.layout.redirectToLogin) {
               $rootScope.displaySignOutMessage = true;
               $timeout(function () {
                 $rootScope.displaySignOutMessage = false;
               }, 2000);
             }
-          })
-          .error(function () {
+          }, function () {
             // there is not an obvious placement on the screen for this error message
             // since the action is triggered from navbar on any screen
             alert('An error occurred during log out');
@@ -285,8 +285,8 @@ glowroot.run([
     } else {
       // running in dev under 'grunt serve'
       $http.get('backend/layout')
-          .success(function (data) {
-            $rootScope.setLayout(data);
+          .then(function (response) {
+            $rootScope.setLayout(response.data);
           });
     }
 

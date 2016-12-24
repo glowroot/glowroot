@@ -98,7 +98,8 @@ glowroot.controller('TracesCtrl', [
       }
       $scope.suppressChartSpinner = false;
       $http.get('backend/' + traceKind + '/points' + queryStrings.encodeObject(query))
-          .success(function (data) {
+          .then(function (response) {
+            var data = response.data;
             function tryHighlight(dataPoints, dataSeries) {
               var i;
               for (i = 0; i < dataPoints.length; i++) {
@@ -155,12 +156,11 @@ glowroot.controller('TracesCtrl', [
             if (deferred) {
               deferred.resolve('Success');
             }
-          })
-          .error(function (data, status) {
+          }, function (response) {
             if (showChartSpinner) {
               $scope.showChartSpinner--;
             }
-            httpErrors.handler($scope, deferred)(data, status);
+            httpErrors.handle(response, $scope, deferred);
           });
     }
 

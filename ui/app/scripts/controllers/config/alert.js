@@ -74,20 +74,22 @@ glowroot.controller('ConfigAlertCtrl', [
     }
 
     $http.get('backend/jvm/all-gauges?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
-        .success(function (data) {
+        .then(function (response) {
           onHalfLoad();
           $scope.gaugeNames = [];
-          $scope.gauges = data;
-        })
-        .error(httpErrors.handler($scope));
+          $scope.gauges = response.data;
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
 
     if (version) {
       $http.get('backend/config/alerts?agent-id=' + encodeURIComponent($scope.agentId) + '&version=' + version)
-          .success(function (data) {
+          .then(function (response) {
             onHalfLoad();
-            onNewData(data);
-          })
-          .error(httpErrors.handler($scope));
+            onNewData(response.data);
+          }, function (response) {
+            httpErrors.handle(response, $scope);
+          });
     } else {
       onHalfLoad();
       onNewData({
@@ -151,19 +153,18 @@ glowroot.controller('ConfigAlertCtrl', [
       }
       var agentId = $scope.agentId;
       $http.post(url + '?agent-id=' + encodeURIComponent(agentId), postData)
-          .success(function (data) {
-            onNewData(data);
+          .then(function (response) {
+            onNewData(response.data);
             deferred.resolve(version ? 'Saved' : 'Added');
-            version = data.version;
+            version = response.data.version;
             // fix current url (with updated version) before returning to list page in case back button is used later
             if (agentId) {
               $location.search({'agent-id': agentId, v: version}).replace();
             } else {
               $location.search({v: version}).replace();
             }
-          })
-          .error(function (data, status) {
-            httpErrors.handler($scope, deferred)(data, status);
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
           });
     };
 
@@ -173,15 +174,16 @@ glowroot.controller('ConfigAlertCtrl', [
       };
       var agentId = $scope.agentId;
       $http.post('backend/config/alerts/remove?agent-id=' + encodeURIComponent(agentId), postData)
-          .success(function () {
+          .then(function () {
             removeConfirmIfHasChangesListener();
             if (postData) {
               $location.url('config/alert-list?agent-id=' + encodeURIComponent(agentId)).replace();
             } else {
               $location.url('config/alert-list').replace();
             }
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
   }
 ]);

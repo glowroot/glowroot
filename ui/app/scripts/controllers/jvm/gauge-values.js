@@ -195,15 +195,15 @@ glowroot.controller('JvmGaugeValuesCtrl', [
 
     if (!$scope.hideMainContent()) {
       $http.get('backend/jvm/all-gauges?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
-          .success(function (data) {
+          .then(function (response) {
             $scope.loaded = true;
-            $scope.allGauges = data;
-            createShortDataSeriesNames(data);
+            $scope.allGauges = response.data;
+            createShortDataSeriesNames(response.data);
             allGaugeNames = [];
             gaugeShortDisplayMap = {};
             gaugeUnits = {};
             gaugeGrouping = {};
-            angular.forEach(data, function (gauge) {
+            angular.forEach(response.data, function (gauge) {
               allGaugeNames.push(gauge.name);
               gaugeShortDisplayMap[gauge.name] = gauge.shortDisplay;
               if (gauge.unit) {
@@ -224,8 +224,9 @@ glowroot.controller('JvmGaugeValuesCtrl', [
                 }
               });
             }
-          })
-          .error(httpErrors.handler($scope));
+          }, function (response) {
+            httpErrors.handle(response, $scope);
+          });
     }
 
     // scale will bring max into 0..100 range

@@ -37,8 +37,9 @@ glowroot.controller('JvmJstackCtrl', [
 
     $scope.refresh = function (deferred) {
       $http.get('backend/jvm/jstack?agent-id=' + encodeURIComponent($scope.agentId))
-          .success(function (data) {
+          .then(function (response) {
             $scope.loaded = true;
+            var data = response.data;
             $scope.agentNotConnected = data.agentNotConnected;
             $scope.agentUnsupportedOperation = data.agentUnsupportedOperation;
             $scope.unavailableDueToRunningInJre = data.unavailableDueToRunningInJre;
@@ -50,8 +51,9 @@ glowroot.controller('JvmJstackCtrl', [
             if (deferred) {
               deferred.resolve('Refreshed');
             }
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $scope.refresh();

@@ -133,8 +133,9 @@ glowroot.controller('TransactionProfileCtrl', [
       };
       $scope.showSpinner++;
       $http.get('backend/transaction/profile' + queryStrings.encodeObject(query))
-          .success(function (data) {
+          .then(function (response) {
             $scope.showSpinner--;
+            var data = response.data;
             $scope.showOverwrittenMessage = data.overwritten;
             $scope.hasUnfilteredMainThreadProfile = data.hasUnfilteredMainThreadProfile;
             $scope.hasUnfilteredAuxThreadProfile = data.hasUnfilteredAuxThreadProfile;
@@ -148,10 +149,9 @@ glowroot.controller('TransactionProfileCtrl', [
               $('#profileOuter').removeData('gtLoaded');
               HandlebarsRendering.profileToggle(undefined, '#profileOuter', data.profile);
             }
-          })
-          .error(function (data, status) {
+          }, function (response) {
             $scope.showSpinner--;
-            httpErrors.handler($scope)(data, status);
+            httpErrors.handle(response, $scope);
           });
     }
   }

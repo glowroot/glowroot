@@ -82,25 +82,27 @@ glowroot.controller('AdminUserCtrl', [
 
     if ($scope.username) {
       $http.get('backend/admin/users?username=' + encodeURIComponent($scope.username))
-          .success(function (data) {
+          .then(function (response) {
             $scope.loaded = true;
-            onNewData(data);
-          })
-          .error(httpErrors.handler($scope));
+            onNewData(response.data);
+          }, function (response) {
+            httpErrors.handle(response, $scope);
+          });
     } else {
       $http.get('backend/admin/all-role-names')
-          .success(function (data) {
+          .then(function (response) {
             $scope.loaded = true;
             onNewData({
               config: {
                 ldap: false,
                 roles: []
               },
-              allRoles: data.allRoles,
-              ldapAvailable: data.ldapAvailable
+              allRoles: response.data.allRoles,
+              ldapAvailable: response.data.ldapAvailable
             });
-          })
-          .error(httpErrors.handler($scope));
+          }, function (response) {
+            httpErrors.handle(response, $scope);
+          });
     }
 
     $scope.$watch('allRoles', function (newValue, oldValue) {
@@ -139,23 +141,22 @@ glowroot.controller('AdminUserCtrl', [
         url = 'backend/admin/users/add';
       }
       $http.post(url, postData)
-          .success(function (data) {
-            onNewData(data);
+          .then(function (response) {
+            onNewData(response.data);
             deferred.resolve($scope.username ? 'Saved' : 'Added');
             delete $scope.page.password;
             delete $scope.page.verifyPassword;
             if (!$scope.username) {
-              $scope.username = data.config.username;
+              $scope.username = response.data.config.username;
               $location.search({username: $scope.username}).replace();
             }
-          })
-          .error(function (data, status) {
-            if (status === 409 && data.message === 'username') {
+          }, function (response) {
+            if (response.status === 409 && response.data.message === 'username') {
               $scope.duplicateUsername = true;
               deferred.reject('There is already a user with this username');
               return;
             }
-            httpErrors.handler($scope, deferred)(data, status);
+            httpErrors.handle(response, $scope, deferred);
           });
     };
 
@@ -172,19 +173,18 @@ glowroot.controller('AdminUserCtrl', [
       };
       $scope.deleting = true;
       $http.post('backend/admin/users/remove', postData)
-          .success(function (data) {
+          .then(function (response) {
             $scope.deleting = false;
-            if (data.errorCannotDeleteLastUser) {
+            if (response.data.errorCannotDeleteLastUser) {
               $scope.errorCannotDeleteLastUser = true;
               return;
             }
             $('#deleteConfirmationModal').modal('hide');
             removeConfirmIfHasChangesListener();
             $location.url('admin/user-list').replace();
-          })
-          .error(function (data, status) {
+          }, function (response) {
             $scope.deleting = false;
-            httpErrors.handler($scope)(data, status);
+            httpErrors.handle(response, $scope);
           });
     };
   }

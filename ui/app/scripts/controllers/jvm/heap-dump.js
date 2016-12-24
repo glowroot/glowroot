@@ -38,7 +38,8 @@ glowroot.controller('JvmHeapDumpCtrl', [
       $scope.availableDiskSpaceBytes = undefined;
       $scope.heapDumpResponse = false;
       $http.post('backend/jvm/available-disk-space?agent-id=' + encodeURIComponent($scope.agentId), postData)
-          .success(function (data) {
+          .then(function (response) {
+            var data = response.data;
             if (data.error) {
               deferred.reject(data.error);
             } else if (data.directoryDoesNotExist) {
@@ -47,8 +48,9 @@ glowroot.controller('JvmHeapDumpCtrl', [
               $scope.availableDiskSpaceBytes = data;
               deferred.resolve('See disk space below');
             }
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $scope.heapDump = function (deferred) {
@@ -58,7 +60,8 @@ glowroot.controller('JvmHeapDumpCtrl', [
       $scope.availableDiskSpaceBytes = undefined;
       $scope.heapDumpResponse = false;
       $http.post('backend/jvm/heap-dump?agent-id=' + encodeURIComponent($scope.agentId), postData)
-          .success(function (data) {
+          .then(function (response) {
+            var data = response.data;
             if (data.error) {
               deferred.reject(data.error);
             } else if (data.directoryDoesNotExist) {
@@ -67,19 +70,21 @@ glowroot.controller('JvmHeapDumpCtrl', [
               deferred.resolve('Heap dump created');
               $scope.heapDumpResponse = data;
             }
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $http.get('backend/jvm/heap-dump-default-dir?agent-id=' + encodeURIComponent($scope.agentId))
-        .success(function (data) {
+        .then(function (response) {
           $scope.loaded = true;
-          $scope.agentNotConnected = data.agentNotConnected;
+          $scope.agentNotConnected = response.data.agentNotConnected;
           if ($scope.agentNotConnected) {
             return;
           }
-          $scope.page.directory = data.directory;
-        })
-        .error(httpErrors.handler($scope));
+          $scope.page.directory = response.data.directory;
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
   }
 ]);

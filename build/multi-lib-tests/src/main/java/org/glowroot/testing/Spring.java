@@ -36,7 +36,7 @@ public class Spring {
         // https://github.com/spring-projects/spring-framework/commit/6d77f1cf3b3f060ead70d49079bc87d75e0b105c
         runNotJava8("3.2.0.RELEASE", "spring-3.2.x");
         runNotJava8("3.2.1.RELEASE", "spring-3.2.x");
-        for (int i = 2; i <= 16; i++) {
+        for (int i = 2; i <= 18; i++) {
             run("3.2." + i + ".RELEASE", "spring-3.2.x");
         }
         for (int i = 0; i <= 9; i++) {
@@ -45,10 +45,10 @@ public class Spring {
         for (int i = 0; i <= 9; i++) {
             run("4.1." + i + ".RELEASE");
         }
-        for (int i = 0; i <= 8; i++) {
+        for (int i = 0; i <= 9; i++) {
             run("4.2." + i + ".RELEASE");
         }
-        for (int i = 0; i <= 4; i++) {
+        for (int i = 0; i <= 5; i++) {
             run("4.3." + i + ".RELEASE");
         }
     }

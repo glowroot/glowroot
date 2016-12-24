@@ -66,10 +66,11 @@ glowroot.controller('ConfigAlertListCtrl', [
     };
 
     $http.get('backend/config/alerts?agent-id=' + encodeURIComponent($scope.agentId))
-        .success(function (data) {
+        .then(function (response) {
           $scope.loaded = true;
-          $scope.alerts = data;
-        })
-        .error(httpErrors.handler($scope));
+          $scope.alerts = response.data;
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
   }
 ]);

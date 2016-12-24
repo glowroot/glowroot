@@ -52,11 +52,12 @@ glowroot.controller('ConfigPluginCtrl', [
         version: $scope.config.version
       };
       $http.post('backend/config/plugins?agent-id=' + encodeURIComponent($scope.agentId), postData)
-          .success(function (data) {
-            onNewData(data);
+          .then(function (response) {
+            onNewData(response.data);
             deferred.resolve('Saved');
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     var queryData = {
@@ -64,9 +65,10 @@ glowroot.controller('ConfigPluginCtrl', [
       pluginId: $stateParams['plugin-id']
     };
     $http.get('backend/config/plugins' + queryStrings.encodeObject(queryData))
-        .success(function (data) {
-          onNewData(data);
-        })
-        .error(httpErrors.handler($scope));
+        .then(function (response) {
+          onNewData(response.data);
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
   }
 ]);

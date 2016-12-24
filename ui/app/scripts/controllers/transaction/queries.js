@@ -261,15 +261,14 @@ glowroot.controller('TransactionQueriesCtrl', [
       };
       $scope.showModalSpinner++;
       $http.get('backend/transaction/full-query-text' + queryStrings.encodeObject(q))
-          .success(function (data) {
+          .then(function (response) {
             $scope.showModalSpinner--;
-            if (data.expired) {
+            if (response.data.expired) {
               $scope.queryExpired = true;
               return;
             }
-            display(data.fullText);
-          })
-          .error(function () {
+            display(response.data.fullText);
+          }, function () {
             $scope.showModalSpinner--;
             $scope.queryError = true;
           });
@@ -298,8 +297,9 @@ glowroot.controller('TransactionQueriesCtrl', [
       };
       $scope.showSpinner++;
       $http.get('backend/transaction/queries' + queryStrings.encodeObject(query))
-          .success(function (data) {
+          .then(function (response) {
             $scope.showSpinner--;
+            var data = response.data;
             if (data.overwritten) {
               $scope.showOverwrittenMessage = true;
               $scope.showQueries = false;
@@ -326,10 +326,9 @@ glowroot.controller('TransactionQueriesCtrl', [
             if ($scope.queryType && $scope.queryTypes.indexOf($scope.queryType) === -1) {
               $scope.queryTypes.push($scope.queryType);
             }
-          })
-          .error(function (data, status) {
+          }, function (response) {
             $scope.showSpinner--;
-            httpErrors.handler($scope)(data, status);
+            httpErrors.handle(response, $scope);
           });
     }
   }

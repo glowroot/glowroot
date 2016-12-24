@@ -18,12 +18,13 @@
 
 glowroot.factory('httpErrors', [
   function () {
-    function getHttpErrorsObject(data, status) {
-      if (status === 0 || status === -1) {
+    function getHttpErrorsObject(response) {
+      if (response.status === 0 || response.status === -1) {
         return {
           headline: 'Unable to connect to server'
         };
       } else {
+        var data = response.data;
         var message = data.message;
         if (!message && !data.stackTrace) {
           message = data;
@@ -37,33 +38,28 @@ glowroot.factory('httpErrors', [
     }
 
     return {
-      get: getHttpErrorsObject,
-      handler: function ($scope, deferred) {
+      handle: function (response, $scope, deferred) {
         if (deferred) {
-          return function (data, status) {
-            // all actions that need to handle HTTP Precondition Failed pass a deferred object
-            if (status === 403) {
-              deferred.reject('You don\'t have permission for this action');
-            } else if (status === 412) {
-              // HTTP Precondition Failed
-              deferred.reject('Someone else has updated the data on this page, please reload and try again');
-            } else {
-              $scope.httpError = getHttpErrorsObject(data, status);
-              $scope.$on('$locationChangeSuccess', function () {
-                // e.g. clear error on back button
-                $scope.httpError = undefined;
-              });
-              deferred.reject($scope.httpError.headline);
-            }
-          };
-        } else {
-          return function (data, status) {
-            $scope.httpError = getHttpErrorsObject(data, status);
+          // all actions that need to handle HTTP Precondition Failed pass a deferred object
+          if (response.status === 403) {
+            deferred.reject('You don\'t have permission for this action');
+          } else if (response.status === 412) {
+            // HTTP Precondition Failed
+            deferred.reject('Someone else has updated the data on this page, please reload and try again');
+          } else {
+            $scope.httpError = getHttpErrorsObject(response);
             $scope.$on('$locationChangeSuccess', function () {
               // e.g. clear error on back button
               $scope.httpError = undefined;
             });
-          };
+            deferred.reject($scope.httpError.headline);
+          }
+        } else {
+          $scope.httpError = getHttpErrorsObject(response);
+          $scope.$on('$locationChangeSuccess', function () {
+            // e.g. clear error on back button
+            $scope.httpError = undefined;
+          });
         }
       }
     };

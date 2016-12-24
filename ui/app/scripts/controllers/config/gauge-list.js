@@ -45,10 +45,11 @@ glowroot.controller('ConfigGaugeListCtrl', [
     };
 
     $http.get('backend/config/gauges?agent-id=' + encodeURIComponent($scope.agentId))
-        .success(function (data) {
+        .then(function (response) {
           $scope.loaded = true;
-          $scope.gauges = data;
-        })
-        .error(httpErrors.handler($scope));
+          $scope.gauges = response.data;
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
   }
 ]);

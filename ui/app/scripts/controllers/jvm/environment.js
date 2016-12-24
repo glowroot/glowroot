@@ -48,11 +48,12 @@ glowroot.controller('JvmEnvironmentCtrl', [
     };
 
     $http.get('backend/jvm/environment?agent-id=' + encodeURIComponent($scope.agentId))
-        .success(function (data) {
+        .then(function (response) {
           $scope.loaded = true;
-          $scope.data = data;
-          $scope.uptime = Date.now() - data.process.startTime;
-        })
-        .error(httpErrors.handler($scope));
+          $scope.data = response.data;
+          $scope.uptime = Date.now() - response.data.process.startTime;
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
   }
 ]);

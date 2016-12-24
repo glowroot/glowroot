@@ -65,15 +65,19 @@ glowroot.controller('ConfigUiCtrl', [
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
       $http.post('backend/config/ui?agent-id=' + encodeURIComponent($scope.agentId), postData)
-          .success(function (data) {
-            onNewData(data);
+          .then(function (response) {
+            onNewData(response.data);
             deferred.resolve('Saved');
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $http.get('backend/config/ui?agent-id=' + encodeURIComponent($scope.agentId))
-        .success(onNewData)
-        .error(httpErrors.handler($scope));
+        .then(function (response) {
+          onNewData(response.data);
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
   }
 ]);

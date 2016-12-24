@@ -42,9 +42,10 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -99,7 +100,6 @@ public class GaugeCollectorTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void shouldHandleMBeanInstanceNotFoundBeforeLoggingDelay() throws Exception {
         // given
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
@@ -116,11 +116,10 @@ public class GaugeCollectorTest {
 
         // then
         assertThat(gaugeValues).isEmpty();
-        verify(logger).debug(anyString(), any(Exception.class));
+        verify(logger).debug(nullable(String.class), any(Exception.class));
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void shouldHandleMBeanInstanceNotFoundAfterLoggingDelay() throws Exception {
         // given
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
@@ -137,12 +136,11 @@ public class GaugeCollectorTest {
 
         // then
         assertThat(gaugeValues).isEmpty();
-        verify(logger).debug(anyString(), any(Exception.class));
+        verify(logger).debug(nullable(String.class), any(Exception.class));
         verify(logger).warn("mbean not {}: {}", "found", "xyz:aaa=bbb");
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void shouldHandleMBeanInstanceNotFoundBeforeAndAfterLoggingDelay() throws Exception {
         // given
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
@@ -162,7 +160,7 @@ public class GaugeCollectorTest {
         gaugeCollector.collectGaugeValues(gaugeConfig);
 
         // then
-        verify(logger, times(5)).debug(anyString(), any(Exception.class));
+        verify(logger, times(5)).debug(nullable(String.class), any(Exception.class));
         verify(logger)
                 .warn("mbean not {}: {} (waited {} seconds after jvm startup before logging this"
                         + " warning to allow time for mbean registration - this wait time can be"
@@ -170,7 +168,6 @@ public class GaugeCollectorTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void shouldHandleMBeanAttributeNotFound() throws Exception {
         // given
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
@@ -189,7 +186,7 @@ public class GaugeCollectorTest {
         gaugeCollector.collectGaugeValues(gaugeConfig);
 
         // then
-        verify(logger, times(10)).debug(anyString(), any(Exception.class));
+        verify(logger, times(10)).debug(nullable(String.class), any(Exception.class));
         verify(logger).warn("mbean attribute {} not found in {}", "ccc", "xyz:aaa=bbb");
         verify(logger).warn("mbean attribute {} not found in {}", "ddd", "xyz:aaa=bbb");
     }

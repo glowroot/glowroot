@@ -69,11 +69,11 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
 
     function refresh(deferred) {
       $http.get('backend/config/instrumentation?agent-id=' + encodeURIComponent($scope.agentId))
-          .success(function (data) {
+          .then(function (response) {
             $scope.loaded = true;
-            $scope.configs = data.configs;
-            $scope.dirty = data.jvmOutOfSync;
-            $scope.jvmRetransformClassesSupported = data.jvmRetransformClassesSupported;
+            $scope.configs = response.data.configs;
+            $scope.dirty = response.data.jvmOutOfSync;
+            $scope.jvmRetransformClassesSupported = response.data.jvmRetransformClassesSupported;
             var configs = angular.copy($scope.configs);
             angular.forEach(configs, function (config) {
               instrumentationExport.clean(config);
@@ -86,8 +86,9 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
               // preload cache for class name and method name auto completion
               $http.get('backend/config/preload-classpath-cache?agent-id=' + encodeURIComponent($scope.agentId));
             }
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     }
 
     $scope.displayImportModal = function () {
@@ -111,7 +112,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
       });
       $scope.deletingAll = true;
       $http.post('backend/config/instrumentation/remove?agent-id=' + encodeURIComponent($scope.agentId), postData)
-          .success(function () {
+          .then(function () {
             var deferred = $q.defer();
             deferred.promise.finally(function () {
               // leave spinner going until subsequent refresh is complete
@@ -119,10 +120,9 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
               $('#deleteAllConfirmationModal').modal('hide');
             });
             refresh(deferred);
-          })
-          .error(function (data, status) {
+          }, function (response) {
             $scope.deletingAll = false;
-            httpErrors.handler($scope)(data, status);
+            httpErrors.handle(response, $scope);
           });
     };
 
@@ -185,7 +185,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
       }
       $scope.importing = true;
       $http.post('backend/config/instrumentation/import?agent-id=' + encodeURIComponent($scope.agentId), postData)
-          .success(function () {
+          .then(function () {
             var deferred = $q.defer();
             deferred.promise.finally(function () {
               // leave spinner going until subsequent refresh is complete
@@ -193,25 +193,26 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
               $('#importModal').modal('hide');
             });
             refresh(deferred);
-          })
-          .error(function (data, status) {
+          }, function (response) {
             $scope.importing = false;
-            httpErrors.handler($scope)(data, status);
+            httpErrors.handle(response, $scope);
           });
     };
 
     $scope.retransformClasses = function (deferred) {
       $http.post('backend/config/reweave?agent-id=' + encodeURIComponent($scope.agentId))
-          .success(function (data) {
+          .then(function (response) {
             $scope.dirty = false;
+            var data = response.data;
             if (data.classes) {
               var msg = 're-transformed ' + data.classes + ' class' + (data.classes > 1 ? 'es' : '');
               deferred.resolve('Success (' + msg + ')');
             } else {
               deferred.resolve('Success (no classes needed re-transforming)');
             }
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     function dealWithModals() {

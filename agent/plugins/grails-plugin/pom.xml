@@ -17,7 +17,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <grails.version>3.2.1</grails.version>
+    <grails.version>3.2.4</grails.version>
   </properties>
 
   <dependencies>
@@ -144,18 +144,14 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
-      <!-- the tests pass with 4.3.4.RELEASE, but log error:
-        Destroy method on bean with name 'grailsApplicationPostProcessor' threw an exception
-        java.lang.IllegalStateException: ApplicationEventMulticaster not initialized -
-        call 'refresh' before multicasting events via the context -->
-      <version>4.3.3.RELEASE</version>
+      <version>4.3.5.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <version>4.3.4.RELEASE</version>
+      <version>4.3.5.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>

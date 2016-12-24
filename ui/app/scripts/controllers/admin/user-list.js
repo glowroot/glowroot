@@ -23,11 +23,11 @@ glowroot.controller('AdminUserListCtrl', [
   function ($scope, $http, httpErrors) {
 
     $http.get('backend/admin/users')
-        .success(function (data) {
+        .then(function (response) {
           $scope.loaded = true;
           $scope.users = [];
           var anonymousUser;
-          angular.forEach(data, function (user) {
+          angular.forEach(response.data, function (user) {
             if (user.username.toLowerCase() === 'anonymous') {
               anonymousUser = user;
               anonymousUser.display = '<anonymous>';
@@ -39,7 +39,8 @@ glowroot.controller('AdminUserListCtrl', [
           if (anonymousUser) {
             $scope.users.push(anonymousUser);
           }
-        })
-        .error(httpErrors.handler($scope));
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
   }
 ]);

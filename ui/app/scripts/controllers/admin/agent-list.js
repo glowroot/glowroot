@@ -23,7 +23,7 @@ glowroot.controller('AdminAgentListCtrl', [
   function ($scope, $http, httpErrors) {
 
     $http.get('backend/admin/agent-rollups')
-        .success(function (data) {
+        .then(function (response) {
           $scope.loaded = true;
           $scope.agents = [];
           function flatten(agentRollups, depth) {
@@ -33,8 +33,9 @@ glowroot.controller('AdminAgentListCtrl', [
               flatten(agentRollup.children, depth + 1);
             });
           }
-          flatten(data, 0);
-        })
-        .error(httpErrors.handler($scope));
+          flatten(response.data, 0);
+        }, function (response) {
+          httpErrors.handle(response, $scope);
+        });
   }
 ]);

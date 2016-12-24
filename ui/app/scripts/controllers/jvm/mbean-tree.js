@@ -94,9 +94,9 @@ glowroot.controller('JvmMBeanTreeCtrl', [
         expanded: expandedObjectNames
       };
       $http.get('backend/jvm/mbean-tree' + queryStrings.encodeObject(queryData))
-          .success(function (data) {
+          .then(function (response) {
             $scope.loaded = true;
-            $scope.agentNotConnected = data.agentNotConnected;
+            $scope.agentNotConnected = response.data.agentNotConnected;
             if ($scope.agentNotConnected) {
               return;
             }
@@ -113,14 +113,15 @@ glowroot.controller('JvmMBeanTreeCtrl', [
                 }
               });
             }
-            recurse(data, 0);
+            recurse(response.data, 0);
             $('#mbeanTree').empty();
             renderNext(flattened, 0);
             if (deferred) {
               deferred.resolve('Refreshed');
             }
-          })
-          .error(httpErrors.handler($scope, deferred));
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     function incNodeVersion(node) {
@@ -175,18 +176,17 @@ glowroot.controller('JvmMBeanTreeCtrl', [
         objectName: node.objectName
       };
       $http.get('backend/jvm/mbean-attribute-map' + queryStrings.encodeObject(queryData))
-          .success(function (data) {
+          .then(function (response) {
             spinner.stop();
             if (node.v !== v) {
               // interrupted by close
               return;
             }
-            node.attributeMap = data;
+            node.attributeMap = response.data;
             $parent.html(JST['mbean-node-expanded'](node));
-          })
-          .error(function (data, status) {
+          }, function (response) {
             spinner.stop();
-            httpErrors.handler($scope)(data, status);
+            httpErrors.handle(response, $scope);
           });
     });
 

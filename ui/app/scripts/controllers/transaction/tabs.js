@@ -116,7 +116,7 @@ glowroot.controller('TransactionTabCtrl', [
       };
       concurrentUpdateCount++;
       $http.get('backend/' + shortName + '/trace-count' + queryStrings.encodeObject(query))
-          .success(function (data) {
+          .then(function (response) {
             concurrentUpdateCount--;
             if (concurrentUpdateCount) {
               return;
@@ -124,11 +124,10 @@ glowroot.controller('TransactionTabCtrl', [
             if ($scope.activeTabItem !== 'traces') {
               filteredTraceTabCount = undefined;
             }
-            $scope.traceCount = data;
-          })
-          .error(function (data, status) {
+            $scope.traceCount = response.data;
+          }, function (response) {
             concurrentUpdateCount--;
-            httpErrors.handler($scope)(data, status);
+            httpErrors.handle(response, $scope);
           });
     }
 
