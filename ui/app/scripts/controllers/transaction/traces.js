@@ -274,6 +274,8 @@ glowroot.controller('TracesCtrl', [
         to: currMax + currRange / 2
       };
       charts.updateRange($scope, range.from, range.to, true, false, false, true);
+      // scroll zooming out, reset duration limits
+      updateFilter($scope.range.chartFrom, $scope.range.chartTo, 0, undefined);
     };
 
     function updateFilter(from, to, durationMillisLow, durationMillisHigh) {
