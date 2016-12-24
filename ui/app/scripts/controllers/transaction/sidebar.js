@@ -36,7 +36,8 @@ glowroot.controller('TransactionSidebarCtrl', [
 
     $scope.summaryLimit = 10;
     $scope.summariesLoadingMore = 0;
-    $scope.summariesRefreshing = 0;
+
+    $scope.summariesNoSearch = true;
 
     $scope.overallSummaryValue = function () {
       if ($scope.overallSummary) {
@@ -57,12 +58,17 @@ glowroot.controller('TransactionSidebarCtrl', [
     $scope.showMoreSummaries = function () {
       // double each time
       $scope.summaryLimit *= 2;
-      updateSummaries(false, true);
+      updateSummaries(true);
     };
 
     $scope.$watchGroup(['range.chartFrom', 'range.chartTo', 'range.chartRefresh', 'summarySortOrder'],
         function (newValues, oldValues) {
           if (newValues !== oldValues) {
+            if (newValues[3] !== oldValues[3]) {
+              $scope.summariesNoSearch = true;
+              $scope.transactionSummaries = undefined;
+              $scope.moreSummariesAvailable = undefined;
+            }
             $timeout(function () {
               // slight delay to de-prioritize summaries data request
               updateSummaries();
@@ -70,6 +76,7 @@ glowroot.controller('TransactionSidebarCtrl', [
           }
         });
 
+    var initialStateChangeSuccess = true;
     $scope.$on('$stateChangeSuccess', function () {
       // don't let the active sidebar selection get out of sync (which can happen after using the back button)
       var activeElement = document.activeElement;
@@ -79,20 +86,22 @@ glowroot.controller('TransactionSidebarCtrl', [
           activeElement.blur();
         }
       }
-      if ($scope.range.last) {
+      if ($scope.range.last && !initialStateChangeSuccess) {
+        // refresh on tab change
         $timeout(function () {
           // slight delay to de-prioritize summaries data request
           updateSummaries();
         }, 100);
       }
+      initialStateChangeSuccess = false;
     });
 
-    function updateSummaries(initialLoading, moreLoading) {
+    function updateSummaries(moreLoading) {
       if ((!$scope.agentRollupId && !$scope.layout.embedded) || !$scope.transactionType) {
         $scope.summariesNoSearch = true;
         return;
       }
-      $scope.summariesNoSearch = false;
+      $scope.showSpinner = $scope.summariesNoSearch;
       var query = {
         agentRollupId: $scope.agentRollupId,
         transactionType: $scope.transactionType,
@@ -102,27 +111,22 @@ glowroot.controller('TransactionSidebarCtrl', [
         sortOrder: $scope.summarySortOrder,
         limit: $scope.summaryLimit
       };
-      if (initialLoading) {
-        $scope.summariesLoadingInitial = true;
-      } else if (moreLoading) {
+      if (moreLoading) {
         $scope.summariesLoadingMore++;
-      } else {
-        $scope.summariesRefreshing++;
       }
       concurrentUpdateCount++;
       $http.get($scope.backendSummariesUrl + queryStrings.encodeObject(query))
           .then(function (response) {
-            if (initialLoading) {
-              $scope.summariesLoadingInitial = false;
-            } else if (moreLoading) {
+            if (moreLoading) {
               $scope.summariesLoadingMore--;
-            } else {
-              $scope.summariesRefreshing--;
             }
             concurrentUpdateCount--;
             if (concurrentUpdateCount) {
               return;
             }
+            $scope.showSpinner = false;
+            $scope.summariesNoSearch = false;
+
             lastSortOrder = query.sortOrder;
             lastDurationMillis = query.to - query.from;
             var data = response.data;
@@ -131,12 +135,9 @@ glowroot.controller('TransactionSidebarCtrl', [
             $scope.transactionSummaries = data.transactions;
             $scope.moreSummariesAvailable = data.moreAvailable;
           }, function (response) {
-            if (initialLoading) {
-              $scope.summariesLoadingInitial = false;
-            } else if (moreLoading) {
+            $scope.showSpinner = false;
+            if (moreLoading) {
               $scope.summariesLoadingMore--;
-            } else {
-              $scope.summariesRefreshing--;
             }
             concurrentUpdateCount--;
             httpErrors.handle(response, $scope);
@@ -145,7 +146,7 @@ glowroot.controller('TransactionSidebarCtrl', [
 
     $timeout(function () {
       // slight delay to de-prioritize summaries data request
-      updateSummaries(true);
+      updateSummaries();
     }, 100);
   }
 ]);
