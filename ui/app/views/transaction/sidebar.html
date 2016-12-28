@@ -18,7 +18,8 @@
     <ul class="list-group">
       <select gt-selectpicker
               gt-selectpicker-options="{width: '100%', style: 'gt-transaction-sidebar-by'}"
-              ng-model="$parent.summarySortOrder">
+              ng-model="$parent.summarySortOrder"
+              gt-title="summarySortOrders[summarySortOrder]">
         <option ng-repeat="(value, display) in summarySortOrders" value="{{value}}">
           {{display}}
         </option>
@@ -31,10 +32,11 @@
                style="font-weight: 600; display: table-cell; text-align: center; vertical-align: middle;">
             No data for this time period
           </div>
-          <div gt-spinner
-               gt-show="showSpinner"
-               style="display: table-cell; text-align: center; vertical-align: middle;">
-          </div>
+        </div>
+        <div gt-spinner
+             gt-show="showSpinner"
+             class="gt-transaction-sidebar-no-data"
+             style="display: table; width: 100%; height: 100px;">
         </div>
         <div class="gt-panel-overlay"
              ng-show="summariesLoadingMore">

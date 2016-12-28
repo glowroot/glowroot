@@ -404,15 +404,22 @@ glowroot.directive('gtSelectpicker', [
     return {
       scope: {
         ngModel: '=',
-        gtSelectpickerOptions: '&'
+        gtSelectpickerOptions: '&',
+        gtTitle: '&'
       },
       link: function (scope, iElement) {
-        $timeout(function () {
-          iElement.selectpicker(scope.gtSelectpickerOptions());
+        // need to set title before initializing selectpicker in order to avoid flicker of 'None selected' text
+        // when going back and forth between two different transaction types
+        iElement.attr('title', scope.gtTitle);
+        // set style outside of $timeout to avoid style flicker on loading
+        iElement.selectpicker(scope.gtSelectpickerOptions());
+        scope.$watch('ngModel', function () {
           iElement.selectpicker('val', scope.ngModel);
+        });
+        $timeout(function () {
+          // refresh only works inside of $timeout
           iElement.selectpicker('refresh');
         });
-
         scope.$on('$destroy', function () {
           iElement.selectpicker('destroy');
         });
