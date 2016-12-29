@@ -1107,8 +1107,7 @@ public class TraceDao implements TraceRepository {
                     Messages.parseDelimitedFrom(attributeBytes, Trace.Attribute.parser());
             Map<String, List<String>> attributes = attrs.stream().collect(
                     Collectors.toMap(Trace.Attribute::getName, Trace.Attribute::getValueList));
-            if (filter.matchesDuration(durationNanos)
-                    && filter.matchesHeadline(headline)
+            if (filter.matchesHeadline(headline)
                     && filter.matchesError(errorMessage)
                     && filter.matchesUser(user)
                     && filter.matchesAttributes(attributes)) {

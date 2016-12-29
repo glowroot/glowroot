@@ -80,10 +80,7 @@ public class TraceDaoIT {
                 .from(0)
                 .to(100)
                 .build();
-        TracePointFilter filter = ImmutableTracePointFilter.builder()
-                .durationNanosLow(0)
-                .durationNanosHigh(Long.MAX_VALUE)
-                .build();
+        TracePointFilter filter = ImmutableTracePointFilter.builder().build();
         Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
 
         // when
@@ -101,72 +98,6 @@ public class TraceDaoIT {
     }
 
     @Test
-    public void shouldReadTraceWithDurationNanosQualifier() throws Exception {
-        // given
-        Trace trace = TraceTestData.createTrace();
-        traceDao.store(AGENT_ID, trace);
-        TraceQuery query = ImmutableTraceQuery.builder()
-                .transactionType("unit test")
-                .from(0)
-                .to(100)
-                .build();
-        TracePointFilter filter = ImmutableTracePointFilter.builder()
-                .durationNanosLow(trace.getHeader().getDurationNanos())
-                .durationNanosHigh(trace.getHeader().getDurationNanos())
-                .build();
-
-        // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
-
-        // then
-        assertThat(queryResult.records()).hasSize(1);
-    }
-
-    @Test
-    public void shouldNotReadTraceWithHighDurationNanosQualifier() throws Exception {
-        // given
-        Trace trace = TraceTestData.createTrace();
-        traceDao.store(AGENT_ID, trace);
-        TraceQuery query = ImmutableTraceQuery.builder()
-                .transactionType("unit test")
-                .from(0)
-                .to(100)
-                .build();
-        TracePointFilter filter = ImmutableTracePointFilter.builder()
-                .durationNanosLow(trace.getHeader().getDurationNanos() + 1)
-                .durationNanosHigh(trace.getHeader().getDurationNanos() + 2)
-                .build();
-
-        // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
-
-        // then
-        assertThat(queryResult.records()).isEmpty();
-    }
-
-    @Test
-    public void shouldNotReadTraceWithLowDurationNanosQualifier() throws Exception {
-        // given
-        Trace trace = TraceTestData.createTrace();
-        traceDao.store(AGENT_ID, trace);
-        TraceQuery query = ImmutableTraceQuery.builder()
-                .transactionType("unit test")
-                .from(0)
-                .to(100)
-                .build();
-        TracePointFilter filter = ImmutableTracePointFilter.builder()
-                .durationNanosLow(trace.getHeader().getDurationNanos() - 2)
-                .durationNanosHigh(trace.getHeader().getDurationNanos() - 1)
-                .build();
-
-        // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ROLLUP, query, filter, 1);
-
-        // then
-        assertThat(queryResult.records()).isEmpty();
-    }
-
-    @Test
     public void shouldReadTraceWithAttributeQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
@@ -177,8 +108,6 @@ public class TraceDaoIT {
                 .to(100)
                 .build();
         TracePointFilter filter = ImmutableTracePointFilter.builder()
-                .durationNanosLow(0)
-                .durationNanosHigh(Long.MAX_VALUE)
                 .attributeName("abc")
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("xyz")
@@ -202,8 +131,6 @@ public class TraceDaoIT {
                 .to(100)
                 .build();
         TracePointFilter filter = ImmutableTracePointFilter.builder()
-                .durationNanosLow(0)
-                .durationNanosHigh(Long.MAX_VALUE)
                 .attributeName("abc")
                 .attributeValueComparator(null)
                 .attributeValue(null)
@@ -227,8 +154,6 @@ public class TraceDaoIT {
                 .to(100)
                 .build();
         TracePointFilter filter = ImmutableTracePointFilter.builder()
-                .durationNanosLow(0)
-                .durationNanosHigh(Long.MAX_VALUE)
                 .attributeName(null)
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("xyz")
@@ -252,8 +177,6 @@ public class TraceDaoIT {
                 .to(100)
                 .build();
         TracePointFilter filter = ImmutableTracePointFilter.builder()
-                .durationNanosLow(0)
-                .durationNanosHigh(Long.MAX_VALUE)
                 .attributeName("abc")
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("abc")
@@ -277,8 +200,6 @@ public class TraceDaoIT {
                 .to(100)
                 .build();
         TracePointFilter filter = ImmutableTracePointFilter.builder()
-                .durationNanosLow(0)
-                .durationNanosHigh(Long.MAX_VALUE)
                 .attributeName(null)
                 .attributeValueComparator(StringComparator.EQUALS)
                 .attributeValue("xyz1")
