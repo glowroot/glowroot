@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,23 @@
 glowroot.factory('queryStrings', [
   function () {
     function encodeObject(object) {
+      var keys = Object.keys(object);
+      var ordered = [];
+      function addKeyToOrdered(name) {
+        var index = keys.indexOf(name);
+        if (index !== -1) {
+          ordered.push(name);
+          keys.splice(index, 1);
+        }
+      }
+      addKeyToOrdered('agent-rollup-id');
+      addKeyToOrdered('agent-id');
+      addKeyToOrdered('transaction-type');
+      addKeyToOrdered('transaction-name');
+      Array.prototype.push.apply(ordered, keys);
       var queryString = '';
-      angular.forEach(object, function (value, key) {
+      angular.forEach(ordered, function (key) {
+        var value = object[key];
         // don't want to exclude values that are 0, so only exclude undefined and null
         if (value !== undefined && value !== null) {
           key = key.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
