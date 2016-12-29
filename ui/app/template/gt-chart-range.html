@@ -24,7 +24,10 @@
           </span>
           <span class="gt-large-caret"></span>
         </a>
-        <ul class="dropdown-menu" role="menu">
+        <!-- z-index 1200 to keep dropdown on top of error overlay (which is at z-index 1000) -->
+        <ul class="dropdown-menu"
+            role="menu"
+            style="z-index: 1200;">
           <li ng-repeat="last in rangeSelections">
             <a role="menuitem" tabindex="-1" ng-href="{{currentTabUrl()}}{{headerRangeQueryString(last)}}"
                ng-click="updateLast(last, $event)">

@@ -29,9 +29,10 @@
             <span class="gt-large-caret"></span>
           </a>
           <!-- margin-bottom helps when large menu that extends to the bottom of the page -->
+          <!-- z-index 1200 to keep dropdown on top of error overlay (which is at z-index 1000) -->
           <ul class="dropdown-menu"
               role="menu"
-              style="margin-bottom: 100px;">
+              style="margin-bottom: 100px; z-index: 1200;">
             <!-- using layout.agentRollupValues instead of layout.agentRollups in case there are any agent rollup ids
                  that start with '$', because angular silently ignores object keys starting with '$' -->
             <li ng-repeat="agentRollup in layout.agentRollupValues">
@@ -62,7 +63,10 @@
             {{transactionType || '&lt;transaction type&gt;'}}
             <span class="gt-large-caret"></span>
           </a>
-          <ul class="dropdown-menu" role="menu">
+          <!-- z-index 1200 to keep dropdown on top of error overlay (which is at z-index 1000) -->
+          <ul class="dropdown-menu"
+              role="menu"
+              style="z-index: 1200;">
             <li ng-repeat="tt in layout.agentRollups[agentRollupId].transactionTypes"
                 ng-hide="tt === transactionType">
               <a role="menuitem"
