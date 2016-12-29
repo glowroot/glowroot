@@ -17,7 +17,14 @@
 /* global glowroot */
 
 glowroot.factory('httpErrors', [
-  function () {
+  '$rootScope',
+  function ($rootScope) {
+
+    $rootScope.$on('$locationChangeSuccess', function () {
+      // e.g. clear error on back button
+      $rootScope.httpError = undefined;
+    });
+
     function getHttpErrorsObject(response) {
       if (response.status === 0 || response.status === -1) {
         return {
@@ -47,20 +54,15 @@ glowroot.factory('httpErrors', [
             // HTTP Precondition Failed
             deferred.reject('Someone else has updated the data on this page, please reload and try again');
           } else {
-            $scope.httpError = getHttpErrorsObject(response);
-            $scope.$on('$locationChangeSuccess', function () {
-              // e.g. clear error on back button
-              $scope.httpError = undefined;
-            });
-            deferred.reject($scope.httpError.headline);
+            $rootScope.httpError = getHttpErrorsObject(response);
+            deferred.reject($rootScope.httpError.headline);
           }
         } else {
-          $scope.httpError = getHttpErrorsObject(response);
-          $scope.$on('$locationChangeSuccess', function () {
-            // e.g. clear error on back button
-            $scope.httpError = undefined;
-          });
+          $rootScope.httpError = getHttpErrorsObject(response);
         }
+      },
+      clear: function () {
+        $rootScope.httpError = undefined;
       }
     };
   }

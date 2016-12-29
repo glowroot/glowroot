@@ -70,7 +70,7 @@ glowroot.controller('ErrorMessagesCtrl', [
       $http.get('backend/error/messages' + queryStrings.encodeObject(query))
           .then(function (response) {
             // clear http error, especially useful for auto refresh on live data to clear a sporadic error from earlier
-            $scope.httpError = undefined;
+            httpErrors.clear();
             if (showChartSpinner) {
               $scope.showChartSpinner--;
             }

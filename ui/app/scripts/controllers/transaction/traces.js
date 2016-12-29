@@ -123,7 +123,7 @@ glowroot.controller('TracesCtrl', [
             }
 
             // clear http error, especially useful for auto refresh on live data to clear a sporadic error from earlier
-            $scope.httpError = undefined;
+            httpErrors.clear();
             if (showChartSpinner) {
               $scope.showChartSpinner--;
             }
