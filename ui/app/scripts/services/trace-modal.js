@@ -63,8 +63,8 @@ glowroot.factory('traceModal', [
           });
 
       // padding is same as for trace once it loads
-      $modalContent.html('<div style="position: relative; display: inline-block;' +
-          ' padding-left: 40px; padding-top: 60px;"></div>');
+      $modalContent.html(
+          '<div style="position: relative; display: inline-block; padding-left: 40px; padding-top: 60px;"></div>');
       spinner = Glowroot.showSpinner($modalContent.children().first());
     }
 

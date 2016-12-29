@@ -414,14 +414,14 @@ glowroot.factory('charts', [
         if (seriesIndex === highlightSeriesIndex) {
           html += ' style="background-color: #eee;"';
         }
-        html += '>' +
-            '<td class="legendColorBox" width="16">' +
-            '<div style="border: 1px solid rgb(204, 204, 204); padding: 1px;">' +
-            '<div style="width: 4px; height: 0px; border: 5px solid ' + dataSeries.color + '; overflow: hidden;">' +
-            '</div></div></td>' +
-            '<td style="padding-right: 10px;">' + label + '</td>' +
-            '<td style="font-weight: 600;">' + displayText + '</td>' +
-            '</tr>';
+        html += '>'
+            + '<td class="legendColorBox" width="16">'
+            + '<div style="border: 1px solid rgb(204, 204, 204); padding: 1px;">'
+            + '<div style="width: 4px; height: 0px; border: 5px solid ' + dataSeries.color + '; overflow: hidden;">'
+            + '</div></div></td>'
+            + '<td style="padding-right: 10px;">' + label + '</td>'
+            + '<td style="font-weight: 600;">' + displayText + '</td>'
+            + '</tr>';
       }
       if (!found) {
         return 'No data';

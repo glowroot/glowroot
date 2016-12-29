@@ -78,9 +78,9 @@ glowroot.controller('AdminWebCtrl', [
               text = 'port and protocol';
             }
             if ($location.port() !== previousActivePort) {
-              deferred.reject('The save succeeded, and switching the http listener over to the new port' +
-                  ' succeeded, but you are not being redirected to the new ' + text + ' since it seems you are using an' +
-                  ' intermediary proxy?');
+              deferred.reject('The save succeeded, and switching the http listener over to the new port succeeded,'
+                  + ' but you are not being redirected to the new ' + text + ' since it seems you are using an'
+                  + ' intermediary proxy?');
               return;
             }
             deferred.resolve('Saved, redirecting to new ' + text + ' ...');

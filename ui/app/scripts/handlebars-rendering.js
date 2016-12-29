@@ -554,9 +554,9 @@ HandlebarsRendering = (function () {
         $.get(url)
             .done(function (data) {
               if (data.overwritten) {
-                $selector.append('<div style="padding: 1em;">The trace entries have expired, see' +
-                    ' <a href="admin/storage#trace-capped-database-size">' +
-                    'Configuration &gt; Storage &gt; Trace detail data</a></div>');
+                $selector.append('<div style="padding: 1em;">The trace entries have expired, see'
+                    + ' <a href="admin/storage#trace-capped-database-size">'
+                    + 'Configuration &gt; Storage &gt; Trace detail data</a></div>');
               } else if (data.expired) {
                 $selector.append('<div style="padding: 1em;">This trace has expired</div>');
               } else {
@@ -681,9 +681,9 @@ HandlebarsRendering = (function () {
         $.get(url)
             .done(function (data) {
               if (data.overwritten) {
-                $selector.find('.gt-profile').html('<div style="padding: 1em;">The profile has expired, see' +
-                    ' <a href="admin/storage#trace-capped-database-size">' +
-                    'Configuration &gt; Storage &gt; Trace detail data</a></div>');
+                $selector.find('.gt-profile').html('<div style="padding: 1em;">The profile has expired, see'
+                    + ' <a href="admin/storage#trace-capped-database-size">'
+                    + 'Configuration &gt; Storage &gt; Trace detail data</a></div>');
               } else if (data.expired) {
                 $selector.find('.gt-profile').html.append('<div style="padding: 1em;">This trace has expired</div>');
               } else {
@@ -1036,9 +1036,9 @@ HandlebarsRendering = (function () {
           return range1[0] - range2[0];
         });
         var firstHighlightRange = highlightRanges[0];
-        return escapeHtml(text.substring(0, firstHighlightRange[0])) + '<strong>' +
-            escapeHtml(text.substring(firstHighlightRange[0], firstHighlightRange[1])) +
-            '</strong>' + highlightAndEscapeHtml(text.substring(firstHighlightRange[1]));
+        return escapeHtml(text.substring(0, firstHighlightRange[0])) + '<strong>'
+            + escapeHtml(text.substring(firstHighlightRange[0], firstHighlightRange[1]))
+            + '</strong>' + highlightAndEscapeHtml(text.substring(firstHighlightRange[1]));
       }
 
       function filterNode(node, underMatchingNode) {

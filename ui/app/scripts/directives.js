@@ -77,12 +77,12 @@ glowroot.directive('gtButtonGroup', [
     return {
       scope: {},
       transclude: true,
-      template: '' +
-      '<div class="clearfix">' +
-      '  <span ng-transclude style="margin-right: 15px;"></span>' +
-      '  <div class="gt-button-spinner hide"></div>' +
-      '  <div class="gt-button-message hide" style="padding-top: 5px;"></div>' +
-      '</div>',
+      template: ''
+      + '<div class="clearfix">'
+      + '  <span ng-transclude style="margin-right: 15px;"></span>'
+      + '  <div class="gt-button-spinner hide"></div>'
+      + '  <div class="gt-button-message hide" style="padding-top: 5px;"></div>'
+      + '</div>',
       controller: [
         '$element',
         function ($element) {
