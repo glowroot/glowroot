@@ -32,6 +32,7 @@ import org.glowroot.agent.embedded.util.H2DatabaseStats;
 import org.glowroot.common.config.FatStorageConfig;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.RepoAdmin;
+import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.repo.util.MailService;
@@ -51,6 +52,7 @@ public class SimpleRepoModule {
     private final AgentDao agentDao;
     private final TransactionTypeDao transactionTypeDao;
     private final AggregateDao aggregateDao;
+    private final TraceAttributeNameDao traceAttributeNameDao;
     private final TraceDao traceDao;
     private final GaugeValueDao gaugeValueDao;
     private final ConfigRepository configRepository;
@@ -84,15 +86,15 @@ public class SimpleRepoModule {
         FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(dataSource);
         aggregateDao = new AggregateDao(dataSource, this.rollupCappedDatabases, configRepository,
                 transactionTypeDao, fullQueryTextDao);
-        TraceAttributeNameDao traceAttributeNameDao = new TraceAttributeNameDao(dataSource);
-        traceDao = new TraceDao(dataSource, traceCappedDatabase, traceAttributeNameDao,
-                transactionTypeDao, fullQueryTextDao);
+        traceAttributeNameDao = new TraceAttributeNameDao(dataSource);
+        traceDao = new TraceDao(dataSource, traceCappedDatabase, transactionTypeDao,
+                fullQueryTextDao, traceAttributeNameDao);
         GaugeNameDao gaugeNameDao = new GaugeNameDao(dataSource);
         gaugeValueDao = new GaugeValueDao(dataSource, gaugeNameDao, clock);
 
         repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
-                configRepository, agentDao, gaugeValueDao, gaugeNameDao, traceAttributeNameDao,
-                transactionTypeDao, fullQueryTextDao);
+                configRepository, agentDao, gaugeValueDao, gaugeNameDao, transactionTypeDao,
+                fullQueryTextDao, traceAttributeNameDao);
 
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
         alertingService = new AlertingService(configRepository, triggeredAlertDao, aggregateDao,
@@ -130,6 +132,10 @@ public class SimpleRepoModule {
 
     public AggregateDao getAggregateDao() {
         return aggregateDao;
+    }
+
+    public TraceAttributeNameRepository getTraceAttributeNameRepository() {
+        return traceAttributeNameDao;
     }
 
     public TraceDao getTraceDao() {

@@ -129,13 +129,13 @@ public class TraceDao implements TraceRepository {
 
     private final DataSource dataSource;
     private final CappedDatabase traceCappedDatabase;
-    private final TraceAttributeNameDao traceAttributeNameDao;
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
+    private final TraceAttributeNameDao traceAttributeNameDao;
 
     TraceDao(DataSource dataSource, CappedDatabase traceCappedDatabase,
-            TraceAttributeNameDao traceAttributeNameDao, TransactionTypeDao transactionTypeDao,
-            FullQueryTextDao fullQueryTextDao) throws Exception {
+            TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
+            TraceAttributeNameDao traceAttributeNameDao) throws Exception {
         this.dataSource = dataSource;
         this.traceCappedDatabase = traceCappedDatabase;
         this.traceAttributeNameDao = traceAttributeNameDao;
@@ -196,12 +196,6 @@ public class TraceDao implements TraceRepository {
         }
         transactionTypeDao.updateLastCaptureTime(header.getTransactionType(),
                 header.getCaptureTime());
-    }
-
-    @Override
-    public List<String> readTraceAttributeNames(String agentRollupId, String transactionType)
-            throws Exception {
-        return traceAttributeNameDao.readTraceAttributeNames(transactionType);
     }
 
     @Override

@@ -79,10 +79,9 @@ public class TraceDao implements TraceRepository {
     private final AgentDao agentDao;
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
+    private final TraceAttributeNameDao traceAttributeNameDao;
     private final ConfigRepository configRepository;
     private final Clock clock;
-
-    private final TraceAttributeNameDao traceAttributeNameDao;
 
     private final PreparedStatement insertCheck;
 
@@ -130,15 +129,16 @@ public class TraceDao implements TraceRepository {
     private final PreparedStatement deletePartialTransactionSlowCount;
 
     public TraceDao(Session session, AgentDao agentDao, TransactionTypeDao transactionTypeDao,
-            FullQueryTextDao fullQueryTextDao, ConfigRepository configRepository, Clock clock) {
+            FullQueryTextDao fullQueryTextDao, TraceAttributeNameDao traceAttributeNameDao,
+            ConfigRepository configRepository, Clock clock) {
         this.session = session;
         this.agentDao = agentDao;
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
+        this.traceAttributeNameDao = traceAttributeNameDao;
         this.configRepository = configRepository;
         this.clock = clock;
 
-        traceAttributeNameDao = new TraceAttributeNameDao(session, configRepository);
         int expirationHours = configRepository.getStorageConfig().traceExpirationHours();
 
         Sessions.createTableWithTWCS(session, "create table if not exists trace_check"
@@ -726,11 +726,6 @@ public class TraceDao implements TraceRepository {
         }
         futures.addAll(transactionTypeDao.store(agentRollupIds, header.getTransactionType()));
         MoreFutures.waitForAll(futures);
-    }
-
-    @Override
-    public List<String> readTraceAttributeNames(String agentRollupId, String transactionType) {
-        return traceAttributeNameDao.read(agentRollupId, transactionType);
     }
 
     @Override

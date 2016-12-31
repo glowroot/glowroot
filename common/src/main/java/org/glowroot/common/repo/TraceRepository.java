@@ -33,9 +33,6 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface TraceRepository {
 
-    List<String> readTraceAttributeNames(String agentRollupId, String transactionType)
-            throws Exception;
-
     Result<TracePoint> readSlowPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter,
             int limit) throws Exception;

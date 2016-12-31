@@ -35,6 +35,7 @@ import org.glowroot.common.repo.AgentRepository;
 import org.glowroot.common.repo.AgentRepository.AgentRollup;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
+import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
@@ -56,16 +57,19 @@ class LayoutService {
     private final ConfigRepository configRepository;
     private final AgentRepository agentRepository;
     private final TransactionTypeRepository transactionTypeRepository;
+    private final TraceAttributeNameRepository traceAttributeNameRepository;
 
     LayoutService(boolean embedded, boolean offline, String version,
             ConfigRepository configRepository, AgentRepository agentRepository,
-            TransactionTypeRepository transactionTypeRepository) {
+            TransactionTypeRepository transactionTypeRepository,
+            TraceAttributeNameRepository traceAttributeNameRepository) {
         this.embedded = embedded;
         this.offline = offline;
         this.version = version;
         this.configRepository = configRepository;
         this.agentRepository = agentRepository;
         this.transactionTypeRepository = transactionTypeRepository;
+        this.traceAttributeNameRepository = traceAttributeNameRepository;
     }
 
     String getLayout(Authentication authentication) throws Exception {
@@ -109,6 +113,12 @@ class LayoutService {
         }
         transactionTypes.add(defaultDisplayedTransactionType);
 
+        Map<String, List<String>> traceAttributeNames =
+                traceAttributeNameRepository.read().get(AGENT_ID);
+        if (traceAttributeNames == null) {
+            traceAttributeNames = ImmutableMap.of();
+        }
+
         Map<String, AgentRollupLayout> agentRollups = Maps.newLinkedHashMap();
         agentRollups.put(AGENT_ID, ImmutableAgentRollupLayout.builder()
                 .display(AGENT_ID)
@@ -116,6 +126,7 @@ class LayoutService {
                 .agent(true)
                 .permissions(permissions)
                 .addAllTransactionTypes(transactionTypes)
+                .putAllTraceAttributeNames(traceAttributeNames)
                 .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
                 .defaultDisplayedPercentiles(uiConfig.getDefaultDisplayedPercentileList())
                 .build());
@@ -281,6 +292,7 @@ class LayoutService {
         // linked hash map to preserve ordering
         private final Map<String, AgentRollupLayout> agentRollups = Maps.newLinkedHashMap();
         private final Map<String, List<String>> transactionTypesMap;
+        private final Map<String, Map<String, List<String>>> traceAttributeNamesMap;
 
         private boolean hasSomeAccess = false;
         private boolean showNavbarTransaction = false;
@@ -290,6 +302,7 @@ class LayoutService {
 
         private CentralLayoutBuilder(Authentication authentication) throws Exception {
             transactionTypesMap = transactionTypeRepository.read();
+            traceAttributeNamesMap = traceAttributeNameRepository.read();
             // "*" is to check permissions for "all agents"
             Permissions permissions = getPermissions(authentication, "*", true);
             hasSomeAccess =
@@ -326,6 +339,11 @@ class LayoutService {
                 transactionTypes.addAll(storedTransactionTypes);
             }
             transactionTypes.add(defaultDisplayedTransactionType);
+            Map<String, List<String>> traceAttributeNames =
+                    traceAttributeNamesMap.get(agentRollup.id());
+            if (traceAttributeNames == null) {
+                traceAttributeNames = ImmutableMap.of();
+            }
             agentRollups.put(agentRollup.id(),
                     ImmutableAgentRollupLayout.builder()
                             .display(agentRollup.display())
@@ -333,6 +351,7 @@ class LayoutService {
                             .agent(agentRollup.agent())
                             .permissions(permissions)
                             .addAllTransactionTypes(transactionTypes)
+                            .putAllTraceAttributeNames(traceAttributeNames)
                             .defaultDisplayedTransactionType(defaultDisplayedTransactionType)
                             .defaultDisplayedPercentiles(defaultDisplayedPercentiles)
                             .build());
@@ -396,6 +415,7 @@ class LayoutService {
         boolean agent();
         Permissions permissions();
         List<String> transactionTypes();
+        Map<String, List<String>> traceAttributeNames(); // key is transaction type
         String defaultDisplayedTransactionType();
         List<Double> defaultDisplayedPercentiles();
     }

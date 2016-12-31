@@ -32,15 +32,15 @@ class RepoAdminImpl implements RepoAdmin {
     private final AgentDao agentDao;
     private final GaugeValueDao gaugeValueDao;
     private final GaugeNameDao gaugeNameDao;
-    private final TraceAttributeNameDao traceAttributeNameDao;
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
+    private final TraceAttributeNameDao traceAttributeNameDao;
 
     RepoAdminImpl(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
             CappedDatabase traceCappedDatabase, ConfigRepository configRepository,
             AgentDao agentDao, GaugeValueDao gaugeValueDao, GaugeNameDao gaugeNameDao,
-            TraceAttributeNameDao traceAttributeNameDao, TransactionTypeDao transactionTypeDao,
-            FullQueryTextDao fullQueryTextDao) {
+            TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
+            TraceAttributeNameDao traceAttributeNameDao) {
         this.dataSource = dataSource;
         this.rollupCappedDatabases = rollupCappedDatabases;
         this.traceCappedDatabase = traceCappedDatabase;
@@ -48,9 +48,9 @@ class RepoAdminImpl implements RepoAdmin {
         this.agentDao = agentDao;
         this.gaugeValueDao = gaugeValueDao;
         this.gaugeNameDao = gaugeNameDao;
-        this.traceAttributeNameDao = traceAttributeNameDao;
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
+        this.traceAttributeNameDao = traceAttributeNameDao;
     }
 
     @Override
@@ -60,9 +60,9 @@ class RepoAdminImpl implements RepoAdmin {
         agentDao.reinitAfterDeletingDatabase();
         gaugeValueDao.reinitAfterDeletingDatabase();
         gaugeNameDao.invalidateCache();
-        traceAttributeNameDao.invalidateCache();
         transactionTypeDao.invalidateCache();
         fullQueryTextDao.invalidateCache();
+        traceAttributeNameDao.invalidateCache();
         if (environment != null) {
             agentDao.store(environment);
         }

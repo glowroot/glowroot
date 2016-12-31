@@ -56,6 +56,7 @@ import org.glowroot.central.repo.FullQueryTextDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.RoleDao;
 import org.glowroot.central.repo.SchemaUpgrade;
+import org.glowroot.central.repo.TraceAttributeNameDao;
 import org.glowroot.central.repo.TraceDao;
 import org.glowroot.central.repo.TransactionTypeDao;
 import org.glowroot.central.repo.TriggeredAlertDao;
@@ -175,8 +176,10 @@ class CentralModule {
             FullQueryTextDao fullQueryTextDao = new FullQueryTextDao(session, configRepository);
             AggregateDao aggregateDao = new AggregateDao(session, agentDao, transactionTypeDao,
                     fullQueryTextDao, configRepository, clock);
+            TraceAttributeNameDao traceAttributeNameDao =
+                    new TraceAttributeNameDao(session, configRepository);
             TraceDao traceDao = new TraceDao(session, agentDao, transactionTypeDao,
-                    fullQueryTextDao, configRepository, clock);
+                    fullQueryTextDao, traceAttributeNameDao, configRepository, clock);
             GaugeValueDao gaugeValueDao =
                     new GaugeValueDao(session, agentDao, configRepository, clock);
             TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session, configRepository);
@@ -214,6 +217,7 @@ class CentralModule {
                     .configRepository(configRepository)
                     .agentRepository(agentDao)
                     .transactionTypeRepository(transactionTypeDao)
+                    .traceAttributeNameRepository(traceAttributeNameDao)
                     .traceRepository(traceDao)
                     .aggregateRepository(aggregateDao)
                     .gaugeValueRepository(gaugeValueDao)

@@ -33,6 +33,7 @@ import org.glowroot.common.repo.AggregateRepository;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.RepoAdmin;
+import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.repo.TraceRepository;
 import org.glowroot.common.repo.TransactionTypeRepository;
 import org.glowroot.common.repo.util.MailService;
@@ -56,6 +57,7 @@ public class UiModule {
             AgentRepository agentRepository,
             TransactionTypeRepository transactionTypeRepository,
             AggregateRepository aggregateRepository,
+            TraceAttributeNameRepository traceAttributeNameRepository,
             TraceRepository traceRepository,
             GaugeValueRepository gaugeValueRepository,
             RepoAdmin repoAdmin,
@@ -66,8 +68,9 @@ public class UiModule {
             int numWorkerThreads,
             String version) throws Exception {
 
-        LayoutService layoutService = new LayoutService(embedded, offline, version,
-                configRepository, agentRepository, transactionTypeRepository);
+        LayoutService layoutService =
+                new LayoutService(embedded, offline, version, configRepository, agentRepository,
+                        transactionTypeRepository, traceAttributeNameRepository);
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(embedded, offline, configRepository, clock, layoutService);
         IndexHtmlHttpService indexHtmlHttpService =

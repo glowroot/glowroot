@@ -15,7 +15,10 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
@@ -23,20 +26,21 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Sessions;
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 
-class TraceAttributeNameDao {
+public class TraceAttributeNameDao implements TraceAttributeNameRepository {
 
     private static final String WITH_LCS =
             "with compaction = { 'class' : 'LeveledCompactionStrategy' }";
@@ -49,7 +53,7 @@ class TraceAttributeNameDao {
 
     private final RateLimiter<TraceAttributeNameKey> rateLimiter = new RateLimiter<>();
 
-    TraceAttributeNameDao(Session session, ConfigRepository configRepository) {
+    public TraceAttributeNameDao(Session session, ConfigRepository configRepository) {
         this.session = session;
         this.configRepository = configRepository;
 
@@ -59,20 +63,25 @@ class TraceAttributeNameDao {
 
         insertPS = session.prepare("insert into trace_attribute_name (agent_rollup,"
                 + " transaction_type, trace_attribute_name) values (?, ?, ?) using ttl ?");
-        readPS = session.prepare("select trace_attribute_name from trace_attribute_name"
-                + " where agent_rollup = ? and transaction_type = ?");
+        readPS = session.prepare("select agent_rollup, transaction_type, trace_attribute_name"
+                + " from trace_attribute_name");
     }
 
-    List<String> read(String agentRollupId, String transactionType) {
+    @Override
+    public Map<String, Map<String, List<String>>> read() throws Exception {
         BoundStatement boundStatement = readPS.bind();
-        boundStatement.setString(0, agentRollupId);
-        boundStatement.setString(1, transactionType);
         ResultSet results = session.execute(boundStatement);
-        List<String> attributeNames = Lists.newArrayList();
+        Map<String, Map<String, List<String>>> traceAttributeNames = Maps.newHashMap();
         for (Row row : results) {
-            attributeNames.add(checkNotNull(row.getString(0)));
+            String agentRollup = checkNotNull(row.getString(0));
+            String transactionType = checkNotNull(row.getString(1));
+            String traceAttributeName = checkNotNull(row.getString(2));
+            Map<String, List<String>> innerMap =
+                    traceAttributeNames.computeIfAbsent(agentRollup, k -> new HashMap<>());
+            innerMap.computeIfAbsent(transactionType, k -> new ArrayList<>())
+                    .add(traceAttributeName);
         }
-        return attributeNames;
+        return traceAttributeNames;
     }
 
     void store(String agentRollupId, String transactionType, String traceAttributeName,

@@ -17,28 +17,35 @@ package org.glowroot.agent.embedded.repo;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimaps;
 import org.checkerframework.checker.tainting.qual.Untainted;
 import org.immutables.value.Value;
 
 import org.glowroot.agent.embedded.util.DataSource;
-import org.glowroot.agent.embedded.util.DataSource.JdbcRowQuery;
+import org.glowroot.agent.embedded.util.DataSource.JdbcQuery;
 import org.glowroot.agent.embedded.util.ImmutableColumn;
 import org.glowroot.agent.embedded.util.ImmutableIndex;
 import org.glowroot.agent.embedded.util.Schemas.Column;
 import org.glowroot.agent.embedded.util.Schemas.ColumnType;
 import org.glowroot.agent.embedded.util.Schemas.Index;
+import org.glowroot.common.repo.TraceAttributeNameRepository;
 import org.glowroot.common.util.Styles;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
 
-class TraceAttributeNameDao {
+class TraceAttributeNameDao implements TraceAttributeNameRepository {
+
+    private static final String AGENT_ID = "";
 
     private static final ImmutableList<Column> columns = ImmutableList.<Column>of(
             ImmutableColumn.of("transaction_type", ColumnType.VARCHAR),
@@ -65,8 +72,11 @@ class TraceAttributeNameDao {
         dataSource.syncIndexes("trace_attribute_name", indexes);
     }
 
-    public List<String> readTraceAttributeNames(String transactionType) throws Exception {
-        return dataSource.query(new TraceAttributeQuery(transactionType));
+    @Override
+    public Map<String, Map<String, List<String>>> read() throws Exception {
+        Map<String, Map<String, List<String>>> traceAttributesNames = Maps.newHashMap();
+        traceAttributesNames.put(AGENT_ID, dataSource.query(new TraceAttributeQuery()));
+        return traceAttributesNames;
     }
 
     void updateLastCaptureTime(String transactionType, String traceAttributeName, long captureTime)
@@ -103,28 +113,28 @@ class TraceAttributeNameDao {
         lastCaptureTimeUpdatedInThePastDay.invalidateAll();
     }
 
-    private static class TraceAttributeQuery implements JdbcRowQuery<String> {
-
-        private final String transactionType;
-
-        private TraceAttributeQuery(String transactionType) {
-            this.transactionType = transactionType;
-        }
+    private static class TraceAttributeQuery implements JdbcQuery<Map<String, List<String>>> {
 
         @Override
         public @Untainted String getSql() {
-            return "select trace_attribute_name from trace_attribute_name where"
-                    + " transaction_type = ?";
+            return "select transaction_type, trace_attribute_name from trace_attribute_name";
         }
 
         @Override
-        public void bind(PreparedStatement preparedStatement) throws SQLException {
-            preparedStatement.setString(1, transactionType);
+        public void bind(PreparedStatement preparedStatement) {}
+
+        @Override
+        public Map<String, List<String>> processResultSet(ResultSet resultSet) throws Exception {
+            ListMultimap<String, String> multimap = ArrayListMultimap.create();
+            while (resultSet.next()) {
+                multimap.put(resultSet.getString(1), resultSet.getString(2));
+            }
+            return Multimaps.asMap(multimap);
         }
 
         @Override
-        public String mapRow(ResultSet resultSet) throws SQLException {
-            return checkNotNull(resultSet.getString(1));
+        public Map<String, List<String>> valueIfDataSourceClosing() {
+            return ImmutableMap.of();
         }
     }
 

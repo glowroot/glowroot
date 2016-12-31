@@ -88,6 +88,7 @@ glowroot.controller('TracesCtrl', [
       $http.get('backend/' + traceKind + '/points' + queryStrings.encodeObject(query))
           .then(function (response) {
             var data = response.data;
+
             function tryHighlight(dataPoints, dataSeries) {
               var i;
               for (i = 0; i < dataPoints.length; i++) {
@@ -124,7 +125,6 @@ glowroot.controller('TracesCtrl', [
             $scope.showExpiredMessage = data.expired;
             $scope.chartLimitExceeded = data.limitExceeded;
             $scope.chartLimit = limit;
-            $scope.traceAttributeNames = data.traceAttributeNames;
             // user clicked on Refresh button, need to reset axes
             plot.getAxes().xaxis.options.min = from;
             plot.getAxes().xaxis.options.max = to;
@@ -352,6 +352,10 @@ glowroot.controller('TracesCtrl', [
     ];
 
     locationChanges.on($scope, function () {
+
+      $scope.traceAttributeNames = $scope.layout.agentRollups[$scope.agentRollupId]
+          .traceAttributeNames[$scope.transactionType];
+
       var priorAppliedFilter = appliedFilter;
       appliedFilter = {};
       appliedFilter.transactionType = $scope.transactionType;

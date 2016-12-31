@@ -170,10 +170,7 @@ class TracePointJsonService {
             int traceExpirationHours = configRepository.getStorageConfig().traceExpirationHours();
             boolean expired = points.isEmpty() && traceExpirationHours != 0 && query
                     .to() < clock.currentTimeMillis() - HOURS.toMillis(traceExpirationHours);
-            List<String> traceAttributeNames =
-                    traceRepository.readTraceAttributeNames(agentRollupId, query.transactionType());
-            return writeResponse(points, activeTracePoints, queryResult.moreAvailable(), expired,
-                    traceAttributeNames);
+            return writeResponse(points, activeTracePoints, queryResult.moreAvailable(), expired);
         }
 
         private boolean shouldCaptureActiveTracePoints() {
@@ -264,8 +261,7 @@ class TracePointJsonService {
         }
 
         private String writeResponse(List<TracePoint> points, List<TracePoint> activePoints,
-                boolean limitExceeded, boolean expired, List<String> traceAttributeNames)
-                throws Exception {
+                boolean limitExceeded, boolean expired) throws Exception {
             StringBuilder sb = new StringBuilder();
             JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();
@@ -299,11 +295,6 @@ class TracePointJsonService {
             if (expired) {
                 jg.writeBooleanField("expired", true);
             }
-            jg.writeArrayFieldStart("traceAttributeNames");
-            for (String traceAttributeName : traceAttributeNames) {
-                jg.writeString(traceAttributeName);
-            }
-            jg.writeEndArray();
             jg.writeEndObject();
             jg.close();
             return sb.toString();

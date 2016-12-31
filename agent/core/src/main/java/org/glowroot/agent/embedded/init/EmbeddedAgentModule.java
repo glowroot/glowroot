@@ -204,6 +204,8 @@ class EmbeddedAgentModule {
                     .configRepository(simpleRepoModule.getConfigRepository())
                     .agentRepository(simpleRepoModule.getAgentDao())
                     .transactionTypeRepository(simpleRepoModule.getTransactionTypeRepository())
+                    .traceAttributeNameRepository(
+                            simpleRepoModule.getTraceAttributeNameRepository())
                     .aggregateRepository(simpleRepoModule.getAggregateDao())
                     .traceRepository(simpleRepoModule.getTraceDao())
                     .gaugeValueRepository(simpleRepoModule.getGaugeValueDao())
@@ -228,6 +230,8 @@ class EmbeddedAgentModule {
                     .configRepository(simpleRepoModule.getConfigRepository())
                     .agentRepository(simpleRepoModule.getAgentDao())
                     .transactionTypeRepository(simpleRepoModule.getTransactionTypeRepository())
+                    .traceAttributeNameRepository(
+                            simpleRepoModule.getTraceAttributeNameRepository())
                     .aggregateRepository(simpleRepoModule.getAggregateDao())
                     .traceRepository(simpleRepoModule.getTraceDao())
                     .gaugeValueRepository(simpleRepoModule.getGaugeValueDao())
