@@ -67,6 +67,7 @@ message AgentConfig {
     enum AlertKind {
       TRANSACTION = 0;
       GAUGE = 1;
+      HEARTBEAT = 2;
     }
   }
 

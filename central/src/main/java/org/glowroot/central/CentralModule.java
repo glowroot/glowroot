@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.ConfigRepositoryImpl.ConfigListener;
 import org.glowroot.central.repo.FullQueryTextDao;
 import org.glowroot.central.repo.GaugeValueDao;
+import org.glowroot.central.repo.HeartbeatDao;
 import org.glowroot.central.repo.RoleDao;
 import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.repo.TraceAttributeNameDao;
@@ -182,6 +183,7 @@ class CentralModule {
                     fullQueryTextDao, traceAttributeNameDao, configRepository, clock);
             GaugeValueDao gaugeValueDao =
                     new GaugeValueDao(session, agentDao, configRepository, clock);
+            HeartbeatDao heartbeatDao = new HeartbeatDao(session, clock);
             TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(session, configRepository);
             RollupLevelService rollupLevelService = new RollupLevelService(configRepository, clock);
             AlertingService alertingService = new AlertingService(configRepository,
@@ -194,7 +196,7 @@ class CentralModule {
             }
 
             server = new GrpcServer(centralConfig.grpcBindAddress(), centralConfig.grpcPort(),
-                    agentDao, aggregateDao, gaugeValueDao, traceDao, configRepository,
+                    agentDao, aggregateDao, gaugeValueDao, heartbeatDao, traceDao, configRepository,
                     alertingService, clock, version);
             DownstreamServiceImpl downstreamService = server.getDownstreamService();
             configRepository.addConfigListener(new ConfigListener() {
@@ -204,7 +206,7 @@ class CentralModule {
                     checkNotNull(downstreamService).updateAgentConfigIfConnectedAndNeeded(agentId);
                 }
             });
-            rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao,
+            rollupService = new RollupService(agentDao, aggregateDao, gaugeValueDao, heartbeatDao,
                     configRepository, alertingService, downstreamService, clock);
 
             uiModule = new CreateUiModuleBuilder()

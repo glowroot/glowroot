@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,11 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.AgentDao;
 import org.glowroot.central.repo.AggregateDao;
+import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.GaugeValueDao;
+import org.glowroot.central.repo.HeartbeatDao;
 import org.glowroot.central.repo.TraceDao;
 import org.glowroot.common.config.SmtpConfig;
-import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.util.AlertingService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -81,8 +82,9 @@ class GrpcServer {
     private final AgentDao agentDao;
     private final AggregateDao aggregateDao;
     private final GaugeValueDao gaugeValueDao;
+    private final HeartbeatDao heartbeatDao;
     private final TraceDao traceDao;
-    private final ConfigRepository configRepository;
+    private final ConfigRepositoryImpl configRepository;
     private final AlertingService alertingService;
     private final Clock clock;
     private final String version;
@@ -97,11 +99,13 @@ class GrpcServer {
     private final AtomicInteger nextDelay = new AtomicInteger();
 
     GrpcServer(String bindAddress, int port, AgentDao agentDao, AggregateDao aggregateDao,
-            GaugeValueDao gaugeValueDao, TraceDao traceDao, ConfigRepository configRepository,
-            AlertingService alertingService, Clock clock, String version) throws IOException {
+            GaugeValueDao gaugeValueDao, HeartbeatDao heartbeatDao, TraceDao traceDao,
+            ConfigRepositoryImpl configRepository, AlertingService alertingService, Clock clock,
+            String version) throws IOException {
         this.agentDao = agentDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
+        this.heartbeatDao = heartbeatDao;
         this.traceDao = traceDao;
         this.configRepository = configRepository;
         this.alertingService = alertingService;
@@ -309,7 +313,15 @@ class GrpcServer {
                 responseObserver.onError(t);
                 return;
             }
+            try {
+                heartbeatDao.store(request.getAgentId());
+            } catch (Throwable t) {
+                logger.error("{} - {}", request.getAgentId(), t.getMessage(), t);
+                responseObserver.onError(t);
+                return;
+            }
             checkGaugeAlerts(request.getAgentId(), maxCaptureTime);
+            clearHeartbeatAlerts(request.getAgentId());
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
         }
@@ -488,20 +500,67 @@ class GrpcServer {
             });
         }
 
+        private void clearHeartbeatAlerts(String agentId) {
+            SmtpConfig smtpConfig = configRepository.getSmtpConfig();
+            if (smtpConfig.host().isEmpty()) {
+                return;
+            }
+            List<AlertConfig> alertConfigs;
+            try {
+                alertConfigs = configRepository.getHeartbeatAlertConfigs(agentId);
+            } catch (IOException e) {
+                logger.error("{} - {}", agentId, e.getMessage(), e);
+                return;
+            }
+            if (alertConfigs.isEmpty()) {
+                return;
+            }
+            alertCheckingExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        runInternal();
+                    } catch (Throwable t) {
+                        logger.error("{} - {}", agentId, t.getMessage(), t);
+                    }
+                }
+                private void runInternal() throws InterruptedException {
+                    for (AlertConfig alertConfig : alertConfigs) {
+                        try {
+                            checkHeartbeatAlert(agentId, alertConfig, smtpConfig);
+                        } catch (InterruptedException e) {
+                            // shutdown requested
+                            throw e;
+                        } catch (Exception e) {
+                            logger.error("{} - {}", agentId, e.getMessage(), e);
+                        }
+                    }
+                }
+            });
+        }
+
         @Instrumentation.Transaction(transactionType = "Background",
                 transactionName = "Check transaction alert",
                 traceHeadline = "Check transaction alert: {{0}}", timer = "check transaction alert")
         private void checkTransactionAlert(String agentId, AlertConfig alertConfig,
-                long captureTime, SmtpConfig smtpConfig) throws Exception {
-            alertingService.checkTransactionAlert(agentId, alertConfig, captureTime, smtpConfig);
+                long endTime, SmtpConfig smtpConfig) throws Exception {
+            alertingService.checkTransactionAlert(agentId, alertConfig, endTime, smtpConfig);
         }
 
         @Instrumentation.Transaction(transactionType = "Background",
                 transactionName = "Check gauge alert",
                 traceHeadline = "Check gauge alert: {{0}}", timer = "check gauge alert")
-        private void checkGaugeAlert(String agentId, AlertConfig alertConfig, long captureTime,
+        private void checkGaugeAlert(String agentId, AlertConfig alertConfig, long endTime,
                 SmtpConfig smtpConfig) throws Exception {
-            alertingService.checkGaugeAlert(agentId, alertConfig, captureTime, smtpConfig);
+            alertingService.checkGaugeAlert(agentId, alertConfig, endTime, smtpConfig);
+        }
+
+        @Instrumentation.Transaction(transactionType = "Background",
+                transactionName = "Check heartbeat alert",
+                traceHeadline = "Check heartbeat alert: {{0}}", timer = "check heartbeat alert")
+        private void checkHeartbeatAlert(String agentId, AlertConfig alertConfig,
+                SmtpConfig smtpConfig) throws Exception {
+            alertingService.checkHeartbeatAlert(agentId, alertConfig, false, smtpConfig);
         }
 
         private void log(Level level, String format, Object... arguments) {

@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2016 the original author or authors.
+  Copyright 2012-2017 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -61,6 +61,16 @@
                      ng-disabled="!agentPermissions.config.edit.alert"
                      value="gauge">
               Gauge values
+            </label>
+          </div>
+          <div class="radio" ng-if="!layout.embedded">
+            <label>
+              <input type="radio"
+                     class="gt-autofocus-ignore"
+                     ng-model="config.kind"
+                     ng-disabled="!agentPermissions.config.edit.alert"
+                     value="heartbeat">
+              Heartbeat
             </label>
           </div>
         </div>
@@ -196,6 +206,22 @@
              gt-addon="minutes">
           <div class="help-block">
             The time period over which the average is calculated.
+          </div>
+        </div>
+      </div>
+      <div ng-if="config.kind === 'heartbeat'">
+        <div gt-form-group
+             gt-label="Time period"
+             gt-model="config.timePeriodSeconds"
+             gt-number="true"
+             gt-pattern="pattern.integer"
+             gt-required="loaded"
+             gt-disabled="!agentPermissions.config.edit.alert"
+             gt-width="7em"
+             gt-addon="seconds">
+          <div class="help-block">
+            The time period after which the alert is triggered if no heartbeat has been received from the agent.
+            Heartbeats are normally received every 5 seconds.
           </div>
         </div>
       </div>

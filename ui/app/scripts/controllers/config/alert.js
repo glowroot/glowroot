@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,7 @@ glowroot.controller('ConfigAlertCtrl', [
     };
 
     var halfLoaded;
+
     function onHalfLoad() {
       if (halfLoaded) {
         $scope.loaded = true;
@@ -95,7 +96,6 @@ glowroot.controller('ConfigAlertCtrl', [
       onNewData({
         kind: 'transaction',
         transactionType: $scope.defaultTransactionType(),
-        timePeriodSeconds: NaN, // setting to NaN prevents "has changes" dialog on new alert with no changes
         emailAddresses: []
       });
     }
@@ -107,6 +107,7 @@ glowroot.controller('ConfigAlertCtrl', [
       if (newValue === 'transaction') {
         $scope.config.gaugeName = undefined;
         $scope.config.gaugeThreshold = undefined;
+        $scope.config.transactionType = $scope.defaultTransactionType();
       }
       if (newValue === 'gauge') {
         $scope.config.transactionType = undefined;
@@ -120,7 +121,11 @@ glowroot.controller('ConfigAlertCtrl', [
       if (!$scope.config) {
         return;
       }
-      $scope.config.timePeriodSeconds = newValue * 60;
+      if (newValue === undefined) {
+        $scope.config.timePeriodSeconds = undefined;
+      } else {
+        $scope.config.timePeriodSeconds = newValue * 60;
+      }
     });
 
     $scope.$watch('emailAddresses', function (newValue) {

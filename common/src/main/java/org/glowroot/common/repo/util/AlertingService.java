@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,14 +100,13 @@ public class AlertingService {
         int minTransactionCount = alertConfig.getMinTransactionCount().getValue();
 
         long startTime = endTime - SECONDS.toMillis(alertConfig.getTimePeriodSeconds());
-        // don't want to include the aggregate at startTime, so add 1
-        startTime++;
         int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
+        // startTime + 1 in order to not include the gauge value at startTime
         List<PercentileAggregate> percentileAggregates =
                 aggregateRepository.readPercentileAggregates(agentRollupId,
                         ImmutableTransactionQuery.builder()
                                 .transactionType(alertConfig.getTransactionType())
-                                .from(startTime)
+                                .from(startTime + 1)
                                 .to(endTime)
                                 .rollupLevel(rollupLevel)
                                 .build());
@@ -145,11 +144,10 @@ public class AlertingService {
         }
         double threshold = alertConfig.getGaugeThreshold().getValue();
         long startTime = endTime - SECONDS.toMillis(alertConfig.getTimePeriodSeconds());
-        // don't want to include the aggregate at startTime, so add 1
-        startTime++;
         int rollupLevel = rollupLevelService.getRollupLevelForView(startTime, endTime);
+        // startTime + 1 in order to not include the gauge value at startTime
         List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollupId,
-                alertConfig.getGaugeName(), startTime, endTime, rollupLevel);
+                alertConfig.getGaugeName(), startTime + 1, endTime, rollupLevel);
         if (gaugeValues.isEmpty()) {
             return;
         }
@@ -169,6 +167,20 @@ public class AlertingService {
         } else if (!previouslyTriggered && currentlyTriggered) {
             triggeredAlertRepository.insert(agentRollupId, version);
             sendGaugeAlert(agentRollupId, alertConfig, threshold, false, smtpConfig);
+        }
+    }
+
+    // this is only used by central
+    public void checkHeartbeatAlert(String agentRollupId, AlertConfig alertConfig,
+            boolean currentlyTriggered, SmtpConfig smtpConfig) throws Exception {
+        String version = Versions.getVersion(alertConfig);
+        boolean previouslyTriggered = triggeredAlertRepository.exists(agentRollupId, version);
+        if (previouslyTriggered && !currentlyTriggered) {
+            triggeredAlertRepository.delete(agentRollupId, version);
+            sendHeartbeatAlert(agentRollupId, alertConfig, true, smtpConfig);
+        } else if (!previouslyTriggered && currentlyTriggered) {
+            triggeredAlertRepository.insert(agentRollupId, version);
+            sendHeartbeatAlert(agentRollupId, alertConfig, false, smtpConfig);
         }
     }
 
@@ -232,6 +244,26 @@ public class AlertingService {
             sb.append(unit);
         }
         sb.append(".\n\n");
+        sendEmail(alertConfig.getEmailAddressList(), subject, sb.toString(), smtpConfig,
+                configRepository.getSecretKey(), mailService);
+    }
+
+    private void sendHeartbeatAlert(String agentRollupId, AlertConfig alertConfig, boolean ok,
+            SmtpConfig smtpConfig) throws Exception {
+        // subject is the same between initial and ok messages so they will be threaded by gmail
+        String subject = "Glowroot alert";
+        if (!agentRollupId.equals("")) {
+            subject += " - " + agentRollupId;
+        }
+        subject += " - Heartbeat";
+        StringBuilder sb = new StringBuilder();
+        if (ok) {
+            sb.append("Receving heartbeat again.\n\n");
+        } else {
+            sb.append("Heartbeat not received in the last ");
+            sb.append(alertConfig.getTimePeriodSeconds());
+            sb.append(" seconds.\n\n");
+        }
         sendEmail(alertConfig.getEmailAddressList(), subject, sb.toString(), smtpConfig,
                 configRepository.getSecretKey(), mailService);
     }

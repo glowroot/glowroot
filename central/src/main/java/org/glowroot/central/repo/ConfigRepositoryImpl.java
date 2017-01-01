@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -194,6 +194,17 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         List<AlertConfig> configs = Lists.newArrayList();
         for (AlertConfig config : getAlertConfigs(agentId)) {
             if (config.getKind() == AlertKind.GAUGE) {
+                configs.add(config);
+            }
+        }
+        return configs;
+    }
+
+    public List<AlertConfig> getHeartbeatAlertConfigs(String agentId)
+            throws InvalidProtocolBufferException {
+        List<AlertConfig> configs = Lists.newArrayList();
+        for (AlertConfig config : getAlertConfigs(agentId)) {
+            if (config.getKind() == AlertKind.HEARTBEAT) {
                 configs.add(config);
             }
         }
